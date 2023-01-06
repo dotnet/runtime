@@ -131,7 +131,7 @@ namespace System.Net.WebSockets
                             externalAndAbortCancellation.Token.ThrowIfCancellationRequested(); // poll in case sends/receives in request/response didn't observe cancellation
                         }
 
-                        ValidateResponse(response, secValue, options);
+                        ValidateResponse(response, secValue);
                         break;
                     }
                     catch (HttpRequestException ex) when
@@ -360,13 +360,13 @@ namespace System.Net.WebSockets
 
             if (options.ClientMaxWindowBits > original.ClientMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_ClientWindowBitsNegotiationFailure,
+                throw new WebSocketException(SR.Format(SR.net_WebSockets_ClientWindowBitsNegotiationFailure,
                     original.ClientMaxWindowBits, options.ClientMaxWindowBits));
             }
 
             if (options.ServerMaxWindowBits > original.ServerMaxWindowBits)
             {
-                throw new WebSocketException(string.Format(SR.net_WebSockets_ServerWindowBitsNegotiationFailure,
+                throw new WebSocketException(SR.Format(SR.net_WebSockets_ServerWindowBitsNegotiationFailure,
                     original.ServerMaxWindowBits, options.ServerMaxWindowBits));
             }
 
@@ -443,7 +443,7 @@ namespace System.Net.WebSockets
             return secValue;
         }
 
-        private static void ValidateResponse(HttpResponseMessage response, string? secValue, ClientWebSocketOptions options)
+        private static void ValidateResponse(HttpResponseMessage response, string? secValue)
         {
             Debug.Assert(response.Version == HttpVersion.Version11 || response.Version == HttpVersion.Version20);
 

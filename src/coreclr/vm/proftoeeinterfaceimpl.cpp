@@ -901,7 +901,7 @@ void GenerationTable::Refresh()
 
 // This is the table of generation bounds updated by the gc
 // and read by the profiler.
-static GenerationTable *s_currentGenerationTable;
+static GenerationTable *s_currentGenerationTable = nullptr;
 
 // This is just so we can assert there's a single writer
 #ifdef  ENABLE_CONTRACTS
@@ -931,7 +931,6 @@ void __stdcall UpdateGenerationBounds()
     // Notify the profiler of start of the collection
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-
         if (s_currentGenerationTable == nullptr)
         {
             EX_TRY
@@ -965,7 +964,10 @@ void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC() || CORProfilerTrackBasicGC())
     {
-        s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
+        if (s_currentGenerationTable != nullptr)
+        {
+            s_currentGenerationTable->AddRecord(generation, rangeStart, rangeEnd, rangeEndReserved);
+        }
     }
 #endif // PROFILING_SUPPORTED
     RETURN;
@@ -8718,7 +8720,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         // If the profiler did not specify a seed context of its own, use the current one we
         // just produced.
         //
-        // Failing to seed the walk can cause us to to "miss" functions on the stack.  This is
+        // Failing to seed the walk can cause us to "miss" functions on the stack.  This is
         // because StackWalkFrames(), when doing an unseeded stackwalk, sets the
         // starting regdisplay's IP/SP to 0.  This, in turn causes StackWalkFramesEx
         // to set cf.isFrameless = (pEEJM != NULL); (which is FALSE, since we have no

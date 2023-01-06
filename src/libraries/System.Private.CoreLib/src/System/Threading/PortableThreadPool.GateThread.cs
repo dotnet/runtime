@@ -218,7 +218,7 @@ namespace System.Threading
                 }
                 else if ((numRunsMask & GateThreadRunningMask) == 0)
                 {
-                    CreateGateThread(threadPoolInstance);
+                    CreateGateThread();
                 }
             }
 
@@ -229,7 +229,7 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            private static void CreateGateThread(PortableThreadPool threadPoolInstance)
+            private static void CreateGateThread()
             {
                 try
                 {
@@ -239,7 +239,7 @@ namespace System.Threading
                     {
                         IsThreadPoolThread = true,
                         IsBackground = true,
-                        Name = ".NET ThreadPool Gate"
+                        Name = ".NET TP Gate"
                     };
                     gateThread.UnsafeStart();
                 }

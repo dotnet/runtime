@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         private static readonly CngKeyBlobFormat s_rsaPublicBlob =
             new CngKeyBlobFormat(Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB);
 
-        private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
+        private void ImportKeyBlob(ReadOnlySpan<byte> rsaBlob, bool includePrivate)
         {
             CngKeyBlobFormat blobFormat = includePrivate ? s_rsaPrivateBlob : s_rsaPublicBlob;
 

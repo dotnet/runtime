@@ -317,7 +317,7 @@ namespace System
             private int _length;
             private fixed uint _blocks[MaxBlockCount];
 
-            public static void Add(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
+            public static void Add(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger result)
             {
                 // determine which operand has the smaller length
                 ref BigInteger large = ref (lhs._length < rhs._length) ? ref rhs : ref lhs;
@@ -369,7 +369,7 @@ namespace System
                 }
             }
 
-            public static int Compare(ref BigInteger lhs, ref BigInteger rhs)
+            public static int Compare(scoped ref BigInteger lhs, scoped ref BigInteger rhs)
             {
                 Debug.Assert(unchecked((uint)(lhs._length)) <= MaxBlockCount);
                 Debug.Assert(unchecked((uint)(rhs._length)) <= MaxBlockCount);
@@ -427,7 +427,7 @@ namespace System
                 return (lastIndex * BitsPerBlock) + CountSignificantBits(value._blocks[lastIndex]);
             }
 
-            public static void DivRem(ref BigInteger lhs, ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
+            public static void DivRem(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
             {
                 // This is modified from the libraries BigIntegerCalculator.DivRem.cs implementation:
                 // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
@@ -558,6 +558,11 @@ namespace System
 
                         if (digit > 0)
                         {
+                            // rem and rhs have different lifetimes here and compiler is warning
+                            // about potential for one to copy into the other. This is a place
+                            // ref scoped parameters would alleviate.
+                            // https://github.com/dotnet/roslyn/issues/64393
+#pragma warning disable CS9080
                             // Now it's time to subtract our current quotient
                             uint carry = SubtractDivisor(ref rem, n, ref rhs, digit);
 
@@ -571,6 +576,7 @@ namespace System
 
                                 Debug.Assert(carry == 1);
                             }
+#pragma warning restore CS9080
                         }
 
                         // We have the digit!
@@ -693,7 +699,7 @@ namespace System
                 return quotient;
             }
 
-            public static void Multiply(ref BigInteger lhs, uint value, out BigInteger result)
+            public static void Multiply(scoped ref BigInteger lhs, uint value, out BigInteger result)
             {
                 if (lhs._length <= 1)
                 {
@@ -739,7 +745,7 @@ namespace System
                 }
             }
 
-            public static void Multiply(ref BigInteger lhs, ref BigInteger rhs, out BigInteger result)
+            public static void Multiply(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger result)
             {
                 if (lhs._length <= 1)
                 {
@@ -1032,7 +1038,7 @@ namespace System
                 Multiply(ref this, value, out this);
             }
 
-            public void Multiply(ref BigInteger value)
+            public void Multiply(scoped ref BigInteger value)
             {
                 if (value._length <= 1)
                 {
@@ -1115,7 +1121,7 @@ namespace System
                 }
             }
 
-            public static void SetValue(out BigInteger result, ref BigInteger value)
+            public static void SetValue(out BigInteger result, scoped ref BigInteger value)
             {
                 int rhsLength = value._length;
                 result._length = rhsLength;

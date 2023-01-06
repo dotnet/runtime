@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private CryptoStream _cs;
+        private CryptoStream? _cs;
 
         public XmlDsigBase64Transform()
         {
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
         {
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return null;
         }
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Xml
             }
             if (obj is XmlDocument)
             {
-                LoadXmlNodeListInput(((XmlDocument)obj).SelectNodes("//."));
+                LoadXmlNodeListInput(((XmlDocument)obj).SelectNodes("//.")!);
                 return;
             }
         }
@@ -93,12 +93,12 @@ namespace System.Security.Cryptography.Xml
             StringBuilder sb = new StringBuilder();
             foreach (XmlNode node in nodeList)
             {
-                XmlNode result = node.SelectSingleNode("self::text()");
+                XmlNode? result = node.SelectSingleNode("self::text()");
                 if (result != null)
                     sb.Append(result.OuterXml);
             }
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            byte[] buffer = utf8.GetBytes(sb.ToString());
+
+            byte[] buffer = Encoding.UTF8.GetBytes(sb.ToString());
             int i;
             int j = 0;
             while ((j < buffer.Length) && (!char.IsWhiteSpace((char)buffer[j]))) j++;
@@ -118,14 +118,14 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            return _cs;
+            return _cs!;
         }
 
         public override object GetOutput(Type type)
         {
             if (type != typeof(Stream) && !type.IsSubclassOf(typeof(Stream)))
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
-            return _cs;
+            return _cs!;
         }
     }
 }

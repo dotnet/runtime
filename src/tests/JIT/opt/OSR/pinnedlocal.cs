@@ -3,7 +3,7 @@
 
 using System;
 
-// Run under COMPlus_GCStress=3
+// Run under DOTNET_GCStress=3
 
 class PinnedLocal
 {

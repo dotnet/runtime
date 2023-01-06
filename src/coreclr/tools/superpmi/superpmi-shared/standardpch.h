@@ -53,7 +53,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
-#include <tchar.h>
 #include <specstrings.h>
 #include <math.h>
 #include <limits.h>
@@ -62,6 +61,7 @@
 
 // Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
 #ifdef TARGET_UNIX
+#include "clr_std/utility"
 #include "clr_std/string"
 #include "clr_std/algorithm"
 #include "clr_std/vector"
@@ -69,6 +69,7 @@
 #ifndef USE_STL
 #define USE_STL
 #endif // USE_STL
+#include <utility>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -81,13 +82,6 @@
 #include "..\external\msvcdis\inc\disarm64.h"
 #endif // USE_MSVCDIS
 
-#ifndef DIRECTORY_SEPARATOR_CHAR_A
-#define DIRECTORY_SEPARATOR_CHAR_A '\\'
-#endif
-#ifndef DIRECTORY_SEPARATOR_STR_A
-#define DIRECTORY_SEPARATOR_STR_A "\\"
-#endif
-
 #ifndef W
 #ifdef TARGET_UNIX
 #define W(str) u##str
@@ -96,9 +90,27 @@
 #endif // TARGET_UNIX
 #endif // !W
 
+#ifdef TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '/'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "/"
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_W
+#define DIRECTORY_SEPARATOR_STR_W W("/")
+#endif
+#else // TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '\\'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "\\"
+#endif
 #ifndef DIRECTORY_SEPARATOR_STR_W
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 #endif
+#endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_A PAL_SHLIB_SUFFIX
@@ -115,5 +127,7 @@ static inline void __debugbreak()
   DebugBreak();
 }
 #endif
+
+#include <minipal/utils.h>
 
 #endif // STANDARDPCH_H

@@ -314,8 +314,38 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAcceleratedProp)
     {
-        return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
-                              : NI_IsSupported_False;
+        // The `compSupportsHWIntrinsic` above validates `compSupportsIsa` indicating
+        // that the compiler can emit instructions for the ISA but not whether the
+        // hardware supports them.
+        //
+        // The `compExactlyDependsOn` on call then validates that the target hardware
+        // supports the instruction. Normally this is the same ISA as we just checked
+        // but for Vector128/256 on xarch this can be a different ISA since we accelerate
+        // some APIs even when we can't accelerate all APIs.
+        //
+        // When the target hardware does support the instruction set, we can return a
+        // constant true. When it doesn't then we want to report the check as dynamically
+        // supported instead. This allows some targets, such as AOT, to emit a check against
+        // a cached CPU query so lightup can still happen (such as for SSE4.1 when the target
+        // hardware is SSE2).
+        //
+        // When the compiler doesn't support ISA or when it does but the target hardware does
+        // not and we aren't in a scenario with support for a dynamic check, we want to return false.
+
+        if (isIsaSupported)
+        {
+            if (comp->compExactlyDependsOn(isa))
+            {
+                return NI_IsSupported_True;
+            }
+
+            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                return NI_IsSupported_Dynamic;
+            }
+        }
+
+        return NI_IsSupported_False;
     }
     else if (!isIsaSupported)
     {
@@ -516,22 +546,26 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         else
         {
-            assert((newobjThis->gtOper == GT_ADDR) && (newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR));
+            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
             arg = newobjThis;
 
             // push newobj result on type stack
-            unsigned tmp = arg->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(argClass).NormaliseForStack());
+            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
+            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
+                           verMakeTypeInfo(argClass).NormaliseForStack());
         }
     }
     else
     {
-        assert(varTypeIsArithmetic(argType));
+        assert(varTypeIsArithmetic(argType) || ((argType == TYP_BYREF) && (newobjThis == nullptr)));
 
         arg = impPopStack().val;
-        assert(varTypeIsArithmetic(arg->TypeGet()));
+        assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
 
-        assert(genActualType(arg->gtType) == genActualType(argType));
+        if (!impCheckImplicitArgumentCoercion(argType, arg->gtType))
+        {
+            BADCODE("the hwintrinsic argument has a type that can't be implicitly converted to the signature type");
+        }
     }
 
     return arg;
@@ -607,7 +641,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     GenTree* immOpDup = nullptr;
 
-    immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+    immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                          nullptr DEBUGARG("Clone an immediate operand for immediate value bounds check"));
 
     if (immLowerBound != 0)

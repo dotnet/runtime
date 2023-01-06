@@ -23,39 +23,39 @@ namespace System.Security.Cryptography.Xml
             MimeType = Utils.GetAttribute(value, "MimeType", EncryptedXml.XmlEncNamespaceUrl);
             Encoding = Utils.GetAttribute(value, "Encoding", EncryptedXml.XmlEncNamespaceUrl);
 
-            XmlNode encryptionMethodNode = value.SelectSingleNode("enc:EncryptionMethod", nsm);
+            XmlNode? encryptionMethodNode = value.SelectSingleNode("enc:EncryptionMethod", nsm);
 
             // EncryptionMethod
             EncryptionMethod = new EncryptionMethod();
             if (encryptionMethodNode != null)
-                EncryptionMethod.LoadXml(encryptionMethodNode as XmlElement);
+                EncryptionMethod.LoadXml((encryptionMethodNode as XmlElement)!);
 
             // Key Info
             KeyInfo = new KeyInfo();
-            XmlNode keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
+            XmlNode? keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
             if (keyInfoNode != null)
-                KeyInfo.LoadXml(keyInfoNode as XmlElement);
+                KeyInfo.LoadXml((keyInfoNode as XmlElement)!);
 
             // CipherData
-            XmlNode cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
+            XmlNode? cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
             if (cipherDataNode == null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
 
             CipherData = new CipherData();
-            CipherData.LoadXml(cipherDataNode as XmlElement);
+            CipherData.LoadXml((cipherDataNode as XmlElement)!);
 
             // EncryptionProperties
-            XmlNode encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
+            XmlNode? encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
             if (encryptionPropertiesNode != null)
             {
                 // Select the EncryptionProperty elements inside the EncryptionProperties element
-                XmlNodeList encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
+                XmlNodeList? encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
                 if (encryptionPropertyNodes != null)
                 {
                     foreach (XmlNode node in encryptionPropertyNodes)
                     {
                         EncryptionProperty ep = new EncryptionProperty();
-                        ep.LoadXml(node as XmlElement);
+                        ep.LoadXml((node as XmlElement)!);
                         EncryptionProperties.Add(ep);
                     }
                 }
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml);
+            if (CacheValid) return _cachedXml;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;

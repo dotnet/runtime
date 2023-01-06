@@ -65,16 +65,16 @@
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
 #if defined(TARGET_WINDOWS)
-#define LIB_PREFIX
-#define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
 #define FALLBACK_HOST_RID _X("win10")
 #elif defined(TARGET_OSX)
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
 #define FALLBACK_HOST_RID _X("osx.10.12")
 #else
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
 #if defined(TARGET_FREEBSD)
 #define FALLBACK_HOST_RID _X("freebsd")
 #elif defined(TARGET_ILLUMOS)
@@ -90,15 +90,16 @@
 #endif
 #endif
 
-#define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
-#define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
+#define _STRINGIFY(s) _X(s)
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
 
 #define CORELIB_NAME _X("System.Private.CoreLib.dll")
-
-#define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
-#define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
-
-#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
 
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
@@ -179,6 +180,7 @@ namespace pal
         return buffer;
     }
 
+    size_t pal_utf8string(const string_t& str, char* out_buffer, size_t len);
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
@@ -235,6 +237,16 @@ namespace pal
 
     inline const string_t strerror(int errnum) { return ::strerror(errnum); }
 
+    inline size_t pal_utf8string(const string_t& str, char* out_buffer, size_t buffer_len)
+    {
+        size_t len = str.size() + 1;
+        if (buffer_len < len)
+            return len;
+
+        ::strncpy(out_buffer, str.c_str(), str.size());
+        out_buffer[len - 1] = '\0';
+        return len;
+    }
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
@@ -260,10 +272,6 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
-
-    inline void file_flush(FILE* f) { std::fflush(f); }
-    inline void err_flush() { std::fflush(stderr); }
-    inline void out_flush() { std::fflush(stdout); }
 
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()

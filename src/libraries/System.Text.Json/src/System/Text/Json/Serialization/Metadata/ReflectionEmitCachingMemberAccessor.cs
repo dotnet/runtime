@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Metadata
             => s_cache.GetOrAdd((nameof(CreateImmutableEnumerableCreateRangeDelegate), typeof((TCollection, TElement)), null),
                 static (_) => s_sourceAccessor.CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>());
 
-        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
             => s_cache.GetOrAdd((nameof(CreateParameterizedConstructor), typeof(T), constructor), static key => s_sourceAccessor.CreateParameterizedConstructor<T>((ConstructorInfo)key.member!));
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>? CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor)

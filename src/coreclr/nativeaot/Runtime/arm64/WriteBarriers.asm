@@ -42,8 +42,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         UPDATE_GC_SHADOW $destReg, $refReg
 
         ;; If g_GCShadow is 0, don't perform the check.
-        adrp    x12, $g_GCShadow
-        ldr     x12, [x12, $g_GCShadow]
+        PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadow, x12
         cbz     x12, %ft1
 
         ;; Save $destReg since we're about to modify it (and we need the original value both within the macro and
@@ -51,17 +50,14 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         mov     x17, $destReg
 
         ;; Transform $destReg into the equivalent address in the shadow heap.
-        adrp    x12, g_lowest_address
-        ldr     x12, [x12, g_lowest_address]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
         subs    $destReg, $destReg, x12
         blo     %ft0
 
-        adrp    x12, $g_GCShadow
-        ldr     x12, [x12, $g_GCShadow]
+        PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadow, x12
         add     $destReg, $destReg, x12
 
-        adrp    x12, $g_GCShadowEnd
-        ldr     x12, [x12, $g_GCShadowEnd]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, x12
         cmp     $destReg, x12
         bhs     %ft0
 
@@ -109,44 +105,63 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         ;; On entry:
         ;;   $destReg:  location to be updated (cannot be x12,x17)
         ;;   $refReg:   objectref to be stored (cannot be x12,x17)
-        ;;   $trashReg: register that can be trashed (can be $destReg or $refReg)
         ;;
         ;; On exit:
-        ;;   $trashReg: trashed
-        ;;   x12:       trashed
-        ;;   x17:       trashed if WRITE_BARRIER_CHECK
+        ;;   x12,x17: trashed
         ;;
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg, $trashReg
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg
 
         ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
         ;; we're in a debug build and write barrier checking has been enabled).
         UPDATE_GC_SHADOW $destReg, $refReg
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // Update the write watch table if necessary
+        PREPARE_EXTERNAL_VAR_INDIRECT g_write_watch_table, x12
+
+        cbz     x12, %ft2
+        add     x12, x12, $destReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+        ldrb    w17, [x12]
+        cbnz    x17, %ft2
+        mov     w17, #0xFF
+        strb    w17, [x12]
+#endif
+
+2
         ;; We can skip the card table write if the reference is to
         ;; an object not on the epehemeral segment.
-        adrp    x12, g_ephemeral_low
-        ldr     x12, [x12, g_ephemeral_low]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x12
         cmp     $refReg, x12
         blo     %ft0
 
-        adrp    x12, g_ephemeral_high
-        ldr     x12, [x12, g_ephemeral_high]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x12
         cmp     $refReg, x12
         bhs     %ft0
 
         ;; Set this object's card, if it hasn't already been set.
-        adrp    x12, g_card_table
-        ldr     x12, [x12, g_card_table]
-        add     $trashReg, x12, $destReg lsr #11
+        PREPARE_EXTERNAL_VAR_INDIRECT g_card_table, x12
+        add     x17, x12, $destReg lsr #11
 
         ;; Check that this card hasn't already been written. Avoiding useless writes is a big win on
         ;; multi-proc systems since it avoids cache trashing.
-        ldrb    w12, [$trashReg]
+        ldrb    w12, [x17]
         cmp     x12, 0xFF
         beq     %ft0
 
         mov     x12, 0xFF
-        strb    w12, [$trashReg]
+        strb    w12, [x17]
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // Check if we need to update the card bundle table
+        PREPARE_EXTERNAL_VAR_INDIRECT g_card_bundle_table, x12
+        add     x17, x12, $destReg, lsr #21
+        ldrb    w12, [x17]
+        cmp     x12, 0xFF
+        beq     %ft0
+
+        mov     x12, 0xFF
+        strb    w12, [x17]
+#endif
 
 0
         ;; Exit label
@@ -156,81 +171,110 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         ;; On entry:
         ;;   $destReg:  location to be updated (cannot be x12,x17)
         ;;   $refReg:   objectref to be stored (cannot be x12,x17)
-        ;;   $trashReg: register that can be trashed (can be $destReg or $refReg)
         ;;
         ;; On exit:
-        ;;   $trashReg: trashed
-        ;;   x12:       trashed
-        ;;   x17:       trashed if WRITE_BARRIER_CHECK
+        ;;   x12, x17:       trashed
         ;;
-        INSERT_CHECKED_WRITE_BARRIER_CORE $destReg, $refReg, $trashReg
+        INSERT_CHECKED_WRITE_BARRIER_CORE $destReg, $refReg
 
         ;; The "check" of this checked write barrier - is $destReg
         ;; within the heap? if no, early out.
-        adrp    x12, g_lowest_address
-        ldr     x12, [x12, g_lowest_address]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
         cmp     $destReg, x12
 
-        adrp    x12, g_highest_address
-        ldr     x12, [x12, g_highest_address]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
 
         ;; If $destReg >= g_lowest_address, compare $destReg to g_highest_address.
         ;; Otherwise, set the C flag (0x2) to take the next branch.
         ccmp    $destReg, x12, #0x2, hs
         bhs     %ft0
 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg, $trashReg
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE $destReg, $refReg
 
 0
         ;; Exit label
     MEND
 
-;; RhpCheckedAssignRef(Object** dst, Object* src)
+;; void JIT_ByRefWriteBarrier
+;; On entry:
+;;   x13 : the source address (points to object reference to write)
+;;   x14 : the destination address (object reference written here)
+;;
+;; On exit:
+;;   x13 : incremented by 8
+;;   x14 : incremented by 8
+;;   x15  : trashed
+;;   x12, x17  : trashed
+;;
+    LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
+
+        ldr     x15, [x13], 8
+        b       RhpCheckedAssignRefArm64
+
+    LEAF_END RhpByRefAssignRefArm64
+
+
+;; JIT_CheckedWriteBarrier(Object** dst, Object* src)
 ;;
 ;; Write barrier for writes to objects that may reside
 ;; on the managed heap.
 ;;
 ;; On entry:
-;;   x0  : the destination address (LHS of the assignment).
-;;         May not be an object reference (hence the checked).
-;;   x1  : the object reference (RHS of the assignment)
+;;   x14  : the destination address (LHS of the assignment).
+;;          May not be a heap location (hence the checked).
+;;   x15  : the object reference (RHS of the assignment)
 ;;
 ;; On exit:
-;;   x12 : trashed
-;;   x14 : trashed
-;;   x15 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
-    LEAF_ENTRY RhpCheckedAssignRef
-    ALTERNATE_ENTRY RhpCheckedAssignRefX1
+;;   x12, x17 : trashed
+;;   x14      : incremented by 8
+    LEAF_ENTRY RhpCheckedAssignRefArm64
 
-        mov     x14, x0                     ; x14 = dst
-        mov     x15, x1                     ; x15 = val
-        b       RhpCheckedAssignRefArm64
+        ;; is destReg within the heap?
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        cmp     x14, x12
 
-    LEAF_END RhpCheckedAssignRef
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
+        ccmp    x14, x12, #0x2, hs
+        blo     RhpAssignRefArm64
 
-;; RhpAssignRef(Object** dst, Object* src)
+NotInHeap
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+        str     x15, [x14], 8
+        ret
+
+    LEAF_END RhpCheckedAssignRefArm64
+
+;; JIT_WriteBarrier(Object** dst, Object* src)
 ;;
 ;; Write barrier for writes to objects that are known to
 ;; reside on the managed heap.
 ;;
 ;; On entry:
-;;   x0  : the destination address (LHS of the assignment)
-;;   x1  : the object reference (RHS of the assignment)
+;;   x14  : the destination address (LHS of the assignment)
+;;   x15  : the object reference (RHS of the assignment)
 ;;
 ;; On exit:
-;;   x12 : trashed
-;;   x14 : trashed
-;;   x15 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
+;;   x12, x17 : trashed
+;;   x14 : incremented by 8
+    LEAF_ENTRY RhpAssignRefArm64
+
+    ALTERNATE_ENTRY RhpAssignRefAVLocation
+        stlr    x15, [x14]
+
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15
+
+        add     x14, x14, 8
+        ret
+
+    LEAF_END RhpAssignRefArm64
+
+;; same as RhpAssignRefArm64, but with standard ABI.
     LEAF_ENTRY RhpAssignRef
-    ALTERNATE_ENTRY RhpAssignRefX1
-
-        mov     x14, x0                     ; x14 = dst
-        mov     x15, x1                     ; x15 = val
+        mov     x14, x0             ; x14 = dst
+        mov     x15, x1             ; x15 = val
         b       RhpAssignRefArm64
-
     LEAF_END RhpAssignRef
+
 
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
@@ -249,30 +293,27 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;;   x2  : comparand
 ;;
 ;; On exit:
-;;   x0  : original value of objectref
-;;   x9  : trashed
-;;   x10 : trashed
-;;   x12 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
+;;  x0: original value of objectref
+;;  x10, x12, x17: trashed
 ;;
     LEAF_ENTRY RhpCheckedLockCmpXchg
-    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
 
 CmpXchgRetry
         ;; Check location value is what we expect.
+    ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     CmpXchgNoUpdate
 
         ;; Current value matches comparand, attempt to update with the new value.
-        stlxr   w9, x1, [x0]
-        cbnz    w9, CmpXchgRetry
+        stlxr   w12, x1, [x0]
+        cbnz    w12, CmpXchgRetry
 
         ;; We've successfully updated the value of the objectref so now we need a GC write barrier.
         ;; The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         ;; already correctly set up.
 
-        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, x0
+        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1
 
 CmpXchgNoUpdate
         ;; x10 still contains the original value.
@@ -295,28 +336,26 @@ CmpXchgNoUpdate
 ;;   x1  : exchange value
 ;;
 ;; On exit:
-;;   x0  : original value of objectref
-;;   x9  : trashed
-;;   x10 : trashed
-;;   x12 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
+;;  x0: original value of objectref
+;;  x10: trashed
+;;  x12, x17: trashed
 ;;
     LEAF_ENTRY RhpCheckedXchg
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
 
 ExchangeRetry
         ;; Read the existing memory location.
+    ALTERNATE_ENTRY RhpCheckedXchgAVLocation
         ldaxr   x10,  [x0]
 
         ;; Attempt to update with the new value.
-        stlxr   w9, x1, [x0]
-        cbnz    w9, ExchangeRetry
+        stlxr   w12, x1, [x0]
+        cbnz    w12, ExchangeRetry
 
         ;; We've successfully updated the value of the objectref so now we need a GC write barrier.
         ;; The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         ;; already correctly set up.
 
-        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, x0
+        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1
 
         ;; x10 still contains the original value.
         mov     x0, x10
@@ -324,72 +363,5 @@ ExchangeRetry
         ret
 
     LEAF_END RhpCheckedXchg
-
-;; RhpAssignRefArm64(Object** dst, Object* src)
-;;
-;; On entry:
-;;   x14  : the destination address (LHS of the assignment).
-;;   x15  : the object reference (RHS of the assignment).
-;;
-;; On exit:
-;;   x12  : trashed
-;;   x15  : trashed
-;;   x17  : trashed if WRITE_BARRIER_CHECK
-;;
-    LEAF_ENTRY RhpAssignRefArm64, _TEXT
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
-    ALTERNATE_ENTRY RhpAssignRefX1AVLocation
-
-        stlr    x15, [x14]
-
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15, x15
-
-        ret
-    LEAF_END RhpAssignRefArm64
-
-;; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-;; On entry:
-;;   x14 : the destination address (LHS of the assignment)
-;;   x15 : the object reference (RHS of the assignment)
-;;
-;; On exit:
-;;   x12 : trashed
-;;   x15 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
-;;
-    LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
-    ALTERNATE_ENTRY RhpCheckedAssignRefX1AVLocation
-
-        stlr    x15, [x14]
-
-        INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, x15
-
-        ret
-    LEAF_END RhpCheckedAssignRefArm64
-
-;; void JIT_ByRefWriteBarrier
-;; On entry:
-;;   x13 : the source address (points to object reference to write)
-;;   x14 : the destination address (object reference written here)
-;;
-;; On exit:
-;;   x12 : trashed
-;;   x13 : incremented by 8
-;;   x14 : incremented by 8
-;;   x15 : trashed
-;;   x17 : trashed if WRITE_BARRIER_CHECK
-;;
-    LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
-        ldr     x15, [x13]
-        stlr    x15, [x14]
-
-        INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, x15
-
-        add     x13, x13, #8
-        add     x14, x14, #8
-
-        ret
-    LEAF_END RhpByRefAssignRefArm64
 
     end

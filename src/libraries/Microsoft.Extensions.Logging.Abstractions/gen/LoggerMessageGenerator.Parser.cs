@@ -248,9 +248,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                         }
 
-                                        if (method.Body != null)
+                                        CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
+                                        if (methodBody != null)
                                         {
-                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, method.Body.GetLocation());
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
                                             keepMethod = false;
                                         }
 
@@ -668,21 +669,6 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 int findIndex = message.IndexOfAny(chars, startIndex, endIndex - startIndex);
                 return findIndex == -1 ? endIndex : findIndex;
-            }
-
-            private string GetStringExpression(SemanticModel sm, SyntaxNode expr)
-            {
-                Optional<object?> optional = sm.GetConstantValue(expr, _cancellationToken);
-                if (optional.HasValue)
-                {
-                    object o = optional.Value;
-                    if (o != null)
-                    {
-                        return o.ToString();
-                    }
-                }
-
-                return string.Empty;
             }
 
             private static object GetItem(TypedConstant arg) => arg.Kind == TypedConstantKind.Array ? arg.Values : arg.Value;

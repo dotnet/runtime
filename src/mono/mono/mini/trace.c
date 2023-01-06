@@ -482,7 +482,7 @@ mono_trace_enable (gboolean enable)
 }
 
 gboolean
-mono_trace_is_enabled ()
+mono_trace_is_enabled (void)
 {
 	return trace_spec.enabled;
 }

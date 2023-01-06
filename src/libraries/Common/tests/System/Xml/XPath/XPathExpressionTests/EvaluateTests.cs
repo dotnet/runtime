@@ -6,8 +6,8 @@ using System.Collections;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using Xunit;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.XPathExpressionTests
 {
@@ -32,18 +32,18 @@ namespace XPathTests.XPathExpressionTests
     </Level1>
 </DocumentElement>";
 
-        private static void EvaluateTestNonCompiled<T>(string toEvaluate, T expected)
+        private static void EvaluateTestNonCompiled<T>(Utils.NavigatorKind kind, string toEvaluate, T expected)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
             var result = navigator.Evaluate(toEvaluate);
             var convertedResult = Convert.ChangeType(result, typeof(T));
 
             Assert.Equal(expected, convertedResult);
         }
 
-        private static void EvaluateTestCompiledXPathExpression<T>(string toEvaluate, T expected)
+        private static void EvaluateTestCompiledXPathExpression<T>(Utils.NavigatorKind kind, string toEvaluate, T expected)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
             var xPathExpression = XPathExpression.Compile(toEvaluate);
             var result = navigator.Evaluate(xPathExpression);
             var convertedResult = Convert.ChangeType(result, typeof(T));
@@ -52,72 +52,87 @@ namespace XPathTests.XPathExpressionTests
         }
 
 
-        private static void EvaluateTestsBoth<T>(string toEvaluate, T expected)
+        private static void EvaluateTestsBoth<T>(Utils.NavigatorKind kind, string toEvaluate, T expected)
         {
-            EvaluateTestNonCompiled(toEvaluate, expected);
-            EvaluateTestCompiledXPathExpression(toEvaluate, expected);
+            EvaluateTestNonCompiled(kind, toEvaluate, expected);
+            EvaluateTestCompiledXPathExpression(kind, toEvaluate, expected);
         }
 
-        private static void EvaluateTestsErrors(string toEvaluate, string exceptionString)
+        private static void EvaluateTestsErrors(Utils.NavigatorKind kind, string toEvaluate, string exceptionString)
         {
-            Assert.Throws<XPathException>(() => EvaluateTestCompiledXPathExpression<object>(toEvaluate, null));
-            Assert.Throws<XPathException>(() => EvaluateTestNonCompiled<object>(toEvaluate, null));
+            Assert.Throws<XPathException>(() => EvaluateTestCompiledXPathExpression<object>(kind, toEvaluate, null));
+            Assert.Throws<XPathException>(() => EvaluateTestNonCompiled<object>(kind, toEvaluate, null));
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = String)
         /// Priority: 0
         /// </summary>
-        [Fact]
-        public static void Variation_1()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_1(Utils.NavigatorKind kind)
         {
-            EvaluateTestsBoth("string(1)", "1");
+            EvaluateTestsBoth(kind, "string(1)", "1");
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = Number)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_2()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_2(Utils.NavigatorKind kind)
         {
-            EvaluateTestsBoth("number('1')", 1);
+            EvaluateTestsBoth(kind, "number('1')", 1);
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = Boolean)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_3()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_3(Utils.NavigatorKind kind)
         {
-            EvaluateTestsBoth("true()", true);
+            EvaluateTestsBoth(kind, "true()", true);
         }
 
         /// <summary>
         /// Pass in empty String
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_5()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_5(Utils.NavigatorKind kind)
         {
-            EvaluateTestsErrors(string.Empty, "Xp_NodeSetExpected");
+            EvaluateTestsErrors(kind, string.Empty, "Xp_NodeSetExpected");
         }
 
         /// <summary>
         /// Pass in invalid XPath Expression (wrong syntax)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_6()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_6(Utils.NavigatorKind kind)
         {
-            EvaluateTestsErrors("string(1, 2)", "Xp_InvalidNumArgs");
+            EvaluateTestsErrors(kind, "string(1, 2)", "Xp_InvalidNumArgs");
         }
 
 
-        private static void EvaluateTestNonCompiledNodeset(string toEvaluate, string[] expected)
+        private static void EvaluateTestNonCompiledNodeset(Utils.NavigatorKind kind, string toEvaluate, string[] expected)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
             var iter = (XPathNodeIterator)navigator.Evaluate(toEvaluate);
 
             foreach (var e in expected)
@@ -127,9 +142,9 @@ namespace XPathTests.XPathExpressionTests
             }
         }
 
-        private static void EvaluateTestCompiledNodeset(string toEvaluate, string[] expected)
+        private static void EvaluateTestCompiledNodeset(Utils.NavigatorKind kind, string toEvaluate, string[] expected)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
             var xPathExpression = XPathExpression.Compile(toEvaluate);
             var iter = (XPathNodeIterator)navigator.Evaluate(xPathExpression);
 
@@ -144,41 +159,53 @@ namespace XPathTests.XPathExpressionTests
         /// Pass in valid XPath Expression
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_7()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_7(Utils.NavigatorKind kind)
         {
-            EvaluateTestCompiledNodeset("DocumentElement/child::*", new[] { "first", "second", "third", "last" });
-            EvaluateTestNonCompiledNodeset("DocumentElement/child::*", new[] { "first", "second", "third", "last" });
+            EvaluateTestCompiledNodeset(kind, "DocumentElement/child::*", new[] { "first", "second", "third", "last" });
+            EvaluateTestNonCompiledNodeset(kind, "DocumentElement/child::*", new[] { "first", "second", "third", "last" });
         }
 
         /// <summary>
         /// Pass in NULL
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_9()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_9(Utils.NavigatorKind kind)
         {
-            EvaluateTestsErrors(null, "Xp_ExprExpected");
+            EvaluateTestsErrors(kind, null, "Xp_ExprExpected");
         }
 
         /// <summary>
         /// Pass in invalid XPath Expression (wrong syntax)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_10()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_10(Utils.NavigatorKind kind)
         {
-            EvaluateTestsErrors("DocumentElement/child:::*", "Xp_InvalidToken");
+            EvaluateTestsErrors(kind, "DocumentElement/child:::*", "Xp_InvalidToken");
         }
 
         /// <summary>
         /// Pass in two different XPath Expression in a row
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_11()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_11(Utils.NavigatorKind kind)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
 
             navigator.Evaluate("child::*");
             navigator.Evaluate("descendant::*");
@@ -188,10 +215,13 @@ namespace XPathTests.XPathExpressionTests
         /// Pass in valid XPath Expression, then empty string
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_12()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_12(Utils.NavigatorKind kind)
         {
-            var navigator = Utils.CreateNavigator(xml);
+            var navigator = Utils.CreateNavigator(kind, xml);
 
             navigator.Select("/DocumentElement/child::*");
             Assert.Throws<XPathException>(() => navigator.Select(string.Empty));

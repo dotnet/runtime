@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;

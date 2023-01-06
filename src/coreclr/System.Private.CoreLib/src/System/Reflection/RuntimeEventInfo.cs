@@ -71,7 +71,11 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported && CacheEquals(obj));
+            (MetadataUpdater.IsSupported &&
+                obj is RuntimeEventInfo ei &&
+                ei.m_token == m_token &&
+                ReferenceEquals(ei.m_declaringType, m_declaringType) &&
+                ReferenceEquals(ei.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());

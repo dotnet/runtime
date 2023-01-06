@@ -36,7 +36,7 @@ public class Test11611
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine("About to run test");
         d = test;

@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public static class Utils
     {

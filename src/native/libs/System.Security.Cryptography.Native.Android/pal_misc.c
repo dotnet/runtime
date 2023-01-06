@@ -4,7 +4,7 @@
 #include "pal_misc.h"
 #include "pal_jni.h"
 
-int32_t CryptoNative_EnsureOpenSslInitialized()
+int32_t CryptoNative_EnsureOpenSslInitialized(void)
 {
     return 0;
 }

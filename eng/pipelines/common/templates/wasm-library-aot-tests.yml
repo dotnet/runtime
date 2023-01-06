@@ -8,7 +8,7 @@ parameters:
   nameSuffix: ''
   platforms: []
   runAOT: false 
-  runSmokeOnlyArg: ''
+  shouldRunSmokeOnly: false
   shouldContinueOnError: false
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
-      runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+      shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
         - normal
@@ -45,7 +45,7 @@ jobs:
       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
-      runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+      shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
         - WasmTestOnBrowser

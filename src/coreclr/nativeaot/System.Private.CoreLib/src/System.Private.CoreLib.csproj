@@ -40,6 +40,9 @@
 
   <!-- Sources -->
   <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
+      <Link>Internal\Runtime\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
@@ -110,7 +113,6 @@
     <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\GenericVirtualMethodSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
@@ -169,6 +171,7 @@
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
+    <Compile Include="System\ComAwareWeakReference.NativeAot.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
@@ -211,7 +214,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeHandle.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
@@ -248,8 +251,6 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
-    <Compile Include="System\WeakReference.NativeAot.cs" />
-    <Compile Include="System\WeakReference.T.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
@@ -285,7 +286,6 @@
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="System\Environment.NativeAot.Windows.cs" />
-    <Compile Include="System\Environment.NativeAot.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -328,17 +328,11 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnv.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetEnv.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
       <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetEnviron.cs">
-      <Link>Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -610,12 +604,4 @@
     <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
-
-  <!-- Import refererence assembly and ApiCompat logic -->
-  <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
-    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
-  </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

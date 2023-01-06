@@ -29,7 +29,7 @@ namespace
         DWORD* directoryRVA)
     {
         // Fun code ahead... below is a hand written PE decoder with some of the file offsets hardcoded.
-        // It supports no more than what we absolutely have to to get to the PE directory we need. Any of the
+        // It supports no more than what we absolutely have to get to the PE directory we need. Any of the
         // magic numbers used below can be determined by using the public documentation on the web.
         //
         // Yes utilcode has a PE decoder, no it does not support reading its data through a datatarget

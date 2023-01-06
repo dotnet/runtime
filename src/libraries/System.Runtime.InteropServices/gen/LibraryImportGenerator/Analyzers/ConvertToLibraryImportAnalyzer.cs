@@ -95,11 +95,11 @@ namespace Microsoft.Interop.Analyzers
             bool mayRequireAdditionalWork = diagnostics.AnyDiagnostics;
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext(env, "return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-            _ = new BoundGenerators(targetSignatureContext.ElementTypeInformation, info =>
+            BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
             {
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
@@ -111,16 +111,10 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return forwarder;
                 }
-                try
-                {
-                    return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
-                }
-                catch (MarshallingNotSupportedException)
-                {
-                    mayRequireAdditionalWork = true;
-                    return forwarder;
-                }
-            });
+                return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
+            }), stubCodeContext, forwarder, out var bindingFailures);
+
+            mayRequireAdditionalWork |= bindingFailures.Length > 0;
 
             if (anyExplicitlyUnsupportedInfo)
             {
@@ -143,7 +137,7 @@ namespace Microsoft.Interop.Analyzers
             if (info.MarshallingAttributeInfo is not MarshalAsInfo(UnmanagedType unmanagedType, _))
                 return false;
 
-            return !System.Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+            return !Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
                 || unmanagedType == UnmanagedType.CustomMarshaler
                 || unmanagedType == UnmanagedType.Interface
                 || unmanagedType == UnmanagedType.IDispatch
@@ -152,9 +146,9 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private static InteropAttributeData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
+        private static InteropAttributeCompilationData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
         {
-            InteropAttributeData interopData = new();
+            InteropAttributeCompilationData interopData = new();
             if (dllImportData.SetLastError)
             {
                 interopData = interopData with { IsUserDefined = interopData.IsUserDefined | InteropAttributeMember.SetLastError, SetLastError = true };
@@ -172,6 +166,18 @@ namespace Microsoft.Interop.Analyzers
             public bool AnyDiagnostics { get; private set; }
             public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
             public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
+        }
+
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        {
+            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            {
+                _func = func;
+            }
+
+            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
     }
 }

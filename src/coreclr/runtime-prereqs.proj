@@ -6,7 +6,7 @@
     <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
     <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
     <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
-    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</VerifySourceLinkFileExists>
+    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true' AND '$(EnableSourceControlManagerQueries)' == 'true'">true</VerifySourceLinkFileExists>
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 

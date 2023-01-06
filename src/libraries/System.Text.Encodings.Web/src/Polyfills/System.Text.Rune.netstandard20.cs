@@ -51,7 +51,7 @@ namespace System.Text
         }
 
         // non-validating ctor
-        private Rune(uint scalarValue, bool unused)
+        private Rune(uint scalarValue, bool _)
         {
             UnicodeDebug.AssertIsValidScalar(scalarValue);
             _value = scalarValue;

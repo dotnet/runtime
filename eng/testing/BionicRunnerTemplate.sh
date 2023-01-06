@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
-. TestEnv.txt
 
 EXECUTION_DIR="$(realpath "$(dirname "$0")")"
+. "$EXECUTION_DIR/TestEnv.txt"
+
 RUNTIME_PATH="$2"
 TEST_SCRIPT="$(basename "$ASSEMBLY_NAME" .dll).sh"
 if [[ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then

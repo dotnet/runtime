@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class LiteHashProvider
     {
-        internal static int HashStream(string hashAlgorithmId, int hashSizeInBytes, Stream source, Span<byte> destination)
+        internal static int HashStream(string hashAlgorithmId, Stream source, Span<byte> destination)
         {
             LiteHash hash = CreateHash(hashAlgorithmId);
             return ProcessStream(hash, source, destination);
@@ -27,7 +27,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<int> HashStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             Stream source,
             Memory<byte> destination,
             CancellationToken cancellationToken)
@@ -43,7 +42,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<byte[]> HashStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             Stream source,
             CancellationToken cancellationToken)
         {
@@ -58,7 +56,6 @@ namespace System.Security.Cryptography
 
         internal static int HmacStream(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             Span<byte> destination)
@@ -82,7 +79,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<int> HmacStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             Memory<byte> destination,
@@ -99,7 +95,6 @@ namespace System.Security.Cryptography
 
         internal static ValueTask<byte[]> HmacStreamAsync(
             string hashAlgorithmId,
-            int hashSizeInBytes,
             ReadOnlySpan<byte> key,
             Stream source,
             CancellationToken cancellationToken)

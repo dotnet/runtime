@@ -117,10 +117,9 @@ namespace System.IO.Compression
 
             _compressedSize = 0; // we don't know these yet
             _uncompressedSize = 0;
-            UnixFileMode defaultEntryPermissions = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
-                                        ? DefaultDirectoryEntryPermissions
-                                        : DefaultFileEntryPermissions;
-            _externalFileAttr = (uint)(defaultEntryPermissions) << 16;
+            _externalFileAttr = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
+                                        ? DefaultDirectoryExternalAttributes
+                                        : DefaultFileExternalAttributes;
 
             _offsetOfLocalHeader = 0;
             _storedOffsetOfCompressedData = null;

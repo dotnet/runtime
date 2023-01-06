@@ -106,7 +106,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
         {
-            string id = $"blazorwasm_{config}_aot";
+            string id = $"blazorwasm_{config}_aot_{Path.GetRandomFileName()}";
             CreateBlazorWasmTemplateProject(id);
 
             // We don't want to emcc compile, and link ~180 assemblies!
@@ -123,6 +123,7 @@ namespace Wasm.Build.Tests
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
             CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
+                                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                                         .ExecuteWithCapturedOutput("publish",
                                                                    $"-bl:{publishLogPath}",
                                                                    "-p:RunAOTCompilation=true",

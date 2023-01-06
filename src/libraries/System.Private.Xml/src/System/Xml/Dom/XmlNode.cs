@@ -1349,7 +1349,7 @@ namespace System.Xml
                     elem = node as XmlElement;
                     if (elem != null && elem.HasAttribute("xml:space"))
                     {
-                        switch (XmlConvert.TrimString(elem.GetAttribute("xml:space")))
+                        switch (elem.GetAttribute("xml:space").AsSpan().Trim(XmlConvert.WhitespaceChars))
                         {
                             case "default":
                                 return XmlSpace.Default;

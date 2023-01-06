@@ -505,7 +505,7 @@ namespace DebuggerTests
                 expression = "window.setTimeout(function() { " + func_name + "(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
-            await Task.Delay(1000, token);
+            await WaitForEventAsync("Runtime.executionContextCreated");
 
             run_method = JObject.FromObject(new
             {

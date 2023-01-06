@@ -196,14 +196,8 @@ class CQuickHeap
         QuickBlock      *m_pFirstBigQuickBlock;
 };
 
-void PrintToStdOutA(const char *pszString);
-void PrintToStdOutW(const WCHAR *pwzString);
 void PrintToStdErrA(const char *pszString);
 void PrintToStdErrW(const WCHAR *pwzString);
-void NPrintToStdOutA(const char *pszString, size_t nbytes);
-void NPrintToStdOutW(const WCHAR *pwzString, size_t nchars);
-void NPrintToStdErrA(const char *pszString, size_t nbytes);
-void NPrintToStdErrW(const WCHAR *pwzString, size_t nchars);
 
 #include "nativevaraccessors.h"
 

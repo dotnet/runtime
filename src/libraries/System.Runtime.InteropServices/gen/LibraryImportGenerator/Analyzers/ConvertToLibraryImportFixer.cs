@@ -74,7 +74,7 @@ namespace Microsoft.Interop.Analyzers
                     context.Diagnostics);
                 if (!bool.Parse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.ExactSpelling]))
                 {
-                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]);
+                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]!);
                     // CharSet.Auto traditionally maps to either an A or W suffix
                     // depending on the default CharSet of the platform.
                     // We will offer both suffix options when CharSet.Auto is provided
@@ -119,7 +119,7 @@ namespace Microsoft.Interop.Analyzers
             public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
-                                string.Format(SR.ConvertToLibraryImportWithSuffix, suffix),
+                                SR.Format(SR.ConvertToLibraryImportWithSuffix, suffix),
                                 cancelToken => ConvertToLibraryImport(
                                     document,
                                     methodSyntax,
@@ -155,7 +155,7 @@ namespace Microsoft.Interop.Analyzers
             public CodeAction CreateConvertToLibraryImportWithSuffixCodeFix(Document document, MethodDeclarationSyntax methodSyntax, char suffix, bool mayRequireAdditionalWork)
             {
                 return CodeAction.Create(
-                    string.Format(SR.ConvertToLibraryImportWithSuffixAddUnsafe, suffix),
+                    SR.Format(SR.ConvertToLibraryImportWithSuffixAddUnsafe, suffix),
                     async cancelToken =>
                     {
                         Solution solutionWithUnsafe = AddUnsafe(document.Project.Solution, document.Project);

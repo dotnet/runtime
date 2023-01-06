@@ -11,7 +11,7 @@ namespace Test
         public static bool m_bStatic1 = true;
     }
 
-    struct BB
+    public struct BB
     {
         public int Method1()
         {
@@ -26,7 +26,7 @@ namespace Test
             }
             return 0;
         }
-        static int Main()
+        public static int Main()
         {
             new BB().Method1();
             return 100;

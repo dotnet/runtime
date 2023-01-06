@@ -105,12 +105,38 @@ export function retrieve1() {
     return val;
 }
 
-export function throw0() {
+export function throw0fn() {
     //console.log(`throw0()`)
     throw new Error('throw-0-msg');
 }
 
-export function throw1(arg1) {
+export function returnError() {
+    return new Error('this-is-error');
+}
+
+export function catch1toString(message, functionName) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper[functionName];
+    try {
+        fn(message);
+        return "bad";
+    } catch (err) {
+        return err.toString();
+    }
+}
+
+export function catch1stack(message, functionName) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper[functionName];
+    try {
+        fn(message);
+        return "bad";
+    } catch (err) {
+        return err.stack;
+    }
+}
+
+export function throw1fn(arg1) {
     //console.log(`throw1(arg1:${arg1 !== null ? arg1 : '<null>'})`)
     throw new Error('throw1-msg ' + arg1);
 }
@@ -247,6 +273,10 @@ export function invokeStructClassRecords(arg1) {
         dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedStruct.EchoString(arg1),
         dllExports.JavaScriptTestHelperRecordStructNoNamespace.NestedRecordStruct.EchoString(arg1),
     ];
+}
+
+export function echopromise(arg1) {
+    return new Promise(resolve => setTimeout(() => resolve(arg1), 0));
 }
 
 export async function awaitvoid(arg1) {

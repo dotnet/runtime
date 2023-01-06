@@ -169,7 +169,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(
                     SR.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_message_not_success_statuscode,
+                        string.IsNullOrWhiteSpace(ReasonPhrase) ? SR.net_http_message_not_success_statuscode : SR.net_http_message_not_success_statuscode_reason,
                         (int)_statusCode,
                         ReasonPhrase),
                     inner: null,

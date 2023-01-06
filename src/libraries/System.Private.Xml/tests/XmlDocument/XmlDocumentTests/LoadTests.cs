@@ -4,7 +4,7 @@
 using System.IO;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public class LoadTests
     {
@@ -12,7 +12,7 @@ namespace System.Xml.Tests
         [Fact]
         public void LoadDocumentFromFile()
         {
-            TextReader textReader = File.OpenText(@"example.xml");
+            TextReader textReader = File.OpenText(Path.Combine("XmlDocument", "example.xml"));
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
             settings.DtdProcessing = DtdProcessing.Ignore;

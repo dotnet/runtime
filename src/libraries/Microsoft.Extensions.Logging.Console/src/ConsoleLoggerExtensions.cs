@@ -4,12 +4,14 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
+using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -28,6 +30,7 @@ namespace Microsoft.Extensions.Logging
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "AddConsoleFormatter and RegisterProviderOptions are only dangerous when the Options type cannot be statically analyzed, but that is not the case here. " +
             "The DynamicallyAccessedMembers annotations on them will make sure to preserve the right members from the different options objects.")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(JsonWriterOptions))]
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder)
         {
             builder.AddConfiguration();

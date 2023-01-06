@@ -210,19 +210,19 @@ namespace System.Net
             }
 
             List<ListenerPrefix>? list = _unhandledPrefixes;
-            bestMatch = MatchFromList(host, path, list, out prefix);
+            bestMatch = MatchFromList(path, list, out prefix);
 
             if (path != pathSlash && bestMatch == null)
-                bestMatch = MatchFromList(host, pathSlash, list, out prefix);
+                bestMatch = MatchFromList(pathSlash, list, out prefix);
 
             if (bestMatch != null)
                 return bestMatch;
 
             list = _allPrefixes;
-            bestMatch = MatchFromList(host, path, list, out prefix);
+            bestMatch = MatchFromList(path, list, out prefix);
 
             if (path != pathSlash && bestMatch == null)
-                bestMatch = MatchFromList(host, pathSlash, list, out prefix);
+                bestMatch = MatchFromList(pathSlash, list, out prefix);
 
             if (bestMatch != null)
                 return bestMatch;
@@ -230,7 +230,7 @@ namespace System.Net
             return null;
         }
 
-        private static HttpListener? MatchFromList(string? host, string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
+        private static HttpListener? MatchFromList(string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
         {
             prefix = null;
             if (list == null)
@@ -358,7 +358,7 @@ namespace System.Net
             } while (Interlocked.CompareExchange(ref _prefixes, p2, prefs) != prefs);
         }
 
-        public void RemovePrefix(ListenerPrefix prefix, HttpListener listener)
+        public void RemovePrefix(ListenerPrefix prefix)
         {
             List<ListenerPrefix>? current;
             List<ListenerPrefix> future;

@@ -48,7 +48,20 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgHaveSufficientProfileData: check if profile data is available
+// fgHaveProfileWeights: Check if we have a profile that has weights.
+//
+bool Compiler::fgHaveProfileWeights()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    return fgPgoHaveWeights;
+}
+
+//------------------------------------------------------------------------
+// fgHaveSufficientProfileWeights: check if profile data is available
 //   and is sufficient enough to be trustful.
 //
 // Returns:
@@ -57,9 +70,9 @@ bool Compiler::fgHaveProfileData()
 // Note:
 //   See notes for fgHaveProfileData.
 //
-bool Compiler::fgHaveSufficientProfileData()
+bool Compiler::fgHaveSufficientProfileWeights()
 {
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -73,7 +86,7 @@ bool Compiler::fgHaveSufficientProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgHaveTrustedProfileData: check if profile data source is one
+// fgHaveTrustedProfileWeights: check if profile data source is one
 //   that can be trusted to faithfully represent the current program
 //   behavior.
 //
@@ -83,9 +96,9 @@ bool Compiler::fgHaveSufficientProfileData()
 // Note:
 //   See notes for fgHaveProfileData.
 //
-bool Compiler::fgHaveTrustedProfileData()
+bool Compiler::fgHaveTrustedProfileWeights()
 {
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -119,7 +132,7 @@ void Compiler::fgApplyProfileScale()
 
     // Callee has profile data?
     //
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         // No; we will carry on nonetheless.
         //
@@ -140,7 +153,7 @@ void Compiler::fgApplyProfileScale()
     //
     if (calleeWeight == BB_ZERO_WEIGHT)
     {
-        calleeWeight = fgHaveProfileData() ? 1.0 : BB_UNITY_WEIGHT;
+        calleeWeight = fgHaveProfileWeights() ? 1.0 : BB_UNITY_WEIGHT;
         JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
     }
 
@@ -243,7 +256,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, weight_t* weigh
     }
 #endif // DEBUG
 
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -383,7 +396,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
     //
     // If we see any, we need to adjust our instrumentation pattern.
     //
-    if (m_comp->opts.IsOSR() && ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) != 0))
+    if (m_comp->opts.IsInstrumentedOptimized() && ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) != 0))
     {
         JITDUMP("OSR + PGO + potential tail call --- preparing to relocate block probes\n");
 
@@ -1887,8 +1900,11 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         (JitConfig.TC_PartialCompilation() > 0);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
-    const bool osrMethod            = opts.IsOSR();
-    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
+    const bool isOptimized          = opts.IsInstrumentedOptimized();
+    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !isOptimized;
+
+    // TODO-TP: Don't give up on edge profiling for optimized code, currently it has issues
+    // such as unexpected trees near tail calls
 
     if (useEdgeProfiles)
     {
@@ -1899,7 +1915,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         JITDUMP("Using block profiling, because %s\n",
                 (JitConfig.JitEdgeProfiling() == 0)
                     ? "edge profiles disabled"
-                    : prejit ? "prejitting" : osrMethod ? "OSR" : "tier0 with patchpoints");
+                    : prejit ? "prejitting" : isOptimized ? "tier1 instrumented" : "tier0 with patchpoints");
 
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
@@ -2206,9 +2222,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     const bool haveBlockCounts = fgPgoBlockCounts > 0;
     const bool haveEdgeCounts  = fgPgoEdgeCounts > 0;
 
-    // We expect one or the other but not both.
+    fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
+
+    // We expect not to have both block and edge counts. We may have other
+    // forms of profile data even if we do not have any counts.
     //
-    assert(haveBlockCounts != haveEdgeCounts);
+    assert(!haveBlockCounts || !haveEdgeCounts);
 
     if (haveBlockCounts)
     {
@@ -4171,7 +4190,7 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckProfileData: verify profile data is self-consistent
+// fgDebugCheckProfileWeights: verify profile weights are self-consistent
 //   (or nearly so)
 //
 // Notes:
@@ -4182,7 +4201,7 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   we expect EH edge counts to be small, so errors from ignoring
 //   them should be rare.
 //
-void Compiler::fgDebugCheckProfileData()
+void Compiler::fgDebugCheckProfileWeights()
 {
     assert(fgComputePredsDone);
 

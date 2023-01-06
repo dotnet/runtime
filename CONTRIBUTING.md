@@ -61,7 +61,7 @@ The best way to create a minimal reproduction is gradually removing code and dep
 
 Project maintainers will merge changes that improve the product significantly and broadly align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
-Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
+Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. .NET is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
 Contributions must also satisfy the other published guidelines defined in this document as well as in [pr-guide docs](docs/pr-guide.md).
 
@@ -69,12 +69,13 @@ Contributions must also satisfy the other published guidelines defined in this d
 
 Please do:
 
-* **DO** follow our [coding style](docs/coding-guidelines/coding-style.md) (C# code-specific)
+* **DO** follow our [coding style](docs/coding-guidelines/coding-style.md) (C# code-specific).
 * **DO** give priority to the current style of the project or file you're changing even if it diverges from the general guidelines.
 * **DO** include tests when adding new features. When fixing bugs, start with
   adding a test that highlights how the current behavior is broken.
 * **DO** keep the discussions focused. When a new or related topic comes up
   it's often better to create new issue than to side track the discussion.
+* **DO** clearly state on an issue that you are going to take on implementing it.
 * **DO** blog and tweet (or whatever) about your contributions, frequently!
 
 Please do not:
@@ -83,7 +84,7 @@ Please do not:
 * **DON'T** surprise us with big pull requests. Instead, file an issue and start
   a discussion so we can agree on a direction before you invest a large amount
   of time.
-* **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to .NET Core, file an issue and start a discussion before proceeding.
+* **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to the .NET runtime, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
 * **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
 
@@ -154,7 +155,7 @@ You don't have to do this up-front. You can simply clone, fork, and submit your 
 
 ### File Headers
 
-The following file header is the used for .NET Core. Please use it for new files.
+The following file header is the used for files in this repo. Please use it for new files.
 
 ```
 // Licensed to the .NET Foundation under one or more agreements.
@@ -201,7 +202,7 @@ Ports have a weaker contribution bar, at least initially. A functionally correct
 
 #### Copying Files from Other Projects
 
-.NET Core uses some files from other projects, typically where a binary distribution does not exist or would be inconvenient.
+The .NET runtime uses some files from other projects, typically where a binary distribution does not exist or would be inconvenient.
 
 The following rules must be followed for PRs that include files from another project:
 
@@ -213,6 +214,6 @@ See [IdnMapping.cs](./src/libraries/System.Private.CoreLib/src/System/Globalizat
 
 #### Porting Files from Other Projects
 
-There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C#, for example, are the same as would be used for copying the same file, as described above.
+There are many good algorithms implemented in other languages that would benefit the .NET runtime. The rules for porting a Java file to C#, for example, are the same as would be used for copying the same file, as described above.
 
 [Clean-room](https://en.wikipedia.org/wiki/Clean_room_design) implementations of existing algorithms that are not permissively licensed will generally not be accepted. If you want to create or nominate such an implementation, please create an issue to discuss the idea.

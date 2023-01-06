@@ -478,8 +478,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(vnStore->IsVNConstant(vnLibNorm));
 
         // We don't share small offset constants when they require a reloc
+        // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -811,7 +812,7 @@ bool Compiler::optValnumCSE_Locate()
                     if (!enableConstCSE &&
                         // Unconditionally allow these constant handles to be CSE'd
                         !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
-                        !tree->IsIconHandle(GTF_ICON_STR_HDL))
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
                     {
                         continue;
                     }
@@ -2846,7 +2847,8 @@ public:
 
         // If there's just a single def for the CSE, we'll put this
         // CSE into SSA form on the fly. We won't need any PHIs.
-        unsigned cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
+        unsigned      cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
+        LclSsaVarDsc* ssaVarDsc = nullptr;
 
         if (dsc->csdDefCount == 1)
         {
@@ -2857,6 +2859,7 @@ public:
             // Allocate the ssa num
             CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
             cseSsaNum               = m_pCompiler->lvaTable[cseLclVarNum].lvPerSsaData.AllocSsaNum(allocator);
+            ssaVarDsc               = m_pCompiler->lvaTable[cseLclVarNum].GetPerSsaData(cseSsaNum);
         }
 
         // Verify that all of the ValueNumbers in this list are correct as
@@ -3044,6 +3047,12 @@ public:
 
                 // Assign the ssa num for the lclvar use. Note it may be the reserved num.
                 cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                // If this local is in ssa, notify ssa there's a new use.
+                if (ssaVarDsc != nullptr)
+                {
+                    ssaVarDsc->AddUse(blk);
+                }
 
                 cse = cseLclVar;
                 if (isSharedConst)
@@ -3250,8 +3259,6 @@ public:
 
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
-                    LclSsaVarDsc* ssaVarDsc = m_pCompiler->lvaTable[cseLclVarNum].GetPerSsaData(cseSsaNum);
-
                     // These should not have been set yet, since this is the first and
                     // only def for this CSE.
                     assert(ssaVarDsc->GetBlock() == nullptr);
@@ -3268,6 +3275,12 @@ public:
 
                 // Assign the ssa num for the lclvar use. Note it may be the reserved num.
                 cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                // If this local is in ssa, notify ssa there's a new use.
+                if (ssaVarDsc != nullptr)
+                {
+                    ssaVarDsc->AddUse(blk);
+                }
 
                 GenTree* cseUse = cseLclVar;
                 if (isSharedConst)
@@ -3652,12 +3665,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_GE:
         case GT_GT:
             return true; // Allow the CSE of Comparison operators
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            return true; // allow SIMD intrinsics to be CSE-ed
-
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:

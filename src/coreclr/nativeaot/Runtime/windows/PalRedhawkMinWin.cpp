@@ -163,10 +163,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     return true;
 }
 
-// Attach thread to PAL.
-// It can be called multiple times for the same thread.
-// It fails fast if a different thread was already registered with the current fiber
-// or if the thread was already registered with a different fiber.
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
 // Parameters:
 //  thread        - thread to attach
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
@@ -185,8 +183,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
     FlsSetValue(g_flsIndex, thread);
 }
 
-// Detach thread from PAL.
-// It fails fast if some other thread value was attached to PAL.
+// Detach thread from OS notifications.
+// It fails fast if some other thread value was attached to the current fiber.
 // Parameters:
 //  thread        - thread to detach
 // Return:
@@ -208,14 +206,19 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
         ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
         RhFailFast();
     }
-    
-    if (g_threadExitCallback != NULL)
-    {
-        g_threadExitCallback();
-    }
 
     FlsSetValue(g_flsIndex, NULL);
     return true;
+}
+
+extern "C" uint64_t PalQueryPerformanceCounter()
+{
+    return GCToOSInterface::QueryPerformanceCounter();
+}
+
+extern "C" uint64_t PalQueryPerformanceFrequency()
+{
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
@@ -556,6 +559,31 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
 
     DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
     if ((FeatureMask & XSTATE_MASK_AVX) == 0)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
+{
+    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hMod == NULL)
+        return FALSE;
+
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX512) == 0)
     {
         return FALSE;
     }

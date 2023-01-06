@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable 8500 // taking address of managed type
+
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class StorePal
@@ -35,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
             }
 
-            public void CloneTo(X509Certificate2Collection collection)
+            public unsafe void CloneTo(X509Certificate2Collection collection)
             {
                 EnumCertificatesContext context = default;
                 context.Results = new HashSet<X509Certificate2>();
@@ -46,7 +48,7 @@ namespace System.Security.Cryptography.X509Certificates
                     bool success = Interop.AndroidCrypto.X509StoreEnumerateTrustedCertificates(
                         (byte)(systemOnly ? 1 : 0),
                         &EnumCertificatesCallback,
-                        Unsafe.AsPointer(ref context));
+                        &context);
                     if (!success)
                     {
                         throw new CryptographicException(SR.Cryptography_X509_StoreEnumerateFailure);
@@ -67,10 +69,10 @@ namespace System.Security.Cryptography.X509Certificates
             [UnmanagedCallersOnly]
             private static unsafe void EnumCertificatesCallback(void* certPtr, void* context)
             {
-                ref EnumCertificatesContext callbackContext = ref Unsafe.As<byte, EnumCertificatesContext>(ref *(byte*)context);
+                EnumCertificatesContext* callbackContext = (EnumCertificatesContext*)context;
                 var handle = new SafeX509Handle((IntPtr)certPtr);
                 var cert = new X509Certificate2(new AndroidCertificatePal(handle));
-                if (!callbackContext.Results.Add(cert))
+                if (!callbackContext->Results.Add(cert))
                     cert.Dispose();
             }
         }

@@ -25,6 +25,8 @@ namespace System
             return new OperatingSystem(PlatformID.Other, new Version(1, 0, 0, 0));
         }
 
+        private static bool IsPrivilegedProcessCore() => false;
+
         private static int GetProcessId() => 42;
 
         /// <summary>

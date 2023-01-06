@@ -45,6 +45,7 @@
 #include "daccess.h"
 
 #include "GCMemoryHelpers.h"
+#include "interoplibinterface.h"
 
 #include "holder.h"
 #include "volatile.h"
@@ -143,7 +144,6 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
 // success or false if a subsystem failed to initialize.
 
 #ifndef DACCESS_COMPILE
-CrstStatic g_SuspendEELock;
 #ifdef _MSC_VER
 #pragma warning(disable:4815) // zero-sized array in stack object will have no elements
 #endif // _MSC_VER
@@ -168,14 +168,16 @@ bool RedhawkGCInterface::InitializeSubsystems()
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
 
-    if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
-        return false;
-
 #ifdef FEATURE_SVR_GC
     g_heap_type = (g_pRhConfig->GetgcServer() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
 #else
     g_heap_type = GC_HEAP_WKS;
 #endif
+
+    if (g_pRhConfig->GetgcConservative())
+    {
+        GetRuntimeInstance()->EnableConservativeStackReporting();
+    }
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
@@ -209,7 +211,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 
     size_t cbSize = pEEType->get_BaseSize();
 
-    if (pEEType->get_ComponentSize() != 0)
+    if (pEEType->HasComponentSize())
     {
         // Impose limits on maximum array length to prevent corner case integer overflow bugs
         // Keep in sync with Array.MaxLength in BCL.
@@ -226,7 +228,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         if (numElements > 0x10000)
         {
             // Perform the size computation using 64-bit integeres to detect overflow
-            uint64_t size64 = (uint64_t)cbSize + ((uint64_t)numElements * (uint64_t)pEEType->get_ComponentSize());
+            uint64_t size64 = (uint64_t)cbSize + ((uint64_t)numElements * (uint64_t)pEEType->RawGetComponentSize());
             size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
             cbSize = (size_t)size64;
@@ -238,7 +240,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         else
 #endif // !HOST_64BIT
         {
-            cbSize = cbSize + ((size_t)numElements * (size_t)pEEType->get_ComponentSize());
+            cbSize = cbSize + ((size_t)numElements * (size_t)pEEType->RawGetComponentSize());
             cbSize = ALIGN_UP(cbSize, sizeof(uintptr_t));
         }
     }
@@ -269,7 +271,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         return NULL;
 
     pObject->set_EEType(pEEType);
-    if (pEEType->get_ComponentSize() != 0)
+    if (pEEType->HasComponentSize())
     {
         ASSERT(numElements == (uint32_t)numElements);
         ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
@@ -335,8 +337,8 @@ void RedhawkGCInterface::WaitForGCCompletion()
 
 void MethodTable::InitializeAsGcFreeType()
 {
+    m_uFlags = ParameterizedEEType | HasComponentSizeFlag;
     m_usComponentSize = 1;
-    m_usFlags = ParameterizedEEType;
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 
@@ -570,34 +572,18 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
-{
-    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
-    if (cbSrc != cbDest)
-        return;
-
-    ASSERT(pobjDest->get_EEType()->HasReferenceFields() == pobjSrc->get_EEType()->HasReferenceFields());
-
-    if (pobjDest->get_EEType()->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pobjDest, pobjSrc, cbDest);
-    }
-    else
-    {
-        memcpy(pobjDest, pobjSrc, cbDest);
-    }
-}
-
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
     ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
+    ASSERT(pObj1->get_EEType()->IsValueType());
+
     MethodTable * pEEType = pObj1->get_EEType();
     size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
 
+    // memcmp is ok in a COOP method as we are comparing structs which are typically small.
     FC_RETURN_BOOL(memcmp(pbFields1, pbFields2, cbFields) == 0);
 }
 
@@ -652,10 +638,8 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
 
-    g_SuspendEELock.Enter();
-
+    GetThreadStore()->LockThreadStore();
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
-
     GetThreadStore()->SuspendAllThreads(true);
 
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
@@ -679,8 +663,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
-
-    g_SuspendEELock.Leave();
+    GetThreadStore()->UnlockThreadStore();
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }
@@ -693,13 +676,25 @@ void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 
 void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (!is_concurrent)
+    {
+        ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 // EE can perform post stack scanning action, while the user threads are still suspended
-void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* /*sc*/)
+void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* sc)
 {
     // Invoke any registered callouts for the end of the mark phase.
     RestrictedCallouts::InvokeGcCallouts(GCRC_AfterMarkPhase, condemned);
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+    {
+        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 void GCToEEInterface::GcDone(int condemned)
@@ -710,6 +705,11 @@ void GCToEEInterface::GcDone(int condemned)
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference(pObject, &isReferenced))
+        return isReferenced;
+#endif // FEATURE_OBJCMARSHAL
     return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObject);
 }
 
@@ -1024,10 +1024,6 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
-#endif
-
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
@@ -1168,8 +1164,33 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
-    UNREFERENCED_PARAMETER(obj);
-    return false;
+#ifdef FEATURE_OBJCMARSHAL
+    if (obj->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue(obj);
+        return false;
+    }
+#endif
+
+    if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
+        return false;
+
+    // Eager finalization happens while scanning for unmarked finalizable objects
+    // after marking strongly reachable and prior to marking dependent and long weak handles.
+    // Managed code should not be running.
+    ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
+
+    // the lowermost 1 bit is reserved for storing additional info about the handle
+    const uintptr_t HandleTagBits = 1;
+
+    WeakReference* weakRefObj = (WeakReference*)obj;
+    OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
+    _ASSERTE((weakRefObj->m_taggedHandle & 2) == 0);
+    HandleType handleType = (weakRefObj->m_taggedHandle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+    weakRefObj->m_taggedHandle &= HandleTagBits;
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
+    return true;
 }
 
 bool GCToEEInterface::IsGCThread()
@@ -1222,7 +1243,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
             ThreadStore::AttachCurrentThread(false);
         }
 
-        ThreadStore::RawGetCurrentThread()->SetGCSpecial(true);
+        ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
         auto realStartRoutine = pStartContext->m_pRealStartRoutine;
         void* realContext = pStartContext->m_pRealContext;
@@ -1353,6 +1374,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 
     *value = uiValue;
     return true;
+}
+
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
 }
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)

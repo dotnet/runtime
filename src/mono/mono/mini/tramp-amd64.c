@@ -40,6 +40,9 @@
 guint8* mono_aot_arch_get_plt_entry_exec_only (gpointer amodule_info, host_mgreg_t *regs, guint8 *code, guint8 *plt);
 guint32 mono_arch_get_plt_info_offset_exec_only (gpointer amodule_info, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code, MonoAotResolvePltInfoOffset resolver, gpointer amodule);
 void mono_arch_patch_plt_entry_exec_only (gpointer amodule_info, guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+const guint64 mono_arch_plt_entry_index_xor_key = 0xBA284AA0910FB367;
+#endif
 #endif
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
@@ -810,11 +813,16 @@ mono_arch_get_call_target (guint8 *code)
 #define PLT_MOV_REG_IMM8_SIZE (1 + sizeof (guint8))
 #define PLT_MOV_REG_IMM16_SIZE (2 + sizeof (guint16))
 #define PLT_MOV_REG_IMM32_SIZE (1 + sizeof (guint32))
+#define PLT_MOV_REG_IMM64_SIZE (2 + sizeof (guint64))
 #define PLT_JMP_INST_SIZE 6
 
 static guchar
 aot_arch_get_plt_entry_size (MonoAotFileInfo *info, host_mgreg_t *regs, guint8 *code, guint8 *plt)
 {
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+	return PLT_MOV_REG_IMM64_SIZE + PLT_JMP_INST_SIZE;
+#endif
+
 	if (info->plt_size <= 0xFF)
 		return PLT_MOV_REG_IMM8_SIZE + PLT_JMP_INST_SIZE;
 	else if (info->plt_size <= 0xFFFF)
@@ -826,6 +834,13 @@ aot_arch_get_plt_entry_size (MonoAotFileInfo *info, host_mgreg_t *regs, guint8 *
 static guint32
 aot_arch_get_plt_entry_index (MonoAotFileInfo *info, host_mgreg_t *regs, guint8 *code, guint8 *plt)
 {
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+	guint64 plt_index = regs[PLT_ENTRY_OFFSET_REG];
+	plt_index ^= mono_arch_plt_entry_index_xor_key;
+	g_assert ((plt_index & 0xFFFFFFFF) == ((plt_index >> 32) & 0xFFFFFFFF));
+	return (guint32)plt_index;
+#endif
+
 	if (info->plt_size <= 0xFF)
 		return regs[PLT_ENTRY_OFFSET_REG] & 0xFF;
 	else if (info->plt_size <= 0xFFFF)

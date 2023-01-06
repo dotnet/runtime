@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.Collections.Generic;
 using System.IO;
+using System.Xml.Tests;
+using OLEDB.Test.ModuleCore;
 using WebData.BaseLib;
 using XmlCoreTest.Common;
 
-namespace System.Xml.Tests
+namespace System.Xml.ReaderSettingsTests
 {
     [TestCase(Name = "Conformance Settings", Desc = "Conformance Settings")]
     public partial class TCConformanceSettings : TCXMLReaderBaseGeneral

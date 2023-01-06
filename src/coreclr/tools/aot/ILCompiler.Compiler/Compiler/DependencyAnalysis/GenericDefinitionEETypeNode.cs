@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
@@ -42,9 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
             EETypeRareFlags rareFlags = 0;
 
-            ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-                rareFlags |= EETypeRareFlags.HasCctorFlag;
+            uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
@@ -52,10 +50,12 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
             if (HasOptionalFields)
-                flags |= (ushort)EETypeFlags.OptionalFieldsFlag;
+                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
 
-            dataBuilder.EmitShort((short)_type.Instantiation.Length);
-            dataBuilder.EmitUShort(flags);
+            flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            flags |= (ushort)_type.Instantiation.Length;
+
+            dataBuilder.EmitUInt(flags);
             dataBuilder.EmitInt(0);         // Base size is always 0
             dataBuilder.EmitZeroPointer();  // No related type
             dataBuilder.EmitShort(0);       // No VTable
@@ -64,6 +64,10 @@ namespace ILCompiler.DependencyAnalysis
             OutputTypeManagerIndirection(factory, ref dataBuilder);
             OutputWritableData(factory, ref dataBuilder);
             OutputOptionalFields(factory, ref dataBuilder);
+
+            // Generic composition only meaningful if there's variance
+            if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)
+                OutputGenericInstantiationDetails(factory, ref dataBuilder);
 
             return dataBuilder.ToObjectData();
         }

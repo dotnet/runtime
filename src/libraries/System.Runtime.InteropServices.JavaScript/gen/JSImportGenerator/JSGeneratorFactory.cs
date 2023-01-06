@@ -127,7 +127,7 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.DateTime when jsType == JSTypeFlags.Missing:
                 case KnownManagedType.DateTimeOffset when jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Object when jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // nullable
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Boolean && jsType == JSTypeFlags.Boolean: return new NullableJSGenerator(MarshalerType.Boolean);
@@ -157,10 +157,10 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.Int64 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Nullable when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 case KnownManagedType.Nullable:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // task
                 case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1 && argumentTypes.Length == 0 && jsTypeArguments[0] == JSTypeFlags.Void: return new TaskJSGenerator(MarshalerType.Void);
@@ -200,10 +200,10 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.DateTime && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.DateTimeOffset && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Task when argumentTypes[0] == KnownManagedType.Object && jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 case KnownManagedType.Task when jsType == JSTypeFlags.Promise && jsTypeArguments.Length == 1:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // array
                 case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1 && argumentTypes[0] == KnownManagedType.Byte && jsTypeArguments[0] == JSTypeFlags.Number: return new ArrayJSGenerator(MarshalerType.Byte);
@@ -220,11 +220,11 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing: return new ArrayJSGenerator(MarshalerType.Int32);
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.JSObject && jsType == JSTypeFlags.Missing: return new ArrayJSGenerator(MarshalerType.JSObject);
                 case KnownManagedType.Array when jsType == JSTypeFlags.Array && jsTypeArguments.Length == 1:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // array forced
                 case KnownManagedType.Array when argumentTypes[0] == KnownManagedType.Object && jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // span view
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
@@ -234,13 +234,13 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return new SpanJSGenerator(MarshalerType.Double);
 
                 case KnownManagedType.Span when jsType == JSTypeFlags.MemoryView:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // span forced
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.Span when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // segment view
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && jsTypeArguments.Length != 0:
@@ -249,13 +249,13 @@ namespace Microsoft.Interop.JavaScript
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Int32: return new ArraySegmentJSGenerator(MarshalerType.Int32);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView && argumentTypes[0] == KnownManagedType.Double: return new ArraySegmentJSGenerator(MarshalerType.Double);
                 case KnownManagedType.ArraySegment when jsType == JSTypeFlags.MemoryView:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
 
                 // segment forced
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Byte && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Int32 && jsType == JSTypeFlags.Missing:
                 case KnownManagedType.ArraySegment when argumentTypes[0] == KnownManagedType.Double && jsType == JSTypeFlags.Missing:
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 // function + action
                 case KnownManagedType.Function when jsType == JSTypeFlags.Function && jsTypeArguments.Length == argumentTypes.Length:
@@ -273,7 +273,7 @@ namespace Microsoft.Interop.JavaScript
                             || argumentTypes[i] == KnownManagedType.Unknown
                             )
                         {
-                            throw failWithReason(string.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
+                            throw failWithReason(SR.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
                         }
                         var gen = Create(info, isToJs ^ (!isReturn), argumentTypes[i], Array.Empty<KnownManagedType>(), jsTypeArguments[i], Array.Empty<JSTypeFlags>(), failWithReason);
                         argsMarshalers.Add(gen.Type);
@@ -297,13 +297,13 @@ namespace Microsoft.Interop.JavaScript
                             || argumentTypes[i] == KnownManagedType.Unknown
                             )
                         {
-                            throw failWithReason(string.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
+                            throw failWithReason(SR.Format(SR.FuncArgumentNotSupported, argumentTypes[i]));
                         }
                     }
-                    throw failWithReason(string.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName));
 
                 default:
-                    throw failWithReason(string.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
+                    throw failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName));
             }
         }
     }

@@ -141,7 +141,7 @@ namespace System
             return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
@@ -151,7 +151,7 @@ namespace System
             return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
@@ -1367,6 +1367,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out int result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

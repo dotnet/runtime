@@ -44,17 +44,25 @@ namespace ILCompiler
         private readonly bool _crossModuleInlining;
         private readonly bool _crossModuleGenericCompilation;
         private readonly ConcurrentDictionary<TypeDesc, CompilationUnitSet> _layoutCompilationUnits = new ConcurrentDictionary<TypeDesc, CompilationUnitSet>();
+        private readonly Func<TypeDesc, CompilationUnitSet> _layoutCompilationUnitsUncached;
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly Func<TypeDesc, bool> _versionsWithTypeUncached;
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeReferenceCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly Func<TypeDesc, bool> _versionsWithTypeReferenceUncached;
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly Func<MethodDesc, bool> _versionsWithMethodUncached;
         private readonly ConcurrentDictionary<MethodDesc, bool> _crossModuleInlineableCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly Func<MethodDesc, bool> _crossModuleInlineableCacheUncached;
         private readonly ConcurrentDictionary<TypeDesc, bool> _crossModuleInlineableTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
+        private readonly Func<TypeDesc, bool> _crossModuleInlineableTypeCacheUncached;
         private readonly ConcurrentDictionary<MethodDesc, bool> _crossModuleCompilableCache = new ConcurrentDictionary<MethodDesc, bool>();
+        private readonly Func<MethodDesc, bool> _crossModuleCompilableCacheUncached;
         private readonly Dictionary<ModuleDesc, CompilationUnitIndex> _moduleCompilationUnits = new Dictionary<ModuleDesc, CompilationUnitIndex>();
         private ProfileDataManager _profileData;
         private CompilationUnitIndex _nextCompilationUnit = CompilationUnitIndex.FirstDynamicallyAssigned;
         private ModuleTokenResolver _tokenResolver = null;
         private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
+        private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
@@ -77,6 +85,15 @@ namespace ILCompiler
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
+
+            _layoutCompilationUnitsUncached = TypeLayoutCompilationUnitsUncached;
+            _versionsWithTypeUncached = ComputeTypeVersionsWithCode;
+            _versionsWithTypeReferenceUncached = ComputeTypeReferenceVersionsWithCode;
+            _versionsWithMethodUncached = VersionsWithMethodUncached;
+            _crossModuleInlineableCacheUncached = CrossModuleInlineableUncached;
+            _crossModuleInlineableTypeCacheUncached = ComputeCrossModuleInlineableType;
+            _crossModuleCompilableCacheUncached = CrossModuleCompileableUncached;
+            _tokenTranslationFreeNonVersionableUncached = IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached;
         }
 
         public ModuleTokenResolver Resolver => _tokenResolver;
@@ -113,7 +130,7 @@ namespace ILCompiler
 
         public CompilationUnitSet TypeLayoutCompilationUnits(TypeDesc type)
         {
-            return _layoutCompilationUnits.GetOrAdd(type, TypeLayoutCompilationUnitsUncached);
+            return _layoutCompilationUnits.GetOrAdd(type, _layoutCompilationUnitsUncached);
         }
 
         public override ReadyToRunFlags GetReadyToRunFlags()
@@ -343,7 +360,7 @@ namespace ILCompiler
         public sealed override bool VersionsWithType(TypeDesc typeDesc)
         {
             return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
-                _versionsWithTypeCache.GetOrAdd(typeDesc, ComputeTypeVersionsWithCode);
+                _versionsWithTypeCache.GetOrAdd(typeDesc, _versionsWithTypeUncached);
         }
 
         public bool CrossModuleInlineableModule(ModuleDesc module)
@@ -354,18 +371,18 @@ namespace ILCompiler
         public bool CrossModuleInlineableType(TypeDesc typeDesc)
         {
             return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
-                _crossModuleInlineableTypeCache.GetOrAdd(typeDesc, ComputeCrossModuleInlineableType);
+                _crossModuleInlineableTypeCache.GetOrAdd(typeDesc, _crossModuleInlineableTypeCacheUncached);
         }
 
         public sealed override bool VersionsWithTypeReference(TypeDesc typeDesc)
         {
-            return _versionsWithTypeReferenceCache.GetOrAdd(typeDesc, ComputeTypeReferenceVersionsWithCode);
+            return _versionsWithTypeReferenceCache.GetOrAdd(typeDesc, _versionsWithTypeReferenceUncached);
         }
 
 
         public sealed override bool VersionsWithMethodBody(MethodDesc method)
         {
-            return _versionsWithMethodCache.GetOrAdd(method, VersionsWithMethodUncached);
+            return _versionsWithMethodCache.GetOrAdd(method, _versionsWithMethodUncached);
         }
 
         private bool VersionsWithMethodUncached(MethodDesc method)
@@ -400,7 +417,7 @@ namespace ILCompiler
             if (!method.IsNonVersionable())
                 return false;
 
-            return _tokenTranslationFreeNonVersionable.GetOrAdd((EcmaMethod)method.GetTypicalMethodDefinition(), IsNonVersionableWithILTokensThatDoNotNeedTranslationUncached);
+            return _tokenTranslationFreeNonVersionable.GetOrAdd((EcmaMethod)method.GetTypicalMethodDefinition(), _tokenTranslationFreeNonVersionableUncached);
         }
 
         public override bool CrossModuleCompileable(MethodDesc method)
@@ -408,7 +425,7 @@ namespace ILCompiler
             if (!_crossModuleGenericCompilation)
                 return false;
 
-            return _crossModuleCompilableCache.GetOrAdd(method, CrossModuleCompileableUncached);
+            return _crossModuleCompilableCache.GetOrAdd(method, _crossModuleCompilableCacheUncached);
         }
 
         private bool CrossModuleCompileableUncached(MethodDesc method)
@@ -489,7 +506,7 @@ namespace ILCompiler
         // Internal predicate so that the switches controlling cross module inlining and compilation are independent
         private bool CrossModuleInlineableInternal(MethodDesc method)
         {
-            return _crossModuleInlineableCache.GetOrAdd(method, CrossModuleInlineableUncached);
+            return _crossModuleInlineableCache.GetOrAdd(method, _crossModuleInlineableCacheUncached);
         }
 
         private bool CrossModuleInlineableUncached(MethodDesc method)

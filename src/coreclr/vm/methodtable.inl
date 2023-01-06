@@ -1334,19 +1334,16 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
     return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle();
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Logging will be done by the slow path
-    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
+    const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
 
     OBJECTREF retVal;
-
-    // GET_LOADERHANDLE_VALUE_FAST macro is inlined here to let us give hint to the compiler
-    // when the return value is not null.
-    if (!LoaderAllocator::GetHandleValueFast(handle, &retVal) &&
+    if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
         !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
     {
         return NULL;
@@ -1355,6 +1352,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     COMPILER_ASSUME(retVal != NULL);
     return retVal;
 }
+#endif
 
 //==========================================================================================
 inline void MethodTable::SetIsArray(CorElementType arrayType)

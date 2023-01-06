@@ -1224,7 +1224,7 @@ namespace System.Text.Json.Tests
                 byte[] buffer = new byte[expectedUtf8Size];
                 for (int i = 0; i < expectedUtf8Size; i++)
                 {
-                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan(0, i)));
                     Assert.All(buffer, static b => Assert.Equal(0, b));
                 }
 
@@ -1249,7 +1249,7 @@ namespace System.Text.Json.Tests
                 char[] buffer = new char[expectedSize];
                 for (int i = 0; i < expectedSize; i++)
                 {
-                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan().Slice(0, i)));
+                    JsonTestHelper.AssertThrows<ArgumentException>(ref reader, (ref Utf8JsonReader reader) => reader.CopyString(buffer.AsSpan(0, i)));
                     Assert.All(buffer, static c => Assert.Equal(0, c));
                 }
 

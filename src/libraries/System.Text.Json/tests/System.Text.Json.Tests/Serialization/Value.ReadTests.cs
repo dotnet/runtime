@@ -11,8 +11,6 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ValueTests
     {
-        public static bool IsX64 { get; } = Environment.Is64BitProcess;
-
         [Fact]
         public static void ReadPrimitives()
         {
@@ -448,7 +446,7 @@ namespace System.Text.Json.Serialization.Tests
         //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [InlineData(MaxInt)]
         [InlineData(MaximumPossibleStringLength)]

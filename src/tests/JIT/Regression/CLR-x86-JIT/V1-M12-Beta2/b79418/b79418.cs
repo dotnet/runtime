@@ -13,7 +13,7 @@ public class PInvokeTest
     static String foo = "foo";
     static String bar = "bar";
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         if (foo == bar)
             foo = "foo";

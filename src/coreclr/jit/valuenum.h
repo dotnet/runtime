@@ -304,9 +304,6 @@ private:
     // (Requires InitValueNumStoreStatics to have been run.)
     static bool VNFuncIsCommutative(VNFunc vnf);
 
-    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
-    static bool VNFuncIsComparison(VNFunc vnf);
-
     bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
     bool VNEvalCanFoldUnaryFunc(var_types type, VNFunc func, ValueNum arg0VN);
@@ -780,7 +777,7 @@ public:
     ValueNumPair VNPairForStore(
         ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
 
-    bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
+    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }
@@ -982,6 +979,13 @@ public:
     //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
+    // Return VNFunc for swapped relop, or VNF_MemOpaque if the function
+    // is not a relop.
+    static VNFunc SwapRelop(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
+    static bool VNFuncIsComparison(VNFunc vnf);
+
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
     // Lang is the language (C++) type for the corresponding vartype_t.
@@ -1103,6 +1107,9 @@ public:
         return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
+
+    ValueNum EvalHWIntrinsicFunUnary(
+        var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);

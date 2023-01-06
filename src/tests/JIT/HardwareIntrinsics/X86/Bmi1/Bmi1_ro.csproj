@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Bmi1_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,13 +9,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AndNot.UInt32.cs" />
-    <Compile Include="ExtractLowestSetBit.UInt32.cs" />
-    <Compile Include="GetMaskUpToLowestSetBit.UInt32.cs" />
-    <Compile Include="ResetLowestSetBit.UInt32.cs" />
-    <Compile Include="TrailingZeroCount.UInt32.cs" />
-    <Compile Include="BitFieldExtract.UInt32.3Op.cs" />
-    <Compile Include="BitFieldExtract.UInt32.cs" />
     <Compile Include="Program.Bmi1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

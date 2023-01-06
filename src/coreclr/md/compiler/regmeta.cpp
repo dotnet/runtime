@@ -17,7 +17,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -32,7 +31,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
@@ -87,8 +86,6 @@ RegMeta::RegMeta() :
 
 RegMeta::~RegMeta()
 {
-    BEGIN_CLEANUP_ENTRYPOINT;
-
     _ASSERTE(!m_bCached);
 
     HRESULT hr = S_OK;
@@ -166,8 +163,6 @@ RegMeta::~RegMeta()
 
     if (m_OptionValue.m_RuntimeVersion != NULL)
         delete[] m_OptionValue.m_RuntimeVersion;
-
-    END_CLEANUP_ENTRYPOINT;
 
 } // RegMeta::~RegMeta()
 
@@ -542,7 +537,6 @@ RegMeta::QueryInterface(
     void ** ppUnk)
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
     int fIsInterfaceRW = false;
     *ppUnk = 0;
 
@@ -700,9 +694,6 @@ RegMeta::QueryInterface(
 
     AddRef();
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // RegMeta::QueryInterface
 

@@ -4,7 +4,7 @@ using System;
 
 public class b19896
 {
-	public static int Main(string[] args)
+	public static int Main()
 	{
 		int retVal = 200;
 

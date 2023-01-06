@@ -52,7 +52,7 @@ namespace Internal.TypeSystem.NoMetadata
                         TypeDesc[] genericParameters = new TypeDesc[genericArgCount];
                         for (int i = 0; i < genericParameters.Length; i++)
                         {
-                            genericParameters[i] = Context.GetSignatureVariable(i, true);
+                            genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Method, i, Context, GenericVariance.None);
                         }
                         _instantiation = new Instantiation(genericParameters);
                     }

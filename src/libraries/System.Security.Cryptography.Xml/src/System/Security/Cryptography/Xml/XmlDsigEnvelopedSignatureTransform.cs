@@ -10,10 +10,10 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlNodeList), typeof(XmlDocument) };
-        private XmlNodeList _inputNodeList;
+        private XmlNodeList? _inputNodeList;
         private readonly bool _includeComments;
-        private XmlNamespaceManager _nsm;
-        private XmlDocument _containingDocument;
+        private XmlNamespaceManager? _nsm;
+        private XmlDocument? _containingDocument;
         private int _signaturePosition;
 
         internal int SignaturePosition
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // An enveloped signature has no inner XML elements
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return null;
         }
@@ -79,8 +79,8 @@ namespace System.Security.Cryptography.Xml
         {
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
-            XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
+            XmlResolver resolver = ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver();
+            XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             doc.Load(xmlReader);
             _containingDocument = doc;
             if (_containingDocument == null)
@@ -127,11 +127,11 @@ namespace System.Security.Cryptography.Xml
             {
                 // If the position has not been set, then we don't want to remove any signature tags
                 if (_signaturePosition == 0) return _inputNodeList;
-                XmlNodeList signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm);
+                XmlNodeList? signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm!);
                 if (signatureList == null) return _inputNodeList;
 
                 CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
-                foreach (XmlNode node in _inputNodeList)
+                foreach (XmlNode? node in _inputNodeList)
                 {
                     if (node == null) continue;
                     // keep namespaces
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography.Xml
                         try
                         {
                             // Find the nearest signature ancestor tag
-                            XmlNode result = node.SelectSingleNode("ancestor-or-self::dsig:Signature[1]", _nsm);
+                            XmlNode result = node.SelectSingleNode("ancestor-or-self::dsig:Signature[1]", _nsm!)!;
                             int position = 0;
                             foreach (XmlNode node1 in signatureList)
                             {
@@ -165,12 +165,12 @@ namespace System.Security.Cryptography.Xml
             // Else we have received either a stream or a document as input
             else
             {
-                XmlNodeList signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm);
+                XmlNodeList? signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm!);
                 if (signatureList == null) return _containingDocument;
                 if (signatureList.Count < _signaturePosition || _signaturePosition <= 0) return _containingDocument;
 
                 // Remove the signature node with all its children nodes
-                signatureList[_signaturePosition - 1].ParentNode.RemoveChild(signatureList[_signaturePosition - 1]);
+                signatureList[_signaturePosition - 1]!.ParentNode!.RemoveChild(signatureList[_signaturePosition - 1]!);
                 return _containingDocument;
             }
         }
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (type == typeof(XmlNodeList) || type.IsSubclassOf(typeof(XmlNodeList)))
             {
-                _inputNodeList ??= Utils.AllDescendantNodes(_containingDocument, true);
+                _inputNodeList ??= Utils.AllDescendantNodes(_containingDocument!, true);
                 return (XmlNodeList)GetOutput();
             }
             else if (type == typeof(XmlDocument) || type.IsSubclassOf(typeof(XmlDocument)))

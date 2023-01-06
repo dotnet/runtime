@@ -28,7 +28,7 @@ namespace EEGC
             }
         }
 
-        public static void Main(string[] p_args)
+        public static void Main()
         {
             Node root;
             Node longLivedTree;

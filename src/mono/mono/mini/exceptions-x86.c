@@ -243,7 +243,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	return res;
 }
 
-void win32_seh_init()
+void win32_seh_init(void)
 {
 	/* install restore stack helper */
 	if (!restore_stack)
@@ -253,7 +253,7 @@ void win32_seh_init()
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
 }
 
-void win32_seh_cleanup()
+void win32_seh_cleanup(void)
 {
 	if (mono_old_win_toplevel_exception_filter)
 		SetUnhandledExceptionFilter(mono_old_win_toplevel_exception_filter);

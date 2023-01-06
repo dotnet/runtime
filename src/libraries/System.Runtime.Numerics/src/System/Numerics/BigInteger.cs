@@ -1315,9 +1315,6 @@ namespace System.Numerics
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
         private enum GetBytesMode { AllocateArray, Count, Span }
 
-        /// <summary>Dummy array returned from TryGetBytes to indicate success when in span mode.</summary>
-        private static readonly byte[] s_success = Array.Empty<byte>();
-
         /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
         /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
@@ -1354,7 +1351,7 @@ namespace System.Numerics
                         if (destination.Length != 0)
                         {
                             destination[0] = 0;
-                            return s_success;
+                            return Array.Empty<byte>();
                         }
                         return null;
                 }
@@ -1452,7 +1449,7 @@ namespace System.Numerics
                     {
                         return null;
                     }
-                    array = s_success;
+                    array = Array.Empty<byte>();
                     break;
             }
 
@@ -3537,41 +3534,18 @@ namespace System.Numerics
 
             ulong result = 0;
 
-            if (value._sign >= 0)
+            // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
+            // so the sign of value does not matter and both cases can be handled in the same way
+
+            uint part = value._bits[0];
+
+            for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
             {
-                // When the value is positive, we simply need to do a tzcnt for all bits until we find one set
-
-                uint part = value._bits[0];
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    part = value._bits[i];
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
+                part = value._bits[i];
+                result += (sizeof(uint) * 8);
             }
-            else
-            {
-                // When the value is negative, we need to tzcnt the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                uint part = ~value._bits[0] + 1;
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    // Simply process bits, adding the carry while the previous value is zero
-
-                    part = ~value._bits[i] + 1;
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
-            }
+            result += uint.TrailingZeroCount(part);
 
             return result;
         }
@@ -5255,6 +5229,7 @@ namespace System.Numerics
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out BigInteger result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

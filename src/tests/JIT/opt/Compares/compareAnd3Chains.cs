@@ -31,6 +31,12 @@ public class ComparisonTestAnd3Chains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Eq_ulong_3(ulong a1, ulong a2, ulong a3) => a1 == 10 & a2 == 11 & a3 == 12;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Eq_float_3(float a1, float a2, float a3) => a1 == 10.5f & a2 == 11.5f & a3 == 12.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Eq_double_3(double a1, double a2, double a3) => a1 == 10.5 & a2 == 11.5 & a3 == 12.5;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ne_byte_3(byte a1, byte a2, byte a3) => a1 != 5 & a2 != 5 & a3 != 5;
@@ -52,6 +58,12 @@ public class ComparisonTestAnd3Chains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ne_ulong_3(ulong a1, ulong a2, ulong a3) => a1 != 5 & a2 != 5 & a3 != 5;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ne_float_3(float a1, float a2, float a3) => a1 != 5.5f & a2 != 5.5f & a3 != 5.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ne_double_3(double a1, double a2, double a3) => a1 != 5.5 & a2 != 5.5 & a3 != 5.5;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -75,6 +87,12 @@ public class ComparisonTestAnd3Chains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Lt_ulong_3(ulong a1, ulong a2, ulong a3) => a1 < 5 & a2 < 5 & a3 < 5;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Lt_float_3(float a1, float a2, float a3) => a1 < 5.5f & a2 < 5.5f & a3 < 5.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Lt_double_3(double a1, double a2, double a3) => a1 < 5.5 & a2 < 5.5 & a3 < 5.5;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Le_byte_3(byte a1, byte a2, byte a3) => a1 <= 5 & a2 <= 5 & a3 <= 5;
@@ -96,6 +114,12 @@ public class ComparisonTestAnd3Chains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Le_ulong_3(ulong a1, ulong a2, ulong a3) => a1 <= 5 & a2 <= 5 & a3 <= 5;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Le_float_3(float a1, float a2, float a3) => a1 <= 5.5f & a2 <= 5.5f & a3 <= 5.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Le_double_3(double a1, double a2, double a3) => a1 <= 5.5 & a2 <= 5.5 & a3 <= 5.5;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -119,6 +143,12 @@ public class ComparisonTestAnd3Chains
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Gt_ulong_3(ulong a1, ulong a2, ulong a3) => a1 > 5 & a2 > 5 & a3 > 5;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Gt_float_3(float a1, float a2, float a3) => a1 > 5.5f & a2 > 5.5f & a3 > 5.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Gt_double_3(double a1, double a2, double a3) => a1 > 5.5 & a2 > 5.5 & a3 > 5.5;
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ge_byte_3(byte a1, byte a2, byte a3) => a1 >= 5 & a2 >= 5 & a3 >= 5;
@@ -140,6 +170,12 @@ public class ComparisonTestAnd3Chains
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Ge_ulong_3(ulong a1, ulong a2, ulong a3) => a1 >= 5 & a2 >= 5 & a3 >= 5;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ge_float_3(float a1, float a2, float a3) => a1 >= 5.5f & a2 >= 5.5f & a3 >= 5.5f;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool Ge_double_3(double a1, double a2, double a3) => a1 >= 5.5 & a2 >= 5.5 & a3 >= 5.5;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -180,6 +216,16 @@ public class ComparisonTestAnd3Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Eq_ulong_3(10, 11, 12) failed");
             return 101;
         }
+        if (!Eq_float_3(10.5f, 11.5f, 12.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_float_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
+        if (!Eq_double_3(10.5, 11.5, 12.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_double_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
 
         if (!Ne_byte_3(10, 11, 12))
         {
@@ -214,6 +260,16 @@ public class ComparisonTestAnd3Chains
         if (!Ne_ulong_3(10, 11, 12))
         {
             Console.WriteLine("ComparisonTestAnd2Chains:Ne_ulong_3(10, 11, 12) failed");
+            return 101;
+        }
+        if (!Ne_float_3(10.5f, 11.5f, 12.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Ne_float_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
+        if (!Ne_double_3(10.5, 11.5, 12.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Ne_double_3(10.5, 11.5, 12.5) failed");
             return 101;
         }
 
@@ -252,6 +308,16 @@ public class ComparisonTestAnd3Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Lt_ulong_3(2, 3, 4) failed");
             return 101;
         }
+        if (!Lt_float_3(2.5f, 3.5f, 4.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Lt_float_3(2.5, 3.5, 4.5) failed");
+            return 101;
+        }
+        if (!Lt_double_3(2.5, 3.5, 4.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Lt_double_3(2.5, 3.5, 4.5) failed");
+            return 101;
+        }
 
         if (!Le_byte_3(2, 3, 4))
         {
@@ -286,6 +352,16 @@ public class ComparisonTestAnd3Chains
         if (!Le_ulong_3(2, 3, 4))
         {
             Console.WriteLine("ComparisonTestAnd2Chains:Le_ulong_3(2, 3, 4) failed");
+            return 101;
+        }
+        if (!Le_float_3(2.5f, 3.5f, 4.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_float_3(2.5, 3.5, 4.5) failed");
+            return 101;
+        }
+        if (!Le_double_3(2.5, 3.5, 4.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_double_3(2.5, 3.5, 4.5) failed");
             return 101;
         }
 
@@ -324,6 +400,16 @@ public class ComparisonTestAnd3Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Gt_ulong_3(10, 11, 12) failed");
             return 101;
         }
+        if (!Gt_float_3(10.5f, 11.5f, 12.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Gt_float_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
+        if (!Gt_double_3(10.5, 11.5, 12.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Gt_double_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
 
         if (!Ge_byte_3(10, 11, 12))
         {
@@ -358,6 +444,16 @@ public class ComparisonTestAnd3Chains
         if (!Ge_ulong_3(10, 11, 12))
         {
             Console.WriteLine("ComparisonTestAnd2Chains:Le_ulong_3(10, 11, 12) failed");
+            return 101;
+        }
+        if (!Ge_float_3(10.5f, 11.5f, 12.5f))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Ge_float_3(10.5, 11.5, 12.5) failed");
+            return 101;
+        }
+        if (!Ge_double_3(10.5, 11.5, 12.5))
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Le_double_3(10.5, 11.5, 12.5) failed");
             return 101;
         }
 

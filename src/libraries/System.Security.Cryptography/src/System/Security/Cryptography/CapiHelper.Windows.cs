@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
             }
 
             // check to see if there are upgrades available for the requested CSP
-            string providerNameString = new string(providerName.AsSpan().Slice(0, providerName.AsSpan().IndexOf('\0')));
+            string providerNameString = new string(providerName.AsSpan(0, providerName.AsSpan().IndexOf('\0')));
             string? wszUpgrade = null;
             if (dwType == (int)ProviderType.PROV_RSA_FULL)
             {
@@ -1156,7 +1156,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Helper for RSACryptoServiceProvider.SignData/SignHash apis.
         /// </summary>
-        public static byte[] SignValue(SafeProvHandle hProv, SafeCapiKeyHandle hKey, int keyNumber, int calgKey, int calgHash, byte[] hash)
+        public static byte[] SignValue(SafeProvHandle hProv, int keyNumber, int calgKey, int calgHash, byte[] hash)
         {
             using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
             {

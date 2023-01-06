@@ -133,16 +133,7 @@ namespace System.Net.Quic.Tests
         public async Task TwoListenersOnSamePort_SameAlpn_Throws()
         {
             await using QuicListener listener = await CreateQuicListener();
-
-            //
-            // TODO: MsQuic returns QUIC_STATUS_INVALID_STATE in this case, returning
-            // ADDRESS_IN_USE could be confusing because you can actually bind two listeners
-            // to the same port (see TwoListenersOnSamePort_DisjointAlpn_Success). It may be better
-            // to add a new error code to identify this case
-            //
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/73045")]
-            //
-            await AssertThrowsQuicExceptionAsync(QuicError.InternalError, async () => await CreateQuicListener(listener.LocalEndPoint));
+            await AssertThrowsQuicExceptionAsync(QuicError.AlpnInUse, async () => await CreateQuicListener(listener.LocalEndPoint));
         }
 
         [Fact]

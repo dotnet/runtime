@@ -358,7 +358,7 @@ public:
     //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
     //    - LoaderAllocator cannot ever go back to phase #1 or #2, but it can skip this phase if there are
-    //      not any LCG method references keeping it alive at the time of manged scout finalization.
+    //      no LCG method references keeping it alive at the time of managed scout finalization.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... FALSE (change from phase #2)
@@ -590,7 +590,7 @@ public:
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
-    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData);
+    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);
     void LazyInitStringLiteralMap();
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);

@@ -55,6 +55,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGene
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.0", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj", "{65F336C0-BFB7-4248-A56C-8F1AE8770590}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.4", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj", "{01A80754-3531-4394-98C6-0739793B66FA}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\ref\System.Text.Json.csproj", "{EA992513-9CA4-4DEB-B0EE-A8FD0252B451}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\src\System.Text.Json.csproj", "{BC7D3412-DBCB-4863-8BF8-41899E32608C}"
@@ -185,6 +187,10 @@ Global
 		{65F336C0-BFB7-4248-A56C-8F1AE8770590}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65F336C0-BFB7-4248-A56C-8F1AE8770590}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65F336C0-BFB7-4248-A56C-8F1AE8770590}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01A80754-3531-4394-98C6-0739793B66FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01A80754-3531-4394-98C6-0739793B66FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01A80754-3531-4394-98C6-0739793B66FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01A80754-3531-4394-98C6-0739793B66FA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EA992513-9CA4-4DEB-B0EE-A8FD0252B451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EA992513-9CA4-4DEB-B0EE-A8FD0252B451}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA992513-9CA4-4DEB-B0EE-A8FD0252B451}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -228,6 +234,7 @@ Global
 		{E1A1EC7C-3257-46EB-8DBC-DE8DAB3F4F4F} = {5A418E02-B18A-41F1-9D4F-1BD6CB51F63C}
 		{E277B012-C6EE-4032-9E80-C1EE3BAD7F51} = {5A418E02-B18A-41F1-9D4F-1BD6CB51F63C}
 		{65F336C0-BFB7-4248-A56C-8F1AE8770590} = {5A418E02-B18A-41F1-9D4F-1BD6CB51F63C}
+		{01A80754-3531-4394-98C6-0739793B66FA} = {5A418E02-B18A-41F1-9D4F-1BD6CB51F63C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A121E5BA-D935-4572-8D67-2F15DF29922B}

@@ -7,31 +7,19 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void LoadFence()
         {
-            int testResult = Pass;
-
             if (Sse2.IsSupported)
             {
-                try
-                {
-                    Sse2.LoadFence();
-                }
-                catch
-                {
-                    testResult = Fail;
-                }
+                Sse2.LoadFence();
             }
-
-            return testResult;
         }
     }
 }

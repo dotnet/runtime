@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+
+    <Compile Include="..\Common\LogAsErrorException.cs" />
   </ItemGroup>
 
   <Target Name="PublishBuilder"

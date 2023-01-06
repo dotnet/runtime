@@ -89,16 +89,8 @@ class Crst;
 class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
-//
-// loader handles are opaque types that track object pointers that have a lifetime
-// that matches that of a loader allocator
-//
-struct LOADERHANDLE__
-{
-    void* unused;
-};
 typedef TADDR LOADERHANDLE;
-
+typedef TADDR RUNTIMETYPEHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -368,7 +360,6 @@ GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
 GPTR_DECL(MethodTable,      g_pStackOverflowExceptionClass);
 GPTR_DECL(MethodTable,      g_pExecutionEngineExceptionClass);
-GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pDelegateClass);
 GPTR_DECL(MethodTable,      g_pMulticastDelegateClass);
 GPTR_DECL(MethodTable,      g_pFreeObjectMethodTable);
@@ -377,6 +368,9 @@ GPTR_DECL(MethodTable,      g_pEnumClass);
 GPTR_DECL(MethodTable,      g_pThreadClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
+
+GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
+GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);

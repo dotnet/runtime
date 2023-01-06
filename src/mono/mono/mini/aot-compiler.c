@@ -187,6 +187,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
 	char *data_outfile;
+	char *export_symbols_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -396,6 +397,10 @@ typedef struct MonoAotCompile {
 	GList *profile_data;
 	GHashTable *profile_methods;
 	GHashTable *blob_hash;
+	/* Maps MonoMethod*->GPtrArray* */
+	GHashTable *gshared_instances;
+	/* Hash of gshared methods where specific instances are preferred */
+	GHashTable *prefer_instances;
 #ifdef EMIT_WIN32_UNWIND_INFO
 	GList *unwind_info_section_cache;
 #endif
@@ -1840,6 +1845,9 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 /* Keep in sync with tramp-amd64.c, aot_arch_get_plt_entry_index. */
 #define PLT_ENTRY_OFFSET_REG AMD64_RAX
 #endif
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+extern guint64 mono_arch_plt_entry_index_xor_key;
+#endif
 #endif
 
 /*
@@ -1867,7 +1875,11 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, guint32 plt_i
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 		guint8 buf [16];
 		guint8 *code = buf;
-
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+		guint64 plt_index_debug = ((guint64)plt_index << 32) | (guint64)plt_index;
+		plt_index_debug = plt_index_debug ^ mono_arch_plt_entry_index_xor_key;
+		amd64_mov_reg_imm_size (code, PLT_ENTRY_OFFSET_REG, plt_index_debug, sizeof(plt_index_debug));
+#else
 		/* Emit smallest possible imm size 1, 2 or 4 bytes based on total number of PLT entries. */
 		if (acfg->plt_offset <= (guint32)0xFF) {
 			amd64_emit_rex(code, sizeof (guint8), 0, 0, PLT_ENTRY_OFFSET_REG);
@@ -1881,6 +1893,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, guint32 plt_i
 		} else {
 			amd64_mov_reg_imm_size (code, PLT_ENTRY_OFFSET_REG, plt_index, sizeof(plt_index));
 		}
+#endif
 		emit_bytes (acfg, buf, code - buf);
 		acfg->stats.plt_size += code - buf;
 
@@ -2999,6 +3012,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	/* metadata-update: there are no updates during AOT */
 	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -4294,8 +4308,23 @@ mono_dedup_cache_method (MonoAotCompile *acfg, MonoMethod *method)
 	g_hash_table_insert (acfg->dedup_stats, stats_name, GUINT_TO_POINTER (count));
 }
 
+static gboolean
+is_open_method (MonoMethod *method)
+{
+	MonoGenericContext *context;
+
+	if (!method->is_inflated)
+		return FALSE;
+	context = mono_method_get_context (method);
+	if (context->class_inst && context->class_inst->is_open)
+		return TRUE;
+	if (context->method_inst && context->method_inst->is_open)
+		return TRUE;
+	return FALSE;
+}
+
 static void
-add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
+add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer_gshared, int depth)
 {
 	ERROR_DECL (error);
 
@@ -4307,7 +4336,7 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		return;
 	}
 
-	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
+	if (prefer_gshared && mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
 		MonoMethod *orig = method;
 
 		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
@@ -4317,10 +4346,25 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 			return;
 		}
 
+		if (g_hash_table_lookup (acfg->prefer_instances, method) && !is_open_method (orig)) {
+			/* Compile an instance instead */
+			add_extra_method_full (acfg, orig, FALSE, depth);
+			return;
+		}
+
 		/* Add it to profile_methods so its not skipped later */
 		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
 			g_hash_table_insert (acfg->profile_methods, method, method);
-	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
+
+		if (!is_open_method (orig) && !mono_method_is_generic_sharable_full (orig, TRUE, FALSE, FALSE)) {
+			GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
+			if (!instances) {
+				instances = g_ptr_array_new ();
+				g_hash_table_insert (acfg->gshared_instances, method, instances);
+			}
+			g_ptr_array_add (instances, orig);
+		}
+	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gshared && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
@@ -4337,6 +4381,12 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
 	add_method_full (acfg, method, TRUE, depth);
+}
+
+static void
+add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
+{
+	add_extra_method_full (acfg, method, TRUE, depth);
 }
 
 static void
@@ -5056,6 +5106,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	GString *export_symbols = g_string_new ("");
 	/* native-to-managed wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5205,8 +5256,10 @@ MONO_RESTORE_WARNING
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
-				if (export_name)
+				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+				}
 			}
 
 			g_free (cattr);
@@ -5216,6 +5269,19 @@ MONO_RESTORE_WARNING
 			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
+	}
+
+	if (acfg->aot_opts.export_symbols_outfile) {
+		char *export_symbols_out = g_string_free (export_symbols, FALSE);
+		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		if (!export_symbols_outfile) {
+			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
+			g_free (export_symbols_out);
+			exit (1);
+		}
+		fprintf (export_symbols_outfile, "%s", export_symbols_out);
+		g_free (export_symbols_out);
+		fclose (export_symbols_outfile);
 	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
@@ -8370,6 +8436,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "dotprod"))
 		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
+	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
 #else
@@ -8397,6 +8464,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
+		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
+			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9043,6 +9112,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				case WRAPPER_SUBTYPE_PTR_TO_STRUCTURE:
 				case WRAPPER_SUBTYPE_STRUCTURE_TO_PTR:
 					break;
+				case WRAPPER_SUBTYPE_ICALL_WRAPPER: {
+					MonoJumpInfo *tmp_ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+					tmp_ji->type = MONO_PATCH_INFO_METHOD;
+					tmp_ji->data.method = method;
+					get_got_offset (acfg, TRUE, tmp_ji);
+					keep = TRUE;
+					break;
+				}
 				default:
 					keep = TRUE;
 					break;
@@ -9199,6 +9276,23 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			fprintf (acfg->instances_logfile, "%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
 		else
 			printf ("%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
+	}
+
+	if (cfg->prefer_instances) {
+		/*
+		 * Compile the original specific instances in addition to the gshared method
+		 * for performance reasons, since gshared methods cannot implement some
+		 * features like static virtual methods efficiently.
+		 */
+		/* Instances encountered later will be handled in add_extra_method_full () */
+		g_hash_table_insert (acfg->prefer_instances, method, method);
+		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
+		if (instances) {
+			for (guint i = 0; i < instances->len; ++i) {
+				MonoMethod *instance = (MonoMethod*)g_ptr_array_index (instances, i);
+				add_extra_method_full (acfg, instance, FALSE, 0);
+			}
+		}
 	}
 
 	/* Adds generic instances referenced by this method */
@@ -13623,6 +13717,8 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->gsharedvt_in_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->gsharedvt_out_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->profile_methods = g_hash_table_new (NULL, NULL);
+	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
+	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);

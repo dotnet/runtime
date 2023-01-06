@@ -58,6 +58,7 @@
 #include "array.h"
 #include "castcache.h"
 #include "dynamicinterfacecastable.h"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3495,13 +3496,7 @@ void MethodTable::AllocateRegularStaticBoxes()
 
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                TypeHandle  th = pField->GetFieldTypeHandleThrowing();
-                MethodTable* pFieldMT = th.GetMethodTable();
-
-                LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-                OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics());
-
-                SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj);
+                AllocateRegularStaticBox(pField, (Object**)(pStaticBase + pField->GetOffset()));
             }
 
             pField++;
@@ -3510,14 +3505,47 @@ void MethodTable::AllocateRegularStaticBoxes()
     GCPROTECT_END();
 }
 
-//==========================================================================================
-OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle)
+void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
+        CONTRACTL_END;
+    }
+    _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
+
+    // Static fields are not pinned in collectible types so we need to protect the address
+    GCPROTECT_BEGININTERIOR(boxedStaticHandle);
+    if (VolatileLoad(boxedStaticHandle) == nullptr)
+    {
+        // Grab field's type handle before we enter lock
+        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        bool hasFixedAddr = HasFixedAddressVTStatics();
+
+        // Taking a lock since we might come here from multiple threads/places
+        CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
+
+        // double-checked locking
+        if (VolatileLoad(boxedStaticHandle) == nullptr)
+        {
+            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
+        }
+    }
+    GCPROTECT_END();
+}
+
+//==========================================================================================
+OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle, bool canBeFrozen)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         CONTRACTL_END;
     }
 
@@ -3526,7 +3554,22 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     // Activate any dependent modules if necessary
     pFieldMT->EnsureInstanceActive();
 
-    OBJECTREF obj = AllocateObject(pFieldMT);
+    OBJECTREF obj = NULL;
+    if (canBeFrozen)
+    {
+        // In case if we don't plan to collect this handle we may try to allocate it on FOH
+        _ASSERT(!pFieldMT->ContainsPointers());
+        _ASSERT(pHandle == nullptr);
+        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+        obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
+        // obj can be null in case if struct is huge (>64kb)
+        if (obj != NULL)
+        {
+            return obj;
+        }
+    }
+
+    obj = AllocateObject(pFieldMT);
 
     // Pin the object if necessary
     if (fPinned)
@@ -4219,26 +4262,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     {
         // Make sure that we have been restored
         CheckRestore();
-
-        REFLECTCLASSBASEREF  refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
-        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
-
-        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
-
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(TypeHandle(this));
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_ExposedClassObject from NULL.
-        LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
-
-        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
-        }
-
-        GCPROTECT_END();
+        TypeHandle(this).AllocateManagedClassObject(&GetWriteableDataForWrite()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
@@ -4790,7 +4814,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         SString name;
         TypeString::AppendTypeDebug(name, this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %S\n", name.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %s\n", name.GetUTF8()));
     }
 #endif
 

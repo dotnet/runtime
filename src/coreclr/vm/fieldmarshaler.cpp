@@ -25,10 +25,6 @@
 #include <corerror.h>
 #include "sigformat.h"
 #include "marshalnative.h"
-#include "typeparse.h"
-#ifdef FEATURE_COMINTEROP
-#include <winstring.h>
-#endif // FEATURE_COMINTEROP
 
 VOID ParseNativeType(Module*                     pModule,
                      SigPointer                  sig,

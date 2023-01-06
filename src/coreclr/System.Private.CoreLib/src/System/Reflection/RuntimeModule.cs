@@ -153,8 +153,6 @@ namespace System.Reflection
 
             Type declaringType = ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
 
-            declaringType.GetFields();
-
             try
             {
                 return declaringType.GetField(fieldName,
@@ -531,7 +529,7 @@ namespace System.Reflection
             return m_runtimeAssembly;
         }
 
-        protected override ModuleHandle GetModuleHandleImpl()
+        private protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
         }

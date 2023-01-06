@@ -49,7 +49,7 @@ The P/Invoke algorithm is presented below using a simple example.
 
 ``` CSharp
 /* A */ [DllImportAttribute("Kernel32.dll")]
-/* B */ extern static bool QueryPerformanceCounter(out long lpPerformanceCount);
+/* B */ static extern bool QueryPerformanceCounter(out long lpPerformanceCount);
 ...
 long count;
 /* C */ QueryPerformanceCounter(out count);
@@ -81,7 +81,7 @@ An example of how the previous P/Invoke snippet could be transformed is below. T
 
 ``` CSharp
 /* A */ [LibraryImportAttribute("Kernel32.dll")]
-/* B */ partial static bool QueryPerformanceCounter(out long lpPerformanceCount);
+/* B */ static partial bool QueryPerformanceCounter(out long lpPerformanceCount);
 ...
 long count;
 /* C*/ QueryPerformanceCounter(out count);
@@ -94,7 +94,7 @@ During the source generation process the metadata in the `LibraryImportAttribute
 `Stubs.g.cs` (Source Generator code)
 
 ``` CSharp
-/* D */ partial static bool QueryPerformanceCounter(out long lpPerformanceCount)
+/* D */ static partial bool QueryPerformanceCounter(out long lpPerformanceCount)
 {
     unsafe
     {

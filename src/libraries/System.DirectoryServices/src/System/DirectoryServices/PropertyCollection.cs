@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 using System.Collections;
-using System.DirectoryServices.Interop;
 using System.Globalization;
 
 namespace System.DirectoryServices

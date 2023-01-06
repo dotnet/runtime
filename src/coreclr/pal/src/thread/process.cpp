@@ -1675,6 +1675,8 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     {
         TRACE("GetProcessIdDisambiguationKey: getline() FAILED");
         SetLastError(ERROR_INVALID_HANDLE);
+        free(line);
+        fclose(statFile);
         return FALSE;
     }
 
@@ -1691,14 +1693,14 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
         "%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
          &starttime);
 
+    free(line);
+    fclose(statFile);
+
     if (sscanfRet != 1)
     {
         _ASSERTE(!"Failed to parse stat file contents with sscanf_s.");
         return FALSE;
     }
-
-    free(line);
-    fclose(statFile);
 
     *disambiguationKey = starttime;
     return TRUE;
@@ -3415,8 +3417,7 @@ getFileName(
                                             NULL, 0, NULL, NULL);
 
         /* if only a file name is specified, prefix it with "./" */
-        if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
-            (*lpApplicationName != '\\'))
+        if ((*lpApplicationName != '.') && (*lpApplicationName != '/'))
         {
             length += 2;
             lpTemp = lpPathFileName.OpenStringBuffer(length);
@@ -3445,9 +3446,6 @@ getFileName(
         }
 
         lpPathFileName.CloseBuffer(length -1);
-
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpTemp);
 
         return TRUE;
     }
@@ -3519,8 +3517,6 @@ getFileName(
         /* restore last character */
         *lpEnd = wcEnd;
 
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpFileName);
         if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
@@ -3655,6 +3651,7 @@ buildArgv(
         (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
     {
         ERROR("strcpy_s/strcat_s failed!\n");
+        free(lpAsciiCmdLine);
         return NULL;
     }
 

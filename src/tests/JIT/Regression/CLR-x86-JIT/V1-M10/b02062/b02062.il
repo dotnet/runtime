@@ -10,7 +10,7 @@
 .assembly b02062
 {
 }
-.class test
+.class public test
 {
   .field public        int32 m_i
   .field public static int32 s_i
@@ -32,7 +32,7 @@
 		ret
 	}
 
-	.method public static int32 main(class [mscorlib]System.String[] A_0) il managed
+	.method public static int32 main() il managed
 	{
 		.entrypoint
 		.locals(class test)

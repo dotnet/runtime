@@ -5,7 +5,7 @@
 
 #include <assert.h>
 
-BIO* CryptoNative_CreateMemoryBio()
+BIO* CryptoNative_CreateMemoryBio(void)
 {
     ERR_clear_error();
     return BIO_new(BIO_s_mem());

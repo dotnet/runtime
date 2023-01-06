@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.IO;
+using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
-using System.IO;
-using System.Collections;
-using System.Xml.Schema;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaTests
 {
     //[TestCase(Name = "TC_SchemaSet_Remove", Desc = "")]
     public class TC_SchemaSet_Remove : TC_SchemaSetBase

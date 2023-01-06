@@ -3,14 +3,11 @@
 
 import { dotnet } from './dotnet.js'
 
-const is_node = typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
-if (!is_node) throw new Error(`This file only supports nodejs`);
-
-const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
     .withDiagnosticTracing(false)
     .create();
 
-setModuleImports("main.mjs", {
+setModuleImports('main.mjs', {
     node: {
         process: {
             version: () => globalThis.process.version
@@ -23,4 +20,4 @@ const exports = await getAssemblyExports(config.mainAssemblyName);
 const text = exports.MyClass.Greeting();
 console.log(text);
 
-await runMainAndExit(config.mainAssemblyName, ["dotnet", "is", "great!"]);
+await dotnet.run();

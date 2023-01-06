@@ -400,7 +400,12 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         {
             // Append process ID to the log file name, so multiple processes can log at the same time.
             StackSString fullname;
-            fullname.Printf(W("%s.%u"), wszReadyToRunLogFile.GetValue(), GetCurrentProcessId());
+            fullname.Append(wszReadyToRunLogFile.GetValue());
+
+            WCHAR pidSuffix[ARRAY_SIZE(".") + MaxUnsigned32BitDecString] = W(".");
+            DWORD pid = GetCurrentProcessId();
+            FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
+            fullname.Append(pidSuffix);
             r2rLogFile = _wfopen(fullname.GetUnicode(), W("w"));
         }
         else
@@ -424,7 +429,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -795,6 +800,17 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     else
     {
         m_nRuntimeFunctions = 0;
+    }
+
+    IMAGE_DATA_DIRECTORY * pHotColdMapDir = m_pComposite->FindSection(ReadyToRunSectionType::HotColdMap);
+    if (pHotColdMapDir != NULL)
+    {
+        m_pHotColdMap = (PTR_ULONG)m_pComposite->GetLayout()->GetDirectoryData(pHotColdMapDir);
+        m_nHotColdMap = pHotColdMapDir->Size / sizeof(ULONG);
+    }
+    else
+    {
+        m_nHotColdMap = 0;
     }
 
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
@@ -1717,7 +1733,7 @@ public:
             if (assemblyNameLen != 0) // #:<num> is a direct reference to a module index, #<assemblyName>:<num> is indirect
             {
                 mdToken assemblyRef;
-                
+
                 IfFailThrow(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef));
                 if (assemblyRef == mdTokenNil)
                 {

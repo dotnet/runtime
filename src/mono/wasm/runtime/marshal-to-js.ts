@@ -33,7 +33,7 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.Single, _marshal_float_to_js);
         cs_to_js_marshalers.set(MarshalerType.IntPtr, _marshal_intptr_to_js);
         cs_to_js_marshalers.set(MarshalerType.Double, _marshal_double_to_js);
-        cs_to_js_marshalers.set(MarshalerType.String, _marshal_string_to_js);
+        cs_to_js_marshalers.set(MarshalerType.String, marshal_string_to_js);
         cs_to_js_marshalers.set(MarshalerType.Exception, marshal_exception_to_js);
         cs_to_js_marshalers.set(MarshalerType.JSException, marshal_exception_to_js);
         cs_to_js_marshalers.set(MarshalerType.JSObject, _marshal_js_object_to_js);
@@ -296,7 +296,7 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
     set_arg_type(exc, MarshalerType.None);
 }
 
-function _marshal_string_to_js(arg: JSMarshalerArgument): string | null {
+export function marshal_string_to_js(arg: JSMarshalerArgument): string | null {
     const type = get_arg_type(arg);
     if (type == MarshalerType.None) {
         return null;
@@ -326,7 +326,7 @@ export function marshal_exception_to_js(arg: JSMarshalerArgument): Error | null 
     let result = _lookup_js_owned_object(gc_handle);
     if (result === null || result === undefined) {
         // this will create new ManagedError
-        const message = _marshal_string_to_js(arg);
+        const message = marshal_string_to_js(arg);
         result = new ManagedError(message!);
 
         setup_managed_proxy(result, gc_handle);
@@ -405,7 +405,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
         result = new Array(length);
         for (let index = 0; index < length; index++) {
             const element_arg = get_arg(<any>buffer_ptr, index);
-            result[index] = _marshal_string_to_js(element_arg);
+            result[index] = marshal_string_to_js(element_arg);
         }
         cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
     }

@@ -284,7 +284,8 @@ set(interp_sources
     interp/mintops.c
     interp/transform.c
     interp/tiering.h
-    interp/tiering.c)
+    interp/tiering.c
+    interp/jiterpreter.c)
 set(interp_stub_sources
     interp-stubs.c)
 
@@ -325,7 +326,13 @@ else()
 set(llvm_runtime_sources)
 endif()
 
-set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${llvm_runtime_sources}")
+if(TARGET_BROWSER AND MONO_CROSS_COMPILE)
+set(profiler_sources ../profiler/browser.c)
+else()
+set(profiler_sources "")
+endif()
+
+set(mini_sources "main-core.c;${mini_common_sources};${arch_sources};${os_sources};${mini_interp_sources};${llvm_sources};${debugger_sources};${profiler_sources};${llvm_runtime_sources}")
 
 if(LLVM_INCLUDEDIR)
   include_directories(BEFORE SYSTEM "${LLVM_INCLUDEDIR}")
@@ -349,7 +356,7 @@ add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_O
 target_link_libraries (monosgen-static PRIVATE monoapi)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
-if(DISABLE_COMPONENTS)
+if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
   target_sources(monosgen-static PRIVATE "${mono-components-stub-objects}")
 endif()
@@ -448,16 +455,16 @@ if(NOT DISABLE_SHARED_LIBS)
   endif()
 endif()
 
-if(HOST_WASM AND NOT HOST_WASI)
-# Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
-# This is the only source file which contains a c++ throw or catch
-add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
-target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
-install(TARGETS mono-wasm-eh-js LIBRARY)
-add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
-target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
-set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-install(TARGETS mono-wasm-eh-wasm LIBRARY)
+if(HOST_BROWSER)
+  # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
+  # This is the only source file which contains a c++ throw or catch
+  add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
+  target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
+  install(TARGETS mono-wasm-eh-js LIBRARY)
+  add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
+  target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+  install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

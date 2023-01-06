@@ -53,6 +53,10 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+if [[ -n "$PREPEND_PATH" ]]; then
+    export PATH=$PREPEND_PATH:$PATH
+fi
+
 if [[ -n "$XUNIT_RANDOM_ORDER_SEED" ]]; then
     WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
 fi

@@ -1154,7 +1154,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
                 if (cur.ip)
                 {
-                    dwNativeOffset = (DWORD)(cur.ip - (UINT_PTR)pMD->GetNativeCode());
+                    EECodeInfo codeInfo(cur.ip);
+                    dwNativeOffset = codeInfo.GetRelOffset();
                 }
                 else
                 {

@@ -37,7 +37,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = -1,
@@ -47,7 +47,7 @@ namespace System.Threading.RateLimiting.Test
                     TokensPerPeriod = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = 1,
@@ -57,7 +57,7 @@ namespace System.Threading.RateLimiting.Test
                     TokensPerPeriod = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = 1,
@@ -67,7 +67,7 @@ namespace System.Threading.RateLimiting.Test
                     TokensPerPeriod = -1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = 1,
@@ -77,13 +77,23 @@ namespace System.Threading.RateLimiting.Test
                     TokensPerPeriod = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
                 {
                     TokenLimit = 1,
                     QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                     QueueLimit = 1,
                     ReplenishmentPeriod = TimeSpan.FromMilliseconds(-1),
+                    TokensPerPeriod = 1,
+                    AutoReplenishment = false
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    ReplenishmentPeriod = TimeSpan.Zero,
                     TokensPerPeriod = 1,
                     AutoReplenishment = false
                 }));
@@ -550,6 +560,39 @@ namespace System.Threading.RateLimiting.Test
             Replenish(limiter, 1L);
 
             Assert.Equal(1, limiter.GetStatistics().CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public override async Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(3),
+                TokensPerPeriod = 3,
+                AutoReplenishment = false
+            });
+
+            var lease = limiter.AttemptAcquire(3);
+            Assert.True(lease.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.AcquireAsync(2, cts.Token);
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            var wait2 = limiter.AcquireAsync(1);
+            Replenish(limiter, 1L);
+
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.Equal(0, limiter.GetStatistics().CurrentQueuedCount);
         }
 
         [Fact]

@@ -20,10 +20,10 @@ static const UNormalizer2* GetNormalizerForForm(NormalizationForm normalizationF
             return unorm2_getNFKCInstance(pErrorCode);
         case FormKD:
             return unorm2_getNFKDInstance(pErrorCode);
+        default:
+            *pErrorCode = U_ILLEGAL_ARGUMENT_ERROR;
+            return NULL;
     }
-
-    *pErrorCode = U_ILLEGAL_ARGUMENT_ERROR;
-    return NULL;
 }
 
 /*

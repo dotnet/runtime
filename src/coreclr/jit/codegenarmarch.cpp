@@ -315,10 +315,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSwap(treeNode->AsOp());
             break;
 
-        case GT_ADDEX:
-            genCodeForAddEx(treeNode->AsOp());
-            break;
-
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
@@ -338,14 +334,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            genIntrinsic(treeNode);
+            genIntrinsic(treeNode->AsIntrinsic());
             break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            genSIMDIntrinsic(treeNode->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -666,18 +656,21 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 // Return value:
 //    None
 //
-void CodeGen::genIntrinsic(GenTree* treeNode)
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
-    assert(treeNode->OperIs(GT_INTRINSIC));
-
     // Both operand and its result must be of the same floating point type.
-    GenTree* srcNode = treeNode->AsOp()->gtOp1;
-    assert(varTypeIsFloating(srcNode));
-    assert(srcNode->TypeGet() == treeNode->TypeGet());
+    GenTree* srcNode = treeNode->gtGetOp1();
 
-    // Only a subset of functions are treated as math intrinsics.
-    //
-    switch (treeNode->AsIntrinsic()->gtIntrinsicName)
+#ifdef DEBUG
+    if ((treeNode->gtIntrinsicName > NI_SYSTEM_MATH_START) && (treeNode->gtIntrinsicName < NI_SYSTEM_MATH_END))
+    {
+        assert(varTypeIsFloating(srcNode));
+        assert(srcNode->TypeGet() == treeNode->TypeGet());
+    }
+#endif // DEBUG
+
+    // Handle intrinsics that can be implemented by target-specific instructions
+    switch (treeNode->gtIntrinsicName)
     {
         case NI_System_Math_Abs:
             genConsumeOperands(treeNode->AsOp());
@@ -708,13 +701,13 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
         case NI_System_Math_Max:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitIns_R_R_R(INS_fmax, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
             break;
 
         case NI_System_Math_Min:
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitIns_R_R_R(INS_fmin, emitActualTypeSize(treeNode), treeNode->GetRegNum(),
-                                        treeNode->gtGetOp1()->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
+                                        srcNode->GetRegNum(), treeNode->gtGetOp2()->GetRegNum());
             break;
 #endif // TARGET_ARM64
 
@@ -722,6 +715,23 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             genConsumeOperands(treeNode->AsOp());
             GetEmitter()->emitInsBinary(INS_SQRT, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+
+#if defined(FEATURE_SIMD)
+        // The handling is a bit more complex so genSimdUpperSave/Restore
+        // handles genConsumeOperands and genProduceReg
+
+        case NI_SIMD_UpperRestore:
+        {
+            genSimdUpperRestore(treeNode);
+            return;
+        }
+
+        case NI_SIMD_UpperSave:
+        {
+            genSimdUpperSave(treeNode);
+            return;
+        }
+#endif // FEATURE_SIMD
 
         default:
             assert(!"genIntrinsic: Unsupported intrinsic");
@@ -797,7 +807,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             if (compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
             {
                 regNumber tmpReg = treeNode->GetSingleTempReg();
-                GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
+                GetEmitter()->emitStoreSimd12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
                 argOffsetOut += 12;
             }
             else
@@ -1205,7 +1215,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         var_types targetType = source->TypeGet();
         assert(source->isContained() && varTypeIsStruct(targetType));
 
-        regNumber    baseReg      = treeNode->ExtractTempReg();
+        // We need a register to store intermediate values that we are loading
+        // from the source into. We can usually use one of the target registers
+        // that will be overridden anyway. The exception is when the source is
+        // in a register and that register is the unique target register we are
+        // placing. LSRA will always allocate an internal register when there
+        // is just one target register to handle this situation.
+        //
+        int          firstRegToPlace;
+        regNumber    valueReg     = REG_NA;
         unsigned     srcLclNum    = BAD_VAR_NUM;
         unsigned     srcLclOffset = 0;
         regNumber    addrReg      = REG_NA;
@@ -1221,6 +1239,10 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
             // This struct must live on the stack frame.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
+
+            // No possible conflicts, just use the first register as the value register.
+            firstRegToPlace = 0;
+            valueReg        = treeNode->GetRegNumByIdx(0);
         }
         else // we must have a GT_OBJ
         {
@@ -1228,10 +1250,47 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             addrReg  = genConsumeReg(source->AsObj()->Addr());
             addrType = source->AsObj()->Addr()->TypeGet();
 
-            // If addrReg equal to baseReg, we use the last target register as alternative baseReg.
-            // Because the candidate mask for the internal baseReg does not include any of the target register,
-            // we can ensure that baseReg, addrReg, and the last target register are not all same.
-            assert(baseReg != addrReg);
+            regNumber allocatedValueReg = REG_NA;
+            if (treeNode->gtNumRegs == 1)
+            {
+                allocatedValueReg = treeNode->ExtractTempReg();
+            }
+
+            // Pick a register to store intermediate values in for the to-stack
+            // copy. It must not conflict with addrReg. We try to prefer an
+            // argument register since those can always use thumb encoding.
+            valueReg = treeNode->GetRegNumByIdx(0);
+            if (valueReg == addrReg)
+            {
+                if (treeNode->gtNumRegs == 1)
+                {
+                    valueReg = allocatedValueReg;
+                }
+                else
+                {
+                    // Prefer argument register that can always use thumb encoding.
+                    valueReg = treeNode->GetRegNumByIdx(1);
+                }
+            }
+
+            // Find first register to place. If we are placing addrReg, then
+            // make sure we place it last to avoid clobbering its value.
+            //
+            // The loop below will start at firstRegToPlace and place
+            // treeNode->gtNumRegs registers in order, with wraparound. For
+            // example, if the registers to place are r0, r1, r2=addrReg, r3
+            // then we will set firstRegToPlace = 3 (r3) and the loop below
+            // will place r3, r0, r1, r2. The last placement will clobber
+            // addrReg.
+            firstRegToPlace = 0;
+            for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
+            {
+                if (treeNode->GetRegNumByIdx(i) == addrReg)
+                {
+                    firstRegToPlace = i + 1;
+                    break;
+                }
+            }
         }
 
         // Put on stack first
@@ -1268,19 +1327,18 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             if (srcLclNum != BAD_VAR_NUM)
             {
                 // Load from our local source
-                emit->emitIns_R_S(loadIns, attr, baseReg, srcLclNum, srcLclOffset + structOffset);
+                emit->emitIns_R_S(loadIns, attr, valueReg, srcLclNum, srcLclOffset + structOffset);
             }
             else
             {
-                // check for case of destroying the addrRegister while we still need it
-                assert(baseReg != addrReg);
+                assert(valueReg != addrReg);
 
                 // Load from our address expression source
-                emit->emitIns_R_R_I(loadIns, attr, baseReg, addrReg, structOffset);
+                emit->emitIns_R_R_I(loadIns, attr, valueReg, addrReg, structOffset);
             }
 
             // Emit the instruction to store the register into the outgoing argument area
-            emit->emitIns_S_R(ins_Store(type), attr, baseReg, varNumOut, argOffsetOut);
+            emit->emitIns_S_R(ins_Store(type), attr, valueReg, varNumOut, argOffsetOut);
             argOffsetOut += moveSize;
             assert(argOffsetOut <= argOffsetMax);
 
@@ -1288,13 +1346,21 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             structOffset += moveSize;
         }
 
-        // We set up the registers in order, so that we assign the last target register `baseReg` is no longer in use,
-        // in case we had to reuse the last target register for it.
-        structOffset = 0;
-        for (unsigned idx = 0; idx < treeNode->gtNumRegs; idx++)
+        // Place registers starting from firstRegToPlace. It should ensure we
+        // place addrReg last (if we place it at all).
+        structOffset         = static_cast<unsigned>(firstRegToPlace) * TARGET_POINTER_SIZE;
+        unsigned curRegIndex = firstRegToPlace;
+
+        for (unsigned regsPlaced = 0; regsPlaced < treeNode->gtNumRegs; regsPlaced++)
         {
-            regNumber targetReg = treeNode->GetRegNumByIdx(idx);
-            var_types type      = treeNode->GetRegType(idx);
+            if (curRegIndex == treeNode->gtNumRegs)
+            {
+                curRegIndex  = 0;
+                structOffset = 0;
+            }
+
+            regNumber targetReg = treeNode->GetRegNumByIdx(curRegIndex);
+            var_types type      = treeNode->GetRegType(curRegIndex);
 
             if (srcLclNum != BAD_VAR_NUM)
             {
@@ -1303,17 +1369,13 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             }
             else
             {
-                // check for case of destroying the addrRegister while we still need it
-                if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
-                {
-                    assert(targetReg != baseReg);
-                    emit->emitIns_Mov(INS_mov, emitActualTypeSize(addrType), baseReg, addrReg, /* canSkip */ false);
-                    addrReg = baseReg;
-                }
+                assert((addrReg != targetReg) || (regsPlaced == treeNode->gtNumRegs - 1));
 
                 // Load from our address expression source
                 emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type), targetReg, addrReg, structOffset);
             }
+
+            curRegIndex++;
             structOffset += TARGET_POINTER_SIZE;
         }
     }
@@ -1765,7 +1827,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     // Handling of Vector3 type values loaded through indirection.
     if (tree->TypeGet() == TYP_SIMD12)
     {
-        genLoadIndTypeSIMD12(tree);
+        genLoadIndTypeSimd12(tree);
         return;
     }
 #endif // FEATURE_SIMD
@@ -3020,9 +3082,6 @@ void CodeGen::genCall(GenTreeCall* call)
     {
         CallArgABIInformation& abiInfo = arg.AbiInfo;
         GenTree*               argNode = arg.GetLateNode();
-
-        // GT_RELOAD/GT_COPY use the child node
-        argNode = argNode->gtSkipReloadOrCopy();
 
         if (abiInfo.GetRegNum() == REG_STK)
             continue;

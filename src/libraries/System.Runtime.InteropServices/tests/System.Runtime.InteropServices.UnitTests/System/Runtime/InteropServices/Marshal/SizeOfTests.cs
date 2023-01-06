@@ -28,8 +28,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void SizeOf_Object_ReturnsExpected()
         {
-            SomeTestStruct someTestStruct = new SomeTestStruct();
-            Assert.NotEqual(0, Marshal.SizeOf(someTestStruct.GetType()));
+            Assert.NotEqual(0, Marshal.SizeOf(typeof(SomeTestStruct)));
         }
 
         [Fact]
@@ -91,6 +90,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15087", TestRuntimes.Mono)]
         [MemberData(nameof(SizeOf_InvalidType_TestData))]
         public void SizeOf_InvalidType_ThrowsArgumentException(Type type, string paramName)

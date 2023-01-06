@@ -14,11 +14,6 @@ namespace System.Runtime.Serialization.Json
     // ASSUMPTION (Microsoft): This class will only be used for EITHER reading OR writing.  It can be done, it would just mean more buffers.
     internal sealed class JsonEncodingStreamWrapper : Stream
     {
-        private static readonly UnicodeEncoding s_validatingBEUTF16 = new UnicodeEncoding(true, false, true);
-
-        private static readonly UnicodeEncoding s_validatingUTF16 = new UnicodeEncoding(false, false, true);
-
-        private static readonly UTF8Encoding s_validatingUTF8 = new UTF8Encoding(false, true);
         private const int BufferLength = 128;
 
         private readonly byte[] _byteBuffer = new byte[1];
@@ -154,7 +149,7 @@ namespace System.Runtime.Serialization.Json
 
                 // Convert to UTF-8
                 return
-                    new ArraySegment<byte>(s_validatingUTF8.GetBytes(GetEncoding(dataEnc).GetChars(buffer, offset, count)));
+                    new ArraySegment<byte>(DataContractSerializer.ValidatingUTF8.GetBytes(GetEncoding(dataEnc).GetChars(buffer, offset, count)));
             }
             catch (DecoderFallbackException e)
             {
@@ -286,9 +281,9 @@ namespace System.Runtime.Serialization.Json
         private static Encoding GetEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => s_validatingUTF8,
-                SupportedEncoding.UTF16LE => s_validatingUTF16,
-                SupportedEncoding.UTF16BE => s_validatingBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.ValidatingUTF8,
+                SupportedEncoding.UTF16LE => DataContractSerializer.ValidatingUTF16,
+                SupportedEncoding.UTF16BE => DataContractSerializer.ValidatingBEUTF16,
                 _ => throw new XmlException(SR.JsonEncodingNotSupported),
             };
 
@@ -307,15 +302,15 @@ namespace System.Runtime.Serialization.Json
             {
                 return SupportedEncoding.None;
             }
-            if (encoding.WebName == s_validatingUTF8.WebName)
+            if (encoding.WebName == DataContractSerializer.ValidatingUTF8.WebName)
             {
                 return SupportedEncoding.UTF8;
             }
-            else if (encoding.WebName == s_validatingUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingUTF16.WebName)
             {
                 return SupportedEncoding.UTF16LE;
             }
-            else if (encoding.WebName == s_validatingBEUTF16.WebName)
+            else if (encoding.WebName == DataContractSerializer.ValidatingBEUTF16.WebName)
             {
                 return SupportedEncoding.UTF16BE;
             }
@@ -451,7 +446,7 @@ namespace System.Runtime.Serialization.Json
                     CleanupCharBreak();
                     int count = _encoding.GetChars(_bytes, _byteOffset, _byteCount, _chars, 0);
                     _byteOffset = 0;
-                    _byteCount = s_validatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
+                    _byteCount = DataContractSerializer.ValidatingUTF8.GetBytes(_chars, 0, count, _bytes, 0);
                 }
             }
             catch (DecoderFallbackException ex)
@@ -471,7 +466,7 @@ namespace System.Runtime.Serialization.Json
             if (_encodingCode != SupportedEncoding.UTF8)
             {
                 EnsureBuffers();
-                _dec = s_validatingUTF8.GetDecoder();
+                _dec = DataContractSerializer.ValidatingUTF8.GetDecoder();
                 _enc = _encoding.GetEncoder();
             }
         }

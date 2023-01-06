@@ -32,7 +32,7 @@ namespace System.Diagnostics.Metrics
             var tags = ts_tags ?? new KeyValuePair<string, object?>[MaxTagsCount];
             ts_tags = null;
             tags[0] = tag;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 1));
+            RecordMeasurement(measurement, tags.AsSpan(0, 1));
             ts_tags = tags;
         }
 
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Metrics
             ts_tags = null;
             tags[0] = tag1;
             tags[1] = tag2;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 2));
+            RecordMeasurement(measurement, tags.AsSpan(0, 2));
             ts_tags = tags;
         }
 
@@ -66,7 +66,7 @@ namespace System.Diagnostics.Metrics
             tags[0] = tag1;
             tags[1] = tag2;
             tags[2] = tag3;
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, 3));
+            RecordMeasurement(measurement, tags.AsSpan(0, 3));
             ts_tags = tags;
         }
 
@@ -80,7 +80,7 @@ namespace System.Diagnostics.Metrics
             KeyValuePair<string, object?>[]? tags = tagList.Tags;
             if (tags is not null)
             {
-                RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
+                RecordMeasurement(measurement, tags.AsSpan(0, tagList.Count));
                 return;
             }
 
@@ -104,7 +104,7 @@ namespace System.Diagnostics.Metrics
 
             ts_tags = null;
 
-            RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
+            RecordMeasurement(measurement, tags.AsSpan(0, tagList.Count));
 
             ts_tags = tags;
         }

@@ -116,7 +116,6 @@
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
-    <Compile Include="Serialization\CamelCaseUnitTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ContinuationTests.cs" />
@@ -175,6 +174,7 @@
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
+    <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
@@ -217,6 +217,20 @@
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ClassWithCustomConverter.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.GetJsonTypeInfo.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.HighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.Int32.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.PropertyNames.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />

@@ -70,7 +70,10 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_CFB = "ChainingModeCFB";
         public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
 
-        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string? pszImplementation, OpenAlgorithmProviderFlags dwFlags)
+        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(
+            string pszAlgId,
+            string? pszImplementation = null,
+            OpenAlgorithmProviderFlags dwFlags = 0)
         {
             SafeAlgorithmHandle hAlgorithm;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);

@@ -278,5 +278,64 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        [Fact]
+        public static void PolymorphicBaseClassConverter_IsPassedCorrectTypeToConvertParameter()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/77173
+            var options = new JsonSerializerOptions { Converters = { new PolymorphicBaseClassConverter() } };
+
+            // Sanity check -- returns converter for the base class.
+            JsonConverter converter = options.GetConverter(typeof(DerivedClass));
+            Assert.IsAssignableFrom<PolymorphicBaseClassConverter>(converter);
+
+            // Validate that the correct typeToConvert parameter is passed in all serialization contexts:
+            // 1. Typed root value.
+            // 2. Untyped root value (where the reported regression occured).
+            // 3. Nested values in POCOs, collections & dictionaries.
+
+            DerivedClass result = JsonSerializer.Deserialize<DerivedClass>("{}", options);
+            Assert.IsType<DerivedClass>(result);
+
+            object objResult = JsonSerializer.Deserialize("{}", typeof(DerivedClass), options);
+            Assert.IsType<DerivedClass>(objResult);
+
+            PocoWithDerivedClassProperty pocoResult = JsonSerializer.Deserialize<PocoWithDerivedClassProperty>("""{"Value":{}}""", options);
+            Assert.IsType<DerivedClass>(pocoResult.Value);
+
+            DerivedClass[] arrayResult = JsonSerializer.Deserialize<DerivedClass[]>("[{}]", options);
+            Assert.IsType<DerivedClass>(arrayResult[0]);
+
+            Dictionary<string, DerivedClass> dictResult = JsonSerializer.Deserialize<Dictionary<string, DerivedClass>>("""{"Value":{}}""", options);
+            Assert.IsType<DerivedClass>(dictResult["Value"]);
+        }
+
+        public class BaseClass
+        { }
+
+        public class DerivedClass : BaseClass
+        { }
+
+        public class PocoWithDerivedClassProperty
+        {
+            public DerivedClass Value { get; set; }
+        }
+
+        public class PolymorphicBaseClassConverter : JsonConverter<BaseClass>
+        {
+            public override bool CanConvert(Type typeToConvert) => typeof(BaseClass).IsAssignableFrom(typeToConvert);
+
+            public override BaseClass? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Assert.Equal(typeof(DerivedClass), typeToConvert);
+                reader.Skip();
+                return (BaseClass)Activator.CreateInstance(typeToConvert);
+            }
+
+            public override void Write(Utf8JsonWriter writer, BaseClass value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+        }
     }
 }

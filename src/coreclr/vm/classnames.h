@@ -112,8 +112,6 @@
 #define g_UnmanagedCallersOnlyAttribute "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
 #define g_FixedBufferAttribute "System.Runtime.CompilerServices.FixedBufferAttribute"
 
-#define g_CompilerServicesTypeDependencyAttribute "System.Runtime.CompilerServices.TypeDependencyAttribute"
-
 #define g_ReferenceAssemblyAttribute "System.Runtime.CompilerServices.ReferenceAssemblyAttribute"
 
 #define g_CriticalFinalizerObjectName "CriticalFinalizerObject"

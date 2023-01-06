@@ -20,3 +20,9 @@ steps:
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
   target: ${{ parameters.target }}
+# Broken symbolic links break the SBOM processing
+# We make some symlinks during the installer generation process,
+# but they aren't always valid on disk afterwards. Some of our tooling,
+# in particular the SBOM tooling, breaks on broken symlinks.
+- script: find . -xtype l -delete
+  displayName: Remove broken symbolic links

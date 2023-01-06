@@ -607,17 +607,26 @@ namespace System.Formats.Asn1
             // Since it's not mutating, any restrictions imposed by CER or DER will
             // still be maintained.
             var reader = new AsnReader(new ReadOnlyMemory<byte>(buffer, start, len), AsnEncodingRules.BER);
+            int pos = start;
+            ReadOnlyMemory<byte> encoded = reader.ReadEncodedValue();
+
+            if (!reader.HasData)
+            {
+                // If there is no more data, then there was only one value, so we don't need to sort anything.
+                return;
+            }
 
             List<(int, int)> positions = new List<(int, int)>();
+            positions.Add((pos, encoded.Length));
+            pos += encoded.Length;
 
-            int pos = start;
-
-            while (reader.HasData)
+            do
             {
-                ReadOnlyMemory<byte> encoded = reader.ReadEncodedValue();
+                encoded = reader.ReadEncodedValue();
                 positions.Add((pos, encoded.Length));
                 pos += encoded.Length;
             }
+            while (reader.HasData);
 
             Debug.Assert(pos == end);
 

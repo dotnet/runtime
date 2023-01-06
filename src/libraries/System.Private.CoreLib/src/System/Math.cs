@@ -97,7 +97,7 @@ namespace System
 
         /// <summary>Returns the absolute value of a native signed integer.</summary>
         /// <param name="value">A number that is greater than <see cref="IntPtr.MinValue" />, but less than or equal to <see cref="IntPtr.MaxValue" />.</param>
-        /// <returns>A native signed integer, x, such that 0 ≤ x ≤ <see cref="IntPtr.MaxValue" />.</returns>
+        /// <returns>A native signed integer, x, such that 0 \u2264 x \u2264 <see cref="IntPtr.MaxValue" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Abs(nint value)
         {
@@ -585,7 +585,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///
@@ -724,7 +724,7 @@ namespace System
         /// <param name="min">The lower bound of the result.</param>
         /// <param name="max">The upper bound of the result.</param>
         /// <returns>
-        ///   <paramref name="value" /> if <paramref name="min" /> ≤ <paramref name="value" /> ≤ <paramref name="max" />.
+        ///   <paramref name="value" /> if <paramref name="min" /> \u2264 <paramref name="value" /> \u2264 <paramref name="max" />.
         ///
         ///   -or-
         ///
@@ -1320,9 +1320,14 @@ namespace System
                     return Round(value);
 
                 // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                    // manually fold BitDecrement(0.5)
+                    return Truncate(value + CopySign(0.49999999999999994, value));
+                }
             }
 
             return Round(value, 0, mode);
@@ -1359,13 +1364,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        double fraction = ModF(value, &value);
-
-                        if (Abs(fraction) >= 0.5)
-                        {
-                            value += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5)
+                        value = Truncate(value + CopySign(0.49999999999999994, value));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero

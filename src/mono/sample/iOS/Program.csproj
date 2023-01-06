@@ -71,6 +71,9 @@
     </MonoAOTCompiler>
 
     <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'Full'" Assemblies="@(BundleAssemblies)" />
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"

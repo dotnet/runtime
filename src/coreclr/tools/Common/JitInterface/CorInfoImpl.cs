@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
@@ -28,6 +30,10 @@ using ILCompiler.DependencyAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
+
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
+#pragma warning disable IDE0060
 
 namespace Internal.JitInterface
 {
@@ -221,7 +227,9 @@ namespace Internal.JitInterface
                 Dictionary<object, IntPtr> objectToHandle = new Dictionary<object, IntPtr>();
                 Dictionary<IntPtr, object> handleToObject = new Dictionary<IntPtr, object>();
 
-                ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, out var instrumentationData);
+                MemoryStream memoryStreamInstrumentationData = new MemoryStream();
+                ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, memoryStreamInstrumentationData);
+                var instrumentationData = memoryStreamInstrumentationData.ToArray();
 
                 for (int i = 0; i < pgoData.Length; i++)
                 {
@@ -471,8 +479,24 @@ namespace Internal.JitInterface
 #endif
                 );
 #pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+#if READYTORUN
+            if (_methodColdCodeNode != null)
+            {
+                var relocs2 = _coldCodeRelocs.ToArray();
+                Array.Sort(relocs2, (x, y) => (x.Offset - y.Offset));
+                var coldObjectData = new ObjectNode.ObjectData(_coldCode,
+                    relocs2,
+                    alignment,
+                    new ISymbolDefinitionNode[] { _methodColdCodeNode });
+                _methodColdCodeNode.SetCode(coldObjectData);
+                _methodCodeNode.ColdCodeNode = _methodColdCodeNode;
+            }
+#endif
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
+#endif
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
             _methodCodeNode.InitializeGCInfo(_gcInfo);
             _methodCodeNode.InitializeEHInfo(ehInfo);
@@ -535,10 +559,15 @@ namespace Internal.JitInterface
                     }
                 }
             }
+
+            if (_synthesizedPgoDependencies != null)
+            {
+                Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
+            }
 #else
-            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+            var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -548,6 +577,8 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
+
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
         }
 
         private void PublishROData()
@@ -612,7 +643,9 @@ namespace Internal.JitInterface
             }
 
             _methodCodeNode = null;
-
+#if READYTORUN
+            _methodColdCodeNode = null;
+#endif
             _code = null;
             _coldCode = null;
 
@@ -621,19 +654,27 @@ namespace Internal.JitInterface
 
             _codeRelocs = default(ArrayBuilder<Relocation>);
             _roDataRelocs = default(ArrayBuilder<Relocation>);
-
+#if READYTORUN
+            _coldCodeRelocs = default(ArrayBuilder<Relocation>);
+#endif
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
             _frameInfos = null;
 
+#if READYTORUN
+            _numColdFrameInfos = 0;
+            _usedColdFrameInfos = 0;
+            _coldFrameInfos = null;
+#endif
+
             _gcInfo = null;
             _ehClauses = null;
+            _additionalDependencies = null;
 
 #if !READYTORUN
             _debugInfo = null;
-
-            _additionalDependencies = null;
 #endif
+
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
@@ -646,6 +687,7 @@ namespace Internal.JitInterface
             _stashedPrecodeFixups.Clear();
             _stashedInlinedMethods.Clear();
             _ilBodiesNeeded = null;
+            _synthesizedPgoDependencies = null;
 #endif
 
             _instantiationToJitVisibleInstantiation = null;
@@ -653,7 +695,7 @@ namespace Internal.JitInterface
             _pgoResults.Clear();
         }
 
-        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>();
+        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
         private List<object> _handleToObject = new List<object>();
 
         private const int handleMultiplier = 8;
@@ -680,24 +722,24 @@ namespace Internal.JitInterface
             return handle;
         }
 
-        private object HandleToObject(IntPtr handle)
+        private object HandleToObject(void* handle)
         {
 #if DEBUG
-            handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
+            handle = (void*)(~s_handleHighBitSet & (nint)handle);
 #endif
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
 
-        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((IntPtr)method);
+        private MethodDesc HandleToObject(CORINFO_METHOD_STRUCT_* method) => (MethodDesc)HandleToObject((void*)method);
         private CORINFO_METHOD_STRUCT_* ObjectToHandle(MethodDesc method) => (CORINFO_METHOD_STRUCT_*)ObjectToHandle((object)method);
-        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((IntPtr)type);
+        private TypeDesc HandleToObject(CORINFO_CLASS_STRUCT_* type) => (TypeDesc)HandleToObject((void*)type);
         private CORINFO_CLASS_STRUCT_* ObjectToHandle(TypeDesc type) => (CORINFO_CLASS_STRUCT_*)ObjectToHandle((object)type);
-        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((IntPtr)field);
+        private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) => (FieldDesc)HandleToObject((void*)field);
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) => (CORINFO_FIELD_STRUCT_*)ObjectToHandle((object)field);
-        private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((IntPtr)module);
+        private MethodILScope HandleToObject(CORINFO_MODULE_STRUCT_* module) => (MethodIL)HandleToObject((void*)module);
         private CORINFO_MODULE_STRUCT_* ObjectToHandle(MethodILScope methodIL) => (CORINFO_MODULE_STRUCT_*)ObjectToHandle((object)methodIL);
-        private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((IntPtr)method);
+        private MethodSignature HandleToObject(MethodSignatureInfo* method) => (MethodSignature)HandleToObject((void*)method);
         private MethodSignatureInfo* ObjectToHandle(MethodSignature method) => (MethodSignatureInfo*)ObjectToHandle((object)method);
 
         private bool Get_CORINFO_METHOD_INFO(MethodDesc method, MethodIL methodIL, CORINFO_METHOD_INFO* methodInfo)
@@ -912,12 +954,12 @@ namespace Internal.JitInterface
 
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
-            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(method)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
+            return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(method)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
         }
 
         private CORINFO_CONTEXT_STRUCT* contextFromType(TypeDesc type)
         {
-            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(type)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
+            return (CORINFO_CONTEXT_STRUCT*)(((nuint)ObjectToHandle(type)) | (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
         }
 
         private static CORINFO_CONTEXT_STRUCT* contextFromMethodBeingCompiled()
@@ -932,13 +974,13 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled;
             }
 
-            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            if (((nuint)contextStruct & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
                 return null;
             }
             else
             {
-                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
         }
 
@@ -949,13 +991,13 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled.OwningType;
             }
 
-            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            if (((nuint)contextStruct & (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
             {
-                return HandleToObject((CORINFO_CLASS_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+                return HandleToObject((CORINFO_CLASS_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
             }
             else
             {
-                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK)).OwningType;
             }
         }
 
@@ -966,7 +1008,7 @@ namespace Internal.JitInterface
                 return MethodBeingCompiled.HasInstantiation ? (TypeSystemEntity)MethodBeingCompiled: (TypeSystemEntity)MethodBeingCompiled.OwningType;
             }
 
-            return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+            return (TypeSystemEntity)HandleToObject((void*)((nuint)contextStruct & ~(nuint)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
         private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
@@ -989,7 +1031,24 @@ namespace Internal.JitInterface
             if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
+            {
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
+
+                // The JIT only cares about the sealed flag if the method is virtual, or if
+                // it is a delegate.
+
+                // method or class might have the final bit
+                if (method.IsUnboxingThunk())
+                {
+                    if (_compilation.IsEffectivelySealed(method.GetUnboxedMethod()))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
+                else
+                {
+                    if (_compilation.IsEffectivelySealed(method))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
+            }
             if (method.IsAbstract)
                 result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             if (method.IsConstructor || method.IsStaticConstructor)
@@ -999,10 +1058,6 @@ namespace Internal.JitInterface
             // See if we need to embed a .cctor call at the head of the
             // method body.
             //
-
-            // method or class might have the final bit
-            if (_compilation.IsEffectivelySealed(method))
-                result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
@@ -1592,7 +1647,7 @@ namespace Internal.JitInterface
             var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
-                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
+                MethodBeingCompiled : HandleToObject((void*)pResolvedToken.tokenContext);
 
             object result = GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, pResolvedToken.token);
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
@@ -1646,7 +1701,7 @@ namespace Internal.JitInterface
             var methodIL = HandleToObject(pResolvedToken.tokenScope);
 
             var typeOrMethodContext = (pResolvedToken.tokenContext == contextFromMethodBeingCompiled()) ?
-                MethodBeingCompiled : HandleToObject((IntPtr)pResolvedToken.tokenContext);
+                MethodBeingCompiled : HandleToObject((void*)pResolvedToken.tokenContext);
 
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
@@ -1800,19 +1855,56 @@ namespace Internal.JitInterface
         private bool isValidStringRef(CORINFO_MODULE_STRUCT_* module, uint metaTOK)
         { throw new NotImplementedException("isValidStringRef"); }
 
-        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size)
+        private int getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, char* buffer, int size, int startIndex)
         {
             Debug.Assert(size >= 0);
+            Debug.Assert(startIndex >= 0);
 
             MethodILScope methodIL = HandleToObject(module);
             string str = (string)methodIL.GetObject((int)metaTOK);
 
-            if (buffer != null)
+            int result = (str.Length >= startIndex) ? (str.Length - startIndex) : 0;
+            if (buffer != null && result != 0)
             {
                 // Copy str's content to buffer
-                str.AsSpan(0, Math.Min(size, str.Length)).CopyTo(new Span<char>(buffer, size));
+                str.AsSpan(startIndex, Math.Min(size, result)).CopyTo(new Span<char>(buffer, size));
             }
-            return str.Length;
+            return result;
+        }
+
+        private nuint printObjectDescription(CORINFO_OBJECT_STRUCT_* handle, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        {
+            Debug.Assert(handle != null);
+
+            return PrintFromUtf16(HandleToObject(handle).ToString(), buffer, bufferSize, pRequiredBufferSize);
+        }
+
+        private nuint PrintFromUtf16(ReadOnlySpan<char> utf16, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
+        {
+            int written = 0;
+            if (bufferSize > 0)
+            {
+                OperationStatus status = Utf8.FromUtf16(utf16, new Span<byte>(buffer, checked((int)(bufferSize - 1))), out _, out written);
+                // Always null-terminate
+                buffer[written] = 0;
+
+                if (status == OperationStatus.Done)
+                {
+                    if (pRequiredBufferSize != null)
+                    {
+                        *pRequiredBufferSize = (nuint)written + 1;
+                    }
+
+                    return (nuint)written;
+                }
+            }
+
+            if (pRequiredBufferSize != null)
+            {
+                *pRequiredBufferSize = (nuint)Encoding.UTF8.GetByteCount(utf16) + 1;
+            }
+
+            return (nuint)written;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -1821,22 +1913,21 @@ namespace Internal.JitInterface
             return asCorInfoType(type);
         }
 
-        private byte* getClassName(CORINFO_CLASS_STRUCT_* cls)
-        {
-            var type = HandleToObject(cls);
-            StringBuilder nameBuilder = new StringBuilder();
-            TypeString.Instance.AppendName(nameBuilder, type);
-            return (byte*)GetPin(StringToUTF8(nameBuilder.ToString()));
-        }
-
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
         {
-            var type = HandleToObject(cls) as MetadataType;
-            if (type != null)
+            TypeDesc type = HandleToObject(cls);
+            if (type.GetTypeDefinition() is EcmaType ecmaType)
+            {
+                var reader = ecmaType.MetadataReader;
+                if (namespaceName != null)
+                    *namespaceName = reader.GetTypeNamespacePointer(ecmaType.Handle);
+                return reader.GetTypeNamePointer(ecmaType.Handle);
+            }
+            else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(StringToUTF8(type.Namespace));
-                return (byte*)GetPin(StringToUTF8(type.Name));
+                    *namespaceName = (byte*)GetPin(StringToUTF8(mdType.Namespace));
+                return (byte*)GetPin(StringToUTF8(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -1853,37 +1944,11 @@ namespace Internal.JitInterface
         }
 
 
-        private int appendClassName(char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
+        private nuint printClassName(CORINFO_CLASS_STRUCT_* cls, byte* buffer, nuint bufferSize, nuint* pRequiredBufferSize)
         {
-            // We support enough of this to make SIMD work, but not much else.
-
-            Debug.Assert(fNamespace && !fFullInst && !fAssembly);
-
-            var type = HandleToObject(cls);
-            string name = TypeString.Instance.FormatName(type);
-
-            int length = name.Length;
-            if (pnBufLen > 0)
-            {
-                char* buffer = *ppBuf;
-                int lengthToCopy = Math.Min(name.Length, pnBufLen);
-                for (int i = 0; i < lengthToCopy; i++)
-                    buffer[i] = name[i];
-                if (name.Length < pnBufLen)
-                {
-                    buffer[name.Length] = (char)0;
-                }
-                else
-                {
-                    buffer[pnBufLen - 1] = (char)0;
-                    lengthToCopy -= 1;
-                }
-
-                pnBufLen -= lengthToCopy;
-                *ppBuf = buffer + lengthToCopy;
-            }
-
-            return length;
+            TypeDesc type = HandleToObject(cls);
+            string name = JitTypeNameFormatter.Instance.FormatName(type);
+            return PrintFromUtf16(name, buffer, bufferSize, pRequiredBufferSize);
         }
 
         private bool isValueClass(CORINFO_CLASS_STRUCT_* cls)
@@ -2237,18 +2302,26 @@ namespace Internal.JitInterface
             return result;
         }
 
+        private Dictionary<TypeDesc, uint> _classNumInstanceFields = new();
+
         private uint getClassNumInstanceFields(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
 
-            uint result = 0;
+            var lookupType = type.GetTypeDefinition(); // The number of fields on an instantiation is the same as on the generic definition
+
+            if (_classNumInstanceFields.TryGetValue(lookupType, out uint numInstanceFields))
+                return numInstanceFields;
+
+            numInstanceFields = 0;
             foreach (var field in type.GetFields())
             {
                 if (!field.IsStatic)
-                    result++;
+                    numInstanceFields++;
             }
 
-            return result;
+            _classNumInstanceFields.Add(lookupType, numInstanceFields);
+            return numInstanceFields;
         }
 
         private CORINFO_FIELD_STRUCT_* getFieldInClass(CORINFO_CLASS_STRUCT_* clsHnd, int num)
@@ -2302,11 +2375,6 @@ namespace Internal.JitInterface
             var type = HandleToObject(cls);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
-        }
-
-        private byte* getHelperName(CorInfoHelpFunc helpFunc)
-        {
-            return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
         }
 
         private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
@@ -2678,6 +2746,36 @@ namespace Internal.JitInterface
             return merged == type1;
         }
 
+        private TypeCompareState isEnum(CORINFO_CLASS_STRUCT_* cls, CORINFO_CLASS_STRUCT_** underlyingType)
+        {
+            Debug.Assert(cls != null);
+
+            if (underlyingType != null)
+            {
+                *underlyingType = null;
+            }
+
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsGenericParameter)
+            {
+                return TypeCompareState.May;
+            }
+
+            if (type.IsEnum)
+            {
+                if (underlyingType != null)
+                {
+                    *underlyingType = ObjectToHandle(type.UnderlyingType);
+                }
+                return TypeCompareState.Must;
+            }
+            else
+            {
+                return TypeCompareState.MustNot;
+            }
+        }
+
         private CORINFO_CLASS_STRUCT_* getParentType(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getParentType"); }
 
@@ -2757,19 +2855,10 @@ namespace Internal.JitInterface
             return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
         }
 
-        private byte* getFieldName(CORINFO_FIELD_STRUCT_* ftn, byte** moduleName)
+        private nuint printFieldName(CORINFO_FIELD_STRUCT_* fld, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
-            var field = HandleToObject(ftn);
-            if (moduleName != null)
-            {
-                MetadataType typeDef = field.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(field.Name));
+            FieldDesc field = HandleToObject(fld);
+            return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
@@ -2885,7 +2974,7 @@ namespace Internal.JitInterface
         private CorInfoTypeWithMod getArgType(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet)
         {
             int index = (int)args;
-            object sigObj = HandleToObject((IntPtr)sig->methodSignature);
+            object sigObj = HandleToObject((void*)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
 
@@ -2910,7 +2999,7 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args)
         {
             int index = (int)args;
-            object sigObj = HandleToObject((IntPtr)sig->methodSignature);
+            object sigObj = HandleToObject((void*)sig->methodSignature);
 
             MethodSignature methodSig = sigObj as MethodSignature;
             if (methodSig != null)
@@ -3053,20 +3142,10 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private byte* getMethodName(CORINFO_METHOD_STRUCT_* ftn, byte** moduleName)
+        private nuint printMethodName(CORINFO_METHOD_STRUCT_* ftn, byte* buffer, nuint bufferSize, nuint* requiredBufferSize)
         {
             MethodDesc method = HandleToObject(ftn);
-
-            if (moduleName != null)
-            {
-                MetadataType typeDef = method.OwningType.GetTypeDefinition() as MetadataType;
-                if (typeDef != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
-                else
-                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
-            }
-
-            return (byte*)GetPin(StringToUTF8(method.Name));
+            return PrintFromUtf16(method.Name, buffer, bufferSize, requiredBufferSize);
         }
 
         private static string getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
@@ -3100,21 +3179,47 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            string result;
-            string classResult;
-            string namespaceResult;
-            string enclosingResult;
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            {
+                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                var reader = owningType.MetadataReader;
 
-            result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+                if (className != null)
+                    *className = reader.GetTypeNamePointer(owningType.Handle);
+                if (namespaceName != null)
+                *namespaceName = reader.GetTypeNamespacePointer(owningType.Handle);
 
-            if (className != null)
-                *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
-            if (namespaceName != null)
-                *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
-            if (enclosingClassName != null)
-                *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+                // Query enclosingClassName when the method is in a nested class
+                // and get the namespace of enclosing classes (nested class's namespace is empty)
+                var containingType = owningType.ContainingType as EcmaType;
+                if (containingType != null)
+                {
+                    if (enclosingClassName != null)
+                        *enclosingClassName = reader.GetTypeNamePointer(containingType.Handle);
+                    if (namespaceName != null)
+                        *namespaceName = reader.GetTypeNamespacePointer(containingType.Handle);
+                }
 
-            return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+                return reader.GetMethodNamePointer(ecmaMethod.Handle);
+            }
+            else
+            {
+                string result;
+                string classResult;
+                string namespaceResult;
+                string enclosingResult;
+
+                result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+
+                if (className != null)
+                    *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
+                if (namespaceName != null)
+                    *namespaceName = namespaceResult != null ? (byte*)GetPin(StringToUTF8(namespaceResult)) : null;
+                if (enclosingClassName != null)
+                    *enclosingClassName = enclosingResult != null ? (byte*)GetPin(StringToUTF8(enclosingResult)) : null;
+
+                return result != null ? (byte*)GetPin(StringToUTF8(result)) : null;
+            }
         }
 
         private uint getMethodHash(CORINFO_METHOD_STRUCT_* ftn)
@@ -3163,6 +3268,29 @@ namespace Internal.JitInterface
                 ppIndirection = null;
                 return (void*)ObjectToHandle(entryPoint);
             }
+        }
+
+        public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
+        {
+            ReadyToRunHelperId res;
+            switch (helper)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetNonGCStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadStaticBase;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
+                    res = ReadyToRunHelperId.GetThreadNonGcStaticBase;
+                    break;
+                default:
+                    throw new NotImplementedException("ReadyToRun: " + helper.ToString());
+            }
+            return res;
         }
 
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
@@ -3241,25 +3369,6 @@ namespace Internal.JitInterface
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
 
-        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, void** ppIndirection)
-        {
-            FieldDesc fieldDesc = HandleToObject(field);
-            Debug.Assert(fieldDesc.HasRva);
-            ISymbolNode node = _compilation.GetFieldRvaData(fieldDesc);
-            void *handle = (void *)ObjectToHandle(node);
-            if (node.RepresentsIndirectionCell)
-            {
-                *ppIndirection = handle;
-                return null;
-            }
-            else
-            {
-                if (ppIndirection != null)
-                    *ppIndirection = null;
-                return handle;
-            }
-        }
-
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
             if (pIsSpeculative != null)
@@ -3280,8 +3389,6 @@ namespace Internal.JitInterface
 
         private uint getFieldThreadLocalStoreID(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
         { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
-        private void addActiveDependency(CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
-        { throw new NotImplementedException("addActiveDependency"); }
         private CORINFO_METHOD_STRUCT_* GetDelegateCtor(CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
         { throw new NotImplementedException("GetDelegateCtor"); }
         private void MethodCompileComplete(CORINFO_METHOD_STRUCT_* methHnd)
@@ -3313,8 +3420,16 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+#if READYTORUN
+        private int _numColdFrameInfos;
+        private int _usedColdFrameInfos;
+        private FrameInfo[] _coldFrameInfos;
+#endif
+
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
+
+        private DependencyList _additionalDependencies;
 
         private void allocMem(ref AllocMemArgs args)
         {
@@ -3323,6 +3438,10 @@ namespace Internal.JitInterface
 
             if (args.coldCodeSize != 0)
             {
+
+#if READYTORUN
+                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
                 args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
                 args.coldCodeBlockRW = args.coldCodeBlock;
             }
@@ -3366,11 +3485,27 @@ namespace Internal.JitInterface
             {
                 _frameInfos = new FrameInfo[_numFrameInfos];
             }
+
+#if READYTORUN
+            if (_numColdFrameInfos > 0)
+            {
+                _coldFrameInfos = new FrameInfo[_numColdFrameInfos];
+            }
+#endif
         }
 
         private void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint unwindSize)
         {
-            _numFrameInfos++;
+#if READYTORUN
+            if (isColdCode)
+            {
+                _numColdFrameInfos++;
+            }
+            else
+#endif
+            {
+                _numFrameInfos++;
+            }
         }
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
@@ -3386,11 +3521,15 @@ namespace Internal.JitInterface
                     flags |= FrameInfoFlags.ReversePInvoke;
             }
 
-            byte[] blobData = new byte[unwindSize];
+            byte[] blobData = null;
 
-            for (uint i = 0; i < unwindSize; i++)
+            if (pUnwindBlock != null || pColdCode == null)
             {
-                blobData[i] = pUnwindBlock[i];
+                blobData = new byte[unwindSize];
+                for (uint i = 0; i < unwindSize; i++)
+                {
+                    blobData[i] = pUnwindBlock[i];
+                }
             }
 
 #if !READYTORUN
@@ -3401,8 +3540,18 @@ namespace Internal.JitInterface
                 blobData = CompressARM64CFI(blobData);
             }
 #endif
-
-            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+#if READYTORUN
+            if (pColdCode == null)
+#endif
+            {
+                _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#if READYTORUN
+            else
+            {
+                _coldFrameInfos[_usedColdFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            }
+#endif
         }
 
         private void* allocGCInfo(UIntPtr size)
@@ -3443,7 +3592,9 @@ namespace Internal.JitInterface
 
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
-
+#if READYTORUN
+        private ArrayBuilder<Relocation> _coldCodeRelocs;
+#endif
 
         /// <summary>
         /// Various type of block.
@@ -3521,6 +3672,11 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     length = _roData.Length;
                     return ref _roDataRelocs;
+#if READYTORUN
+                case BlockType.ColdCode:
+                    length = _coldCode.Length;
+                    return ref _coldCodeRelocs;
+#endif
                 default:
                     throw new NotImplementedException("Arbitrary relocs");
             }
@@ -3594,8 +3750,13 @@ namespace Internal.JitInterface
                     break;
 
                 case BlockType.ColdCode:
-                    // TODO: Arbitrary relocs
+#if READYTORUN
+                    Debug.Assert(_methodColdCodeNode != null);
+                    relocTarget = _methodColdCodeNode;
+                    break;
+#else
                     throw new NotImplementedException("ColdCode relocs");
+#endif
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
@@ -3609,7 +3770,7 @@ namespace Internal.JitInterface
 
                 default:
                     // Reloc points to something outside of the generated blocks
-                    var targetObject = HandleToObject((IntPtr)target);
+                    var targetObject = HandleToObject(target);
 
 #if READYTORUN
                     if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
@@ -3794,16 +3955,13 @@ namespace Internal.JitInterface
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
-        private PgoSchemaElem[] getPgoInstrumentationResults(MethodDesc method)
-        {
-            return _compilation.ProfileData[method]?.SchemaData;
-        }
+        private MemoryStream _cachedMemoryStream = new MemoryStream();
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData, Func<TypeDesc, bool> typeFilter = null)
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
-            MemoryStream msInstrumentationData = new MemoryStream();
-            BinaryWriter bwInstrumentationData = new BinaryWriter(msInstrumentationData);
+            instrumentationData.SetLength(0);
+            BinaryWriter bwInstrumentationData = new BinaryWriter(instrumentationData);
             for (int i = 0; i < nativeSchemas.Length; i++)
             {
                 if ((bwInstrumentationData.BaseStream.Position % 8) == 4)
@@ -3839,7 +3997,7 @@ namespace Internal.JitInterface
                     {
                         foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
                         {
-                            IntPtr ptrVal;
+                            nint ptrVal;
 
                             if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
                             {
@@ -3865,8 +4023,6 @@ namespace Internal.JitInterface
             }
 
             bwInstrumentationData.Flush();
-
-            instrumentationData = msInstrumentationData.ToArray();
         }
 
         private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
@@ -3876,7 +4032,19 @@ namespace Internal.JitInterface
 
             if (!_pgoResults.TryGetValue(methodDesc, out PgoInstrumentationResults pgoResults))
             {
-                var pgoResultsSchemas = getPgoInstrumentationResults(methodDesc);
+#if READYTORUN
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData.GetAllowSynthesis(_compilation, methodDesc, out bool isSynthesized)?.SchemaData;
+
+                if (pgoResultsSchemas != null && isSynthesized && _compilation.ProfileData.EmbedPgoDataInR2RImage)
+                {
+                    if (_synthesizedPgoDependencies == null)
+                        _synthesizedPgoDependencies = new HashSet<MethodDesc>();
+
+                    _synthesizedPgoDependencies.Add(methodDesc);
+                }
+#else
+                PgoSchemaElem[] pgoResultsSchemas = _compilation.ProfileData[methodDesc]?.SchemaData;
+#endif
                 if (pgoResultsSchemas == null)
                 {
                     pgoResults.hr = HRESULT.E_NOTIMPL;
@@ -3884,13 +4052,14 @@ namespace Internal.JitInterface
                 else
                 {
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
-                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, out var instrumentationData
+                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
 #if !READYTORUN
                         , _compilation.CanConstructType
 #endif
                         );
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
 
+                    var instrumentationData = _cachedMemoryStream.ToArray();
                     pgoResults.pInstrumentationData = (byte*)GetPin(instrumentationData);
                     pgoResults.countSchemaItems = (uint)nativeSchemas.Length;
                     pgoResults.pSchema = (PgoInstrumentationSchema*)GetPin(nativeSchemas);
@@ -3924,8 +4093,11 @@ namespace Internal.JitInterface
             else
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
-                // set is not a reason to not support usage of it.
-                if (!isMethodDefinedInCoreLib())
+                // set is not a reason to not support usage of it. Except for functions which check if a given
+                // feature is supported or hardware accelerated.
+                if (!isMethodDefinedInCoreLib() ||
+                    MethodBeingCompiled.Name == "get_IsSupported" ||
+                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
@@ -3942,5 +4114,25 @@ namespace Internal.JitInterface
             return supportEnabled ? _compilation.InstructionSetSupport.IsInstructionSetSupported(instructionSet) : false;
         }
 #endif
+
+        private static bool TryReadRvaFieldData(FieldDesc field, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
+            Debug.Assert(field.IsStatic);
+            Debug.Assert(field.HasRva);
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field is EcmaField ecmaField)
+            {
+                ReadOnlySpan<byte> rvaData = ecmaField.GetFieldRvaData();
+                if (rvaData.Length >= bufferSize && valueOffset <= rvaData.Length - bufferSize)
+                {
+                    rvaData.Slice(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

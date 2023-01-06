@@ -42,8 +42,6 @@ LPVOID SetupOleContext()
 
     IUnknown* pObjCtx = NULL;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
 #ifdef FEATURE_COMINTEROP
     if (g_fComStarted)
     {
@@ -65,8 +63,6 @@ LPVOID SetupOleContext()
         }
     }
 #endif // FEATURE_COMINTEROP
-
-    END_ENTRYPOINT_VOIDRET;
 
     RETURN pObjCtx;
 }

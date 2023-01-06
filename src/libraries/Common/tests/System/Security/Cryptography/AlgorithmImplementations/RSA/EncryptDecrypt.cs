@@ -696,8 +696,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
+#pragma warning disable SYSLIB0048
                 Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
                 Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+#pragma warning restore SYSLIB0048
             }
         }
 

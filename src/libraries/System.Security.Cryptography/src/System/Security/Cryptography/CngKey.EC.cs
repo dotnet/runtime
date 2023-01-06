@@ -26,8 +26,9 @@ namespace System.Security.Cryptography
         {
             if (IsECNamedCurve())
             {
-                oidValue = null;
-                return _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+                string? curveName = _keyHandle.GetPropertyAsString(KeyPropertyName.ECCCurveName, CngPropertyOptions.None);
+                oidValue = curveName is null ? null : OidLookup.ToOid(curveName, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: false);
+                return curveName;
             }
 
             // Use hard-coded values (for use with pre-Win10 APIs)
@@ -81,130 +82,52 @@ namespace System.Security.Cryptography
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static CngAlgorithm EcdsaCurveNameToAlgorithm(string name)
+        internal static CngAlgorithm EcdsaCurveNameToAlgorithm(ReadOnlySpan<char> name)
         {
-            switch (name)
+            const int MaxCurveNameLength = 16;
+            Span<char> nameLower = stackalloc char[MaxCurveNameLength];
+            int written = name.ToLowerInvariant(nameLower);
+
+            // Either it is empty or too big for the buffer, and the buffer is large enough to hold all mapped
+            // curve names, so return the generic algorithm.
+            if (written < 1)
             {
-                case "nistP256":
-                case "ECDSA_P256":
-                    return CngAlgorithm.ECDsaP256;
-
-                case "nistP384":
-                case "ECDSA_P384":
-                    return CngAlgorithm.ECDsaP384;
-
-                case "nistP521":
-                case "ECDSA_P521":
-                    return CngAlgorithm.ECDsaP521;
+                return CngAlgorithm.ECDsa;
             }
 
-            // All other curves are new in Win10 so use generic algorithm
-            return CngAlgorithm.ECDsa;
+            return nameLower.Slice(0, written) switch
+            {
+                "nistp256" or "ecdsa_p256" => CngAlgorithm.ECDsaP256,
+                "nistp384" or "ecdsa_p384" => CngAlgorithm.ECDsaP384,
+                "nistp521" or "ecdsa_p521" => CngAlgorithm.ECDsaP521,
+                _ => CngAlgorithm.ECDsa, // All other curves are new in Win10 so use generic algorithm
+            };
         }
 
         /// <summary>
         /// Map a curve name to algorithm. This enables curves that worked pre-Win10
         /// to work with newer APIs for import and export.
         /// </summary>
-        internal static CngAlgorithm EcdhCurveNameToAlgorithm(string name)
+        internal static CngAlgorithm EcdhCurveNameToAlgorithm(ReadOnlySpan<char> name)
         {
-            switch (name)
+            const int MaxCurveNameLength = 16;
+            Span<char> nameLower = stackalloc char[MaxCurveNameLength];
+            int written = name.ToLowerInvariant(nameLower);
+
+            // Either it is empty or too big for the buffer, and the buffer is large enough to hold all mapped
+            // curve names, so return the generic algorithm.
+            if (written < 1)
             {
-                case "nistP256":
-                case "ECDH_P256":
-                case "ECDSA_P256":
-                    return CngAlgorithm.ECDiffieHellmanP256;
-
-                case "nistP384":
-                case "ECDH_P384":
-                case "ECDSA_P384":
-                    return CngAlgorithm.ECDiffieHellmanP384;
-
-                case "nistP521":
-                case "ECDH_P521":
-                case "ECDSA_P521":
-                    return CngAlgorithm.ECDiffieHellmanP521;
+                return CngAlgorithm.ECDiffieHellman;
             }
 
-            // All other curves are new in Win10 so use generic algorithm
-            return CngAlgorithm.ECDiffieHellman;
-        }
-
-        internal static CngKey Create(ECCurve curve, Func<string?, CngAlgorithm> algorithmResolver)
-        {
-            System.Diagnostics.Debug.Assert(algorithmResolver != null);
-
-            curve.Validate();
-
-            CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
+            return nameLower.Slice(0, written) switch
             {
-                ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+                "nistp256" or "ecdsa_p256" or "ecdh_p256" => CngAlgorithm.ECDiffieHellmanP256,
+                "nistp384" or "ecdsa_p384" or "ecdh_p384" => CngAlgorithm.ECDiffieHellmanP384,
+                "nistp521" or "ecdsa_p521" or "ecdh_p521" => CngAlgorithm.ECDiffieHellmanP521,
+                _ => CngAlgorithm.ECDiffieHellman, // All other curves are new in Win10 so use generic algorithm
             };
-
-            CngAlgorithm alg;
-
-            if (curve.IsNamed)
-            {
-                if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
-                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
-
-                // Map curve name to algorithm to support pre-Win10 curves
-                alg = algorithmResolver(curve.Oid.FriendlyName);
-
-                if (CngKey.IsECNamedCurve(alg.Algorithm))
-                {
-                    creationParameters.Parameters.Add(GetPropertyFromNamedCurve(curve));
-                }
-                else
-                {
-                    if (alg == CngAlgorithm.ECDsaP256 || alg == CngAlgorithm.ECDiffieHellmanP256 ||
-                        alg == CngAlgorithm.ECDsaP384 || alg == CngAlgorithm.ECDiffieHellmanP384 ||
-                        alg == CngAlgorithm.ECDsaP521 || alg == CngAlgorithm.ECDiffieHellmanP521)
-                    {
-                        // No parameters required, the algorithm ID has everything built-in.
-                    }
-                    else
-                    {
-                        Debug.Fail($"Unknown algorithm {alg}");
-                        throw new ArgumentException(SR.Cryptography_InvalidKeySize);
-                    }
-                }
-            }
-            else if (curve.IsPrime)
-            {
-                byte[] parametersBlob = ECCng.GetPrimeCurveParameterBlob(ref curve);
-
-                CngProperty prop = new CngProperty(
-                    KeyPropertyName.ECCParameters,
-                    parametersBlob,
-                    CngPropertyOptions.None);
-
-                creationParameters.Parameters.Add(prop);
-                alg = algorithmResolver(null);
-            }
-            else
-            {
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
-            }
-
-            try
-            {
-                return Create(alg, null, creationParameters);
-            }
-            catch (CryptographicException e)
-            {
-                Interop.NCrypt.ErrorCode errorCode = (Interop.NCrypt.ErrorCode)e.HResult;
-
-                if (errorCode == Interop.NCrypt.ErrorCode.NTE_INVALID_PARAMETER ||
-                    errorCode == Interop.NCrypt.ErrorCode.NTE_NOT_SUPPORTED)
-                {
-                    string? target = curve.IsNamed ? curve.Oid.FriendlyName : curve.CurveType.ToString();
-                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, target), e);
-                }
-
-                throw;
-            }
         }
-
     }
 }

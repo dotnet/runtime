@@ -10,11 +10,11 @@ namespace DebuggerTests
         private int d;
         public int e;
         protected int f;
-        public int G
+        private int G
         {
             get {return f + 1;}
         }
-        public int H => f;
+        private int H => f;
 
         public ClassWithoutDebugSymbolsToInherit()
         {

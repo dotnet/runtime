@@ -18,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public Function(params object[] args)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Function), args))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         internal Function(IntPtr jsHandle) : base(jsHandle)

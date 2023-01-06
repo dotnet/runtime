@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
             return new ConstructorContext(type).CreateInstance!;
         }
 
-        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 
@@ -49,11 +49,6 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
-
-            if (parameterCount > JsonConstants.MaxParameterCount)
-            {
-                return null;
-            }
 
             return (arguments) =>
             {

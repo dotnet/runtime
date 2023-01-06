@@ -49,9 +49,9 @@ namespace LibraryImportGenerator.UnitTests
                         public void {|#3:FromUnmanaged|}(ManagedToUnmanagedIn unmanaged) {}
 
                         public S {|#4:ToManaged|}() => default;
-                
+
                         public void {|#5:Free|}() {}
-                
+
                         public void {|#6:OnInvoked|}() {}
 
                         public ref byte {|#7:GetPinnableReference|}() => ref Unsafe.NullRef<byte>();
@@ -88,13 +88,13 @@ namespace LibraryImportGenerator.UnitTests
                     public struct ManagedToUnmanagedIn
                     {
                         public void {|#0:FromManaged|}(S s) {}
-                
+
                         public void {|#1:FromManaged|}(S s, Span<byte> buffer){}
-                
+
                         public ManagedToUnmanagedIn {|#2:ToUnmanaged|}() => default;
-                
+
                         public void {|#3:FromUnmanaged|}(ManagedToUnmanagedIn unmanaged) {}
-                
+
                         public S {|#4:ToManaged|}() => default;
 
                         public ReadOnlySpan<int> {|#5:GetManagedValuesSource|}() => default;

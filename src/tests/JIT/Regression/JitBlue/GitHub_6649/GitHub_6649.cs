@@ -18,7 +18,7 @@ namespace N
             return arr[0] + arr[arr.Length];
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             try
             {

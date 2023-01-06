@@ -4,9 +4,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Interop
 {
@@ -17,6 +14,19 @@ namespace Microsoft.Interop
     {
         private TypeSyntax? _syntax;
         public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
+
+        public virtual bool Equals(ManagedTypeInfo? other)
+        {
+            return other is not null
+                && Syntax.IsEquivalentTo(other.Syntax)
+                && FullTypeName == other.FullTypeName
+                && DiagnosticFormattedName == other.DiagnosticFormattedName;
+        }
+
+        public override int GetHashCode()
+        {
+            return FullTypeName.GetHashCode() ^ DiagnosticFormattedName.GetHashCode();
+        }
 
         protected ManagedTypeInfo(ManagedTypeInfo original)
         {
@@ -74,6 +84,7 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
         public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
         public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
+        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {

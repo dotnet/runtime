@@ -672,22 +672,21 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         EventReporter reporter(EventReporter::ERT_UnhandledException);
         EX_TRY
         {
+            WCHAR exceptionCodeString[MaxIntegerDecHexString + 1];
+            FormatInteger(exceptionCodeString, ARRAY_SIZE(exceptionCodeString), "%x", pExceptionInfo->ExceptionRecord->ExceptionCode);
+
+            WCHAR addressString[MaxIntegerDecHexString + 1];
+            FormatInteger(addressString, ARRAY_SIZE(addressString), "%p", (SIZE_T)pExceptionInfo->ExceptionRecord->ExceptionAddress);
+
             StackSString s;
-        InlineSString<80> ssErrorFormat;
-        if (!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONINFO))
-            ssErrorFormat.Set(W("exception code %1, exception address %2"));
-        SmallStackSString exceptionCodeString;
-        exceptionCodeString.Printf(W("%x"), pExceptionInfo->ExceptionRecord->ExceptionCode);
-        SmallStackSString addressString;
-        addressString.Printf(W("%p"), (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress);
-        s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, exceptionCodeString, addressString);
-        reporter.AddDescription(s);
-        if (pThread)
-        {
-            LogCallstackForEventReporter(reporter);
+            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, W("exception code %1, exception address %2"), 0, 0, exceptionCodeString, addressString);
+            reporter.AddDescription(s);
+            if (pThread)
+            {
+                LogCallstackForEventReporter(reporter);
+            }
         }
-        }
-            EX_CATCH
+        EX_CATCH
         {
             // We are reporting an exception.  If we throw while working on this, it is not fatal.
         }

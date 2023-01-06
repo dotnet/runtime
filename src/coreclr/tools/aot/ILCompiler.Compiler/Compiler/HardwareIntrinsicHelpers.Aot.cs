@@ -101,6 +101,14 @@ namespace ILCompiler
             public const int Lzcnt = 0x1000;
             public const int AvxVnni = 0x2000;
             public const int Movbe = 0x4000;
+            public const int Avx512f = 0x8000;
+            public const int Avx512f_vl = 0x10000;
+            public const int Avx512bw = 0x20000;
+            public const int Avx512bw_vl = 0x40000;
+            public const int Avx512cd = 0x80000;
+            public const int Avx512cd_vl = 0x100000;
+            public const int Avx512dq = 0x200000;
+            public const int Avx512dq_vl = 0x400000;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
@@ -140,6 +148,22 @@ namespace ILCompiler
                     InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
                     InstructionSet.X64_MOVBE => Movbe,
                     InstructionSet.X64_MOVBE_X64 => Movbe,
+                    InstructionSet.X64_AVX512F => Avx512f,
+                    InstructionSet.X64_AVX512F_X64 => Avx512f,
+                    InstructionSet.X64_AVX512F_VL => Avx512f_vl,
+                    InstructionSet.X64_AVX512F_VL_X64 => Avx512f_vl,
+                    InstructionSet.X64_AVX512BW => Avx512bw,
+                    InstructionSet.X64_AVX512BW_X64 => Avx512bw,
+                    InstructionSet.X64_AVX512BW_VL => Avx512bw_vl,
+                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512bw_vl,
+                    InstructionSet.X64_AVX512CD => Avx512cd,
+                    InstructionSet.X64_AVX512CD_X64 => Avx512cd,
+                    InstructionSet.X64_AVX512CD_VL => Avx512cd_vl,
+                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512cd_vl,
+                    InstructionSet.X64_AVX512DQ => Avx512dq,
+                    InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
+                    InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
+                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
 
                     // SSE and SSE2 are baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

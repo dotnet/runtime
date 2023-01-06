@@ -164,6 +164,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string LibraryFilePrefix { get; set; } = "";
 
     /// <summary>
+    /// Enables exporting symbols of methods decorated with UnmanagedCallersOnly Attribute containing a specified EntryPoint
+    /// </summary>
+    public bool EnableUnmanagedCallersOnlyMethodsExport { get; set; }
+
+    /// <summary>
     /// Path to the directory where LLVM binaries (opt and llc) are found.
     /// It's required if UseLLVM is set
     /// </summary>
@@ -478,6 +483,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        CheckExportSymbolsFile(_assembliesToCompile);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -568,7 +574,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -729,6 +735,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        if (EnableUnmanagedCallersOnlyMethodsExport)
+        {
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            ProxyFile proxyFile = _cache.NewFile(exportSymbolsFile);
+            proxyFiles.Add(proxyFile);
+
+            aotArgs.Add($"export-symbols-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("ExportSymbolsFile", proxyFile.TargetFile);
+        }
+
         // pass msym-dir if specified
         if (MsymPath != null)
         {
@@ -743,6 +759,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"data-outfile={proxyFile.TempFile}");
             aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
+
+        if (Profilers?.Length > 0)
+        {
+            foreach (var profiler in Profilers)
+            {
+                processArgs.Add($"\"--profile={profiler}\"");
+            }
+        }
+
 
         if (AotProfilePath?.Length > 0)
         {
@@ -1028,6 +1053,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             Log.LogError($"Failed to get assembly name for {asmPath}: {ex.Message}");
             return false;
+        }
+    }
+
+    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    {
+        if (!EnableUnmanagedCallersOnlyMethodsExport)
+            return;
+
+        foreach (var assemblyItem in assemblies)
+        {
+            string assembly = assemblyItem.GetMetadata("FullPath");
+            string assemblyFilename = Path.GetFileName(assembly);
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            if (!File.Exists(exportSymbolsFile))
+                Log.LogWarning($"EnableUnmanagedCallersOnlyMethodsExport is true, but no .exportsymbols file generated for assembly '{assemblyFilename}'. Check that the AOT compilation mode is full.");
         }
     }
 

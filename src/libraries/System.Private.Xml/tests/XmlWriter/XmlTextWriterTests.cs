@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterTests
 {
     public class XmlTextWriterTests
     {

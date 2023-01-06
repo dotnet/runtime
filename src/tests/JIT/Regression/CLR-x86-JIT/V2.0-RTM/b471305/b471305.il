@@ -17,7 +17,7 @@
 }
 .assembly extern xunit.core {}
 
-.class sealed Program
+.class public sealed Program
 {
    .field static int32 foo
 
@@ -48,7 +48,7 @@
   } 
 
  
-  .method static int32 Main(string[] args)
+  .method public static int32 Main()
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

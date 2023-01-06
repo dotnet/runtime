@@ -59,13 +59,13 @@ namespace System.Text.RegularExpressions.Tests
                 protected override void InitTrackCount() => base.runtrackcount = 12;
 
                 // Description:
-                // ○ Match if at the start position.
-                // ○ 1st capture group.
-                //     ○ Match a Unicode digit greedily at least 1 and at most 3 times.
-                // ○ Zero-width positive lookahead assertion.
-                //     ○ Loop greedily at least once.
-                //         ○ Match a Unicode digit exactly 3 times.
-                //     ○ Match if at a word boundary.
+                // * Match if at the start position.
+                // * 1st capture group.
+                //     * Match a Unicode digit greedily at least 1 and at most 3 times.
+                // * Zero-width positive lookahead assertion.
+                //     * Loop greedily at least once.
+                //         * Match a Unicode digit exactly 3 times.
+                //     * Match if at a word boundary.
 
                 protected override bool FindFirstChar()
                 {

@@ -14,6 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out long value)
         {
@@ -29,12 +30,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(long value)
         {
             if (value < I52_MIN_VALUE || value > I52_MAX_VALUE)
             {
-                throw new OverflowException($"Overflow: value ${value} is out of ${I52_MIN_VALUE} ${I52_MAX_VALUE} range");
+                throw new OverflowException(SR.Format(SR.ValueOutOf52BitRange, value, I52_MIN_VALUE, I52_MAX_VALUE));
             }
 
             slot.Type = MarshalerType.Int52;
@@ -45,6 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out long? value)
         {
@@ -60,6 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(long? value)
         {
@@ -67,7 +71,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (value.Value < I52_MIN_VALUE || value.Value > I52_MAX_VALUE)
                 {
-                    throw new OverflowException($"Overflow: value ${value} is out of ${I52_MIN_VALUE} ${I52_MAX_VALUE} range");
+                    throw new OverflowException(SR.Format(SR.ValueOutOf52BitRange, value, I52_MIN_VALUE, I52_MAX_VALUE));
                 }
                 slot.Type = MarshalerType.Int52;
                 slot.DoubleValue = value.Value;

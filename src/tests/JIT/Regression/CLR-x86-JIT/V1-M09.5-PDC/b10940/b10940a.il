@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b10940a { }
+.class public auto ansi Test_b10940a extends [mscorlib] System.Object {
 .method public static int32 foo() {
   .entrypoint
   .locals(int32,refany)
@@ -22,4 +23,5 @@
 
 ldc.i4 100
   ret
+}
 }

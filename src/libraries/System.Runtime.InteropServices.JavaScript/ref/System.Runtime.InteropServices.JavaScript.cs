@@ -152,6 +152,7 @@ public static class JSHost
 [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 public sealed class JSFunctionBinding
 {
+    internal JSFunctionBinding() { throw null; }
     public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments) { throw null; }
     public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures) { throw null; }
     public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures) { throw null; }
@@ -201,7 +202,9 @@ public sealed class JSMarshalerType
 [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 public struct JSMarshalerArgument
 {
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
     public void Initialize() { throw null; }
     public void ToManaged(out bool value) { throw null; }

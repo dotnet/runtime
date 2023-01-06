@@ -441,19 +441,20 @@ namespace System.Drawing.Imaging
             SetRemapTable(map, ColorAdjustType.Default);
         }
 
-        public void SetRemapTable(ColorMap[] map, ColorAdjustType type)
+        public unsafe void SetRemapTable(ColorMap[] map, ColorAdjustType type)
         {
             int index;
             int mapSize = map.Length;
             int size = 4; // Marshal.SizeOf(index.GetType());
             IntPtr memory = Marshal.AllocHGlobal(checked(mapSize * size * 2));
+            byte* pMemory = (byte*)memory;
 
             try
             {
                 for (index = 0; index < mapSize; index++)
                 {
-                    Marshal.StructureToPtr(map[index].OldColor.ToArgb(), (IntPtr)((long)memory + index * size * 2), false);
-                    Marshal.StructureToPtr(map[index].NewColor.ToArgb(), (IntPtr)((long)memory + index * size * 2 + size), false);
+                    Marshal.StructureToPtr(map[index].OldColor.ToArgb(), (IntPtr)(pMemory + (nint)index * size * 2), false);
+                    Marshal.StructureToPtr(map[index].NewColor.ToArgb(), (IntPtr)(pMemory + (nint)index * size * 2 + size), false);
                 }
 
                 Gdip.CheckStatus(Gdip.GdipSetImageAttributesRemapTable(

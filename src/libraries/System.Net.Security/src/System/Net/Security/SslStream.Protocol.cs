@@ -518,7 +518,6 @@ namespace System.Net.Security
             bool cachedCred = false;                   // this is a return result from this method.
 
             X509Certificate2? selectedCert = SelectClientCertificate(out sessionRestartAttempt);
-
             try
             {
                 // Try to locate cached creds first.
@@ -817,6 +816,24 @@ namespace System.Net.Security
                                       inputBuffer,
                                       ref result,
                                       _sslAuthenticationOptions);
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
+                        {
+                            status = SslStreamPal.SelectApplicationProtocol(
+                                        _credentialsHandle!,
+                                        _securityContext!,
+                                        _sslAuthenticationOptions,
+                                        _lastFrame.RawApplicationProtocols);
+
+                            if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                            {
+                                status = SslStreamPal.AcceptSecurityContext(
+                                        ref _credentialsHandle!,
+                                        ref _securityContext,
+                                        ReadOnlySpan<byte>.Empty,
+                                        ref result,
+                                        _sslAuthenticationOptions);
+                            }
+                        }
                     }
                     else
                     {
@@ -977,6 +994,12 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
+                if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
+                {
+                    // We may slect client cert but it may not be used.
+                    // This is primarily issue on Windows with credential caching
+                    _selectedClientCertificate = null;
+                }
 
                 if (_remoteCertificate == null)
                 {
@@ -1100,7 +1123,7 @@ namespace System.Net.Security
                 NetEventSource.Info(this, $"alertMessage:{alertMessage}");
 
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyAlertToken(ref _credentialsHandle, _securityContext, TlsAlertType.Fatal, alertMessage);
+            status = SslStreamPal.ApplyAlertToken(_securityContext, TlsAlertType.Fatal, alertMessage);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
@@ -1121,7 +1144,7 @@ namespace System.Net.Security
         private ProtocolToken? CreateShutdownToken()
         {
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);
+            status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
