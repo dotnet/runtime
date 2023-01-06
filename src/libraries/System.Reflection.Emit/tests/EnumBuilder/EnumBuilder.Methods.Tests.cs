@@ -47,9 +47,6 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { typeof(char), (char)0 };
             yield return new object[] { typeof(char), (char)1 };
 
-            yield return new object[] { typeof(bool), true };
-            yield return new object[] { typeof(bool), false };
-
             yield return new object[] { typeof(float), 0f };
             yield return new object[] { typeof(float), 1.1f };
 

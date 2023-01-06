@@ -1595,11 +1595,18 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => Enum.GetValues(genericArgumentWithEnumConstraint));
         }
 
-        [Fact]
-        public void DeclaringEnumWithBoolUnderlyingTypeFails()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void DeclaringEnumWithBoolUnderlyingTypeFailsInCoreclr()
         {
             var exception = Assert.Throws<ArgumentException>(GetBoolEnumType);
             Assert.Equal("System.Boolean is not a supported constant type.", exception.Message);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        public void DeclaringEnumWithBoolUnderlyingTypeFailsInMono()
+        {
+            var exception = Assert.Throws<TypeLoadException>(GetBoolEnumType);
+            Assert.Equal("Not a valid enumeration", exception.Message);
         }
 
         public static IEnumerable<object[]> ToString_Format_TestData()
