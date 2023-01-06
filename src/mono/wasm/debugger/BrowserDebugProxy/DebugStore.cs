@@ -1183,11 +1183,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal async Task LoadPDBFromSymbolServer(CancellationToken token)
-        {
-            if (this.pdbMetadataReader == null)
-                await debugStore.LoadPDBFromSymbolServer(this, token);
-        }
+        internal Task LoadPDBFromSymbolServer(CancellationToken token)
+            => this.pdbMetadataReader is null
+                    ? debugStore.LoadPDBFromSymbolServer(this, token)
+                    : Task.CompletedTask;
 
     }
     internal sealed class SourceFile
@@ -1794,10 +1793,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 this.logger = logger;
             }
 
-            public void WriteLine(string message)
-            {
-                logger.LogTrace(message);
-            }
+            public void WriteLine(string message) => logger.LogTrace(message);
 
             public void WriteLine(string format, params object[] arguments)
             {
