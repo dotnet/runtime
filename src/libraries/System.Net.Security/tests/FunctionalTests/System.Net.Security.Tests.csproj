@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
@@ -15,7 +15,7 @@
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
   <Import Project="$(CommonTestPath)System\Net\Security\Kerberos\System.Net.Security.Kerberos.Shared.projitems" />
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="TestHelper.cs" />
@@ -116,7 +116,7 @@
     <Compile Include="SslStreamCredentialCacheTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="TelemetryTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
@@ -142,7 +142,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="IdentityValidator.Unix.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.Unix.cs"
              Link="Common\System\Net\Capability.Security.Unix.cs" />

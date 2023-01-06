@@ -187,6 +187,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
 	char *data_outfile;
+	char *export_symbols_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -5103,6 +5104,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	GString *export_symbols = g_string_new ("");
 	/* native-to-managed wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5252,8 +5254,10 @@ MONO_RESTORE_WARNING
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
-				if (export_name)
+				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+				}
 			}
 
 			g_free (cattr);
@@ -5263,6 +5267,19 @@ MONO_RESTORE_WARNING
 			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
+	}
+
+	if (acfg->aot_opts.export_symbols_outfile) {
+		char *export_symbols_out = g_string_free (export_symbols, FALSE);
+		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		if (!export_symbols_outfile) {
+			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
+			g_free (export_symbols_out);
+			exit (1);
+		}
+		fprintf (export_symbols_outfile, "%s", export_symbols_out);
+		g_free (export_symbols_out);
+		fclose (export_symbols_outfile);
 	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
@@ -8445,6 +8462,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
+		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
+			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {

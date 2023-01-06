@@ -3,9 +3,9 @@
 //
 
 using System;
-class CC
+public class CC
 {
-    static int Main()
+    public static int Main()
     {
         try
         {

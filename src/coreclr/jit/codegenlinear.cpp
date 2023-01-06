@@ -1781,7 +1781,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 
     // If the op1 is already in the dstReg - nothing to do.
-    // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
+    // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86

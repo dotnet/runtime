@@ -6,12 +6,12 @@
 .assembly extern xunit.core {}
 .namespace Test
 {
-  .class private auto ansi AA extends [mscorlib]System.Object
+  .class public auto ansi AA extends [mscorlib]System.Object
   {
 	.field public int32 m_i
 	.field public int32[0...] m_ai
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00

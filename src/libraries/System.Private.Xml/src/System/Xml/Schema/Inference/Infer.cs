@@ -1768,7 +1768,7 @@ namespace System.Xml.Schema
                 //else
                 case 'I':       //try to match "INF"
                 INF:
-                    if (s.AsSpan(i).SequenceEqual("INF"))
+                    if (s.AsSpan(i) is "INF")
                         return TF_float | TF_double | TF_string;
                     else return TF_string;
                 case '.':       //try to match ".9999"  decimal/float/double

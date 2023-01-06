@@ -65,15 +65,7 @@ namespace System.IO.Strategies
             }
             set
             {
-                if (_writePos > 0)
-                {
-                    FlushWrite();
-                }
-
-                _readPos = 0;
-                _readLen = 0;
-
-                _strategy.Position = value;
+                Seek(value, SeekOrigin.Begin);
             }
         }
 
@@ -904,9 +896,6 @@ namespace System.IO.Strategies
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            EnsureNotClosed();
-            EnsureCanSeek();
-
             // If we have bytes in the write buffer, flush them out, seek and be done.
             if (_writePos > 0)
             {

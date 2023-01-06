@@ -92,7 +92,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToDouble()
         {
-            int[] source = new int[] { -4, 1, 2, 9 };
+            int[] source = { -4, 1, 2, 9 };
 
             IQueryable<double> cast = source.AsQueryable().Cast<double>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -159,7 +159,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToLong()
         {
-            int[] source = new int[] { -4, 1, 2, 3, 9 };
+            int[] source = { -4, 1, 2, 3, 9 };
 
             IQueryable<long> cast = source.AsQueryable().Cast<long>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -168,7 +168,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingIntToNullableLong()
         {
-            int[] source = new int[] { -4, 1, 2, 3, 9 };
+            int[] source = { -4, 1, 2, 3, 9 };
 
             IQueryable<long?> cast = source.AsQueryable().Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -177,7 +177,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingNullableIntToLong()
         {
-            int?[] source = new int?[] { -4, 1, 2, 3, 9 };
+            int?[] source = { -4, 1, 2, 3, 9 };
 
             IQueryable<long> cast = source.AsQueryable().Cast<long>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -186,7 +186,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowCastingNullableIntToNullableLong()
         {
-            int?[] source = new int?[] { -4, 1, 2, 3, 9, null };
+            int?[] source = { -4, 1, 2, 3, 9, null };
 
             IQueryable<long?> cast = source.AsQueryable().Cast<long?>();
             Assert.Throws<InvalidCastException>(() => cast.ToList());
@@ -195,7 +195,7 @@ namespace System.Linq.Tests
         [Fact]
         public void CastingNullToNonnullableIsNullReferenceException()
         {
-            int?[] source = new int?[] { -4, 1, null, 3 };
+            int?[] source = { -4, 1, null, 3 };
             IQueryable<int> cast = source.AsQueryable().Cast<int>();
             Assert.Throws<NullReferenceException>(() => cast.ToList());
         }
@@ -209,7 +209,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Cast()
         {
-            var count = (new object[] { 0, 1, 2 }).AsQueryable().Cast<int>().Count();
+            var count = new object[] { 0, 1, 2 }.AsQueryable().Cast<int>().Count();
             Assert.Equal(3, count);
         }
     }

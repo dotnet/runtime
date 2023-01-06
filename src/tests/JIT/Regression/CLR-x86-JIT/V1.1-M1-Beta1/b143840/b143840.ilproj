@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test leaves threads running at exit -->

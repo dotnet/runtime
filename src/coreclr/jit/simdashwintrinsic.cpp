@@ -331,6 +331,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
             {
+                assert(newobjThis == nullptr);
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
@@ -396,6 +397,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
     GenTree* op3 = nullptr;
+    GenTree* op4 = nullptr;
+    GenTree* op5 = nullptr;
 
     unsigned numArgs          = sig->numArgs;
     bool     isInstanceMethod = false;
@@ -1180,11 +1183,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 2:
         {
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic) && (newobjThis == nullptr))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             ((newobjThis == nullptr) ? 2 : 1)DEBUGARG(
-                                                 "Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                             2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
@@ -1741,9 +1743,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
         case 3:
         {
-            assert(newobjThis == nullptr);
-
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic))
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic) && (newobjThis == nullptr))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
@@ -1751,6 +1751,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic))
             {
+                assert(newobjThis == nullptr);
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
             }
@@ -1764,9 +1765,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
 
-            argType = isInstanceMethod ? simdType
-                                       : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
-            op1 = getArgForHWIntrinsic(argType, argClass, isInstanceMethod, newobjThis);
+            bool implicitConstructor = isInstanceMethod && (newobjThis == nullptr) && (retType == TYP_VOID);
+
+            if (implicitConstructor)
+            {
+                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
+            }
+            else
+            {
+                argType = isInstanceMethod
+                              ? simdType
+                              : JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
+
+                op1 = getArgForHWIntrinsic(argType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                           newobjThis);
+            }
 
             assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
 
@@ -1842,6 +1855,89 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+                case NI_Vector2_Create:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert(simdSize == 8);
+
+                    if (op2->IsCnsFltOrDbl() && op3->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD8);
+
+                        float cnsVal = 0;
+
+                        vecCon->gtSimd8Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimd8Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else if (areArgumentsContiguous(op2, op3))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 8);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
+                    }
+                    else
+                    {
+#if defined(TARGET_XARCH)
+                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), 4);
+
+                        nodeBuilder.AddOperand(0, op2);
+                        nodeBuilder.AddOperand(1, op3);
+                        nodeBuilder.AddOperand(2, gtNewZeroConNode(TYP_FLOAT));
+                        nodeBuilder.AddOperand(3, gtNewZeroConNode(TYP_FLOAT));
+
+                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD8, std::move(nodeBuilder), NI_Vector128_Create,
+                                                              simdBaseJitType, 16, /* isSimdAsHWIntrinsic */ true);
+#elif defined(TARGET_ARM64)
+                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, op3, NI_Vector64_Create, simdBaseJitType,
+                                                              8, /* isSimdAsHWIntrinsic */ true);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
+                case NI_Vector3_CreateFromVector2:
+                case NI_Vector4_CreateFromVector3:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert((simdSize == 12) || (simdSize == 16));
+
+                    // TODO-CQ: We should be able to check for contiguous args here after
+                    // the relevant methods are updated to support more than just float
+
+                    if (op2->IsCnsVec() && op3->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = op2->AsVecCon();
+                        vecCon->gtType        = simdType;
+
+                        if (simdSize == 12)
+                        {
+                            vecCon->gtSimd12Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        }
+                        else
+                        {
+                            vecCon->gtSimd16Val.f32[3] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        }
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else
+                    {
+                        GenTree* idx = gtNewIconNode((simdSize == 12) ? 2 : 3, TYP_INT);
+                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                                                              /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
                 default:
                 {
                     // Some platforms warn about unhandled switch cases
@@ -1849,6 +1945,227 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
             }
+            break;
+        }
+
+        case 4:
+        {
+            assert(isInstanceMethod);
+            assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+
+            if (newobjThis == nullptr)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             4 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            }
+
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
+
+            CORINFO_ARG_LIST_HANDLE arg2 = argList;
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+            CORINFO_ARG_LIST_HANDLE arg4 = info.compCompHnd->getArgNext(arg3);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+            op4     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            if ((newobjThis == nullptr) && (retType == TYP_VOID))
+            {
+                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
+            }
+            else
+            {
+                op1 = getArgForHWIntrinsic(simdType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                           newobjThis);
+            }
+
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+
+            switch (intrinsic)
+            {
+                case NI_Vector3_Create:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert(simdSize == 12);
+
+                    if (op2->IsCnsFltOrDbl() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD12);
+
+                        float cnsVal = 0;
+
+                        vecCon->gtSimd12Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimd12Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimd12Val.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 12);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
+                    }
+                    else
+                    {
+                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), 4);
+
+                        nodeBuilder.AddOperand(0, op2);
+                        nodeBuilder.AddOperand(1, op3);
+                        nodeBuilder.AddOperand(2, op4);
+                        nodeBuilder.AddOperand(3, gtNewZeroConNode(TYP_FLOAT));
+
+                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD12, std::move(nodeBuilder), NI_Vector128_Create,
+                                                              simdBaseJitType, 16, /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
+                case NI_Vector4_CreateFromVector2:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert(simdSize == 16);
+
+                    // TODO-CQ: We should be able to check for contiguous args here after
+                    // the relevant methods are updated to support more than just float
+
+                    if (op2->IsCnsVec() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = op2->AsVecCon();
+                        vecCon->gtType        = simdType;
+
+                        vecCon->gtSimd16Val.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimd16Val.f32[3] = static_cast<float>(op4->AsDblCon()->DconValue());
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else
+                    {
+                        GenTree* idx = gtNewIconNode(2, TYP_INT);
+                        op2          = gtNewSimdWithElementNode(simdType, op2, op3, idx, simdBaseJitType, simdSize,
+                                                       /* isSimdAsHWIntrinsic */ true);
+
+                        idx        = gtNewIconNode(3, TYP_INT);
+                        copyBlkSrc = gtNewSimdWithElementNode(simdType, op2, op4, idx, simdBaseJitType, simdSize,
+                                                              /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+            break;
+        }
+
+        case 5:
+        {
+            assert(isInstanceMethod);
+            assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+
+            if (newobjThis == nullptr)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             5 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            }
+
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
+
+            CORINFO_ARG_LIST_HANDLE arg2 = argList;
+            CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
+            CORINFO_ARG_LIST_HANDLE arg4 = info.compCompHnd->getArgNext(arg3);
+            CORINFO_ARG_LIST_HANDLE arg5 = info.compCompHnd->getArgNext(arg4);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
+            op5     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+            op4     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            if ((newobjThis == nullptr) && (retType == TYP_VOID))
+            {
+                op1 = getArgForHWIntrinsic(TYP_BYREF, argClass, isInstanceMethod, newobjThis);
+            }
+            else
+            {
+                op1 = getArgForHWIntrinsic(simdType, (newobjThis != nullptr) ? clsHnd : argClass, isInstanceMethod,
+                                           newobjThis);
+            }
+
+            assert(!SimdAsHWIntrinsicInfo::NeedsOperandsSwapped(intrinsic));
+
+            switch (intrinsic)
+            {
+                case NI_Vector4_Create:
+                {
+                    assert(retType == TYP_VOID);
+                    assert(simdBaseType == TYP_FLOAT);
+                    assert(simdSize == 16);
+
+                    if (op2->IsCnsFltOrDbl() && op3->IsCnsFltOrDbl() && op4->IsCnsFltOrDbl() && op5->IsCnsFltOrDbl())
+                    {
+                        GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
+
+                        float cnsVal = 0;
+
+                        vecCon->gtSimd16Val.f32[0] = static_cast<float>(op2->AsDblCon()->DconValue());
+                        vecCon->gtSimd16Val.f32[1] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        vecCon->gtSimd16Val.f32[2] = static_cast<float>(op4->AsDblCon()->DconValue());
+                        vecCon->gtSimd16Val.f32[3] = static_cast<float>(op5->AsDblCon()->DconValue());
+
+                        copyBlkSrc = vecCon;
+                    }
+                    else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4) &&
+                             areArgumentsContiguous(op4, op5))
+                    {
+                        GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
+                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
+                    }
+                    else
+                    {
+                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), 4);
+
+                        nodeBuilder.AddOperand(0, op2);
+                        nodeBuilder.AddOperand(1, op3);
+                        nodeBuilder.AddOperand(2, op4);
+                        nodeBuilder.AddOperand(3, op5);
+
+                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD16, std::move(nodeBuilder), NI_Vector128_Create,
+                                                              simdBaseJitType, 16, /* isSimdAsHWIntrinsic */ true);
+                    }
+
+                    copyBlkDst = op1;
+                    break;
+                }
+
+                default:
+                {
+                    // Some platforms warn about unhandled switch cases
+                    // We handle it more generally via the assert and nullptr return below.
+                    break;
+                }
+            }
+            break;
         }
     }
 

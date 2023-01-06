@@ -799,7 +799,7 @@ namespace System.Reflection.Emit
                 // Global methods must be static.
                 if ((attributes & MethodAttributes.Static) == 0)
                 {
-                    throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
+                    throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
                 }
 
                 return _globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
@@ -829,7 +829,7 @@ namespace System.Reflection.Emit
             ArgumentException.ThrowIfNullOrEmpty(name);
             if ((attributes & MethodAttributes.Static) == 0)
             {
-                throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
+                throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             }
 
             return _globalTypeBuilder.DefineMethod(name, attributes, callingConvention,

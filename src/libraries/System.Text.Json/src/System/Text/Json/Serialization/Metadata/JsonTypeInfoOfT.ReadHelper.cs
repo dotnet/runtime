@@ -152,6 +152,22 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
+        internal sealed override IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken)
+        {
+            IAsyncEnumerable<T> typedSource = DeserializeAsyncEnumerable(utf8Json, cancellationToken);
+            return AsObjectEnumerable(typedSource, cancellationToken);
+
+            static async IAsyncEnumerable<object?> AsObjectEnumerable(
+                IAsyncEnumerable<T> source,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await foreach (T elem in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    yield return elem;
+                }
+            }
+        }
+
         private T? ContinueDeserialize(
             ref ReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,

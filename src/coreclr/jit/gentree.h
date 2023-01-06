@@ -442,7 +442,6 @@ enum GenTreeFlags : unsigned int
 //  well to make sure it's the right operator for the particular flag.
 //---------------------------------------------------------------------
 
-// NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags.
 // These flags are also used by GT_LCL_FLD, and the last-use (DEATH) flags are also used by GenTreeCopyOrReload.
 
     GTF_VAR_DEF             = 0x80000000, // GT_LCL_VAR -- this is a definition
@@ -469,11 +468,12 @@ enum GenTreeFlags : unsigned int
                                           // that returns its result in multiple registers such as a long multiply). Set by
                                           // (and thus only valid after) lowering.
 
-    GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
+    GTF_LIVENESS_MASK     = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_ITERATOR      = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED        = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1504,15 +1504,6 @@ public:
         return OperIsSimple(gtOper);
     }
 
-#ifdef FEATURE_SIMD
-    bool isCommutativeSIMDIntrinsic();
-#else  // !
-    bool isCommutativeSIMDIntrinsic()
-    {
-        return false;
-    }
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
@@ -1541,8 +1532,7 @@ public:
 
     bool OperIsCommutative()
     {
-        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
-               (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
+        return OperIsCommutative(gtOper) || (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
     }
 
     static bool OperMayOverflow(genTreeOps gtOper)
@@ -1564,7 +1554,9 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
+                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)
@@ -6338,8 +6330,6 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     }
 #endif
 
-    bool OperIsMemoryLoad() const;
-
     SIMDIntrinsicID GetSIMDIntrinsicId() const
     {
         return gtSIMDIntrinsicID;
@@ -7157,29 +7147,25 @@ public:
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
     }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
-        gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
+    }
+
+    void Initialize(ClassLayout* layout)
+    {
+        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
+
+        m_layout    = layout;
+        gtBlkOpKind = BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+        gtBlkOpGcUnsafe = false;
+#endif
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8712,21 +8698,6 @@ inline bool GenTree::IsVectorCreate() const
         }
     }
 #endif // FEATURE_HW_INTRINSICS
-
-#ifdef FEATURE_SIMD
-    if (OperIs(GT_SIMD))
-    {
-        switch (AsSIMD()->GetSIMDIntrinsicId())
-        {
-            case SIMDIntrinsicInit:
-            case SIMDIntrinsicInitN:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-#endif // FEATURE_SIMD
 
     return false;
 }

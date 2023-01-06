@@ -19,7 +19,7 @@
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
-    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">true</UseLocalAppHostPack>
+    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <!-- TODO: Enable when a 8.0.100 SDK is consumed
     <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
@@ -169,35 +169,6 @@
     <ItemGroup>
       <RuntimeFramework Version="$(ProductVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Filter out conflicting implicit assembly references. -->
-  <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitFrameworkReferences)' != 'true'"
-          DependsOnTargets="ResolveProjectReferences"
-          AfterTargets="ResolveTargetingPackAssets">
-    <ItemGroup>
-      <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
-      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
-    </ItemGroup>
-
-    <!-- Filter out shims from the targeting pack references as an opt-in. -->
-    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                          '$(SkipTargetingPackShimReferences)' == 'true'">
-      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
-      <_targetingPackReferenceExclusion Include="netstandard" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
-                                              OriginalIdentity="%(Identity)" />
-      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackReferenceExclusion)" />
-      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
-      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 </Project>

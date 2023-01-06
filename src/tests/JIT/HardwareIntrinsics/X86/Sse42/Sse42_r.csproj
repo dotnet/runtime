@@ -9,8 +9,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CompareGreaterThan.Int64.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="Program.Sse42.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

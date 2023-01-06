@@ -40,21 +40,28 @@ Libraries to be packaged must set `IsPackable` to true. By default, all `librari
 
 Package versions and shipping state should be controlled using the properties defined by the [Arcade SDK](https://github.com/dotnet/arcade/blob/master/Documentation/ArcadeSdk.md#project-properties-defined-by-the-sdk). Typically libraries should not need to explicitly set any of these properties.
 
-Most metadata for packages is controlled centrally in the repository and individual projects may not need to make any changes to these. One property is required to be set in each project: `PackageDescription`. This should be set to a descriptive summary of the purpose of the package, and a list of common entry-point types for the package: to aide in search engine optimization. Example:
-```xml
-<PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
+Most metadata for packages is controlled centrally in the repository and individual projects may not need to make any changes to these. One property is required to be set in each project: `PackageDescription`. This should be set to a descriptive summary of the purpose of the package. Example:
 
-Commonly Used Types:
-Microsoft.Extensions.Logging.ILogger
-Microsoft.Extensions.Logging.ILoggerFactory
-Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;
-Microsoft.Extensions.Logging.LogLevel
-Microsoft.Extensions.Logging.Logger&lt;T&gt;
-Microsoft.Extensions.Logging.LoggerMessage
-Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
+```xml
+<PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.</PackageDescription>
 ```
 
 Package content can be defined using any of the publicly defined Pack inputs: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets
+
+### Package Readme
+
+Packages can include a Markdown Readme file with a short usage documentation. To include a package Readme, create a `PACKAGE.md` file in the library `src` directory. The file will be automatically included in the package and used as a Readme if its name matches this convention.
+
+The package Readme is displayed on the package details page on [NuGet gallery](https://nuget.org/). You can include the following content in it:
+
+- A description of the package purpose.
+- Information when package should be used. For example, if the library is included in the shared framework in .NET, but needs to be installed via NuGet on .NET Framework, it should be mentioned.
+- Information on how to get started with the package.
+- Links to related documentation.
+- A list of common entry-point types for the package, with links to their API docs under [.NET API Browser](https://learn.microsoft.com/dotnet/api/).
+- A short code example that demostrates the package usage.
+
+For a list of supported Markdown features, see [NuGet documentation](https://learn.microsoft.com/nuget/nuget-org/package-readme-on-nuget-org#supported-markdown-features).
 
 ### Build props / targets and other content
 

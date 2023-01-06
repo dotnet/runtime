@@ -307,7 +307,7 @@ namespace System.Net.Sockets
                         handle,
                         PtrSocketAddressBuffer,
                         _socketAddress!.Size,
-                        (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset),
+                        (IntPtr)(bufferPtr + _offset),
                         _count,
                         out int bytesTransferred,
                         overlapped);

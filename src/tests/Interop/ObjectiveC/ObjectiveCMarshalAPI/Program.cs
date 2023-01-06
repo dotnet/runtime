@@ -73,8 +73,9 @@ namespace ObjectiveCMarshalAPI
         // the RefCountDown will be set to some non-negative number and RefCountUp
         // will remain zero. The values will be incremented and decremented respectively
         // during the "is referenced" callback. When the object enters the finalizer queue
-        // the RefCountDown will then be set to nuint.MaxValue. In the object's finalizer
-        // the RefCountUp can be checked to ensure the count down value was respected.
+        // the RefCountDown will then be set to nuint.MaxValue, see the EnteredFinalizerCb
+        // callback. In the object's finalizer the RefCountUp can be checked to ensure
+        // the count down value was respected.
         struct Contract
         {
             public nuint RefCountDown;
@@ -156,6 +157,7 @@ namespace ObjectiveCMarshalAPI
             return h;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void Validate_AllocAndFreeAnotherHandle<T>(GCHandle handle) where T : Base, new()
         {
             var obj = (T)handle.Target;
@@ -285,6 +287,8 @@ namespace ObjectiveCMarshalAPI
         // Do not call this method from Main as it depends on a previous test for set up.
         static void _Validate_ExceptionPropagation()
         {
+            Console.WriteLine($"Running {nameof(_Validate_ExceptionPropagation)}");
+
             var delThrowInt = new ThrowExceptionDelegate(DEL_ThrowIntException);
             var delThrowException = new ThrowExceptionDelegate(DEL_ThrowExceptionException);
             var scenarios = new[]

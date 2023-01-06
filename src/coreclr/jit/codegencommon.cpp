@@ -2019,7 +2019,7 @@ void CodeGen::genEmitMachineCode()
     if (verbose)
     {
         printf("*************** After end code gen, before unwindEmit()\n");
-        GetEmitter()->emitDispIGlist(true);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ true);
     }
 #else
     if (compiler->opts.disAsm)
@@ -6409,7 +6409,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     if (verbose)
     {
         printf("*************** Before prolog / epilog generation\n");
-        GetEmitter()->emitDispIGlist(false);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 
@@ -6457,7 +6457,7 @@ void CodeGen::genGeneratePrologsAndEpilogs()
     if (verbose)
     {
         printf("*************** After prolog / epilog generation\n");
-        GetEmitter()->emitDispIGlist(false);
+        GetEmitter()->emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 }
@@ -8769,6 +8769,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeA
     // Using [close, open) ranges so as to not compute the size of the last instruction
     m_VariableLiveRanges->back().m_EndEmitLocation.CaptureLocation(emit);
 
+    JITDUMP("Closing debug range.\n");
     // No m_EndEmitLocation has to be Valid
     noway_assert(m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 }

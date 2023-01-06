@@ -23,13 +23,13 @@ public struct AA
     }
 }
 
-internal class TestApp
+public class TestApp
 {
     private static unsafe int test_26(uint ub)
     {
         return 0;
     }
-    private static unsafe int Main()
+    public static unsafe int Main()
     {
         AA loc_x = new AA(0, 100);
         test_26((uint)&loc_x.m_b);

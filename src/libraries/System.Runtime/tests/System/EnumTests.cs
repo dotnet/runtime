@@ -77,7 +77,7 @@ namespace System.Tests
             yield return new object[] { ulong.MinValue.ToString(), false, (UInt64Enum)ulong.MinValue };
             yield return new object[] { ulong.MaxValue.ToString(), false, (UInt64Enum)ulong.MaxValue };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { "Value1", false, Enum.ToObject(s_charEnumType, (char)1) };
@@ -204,7 +204,7 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), "-1", false, typeof(OverflowException) };
             yield return new object[] { typeof(UInt64Enum), "18446744073709551616", false, typeof(OverflowException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { s_charEnumType, ((char)1).ToString(), false, typeof(ArgumentException) };
@@ -456,7 +456,7 @@ namespace System.Tests
             yield return new object[] { (char)4, null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(GetName_CharEnum_TestData))]
         public void GetName_InvokeCharEnum_ReturnsExpected(object value, string expected)
         {
@@ -471,7 +471,7 @@ namespace System.Tests
             yield return new object[] { false, "Value2" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(GetName_BoolEnum_TestData))]
         public void GetName_InvokeBoolEnum_ReturnsExpected(object value, string expected)
         {
@@ -712,7 +712,7 @@ namespace System.Tests
             yield return new object[] { (char)99, false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(IsDefined_CharEnum_TestData))]
         public void IsDefined_InvokeCharEnum_ReturnsExpected(object value, bool expected)
         {
@@ -729,7 +729,7 @@ namespace System.Tests
             yield return new object[] { false, true };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(IsDefined_BoolEnum_TestData))]
         public void IsDefined_InvokeBoolEnum_ReturnsExpected(object value, bool expected)
         {
@@ -845,7 +845,7 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x0010, false };
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x3f16, false };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3000"), true };
@@ -962,7 +962,7 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), (ulong)77, (UInt64Enum)77 };
             yield return new object[] { typeof(UInt64Enum), (ulong)0x0123456789abcdefL, (UInt64Enum)0x0123456789abcdefL };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
@@ -995,7 +995,7 @@ namespace System.Tests
             yield return new object[] { typeof(Enum), typeof(ArgumentException) };
             yield return new object[] { typeof(object), typeof(ArgumentException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
                 yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
         }
 
@@ -1020,7 +1020,7 @@ namespace System.Tests
             yield return new object[] { typeof(SimpleEnum), null, typeof(ArgumentNullException) };
             yield return new object[] { typeof(SimpleEnum), "Hello", typeof(ArgumentException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
                 yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
@@ -1105,7 +1105,7 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, new object(), false };
             yield return new object[] { UInt64Enum.One, null, false };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value1"), true };
@@ -1216,7 +1216,7 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, UInt64Enum.Max, -1 };
             yield return new object[] { UInt64Enum.One, null, 1 };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value2"), 0 };
@@ -1281,7 +1281,7 @@ namespace System.Tests
             yield return new object[] { typeof(Int64Enum), typeof(long) };
             yield return new object[] { typeof(UInt64Enum), typeof(ulong) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { s_charEnumType, typeof(char) };
                 yield return new object[] { s_boolEnumType, typeof(bool) };
@@ -1387,7 +1387,7 @@ namespace System.Tests
             Assert.Equal(expected, Enum.GetNames<UInt64Enum>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeCharEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
@@ -1395,7 +1395,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetNames(s_charEnumType), Enum.GetNames(s_charEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeBoolEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value2", "Value1" };
@@ -1403,7 +1403,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetNames(s_boolEnumType), Enum.GetNames(s_boolEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeSingleEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
@@ -1411,7 +1411,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetNames(s_floatEnumType), Enum.GetNames(s_floatEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeDoubleEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
@@ -1419,7 +1419,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetNames(s_doubleEnumType), Enum.GetNames(s_doubleEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeIntPtrEnum_ReturnsExpected()
         {
             var expected = new string[0];
@@ -1427,7 +1427,7 @@ namespace System.Tests
             Assert.Same(Enum.GetNames(s_intPtrEnumType), Enum.GetNames(s_intPtrEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeUIntPtrEnum_ReturnsExpected()
         {
             var expected = new string[0];
@@ -1532,7 +1532,7 @@ namespace System.Tests
             Assert.Equal(expected, Enum.GetValues<UInt64Enum>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeCharEnum_ReturnsExpected()
         {
             var expected = new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") };
@@ -1540,7 +1540,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_charEnumType), Enum.GetValues(s_charEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeBoolEnum_ReturnsExpected()
         {
             var expected = new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") };
@@ -1548,7 +1548,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_boolEnumType), Enum.GetValues(s_boolEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeSingleEnum_ReturnsExpected()
         {
             var expected = new object[] { Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
@@ -1556,7 +1556,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_floatEnumType), Enum.GetValues(s_floatEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeDoubleEnum_ReturnsExpected()
         {
             var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
@@ -1564,7 +1564,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_doubleEnumType), Enum.GetValues(s_doubleEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeIntPtrEnum_ReturnsExpected()
         {
             var expected = new object[0];
@@ -1572,7 +1572,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_intPtrEnumType), Enum.GetValues(s_intPtrEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeUIntPtrEnum_ReturnsExpected()
         {
             var expected = new object[0];
@@ -1751,7 +1751,7 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "D", "99" };
             yield return new object[] { UInt64Enum.Max, "D", "18446744073709551615" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "D": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "D", ((char)0).ToString() };
@@ -1834,7 +1834,7 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "X", "0000000000000063" };
             yield return new object[] { UInt64Enum.Max, "X", "FFFFFFFFFFFFFFFF" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "X": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "X", "0000" };
@@ -1900,7 +1900,7 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)5, "F", "5" };
             yield return new object[] { UInt64Enum.Max, "F", "Max" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "F": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };
@@ -1928,7 +1928,7 @@ namespace System.Tests
             // "F": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "G": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString() };
@@ -2289,7 +2289,7 @@ namespace System.Tests
             yield return new object[] { typeof(AttributeTargets), (int)(AttributeTargets.Class | AttributeTargets.Delegate), "G", "Class, Delegate" };
 
             // nint/nuint types
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { s_intPtrEnumType, (nint)1, "G", "1" };
                 yield return new object[] { s_uintPtrEnumType, (nuint)2, "F", "2" };
@@ -2416,7 +2416,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(UnsupportedEnum_TestData))]
         public static void ToString_UnsupportedEnumType_ThrowsArgumentException(Enum e)
         {
@@ -2427,7 +2427,7 @@ namespace System.Tests
 
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)
         {
-            if (!PlatformDetection.IsReflectionEmitSupported)
+            if (!PlatformDetection.IsReflectionEmitSupported || !PlatformDetection.IsRareEnumsSupported)
                 return null;
 
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

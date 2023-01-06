@@ -395,7 +395,7 @@
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
   </ItemGroup>
 
-  <Target Name="SetMonoRollupEnvironment">
+  <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
       <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
     </PropertyGroup>

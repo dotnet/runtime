@@ -438,9 +438,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
-            throw new ArgumentException(SR.Argument_InvalidArrayType);
+            throw new ArgumentException(SR.Argument_IncompatibleArrayType);
         }
 
         [DoesNotReturn]

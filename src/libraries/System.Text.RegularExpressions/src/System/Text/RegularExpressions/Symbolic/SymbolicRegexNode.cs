@@ -665,9 +665,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // This structure arises from a folding rule in TryFold
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
                 {
-                    Debug.Assert(right._left is not null && right._right is not null);
+                    Debug.Assert(left._left is not null && right._left is not null && right._right is not null);
                     SymbolicRegexNode<TSet> rl = right._left;
-                    if (rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
+                    if (left._left.IsNullable && rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
                     {
                         Debug.Assert(rl._left is not null);
                         if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet>? tail))

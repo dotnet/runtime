@@ -203,7 +203,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -225,7 +225,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -249,7 +249,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -274,7 +274,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml

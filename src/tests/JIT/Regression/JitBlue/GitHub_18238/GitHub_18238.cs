@@ -30,9 +30,9 @@ struct S1
     }
 }
 
-static class GitHub_18238
+public static class GitHub_18238
 {
-    static int Main()
+    public static int Main()
     {
         bool passed = true;
 

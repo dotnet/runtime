@@ -47,6 +47,7 @@ internal static partial class Interop
             ServerAuthCompleted,
             ClientAuthCompleted,
             ClientCertRequested,
+            ClientHelloReceived,
         }
 
         internal enum PAL_TlsIo
@@ -101,6 +102,12 @@ internal static partial class Interop
             out int pOSStatus);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_SslSetBreakOnClientHello(
+            SafeSslHandle sslHandle,
+            int setBreak,
+            out int pOSStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetBreakOnCertRequested(
             SafeSslHandle sslHandle,
             int setBreak,
@@ -120,6 +127,9 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SSLSetALPNProtocols")]
         internal static partial int SSLSetALPNProtocols(SafeSslHandle ctx, SafeCreateHandle cfProtocolsRefs, out int osStatus);
+
+        [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SSLSetALPNProtocol")]
+        internal static unsafe partial int SSLSetALPNProtocol(SafeSslHandle ctx, void* protocol, int length, out int osStatus);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetAlpnSelected")]
         internal static partial int SslGetAlpnSelected(SafeSslHandle ssl, out SafeCFDataHandle protocol);
@@ -289,6 +299,25 @@ internal static partial class Interop
             throw new SslException();
         }
 
+        internal static void SslBreakOnClientHello(SafeSslHandle sslHandle, bool setBreak)
+        {
+            int osStatus;
+            int result = AppleCryptoNative_SslSetBreakOnClientHello(sslHandle, setBreak ? 1 : 0, out osStatus);
+
+            if (result == 1)
+            {
+                return;
+            }
+
+            if (result == 0)
+            {
+                throw CreateExceptionForOSStatus(osStatus);
+            }
+
+            Debug.Fail($"AppleCryptoNative_SslSetBreakOnClientHello returned {result}");
+            throw new SslException();
+        }
+
         internal static void SslBreakOnCertRequested(SafeSslHandle sslHandle, bool setBreak)
         {
             int osStatus;
@@ -396,6 +425,22 @@ internal static partial class Interop
                     cfProtocolsRefs?.Dispose();
                 }
             }
+        }
+
+        internal static unsafe int SslCtxSetAlpnProtocol(SafeSslHandle ctx, SslApplicationProtocol protocol)
+        {
+            int osStatus;
+
+            fixed (void* ptr = &MemoryMarshal.GetReference(protocol.Protocol.Span))
+            {
+                int result = SSLSetALPNProtocol(ctx, ptr, protocol.Protocol.Length, out osStatus);
+                if (result != 1)
+                {
+                    throw CreateExceptionForOSStatus(osStatus);
+                }
+            }
+
+            return osStatus;
         }
 
         internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
