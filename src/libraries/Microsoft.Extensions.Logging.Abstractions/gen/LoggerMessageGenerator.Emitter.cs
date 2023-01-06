@@ -60,7 +60,8 @@ namespace Microsoft.Extensions.Logging.Generators
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
                         string t = lm.TemplateList[i];
-                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase) && !t.Equals(lm.TemplateParameters[i].CodeName, StringComparison.OrdinalIgnoreCase))
+                        var (template, parameter) = SanitizeAtSign(t, lm.TemplateParameters[i].CodeName);
+                        if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -217,7 +218,8 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                        var (key, parameter) = SanitizeAtSign(t.Key, p.Name);
+                        if (key.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
@@ -609,5 +611,11 @@ internal static class __LoggerMessageGenerator
 
         private static string ProtectAtSymbol(string value) =>
             ContainsAtSymbol(value) ? value : $"_{value}";
+
+        private static (string template, string parameter) SanitizeAtSign(string template, string parameter)
+        {
+            static string SanitizeSingle(string input) => input.Length > 0 && input[0] == '@' ? input.Substring(1) : input;
+            return (SanitizeSingle(template), SanitizeSingle(parameter));
+        }
     }
 }
