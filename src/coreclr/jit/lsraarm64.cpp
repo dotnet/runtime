@@ -43,19 +43,41 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
     return result;
 }
 
+//------------------------------------------------------------------------
+// setNextConsecutiveRegisterAssignment: Set the consecutive register mask to the
+//   subsequent refpositions
+//
+// Arguments:
+//    tree       - The GT_HWINTRINSIC node of interest
+//    pDstCount  - OUT parameter - the number of registers defined for the given node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
 void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned)
 {
     assert(isSingleRegister(firstRegAssigned));
-    assert(firstRefPosition->needsConsecutive && firstRefPosition->multiRegIdx == 0);
+    assert(firstRefPosition->needsConsecutive && firstRefPosition->regCount > 0);
 
     RefPosition* consecutiveRefPosition = firstRefPosition->nextConsecutiveRefPosition;
+
+     // should have at least one consecutive register requirement
+    assert(consecutiveRefPosition != nullptr);
+
     regMaskTP    registerToAssign       = firstRegAssigned;
+    int          refPosCount            = 1;
     while (consecutiveRefPosition != nullptr)
     {
         registerToAssign <<= 1;
         consecutiveRefPosition->registerAssignment = registerToAssign;
         consecutiveRefPosition                     = consecutiveRefPosition->nextConsecutiveRefPosition;
+
+#ifdef DEBUG
+        refPosCount++;
+#endif
     }
+
+    assert(refPosCount == firstRefPosition->regCount);
 }
 
 //------------------------------------------------------------------------
@@ -1125,14 +1147,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 case NI_AdvSimd_VectorTableLookup_2:
                 case NI_AdvSimd_Arm64_VectorTableLookup_2:
+                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 2);
                     regCount = 2;
                     break;
                 case NI_AdvSimd_VectorTableLookup_3:
                 case NI_AdvSimd_Arm64_VectorTableLookup_3:
+                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 3);
                     regCount = 3;
                     break;
                 case NI_AdvSimd_VectorTableLookup_4:
                 case NI_AdvSimd_Arm64_VectorTableLookup_4:
+                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 4);
                     regCount = 4;
                     break;
                 default:

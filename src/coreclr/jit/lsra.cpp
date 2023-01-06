@@ -5377,7 +5377,7 @@ void LinearScan::allocateRegisters()
         {
             // For consecutive register, we would like to assign a register (if not already assigned)
             // to the 1st position and the subsequent positions will just get the consecutive register.
-            if (currentRefPosition.multiRegIdx == 0)
+            if (currentRefPosition.regCount > 0)
             {
                 if (assignedRegister != REG_NA)
                 {

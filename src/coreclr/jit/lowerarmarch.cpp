@@ -2580,21 +2580,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         switch (intrin.id)
         {
-            case NI_AdvSimd_VectorTableLookup_2:
-            case NI_AdvSimd_Arm64_VectorTableLookup_2:
-                assert(comp->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 2);
-                intrin.op1->AsLclVar()->SetMultiRegUse();
-                break;
-            case NI_AdvSimd_VectorTableLookup_3:
-            case NI_AdvSimd_Arm64_VectorTableLookup_3:
-                assert(comp->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 3);
-                intrin.op1->AsLclVar()->SetMultiRegUse();
-                break;
-            case NI_AdvSimd_VectorTableLookup_4:
-            case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                assert(comp->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 4);
-                intrin.op1->AsLclVar()->SetMultiRegUse();
-                break;
             case NI_AdvSimd_DuplicateSelectedScalarToVector64:
             case NI_AdvSimd_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Extract:

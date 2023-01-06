@@ -1172,15 +1172,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         switch (fieldCount)
                         {
                             case 1:
-                                // keep the intrinsic
+                                // NI_AdvSimd_VectorTableLookup
+                                // NI_AdvSimd_Arm64_VectorTableLookup
                                 break;
                             case 2:
+                                //NI_AdvSimd_VectorTableLookup_2
+                                //NI_AdvSimd_Arm64_VectorTableLookup_2
                                 intrinsic = (NamedIntrinsic)(intrinsic + 1);
                                 break;
                             case 3:
+                                // NI_AdvSimd_VectorTableLookup_3
+                                // NI_AdvSimd_Arm64_VectorTableLookup_3
                                 intrinsic = (NamedIntrinsic)(intrinsic + 2);
                                 break;
                             case 4:
+                                // NI_AdvSimd_VectorTableLookup_4
+                                // NI_AdvSimd_Arm64_VectorTableLookup_4
                                 intrinsic = (NamedIntrinsic)(intrinsic + 3);
                                 break;
                             default:
