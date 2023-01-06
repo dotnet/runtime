@@ -23114,7 +23114,7 @@ void gc_heap::sync_promoted_bytes()
                     (int)(old_card_survived_per_region[region_index]);
 #endif //MULTIPLE_HEAPS
 
-                dprintf (REGIONS_LOG, ("region #%zd %p surv %d, old card surv %d",
+                dprintf (REGIONS_LOG, ("region #%zd %p surv %zd, old card surv %d",
                     region_index,
                     heap_segment_mem (current_region),
                     heap_segment_survived (current_region),
