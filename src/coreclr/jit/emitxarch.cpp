@@ -482,7 +482,7 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
-    if (!((reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST)))
+    if (!genIsValidIntReg(reg))
         return false;
 
     // Only consider if safe
