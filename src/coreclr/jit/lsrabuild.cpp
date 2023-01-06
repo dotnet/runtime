@@ -3089,7 +3089,9 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         operand = nullptr;
     }
     RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, operand, candidates, multiRegIdx);
+#ifdef TARGET_ARM64
     useRefPos->needsConsecutive = needsConsecutive;
+#endif
     useRefPos->setRegOptional(regOptional);
     return useRefPos;
 }

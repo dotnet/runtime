@@ -2240,13 +2240,6 @@ public:
     // are only traversed in the forward direction, and are not moved.
     RefPosition* nextRefPosition;
 
-    // This is temporary. It will be moved to LinearScan level in a map that will store
-    // the next refposition. Below table, we are storing 2 situation of consecutive registers
-    // First being 3 consecutive registers (21, 22, 23) and (41, 42).
-    // 21  ->  22
-    // 22  ->  23
-    // 41  ->  42
-    RefPosition* nextConsecutiveRefPosition;
     // The remaining fields are common to both options
     GenTree*     treeNode;
     unsigned int bbNum;
@@ -2275,8 +2268,22 @@ public:
     // across all targets and that happened to be 4 on Arm.  Hence index value
     // would be 0..MAX_RET_REG_COUNT-1.
     unsigned char multiRegIdx : 2;
+
+#ifdef TARGET_ARM64
+    // This is temporary. It will be moved to LinearScan level in a map that will store
+    // the next refposition. Below table, we are storing 2 situation of consecutive registers
+    // First being 3 consecutive registers (21, 22, 23) and (41, 42).
+    // 21  ->  22
+    // 22  ->  23
+    // 41  ->  42
+    RefPosition* nextConsecutiveRefPosition;
+
+    // If this refposition needs consecutive register assignment
     bool needsConsecutive;
+
+    // How many consecutive registers does this and subsequent refPositions need
     unsigned char regCount : 2;
+#endif // TARGET_ARM64
 
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;
@@ -2357,15 +2364,17 @@ public:
                 RefType refType DEBUG_ARG(GenTree* buildNode))
         : referent(nullptr)
         , nextRefPosition(nullptr)
-        , nextConsecutiveRefPosition(nullptr)
         , treeNode(treeNode)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
         , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
+#ifdef TARGET_ARM64
+        , nextConsecutiveRefPosition(nullptr)
         , needsConsecutive(false)
-        , regCount(1)
+        , regCount(0)
+#endif
         , lastUse(false)
         , reload(false)
         , spillAfter(false)

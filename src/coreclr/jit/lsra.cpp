@@ -2837,8 +2837,6 @@ regNumber LinearScan::allocateReg(Interval*                currentInterval,
         }
     }
 
-    // At this point, we need to make sure that other `regCount` registers are available and then just allocate them
-    // to subsequent refpositions.
     assignPhysReg(availablePhysRegRecord, currentInterval);
     refPosition->registerAssignment = foundRegBit;
 
@@ -5307,7 +5305,8 @@ void LinearScan::allocateRegisters()
                     lastAllocatedRefPosition  = &currentRefPosition;
                     regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                     regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
-                    
+
+#ifdef TARGET_ARM64
                     if (currentRefPosition.needsConsecutive)
                     {
                         // For consecutive register, it doesn't matter what the assigned register was.
@@ -5318,6 +5317,7 @@ void LinearScan::allocateRegisters()
                         // This should never be the first refposition of the series.
                         assert(currentRefPosition.multiRegIdx != 0);
                     }
+#endif
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;
                     if (currentRefPosition.lastUse)
                     {
@@ -5376,20 +5376,22 @@ void LinearScan::allocateRegisters()
         if (currentRefPosition.needsConsecutive)
         {
             // For consecutive register, we would like to assign a register (if not already assigned)
-            // to the 1st position and the subsequent positions will just get the consecutive register.
+            // to the 1st refPosition and the subsequent refPositions will just get the consecutive register.
             if (currentRefPosition.regCount > 0)
             {
+                // 1st refPosition of the series...
                 if (assignedRegister != REG_NA)
                 {
-                    // For 1st position, if it already has a register assigned, then just assign
-                    // subsequent registers to remaining position and skip the allocation for the
-                    // 1st position altogether.
+                    // For the 1st refPosition, if it already has a register assigned, then just assign
+                    // subsequent registers to the remaining position and skip the allocation for the
+                    // 1st refPosition altogether.
 
                     setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegBit);  
                 }
             }
             else
             {
+                // remaining refPosition of the series...
                 if (assignedRegBit == currentRefPosition.registerAssignment)
                 {
                     // For the subsequent position, if they already have the subsequent register assigned, then
@@ -5398,13 +5400,14 @@ void LinearScan::allocateRegisters()
                 }
                 else
                 {
-                    // If subsequent position is not assigned to the subsequent register, then reassign the right
+                    // If the subsequent refPosition is not assigned to the consecutive register, then reassign the right
                     // consecutive register.
                     assignedRegister = REG_NA;
                 }
             }
         }
 #endif // TARGET_ARM64
+
         if (assignedRegister == REG_NA)
         {
             if (currentRefPosition.RegOptional())
