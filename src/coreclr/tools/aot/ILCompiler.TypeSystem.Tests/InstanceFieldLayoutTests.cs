@@ -893,7 +893,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestAutoTypeLayoutClass16Align()
+        public void TestAutoTypeLayoutClass64Align()
         {
             MetadataType classType = _testModule.GetType("Auto", "Class64Align");
             Assert.Equal(0x48, classType.InstanceByteCount.AsInt);
