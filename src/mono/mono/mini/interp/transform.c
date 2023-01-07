@@ -8463,9 +8463,6 @@ interp_reorder_bblocks (TransformData *td)
 			while (i < bb->in_count) {
 				InterpBasicBlock *in_bb = bb->in_bb [i];
 				InterpInst *last_ins = interp_last_ins (in_bb);
-				if (strcmp(td->method->name, "Test")== 0) {
-					printf("test");
-				}
 				if (last_ins && last_ins->opcode == MINT_BR && interp_prev_block_defines_var (last_ins, cond_ins)) {
 					// This bblock is reached unconditionally from one of its parents
 					// Move the conditional branch inside the parent to facilitate propagation
