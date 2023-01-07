@@ -3961,9 +3961,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
             const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
 
-            // We don't have liveness so we rely on other indications of last use.
-            //
-            // We handle these cases:
+            // We generally use liveness to figure out if we can omit creating
+            // this copy. However, even without liveness (e.g. due to too many
+            // tracked locals), we also handle some other cases:
             //
             // * (must not copy) If the call is a tail call, the use is a last use.
             //   We must skip the copy if we have a fast tail call.
@@ -3976,8 +3976,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
             //
-            // fgMightHaveLoop() is expensive; check it last, only if necessary.
-            //
             bool omitCopy = call->IsTailCall();
 
             if (!omitCopy && fgDidEarlyLiveness)
@@ -3987,6 +3985,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && (totalAppearances == 1))
             {
+                // fgMightHaveLoop() is expensive; check it last, only if necessary.
                 omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
             }
 
