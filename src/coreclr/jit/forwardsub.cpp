@@ -619,7 +619,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // recheck it here.
     if (fsv.GetNode() == nullptr)
     {
-        JITDUMP(" no next stmt use");
+        JITDUMP(" no next stmt use\n");
         return false;
     }
 
