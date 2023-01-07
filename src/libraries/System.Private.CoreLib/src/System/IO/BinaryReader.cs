@@ -13,6 +13,7 @@
 **
 ============================================================*/
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -25,13 +26,11 @@ namespace System.IO
         private const int MaxCharBytesSize = 128;
 
         private readonly Stream _stream;
-        private byte[]? _buffer;
         private readonly Encoding _encoding;
         private Decoder? _decoder;
         private byte[]? _charBytes;
         private char[]? _charBuffer;
         private readonly int _maxCharsSize;  // From MaxCharBytesSize & Encoding
-        private readonly int _bufferSize;
 
         // Performance optimization for Read() w/ Unicode.  Speeds us up by ~40%
         private readonly bool _2BytesPerChar;
@@ -60,12 +59,6 @@ namespace System.IO
             _stream = input;
             _encoding = encoding;
             _maxCharsSize = encoding.GetMaxCharCount(MaxCharBytesSize);
-            int minBufferSize = encoding.GetMaxByteCount(1);  // max bytes per one char
-            if (minBufferSize < 16)
-            {
-                minBufferSize = 16;
-            }
-            _bufferSize = minBufferSize;
 
             // For Encodings that always use 2 bytes per char (or more),
             // special case them here to make Read() & Peek() faster.
@@ -504,42 +497,41 @@ namespace System.IO
         // reasons. More about the subject in: https://github.com/dotnet/coreclr/pull/22102
         protected virtual void FillBuffer(int numBytes)
         {
-            if (numBytes < 0 || numBytes > _bufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(numBytes);
 
             ThrowIfDisposed();
 
-            _buffer ??= new byte[_bufferSize];
-
-            // Need to find a good threshold for calling ReadByte() repeatedly
-            // vs. calling Read(byte[], int, int) for both buffered & unbuffered
-            // streams.
-            if (numBytes == 1)
+            switch (numBytes)
             {
-                int n = _stream.ReadByte();
-                if (n == -1)
-                {
-                    ThrowHelper.ThrowEndOfFileException();
-                }
-
-                _buffer[0] = (byte)n;
-                return;
-            }
-
-            if (numBytes > 0)
-            {
-                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
-            }
-            else
-            {
-                // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
-                int n = _stream.Read(_buffer, 0, 0);
-                if (n == 0)
-                {
-                    ThrowHelper.ThrowEndOfFileException();
-                }
+                case 0:
+                    // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
+                    int n = _stream.Read(Array.Empty<byte>(), 0, 0);
+                    if (n == 0)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    break;
+                case 1:
+                    // Need to find a good threshold for calling ReadByte() repeatedly
+                    // vs. calling Read(byte[], int, int) for both buffered & unbuffered
+                    // streams.
+                    n = _stream.ReadByte();
+                    if (n == -1)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    break;
+                default:
+                    byte[] buffer = ArrayPool<byte>.Shared.Rent(numBytes);
+                    try
+                    {
+                        _stream.ReadExactly(buffer.AsSpan(0, numBytes));
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
+                    break;
             }
         }
 
