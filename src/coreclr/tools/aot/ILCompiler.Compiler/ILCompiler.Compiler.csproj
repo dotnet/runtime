@@ -380,6 +380,7 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisReflectionAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
@@ -387,7 +388,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
@@ -695,6 +696,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.compiler\compiler\dataflow\" />
   </ItemGroup>
 
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />

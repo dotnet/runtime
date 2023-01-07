@@ -594,7 +594,7 @@ namespace ILCompiler
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
             }
 
             // Presence of code might trigger the reflectability dependencies.
@@ -746,7 +746,7 @@ namespace ILCompiler
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
             }
         }
 

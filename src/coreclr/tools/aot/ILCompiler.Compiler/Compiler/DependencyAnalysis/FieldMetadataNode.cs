@@ -39,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_field is EcmaField ecmaField)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
             }
 
             return dependencies;

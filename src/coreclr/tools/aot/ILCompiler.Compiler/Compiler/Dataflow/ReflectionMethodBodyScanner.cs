@@ -163,7 +163,7 @@ namespace ILCompiler.Dataflow
         protected override void HandleCallableMethodAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
-            _reflectionMarker.CheckAndWarnOnReflectionAccess(_origin, accessedMethod);
+            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
         }
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)

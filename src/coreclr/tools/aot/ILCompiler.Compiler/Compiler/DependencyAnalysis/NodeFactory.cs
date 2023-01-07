@@ -356,6 +356,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
+            {
+                return new DynamicDependencyAttributesOnEntityNode(entity);
+            });
+
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
             {
                 return new EmbeddedTrimmingDescriptorNode(module);
@@ -675,6 +680,13 @@ namespace ILCompiler.DependencyAnalysis
         public DataflowAnalyzedMethodNode DataflowAnalyzedMethod(MethodIL methodIL)
         {
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
+        }
+
+        private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
+
+        public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
+        {
+            return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
         }
 
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;

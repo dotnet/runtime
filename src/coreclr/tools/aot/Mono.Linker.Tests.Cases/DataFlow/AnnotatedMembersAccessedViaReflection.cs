@@ -59,7 +59,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// DynamicDependency is not supported yet in the analyzer https://github.com/dotnet/linker/issues/2560
 			[ExpectedWarning ("IL2110", nameof (_annotatedField), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2110", nameof (_annotatedField), ProducedBy = ProducedBy.NativeAot)]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (AnnotatedField))]
 			static void DynamicDependency ()
 			{
@@ -73,7 +72,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// DynamicDependency is not supported yet in the analyzer https://github.com/dotnet/linker/issues/2560
 			[ExpectedWarning ("IL2110", nameof (_annotatedField), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2110", nameof (_annotatedField), ProducedBy = ProducedBy.NativeAot)]
 			[DynamicDependency (nameof (_annotatedField), typeof (AnnotatedField))]
 			static void DynamicDependencyByName ()
 			{
@@ -193,7 +191,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// DynamicDependency is not supported yet in the analyzer https://github.com/dotnet/linker/issues/2560
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.NativeAot)]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicMethods, typeof (AnnotatedMethodParameters))]
 			static void DynamicDependency ()
 			{
@@ -207,7 +204,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// DynamicDependency is not supported yet in the analyzer https://github.com/dotnet/linker/issues/2560
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.NativeAot)]
 			[DynamicDependency (nameof (MethodWithSingleAnnotatedParameter), typeof (AnnotatedMethodParameters))]
 			static void DynamicDependencyByName ()
 			{
@@ -509,19 +505,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// DynamicDependency is not supported yet in the analyzer https://github.com/dotnet/linker/issues/2560
 			[ExpectedWarning ("IL2111", nameof (Property1WithAnnotation) + ".set", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (Property1WithAnnotation) + ".set", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (VirtualProperty3WithAnnotationGetterOnly) + ".get", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (VirtualProperty3WithAnnotationGetterOnly) + ".get", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (VirtualProperty4WithAnnotation) + ".get", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (VirtualProperty4WithAnnotation) + ".get", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (VirtualProperty4WithAnnotation) + ".set", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (VirtualProperty4WithAnnotation) + ".set", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (Property5WithAnnotationOnMembers) + ".set", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (Property5WithAnnotationOnMembers) + ".set", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (VirtualProperty6WithAnnotationOnMembers) + ".get", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (VirtualProperty6WithAnnotationOnMembers) + ".get", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2111", nameof (VirtualProperty6WithAnnotationOnMembers) + ".set", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL2111", nameof (VirtualProperty6WithAnnotationOnMembers) + ".set", ProducedBy = ProducedBy.NativeAot)]
 			[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (AnnotatedProperty))]
 			static void DynamicDependency ()
 			{

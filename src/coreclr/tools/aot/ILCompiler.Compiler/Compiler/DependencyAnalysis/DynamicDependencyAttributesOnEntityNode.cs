@@ -11,13 +11,12 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
 
 using ILLink.Shared;
 
 using static ILCompiler.Dataflow.DynamicallyAccessedMembersBinder;
-
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -25,22 +24,55 @@ namespace ILCompiler.DependencyAnalysis
     /// Computes the list of dependencies from DynamicDependencyAttribute.
     /// https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
     /// </summary>
-    internal static class DynamicDependencyAttributeAlgorithm
+    public class DynamicDependencyAttributesOnEntityNode : DependencyNodeCore<NodeFactory>
     {
+        private readonly TypeSystemEntity _entity;
+
+        public DynamicDependencyAttributesOnEntityNode(TypeSystemEntity entity)
+        {
+            Debug.Assert(entity is EcmaMethod || entity is EcmaField);
+            _entity = entity;
+        }
+
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
-            foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, method, method.OwningType, attribute);
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DynamicDependencyAttributesOnEntity(method), "DynamicDependencyAttribute present");
             }
         }
 
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaField field)
         {
-            foreach (var attribute in field.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+            if (field.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, field, field.OwningType, attribute);
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DynamicDependencyAttributesOnEntity(field), "DynamicDependencyAttribute present");
             }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = null;
+            switch (_entity)
+            {
+                case EcmaMethod method:
+                    foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+                    {
+                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, method, method.OwningType, attribute);
+                    }
+                    break;
+
+                case EcmaField field:
+                    foreach (var attribute in field.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+                    {
+                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, field, field.OwningType, attribute);
+                    }
+                    break;
+            }
+
+            return dependencies;
         }
 
         private static void AddDependenciesDueToDynamicDependencyAttribute(
@@ -201,5 +233,17 @@ namespace ILCompiler.DependencyAnalysis
             dependencies ??= new DependencyList();
             dependencies.AddRange(reflectionMarker.Dependencies);
         }
+
+        protected override string GetName(NodeFactory factory)
+        {
+            return "DynamicDependencyAttribute analysis for " + _entity.GetDisplayName();
+        }
+
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool StaticDependenciesAreComputed => true;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
     }
 }

@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_method is EcmaMethod ecmaMethod)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
             }
 
             return dependencies;
