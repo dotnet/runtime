@@ -287,12 +287,12 @@ namespace System.IO
                     ThrowHelper.ThrowEndOfFileException();
                 }
 
-                charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
-
                 if (currPos == 0 && n == stringLength)
                 {
-                    return new string(_charBuffer, 0, charsRead);
+                    return _encoding.GetString(charBytes[..n]);
                 }
+
+                charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
 
                 // Since we could be reading from an untrusted data source, limit the initial size of the
                 // StringBuilder instance we're about to get or create. It'll expand automatically as needed.
