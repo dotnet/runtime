@@ -47,9 +47,7 @@ public class WebcilConverter
     }
 
     public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath)
-    {
-        return new WebcilConverter(inputPath, outputPath);
-    }
+        => new WebcilConverter(inputPath, outputPath);
 
     public void ConvertToWebcil()
     {
@@ -139,7 +137,6 @@ public class WebcilConverter
             curSectionPos += sectionHeader.SizeOfRawData;
             headerBuilder.Add(newHeader);
         }
-
 
         ImmutableArray<DebugDirectoryEntry> debugDirectoryEntries = peReader.ReadDebugDirectory();
 

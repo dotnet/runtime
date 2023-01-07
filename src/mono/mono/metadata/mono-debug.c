@@ -1108,7 +1108,7 @@ bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
 	if (p && *(p + 7) == 0) {
 		size_t n = p - assembly_name;
 		if (!strncmp (bsymfile->aname, assembly_name, n)
-		    && !strcmp (bsymfile->aname + n, ".dll"))
+			&& !strcmp (bsymfile->aname + n, ".dll"))
 			return TRUE;
 	}
 #endif

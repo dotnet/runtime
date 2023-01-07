@@ -948,7 +948,6 @@ try_load_pe_cli_header (char *raw_data, uint32_t raw_data_len, MonoDotNetHeader 
 	return ret;
 }
 
-
 mono_bool
 mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 {

@@ -21,8 +21,4 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="Common\IsExternalInit.cs" />
   </ItemGroup>
-
-
 </Project>
-
-
