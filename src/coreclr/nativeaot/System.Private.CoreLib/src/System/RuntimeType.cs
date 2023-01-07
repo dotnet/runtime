@@ -12,8 +12,8 @@ namespace System
     {
         public sealed override string? GetEnumName(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
+
             ulong rawValue;
             if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
@@ -48,8 +48,7 @@ namespace System
 
         public sealed override bool IsEnumDefined(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
