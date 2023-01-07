@@ -420,9 +420,7 @@ namespace System.IO
             int n = InternalReadChars(new Span<char>(chars));
             if (n != count)
             {
-                char[] copy = new char[n];
-                Buffer.BlockCopy(chars, 0, copy, 0, 2 * n); // sizeof(char)
-                chars = copy;
+                chars = chars[..n];
             }
 
             return chars;
