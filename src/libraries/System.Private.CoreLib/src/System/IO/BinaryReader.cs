@@ -468,10 +468,8 @@ namespace System.IO
 
             if (numRead != result.Length)
             {
-                // Trim array.  This should happen on EOF & possibly net streams.
-                byte[] copy = new byte[numRead];
-                Buffer.BlockCopy(result, 0, copy, 0, numRead);
-                result = copy;
+                // Trim array. This should happen on EOF & possibly net streams.
+                result = result[..numRead];
             }
 
             return result;
