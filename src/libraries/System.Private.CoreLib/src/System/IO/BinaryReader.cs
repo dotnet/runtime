@@ -72,7 +72,7 @@ namespace System.IO
             _2BytesPerChar = encoding is UnicodeEncoding;
             // check if BinaryReader is based on MemoryStream, and keep this for it's life
             // we cannot use "as" operator, since derived classes are not allowed
-            _isMemoryStream = (_stream.GetType() == typeof(MemoryStream));
+            _isMemoryStream = _stream.GetType() == typeof(MemoryStream);
             _leaveOpen = leaveOpen;
 
             Debug.Assert(_decoder != null, "[BinaryReader.ctor]_decoder!=null");
@@ -229,24 +229,24 @@ namespace System.IO
             return (char)value;
         }
 
-        public virtual short ReadInt16() => BinaryPrimitives.ReadInt16LittleEndian(InternalRead(2));
+        public virtual short ReadInt16() => BinaryPrimitives.ReadInt16LittleEndian(InternalRead(stackalloc byte[2]));
 
         [CLSCompliant(false)]
-        public virtual ushort ReadUInt16() => BinaryPrimitives.ReadUInt16LittleEndian(InternalRead(2));
+        public virtual ushort ReadUInt16() => BinaryPrimitives.ReadUInt16LittleEndian(InternalRead(stackalloc byte[2]));
 
-        public virtual int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian(InternalRead(4));
+        public virtual int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian(InternalRead(stackalloc byte[4]));
         [CLSCompliant(false)]
-        public virtual uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian(InternalRead(4));
-        public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8));
+        public virtual uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian(InternalRead(stackalloc byte[4]));
+        public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(stackalloc byte[8]));
         [CLSCompliant(false)]
-        public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(8));
-        public virtual Half ReadHalf() => BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(InternalRead(2)));
-        public virtual unsafe float ReadSingle() => BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(InternalRead(4)));
-        public virtual unsafe double ReadDouble() => BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(InternalRead(8)));
+        public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(stackalloc byte[8]));
+        public virtual Half ReadHalf() => BinaryPrimitives.ReadHalfLittleEndian(InternalRead(stackalloc byte[2]));
+        public virtual unsafe float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(InternalRead(stackalloc byte[4]));
+        public virtual unsafe double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(InternalRead(stackalloc byte[8]));
 
         public virtual decimal ReadDecimal()
         {
-            ReadOnlySpan<byte> span = InternalRead(16);
+            ReadOnlySpan<byte> span = InternalRead(stackalloc byte[16]);
             try
             {
                 return decimal.ToDecimal(span);
@@ -478,23 +478,23 @@ namespace System.IO
             return result;
         }
 
-        private ReadOnlySpan<byte> InternalRead(int numBytes)
+        private ReadOnlySpan<byte> InternalRead(Span<byte> buffer)
         {
-            Debug.Assert(numBytes >= 2 && numBytes <= 16, "value of 1 should use ReadByte. value > 16 requires to change the minimal _buffer size");
+            Debug.Assert(buffer.Length != 1, "length of 1 should use ReadByte.");
 
             if (_isMemoryStream)
             {
                 // read directly from MemoryStream buffer
                 Debug.Assert(_stream is MemoryStream);
-                return ((MemoryStream)_stream).InternalReadSpan(numBytes);
+                return ((MemoryStream)_stream).InternalReadSpan(buffer.Length);
             }
             else
             {
                 ThrowIfDisposed();
 
-                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
+                _stream.ReadExactly(buffer);
 
-                return _buffer;
+                return buffer;
             }
         }
 
