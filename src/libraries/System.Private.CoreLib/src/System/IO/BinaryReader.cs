@@ -25,11 +25,12 @@ namespace System.IO
         private const int MaxCharBytesSize = 128;
 
         private readonly Stream _stream;
-        private readonly byte[] _buffer;
+        private byte[]? _buffer;
         private readonly Decoder _decoder;
         private byte[]? _charBytes;
         private char[]? _charBuffer;
         private readonly int _maxCharsSize;  // From MaxCharBytesSize & Encoding
+        private readonly int _bufferSize;
 
         // Performance optimization for Read() w/ Unicode.  Speeds us up by ~40%
         private readonly bool _2BytesPerChar;
@@ -63,9 +64,7 @@ namespace System.IO
             {
                 minBufferSize = 16;
             }
-
-            _buffer = new byte[minBufferSize];
-            // _charBuffer and _charBytes will be left null.
+            _bufferSize = minBufferSize;
 
             // For Encodings that always use 2 bytes per char (or more),
             // special case them here to make Read() & Peek() faster.
@@ -504,12 +503,14 @@ namespace System.IO
         // reasons. More about the subject in: https://github.com/dotnet/coreclr/pull/22102
         protected virtual void FillBuffer(int numBytes)
         {
-            if (numBytes < 0 || numBytes > _buffer.Length)
+            if (numBytes < 0 || numBytes > _bufferSize)
             {
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
 
             ThrowIfDisposed();
+
+            _buffer ??= new byte[_bufferSize];
 
             // Need to find a good threshold for calling ReadByte() repeatedly
             // vs. calling Read(byte[], int, int) for both buffered & unbuffered
