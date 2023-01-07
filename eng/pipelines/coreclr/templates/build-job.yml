@@ -148,6 +148,9 @@ jobs:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
+    - name: CoreClrPgoDataArg
+      value: ''
+
     - ${{ parameters.variables }}
 
     steps:
