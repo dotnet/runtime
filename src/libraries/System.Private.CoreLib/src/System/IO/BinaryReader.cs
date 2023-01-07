@@ -26,7 +26,8 @@ namespace System.IO
 
         private readonly Stream _stream;
         private byte[]? _buffer;
-        private readonly Decoder _decoder;
+        private readonly Encoding _encoding;
+        private Decoder? _decoder;
         private byte[]? _charBytes;
         private char[]? _charBuffer;
         private readonly int _maxCharsSize;  // From MaxCharBytesSize & Encoding
@@ -57,7 +58,7 @@ namespace System.IO
             }
 
             _stream = input;
-            _decoder = encoding.GetDecoder();
+            _encoding = encoding;
             _maxCharsSize = encoding.GetMaxCharCount(MaxCharBytesSize);
             int minBufferSize = encoding.GetMaxByteCount(1);  // max bytes per one char
             if (minBufferSize < 16)
@@ -73,8 +74,6 @@ namespace System.IO
             // we cannot use "as" operator, since derived classes are not allowed
             _isMemoryStream = _stream.GetType() == typeof(MemoryStream);
             _leaveOpen = leaveOpen;
-
-            Debug.Assert(_decoder != null, "[BinaryReader.ctor]_decoder!=null");
         }
 
         public virtual Stream BaseStream => _stream;
@@ -140,6 +139,7 @@ namespace System.IO
                 posSav = _stream.Position;
             }
 
+            _decoder ??= _encoding.GetDecoder();
             _charBytes ??= new byte[MaxCharBytesSize];
 
             char singleChar = '\0';
@@ -279,6 +279,7 @@ namespace System.IO
                 return string.Empty;
             }
 
+            _decoder ??= _encoding.GetDecoder();
             _charBytes ??= new byte[MaxCharBytesSize];
             _charBuffer ??= new char[_maxCharsSize];
 
@@ -335,6 +336,8 @@ namespace System.IO
         private int InternalReadChars(Span<char> buffer)
         {
             Debug.Assert(!_disposed);
+
+            _decoder ??= _encoding.GetDecoder();
 
             int totalCharsRead = 0;
 
