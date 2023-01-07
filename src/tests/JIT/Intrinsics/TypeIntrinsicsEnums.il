@@ -11,6 +11,12 @@
   .field public specialname rtspecialname char value__
 } // end of class CharEnum
 
+.class public auto ansi sealed BoolEnum
+       extends [System.Runtime]System.Enum
+{
+  .field public specialname rtspecialname bool value__
+} // end of class BoolEnum
+
 .class public auto ansi sealed FloatEnum
        extends [System.Runtime]System.Enum
 {

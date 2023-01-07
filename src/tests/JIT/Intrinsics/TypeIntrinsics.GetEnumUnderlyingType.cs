@@ -43,6 +43,7 @@ public class GetEnumUnderlyingType
         AssertEquals(typeof(ulong),  NoInline(typeof(ULongEnum).GetEnumUnderlyingType()));
 
         AssertEquals(typeof(char),   NoInline(typeof(CharEnum).GetEnumUnderlyingType()));
+        AssertEquals(typeof(bool),   NoInline(typeof(BoolEnum).GetEnumUnderlyingType()));
         AssertEquals(typeof(float),  NoInline(typeof(FloatEnum).GetEnumUnderlyingType()));
         AssertEquals(typeof(double), NoInline(typeof(DoubleEnum).GetEnumUnderlyingType()));
         AssertEquals(typeof(nint),   NoInline(typeof(IntPtrEnum).GetEnumUnderlyingType()));

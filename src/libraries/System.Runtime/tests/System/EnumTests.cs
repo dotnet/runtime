@@ -1595,14 +1595,14 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => Enum.GetValues(genericArgumentWithEnumConstraint));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void DeclaringEnumWithBoolUnderlyingTypeFailsInCoreclr()
         {
             var exception = Assert.Throws<ArgumentException>(GetBoolEnumType);
             Assert.Equal("System.Boolean is not a supported constant type.", exception.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void DeclaringEnumWithBoolUnderlyingTypeFailsInMono()
         {
             var exception = Assert.Throws<TypeLoadException>(GetBoolEnumType);
