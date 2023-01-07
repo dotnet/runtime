@@ -147,7 +147,7 @@ namespace System.Threading
             Initialize();
         }
 
-#if !TARGET_BROWSER || FEATURE_WASM_THREADS
+#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_THREADS
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;

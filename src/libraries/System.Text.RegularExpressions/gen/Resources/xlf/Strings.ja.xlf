@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
         <source>Insufficient or invalid hexadecimal digits.</source>
-        <target state="needs-review-translation">不十分な 16 進数の数字です。</target>
+        <target state="new">Insufficient or invalid hexadecimal digits.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \p{X} character escape.</source>
-        <target state="needs-review-translation">不完全な \\p{X} 文字エスケープです。</target>
+        <target state="new">Incomplete \p{X} character escape.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -139,12 +139,12 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \k&lt;...&gt; named back reference.</source>
-        <target state="needs-review-translation">形式に誤りがある \\k&lt;...&gt; 名前付き逆参照です。</target>
+        <target state="new">Malformed \k&lt;...&gt; named back reference.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
         <source>Malformed \p{X} character escape.</source>
-        <target state="needs-review-translation">形式に誤りがある \\p{X} エスケープ文字です。</target>
+        <target state="new">Malformed \p{X} character escape.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">パターンと入力文字列との照合中に、RegEx エンジンがタイムアウトしました。これは、非常に大きな入力、入れ子になった量指定子によって生じた過剰なバックトラッキング、前方参照などの要因を含む、さまざまな原因によって発生する可能性があります。</target>
+        <target state="new">The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
         <source>Cannot include class \{0} in character range.</source>
-        <target state="needs-review-translation">文字範囲にクラス \\{0} を含めることはできません。</target>
+        <target state="new">Cannot include class \{0} in character range.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \ at end of pattern.</source>
-        <target state="needs-review-translation">パターンの末尾に無効な \\ があります。</target>
+        <target state="new">Illegal \ at end of pattern.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -239,7 +239,7 @@
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
         <source>Unrecognized escape sequence \{0}.</source>
-        <target state="needs-review-translation">認識できないエスケープ シーケンス \\{0} です。</target>
+        <target state="new">Unrecognized escape sequence \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

@@ -33,6 +33,7 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 
+#include "thread.h"
 
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
@@ -54,6 +55,11 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
         // The current fiber is the home fiber of a thread, so the thread is shutting down
         RuntimeThreadShutdown(lpFlsData);
     }
+}
+
+static HMODULE LoadKernel32dll()
+{
+    return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
 void InitializeCurrentProcessCpuCount()
@@ -442,6 +448,26 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 
 static PalHijackCallback g_pHijackCallback;
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
+
+#define QUEUE_USER_APC2_UNINITIALIZED (QueueUserAPC2Proc)-1
+static QueueUserAPC2Proc g_pfnQueueUserAPC2Proc = QUEUE_USER_APC2_UNINITIALIZED;
+
+static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
+                                    (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
+                                    QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
+
+static void NTAPI ActivationHandler(ULONG_PTR parameter)
+{
+    APC_CALLBACK_DATA* data = (APC_CALLBACK_DATA*)parameter;
+    g_pHijackCallback(data->ContextRecord, NULL);
+
+    Thread* pThread = (Thread*)data->Parameter;
+    pThread->SetActivationPending(false);
+}
+#endif
+
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
     ASSERT(g_pHijackCallback == NULL);
@@ -453,6 +479,57 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    // initialize g_pfnQueueUserAPC2Proc on demand.
+    // Note that only one thread at a time may perform suspension (guaranteed by the thread store lock)
+    // so simple conditional assignment is ok.
+    if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
+    {
+        g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(LoadKernel32dll(), "QueueUserAPC2");
+    }
+
+    if (g_pfnQueueUserAPC2Proc)
+    {
+        Thread* pThread = (Thread*)pThreadToHijack;
+
+        // An APC can be interrupted by another one, do not queue more if one is pending.
+        if (pThread->IsActivationPending())
+        {
+            return;
+        }
+
+        pThread->SetActivationPending(true);
+        BOOL success = g_pfnQueueUserAPC2Proc(
+            &ActivationHandler,
+            hThread,
+            (ULONG_PTR)pThreadToHijack,
+            SpecialUserModeApcWithContextFlags);
+
+        if (success)
+        {
+            return;
+        }
+
+        // queuing an APC failed
+        pThread->SetActivationPending(false);
+
+        DWORD lastError = GetLastError();
+        if (lastError != ERROR_INVALID_PARAMETER)
+        {
+            // An unexpected failure has happened. It is a concern.
+            ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
+
+            // maybe it will work next time.
+            return;
+        }
+
+        // the flags that we passed are not supported.
+        // we will not try again
+        g_pfnQueueUserAPC2Proc = NULL;
+    }
+#endif
+
     if (SuspendThread(hThread) == (DWORD)-1)
     {
         return;
@@ -546,7 +623,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadKernel32dll();
     if (hMod == NULL)
         return FALSE;
 
@@ -571,7 +648,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadKernel32dll();
     if (hMod == NULL)
         return FALSE;
 

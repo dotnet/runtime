@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -118,6 +119,20 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
+        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // If we have a type loader template for this type, we need to keep track of the generated
+            // bases in the type info hashtable. The type symbol node does such accounting.
+            return new CombinedDependencyListEntry[]
+            {
+                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Keeping track of template-constructable type static bases"),
+            };
+        }
+
         public override bool StaticDependenciesAreComputed => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -130,8 +145,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
-
-            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
 
             return dependencyList;
         }

@@ -6603,11 +6603,10 @@ PhaseStatus Compiler::optHoistLoopCode()
     if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
-        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+        for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
         {
             TestLabelAndNum tlAndN;
-            GenTree*        node = ki.Get();
-            bool            b    = testData->Lookup(node, &tlAndN);
+            bool            b = testData->Lookup(node, &tlAndN);
             assert(b);
             if (tlAndN.m_tl != TL_LoopHoist)
             {
@@ -10309,11 +10308,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
         if (removedTrackedDefs)
         {
-            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
-            LclVarRefCounts::KeyIterator end(defsInBlock.End());
-            for (; !iter.Equal(end); iter++)
+            for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
             {
-                unsigned int lclNum = iter.Get();
                 if (defsInBlock[lclNum] == 0)
                 {
                     VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
