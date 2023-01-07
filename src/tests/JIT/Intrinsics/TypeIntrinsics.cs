@@ -120,7 +120,7 @@ public partial class Program
         IsFalse(typeof(SimpleStruct).IsEnum);
         IsTrue (typeof(SimpleEnum).IsEnum);
         IsTrue (typeof(CharEnum).IsEnum);
-        IsTrue(typeof(BoolEnum).IsEnum);
+        IsTrue (typeof(BoolEnum).IsEnum);
         IsTrue (typeof(FloatEnum).IsEnum);
         IsTrue (typeof(DoubleEnum).IsEnum);
         IsTrue (typeof(IntPtrEnum).IsEnum);
