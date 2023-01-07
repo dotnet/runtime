@@ -56,7 +56,8 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 		return -1;
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
 
-	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' && wcheader.version_major == MONO_WEBCIL_VERSION_MAJOR && wcheader.version_minor == MONO_WEBCIL_VERSION_MINOR))
+	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' &&
+	      GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR && GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
 		return -1;
 
 	memset (header, 0, sizeof(MonoDotNetHeader));

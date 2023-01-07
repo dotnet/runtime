@@ -59,7 +59,7 @@ public sealed class WebcilReader : IDisposable
             header = *(WebcilHeader*)p;
         }
         if (header.id[0] != 'W' || header.id[1] != 'b'
-            || header.id[1] != 'I' || header.id[1] != 'L'
+            || header.id[2] != 'I' || header.id[3] != 'L'
             || header.version_major != Internal.Constants.WC_VERSION_MAJOR
             || header.version_minor != Internal.Constants.WC_VERSION_MINOR)
         {
