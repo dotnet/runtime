@@ -196,7 +196,6 @@ public:
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
         , m_parentLclNum(BAD_VAR_NUM)
-        , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
@@ -252,10 +251,12 @@ public:
         LclVarDsc* lclDsc = nullptr;
         if (node->OperIsLocal())
         {
+#ifdef DEBUG
             if (IsUse(node->AsLclVarCommon()))
             {
                 m_useCount++;
             }
+#endif
 
             if (!isDef)
             {
@@ -277,10 +278,12 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
+#ifdef DEBUG
     unsigned GetUseCount() const
     {
         return m_useCount;
     }
+#endif
 
     GenTree* GetNode() const
     {
@@ -368,12 +371,14 @@ public:
     }
 
 private:
-    GenTree**    m_use;
-    GenTree*     m_node;
-    GenTree*     m_parentNode;
-    unsigned     m_lclNum;
-    unsigned     m_parentLclNum;
-    unsigned     m_useCount;
+    GenTree** m_use;
+    GenTree*  m_node;
+    GenTree*  m_parentNode;
+    unsigned  m_lclNum;
+    unsigned  m_parentLclNum;
+#ifdef DEBUG
+    unsigned m_useCount = 0;
+#endif
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
     unsigned     m_treeSize;
@@ -601,25 +606,20 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    if (livenessBased)
-    {
-        if (fsv.GetUseCount() > 1)
-        {
-            JITDUMP(" next stmt has multiple uses\n");
-            return false;
-        }
-    }
-    else
+    if (!livenessBased)
     {
         // LclMorph (via RCS_Early) said there was just one use.
         // It had better have gotten this right.
         //
-        assert(fsv.GetUseCount() <= 1);
+        assert(fsv.GetUseCount() == 1);
     }
 
-    if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
+    // The visitor has more contextual information and may not actually deem
+    // the use we found above as a valid forward sub destination so we must
+    // recheck it here.
+    if (fsv.GetNode() == nullptr)
     {
-        JITDUMP(" no next stmt use\n");
+        JITDUMP(" no next stmt use");
         return false;
     }
 
