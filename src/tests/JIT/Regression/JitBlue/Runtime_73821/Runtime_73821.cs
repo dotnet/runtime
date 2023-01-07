@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_73821
+public unsafe class Runtime_73821
 {
     public struct S
     {
@@ -28,7 +28,7 @@ unsafe class Runtime_73821
         return val2;
     }
 
-    static int Main()
+    public static int Main()
     {
         return Test1(33).F + Test2(67);
     }

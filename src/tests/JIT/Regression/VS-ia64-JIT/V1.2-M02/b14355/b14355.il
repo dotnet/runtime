@@ -32,7 +32,7 @@
 .corflags 0x00000001
 
 
-.class private auto ansi beforefieldinit LocallocTest
+.class public auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
 {
   .field private static int32 locallocSize

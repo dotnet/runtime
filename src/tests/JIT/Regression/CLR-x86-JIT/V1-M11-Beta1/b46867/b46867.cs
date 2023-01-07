@@ -6,13 +6,13 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static void Method2(double param3, long param4, __arglist)
         {
             param3 = (double)param4;
         }
-        static int Main()
+        public static int Main()
         {
             Method2(1.0d, 1, __arglist());
             return 100;

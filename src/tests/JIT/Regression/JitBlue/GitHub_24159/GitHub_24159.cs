@@ -25,7 +25,7 @@ namespace GitHub_24159
         public int j5;
     }
 
-    class Test
+    public class Test
     {
         static int i;
 

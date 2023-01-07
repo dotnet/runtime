@@ -26,10 +26,10 @@
   .size 1680
 }
 
-.class private auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test
        extends [mscorlib]System.Object
 {
-    .method assembly static unmanagedexp int32
+    .method public assembly static unmanagedexp int32
             main() cil managed
     {
         .entrypoint

@@ -3,9 +3,9 @@
 //
 
 using System;
-class AA
+public class AA
 {
-    static int Main()
+    public static int Main()
     {
         bool b = false;
         b = (b ? (object)b : (object)new AA()) ==

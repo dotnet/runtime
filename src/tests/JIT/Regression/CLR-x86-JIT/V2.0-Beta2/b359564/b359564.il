@@ -10,7 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 
 .method static int32 Test() noinlining {
 .maxstack 16
