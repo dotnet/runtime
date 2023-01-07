@@ -25,6 +25,8 @@ public sealed class WebcilReader : IDisposable
     private MetadataReaderProvider? _metadataReaderProvider;
     private ImmutableArray<WebcilSectionHeader>? _sections;
 
+    private string? InputPath { get; }
+
     public WebcilReader(Stream stream)
     {
         this._stream = stream;
@@ -40,6 +42,11 @@ public sealed class WebcilReader : IDisposable
         {
             throw new BadImageFormatException("Stream does not contain a valid COR header in the Webcil file", nameof(stream));
         }
+    }
+
+    public WebcilReader (Stream stream, string inputPath) : this(stream)
+    {
+        InputPath = inputPath;
     }
 
     private unsafe bool ReadHeader()
@@ -94,7 +101,7 @@ public sealed class WebcilReader : IDisposable
             long pos = TranslateRVA((uint)_corHeaderMetadataDirectory.RelativeVirtualAddress);
             if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
             {
-                throw new BadImageFormatException("Could not seek to metadata", nameof(_stream));
+                throw new BadImageFormatException("Could not seek to metadata in ", InputPath);
             }
             _metadataReaderProvider = MetadataReaderProvider.FromMetadataStream(_stream, MetadataStreamOptions.LeaveOpen);
         }
@@ -120,7 +127,7 @@ public sealed class WebcilReader : IDisposable
         var buffer = new byte[debugSize];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
-            throw new BadImageFormatException("Could not read debug directory", nameof(_stream));
+            throw new BadImageFormatException("Could not read debug directory", InputPath);
         }
         unsafe
         {
