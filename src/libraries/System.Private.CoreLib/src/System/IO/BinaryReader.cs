@@ -28,7 +28,6 @@ namespace System.IO
         private readonly Stream _stream;
         private readonly Encoding _encoding;
         private Decoder? _decoder;
-        private byte[]? _charBytes;
         private char[]? _charBuffer;
         private readonly int _maxCharsSize;  // From MaxCharBytesSize & Encoding
 
@@ -133,7 +132,7 @@ namespace System.IO
             }
 
             _decoder ??= _encoding.GetDecoder();
-            _charBytes ??= new byte[MaxCharBytesSize];
+            Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
             char singleChar = '\0';
 
@@ -146,7 +145,7 @@ namespace System.IO
                 numBytes = _2BytesPerChar ? 2 : 1;
 
                 int r = _stream.ReadByte();
-                _charBytes[0] = (byte)r;
+                charBytes[0] = (byte)r;
                 if (r == -1)
                 {
                     numBytes = 0;
@@ -154,7 +153,7 @@ namespace System.IO
                 if (numBytes == 2)
                 {
                     r = _stream.ReadByte();
-                    _charBytes[1] = (byte)r;
+                    charBytes[1] = (byte)r;
                     if (r == -1)
                     {
                         numBytes = 1;
@@ -166,11 +165,11 @@ namespace System.IO
                     return -1;
                 }
 
-                Debug.Assert(numBytes == 1 || numBytes == 2, "BinaryReader::ReadOneChar assumes it's reading one or 2 bytes only.");
+                Debug.Assert(numBytes is 1 or 2, "BinaryReader::ReadOneChar assumes it's reading one or two bytes only.");
 
                 try
                 {
-                    charsRead = _decoder.GetChars(new ReadOnlySpan<byte>(_charBytes, 0, numBytes), new Span<char>(ref singleChar), flush: false);
+                    charsRead = _decoder.GetChars(charBytes[..numBytes], new Span<char>(ref singleChar), flush: false);
                 }
                 catch
                 {
@@ -273,21 +272,22 @@ namespace System.IO
             }
 
             _decoder ??= _encoding.GetDecoder();
-            _charBytes ??= new byte[MaxCharBytesSize];
             _charBuffer ??= new char[_maxCharsSize];
+
+            Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
             StringBuilder? sb = null;
             do
             {
                 readLength = ((stringLength - currPos) > MaxCharBytesSize) ? MaxCharBytesSize : (stringLength - currPos);
 
-                n = _stream.Read(_charBytes, 0, readLength);
+                n = _stream.Read(charBytes[..readLength]);
                 if (n == 0)
                 {
                     ThrowHelper.ThrowEndOfFileException();
                 }
 
-                charsRead = _decoder.GetChars(_charBytes, 0, n, _charBuffer, 0);
+                charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
 
                 if (currPos == 0 && n == stringLength)
                 {
@@ -333,6 +333,7 @@ namespace System.IO
             _decoder ??= _encoding.GetDecoder();
 
             int totalCharsRead = 0;
+            Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
             while (!buffer.IsEmpty)
             {
@@ -353,10 +354,9 @@ namespace System.IO
                 // a custom replacement sequence may violate this assumption.
                 if (numBytes > 1)
                 {
-                    DecoderNLS? decoder = _decoder as DecoderNLS;
                     // For internal decoders, we can check whether the decoder has any pending state.
                     // For custom decoders, assume that the decoder has pending state.
-                    if (decoder == null || decoder.HasState)
+                    if (_decoder is not DecoderNLS decoder || decoder.HasState)
                     {
                         numBytes--;
 
@@ -367,7 +367,7 @@ namespace System.IO
                     }
                 }
 
-                ReadOnlySpan<byte> byteBuffer;
+                scoped ReadOnlySpan<byte> byteBuffer;
                 if (_isMemoryStream)
                 {
                     Debug.Assert(_stream is MemoryStream);
@@ -379,15 +379,13 @@ namespace System.IO
                 }
                 else
                 {
-                    _charBytes ??= new byte[MaxCharBytesSize];
-
                     if (numBytes > MaxCharBytesSize)
                     {
                         numBytes = MaxCharBytesSize;
                     }
 
-                    numBytes = _stream.Read(_charBytes, 0, numBytes);
-                    byteBuffer = new ReadOnlySpan<byte>(_charBytes, 0, numBytes);
+                    numBytes = _stream.Read(charBytes[..numBytes]);
+                    byteBuffer = charBytes[..numBytes];
                 }
 
                 if (byteBuffer.IsEmpty)
