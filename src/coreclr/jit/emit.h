@@ -2174,10 +2174,10 @@ private:
     }
 
 #define EMIT_MAX_IG_INS_COUNT 256
-#define EMIT_MAX_LAST_INSTR_COUNT 32
+#define EMIT_MAX_LAST_INS_COUNT 32
 
     // A recording of the last instructions, used for peephole optimizations.
-    instrDesc* emitLastInstrs[EMIT_MAX_LAST_INSTR_COUNT];
+    instrDesc* emitLastInstrs[EMIT_MAX_LAST_INS_COUNT];
 
     inline instrDesc* emitGetLastIns() const
     {
