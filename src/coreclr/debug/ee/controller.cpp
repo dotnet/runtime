@@ -2168,7 +2168,7 @@ void DebuggerController::RemovePatchesFromModule(Module *pModule, AppDomain *pAp
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100000, "DPT::CPFM mod:0x%p (%S)\n",
+    LOG((LF_CORDB, LL_INFO100000, "DPT::CPFM mod:0x%p (%s)\n",
         pModule, pModule->GetDebugName()));
 
     // First find all patches of interest
@@ -7398,14 +7398,14 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
             "See http://team/sites/clrdev/Devdocs/StubManagers.rtf for more information on StubManagers.\n"
             "Stepper this=0x%p, startMethod='%s::%s'\n"
             "---------------------------------\n"
-            "Stub manager log:\n%S"
+            "Stub manager log:\n%s"
             "\n"
             "The thread is now in managed method '%s::%s'.\n"
             "---------------------------------\n",
             this,
             ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
             ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
-            sLog.GetUnicode(),
+            sLog.GetUTF8(),
             pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
             ));
     }
@@ -8707,8 +8707,8 @@ DebuggerEnCBreakpoint::DebuggerEnCBreakpoint(SIZE_T offset,
     _ASSERTE( jitInfo != NULL );
     // Add and activate the specified patch
     AddBindAndActivateNativeManagedPatch(jitInfo->m_nativeCodeVersion.GetMethodDesc(), jitInfo, offset, LEAF_MOST_FRAME, pAppDomain);
-    LOG((LF_ENC,LL_INFO1000, "DEnCBPDEnCBP::adding %S patch!\n",
-        fTriggerType == REMAP_PENDING ? W("remap pending") : W("remap complete")));
+    LOG((LF_ENC,LL_INFO1000, "DEnCBPDEnCBP::adding %s patch!\n",
+        fTriggerType == REMAP_PENDING ? "remap pending" : "remap complete"));
 }
 
 
@@ -8749,9 +8749,9 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     _ASSERTE(map == MAPPING_EXACT);
 
     LOG((LF_ENC, LL_ALWAYS,
-         "DEnCBP::TP: triggered E&C %S breakpoint: tid=0x%x, module=0x%08x, "
+         "DEnCBP::TP: triggered E&C %s breakpoint: tid=0x%x, module=0x%08x, "
          "method def=0x%08x, version=%d, native offset=0x%x, IL offset=0x%x\n this=0x%x\n",
-         m_fTriggerType == REMAP_PENDING ? W("ResumePending") : W("ResumeComplete"),
+         m_fTriggerType == REMAP_PENDING ? "ResumePending" : "ResumeComplete",
          thread, module, md, m_jitInfo->m_encVersion, offset, currentIP, this));
 
     // If this is a REMAP_COMPLETE patch, then dispatch the RemapComplete callback

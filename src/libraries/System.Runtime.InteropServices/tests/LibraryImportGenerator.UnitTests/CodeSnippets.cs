@@ -964,7 +964,7 @@ partial class Test
             + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.In
             + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
 
-    public static string RecursiveCountElementNameOnReturnValue => $@"
+        public static string RecursiveCountElementNameOnReturnValue => $@"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {DisableRuntimeMarshalling}

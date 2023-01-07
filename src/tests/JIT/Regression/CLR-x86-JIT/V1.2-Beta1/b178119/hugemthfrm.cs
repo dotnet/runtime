@@ -96,7 +96,7 @@ struct Struct_128Kbytes
 
 }
 
-class bug178119
+public class bug178119
 {
     public static int foo1()
     {

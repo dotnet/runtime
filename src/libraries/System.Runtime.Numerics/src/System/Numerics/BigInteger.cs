@@ -1314,9 +1314,6 @@ namespace System.Numerics
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
         private enum GetBytesMode { AllocateArray, Count, Span }
 
-        /// <summary>Dummy array returned from TryGetBytes to indicate success when in span mode.</summary>
-        private static readonly byte[] s_success = Array.Empty<byte>();
-
         /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
         /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
@@ -1353,7 +1350,7 @@ namespace System.Numerics
                         if (destination.Length != 0)
                         {
                             destination[0] = 0;
-                            return s_success;
+                            return Array.Empty<byte>();
                         }
                         return null;
                 }
@@ -1451,7 +1448,7 @@ namespace System.Numerics
                     {
                         return null;
                     }
-                    array = s_success;
+                    array = Array.Empty<byte>();
                     break;
             }
 

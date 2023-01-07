@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -106,55 +107,55 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<sbyte> AlignRight(Vector256<sbyte> left, Vector256<sbyte> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<sbyte> AlignRight(Vector256<sbyte> left, Vector256<sbyte> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<byte> AlignRight(Vector256<byte> left, Vector256<byte> right, byte mask) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
-        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
-        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
-        /// </summary>
-        public static Vector256<short> AlignRight(Vector256<short> left, Vector256<short> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> AlignRight(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
         /// </summary>
-        public static Vector256<ushort> AlignRight(Vector256<ushort> left, Vector256<ushort> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> AlignRight(Vector256<short> left, Vector256<short> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
         /// </summary>
-        public static Vector256<int> AlignRight(Vector256<int> left, Vector256<int> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> AlignRight(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
         /// </summary>
-        public static Vector256<uint> AlignRight(Vector256<uint> left, Vector256<uint> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> AlignRight(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
         /// </summary>
-        public static Vector256<long> AlignRight(Vector256<long> left, Vector256<long> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> AlignRight(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
         ///   VPALIGNR ymm, ymm, ymm/m256, imm8
         /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
         /// </summary>
-        public static Vector256<ulong> AlignRight(Vector256<ulong> left, Vector256<ulong> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> AlignRight(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<ulong> AlignRight(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_and_si256 (__m256i a, __m256i b)
@@ -253,32 +254,32 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8)
         ///   VPBLENDD xmm, xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<int> Blend(Vector128<int> left, Vector128<int> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> Blend(Vector128<int> left, Vector128<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8)
         ///   VPBLENDD xmm, xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<uint> Blend(Vector128<uint> left, Vector128<uint> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> Blend(Vector128<uint> left, Vector128<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8)
         ///   VPBLENDW ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<short> Blend(Vector256<short> left, Vector256<short> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> Blend(Vector256<short> left, Vector256<short> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8)
         ///   VPBLENDW ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ushort> Blend(Vector256<ushort> left, Vector256<ushort> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> Blend(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8)
         ///   VPBLENDD ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<int> Blend(Vector256<int> left, Vector256<int> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> Blend(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8)
         ///   VPBLENDD ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<uint> Blend(Vector256<uint> left, Vector256<uint> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> Blend(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
@@ -803,339 +804,339 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<byte> ExtractVector128(Vector256<byte> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<byte> ExtractVector128(Vector256<byte> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<short> ExtractVector128(Vector256<short> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<short> ExtractVector128(Vector256<short> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<ushort> ExtractVector128(Vector256<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<ushort> ExtractVector128(Vector256<ushort> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<int> ExtractVector128(Vector256<int> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<int> ExtractVector128(Vector256<int> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<uint> ExtractVector128(Vector256<uint> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<uint> ExtractVector128(Vector256<uint> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<long> ExtractVector128(Vector256<long> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<long> ExtractVector128(Vector256<long> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
-        public static new Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector128<ulong> ExtractVector128(Vector256<ulong> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDQ xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDQ xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_i32gather_ps (float const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERDPS xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERDPD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i64gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERQQ xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERQQ xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_i64gather_ps (float const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERQPS xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_i64gather_pd (double const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERQPD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<int> GatherVector256(int* baseAddress, Vector256<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<int> GatherVector256(int* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<uint> GatherVector256(uint* baseAddress, Vector256<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<uint> GatherVector256(uint* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
         ///   VPGATHERDQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_i32gather_ps (float const* base_addr, __m256i vindex, const int scale)
         ///   VGATHERDPS ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<float> GatherVector256(float* baseAddress, Vector256<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<float> GatherVector256(float* baseAddress, Vector256<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_i32gather_pd (double const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERDPD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector128<int> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector128<int> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm256_i64gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERQD xmm, vm64y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i64gather_epi64 (__int64 const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERQQ ymm, vm64y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<long> GatherVector256(long* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_i64gather_epi64 (__int64 const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERQQ ymm, vm64y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ulong> GatherVector256(ulong* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm256_i64gather_ps (float const* base_addr, __m256i vindex, const int scale)
         ///   VGATHERQPS xmm, vm64y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
         ///   VGATHERQPD ymm, vm64y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<long> index, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<int> index, Vector128<int> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<int> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<int> index, Vector128<uint> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<int> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERDQ xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<int> index, Vector128<long> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<int> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERDQ xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<int> index, Vector128<ulong> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<int> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_mask_i32gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale)
         ///   VGATHERDPS xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<int> index, Vector128<float> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<int> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_mask_i32gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale)
         ///   VGATHERDPD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<int> index, Vector128<double> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<int> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<long> index, Vector128<int> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<long> index, Vector128<uint> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERQQ xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<long> index, Vector128<long> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<long> index, Vector128<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_mask_i64gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
         ///   VPGATHERQQ xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<long> index, Vector128<ulong> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<long> index, Vector128<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_mask_i64gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale)
         ///   VGATHERQPS xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<long> index, Vector128<float> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_mask_i64gather_pd (__m128d src, double const* base_addr, __m128i vindex, __m128d mask, const int scale)
         ///   VGATHERQPD xmm, vm64x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<long> index, Vector128<double> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<double> GatherMaskVector128(Vector128<double> source, double* baseAddress, Vector128<long> index, Vector128<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<int> GatherMaskVector256(Vector256<int> source, int* baseAddress, Vector256<int> index, Vector256<int> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<int> GatherMaskVector256(Vector256<int> source, int* baseAddress, Vector256<int> index, Vector256<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<uint> GatherMaskVector256(Vector256<uint> source, uint* baseAddress, Vector256<int> index, Vector256<uint> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<uint> GatherMaskVector256(Vector256<uint> source, uint* baseAddress, Vector256<int> index, Vector256<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)
         ///   VPGATHERDQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector128<int> index, Vector256<long> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector128<int> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)
         ///   VPGATHERDQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector128<int> index, Vector256<ulong> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector128<int> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_mask_i32gather_ps (__m256 src, float const* base_addr, __m256i vindex, __m256 mask, const int scale)
         ///   VPGATHERDPS ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<float> GatherMaskVector256(Vector256<float> source, float* baseAddress, Vector256<int> index, Vector256<float> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<float> GatherMaskVector256(Vector256<float> source, float* baseAddress, Vector256<int> index, Vector256<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_mask_i32gather_pd (__m256d src, double const* base_addr, __m128i vindex, __m256d mask, const int scale)
         ///   VPGATHERDPD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector128<int> index, Vector256<double> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector128<int> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm32y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector256<long> index, Vector128<int> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector256<long> index, Vector128<int> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm32y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<long> index, Vector128<uint> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERQQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<long> GatherMaskVector256(Vector256<long> source, long* baseAddress, Vector256<long> index, Vector256<long> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERQQ ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector256<long> index, Vector256<ulong> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ulong> GatherMaskVector256(Vector256<ulong> source, ulong* baseAddress, Vector256<long> index, Vector256<ulong> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm256_mask_i64gather_ps (__m128 src, float const* base_addr, __m256i vindex, __m128 mask, const int scale)
         ///   VGATHERQPS xmm, vm32y, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector256<long> index, Vector128<float> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector256<long> index, Vector128<float> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_mask_i64gather_pd (__m256d src, double const* base_addr, __m256i vindex, __m256d mask, const int scale)
         ///   VGATHERQPD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
-        public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, byte scale) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, [ConstantExpected(Min = (byte)(1), Max = (byte)(8))] byte scale) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_hadd_epi16 (__m256i a, __m256i b)
@@ -1175,49 +1176,49 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static new Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_stream_load_si256 (__m256i const* mem_addr)
@@ -1433,7 +1434,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_mpsadbw_epu8 (__m256i a, __m256i b, const int imm8)
         ///   VMPSADBW ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ushort> MultipleSumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right, byte mask) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> MultipleSumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_mul_epi32 (__m256i a, __m256i b)
@@ -1551,58 +1552,58 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
         ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static new Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static new Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)
         ///   VPERMQ ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<long> Permute4x64(Vector256<long> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> Permute4x64(Vector256<long> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)
         ///   VPERMQ ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ulong> Permute4x64(Vector256<ulong> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> Permute4x64(Vector256<ulong> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_permute4x64_pd (__m256d a, const int imm8)
         ///   VPERMPD ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<double> Permute4x64(Vector256<double> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<double> Permute4x64(Vector256<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
@@ -1655,73 +1656,73 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_slli_epi16 (__m256i a, int imm8)
         ///   VPSLLW ymm, ymm, imm8
         /// </summary>
-        public static Vector256<short> ShiftLeftLogical(Vector256<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShiftLeftLogical(Vector256<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_slli_epi16 (__m256i a, int imm8)
         ///   VPSLLW ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ushort> ShiftLeftLogical(Vector256<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShiftLeftLogical(Vector256<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_slli_epi32 (__m256i a, int imm8)
         ///   VPSLLD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<int> ShiftLeftLogical(Vector256<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ShiftLeftLogical(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_slli_epi32 (__m256i a, int imm8)
         ///   VPSLLD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<uint> ShiftLeftLogical(Vector256<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ShiftLeftLogical(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_slli_epi64 (__m256i a, int imm8)
         ///   VPSLLQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<long> ShiftLeftLogical(Vector256<long> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ShiftLeftLogical(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_slli_epi64 (__m256i a, int imm8)
         ///   VPSLLQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ulong> ShiftLeftLogical(Vector256<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ShiftLeftLogical(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<sbyte> ShiftLeftLogical128BitLane(Vector256<sbyte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<sbyte> ShiftLeftLogical128BitLane(Vector256<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<byte> ShiftLeftLogical128BitLane(Vector256<byte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> ShiftLeftLogical128BitLane(Vector256<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<short> ShiftLeftLogical128BitLane(Vector256<short> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShiftLeftLogical128BitLane(Vector256<short> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ushort> ShiftLeftLogical128BitLane(Vector256<ushort> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShiftLeftLogical128BitLane(Vector256<ushort> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<int> ShiftLeftLogical128BitLane(Vector256<int> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ShiftLeftLogical128BitLane(Vector256<int> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<uint> ShiftLeftLogical128BitLane(Vector256<uint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ShiftLeftLogical128BitLane(Vector256<uint> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<long> ShiftLeftLogical128BitLane(Vector256<long> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ShiftLeftLogical128BitLane(Vector256<long> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
         ///   VPSLLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ulong> ShiftLeftLogical128BitLane(Vector256<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ShiftLeftLogical128BitLane(Vector256<ulong> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_sllv_epi32 (__m256i a, __m256i count)
@@ -1780,12 +1781,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_srai_epi16 (__m256i a, int imm8)
         ///   VPSRAW ymm, ymm, imm8
         /// </summary>
-        public static Vector256<short> ShiftRightArithmetic(Vector256<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShiftRightArithmetic(Vector256<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srai_epi32 (__m256i a, int imm8)
         ///   VPSRAD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<int> ShiftRightArithmetic(Vector256<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ShiftRightArithmetic(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_srav_epi32 (__m256i a, __m256i count)
@@ -1834,73 +1835,73 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_srli_epi16 (__m256i a, int imm8)
         ///   VPSRLW ymm, ymm, imm8
         /// </summary>
-        public static Vector256<short> ShiftRightLogical(Vector256<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShiftRightLogical(Vector256<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srli_epi16 (__m256i a, int imm8)
         ///   VPSRLW ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShiftRightLogical(Vector256<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srli_epi32 (__m256i a, int imm8)
         ///   VPSRLD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<int> ShiftRightLogical(Vector256<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ShiftRightLogical(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srli_epi32 (__m256i a, int imm8)
         ///   VPSRLD ymm, ymm, imm8
         /// </summary>
-        public static Vector256<uint> ShiftRightLogical(Vector256<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ShiftRightLogical(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srli_epi64 (__m256i a, int imm8)
         ///   VPSRLQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<long> ShiftRightLogical(Vector256<long> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ShiftRightLogical(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_srli_epi64 (__m256i a, int imm8)
         ///   VPSRLQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<sbyte> ShiftRightLogical128BitLane(Vector256<sbyte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<sbyte> ShiftRightLogical128BitLane(Vector256<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<byte> ShiftRightLogical128BitLane(Vector256<byte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<byte> ShiftRightLogical128BitLane(Vector256<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<short> ShiftRightLogical128BitLane(Vector256<short> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShiftRightLogical128BitLane(Vector256<short> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ushort> ShiftRightLogical128BitLane(Vector256<ushort> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShiftRightLogical128BitLane(Vector256<ushort> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<int> ShiftRightLogical128BitLane(Vector256<int> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ShiftRightLogical128BitLane(Vector256<int> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<uint> ShiftRightLogical128BitLane(Vector256<uint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> ShiftRightLogical128BitLane(Vector256<uint> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<long> ShiftRightLogical128BitLane(Vector256<long> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ShiftRightLogical128BitLane(Vector256<long> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
         ///   VPSRLDQ ymm, ymm, imm8
         /// </summary>
-        public static Vector256<ulong> ShiftRightLogical128BitLane(Vector256<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ulong> ShiftRightLogical128BitLane(Vector256<ulong> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_srlv_epi32 (__m256i a, __m256i count)
@@ -1958,34 +1959,34 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
         ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<int> Shuffle(Vector256<int> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> Shuffle(Vector256<int> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
         ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<uint> Shuffle(Vector256<uint> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<uint> Shuffle(Vector256<uint> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_shufflehi_epi16 (__m256i a, const int imm8)
         ///   VPSHUFHW ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<short> ShuffleHigh(Vector256<short> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShuffleHigh(Vector256<short> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_shufflehi_epi16 (__m256i a, const int imm8)
         ///   VPSHUFHW ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ushort> ShuffleHigh(Vector256<ushort> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShuffleHigh(Vector256<ushort> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_shufflelo_epi16 (__m256i a, const int imm8)
         ///   VPSHUFLW ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<short> ShuffleLow(Vector256<short> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ShuffleLow(Vector256<short> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_shufflelo_epi16 (__m256i a, const int imm8)
         ///   VPSHUFLW ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<ushort> ShuffleLow(Vector256<ushort> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> ShuffleLow(Vector256<ushort> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_sign_epi8 (__m256i a, __m256i b)

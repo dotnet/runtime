@@ -26,7 +26,7 @@ namespace DefaultNamespace
 
     }
 
-    internal class Finalize
+    public class Finalize
     {
         public static int Main()
         {

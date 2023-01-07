@@ -358,7 +358,7 @@ public:
     //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
     //    - LoaderAllocator cannot ever go back to phase #1 or #2, but it can skip this phase if there are
-    //      not any LCG method references keeping it alive at the time of manged scout finalization.
+    //      no LCG method references keeping it alive at the time of managed scout finalization.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... FALSE (change from phase #2)

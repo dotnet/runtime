@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 // Test case where a type-equvalent delegate is assigned
 
-class X
+public class X
 {
     static int F() => 3;
 

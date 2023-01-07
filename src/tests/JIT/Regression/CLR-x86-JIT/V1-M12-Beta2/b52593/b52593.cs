@@ -4,10 +4,10 @@
 namespace Test
 {
     using System;
-    internal class App
+    public class App
     {
         private static void Method1(TypedReference param1, object obj) { }
-        private static int Main()
+        public static int Main()
         {
             int[] an = { 0 };
             Method1(__makeref(an[0]), 1);

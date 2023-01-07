@@ -32,6 +32,7 @@
   IL_0012:  ret
 } // end of global method PtrToStringChars
 
+.class public auto ansi Test_b102962b extends [mscorlib] System.Object {
 .method public static int32  
         main() cil managed
 {
@@ -49,4 +50,5 @@
   IL_0012:  stloc.1
   IL_0013:  ldc.i4 100
   IL_0014:  ret
+}
 }

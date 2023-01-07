@@ -13,9 +13,9 @@ namespace Runtime_54647
         Vector64<int> _fld2;
     }
 
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             var val1 = new Vector64x2();
             var val2 = new Vector64x2();

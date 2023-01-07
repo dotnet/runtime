@@ -71,9 +71,9 @@ public class RandomTwister64
 }
 
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         int i;
         int countZero = 0;
