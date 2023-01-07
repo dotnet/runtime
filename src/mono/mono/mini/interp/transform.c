@@ -8381,33 +8381,30 @@ interp_mark_reachable_bblocks (TransformData *td)
 static gboolean
 interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
 {
-	GHashTable *vars = g_hash_table_new(NULL, NULL);
-	InterpInst *prev_ins = cond_ins;
-	while (prev_ins) {
-		if (mono_interp_op_dregs [prev_ins->opcode] && g_hash_table_lookup(vars, GINT_TO_POINTER(prev_ins->dreg)))
-			g_hash_table_remove(vars, GINT_TO_POINTER(prev_ins->dreg));
-		
-		if (mono_interp_op_sregs [prev_ins->opcode] > 0)
-			g_hash_table_add(vars, GINT_TO_POINTER(prev_ins->sregs [0]));
-		if (mono_interp_op_sregs [prev_ins->opcode] > 1)
-			g_hash_table_add(vars, GINT_TO_POINTER(prev_ins->sregs [1]));
-
-		prev_ins = interp_prev_ins(prev_ins);
+	InterpInst *prev_ins = interp_prev_ins(cond_ins);
+	int var1 = -1, var2 = -1;
+	if (MINT_IS_BINOP_CONDITIONAL_BRANCH(cond_ins->opcode)) {
+		var1 = cond_ins->sregs [0];
+		var2 = cond_ins->sregs [1];
+	} else {
+		if (prev_ins && MINT_IS_COMPARE(prev_ins->opcode)) {
+			var1 = prev_ins->sregs [0];
+			var2 = prev_ins->sregs [1];
+		} else {
+			var1 = cond_ins->sregs [0];
+		}
 	}
+
 	// Check max of 5 instructions
-	gboolean prev_block_defines_var = FALSE;
 	prev_ins = in_bb_ins;
 	for (int i = 0; i < 5; i++) {
 		prev_ins = interp_prev_ins (prev_ins);
 		if (!prev_ins)
-			break;
-		if (mono_interp_op_dregs [prev_ins->opcode] && g_hash_table_lookup(vars, GINT_TO_POINTER(prev_ins->dreg))) {
-			prev_block_defines_var = TRUE;
-			break;
-		}
+			return FALSE;
+		if (mono_interp_op_dregs [prev_ins->opcode] && (prev_ins->dreg == var1 || prev_ins->dreg == var2))
+			return TRUE;
 	}
-	g_hash_table_destroy(vars);
-	return prev_block_defines_var;
+	return FALSE;
 }
 
 /**
