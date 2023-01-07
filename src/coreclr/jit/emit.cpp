@@ -1010,7 +1010,6 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         assert((BYTE*)emitGetLastIns() < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        assert(emitHasLastIns());
         if (emitGetLastIns()->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;

@@ -2174,10 +2174,10 @@ private:
     }
 
 #define EMIT_MAX_IG_INS_COUNT 256
+#define EMIT_MAX_LAST_INSTR_COUNT 32
 
     // A recording of the last instructions, used for peephole optimizations.
-    // The max count of last instructions is the same as the max count of IG instructions.
-    instrDesc* emitLastInstrs[EMIT_MAX_IG_INS_COUNT];
+    instrDesc* emitLastInstrs[EMIT_MAX_LAST_INSTR_COUNT];
 
     inline instrDesc* emitGetLastIns() const
     {
@@ -2210,8 +2210,9 @@ private:
 
     // Visits the last emitted instructions.
     // Must be safe to do - use emitCanPeepholeLastIns for checking.
+    // Action is a function type: instrDesc* -> emitPeepholeResult
     template <typename Action>
-    void emitPeepholeLastInstrs(Action action)
+    void emitPeepholeIterateLastInstrs(Action action)
     {
         assert(emitCanPeepholeLastIns());
 

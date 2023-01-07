@@ -494,19 +494,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     bool result = false;
 
-    emitPeepholeLastInstrs([&](instrDesc* id) {
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
         switch (id->idInsFmt())
         {
-            case IF_RRD:
             case IF_RWR:
             case IF_RRW:
 
-            case IF_RRD_CNS:
             case IF_RWR_CNS:
             case IF_RRW_CNS:
             case IF_RRW_SHF:
 
-            case IF_RRD_RRD:
             case IF_RWR_RRD:
             case IF_RRW_RRD:
             case IF_RRW_RRW:
@@ -517,7 +514,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
             case IF_RWR_RRD_RRD_RRD:
 
-            case IF_RRD_MRD:
             case IF_RWR_MRD:
             case IF_RRW_MRD:
             case IF_RRW_MRD_CNS:
@@ -528,7 +524,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             case IF_RWR_RRD_MRD_RRD:
             case IF_RWR_MRD_OFF:
 
-            case IF_RRD_SRD:
             case IF_RWR_SRD:
             case IF_RRW_SRD:
             case IF_RRW_SRD_CNS:
@@ -538,7 +533,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             case IF_RWR_RRD_SRD_CNS:
             case IF_RWR_RRD_SRD_RRD:
 
-            case IF_RRD_ARD:
             case IF_RWR_ARD:
             case IF_RRW_ARD:
             case IF_RRW_ARD_CNS:
