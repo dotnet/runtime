@@ -35,6 +35,16 @@ namespace System.Runtime.InteropServices
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
         private readonly ConditionalWeakTable<object, NativeObjectWrapper> _rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
 
+        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>

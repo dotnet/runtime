@@ -197,6 +197,41 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
+        static unsafe void ValidateMappingAPIs()
+        {
+            Console.WriteLine($"Running {nameof(ValidateMappingAPIs)}...");
+
+            var cw = new TestComWrappers();
+
+            // Allocate a wrapper for the managed instance
+            var managedObj = new Test();
+            IntPtr managedWrapper = cw.GetOrCreateComInterfaceForObject(managedObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, managedWrapper);
+
+            // Create a wrapper for the unmanaged instance
+            IntPtr unmanagedObj = MockReferenceTrackerRuntime.CreateTrackerObject();
+            Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, ref IID_IUnknown, out IntPtr unmanagedObjIUnknown));
+            var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
+
+            // Verify TryGetObject
+            Assert.True(ComWrappers.TryGetObject((void*)managedWrapper, out object managedObjOther));
+            Assert.Equal(managedObj, managedObjOther);
+            Assert.False(ComWrappers.TryGetObject((void*)unmanagedObj, out object _));
+
+            // Verify TryGetComInstance
+            Assert.False(ComWrappers.TryGetComInstance(managedObj, out void* _));
+            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out void* unmanagedObjOther));
+            Assert.Equal(unmanagedObjIUnknown, (IntPtr)unmanagedObjOther);
+            Marshal.Release((IntPtr)unmanagedObjOther);
+
+            // Release unmanaged resources
+            int count = Marshal.Release(managedWrapper);
+            Assert.Equal(0, count);
+            Marshal.Release(unmanagedObj);
+            Marshal.Release(unmanagedObjIUnknown);
+        }
+
         static void ValidateWrappersInstanceIsolation()
         {
             Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");
@@ -620,6 +655,7 @@ namespace ComWrappersTests
                 ValidateComInterfaceCreationRoundTrip();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
+                ValidateMappingAPIs();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
                 ValidateExternalWrapperCacheCleanUp();

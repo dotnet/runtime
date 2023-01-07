@@ -22,8 +22,59 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
-    public abstract partial class ComWrappers
+    public abstract unsafe partial class ComWrappers
     {
+        /// <summary>
+        /// Given a managed object, determine if it is a ComWrappers created
+        /// managed wrapper and if so, return the wrapped unmanaged pointer.
+        /// </summary>
+        /// <param name="wrapperMaybe">A managed wrapper</param>
+        /// <param name="externalComObject">An unmanaged COM object</param>
+        /// <returns>True if the wrapper was resolved to an external COM object, otherwise false.</returns>
+        /// <remarks>
+        /// If a COM object is returned, the caller is expected to call Release() on the object.
+        /// This can be done through an API like Marshal.Release(). Since this API is required to interact
+        /// directly with the external COM object, QueryInterface(), it is important for the caller to
+        /// understand the COM object may have apartment affinity and therefore if the current thread is not
+        /// in the correct apartment or the COM object is not a proxy this call may fail.
+        /// </remarks>
+        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        {
+            if (wrapperMaybe == null)
+            {
+                externalComObject = null;
+                return false;
+            }
+
+            return TryGetComInstanceInternal(ObjectHandleOnStack.Create(ref wrapperMaybe), out externalComObject);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetComInstance")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetComInstanceInternal(ObjectHandleOnStack wrapperMaybe, out void* externalComObject);
+
+        /// <summary>
+        /// Given a COM object, determine if it is a ComWrappers created
+        /// unmanaged wrapper and if so, return the wrapped managed object.
+        /// </summary>
+        /// <param name="wrapperMaybe"></param>
+        /// <param name="instance"></param>
+        /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
+        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        {
+            instance = null;
+            if (wrapperMaybe == null)
+            {
+                return false;
+            }
+
+            return TryGetObjectInternal(wrapperMaybe, ObjectHandleOnStack.Create(ref instance));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool TryGetObjectInternal(void* wrapperMaybe, ObjectHandleOnStack instance);
+
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>

@@ -1521,6 +1521,76 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     END_QCALL;
 }
 
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetComInstance(
+    _In_ QCall::ObjectHandleOnStack wrapperMaybe,
+    _Out_ void** externalComObject)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(externalComObject != NULL);
+
+    bool success = false;
+
+    BEGIN_QCALL;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        SyncBlock* syncBlock = ObjectToOBJECTREF(*wrapperMaybe.m_ppObject)->PassiveGetSyncBlock();
+        if (syncBlock != nullptr)
+        {
+            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+            if (interopInfo != nullptr)
+            {
+                void* contextMaybe;
+                if (interopInfo->TryGetExternalComObjectContext(&contextMaybe))
+                {
+                    ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
+                    IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
+                    GCX_PREEMP();
+                    success = SUCCEEDED(identity->QueryInterface(IID_IUnknown, externalComObject));
+                }
+            }
+        }
+    }
+
+    END_QCALL;
+
+    return (success ? TRUE : FALSE);
+}
+
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetObject(
+    _In_ void* wrapperMaybe,
+    _Inout_ QCall::ObjectHandleOnStack instance)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(wrapperMaybe != NULL);
+
+    bool success = false;
+
+    BEGIN_QCALL;
+
+    InteropLib::OBJECTHANDLE handle;
+    if (InteropLib::Com::GetObjectForWrapper((IUnknown*)wrapperMaybe, &handle) ==  S_OK)
+    {
+        // Switch to Cooperative mode since object references
+        // are being manipulated.
+        GCX_COOP();
+
+        // We have an object handle from the COM instance which is a CCW.
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+        instance.Set(ObjectFromHandle(objectHandle));
+        success = true;
+    }
+
+    END_QCALL;
+
+    return (success ? TRUE : FALSE);
+}
+
 void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
 {
     CONTRACTL

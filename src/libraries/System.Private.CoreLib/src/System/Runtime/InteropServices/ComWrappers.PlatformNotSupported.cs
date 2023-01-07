@@ -8,6 +8,16 @@ namespace System.Runtime.InteropServices
 {
     public abstract partial class ComWrappers
     {
+        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public partial struct ComInterfaceDispatch
         {
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class

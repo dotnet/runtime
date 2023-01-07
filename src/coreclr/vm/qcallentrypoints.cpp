@@ -254,6 +254,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionSerialization_GetUninitializedObject)
 #if defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWrappers_GetIUnknownImpl)
+    DllImportEntry(ComWrappers_TryGetComInstance)
+    DllImportEntry(ComWrappers_TryGetObject)
     DllImportEntry(ComWrappers_TryGetOrCreateComInterfaceForObject)
     DllImportEntry(ComWrappers_TryGetOrCreateObjectForComInstance)
     DllImportEntry(ComWrappers_SetGlobalInstanceRegisteredForMarshalling)
