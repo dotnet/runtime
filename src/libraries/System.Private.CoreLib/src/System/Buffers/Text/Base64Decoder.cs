@@ -130,13 +130,6 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe OperationStatus DecodeFromUtf8Core(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
-            if (utf8.IsEmpty)
-            {
-                bytesConsumed = 0;
-                bytesWritten = 0;
-                return OperationStatus.Done;
-            }
-
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(utf8))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
@@ -444,13 +437,6 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe OperationStatus DecodeFromUtf8InPlaceCore(Span<byte> buffer, out int bytesWritten, out uint sourceIndex)
         {
-            if (buffer.IsEmpty)
-            {
-                bytesWritten = 0;
-                sourceIndex = 0;
-                return OperationStatus.Done;
-            }
-
             fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
             {
                 int bufferLength = buffer.Length;
