@@ -4084,7 +4084,7 @@ namespace System.Text.RegularExpressions
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
                 const int MaxUnrollSize = 16;
 
-                if (iterations <= MaxUnrollSize)
+                if (iterations <= MaxUnrollSize && !CanUseIndexOfAnyValues(node))
                 {
                     // if (slice[sliceStaticPos] != c1 ||
                     //     slice[sliceStaticPos + 1] != c2 ||
@@ -4116,6 +4116,8 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
+                        Debug.Assert(!CanUseIndexOfAnyValues(node));
+
                         using RentedLocalBuilder spanLocal = RentReadOnlySpanCharLocal();
                         Stloc(spanLocal);
 
@@ -4155,6 +4157,16 @@ namespace System.Text.RegularExpressions
                     }
 
                     sliceStaticPos += iterations;
+                }
+
+                static bool CanUseIndexOfAnyValues(RegexNode node)
+                {
+                    const int MinLengthForVectorizedIndexOfAnyValues = 8;
+
+                    return node.N >= MinLengthForVectorizedIndexOfAnyValues
+                        && node.IsSetFamily
+                        && RegexCharClass.TryGetAsciiSetChars(node.Str!, out char[]? asciiChars)
+                        && asciiChars.Length > 3; // We use 'IndexOfAny(char, char, char)' overloads for shorter sets.
                 }
             }
 

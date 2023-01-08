@@ -3625,7 +3625,7 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     sliceStaticPos += iterations;
                 }
-                else if (iterations <= MaxUnrollSize)
+                else if (iterations <= MaxUnrollSize && !CanUseIndexOfAnyValues(node))
                 {
                     // if ((uint)(sliceStaticPos + iterations - 1) >= (uint)slice.Length ||
                     //     slice[sliceStaticPos] != c1 ||
@@ -3675,6 +3675,8 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     else
                     {
+                        Debug.Assert(!CanUseIndexOfAnyValues(node));
+
                         string repeaterSpan = "repeaterSlice"; // As this repeater doesn't wrap arbitrary node emits, this shouldn't conflict with anything
                         writer.WriteLine($"ReadOnlySpan<char> {repeaterSpan} = {sliceSpan}.Slice({sliceStaticPos}, {iterations});");
 
@@ -3691,6 +3693,16 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     sliceStaticPos += iterations;
+                }
+
+                static bool CanUseIndexOfAnyValues(RegexNode node)
+                {
+                    const int MinLengthForVectorizedIndexOfAnyValues = 8;
+
+                    return node.N >= MinLengthForVectorizedIndexOfAnyValues
+                        && node.IsSetFamily
+                        && RegexCharClass.TryGetAsciiSetChars(node.Str!, out char[]? asciiChars)
+                        && asciiChars.Length > 3; // We use 'IndexOfAny(char, char, char)' overloads for shorter sets.
                 }
             }
 
