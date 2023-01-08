@@ -8411,34 +8411,48 @@ interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
  * Check if the given basic block has a known pattern for inlining into callers blocks, if so, return a pointer to the conditional branch instruction.
  *
  * The known patterns are:
- * - `branch`: a single conditional or unconditional branch instruction.
- * - `ldc; branch` or `compare; branch`: a load instruction or compare instruction followed by a conditional or unconditional branch instruction.
- * - `ldc; compare; branch`: a load instruction followed by a compare instruction and a conditional or unconditional branch instruction.
+ * - `branch`: a branch instruction (either MINT_IS_CONDITIONAL_BRANCH or MINT_BR).
+ * - `ldc; branch`: a load instruction followed by a binary conditional branch.
+ * - `compare; branch`: a compare instruction followed by a unary conditional branch.
+ * - `ldc; compare; branch`: a load instruction followed by a compare instruction and a unary conditional branch.
  */
 static gboolean
 interp_inline_into_callers(InterpBasicBlock *bb, InterpInst** cond_ins) {
 	InterpInst *first = interp_first_ins (bb);
 	InterpInst *second = first ? interp_next_ins(first) : NULL;
 	InterpInst *third = second ? interp_next_ins(second) : NULL;
-
+	
 	// pattern `branch`
 	if (first && (MINT_IS_CONDITIONAL_BRANCH(first->opcode) || first->opcode == MINT_BR)) {
 		*cond_ins = first;
 		return TRUE;
 	}
-
-	// pattern `ldc; branch` or `compare; branch`
+	// pattern `ldc; unop conditional branch`
 	if (first && second 
-		&& (MINT_IS_LDC(first->opcode) || MINT_IS_COMPARE(first->opcode)) 
-		&& (MINT_IS_CONDITIONAL_BRANCH(second->opcode) || second->opcode == MINT_BR)) {
+		&& MINT_IS_LDC(first->opcode)
+		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
 		*cond_ins = second;
 		return TRUE;
 	}
-
-	// pattern `ldc; compare; branch`
+	// pattern `ldc; binop conditional branch`
+	if (first && second 
+		&& MINT_IS_LDC(first->opcode)
+		&& MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])) {
+		*cond_ins = second;
+		return TRUE;
+	}
+	// pattern `compare; unop conditional branch`
+	if (first && second 
+		&& MINT_IS_COMPARE(first->opcode)
+		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
+		*cond_ins = second;
+		return TRUE;
+	}
+	// pattern `ldc; compare; conditional branch`
 	if (first && second && third 
-		&& MINT_IS_LDC(first->opcode) && MINT_IS_COMPARE(second->opcode) 
-		&& (MINT_IS_CONDITIONAL_BRANCH(third->opcode) || third->opcode == MINT_BR)) {
+		&& MINT_IS_LDC(first->opcode)
+		&& MINT_IS_COMPARE(second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])
+		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0]) {
 		*cond_ins = third;
 		return TRUE;
 	}
@@ -8524,7 +8538,7 @@ interp_reorder_bblocks (TransformData *td)
 					i++;
 				}
 			}
-		} else if (can_inline_into_callers && cond_ins->opcode == MINT_BR && !interp_prev_ins (cond_ins)) {
+		} else if (can_inline_into_callers && cond_ins->opcode == MINT_BR) {
 			// All bblocks jumping into this bblock can jump directly into the br target only if it is a single instruction in a bb
 			int i = 0;
 			while (i < bb->in_count) {
