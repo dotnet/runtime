@@ -34,7 +34,7 @@ namespace System.Net.Http.Json
         }
 
         public override bool CanRead => _innerStream.CanRead;
-        public override bool CanSeek => false;
+        public override bool CanSeek => _innerStream.CanSeek;
         public override bool CanWrite => false;
 
 #if NETCOREAPP
@@ -75,12 +75,20 @@ namespace System.Net.Http.Json
         }
 #endif
 
-        public override void Flush() => throw new InvalidOperationException();
-        public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new InvalidOperationException();
-        public override void SetLength(long value) => throw new InvalidOperationException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new InvalidOperationException();
-        public override long Length => throw new InvalidOperationException();
-        public override long Position { get => throw new InvalidOperationException(); set => throw new InvalidOperationException(); }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int read = _innerStream.Read(buffer, offset, count);
+            CheckLengthLimit(read);
+            return read;
+        }
+
+        public override void Flush() => _innerStream.Flush();
+        public override Task FlushAsync(CancellationToken cancellationToken) => _innerStream.FlushAsync(cancellationToken);
+        public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
+        public override void SetLength(long value) => _innerStream.SetLength(value);
+        public override long Length => _innerStream.Length;
+        public override long Position { get => _innerStream.Position; set => _innerStream.Position = value; }
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }
