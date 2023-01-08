@@ -191,6 +191,10 @@ void GCLogConfig (const char *fmt, ... );
 
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
 
+#ifdef USE_REGIONS
+#define MAX_REGION_SIZE 0x80000000 
+#endif // USE_REGIONS
+
 #define MAX_NUM_FREE_SPACES 200
 #define MIN_NUM_FREE_SPACES 5
 
