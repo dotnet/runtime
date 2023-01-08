@@ -942,6 +942,20 @@ namespace System.Buffers.Text
         {
             if (Environment.Is64BitProcess)
             {
+                // For description see https://github.com/dotnet/runtime/blob/48e74187cb15386c29eedaa046a5ee2c7ddef161/src/libraries/Common/src/System/HexConverter.cs#L314-L330
+                /* Constant created with
+                    using System;
+                    string validValues = "\t\n\r ";
+                    ulong magic = 0;
+                    foreach (char c in validValues)
+                    {
+                        int idx = c - '\t';    // lowest value of allowed set
+                        magic |= 1UL << (64 - 1 - idx);
+                    }
+                    Console.WriteLine(magic);
+                    Console.WriteLine($"0x{magic:X16}");
+                */
+
                 const ulong MagicConstant = 0xC800010000000000UL;
 
                 ulong i = (uint)value - '\t';
