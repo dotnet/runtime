@@ -2800,7 +2800,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    bool sequenced = fgNodeThreading != NodeThreading::None;
+    bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -2816,12 +2816,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (block->bbJumpKind == BBJ_COND)
         {
-            assert((!sequenced || (block->lastNode()->gtNext == nullptr)) &&
+            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
                    block->lastNode()->OperIsConditionalJump());
         }
         else if (block->bbJumpKind == BBJ_SWITCH)
         {
-            assert((!sequenced || (block->lastNode()->gtNext == nullptr)) &&
+            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
                    (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
         }
 
