@@ -231,12 +231,12 @@ namespace System.Configuration.Internal
 
         public virtual IDisposable Impersonate() => new DummyDisposable();
 
-#pragma warning disable SYSLIB0003 // Obsolete: CAS
+#if NETFRAMEWORK // Obsolete: CAS (.NET Framework only)
         public virtual void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
         {
             permissionSet = new PermissionSet(null);
             isHostReady = true;
         }
-#pragma warning restore SYSLIB0003 // Obsolete: CAS
+#endif
     }
 }

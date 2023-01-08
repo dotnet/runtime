@@ -314,12 +314,12 @@ namespace System.ConfigurationTests
                 throw new NotImplementedException();
             }
 
-#pragma warning disable SYSLIB0003 // Obsolete: CAS
+#if NETFRAMEWORK // Obsolete: CAS (.NET Framework only)
             void IInternalConfigHost.GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
             {
                 throw new NotImplementedException();
             }
-#pragma warning restore SYSLIB0003 // Obsolete: CAS
+#endif
         }
     }
 }
