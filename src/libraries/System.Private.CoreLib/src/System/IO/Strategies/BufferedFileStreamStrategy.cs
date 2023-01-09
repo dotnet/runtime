@@ -320,6 +320,7 @@ namespace System.IO.Strategies
                     {
                         // hot path #1: the read buffer is empty and buffering would not be beneficial
                         // To find out why we are bypassing cache here, please see WriteAsync comments.
+                        _readPos = _readLen = 0;
                         return _strategy.ReadAsync(buffer, cancellationToken);
                     }
                     else if (_readLen - _readPos >= buffer.Length)
