@@ -84,7 +84,7 @@ namespace {lc.Namespace}
                 }
 
                 LoggerClass parent = lc.ParentClass;
-                List<string> parentClasses = new List<string>();
+                var parentClasses = new List<string>();
                 // loop until you find top level nested class
                 while (parent != null)
                 {
@@ -611,15 +611,15 @@ internal static class __LoggerMessageGenerator
         /// <summary>
         /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
         /// </summary>
-        /// <param name="variableOrTemplateName"></param>
-        /// <returns>true if contains special symbol, otherwise false.</returns>
+        /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
+        /// <returns>true if contains special symbol, false otherwise.</returns>
         private static bool ContainsSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
             => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
 
         /// <summary>
         /// Normalizes variableOrTemplateName replacing starting '@' with '_', allowing local variables to be declared when creating code.
         /// </summary>
-        /// <param name="variableOrTemplateName">input that might contain '@' symbol</param>
+        /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
         /// <returns>current variableName value if variableOrTemplateName if it does not starts with symbol ('@'), otherwise returns a new string with its first char '@' replaced by '_'.</returns>
         /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
         private static string NormalizeSpecialSymbol(string variableOrTemplateName) =>
