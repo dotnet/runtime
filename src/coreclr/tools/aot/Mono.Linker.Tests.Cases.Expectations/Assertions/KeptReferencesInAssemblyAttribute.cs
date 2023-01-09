@@ -10,11 +10,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptReferencesInAssemblyAttribute (string assemblyFileName, string[] expectedReferenceAssemblyNames)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentNullException (nameof (assemblyFileName));
-
-			if (expectedReferenceAssemblyNames == null)
-				throw new ArgumentNullException (nameof (expectedReferenceAssemblyNames));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentNullException.ThrowIfNull (expectedReferenceAssemblyNames);
 		}
 	}
 }

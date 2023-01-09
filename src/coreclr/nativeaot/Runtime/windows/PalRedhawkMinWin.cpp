@@ -449,18 +449,39 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 static PalHijackCallback g_pHijackCallback;
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, QUEUE_USER_APC_FLAGS Flags);
+
+// These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
+// SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
+// become available in the Windows SDK headers, the prefixed declarations below can be removed in favor of the SDK ones.
+
+enum CLONE_QUEUE_USER_APC_FLAGS
+{
+    CLONE_QUEUE_USER_APC_FLAGS_NONE = 0x0,
+    CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC = 0x1,
+    CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = 0x10000
+};
+
+struct CLONE_APC_CALLBACK_DATA
+{
+    ULONG_PTR Parameter;
+    PCONTEXT ContextRecord;
+    ULONG_PTR Reserved0;
+    ULONG_PTR Reserved1;
+};
+typedef CLONE_APC_CALLBACK_DATA* CLONE_PAPC_CALLBACK_DATA;
+
+typedef BOOL (WINAPI* QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, CLONE_QUEUE_USER_APC_FLAGS Flags);
 
 #define QUEUE_USER_APC2_UNINITIALIZED (QueueUserAPC2Proc)-1
 static QueueUserAPC2Proc g_pfnQueueUserAPC2Proc = QUEUE_USER_APC2_UNINITIALIZED;
 
-static const QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (QUEUE_USER_APC_FLAGS)
-                                    (QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
-                                    QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
+static const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags = (CLONE_QUEUE_USER_APC_FLAGS)
+                                    (CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |
+                                     CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT);
 
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
-    APC_CALLBACK_DATA* data = (APC_CALLBACK_DATA*)parameter;
+    CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
     g_pHijackCallback(data->ContextRecord, NULL);
 
     Thread* pThread = (Thread*)data->Parameter;

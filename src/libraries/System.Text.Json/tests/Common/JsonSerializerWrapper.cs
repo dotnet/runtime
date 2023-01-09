@@ -11,6 +11,8 @@ namespace System.Text.Json.Serialization.Tests
     /// </summary>
     public abstract partial class JsonSerializerWrapper
     {
+        public abstract JsonSerializerOptions DefaultOptions { get; }
+
         /// <summary>
         /// Do the deserialize methods allow a value of 'null'.
         /// For example, deserializing JSON to a String supports null by returning a 'null' String reference from a literal value of "null".
@@ -36,5 +38,44 @@ namespace System.Text.Json.Serialization.Tests
         public abstract Task<object> DeserializeWrapper(string value, JsonTypeInfo jsonTypeInfo);
 
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
+
+        public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)
+        {
+            JsonSerializerOptions defaultOptions = DefaultOptions;
+            return new JsonSerializerOptions(defaultOptions)
+            {
+                TypeInfoResolver = defaultOptions.TypeInfoResolver.WithModifier(modifier)
+            };
+        }
+    }
+
+    public static class JsonTypeInfoResolverExtensions
+    {
+        public static IJsonTypeInfoResolver WithModifier(this IJsonTypeInfoResolver resolver, Action<JsonTypeInfo> modifier)
+            => new JsonTypeInfoResolverWithModifier(resolver, modifier);
+
+        private class JsonTypeInfoResolverWithModifier : IJsonTypeInfoResolver
+        {
+            private readonly IJsonTypeInfoResolver _source;
+            private readonly Action<JsonTypeInfo> _modifier;
+
+            public JsonTypeInfoResolverWithModifier(IJsonTypeInfoResolver source, Action<JsonTypeInfo> modifier)
+            {
+                _source = source;
+                _modifier = modifier;
+            }
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo? typeInfo = _source.GetTypeInfo(type, options);
+
+                if (typeInfo != null)
+                {
+                    _modifier(typeInfo);
+                }
+
+                return typeInfo;
+            }
+        }
     }
 }

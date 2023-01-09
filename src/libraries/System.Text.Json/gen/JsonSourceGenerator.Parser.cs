@@ -43,6 +43,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
             private const string JsonSerializerContextFullName = "System.Text.Json.Serialization.JsonSerializerContext";
             private const string JsonSourceGenerationOptionsAttributeFullName = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
+            private const string SetsRequiredMembersAttributeFullName = "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute";
 
             internal const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
 
@@ -160,14 +161,6 @@ namespace System.Text.Json.SourceGeneration
                 messageFormat: new LocalizableResourceString(nameof(SR.DataExtensionPropertyInvalidFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Error,
-                isEnabledByDefault: true);
-
-            private static DiagnosticDescriptor InitOnlyPropertyDeserializationNotSupported { get; } = new DiagnosticDescriptor(
-                id: "SYSLIB1037",
-                title: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                messageFormat: new LocalizableResourceString(nameof(SR.InitOnlyPropertyDeserializationNotSupportedFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
-                category: JsonConstants.SystemTextJsonSourceGenerationName,
-                defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
 
             private static DiagnosticDescriptor InaccessibleJsonIncludePropertiesNotSupported { get; } = new DiagnosticDescriptor(
@@ -708,7 +701,9 @@ namespace System.Text.Json.SourceGeneration
                 string? runtimeTypeRef = null;
                 List<PropertyGenerationSpec>? propGenSpecList = null;
                 ObjectConstructionStrategy constructionStrategy = default;
+                bool constructorSetsRequiredMembers = false;
                 ParameterGenerationSpec[]? paramGenSpecArray = null;
+                List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
                 bool foundDesignTimeCustomConverter = false;
@@ -716,7 +711,6 @@ namespace System.Text.Json.SourceGeneration
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
                 bool isPolymorphic = false;
-                bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
                 bool canContainNullableReferenceAnnotations = type.CanContainNullableReferenceTypeAnnotations();
@@ -783,9 +777,10 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (type.GetCompatibleGenericInterface(_iasyncEnumerableOfTType) is Type iasyncEnumerableType)
                 {
-                    if (type.CanUseDefaultConstructorForDeserialization())
+                    if (type.CanUseDefaultConstructorForDeserialization(out ConstructorInfo? defaultCtor))
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
+                        constructorSetsRequiredMembers = defaultCtor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
                     }
 
                     Type elementType = iasyncEnumerableType.GetGenericArguments()[0];
@@ -795,9 +790,10 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    if (type.CanUseDefaultConstructorForDeserialization())
+                    if (type.CanUseDefaultConstructorForDeserialization(out ConstructorInfo? defaultCtor))
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
+                        constructorSetsRequiredMembers = defaultCtor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
                     }
 
                     Type? actualTypeToConvert;
@@ -981,6 +977,7 @@ namespace System.Text.Json.SourceGeneration
 
                         if ((constructor != null || type.IsValueType) && !type.IsAbstract)
                         {
+                            constructorSetsRequiredMembers = constructor?.ContainsAttribute(SetsRequiredMembersAttributeFullName) == true;
                             ParameterInfo[]? parameters = constructor?.GetParameters();
                             int paramCount = parameters?.Length ?? 0;
 
@@ -1001,7 +998,8 @@ namespace System.Text.Json.SourceGeneration
                                     paramGenSpecArray[i] = new ParameterGenerationSpec()
                                     {
                                         TypeGenerationSpec = typeGenerationSpec,
-                                        ParameterInfo = parameterInfo
+                                        ParameterInfo = parameterInfo,
+                                        ParameterIndex = i
                                     };
 
                                     _implicitlyRegisteredTypes.Add(typeGenerationSpec);
@@ -1024,6 +1022,8 @@ namespace System.Text.Json.SourceGeneration
                             BindingFlags.DeclaredOnly;
 
                         bool propertyOrderSpecified = false;
+                        paramGenSpecArray ??= Array.Empty<ParameterGenerationSpec>();
+                        int nextParameterIndex = paramGenSpecArray.Length;
 
                         // Walk the type hierarchy starting from the current type up to the base type(s)
                         foreach (Type currentType in type.GetSortedTypeHierarchy())
@@ -1092,10 +1092,24 @@ namespace System.Text.Json.SourceGeneration
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
                                 }
 
-                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
+                                if (constructionStrategy is not ObjectConstructionStrategy.NotApplicable && spec.CanUseSetter &&
+                                    ((spec.IsRequired && !constructorSetsRequiredMembers) || spec.IsInitOnlySetter))
                                 {
-                                    _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, memberLocation, new string[] { type.Name }));
-                                    hasInitOnlyProperties = true;
+                                    ParameterGenerationSpec? matchingConstructorParameter = GetMatchingConstructorParameter(spec, paramGenSpecArray);
+
+                                    if (spec.IsRequired || matchingConstructorParameter is null)
+                                    {
+                                        constructionStrategy = ObjectConstructionStrategy.ParameterizedConstructor;
+
+                                        var propInitializerSpec = new PropertyInitializerGenerationSpec
+                                        {
+                                            Property = spec,
+                                            MatchesConstructorParameter = matchingConstructorParameter is not null,
+                                            ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? nextParameterIndex++,
+                                        };
+
+                                        (propertyInitializerSpecList ??= new()).Add(propInitializerSpec);
+                                    }
                                 }
 
                                 if (spec.HasJsonInclude && (!spec.CanUseGetter || !spec.CanUseSetter || !spec.IsPublic))
@@ -1118,10 +1132,12 @@ namespace System.Text.Json.SourceGeneration
                     numberHandling,
                     propGenSpecList,
                     paramGenSpecArray,
+                    propertyInitializerSpecList,
                     collectionType,
                     collectionKeyTypeSpec,
                     collectionValueTypeSpec,
                     constructionStrategy,
+                    constructorSetsRequiredMembers,
                     nullableUnderlyingTypeMetadata: nullableUnderlyingTypeGenSpec,
                     runtimeTypeRef,
                     dataExtensionPropGenSpec,
@@ -1146,7 +1162,7 @@ namespace System.Text.Json.SourceGeneration
                     return true;
                 }
 
-                Type? actualDictionaryType  = type.GetCompatibleGenericInterface(_idictionaryOfTKeyTValueType);
+                Type? actualDictionaryType = type.GetCompatibleGenericInterface(_idictionaryOfTKeyTValueType);
                 if (actualDictionaryType == null)
                 {
                     return false;
@@ -1173,8 +1189,13 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static bool PropertyIsConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
-                => paramGenSpecArray != null && paramGenSpecArray.Any(paramSpec => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase));
+            private static ParameterGenerationSpec? GetMatchingConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecArray)
+            {
+                return paramGenSpecArray?.FirstOrDefault(MatchesConstructorParameter);
+
+                bool MatchesConstructorParameter(ParameterGenerationSpec paramSpec)
+                    => propSpec.ClrName.Equals(paramSpec.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase);
+            }
 
             private static bool PropertyIsOverriddenAndIgnored(
                 string currentMemberName,
@@ -1212,13 +1233,14 @@ namespace System.Text.Json.SourceGeneration
                     out int order,
                     out bool hasFactoryConverter,
                     out bool isExtensionData,
-                    out bool isRequired);
+                    out bool hasJsonRequiredAttribute);
 
                 ProcessMember(
                     memberInfo,
                     hasJsonInclude,
                     out bool isReadOnly,
                     out bool isPublic,
+                    out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
                     out bool getterIsVirtual,
@@ -1243,11 +1265,12 @@ namespace System.Text.Json.SourceGeneration
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,
                     IsVirtual = isVirtual,
-                    IsRequired = isRequired,
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
                     PropertyNameVarName = propertyNameVarName,
                     IsReadOnly = isReadOnly,
+                    IsRequired = isRequired,
+                    HasJsonRequiredAttribute = hasJsonRequiredAttribute,
                     IsInitOnlySetter = setterIsInitOnly,
                     CanUseGetter = canUseGetter,
                     CanUseSetter = canUseSetter,
@@ -1292,7 +1315,7 @@ namespace System.Text.Json.SourceGeneration
                 out int order,
                 out bool hasFactoryConverter,
                 out bool isExtensionData,
-                out bool isRequired)
+                out bool hasJsonRequiredAttribute)
             {
                 hasJsonInclude = false;
                 jsonPropertyName = null;
@@ -1301,7 +1324,7 @@ namespace System.Text.Json.SourceGeneration
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
-                isRequired = false;
+                hasJsonRequiredAttribute = false;
 
                 bool foundDesignTimeCustomConverter = false;
                 hasFactoryConverter = false;
@@ -1370,7 +1393,7 @@ namespace System.Text.Json.SourceGeneration
                                 break;
                             case JsonRequiredAttributeFullName:
                                 {
-                                    isRequired = true;
+                                    hasJsonRequiredAttribute = true;
                                 }
                                 break;
                             default:
@@ -1385,6 +1408,7 @@ namespace System.Text.Json.SourceGeneration
                 bool hasJsonInclude,
                 out bool isReadOnly,
                 out bool isPublic,
+                out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool getterIsVirtual,
@@ -1392,6 +1416,7 @@ namespace System.Text.Json.SourceGeneration
                 out bool setterIsInitOnly)
             {
                 isPublic = false;
+                isRequired = false;
                 canUseGetter = false;
                 canUseSetter = false;
                 getterIsVirtual = false;
@@ -1404,6 +1429,7 @@ namespace System.Text.Json.SourceGeneration
                         {
                             MethodInfo? getMethod = propertyInfo.GetMethod;
                             MethodInfo? setMethod = propertyInfo.SetMethod;
+                            isRequired = propertyInfo.IsRequired();
 
                             if (getMethod != null)
                             {
@@ -1447,6 +1473,7 @@ namespace System.Text.Json.SourceGeneration
                         {
                             isPublic = fieldInfo.IsPublic;
                             isReadOnly = fieldInfo.IsInitOnly;
+                            isRequired = fieldInfo.IsRequired();
 
                             if (!fieldInfo.IsPrivate && !fieldInfo.IsFamily)
                             {
