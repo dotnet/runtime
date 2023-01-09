@@ -342,7 +342,7 @@ namespace Mono.Options
         {
             if (c.Option == null)
                 throw new InvalidOperationException("OptionContext.Option is null.");
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, c.Option.MaxValueCount, nameof(index));
             if (c.Option.OptionValueType == OptionValueType.Required &&
                     index >= values.Count)
                 throw new OptionException(string.Format(
