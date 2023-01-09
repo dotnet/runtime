@@ -15,10 +15,10 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 // Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0008
+#define READYTORUN_MAJOR_VERSION 0x0009
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x008
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
