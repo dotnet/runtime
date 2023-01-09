@@ -59,8 +59,8 @@ namespace Microsoft.Extensions.Logging.Generators
                     // make sure the order of the templates matches the order of the logging method parameter
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
-                        var template = SanitizeSpecialSign(lm.TemplateList[i].AsSpan());
-                        var parameter = SanitizeSpecialSign(lm.TemplateParameters[i].CodeName.AsSpan());
+                        ReadOnlySpan<char> template = RemoveSpecialSymbol(lm.TemplateList[i].AsSpan());
+                        ReadOnlySpan<char> parameter = RemoveSpecialSymbol(lm.TemplateParameters[i].CodeName.AsSpan());
 
                         if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
@@ -84,7 +84,7 @@ namespace {lc.Namespace}
                 }
 
                 LoggerClass parent = lc.ParentClass;
-                var parentClasses = new List<string>();
+                List<string>() parentClasses = new List<string>();
                 // loop until you find top level nested class
                 while (parent != null)
                 {
@@ -200,7 +200,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {NormalizeSpecialSymbol(p.CodeName).ToString()};");
                 }
             }
 
@@ -208,7 +208,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this.{ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this.{NormalizeSpecialSymbol(p.CodeName).ToString()} = {p.CodeName};");
                 }
             }
 
@@ -219,8 +219,8 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        var template = SanitizeSpecialSign(t.Key.AsSpan());
-                        var parameter = SanitizeSpecialSign(p.Name.AsSpan());
+                        ReadOnlySpan<char> template = RemoveSpecialSymbol(t.Key.AsSpan());
+                        ReadOnlySpan<char> parameter = RemoveSpecialSymbol(p.Name.AsSpan());
                         if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
@@ -235,13 +235,13 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                {nestedIndentation}var {t.Key} = "
-                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{ProtectSpecialSymbolInVariable(lm.TemplateParameters[index].CodeName.AsSpan()).ToString()});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName).ToString()});");
 
                             _needEnumerationHelper = true;
                         }
                         else
                         {
-                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{ProtectSpecialSymbolInVariable(lm.TemplateParameters[index].CodeName.AsSpan()).ToString()};");
+                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName).ToString()};");
                         }
                     }
                 }
@@ -260,7 +260,7 @@ namespace {lc.Namespace}
                         name = lm.TemplateMap[name];
                     }
 
-                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()}),");
+                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName).ToString()}),");
                 }
 
                 _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
@@ -609,27 +609,29 @@ internal static class __LoggerMessageGenerator
             return sb.ToString();
         }
         /// <summary>
-        /// Checks if string contains a special symbol ('@') as starting char
+        /// Checks if variableOrTemplateName contains a special symbol ('@') as starting char
         /// </summary>
-        /// <param name="input">true if contains special symbol, otherwise false.</param>
-        /// <returns></returns>
-        private static bool ContainsSpecialSymbol(ReadOnlySpan<char> input)
-            => input.Length > 0 && input[0] == '@';
+        /// <param name="variableOrTemplateName"></param>
+        /// <returns>true if contains special symbol, otherwise false.</returns>
+        private static bool ContainsSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
+            => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
 
         /// <summary>
-        /// Removes '@' from input, allowing local variables to be declared when creating code.
+        /// Normalizes variableOrTemplateName replacing starting '@' with '_', allowing local variables to be declared when creating code.
         /// </summary>
-        /// <param name="input">input that might contain '@' symbol</param>
-        /// <returns>If input starts with a symbol ('@'), returns a new string starting with underscore with '@' symbol removed, otherwise returns current string.</returns>
-        private static ReadOnlySpan<char> ProtectSpecialSymbolInVariable(ReadOnlySpan<char> input) =>
-            ContainsSpecialSymbol(input) ? input : $"_{input.ToString()}".AsSpan();
+        /// <param name="variableOrTemplateName">input that might contain '@' symbol</param>
+        /// <returns>current variableName value if variableOrTemplateName if it does not starts with symbol ('@'), otherwise returns a new string with its first char '@' replaced by '_'.</returns>
+        /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
+        private static string NormalizeSpecialSymbol(string variableOrTemplateName) =>
+            ContainsSpecialSymbol(variableOrTemplateName.AsSpan()) ? variableOrTemplateName : $"_{variableOrTemplateName.ToString()}";
 
         /// <summary>
-        /// Remove leading symbol from input.
+        /// Remove leading symbol from variableOrTemplateName.
         /// </summary>
         /// <param name="input">String that might contains special symbol.</param>
-        /// <returns>If input starts with a symbol ('@'), returns a new string starting with underscore with '@' symbol removed, otherwise returns current string.</returns>
-        private static ReadOnlySpan<char> SanitizeSpecialSign(ReadOnlySpan<char> input)
-            => ContainsSpecialSymbol(input) ? input.Slice(1) : input;
+        /// <returns>current variableOrTemplateName value if it does not contains starting '@' symbol, otherwise returns a new string with first char '@' removed.</returns>
+        /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
+        private static ReadOnlySpan<char> RemoveSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
+            => ContainsSpecialSymbol(variableOrTemplateName) ? variableOrTemplateName.Slice(1) : variableOrTemplateName;
     }
 }
