@@ -12,15 +12,16 @@
 
 SHIM_SOURCE_DIR=$1/native/src
 INTERMEDIATE_OUTPUT_PATH=$2
+TARGET_LIBRARY=$3
 
 if [ -d "$SHIM_SOURCE_DIR" ]; then
-    LOCAL_SHIM_DIR="$INTERMEDIATE_OUTPUT_PATH"/libs/System.Security.Cryptography.Native/build
+    LOCAL_SHIM_DIR="$INTERMEDIATE_OUTPUT_PATH"/libs/$TARGET_LIBRARY/build
     mkdir -p "$LOCAL_SHIM_DIR" && cd "$LOCAL_SHIM_DIR"
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: Cannot use local build directory"; exit 1; fi
-    cmake -S "$SHIM_SOURCE_DIR/libs/System.Security.Cryptography.Native/" -DLOCAL_BUILD:STRING=1 -DCLR_CMAKE_TARGET_UNIX:STRING=1
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: cmake failed"; exit 1; fi
+    if [ $? -ne 0 ]; then echo "build-local.sh::ERROR: Cannot use local build directory"; exit 1; fi
+    cmake -S "$SHIM_SOURCE_DIR/libs/$TARGET_LIBRARY/" -DLOCAL_BUILD:STRING=1 -DCLR_CMAKE_TARGET_UNIX:STRING=1
+    if [ $? -ne 0 ]; then echo "build-local.sh::ERROR: cmake failed"; exit 1; fi
     make -j
-    if [ $? -ne 0 ]; then echo "local_build.sh::ERROR: Build failed"; exit 1; fi
+    if [ $? -ne 0 ]; then echo "build-local.sh::ERROR: Build failed"; exit 1; fi
 fi
 
 exit 0
