@@ -3157,12 +3157,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
             RETURN NULL;
         }
 
-        // This is required only because of some lower casing on the name
-        kFile = GetAssembly()->GetManifestFileToken(moduleName);
-        if (kFile == mdTokenNil)
-            RETURN NULL;
-
-        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(kFile);
+        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
     }
 
     if (kFile == mdFileNil)
@@ -3234,12 +3229,8 @@ PTR_Module Module::LookupModule(mdToken kFile)
     {
         LPCSTR moduleName;
         IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &moduleName));
-        mdFile kFileLocal = GetAssembly()->GetManifestFileToken(moduleName);
 
-        if (kFileLocal == mdTokenNil)
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-
-        RETURN GetAssembly()->GetModule()->LookupModule(kFileLocal);
+        RETURN GetAssembly()->GetModule()->LookupModule(mdFileNil);
     }
 
     PTR_Module pModule = LookupFile(kFile);
