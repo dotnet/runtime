@@ -1,11 +1,13 @@
-// Implementation of ep-rt-types.h targeting aot runtime.
+// Implementation of ep-rt-types.h targeting AOT runtime.
 #ifndef __EVENTPIPE_RT_TYPES_AOT_H__
 #define __EVENTPIPE_RT_TYPES_AOT_H__
 
 #include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "slist.h"
+
+#include "gcenv.h"
+#include "EmptyContainers.h"
 
 #ifdef DEBUG
 #define EP_CHECKED_BUILD
@@ -29,22 +31,22 @@
 
 template<typename T>
 struct _rt_aot_list_internal_t {
-    typedef struct SListElem<T> element_type_t;
-    typedef class SList<element_type_t> list_type_t;
+    typedef struct SListElem_EP<T> element_type_t;
+    typedef class SList_EP<element_type_t> list_type_t;
     list_type_t *list;
 };
 
 template<typename T>
 struct _rt_aot_queue_internal_t {
-    typedef struct SListElem<T> element_type_t;
-    typedef class SList<element_type_t> queue_type_t;
+    typedef struct SListElem_EP<T> element_type_t;
+    typedef class SList_EP<element_type_t> queue_type_t;
     queue_type_t *queue;
 };
 
 template<typename T>
 struct _rt_aot_array_internal_t {
     typedef T element_type_t;
-    typedef class CQuickArrayList<T> array_type_t;
+    typedef class CQuickArrayList_EP<T> array_type_t;
     array_type_t *array;
 };
 
@@ -62,23 +64,23 @@ typedef struct _rt_aot_table_callbacks_t {
 
 template<typename T1, typename T2>
 struct _rt_aot_table_default_internal_t {
-    typedef class SHash<NoRemoveSHashTraits< MapSHashTraits <T1, T2> > > table_type_t;
+    typedef class SHash_EP<NoRemoveSHashTraits_EP< MapSHashTraits_EP <T1, T2> > > table_type_t;
     rt_aot_table_callbacks_t callbacks;
     table_type_t *table;
 };
 
 template<typename T1, typename T2>
 struct _rt_aot_table_remove_internal_t {
-    typedef class SHash< MapSHashTraits <T1, T2> > table_type_t;
+    typedef class SHash_EP< MapSHashTraits_EP <T1, T2> > table_type_t;
     rt_aot_table_callbacks_t callbacks;
     table_type_t *table;
 };
 
-class EventPipeAotStackHashTraits : public NoRemoveSHashTraits< MapSHashTraits<StackHashKey *, StackHashEntry *> >
+class EventPipeAotStackHashTraits : public NoRemoveSHashTraits_EP< MapSHashTraits_EP<StackHashKey *, StackHashEntry *> >
 {
 public:
-    typedef typename MapSHashTraits<StackHashKey *, StackHashEntry *>::element_t element_t;
-    typedef typename MapSHashTraits<StackHashKey *, StackHashEntry *>::count_t count_t;
+    typedef typename MapSHashTraits_EP<StackHashKey *, StackHashEntry *>::element_t element_t;
+    typedef typename MapSHashTraits_EP<StackHashKey *, StackHashEntry *>::count_t count_t;
 
     typedef StackHashKey * key_t;
 
@@ -88,7 +90,7 @@ public:
         return ep_stack_hash_entry_get_key (e.Value ());
     }
 
-    static BOOL Equals (key_t k1, key_t k2)
+    static bool Equals (key_t k1, key_t k2)
     {
         extern bool ep_stack_hash_key_equal (const void *, const void *);
         return ep_stack_hash_key_equal (k1, k2);
@@ -113,7 +115,7 @@ public:
 
 template<typename T1>
 struct _rt_aot_table_custom_internal_t {
-    typedef class SHash<T1> table_type_t;
+    typedef class SHash_EP<T1> table_type_t;
     rt_aot_table_callbacks_t callbacks;
     table_type_t *table;
 };
@@ -306,17 +308,17 @@ typedef class Thread * ep_rt_thread_handle_t;
 typedef class Thread * ep_rt_thread_activity_id_handle_t;
 
 #undef ep_rt_thread_id_t
-#ifndef TARGET_UNIX
-typedef DWORD ep_rt_thread_id_t;
-#else
+// #ifndef TARGET_UNIX
+// typedef DWORD ep_rt_thread_id_t;
+// #else
 typedef size_t ep_rt_thread_id_t;
-#endif
+//#endif
 
 #undef ep_rt_thread_start_func
-typedef DWORD (WINAPI *ep_rt_thread_start_func)(LPVOID lpThreadParameter);
+typedef size_t (__stdcall *ep_rt_thread_start_func)(void *lpThreadParameter);
 
 #undef ep_rt_thread_start_func_return_t
-typedef DWORD ep_rt_thread_start_func_return_t;
+typedef size_t ep_rt_thread_start_func_return_t;
 
 #undef ep_rt_thread_params_t
 typedef struct _rt_aot_thread_params_t {

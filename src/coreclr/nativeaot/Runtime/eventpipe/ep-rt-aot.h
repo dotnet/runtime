@@ -2,22 +2,36 @@
 #ifndef __EVENTPIPE_RT_AOT_H__
 #define __EVENTPIPE_RT_AOT_H__
 
-#include <eventpipe/ep-rt-config.h>
+#include <ctype.h>  // For isspace
 
+#include <eventpipe/ep-rt-config.h>
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-thread.h>
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
-#include "fstream.h"
-#include "typestring.h"
-#include "clrversion.h"
+
+// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
+// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
+// implemented in some manner that doesn't rely on the Thread class.
+
+#include "gcenv.h"
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+#include "thread.h"
+#include "holder.h"
+#include "SpinLock.h"
+#ifdef _INC_WINDOWS
+#include <sysinfoapi.h>
+#endif
+// @TODO - temp, lakshanf. This is not used in NativeAOT
+#define STATIC_CONTRACT_NOTHROW
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
 
 #undef EP_GCX_PREEMP_ENTER
-#define EP_GCX_PREEMP_ENTER { GCX_PREEMP();
+#define EP_GCX_PREEMP_ENTER { //GCX_PREEMP();
 
 #undef EP_GCX_PREEMP_EXIT
 #define EP_GCX_PREEMP_EXIT }
@@ -589,6 +603,7 @@ _rt_aot_hash_map_free (HASH_MAP_TYPE *hash_map)
     EP_ASSERT (HASH_MAP_TYPE::table_type_t::s_NoThrow);
     EP_ASSERT (hash_map != NULL);
 
+    // @TODO - LakshanF: 10/21/22 - Need to understand more on value_free_func, specifically how iterator->Value () gets called 
     if (hash_map->table) {
         if (hash_map->callbacks.value_free_func) {
             for (typename HASH_MAP_TYPE::table_type_t::Iterator iterator = hash_map->table->Begin (); iterator != hash_map->table->End (); ++iterator)
@@ -611,7 +626,7 @@ _rt_aot_hash_map_add (
     EP_ASSERT (HASH_MAP_TYPE::table_type_t::s_NoThrow);
     EP_ASSERT (hash_map != NULL && hash_map->table != NULL);
 
-    return hash_map->table->AddNoThrow (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
+    return hash_map->table->Add (typename HASH_MAP_TYPE::table_type_t::element_t (key, value));
 }
 
 template<typename HASH_MAP_TYPE, typename KEY_TYPE, typename VALUE_TYPE>
@@ -1108,31 +1123,19 @@ inline
 ep_rt_lock_handle_t *
 ep_rt_aot_config_lock_get (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-
-    extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
-    return &_ep_rt_aot_config_lock_handle;
+    // TODO: Implement EventPipe locking for NativeAOT
+    return nullptr;
 }
 
 static
 inline
 const ep_char8_t *
-ep_rt_entrypoint_assembly_name_get_utf8 (void)
-{
+ep_rt_entrypoint_assembly_name_get_utf8 (void) 
+{ 
     STATIC_CONTRACT_NOTHROW;
 
-    AppDomain *app_domain_ref = nullptr;
-    Assembly *assembly_ref = nullptr;
-
-    app_domain_ref = GetAppDomain ();
-    if (app_domain_ref != nullptr)
-    {
-        assembly_ref = app_domain_ref->GetRootAssembly ();
-        if (assembly_ref != nullptr)
-        {
-            return reinterpret_cast<const ep_char8_t*>(assembly_ref->GetSimpleName ());
-        }
-    }
+    // TODO: Implement EventPipe assembly name - return filename in nativeaot?
+    __debugbreak();
 
     // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
     // suspended before an assembly is loaded.
@@ -1141,11 +1144,11 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 
 static
 const ep_char8_t *
-ep_rt_runtime_version_get_utf8 (void)
-{
+ep_rt_runtime_version_get_utf8 (void) { 
     STATIC_CONTRACT_NOTHROW;
 
-    return reinterpret_cast<const ep_char8_t*>(CLR_PRODUCT_VERSION);
+    // TODO: Find a way to use CoreCLR runtime_version.h here if a more exact version is needed
+    return reinterpret_cast<const ep_char8_t*>("8.0.0");
 }
 
 /*
@@ -1218,7 +1221,7 @@ uint32_t
 ep_rt_atomic_inc_uint32_t (volatile uint32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(InterlockedIncrement ((volatile LONG *)(value)));
+    return static_cast<uint32_t>(PalInterlockedIncrement ((volatile int32_t *)(value)));
 }
 
 static
@@ -1227,7 +1230,7 @@ uint32_t
 ep_rt_atomic_dec_uint32_t (volatile uint32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(InterlockedDecrement ((volatile LONG *)(value)));
+    return static_cast<uint32_t>(PalInterlockedDecrement ((volatile int32_t *)(value)));
 }
 
 static
@@ -1236,7 +1239,7 @@ int32_t
 ep_rt_atomic_inc_int32_t (volatile int32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int32_t>(InterlockedIncrement ((volatile LONG *)(value)));
+    return static_cast<int32_t>(PalInterlockedIncrement (value));
 }
 
 static
@@ -1245,7 +1248,7 @@ int32_t
 ep_rt_atomic_dec_int32_t (volatile int32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int32_t>(InterlockedDecrement ((volatile LONG *)(value)));
+    return static_cast<int32_t>(PalInterlockedDecrement (value));
 }
 
 static
@@ -1254,34 +1257,51 @@ int64_t
 ep_rt_atomic_inc_int64_t (volatile int64_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int64_t>(InterlockedIncrement64 ((volatile LONG64 *)(value)));
+
+    // TODO: Consider replacing with a new PalInterlockedIncrement64 service
+    int64_t currentValue;
+    do {
+        currentValue = *value;
+    } while (currentValue != PalInterlockedCompareExchange64(value, (currentValue + 1), currentValue));
+
+    // The current value has been atomically replaced with the incremented value.
+    return (currentValue + 1);
 }
 
 static
 inline
 int64_t
-ep_rt_atomic_dec_int64_t (volatile int64_t *value)
-{
+ep_rt_atomic_dec_int64_t (volatile int64_t *value) { 
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int64_t>(InterlockedDecrement64 ((volatile LONG64 *)(value)));
+
+    // TODO: Consider replacing with a new PalInterlockedDecrement64 service
+    int64_t currentValue;
+    do {
+        currentValue = *value;
+    } while (currentValue != PalInterlockedCompareExchange64(value, (currentValue - 1), currentValue));
+
+    // The current value has been atomically replaced with the decremented value.
+    return (currentValue - 1);
 }
 
 static
 inline
 size_t
-ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
-{
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
+#ifdef HOST_64BIT
+    return static_cast<size_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
+#else
+    return static_cast<size_t>(PalInterlockedCompareExchange ((volatile int32_t *)target, (int32_t)value, (int32_t)expected));
+#endif	
 }
 
 static
 inline
 ep_char8_t *
-ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
-{
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) { 
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<ep_char8_t *>(InterlockedCompareExchangeT<ep_char8_t *> (target, value, expected));
+    return static_cast<ep_char8_t *>(PalInterlockedCompareExchangePointer ((void *volatile *)target, value, expected));
 }
 
 /*
@@ -1296,31 +1316,9 @@ EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpo
 
 static
 void
-ep_rt_init (void)
+ep_rt_init (void) 
 {
-    STATIC_CONTRACT_NOTHROW;
-
-    extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
-    extern CrstStatic _ep_rt_aot_config_lock;
-
-    _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
-    _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
-
-    if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
-#ifndef TARGET_UNIX
-        // setup the windows processor group offset table
-        uint16_t groups = ::GetActiveProcessorGroupCount ();
-        extern uint32_t *_ep_rt_aot_proc_group_offsets;
-        _ep_rt_aot_proc_group_offsets = new (nothrow) uint32_t [groups];
-        if (_ep_rt_aot_proc_group_offsets) {
-            uint32_t procs = 0;
-            for (uint16_t i = 0; i < procs; ++i) {
-                _ep_rt_aot_proc_group_offsets [i] = procs;
-                procs += GetActiveProcessorCount (i);
-            }
-        }
-#endif
-    }
+    // TODO: Implement EventPipe locking for NativeAOT
 }
 
 static
@@ -1344,8 +1342,8 @@ inline
 bool
 ep_rt_config_acquire (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-    return ep_rt_lock_acquire (ep_rt_aot_config_lock_get ());
+    // TODO: Implement EventPipe locking for NativeAOT
+    return true;   
 }
 
 static
@@ -1353,8 +1351,8 @@ inline
 bool
 ep_rt_config_release (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-    return ep_rt_lock_release (ep_rt_aot_config_lock_get ());
+    // TODO: Implement EventPipe locking for NativeAOT
+    return true;
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -1363,8 +1361,8 @@ inline
 void
 ep_rt_config_requires_lock_held (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-    ep_rt_lock_requires_lock_held (ep_rt_aot_config_lock_get ());
+    // TODO: Implement EventPipe locking for NativeAOT
+    return;
 }
 
 static
@@ -1372,8 +1370,8 @@ inline
 void
 ep_rt_config_requires_lock_not_held (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-    ep_rt_lock_requires_lock_not_held (ep_rt_aot_config_lock_get ());
+    // TODO: Implement EventPipe locking for NativeAOT
+    return;
 }
 #endif
 
@@ -1398,19 +1396,12 @@ ep_rt_method_get_simple_assembly_name (
     size_t name_len)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (method != NULL);
-    EP_ASSERT (name != NULL);
 
-    const ep_char8_t *assembly_name = method->GetLoaderModule ()->GetAssembly ()->GetSimpleName ();
-    if (!assembly_name)
-        return false;
+    // TODO: Design MethodDesc and method name services if/when needed
+    __debugbreak();
 
-    size_t assembly_name_len = strlen (assembly_name) + 1;
-    size_t to_copy = assembly_name_len < name_len ? assembly_name_len : name_len;
-    memcpy (name, assembly_name, to_copy);
-    name [to_copy - 1] = 0;
+    return false;
 
-    return true;
 }
 
 static
@@ -1420,33 +1411,10 @@ ep_rt_method_get_full_name (
     ep_char8_t *name,
     size_t name_len)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (method != NULL);
-    EP_ASSERT (name != NULL);
+    // TODO: Design MethodDesc and method name services if/when needed
+    __debugbreak();
 
-    bool result = true;
-    EX_TRY
-    {
-        SString method_name;
-
-        TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-        const ep_char8_t *method_name_utf8 = method_name.GetUTF8 ();
-        if (method_name_utf8) {
-            size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
-            size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
-            memcpy (name, method_name_utf8, to_copy);
-            name [to_copy - 1] = 0;
-        } else {
-            result = false;
-        }
-    }
-    EX_CATCH
-    {
-        result = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return result;
+    return false;
 }
 
 static
@@ -1456,11 +1424,25 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
-    }
+    // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context is not available in NativeAOT
+
+/**
+    // Mono implementation
+	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
+	}
+
+    // CoreCLR
+	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
+	}
+*/
+
+    //__debugbreak();	
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -1474,14 +1456,8 @@ static
 void
 ep_rt_init_providers_and_events (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-
-    EX_TRY
-    {
-        InitProvidersAndEvents ();
-    }
-    EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions);
+    // TODO: auto-generated fn, no op for now
+    // InitProvidersAndEvents ();
 }
 
 static
@@ -1490,10 +1466,8 @@ bool
 ep_rt_providers_validate_all_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    return (!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
-        !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
-        !MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+    // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context and MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context are not available in NativeAOT
+    return true;
 }
 
 static
@@ -1519,19 +1493,14 @@ ep_rt_provider_invoke_callback (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (callback_func != NULL);
 
-    EX_TRY
-    {
-        (*callback_func)(
-            source_id,
-            is_enabled,
-            level,
-            match_any_keywords,
-            match_all_keywords,
-            filter_data,
-            callback_data);
-    }
-    EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions);
+    (*callback_func)(
+        source_id,
+        is_enabled,
+        level,
+        match_any_keywords,
+        match_all_keywords,
+        filter_data,
+        callback_data);
 }
 
 /*
@@ -1592,8 +1561,8 @@ ep_rt_provider_list_find_by_name (
 
     // The provider list should be non-NULL, but can be NULL on shutdown.
     if (list) {
-        SList<SListElem<EventPipeProvider *>> *provider_list = list->list;
-        SListElem<EventPipeProvider *> *element = provider_list->GetHead ();
+        SList_EP<SListElem_EP<EventPipeProvider *>> *provider_list = list->list;
+        SListElem_EP<EventPipeProvider *> *element = provider_list->GetHead ();
         while (element) {
             EventPipeProvider *provider = element->GetValue ();
             if (ep_rt_utf8_string_compare (ep_provider_get_provider_name (element->GetValue ()), name) == 0)
@@ -1618,8 +1587,11 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
-    STATIC_CONTRACT_NOTHROW;
-    return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EnableEventPipe) != 0;
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EnableEventPipe) != 0
+    // If EventPipe environment variables are specified, parse them and start a session.
+    // TODO: Not start a session for now
+    return false;
 }
 
 static
@@ -1628,8 +1600,11 @@ ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeConfig));
-    return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeConfig)
+    __debugbreak();
+    return nullptr;
+//	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
 
 static
@@ -1638,8 +1613,10 @@ ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-    return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeOutputPath)
+    __debugbreak();
+    return nullptr;
 }
 
 static
@@ -1648,7 +1625,10 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeCircularMB);
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeCircularMB)
+    __debugbreak();
+    return 0;
 }
 
 static
@@ -1657,7 +1637,10 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
+    __debugbreak();
+    return false;
 }
 
 /*
@@ -1682,14 +1665,7 @@ inline
 void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
-    STATIC_CONTRACT_NOTHROW;
-
-#ifndef DACCESS_COMPILE
-        // Let the profiler know the provider has been created so it can register if it wants to
-        BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
-        (&g_profControlBlock)->EventPipeProviderCreated (provider);
-        END_PROFILER_CALLBACK ();
-#endif // DACCESS_COMPILE
+    // Following mono's path of no-op
 }
 
 /*
@@ -1707,9 +1683,9 @@ ep_rt_session_provider_list_find_by_name (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    SList<SListElem<EventPipeSessionProvider *>> *provider_list = list->list;
+    SList_EP<SListElem_EP<EventPipeSessionProvider *>> *provider_list = list->list;
     EventPipeSessionProvider *session_provider = NULL;
-    SListElem<EventPipeSessionProvider *> *element = provider_list->GetHead ();
+    SListElem_EP<EventPipeSessionProvider *> *element = provider_list->GetHead ();
     while (element) {
         EventPipeSessionProvider *candidate = element->GetValue ();
         if (ep_rt_utf8_string_compare (ep_session_provider_get_provider_name (candidate), name) == 0) {
@@ -1801,15 +1777,11 @@ ep_rt_wait_event_alloc (
 
     wait_event->event = new (nothrow) CLREventStatic ();
     if (wait_event->event) {
-        EX_TRY
-        {
-            if (manual)
-                wait_event->event->CreateManualEvent (initial);
-            else
-                wait_event->event->CreateAutoEvent (initial);
-        }
-        EX_CATCH {}
-        EX_END_CATCH(SwallowAllExceptions);
+        // NativeAOT has the NoThrow versions
+        if (manual)
+            wait_event->event->CreateManualEventNoThrow (initial);
+        else
+            wait_event->event->CreateAutoEventNoThrow (initial);
     }
 }
 
@@ -1830,8 +1802,8 @@ ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 static
 inline
 bool
-ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
-{
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
+{ 
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
@@ -1843,40 +1815,32 @@ int32_t
 ep_rt_wait_event_wait (
     ep_rt_wait_event_handle_t *wait_event,
     uint32_t timeout,
-    bool alertable)
-{
+    bool alertable) 
+{ 
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    int32_t result;
-    EX_TRY
-    {
-        result = wait_event->event->Wait (timeout, alertable);
-    }
-    EX_CATCH
-    {
-        result = -1;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-    return result;
+    return wait_event->event->Wait (timeout, alertable);
 }
 
 static
 inline
 EventPipeWaitHandle
-ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
-{
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event) 
+{ 
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetHandleUNHOSTED ());
+    // TODO: NativeAOT CLREventStatic doesn't have GetHandleUNHOSTED
+    __debugbreak();
+    return 0;
 }
 
 static
 inline
 bool
-ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
-{
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
+{ 
     STATIC_CONTRACT_NOTHROW;
 
     if (wait_event == NULL || wait_event->event == NULL)
@@ -1895,7 +1859,7 @@ int
 ep_rt_get_last_error (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return ::GetLastError ();
+    return PalGetLastError();
 }
 
 static
@@ -1904,7 +1868,10 @@ bool
 ep_rt_process_detach (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (bool)g_fProcessDetach;
+    // TODO: Does NativeAot have the concept of process detach
+    // __debugbreak();
+
+    return false;
 }
 
 static
@@ -1913,7 +1880,10 @@ bool
 ep_rt_process_shutdown (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (bool)g_fEEShutDown;
+    // TODO: Does NativeAot have the concept of process shutdown
+    //__debugbreak();
+
+    return false;
 }
 
 static
@@ -1927,7 +1897,35 @@ ep_rt_create_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
+    // TODO: Implement a way to generate a real Guid
+    // CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
+
+    // TODO: Using roughly Mono's implementation but Mono randomly generates this, hardcoding for now
+    uint8_t data1[] = {0x67,0xac,0x33,0xf1,0x8d,0xed,0x41,0x01,0xb4,0x26,0xc9,0xb7,0x94,0x35,0xf7,0x8a};
+    memcpy (activity_id, data1, EP_ACTIVITY_ID_SIZE);
+
+	const uint16_t version_mask = 0xF000;
+	const uint16_t random_guid_version = 0x4000;
+	const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
+	const uint8_t clock_seq_hi_and_reserved_value = 0x80;
+
+	// Modify bits indicating the type of the GUID
+	uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
+	uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
+
+	uint16_t c;
+	memcpy (&c, activity_id_c, sizeof (c));
+
+	uint8_t d;
+	memcpy (&d, activity_id_d, sizeof (d));
+
+	// time_hi_and_version
+	c = ((c & ~version_mask) | random_guid_version);
+	// clock_seq_hi_and_reserved
+	d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
+
+	memcpy (activity_id_c, &c, sizeof (c));
+	memcpy (activity_id_d, &d, sizeof (d));
 }
 
 static
@@ -1936,7 +1934,10 @@ bool
 ep_rt_is_running (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (bool)g_fEEStarted;
+    // TODO: Does NativeAot have the concept of EEStarted
+    __debugbreak();
+
+    return false;
 }
 
 static
@@ -1947,11 +1948,9 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
     STATIC_CONTRACT_NOTHROW;
 
     //TODO: Write execution checkpoint rundown events.
-    if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeRundown) > 0) {
-        // Ask the runtime to emit rundown events.
-        if (g_fEEStarted && !g_fEEShutDown)
-            ETW::EnumerationLog::EndRundown ();
-    }
+    // TODO: EventPipe Configuration values - RhConfig?
+    // (CLRConfig::INTERNAL_EventPipeCircularMB)
+    __debugbreak();
 }
 
 /*
@@ -1978,21 +1977,22 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
  * PAL.
  */
 
-typedef struct _rt_aot_thread_params_internal_t {
-    ep_rt_thread_params_t thread_params;
-} rt_aot_thread_params_internal_t;
-
 #undef EP_RT_DEFINE_THREAD_FUNC
-#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
+#define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t __stdcall name (void *data)
 
-EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_func)
+EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    rt_aot_thread_params_internal_t *thread_params = reinterpret_cast<rt_aot_thread_params_internal_t *>(data);
-    DWORD result = thread_params->thread_params.thread_func (thread_params);
-    if (thread_params->thread_params.thread)
-        ::DestroyThread (thread_params->thread_params.thread);
+    ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
+
+    // TODO: Implement thread creation/management if needed.
+    // The session and sampling threads both assert that the incoming thread handle is
+    // non-null, but do not necessarily rely on it otherwise; just pass a meaningless non-null
+    // value until testing shows that a meaningful value is needed.
+    thread_params->thread = reinterpret_cast<ep_rt_thread_handle_t>(1);
+
+    size_t result = thread_params->thread_func (thread_params);
     delete thread_params;
     return result;
 }
@@ -2008,58 +2008,78 @@ ep_rt_thread_create (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (thread_func != NULL);
 
-    bool result = false;
+    // TODO: Fill in the outgoing id if any callers ever need it
+    if (id)
+        *reinterpret_cast<DWORD*>(id) = 0xffffffff;
 
-    EX_TRY
+    switch (thread_type)
     {
-        if (thread_type == EP_THREAD_TYPE_SERVER)
-        {
-            DWORD thread_id = 0;
-            HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
-            if (server_thread != NULL)
-            {
-                if (id)
-                {
-                    *reinterpret_cast<DWORD *>(id) = thread_id;
-                }
-                ::CloseHandle (server_thread);
-                result = true;
-            }
-        }
-        else if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING)
-        {
-            rt_aot_thread_params_internal_t *thread_params = new (nothrow) rt_aot_thread_params_internal_t ();
-            if (thread_params)
-            {
-                thread_params->thread_params.thread_type = thread_type;
-                thread_params->thread_params.thread = SetupUnstartedThread ();
-                thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
-                thread_params->thread_params.thread_params = params;
+    default:
+        return false;
 
-                if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_aot_start_func, thread_params))
-                {
-                    if (id)
-                    {
-                        *reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
-                    }
-                    thread_params->thread_params.thread->SetBackground (TRUE);
-                    thread_params->thread_params.thread->StartThread ();
-                    result = true;
-                }
-                else
-                {
-                    delete thread_params;
-                }
-            }
-        }
-    }
-    EX_CATCH
-    {
-        result = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
+    case EP_THREAD_TYPE_SERVER:
+        // Match CoreCLR and hardcode a null thread context in this case.
+        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), NULL);
 
-    return result;
+    case EP_THREAD_TYPE_SESSION:
+    case EP_THREAD_TYPE_SAMPLING:
+        ep_rt_thread_params_t* thread_params = new (nothrow) ep_rt_thread_params_t ();
+        if (!thread_params)
+            return false;
+
+        thread_params->thread_type = thread_type;
+        thread_params->thread_func = reinterpret_cast<ep_rt_thread_start_func>(thread_func);
+        thread_params->thread_params = params;
+        if (!PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(ep_rt_thread_aot_start_session_or_sampling_thread), thread_params)) {
+            delete thread_params;
+            return false;
+        }
+
+        return true;
+    }
+
+
+    // Mono implementation
+/**
+    rt_mono_thread_params_internal_t *thread_params = g_new0 (rt_mono_thread_params_internal_t, 1);
+    if (thread_params) {
+        thread_params->thread_params.thread_type = thread_type;
+        thread_params->thread_params.thread_func = (ep_rt_thread_start_func)thread_func;
+        thread_params->thread_params.thread_params = params;
+        thread_params->background_thread = true;
+        return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
+    }
+
+    return false;
+
+ * */
+
+    // CoreCLR implementation
+
+    // if (thread_params) {
+    //     thread_params->thread_params.thread_type = thread_type;
+    //     if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING) {
+    //         thread_params->thread_params.thread = SetupUnstartedThread ();
+    //         thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
+    //         thread_params->thread_params.thread_params = params;
+    //         if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_aot_start_func, thread_params)) {
+    //             thread_params->thread_params.thread->SetBackground (TRUE);
+    //             thread_params->thread_params.thread->StartThread ();
+    //             if (id)
+    //                 *reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
+    //             result = true;
+    //         }
+    //     } else if (thread_type == EP_THREAD_TYPE_SERVER) {
+    //         DWORD thread_id = 0;
+    //         HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
+    //         if (server_thread != NULL) {
+    //             ::CloseHandle (server_thread);
+    //             if (id)
+    //                 *reinterpret_cast<DWORD *>(id) = thread_id;
+    //             result = true;
+    //         }
+    //     }
+    // }
 }
 
 static
@@ -2067,8 +2087,11 @@ inline
 void
 ep_rt_set_server_name(void)
 {
-    ::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
+    // TODO: Need to set name for  the thread
+    // ::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
+    //__debugbreak();
 }
+
 
 static
 inline
@@ -2076,13 +2099,7 @@ void
 ep_rt_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-    PAL_nanosleep (ns);
-#else  //TARGET_UNIX
-    const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-    ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
-#endif //TARGET_UNIX
+    PalSleep(static_cast<uint32_t>(ns/1000000));
 }
 
 static
@@ -2104,9 +2121,10 @@ ep_rt_current_processor_get_number (void)
 #ifndef TARGET_UNIX
     extern uint32_t *_ep_rt_aot_proc_group_offsets;
     if (_ep_rt_aot_proc_group_offsets) {
-        PROCESSOR_NUMBER proc;
-        GetCurrentProcessorNumberEx (&proc);
-        return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
+        // PROCESSOR_NUMBER proc;
+        // GetCurrentProcessorNumberEx (&proc);
+        // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
+        __debugbreak();
     }
 #endif
     return 0xFFFFFFFF;
@@ -2118,10 +2136,14 @@ uint32_t
 ep_rt_processors_get_count (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
+#ifdef _INC_WINDOWS
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
+#else    
+    __debugbreak();
+    return 0xffff;
+#endif
 }
 
 static
@@ -2132,7 +2154,9 @@ ep_rt_current_thread_get_id (void)
     STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
-    return static_cast<ep_rt_thread_id_t>(::PAL_GetCurrentOSThreadId ());
+    // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
+    __debugbreak();    
+    return static_cast<ep_rt_thread_id_t>(0);
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
 #endif
@@ -2144,12 +2168,7 @@ int64_t
 ep_rt_perf_counter_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    LARGE_INTEGER value;
-    if (QueryPerformanceCounter (&value))
-        return static_cast<int64_t>(value.QuadPart);
-    else
-        return 0;
+    return (int64_t)PalQueryPerformanceCounter();
 }
 
 static
@@ -2158,12 +2177,7 @@ int64_t
 ep_rt_perf_frequency_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    LARGE_INTEGER value;
-    if (QueryPerformanceFrequency (&value))
-        return static_cast<int64_t>(value.QuadPart);
-    else
-        return 0;
+    return (int64_t)PalQueryPerformanceFrequency();
 }
 
 static
@@ -2173,20 +2187,26 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
     STATIC_CONTRACT_NOTHROW;
 
+#ifdef _INC_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);
 
     EP_ASSERT(system_time != NULL);
     ep_system_time_set (
-        system_time,
-        value.wYear,
-        value.wMonth,
-        value.wDayOfWeek,
-        value.wDay,
-        value.wHour,
-        value.wMinute,
-        value.wSecond,
-        value.wMilliseconds);
+    	system_time,
+    	value.wYear,
+    	value.wMonth,
+    	value.wDayOfWeek,
+    	value.wDay,
+    	value.wHour,
+    	value.wMinute,
+    	value.wSecond,
+    	value.wMilliseconds);
+#else
+    // TODO: Get System time
+    __debugbreak();
+#endif
+
 }
 
 static
@@ -2207,7 +2227,9 @@ int32_t
 ep_rt_system_get_alloc_granularity (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
+    // return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
+    //__debugbreak();
+    return 0x10000;//0xffff;
 }
 
 static
@@ -2230,14 +2252,10 @@ ep_rt_file_open_write (const ep_char8_t *path)
     ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
     ep_return_null_if_nok (path_utf16 != NULL);
 
-    CFileStream *file_stream = new (nothrow) CFileStream ();
-    if (file_stream && FAILED (file_stream->OpenForWrite (reinterpret_cast<LPWSTR>(path_utf16)))) {
-        delete file_stream;
-        file_stream = NULL;
-    }
+    // TODO: Find out the way to open a file in native
+    __debugbreak();
 
-    ep_rt_utf16_string_free (path_utf16);
-    return static_cast<ep_rt_file_handle_t>(file_stream);
+    return 0;
 }
 
 static
@@ -2247,9 +2265,8 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // Closed in destructor.
-    if (file_handle)
-        delete file_handle;
+    // TODO: Find out the way to close a file in native
+    __debugbreak();
     return true;
 }
 
@@ -2265,12 +2282,10 @@ ep_rt_file_write (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (buffer != NULL);
 
-    ep_return_false_if_nok (file_handle != NULL);
-
-    ULONG out_count;
-    HRESULT result = reinterpret_cast<CFileStream *>(file_handle)->Write (buffer, bytes_to_write, &out_count);
-    *bytes_written = static_cast<uint32_t>(out_count);
-    return result == S_OK;
+    // TODO: Find out the way to write to a file in native
+    __debugbreak();
+    
+    return false;
 }
 
 static
@@ -2279,7 +2294,7 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
-    return reinterpret_cast<uint8_t *>(ClrVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
 }
 
 static
@@ -2292,7 +2307,7 @@ ep_rt_vfree (
     STATIC_CONTRACT_NOTHROW;
 
     if (buffer)
-        ClrVirtualFree (buffer, 0, MEM_RELEASE);
+        PalVirtualFree (buffer, 0, MEM_RELEASE);
 }
 
 static
@@ -2318,15 +2333,16 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (env_array != NULL);
 
-    LPWSTR envs = GetEnvironmentStringsW ();
-    if (envs) {
-        LPWSTR next = envs;
-        while (*next) {
-            ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
-            next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
-        }
-        FreeEnvironmentStringsW (envs);
-    }
+    // LPWSTR envs = GetEnvironmentStringsW ();
+    // if (envs) {
+    // 	LPWSTR next = envs;
+    //	while (*next) {
+    //		ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
+    //		next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
+    //	}
+    //	FreeEnvironmentStringsW (envs);
+    // }
+    __debugbreak();
 }
 
 /*
@@ -2340,18 +2356,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
     STATIC_CONTRACT_NOTHROW;
 
     bool result = true;
-    EX_TRY
-    {
-        if (lock) {
-            CrstBase::CrstHolderWithState holder (lock->lock);
-            holder.SuppressRelease ();
-        }
-    }
-    EX_CATCH
-    {
-        result = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
+    // TODO: Implement EventPipe locking for NativeAOT	
 
     return result;
 }
@@ -2363,18 +2368,7 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
     STATIC_CONTRACT_NOTHROW;
 
     bool result = true;
-    EX_TRY
-    {
-        if (lock) {
-            CrstBase::UnsafeCrstInverseHolder holder (lock->lock);
-            holder.SuppressRelease ();
-        }
-    }
-    EX_CATCH
-    {
-        result = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
+    // TODO: Implement EventPipe locking for NativeAOT	
 
     return result;
 }
@@ -2385,6 +2379,7 @@ inline
 void
 ep_rt_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
 {
+
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
 }
@@ -2409,13 +2404,7 @@ ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    EX_TRY
-    {
-        spin_lock->lock = new (nothrow) SpinLock ();
-        spin_lock->lock->Init (LOCK_TYPE_DEFAULT);
-    }
-    EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions);
+    spin_lock->lock = new (nothrow) SpinLock ();
 }
 
 static
@@ -2439,7 +2428,8 @@ ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
 
-    SpinLock::AcquireLock (spin_lock->lock);
+    // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
+    // SpinLock::Lock (*(spin_lock->lock));
     return true;
 }
 
@@ -2451,7 +2441,8 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
 
-    SpinLock::ReleaseLock (spin_lock->lock);
+    // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
+    // SpinLock::Unlock (*(spin_lock->lock));
     return true;
 }
 
@@ -2463,7 +2454,7 @@ ep_rt_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-    EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
+
 }
 
 static
@@ -2472,7 +2463,7 @@ void
 ep_rt_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
+
 }
 #endif
 
@@ -2543,7 +2534,11 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
     if (!str)
         return NULL;
 
+#ifdef TARGET_UNIX
+    return strdup (str);
+#else
     return _strdup (str);
+#endif
 }
 
 static
@@ -2570,7 +2565,11 @@ ep_rt_utf8_string_strtok (
     ep_char8_t **context)
 {
     STATIC_CONTRACT_NOTHROW;
+#ifdef TARGET_UNIX
+    return strtok_r (str, delimiter, context);
+#else
     return strtok_s (str, delimiter, context);
+#endif    
 }
 
 // STATIC_CONTRACT_NOTHROW
@@ -2624,24 +2623,21 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
-    COUNT_T len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), 0, 0);
-    if (len_utf16 == 0)
+    // TODO: Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one
+    size_t len_utf8 = strlen(str);        
+    if (len_utf8 == 0)
         return NULL;
 
-    if (static_cast<int>(len) != -1)
-        len_utf16 += 1;
-
-    ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc (len_utf16 * sizeof (ep_char16_t)));
+    ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc ((len_utf8 + 1) * sizeof (ep_char16_t)));
     if (!str_utf16)
         return NULL;
 
-    len_utf16 = WszMultiByteToWideChar (CP_UTF8, 0, str, static_cast<int>(len), reinterpret_cast<LPWSTR>(str_utf16), len_utf16);
-    if (len_utf16 == 0) {
-        free (str_utf16);
-        return NULL;
+    for (size_t i = 0; i < len_utf8; i++)
+    {
+         str_utf16[i] = str[i];
     }
 
-    str_utf16 [len_utf16 - 1] = 0;
+    str_utf16[len_utf8] = 0;
     return str_utf16;
 }
 
@@ -2694,25 +2690,24 @@ ep_rt_utf16_to_utf8_string (
 
     if (!str)
         return NULL;
+    
+    // TODO: Temp implementation that is the reverse of ep_rt_utf8_to_utf16le_string
+    size_t len_utf16 = len;
+    if(len_utf16 == -1)
+    {
+        len_utf16 = ep_rt_utf16_string_len (str);
+    }
 
-    COUNT_T size_utf8 = WszWideCharToMultiByte (CP_UTF8, 0, reinterpret_cast<LPCWSTR>(str), static_cast<int>(len), NULL, 0, NULL, NULL);
-    if (size_utf8 == 0)
-        return NULL;
-
-    if (static_cast<int>(len) != -1)
-        size_utf8 += 1;
-
-    ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc (size_utf8));
+    ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc ((len_utf16 + 1) * sizeof (ep_char8_t)));
     if (!str_utf8)
         return NULL;
 
-    size_utf8 = WszWideCharToMultiByte (CP_UTF8, 0, reinterpret_cast<LPCWSTR>(str), static_cast<int>(len), reinterpret_cast<LPSTR>(str_utf8), size_utf8, NULL, NULL);
-    if (size_utf8 == 0) {
-        free (str_utf8);
-        return NULL;
+    for (size_t i = 0; i < len_utf16; i++)
+    {
+         str_utf8[i] = (char)str[i];
     }
 
-    str_utf8 [size_utf8 - 1] = 0;
+    str_utf8[len_utf16] = 0;
     return str_utf8;
 }
 
@@ -2752,9 +2747,14 @@ static
 const ep_char8_t *
 ep_rt_diagnostics_command_line_get (void)
 {
+
     STATIC_CONTRACT_NOTHROW;
 
-    // In aot, this value can change over time, specifically before vs after suspension in diagnostics server.
+    // TODO: revisit commandline for AOT
+    // return reinterpret_cast<const ep_char8_t *>(::GetCommandLineA());
+
+
+    // In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
     // The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
     // is different during each phase. We suspend during init where the runtime has populated the commandline with a
     // mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
@@ -2766,18 +2766,19 @@ ep_rt_diagnostics_command_line_get (void)
     extern ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
 
     ep_char8_t *old_cmd_line = _ep_rt_aot_diagnostics_cmd_line;
-    ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
-    if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
-        // same as old, so free the new one
-        ep_rt_utf8_string_free (new_cmd_line);
-    } else {
-        // attempt an update, and give up if you lose the race
-        if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_aot_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
-            ep_rt_utf8_string_free (new_cmd_line);
-        }
-        // NOTE: If there was a value we purposefully leak it since it may still be in use.
-        // This leak is *small* (length of the command line) and bounded (should only happen once)
-    }
+
+    // ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+    // __debugbreak();
+    // ep_char8_t *new_cmd_line = NULL;
+    // if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
+    //     // same as old, so free the new one
+    //     ep_rt_utf8_string_free (new_cmd_line);
+    // } else {
+    //     // attempt an update, and give up if you lose the race
+    //     if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_aot_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
+    //         ep_rt_utf8_string_free (new_cmd_line);
+    //     }
+    // }
 
     return _ep_rt_aot_diagnostics_cmd_line;
 }
@@ -2810,14 +2811,14 @@ thread_holder_free_func (EventPipeThreadHolder * thread_holder)
     }
 }
 
-class EventPipeCoreCLRThreadHolderTLS {
+class EventPipeAotThreadHolderTLS {
 public:
-    EventPipeCoreCLRThreadHolderTLS ()
+    EventPipeAotThreadHolderTLS ()
     {
         STATIC_CONTRACT_NOTHROW;
     }
 
-    ~EventPipeCoreCLRThreadHolderTLS ()
+    ~EventPipeAotThreadHolderTLS ()
     {
         STATIC_CONTRACT_NOTHROW;
 
@@ -2847,7 +2848,7 @@ public:
 
 private:
     EventPipeThreadHolder *m_threadHolder;
-    static thread_local EventPipeCoreCLRThreadHolderTLS g_threadHolderTLS;
+    static thread_local EventPipeAotThreadHolderTLS g_threadHolderTLS;
 };
 
 static
@@ -2856,8 +2857,10 @@ ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    Thread* thread_handle = SetupThreadNoThrow ();
-    EP_ASSERT (thread_handle != NULL);
+    // TODO: Implement thread creation/management if needed
+    // Thread* thread_handle = SetupThreadNoThrow ();
+    // EP_ASSERT (thread_handle != NULL);
+    //__debugbreak();
 }
 
 static
@@ -2867,7 +2870,7 @@ ep_rt_thread_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    EventPipeThreadHolder *thread_holder = EventPipeCoreCLRThreadHolderTLS::getThreadHolder ();
+    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
     return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
 }
 
@@ -2878,9 +2881,9 @@ ep_rt_thread_get_or_create (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    EventPipeThreadHolder *thread_holder = EventPipeCoreCLRThreadHolderTLS::getThreadHolder ();
+    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
     if (!thread_holder)
-        thread_holder = EventPipeCoreCLRThreadHolderTLS::createThreadHolder ();
+        thread_holder = EventPipeAotThreadHolderTLS::createThreadHolder ();
 
     return ep_thread_holder_get_thread (thread_holder);
 }
@@ -2891,7 +2894,9 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return GetThreadNULLOk ();
+    // TODO: Implement thread creation/management if needed
+    // return GetThreadNULLOk ();
+    return NULL;
 }
 
 static
@@ -2902,7 +2907,10 @@ ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (thread_handle != NULL);
 
-    return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
+    // TODO: Implement thread creation/management if needed
+    // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
+    __debugbreak();
+    return NULL;
 }
 
 static
@@ -2927,7 +2935,9 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    return thread_handle != NULL && thread_handle->HasStarted ();
+    // TODO: Implement thread creation/management if needed
+    // return thread_handle != NULL && thread_handle->HasStarted ();
+    return true;
 }
 
 static
@@ -2936,7 +2946,10 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return GetThread ();
+    // TODO: Implement thread creation/management if needed
+    // return GetThread ();
+    __debugbreak();
+    return NULL;
 }
 
 static
@@ -2947,7 +2960,10 @@ ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (activity_id_handle != NULL);
 
-    return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
+    // TODO: Implement thread creation/management if needed
+    // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
+    __debugbreak();
+    return NULL;
 }
 
 static
@@ -2979,11 +2995,13 @@ ep_rt_thread_set_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
+    // TODO: Implement thread creation/management if needed
+    // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
+    __debugbreak();
 }
 
 #undef EP_YIELD_WHILE
-#define EP_YIELD_WHILE(condition) YIELD_WHILE(condition)
+#define EP_YIELD_WHILE(condition) {}//YIELD_WHILE(condition)
 
 /*
  * ThreadSequenceNumberMap.
