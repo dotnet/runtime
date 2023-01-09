@@ -7,7 +7,7 @@
  are not used which contain switch statements.
 */
 
-class TEST
+public class TEST
 {
     public static int Main()
     {

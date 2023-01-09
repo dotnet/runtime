@@ -119,7 +119,7 @@ namespace System
 
         internal static TypeAttributes GetAttributes(RuntimeType type)
         {
-            return GetAttributes(new QCallTypeHandle(ref type));
+            return type.GetAttributes();
         }
 
         public ModuleHandle GetModuleHandle()
@@ -223,7 +223,7 @@ namespace System
 
         internal static CorElementType GetCorElementType(RuntimeType type)
         {
-            return GetCorElementType (new QCallTypeHandle(ref type));
+            return type.GetCorElementType();
         }
 
         internal static bool HasInstantiation(RuntimeType type)

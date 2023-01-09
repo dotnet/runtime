@@ -3224,8 +3224,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
         }
 
-        BuildUse(hwintrinsic->Op(1), candidates);
-        return 1;
+        return BuildOperandUses(hwintrinsic->Op(1), candidates);
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64

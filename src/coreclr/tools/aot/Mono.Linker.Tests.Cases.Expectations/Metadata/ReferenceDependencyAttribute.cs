@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public ReferenceDependencyAttribute (string value)
 		{
-			if (string.IsNullOrEmpty (value))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (value));
+			ArgumentException.ThrowIfNullOrEmpty (value);
 		}
 	}
 }

@@ -162,6 +162,9 @@ dotnet_diagnostic.CA1067.severity = none
 # CA1311: Specify culture version
 dotnet_diagnostic.CA1311.severity = none
 
+# CA3075: Unsafe overload of method
+dotnet_diagnostic.CA3075.severity = none
+
 ## SA analyzer rules
 
 # Access modifier must be declared

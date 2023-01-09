@@ -934,16 +934,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     assert(varTypeIsStruct(dest) && (dest->OperIsLocal() || dest->OperIsIndir() || dest->OperIs(GT_FIELD)));
 
     assert(dest->TypeGet() == src->TypeGet());
-    // TODO-1stClassStructs: delete the "!IND" condition once "IND<struct>" nodes are no more.
-    if (dest->TypeIs(TYP_STRUCT) && !src->gtEffectiveVal()->OperIs(GT_IND))
+    if (dest->TypeIs(TYP_STRUCT))
     {
         assert(ClassLayout::AreCompatible(dest->GetLayout(this), src->GetLayout(this)));
-    }
-
-    if (dest->OperIs(GT_FIELD) && dest->TypeIs(TYP_STRUCT))
-    {
-        // TODO-ADDR: delete this once FIELD<struct> nodes are transformed into OBJs (not INDs).
-        dest = gtNewObjNode(dest->GetLayout(this), gtNewOperNode(GT_ADDR, TYP_BYREF, dest));
     }
 
     DebugInfo usedDI = di;
@@ -1199,30 +1192,20 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 {
     assert(varTypeIsStruct(structVal) || eeIsValueClass(structHnd));
 
-    var_types type = structVal->TypeGet();
-
+    var_types  type = structVal->TypeGet();
     genTreeOps oper = structVal->gtOper;
 
-    if (oper == GT_OBJ && willDeref)
-    {
-        assert(structVal->AsObj()->GetLayout()->GetClassHandle() == structHnd);
-        return (structVal->AsObj()->Addr());
-    }
-    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
+    if (oper == GT_CALL || oper == GT_RET_EXPR || (oper == GT_OBJ && !willDeref) || oper == GT_MKREFANY ||
+        structVal->OperIsHWIntrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
         impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-        // The 'return value' is now the temp itself
-
-        type          = genActualType(lvaTable[tmpNum].TypeGet());
-        GenTree* temp = gtNewLclvNode(tmpNum, type);
-        temp          = gtNewOperNode(GT_ADDR, TYP_BYREF, temp);
-        return temp;
+        // The 'return value' is now address of the temp itself.
+        return gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
     }
-    else if (oper == GT_COMMA)
+    if (oper == GT_COMMA)
     {
         assert(structVal->AsOp()->gtOp2->gtType == type); // Second thing is the struct
 
@@ -1255,7 +1238,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal);
     }
 
-    return (gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+    return gtNewOperNode(GT_ADDR, TYP_BYREF, structVal);
 }
 
 //------------------------------------------------------------------------
@@ -1338,29 +1321,13 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
     {
         structType = impNormStructType(structHnd);
     }
-    bool                 alreadyNormalized = false;
-    GenTreeLclVarCommon* structLcl         = nullptr;
+    GenTreeLclVarCommon* structLcl = nullptr;
 
-    genTreeOps oper = structVal->OperGet();
-    switch (oper)
+    switch (structVal->OperGet())
     {
-        // GT_MKREFANY is supported directly by args morphing.
-        case GT_MKREFANY:
-            alreadyNormalized = true;
-            break;
-
         case GT_CALL:
         case GT_RET_EXPR:
             makeTemp = true;
-            break;
-
-        case GT_FIELD:
-            // Wrap it in a GT_OBJ, if needed.
-            structVal->gtType = structType;
-            if (structType == TYP_STRUCT)
-            {
-                structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            }
             break;
 
         case GT_LCL_VAR:
@@ -1370,39 +1337,22 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
             FALLTHROUGH;
 
+        case GT_IND:
         case GT_OBJ:
         case GT_BLK:
-            // These should already have the appropriate type.
-            assert(structVal->gtType == structType);
-            alreadyNormalized = true;
-            break;
-
-        case GT_IND:
-            assert(structVal->gtType == structType);
-            structVal         = gtNewObjNode(structHnd, structVal->gtGetOp1());
-            alreadyNormalized = true;
-            break;
-
+        case GT_FIELD:
         case GT_CNS_VEC:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
-            break;
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            assert(structVal->gtType == structType);
-            assert(varTypeIsSIMD(structVal) ||
-                   HWIntrinsicInfo::IsMultiReg(structVal->AsHWIntrinsic()->GetHWIntrinsicId()));
-            break;
 #endif
+        case GT_MKREFANY:
+            // These should already have the appropriate type.
+            assert(structVal->TypeGet() == structType);
+            break;
 
         case GT_COMMA:
         {
-            // The second thing could either be a block node or a GT_FIELD or a GT_SIMD or a GT_COMMA node.
+            // The second thing could either be a block node or a GT_FIELD or a GT_COMMA node.
             GenTree* blockNode = structVal->AsOp()->gtOp2;
             assert(blockNode->gtType == structType);
 
@@ -1419,22 +1369,15 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-            if (blockNode->OperGet() == GT_FIELD)
-            {
-                // If we have a GT_FIELD then wrap it in a GT_OBJ.
-                blockNode = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, blockNode));
-            }
-
 #ifdef FEATURE_SIMD
-            if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
+            if (blockNode->OperIsHWIntrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
-                alreadyNormalized     = true;
             }
             else
 #endif
             {
-                noway_assert(blockNode->OperIsBlk());
+                noway_assert(blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD));
 
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
@@ -1452,7 +1395,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 {
                     structVal = blockNode;
                 }
-                alreadyNormalized = true;
             }
         }
         break;
@@ -1461,22 +1403,19 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
-    structVal->gtType = structType;
 
-    if (!alreadyNormalized)
+    if (makeTemp)
     {
-        if (makeTemp)
-        {
-            unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
+        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
-            impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
+        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
 
-            // The structVal is now the temp itself
+        // The structVal is now the temp itself
 
-            structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-            structVal = structLcl;
-        }
-        if ((structType == TYP_STRUCT) && !structVal->OperIsBlk())
+        structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
+        structVal = structLcl;
+
+        if (structType == TYP_STRUCT)
         {
             // Wrap it in a GT_OBJ
             structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
@@ -2155,7 +2094,7 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
 
     if ((tree->gtFlags & spillFlags) != 0 ||
         (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-         !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
+         !impIsAddressInLocal(tree) && // No need to spill the LCL_ADDR nodes.
          gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                        // lvAddrTaken flag.
     {
@@ -2700,27 +2639,32 @@ void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
  *  turned into explicit casts here.
  *  We also allow an implicit conversion of a ldnull into a TYP_I_IMPL(0)
  */
-
-GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
+GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp, bool zeroExtend)
 {
-    var_types currType   = genActualType(tree->gtType);
+    var_types currType   = genActualType(tree);
     var_types wantedType = genActualType(dstTyp);
 
     if (wantedType != currType)
     {
         // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
-        if ((tree->OperGet() == GT_CNS_INT) && varTypeIsI(dstTyp))
+        if (tree->IsCnsIntOrI() && varTypeIsI(dstTyp))
         {
-            if (!varTypeIsI(tree->gtType) || ((tree->gtType == TYP_REF) && (tree->AsIntCon()->gtIconVal == 0)))
+            if ((currType == TYP_REF) && (tree->AsIntCon()->IconValue() == 0))
             {
                 tree->gtType = TYP_I_IMPL;
             }
+#ifdef TARGET_64BIT
+            else if (currType == TYP_INT)
+            {
+                tree->gtType = TYP_I_IMPL;
+            }
+#endif // TARGET_64BIT
         }
 #ifdef TARGET_64BIT
         else if (varTypeIsI(wantedType) && (currType == TYP_INT))
         {
             // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
-            tree = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
+            tree = gtNewCastNode(TYP_I_IMPL, tree, zeroExtend, TYP_I_IMPL);
         }
         else if ((wantedType == TYP_INT) && varTypeIsI(currType))
         {
@@ -2734,7 +2678,7 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
 }
 
 /*****************************************************************************
- *  TYP_FLOAT and TYP_DOUBLE can be used almost interchangeably in some cases,
+ *  TYP_FLOAT and TYP_DOUBLE can be used almost interchangeably in most cases,
  *  but we want to make that an explicit cast in our trees, so any implicit casts
  *  that exist in the IL are turned into explicit casts here.
  */
@@ -3871,22 +3815,15 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     //  - Pointer to block of int32 dimensions: address of lvaNewObjArrayArgs temp.
     //
 
-    node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-    node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+    node = gtNewLclVarAddrNode(lvaNewObjArrayArgs);
 
     // Pop dimension arguments from the stack one at a time and store it
     // into lvaNewObjArrayArgs temp.
     for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
     {
-        GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
-
-        GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
-        dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                             new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
-        dest = gtNewOperNode(GT_IND, TYP_INT, dest);
-
-        node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
+        GenTree* arg  = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
+        GenTree* dest = gtNewLclFldNode(lvaNewObjArrayArgs, TYP_INT, sizeof(INT32) * i);
+        node          = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
     }
 
     node =
@@ -4277,7 +4214,13 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
-                op1 = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+                op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
+                if (pResolvedToken->hClass == info.compClassHnd && m_preferredInitCctor == CORINFO_HELP_UNDEF &&
+                    (pFieldInfo->helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
+                     pFieldInfo->helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE))
+                {
+                    m_preferredInitCctor = pFieldInfo->helper;
+                }
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
@@ -5492,6 +5435,7 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
 /*****************************************************************************
  *  Determine the result type of an arithmetic operation
  *  On 64-bit inserts upcasts when native int is mixed with int32
+ *  Also inserts upcasts to double when float and double are mixed.
  */
 var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTree** pOp1, GenTree** pOp2)
 {
@@ -5499,18 +5443,17 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     GenTree*  op1  = *pOp1;
     GenTree*  op2  = *pOp2;
 
-    // Arithmetic operations are generally only allowed with
-    // primitive types, but certain operations are allowed
-    // with byrefs
-
-    if ((oper == GT_SUB) && (genActualType(op1->TypeGet()) == TYP_BYREF || genActualType(op2->TypeGet()) == TYP_BYREF))
+    // Arithmetic operations are generally only allowed with primitive types, but certain operations are allowed
+    // with byrefs.
+    //
+    if ((oper == GT_SUB) && (op1->TypeIs(TYP_BYREF) || op2->TypeIs(TYP_BYREF)))
     {
-        if ((genActualType(op1->TypeGet()) == TYP_BYREF) && (genActualType(op2->TypeGet()) == TYP_BYREF))
+        if (op1->TypeIs(TYP_BYREF) && op2->TypeIs(TYP_BYREF))
         {
             // byref1-byref2 => gives a native int
             type = TYP_I_IMPL;
         }
-        else if (genActualTypeIsIntOrI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_BYREF))
+        else if (genActualTypeIsIntOrI(op1) && op2->TypeIs(TYP_BYREF))
         {
             // [native] int - byref => gives a native int
 
@@ -5530,87 +5473,64 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // So here we decide to make the resulting type to be a native int.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
-            if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
-            {
-                // insert an explicit upcast
-                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-            }
-#endif // TARGET_64BIT
+            // Insert an explicit upcast if needed.
+            op1 = *pOp1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
 
             type = TYP_I_IMPL;
         }
         else
         {
             // byref - [native] int => gives a byref
-            assert(genActualType(op1->TypeGet()) == TYP_BYREF && genActualTypeIsIntOrI(op2->TypeGet()));
+            assert(op1->TypeIs(TYP_BYREF) && genActualTypeIsIntOrI(op2));
 
-#ifdef TARGET_64BIT
-            if ((genActualType(op2->TypeGet()) != TYP_I_IMPL))
-            {
-                // insert an explicit upcast
-                op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-            }
-#endif // TARGET_64BIT
+            // Insert an explicit upcast if needed.
+            op2 = *pOp2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
 
             type = TYP_BYREF;
         }
     }
-    else if ((oper == GT_ADD) &&
-             (genActualType(op1->TypeGet()) == TYP_BYREF || genActualType(op2->TypeGet()) == TYP_BYREF))
+    else if ((oper == GT_ADD) && (op1->TypeIs(TYP_BYREF) || op2->TypeIs(TYP_BYREF)))
     {
         // byref + [native] int => gives a byref
         // (or)
         // [native] int + byref => gives a byref
 
-        // only one can be a byref : byref op byref not allowed
-        assert(genActualType(op1->TypeGet()) != TYP_BYREF || genActualType(op2->TypeGet()) != TYP_BYREF);
-        assert(genActualTypeIsIntOrI(op1->TypeGet()) || genActualTypeIsIntOrI(op2->TypeGet()));
+        // Only one can be a byref : byref op byref not allowed.
+        assert(op1->TypeIs(TYP_BYREF) || op2->TypeIs(TYP_BYREF));
+        assert(genActualTypeIsIntOrI(op1) || genActualTypeIsIntOrI(op2));
 
-#ifdef TARGET_64BIT
-        if (genActualType(op2->TypeGet()) == TYP_BYREF)
-        {
-            if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
-            {
-                // insert an explicit upcast
-                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-            }
-        }
-        else if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
-        {
-            // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
-        }
-#endif // TARGET_64BIT
+        // Insert explicit upcasts if needed.
+        op1 = *pOp1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
+        op2 = *pOp2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, fUnsigned);
 
         type = TYP_BYREF;
     }
 #ifdef TARGET_64BIT
-    else if (genActualType(op1->TypeGet()) == TYP_I_IMPL || genActualType(op2->TypeGet()) == TYP_I_IMPL)
+    else if ((genActualType(op1) == TYP_I_IMPL) || (genActualType(op2) == TYP_I_IMPL))
     {
-        assert(!varTypeIsFloating(op1->gtType) && !varTypeIsFloating(op2->gtType));
+        assert(!varTypeIsFloating(op1) && !varTypeIsFloating(op2));
 
         // int + long => gives long
         // long + int => gives long
-        // we get this because in the IL the long isn't Int64, it's just IntPtr
-
-        if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
+        // We get this because in the IL the long isn't Int64, it's just IntPtr.
+        // Insert explicit upcasts if needed.
+        if (genActualType(op1) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
+            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
         }
-        else if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
+        else if (genActualType(op2) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
+            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
         }
 
         type = TYP_I_IMPL;
     }
 #else  // 32-bit TARGET
-    else if (genActualType(op1->TypeGet()) == TYP_LONG || genActualType(op2->TypeGet()) == TYP_LONG)
+    else if ((genActualType(op1) == TYP_LONG) || (genActualType(op2) == TYP_LONG))
     {
-        assert(!varTypeIsFloating(op1->gtType) && !varTypeIsFloating(op2->gtType));
+        assert(!varTypeIsFloating(op1) && !varTypeIsFloating(op2));
 
         // int + long => gives long
         // long + int => gives long
@@ -5621,23 +5541,22 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
     else
     {
         // int + int => gives an int
-        assert(genActualType(op1->TypeGet()) != TYP_BYREF && genActualType(op2->TypeGet()) != TYP_BYREF);
+        assert((genActualType(op1) != TYP_BYREF) && (genActualType(op2) != TYP_BYREF));
+        assert((genActualType(op1) == genActualType(op2)) || (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-        assert(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-               (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
+        type = genActualType(op1);
 
-        type = genActualType(op1->gtType);
-
-        // If both operands are TYP_FLOAT, then leave it as TYP_FLOAT.
-        // Otherwise, turn floats into doubles
-        if ((type == TYP_FLOAT) && (genActualType(op2->gtType) != TYP_FLOAT))
+        // If both operands are TYP_FLOAT, then leave it as TYP_FLOAT. Otherwise, turn floats into doubles
+        if (varTypeIsFloating(type) && (op2->TypeGet() != type))
         {
-            assert(genActualType(op2->gtType) == TYP_DOUBLE);
+            op1 = *pOp1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+            op2 = *pOp2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
+
             type = TYP_DOUBLE;
         }
     }
 
-    assert(type == TYP_BYREF || type == TYP_DOUBLE || type == TYP_FLOAT || type == TYP_LONG || type == TYP_INT);
+    assert(TypeIs(type, TYP_BYREF, TYP_DOUBLE, TYP_FLOAT, TYP_LONG, TYP_INT));
     return type;
 }
 
@@ -5843,14 +5762,18 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                     if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
                          TypeCompareState::Must))
                     {
-                        assert((info.compCompHnd->getClassAttribs(likelyCls) &
-                                (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
-                        JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
-                                eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+                        bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
+                                           (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
+                        // If it's abstract it means we most likely deal with a stale PGO data so bail out.
+                        if (!isAbstract)
+                        {
+                            JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
+                                    eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
-                        canExpandInline = true;
-                        partialExpand   = true;
-                        exactCls        = likelyCls;
+                            canExpandInline = true;
+                            partialExpand   = true;
+                            exactCls        = likelyCls;
+                        }
                     }
                 }
             }
@@ -6819,23 +6742,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     tiRetVal      = se.seTypeInfo;
                 }
 
-#ifdef FEATURE_SIMD
-                if (varTypeIsSIMD(lclTyp) && (lclTyp != op1->TypeGet()))
+                // TODO-ADDR: delete once all RET_EXPRs are typed properly.
+                if (varTypeIsSIMD(lclTyp))
                 {
-                    assert(op1->TypeGet() == TYP_STRUCT);
                     op1->gtType = lclTyp;
                 }
-#endif // FEATURE_SIMD
 
+                // Note this will downcast TYP_I_IMPL into a 32-bit Int on 64 bit (for x86 JIT compatibility).
                 op1 = impImplicitIorI4Cast(op1, lclTyp);
-
-#ifdef TARGET_64BIT
-                // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
-                if (varTypeIsI(op1->TypeGet()) && (genActualType(lclTyp) == TYP_INT))
-                {
-                    op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
-                }
-#endif // TARGET_64BIT
+                op1 = impImplicitR4orR8Cast(op1, lclTyp);
 
                 // We had better assign it a value of the correct type
                 assertImp(
@@ -6846,21 +6761,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
                     ((genActualType(lclTyp) == TYP_BYREF) && genActualType(op1->TypeGet()) == TYP_REF));
 
-                /* If op1 is "&var" then its type is the transient "*" and it can
-                   be used either as TYP_BYREF or TYP_I_IMPL */
-
-                if (op1->IsLocalAddrExpr() != nullptr)
+                // If op1 is "&var" then its type is the transient "*" and it can
+                // be used either as BYREF or TYP_I_IMPL.
+                if (genActualType(lclTyp) == TYP_I_IMPL)
                 {
-                    assertImp(genActualType(lclTyp) == TYP_I_IMPL || lclTyp == TYP_BYREF);
-
-                    /* When "&var" is created, we assume it is a byref. If it is
-                       being assigned to a TYP_I_IMPL var, change the type to
-                       prevent unnecessary GC info */
-
-                    if (genActualType(lclTyp) == TYP_I_IMPL)
-                    {
-                        op1->gtType = TYP_I_IMPL;
-                    }
+                    impBashVarAddrsToI(op1);
                 }
 
                 // If this is a local and the local is a ref type, see
@@ -6909,15 +6814,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
 
-                // We can generate an assignment to a TYP_FLOAT from a TYP_DOUBLE
-                // We insert a cast to the dest 'op2' type
-                //
-                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1->gtType) &&
-                    varTypeIsFloating(op2->gtType))
-                {
-                    op1 = gtNewCastNode(op2->TypeGet(), op1, false, op2->TypeGet());
-                }
-
                 if (varTypeIsStruct(lclTyp))
                 {
                     op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
@@ -6947,8 +6843,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
                     assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
-                    op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum));
-
+                    op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6978,8 +6873,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
-                    assert(op1->gtOper == GT_LCL_VAR);
-
+                    op1->ChangeType(TYP_BYREF);
+                    op1->SetOper(GT_LCL_VAR_ADDR);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6994,22 +6889,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto ADRVAR;
 
             ADRVAR:
-
-                op1 = impCreateLocalNode(lclNum DEBUGARG(opcodeOffs + sz + 1));
+                // Note that this is supposed to create the transient type "*"
+                // which may be used as a TYP_I_IMPL. However we catch places
+                // where it is used as a TYP_I_IMPL and change the node if needed.
+                // Thus we are pessimistic and may report byrefs in the GC info
+                // where it was not absolutely needed, but doing otherwise would
+                // require careful rethinking of the importer routines which use
+                // the IL validity model (e. g. "impGetByRefResultType").
+                op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 
             _PUSH_ADRVAR:
-                assert(op1->gtOper == GT_LCL_VAR);
-
-                /* Note that this is supposed to create the transient type "*"
-                   which may be used as a TYP_I_IMPL. However we catch places
-                   where it is used as a TYP_I_IMPL and change the node if needed.
-                   Thus we are pessimistic and may report byrefs in the GC info
-                   where it was not absolutely needed, but it is safer this way.
-                 */
-                op1 = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
-
-                // &aliasedVar doesnt need GTF_GLOB_REF, though alisasedVar does
-                assert((op1->gtFlags & GTF_GLOB_REF) == 0);
+                assert(op1->OperIs(GT_LCL_VAR_ADDR));
 
                 tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
@@ -7024,12 +6914,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG);
 
-                /* The ARGLIST cookie is a hidden 'last' parameter, we have already
-                   adjusted the arg count cos this is like fetching the last param */
-                assertImp(0 < numArgs);
-                lclNum = lvaVarargsHandleArg;
-                op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
-                op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
+                // The ARGLIST cookie is a hidden 'last' parameter, we have already
+                // adjusted the arg count cos this is like fetching the last param.
+                assertImp(numArgs > 0);
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -7188,25 +7076,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 GenTree* index = impPopStack().val;
                 GenTree* arr   = impPopStack().val;
 
-#ifdef TARGET_64BIT
                 // The CLI Spec allows an array to be indexed by either an int32 or a native int.
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
-                if (genActualType(index->TypeGet()) != TYP_I_IMPL)
-                {
-                    if (index->IsIntegralConst())
-                    {
-                        index->gtType = TYP_I_IMPL;
-                    }
-                    else
-                    {
-                        bool isUnsigned = false;
-                        index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
-                    }
-                }
-#endif // TARGET_64BIT
-
-                op1 = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
+                index = impImplicitIorI4Cast(index, TYP_I_IMPL);
+                op1   = gtNewHelperCallNode(CORINFO_HELP_LDELEMA_REF, TYP_BYREF, arr, index, type);
                 impPushOnStack(op1, tiRetVal);
             }
             break;
@@ -7324,27 +7198,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+                // Else call a helper function to do the assignment
                 impPopStack(3);
 
-// Else call a helper function to do the assignment
-#ifdef TARGET_64BIT
                 // The CLI Spec allows an array to be indexed by either an int32 or a native int.
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
-                if (genActualType(index->TypeGet()) != TYP_I_IMPL)
-                {
-                    if (index->IsIntegralConst())
-                    {
-                        index->gtType = TYP_I_IMPL;
-                    }
-                    else
-                    {
-                        bool isUnsigned = false;
-                        index           = gtNewCastNode(TYP_I_IMPL, index, isUnsigned, TYP_I_IMPL);
-                    }
-                }
-#endif // TARGET_64BIT
-                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                index = impImplicitIorI4Cast(index, TYP_I_IMPL);
+                op1   = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
                 goto SPILL_APPEND;
             }
 
@@ -7540,22 +7401,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         impPushOnStack(op1, tiRetVal);
                         break;
-                    }
-                }
-
-                // We can generate a TYP_FLOAT operation that has a TYP_DOUBLE operand
-                //
-                if (varTypeIsFloating(type) && varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType))
-                {
-                    if (op1->TypeGet() != type)
-                    {
-                        // We insert a cast of op1 to 'type'
-                        op1 = gtNewCastNode(type, op1, false, type);
-                    }
-                    if (op2->TypeGet() != type)
-                    {
-                        // We insert a cast of op2 to 'type'
-                        op2 = gtNewCastNode(type, op2, false, type);
                     }
                 }
 
@@ -7828,15 +7673,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
 #ifdef TARGET_64BIT
-                // TODO-Casts: create a helper that upcasts int32 -> native int when necessary.
-                // See also identical code in impGetByRefResultType and STSFLD import.
-                if (varTypeIsI(op1) && (genActualType(op2) == TYP_INT))
+                if (varTypeIsI(op1) && genActualTypeIsInt(op2))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
+                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
                 }
-                else if (varTypeIsI(op2) && (genActualType(op1) == TYP_INT))
+                else if (varTypeIsI(op2) && genActualTypeIsInt(op1))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
+                    op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL);
                 }
 #endif // TARGET_64BIT
 
@@ -7928,19 +7771,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
 
 #ifdef TARGET_64BIT
-                if ((op1->TypeGet() == TYP_I_IMPL) && (genActualType(op2->TypeGet()) == TYP_INT))
+                // TODO-Review: this differs in the extending behavior from plain relop import. Why?
+                if (op1->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op2))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL, uns);
                 }
-                else if ((op2->TypeGet() == TYP_I_IMPL) && (genActualType(op1->TypeGet()) == TYP_INT))
+                else if (op2->TypeIs(TYP_I_IMPL) && genActualTypeIsInt(op1))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, uns);
                 }
 #endif // TARGET_64BIT
 
-                assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
-                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
+                assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+                          (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
                 if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
                 {
@@ -7968,33 +7811,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
-                // We can generate an compare of different sized floating point op1 and op2
-                // We insert a cast
+                // We can generate an compare of different sized floating point op1 and op2.
+                // We insert a cast to double.
                 //
-                if (varTypeIsFloating(op1->TypeGet()))
+                if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1))
                 {
-                    if (op1->TypeGet() != op2->TypeGet())
-                    {
-                        assert(varTypeIsFloating(op2->TypeGet()));
-
-                        // say op1=double, op2=float. To avoid loss of precision
-                        // while comparing, op2 is converted to double and double
-                        // comparison is done.
-                        if (op1->TypeGet() == TYP_DOUBLE)
-                        {
-                            // We insert a cast of op2 to TYP_DOUBLE
-                            op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
-                        }
-                        else if (op2->TypeGet() == TYP_DOUBLE)
-                        {
-                            // We insert a cast of op1 to TYP_DOUBLE
-                            op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
-                        }
-                    }
+                    op1 = impImplicitR4orR8Cast(op1, TYP_DOUBLE);
+                    op2 = impImplicitR4orR8Cast(op2, TYP_DOUBLE);
                 }
 
-                /* Create and append the operator */
-
+                // Create and append the operator.
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
                 if (uns)
@@ -8006,7 +7832,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1->gtFlags |= GTF_RELOP_NAN_UN;
                 }
-
                 goto COND_JUMP;
 
             case CEE_SWITCH:
@@ -8465,30 +8290,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 impBashVarAddrsToI(op1, op2);
 
+                // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility.
+                // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility.
+                op2 = impImplicitIorI4Cast(op2, lclTyp);
                 op2 = impImplicitR4orR8Cast(op2, lclTyp);
-
-#ifdef TARGET_64BIT
-                // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
-                if ((op2->OperGet() == GT_CNS_INT) && varTypeIsI(lclTyp) && !varTypeIsI(op2->gtType))
-                {
-                    op2->gtType = TYP_I_IMPL;
-                }
-                else
-                {
-                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
-                    //
-                    if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
-                    {
-                        op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
-                    }
-                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
-                    //
-                    if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
-                    {
-                        op2 = gtNewCastNode(TYP_I_IMPL, op2, false, TYP_I_IMPL);
-                    }
-                }
-#endif // TARGET_64BIT
 
                 if (opcode == CEE_STIND_REF)
                 {
@@ -8969,8 +8774,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         lclDsc->lvHasLdAddrOp = true;
 
                         // Obtain the address of the temp
-                        newObjThisPtr =
-                            gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet()));
+                        newObjThisPtr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     }
                     else
                     {
@@ -9744,32 +9548,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2 = gtNewCastNode(op1->TypeGet(), op2, false, op1->TypeGet());
                     }
 #endif
-
-#ifdef TARGET_64BIT
-                    // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
-                    if ((op2->OperGet() == GT_CNS_INT) && varTypeIsI(lclTyp) && !varTypeIsI(op2->gtType))
-                    {
-                        op2->gtType = TYP_I_IMPL;
-                    }
-                    else
-                    {
-                        // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility
-                        //
-                        if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
-                        {
-                            op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
-                        }
-                        // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
-                        //
-                        if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
-                        {
-                            op2 = gtNewCastNode(TYP_I_IMPL, op2, false, TYP_I_IMPL);
-                        }
-                    }
-#endif
-
-                    // Insert an implicit FLOAT<->DOUBLE cast if needed.
-                    op2 = impImplicitR4orR8Cast(op2, op1->TypeGet());
+                    // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility.
+                    // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility.
+                    op2 = impImplicitIorI4Cast(op2, lclTyp);
+                    op2 = impImplicitR4orR8Cast(op2, lclTyp);
 
                     op1 = gtNewAssignNode(op1, op2);
                 }
@@ -9822,24 +9604,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Form the arglist: array class handle, size */
                 op2 = impPopStack().val;
-                assertImp(genActualTypeIsIntOrI(op2->gtType));
+                assertImp(genActualTypeIsIntOrI(op2));
 
-#ifdef TARGET_64BIT
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
-                if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
-                {
-                    if (op2->IsIntegralConst())
-                    {
-                        op2->gtType = TYP_I_IMPL;
-                    }
-                    else
-                    {
-                        bool isUnsigned = false;
-                        op2             = gtNewCastNode(TYP_I_IMPL, op2, isUnsigned, TYP_I_IMPL);
-                    }
-                }
-#endif // TARGET_64BIT
+                op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
@@ -10105,26 +9874,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
             }
             case CEE_REFANYTYPE:
-
+            {
                 op1 = impPopStack().val;
 
-                // make certain it is normalized;
-                op1 = impNormStructVal(op1, impGetRefAnyClass(), CHECK_SPILL_ALL);
-
-                if (op1->gtOper == GT_OBJ)
+                if (op1->OperIs(GT_MKREFANY))
                 {
-                    // Get the address of the refany
-                    op1 = op1->AsOp()->gtOp1;
-
-                    // Fetch the type from the correct slot
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
-                }
-                else
-                {
-                    assertImp(op1->gtOper == GT_MKREFANY);
-
                     // The pointer may have side-effects
                     if (op1->AsOp()->gtOp1->gtFlags & GTF_SIDE_EFFECT)
                     {
@@ -10137,25 +9891,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We already have the class handle
                     op1 = op1->AsOp()->gtOp2;
                 }
-
-                // convert native TypeHandle to RuntimeTypeHandle
+                else
                 {
-                    op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+                    // Get the address of the refany
+                    op1 = impGetStructAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
 
-                    CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
-
-                    // The handle struct is returned in register
-                    op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                    op1->AsCall()->gtRetClsHnd  = classHandle;
-#if FEATURE_MULTIREG_RET
-                    op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
-#endif
-
-                    tiRetVal = typeInfo(TI_STRUCT, classHandle);
+                    // Fetch the type from the correct slot
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                        gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
+                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
                 }
 
+                // Convert native TypeHandle to RuntimeTypeHandle.
+                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
+
+                CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
+
+                // The handle struct is returned in register
+                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                op1->AsCall()->gtRetClsHnd  = classHandle;
+#if FEATURE_MULTIREG_RET
+                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+#endif
+
+                tiRetVal = typeInfo(TI_STRUCT, classHandle);
                 impPushOnStack(op1, tiRetVal);
-                break;
+            }
+            break;
 
             case CEE_LDTOKEN:
             {
@@ -12731,11 +12493,11 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
         op = op->AsField()->GetFldObj();
     }
 
-    if (op->OperIs(GT_ADDR) && op->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
+    if (op->OperIs(GT_LCL_VAR_ADDR))
     {
         if (lclVarTreeOut != nullptr)
         {
-            *lclVarTreeOut = op->AsUnOp()->gtOp1;
+            *lclVarTreeOut = const_cast<GenTree*>(op);
         }
 
         return true;
@@ -13118,7 +12880,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     {
         LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
 
-        if (varTypeIsStruct(lclVarTree))
+        if (varTypeIsStruct(varDsc))
         {
             inlCurArgInfo->argIsByRefToStructLocal = true;
 #ifdef FEATURE_SIMD

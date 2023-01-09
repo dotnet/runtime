@@ -10,7 +10,7 @@
 .class public _starg {
 .field public static int32 FOO
 .field public static int32 BAR
-.method public static	int32 args(int32,int32) {
+.method public static	int32 args(native int,native int) {
 .maxstack	10
 .locals	(int32*)
 	ldarg		0
@@ -37,7 +37,7 @@
 .maxstack		10
 	ldsflda		int32 _starg::FOO
 	ldsflda		int32 _starg::BAR
-	call	int32 _starg::args(int32,int32)
+	call	int32 _starg::args(native int,native int)
 	brfalse		FAIL
 
 	ldc.i4 100

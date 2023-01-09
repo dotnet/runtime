@@ -549,7 +549,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += (ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W) - 1);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 

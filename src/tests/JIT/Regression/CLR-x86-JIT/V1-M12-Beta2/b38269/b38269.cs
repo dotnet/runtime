@@ -15,11 +15,11 @@ namespace Test
         ~AA() { }
     }
 
-    class App
+    public class App
     {
         static AA s_aa = new AA(0);
 
-        static int Main()
+        public static int Main()
         {
             s_aa = null;
             GC.Collect();

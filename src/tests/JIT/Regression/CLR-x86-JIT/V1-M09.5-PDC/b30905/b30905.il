@@ -7,12 +7,12 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly ILGEN_0xe696696 {}
-.class ILGEN_0xe696696 {
+.assembly 'b30905' {}
+.class public ILGEN_0xe696696 {
 
 .field static	int32 field_0x0
 .field static	float64 field_0x5
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	17
 

@@ -135,10 +135,6 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   <paramref name="reader"/> is using unsupported options.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         /// <remarks>
         ///   <para>
         ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
@@ -171,7 +167,56 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return Read<TValue>(ref reader, jsonTypeInfo);
+            return Read(ref reader, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// <paramref name="jsonTypeInfo"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static object? Deserialize(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadAsObject(ref reader, jsonTypeInfo);
         }
 
         /// <summary>

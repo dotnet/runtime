@@ -9,8 +9,9 @@ namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
-        public void UpdateSslConnectionInfo(SafeSslHandle sslContext)
+        public void UpdateSslConnectionInfo(SafeDeleteSslContext context)
         {
+            SafeSslHandle sslContext = context.SslContext;
             SslProtocols protocol;
             TlsCipherSuite cipherSuite;
 
@@ -26,7 +27,32 @@ namespace System.Net.Security
 
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
-            ApplicationProtocol = Interop.AppleCrypto.SslGetAlpnSelected(sslContext);
+            if (context.IsServer)
+            {
+                if (context.SelectedApplicationProtocol.Protocol.Length > 0)
+                {
+                    if (context.SelectedApplicationProtocol.Equals(SslApplicationProtocol.Http11.Protocol))
+                    {
+                        ApplicationProtocol = s_http1;
+                    }
+                    else if (context.SelectedApplicationProtocol.Equals(SslApplicationProtocol.Http2.Protocol))
+                    {
+                        ApplicationProtocol = s_http2;
+                    }
+                    else if (context.SelectedApplicationProtocol.Equals(SslApplicationProtocol.Http3.Protocol))
+                    {
+                        ApplicationProtocol = s_http3;
+                    }
+                    else
+                    {
+                        ApplicationProtocol = context.SelectedApplicationProtocol.Protocol.ToArray();
+                    }
+                }
+            }
+            else
+            {
+                ApplicationProtocol = Interop.AppleCrypto.SslGetAlpnSelected(sslContext);
+            }
 
             MapCipherSuite(cipherSuite);
         }

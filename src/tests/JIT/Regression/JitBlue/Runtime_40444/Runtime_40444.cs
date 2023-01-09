@@ -7,7 +7,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class Runtime_40444
+public class Runtime_40444
 {
     public static int t2_result;
 
@@ -111,7 +111,7 @@ class Runtime_40444
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         bool passes_test = false;
         bool test_result = false;

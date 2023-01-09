@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         float[] m_af1;
 
@@ -28,7 +28,7 @@ namespace Test
         ulong Method1(AA p1, uint[] p2, ref float p4, ref float[] p5, long p6) { return 0; }
         long Method4(long p1) { return 0; }
 
-        static int Main()
+        public static int Main()
         {
             try
             {
