@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ILGenerator\DeclareLocalTests.cs" />
@@ -32,6 +33,7 @@
     <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper.cs" />
     <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper.cs" />
     <Compile Include="SignatureHelper\SignatureHelperGetSignature.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperDynamicCodeNotSupported.cs" />
     <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
     <Compile Include="CustomAttributeBuilderTests.cs" />
     <Compile Include="Utilities.cs" />
