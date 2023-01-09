@@ -4201,9 +4201,18 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   we expect EH edge counts to be small, so errors from ignoring
 //   them should be rare.
 //
+//   There's no point checking until we've built pred lists, as
+//   we can't easily reason about consistency without them.
+//
 void Compiler::fgDebugCheckProfileWeights()
 {
-    assert(fgComputePredsDone);
+    // Optionally check profile data, if we have any.
+    //
+    const bool enabled = (JitConfig.JitProfileChecks() > 0) && fgHaveProfileWeights() && fgComputePredsDone;
+    if (!enabled)
+    {
+        return;
+    }
 
     // We can't check before we have computed edge weights.
     //

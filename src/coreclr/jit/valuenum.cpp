@@ -8063,11 +8063,11 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
         Compiler::LoopDsc::FieldHandleSet* fieldsMod = optLoopTable[loopNum].lpFieldsModified;
         if (fieldsMod != nullptr)
         {
-            for (Compiler::LoopDsc::FieldHandleSet::KeyIterator ki = fieldsMod->Begin(); !ki.Equal(fieldsMod->End());
-                 ++ki)
+            for (Compiler::LoopDsc::FieldHandleSet::Node* const ki :
+                 Compiler::LoopDsc::FieldHandleSet::KeyValueIteration(fieldsMod))
             {
-                CORINFO_FIELD_HANDLE fldHnd    = ki.Get();
-                FieldKindForVN       fieldKind = ki.GetValue();
+                CORINFO_FIELD_HANDLE fldHnd    = ki->GetKey();
+                FieldKindForVN       fieldKind = ki->GetValue();
                 ValueNum             fldHndVN  = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
 
 #ifdef DEBUG
@@ -8090,11 +8090,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
         Compiler::LoopDsc::ClassHandleSet* elemTypesMod = optLoopTable[loopNum].lpArrayElemTypesModified;
         if (elemTypesMod != nullptr)
         {
-            for (Compiler::LoopDsc::ClassHandleSet::KeyIterator ki = elemTypesMod->Begin();
-                 !ki.Equal(elemTypesMod->End()); ++ki)
+            for (const CORINFO_CLASS_HANDLE elemClsHnd : Compiler::LoopDsc::ClassHandleSet::KeyIteration(elemTypesMod))
             {
-                CORINFO_CLASS_HANDLE elemClsHnd = ki.Get();
-
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -10048,6 +10045,14 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         default:
         {
             assert(s_helperCallProperties.IsPure(eeGetHelperNum(call->gtCallMethHnd)));
+
+#ifdef DEBUG
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                assert(!arg.AbiInfo.PassedByRef &&
+                       "Helpers taking implicit byref arguments should not be marked as pure");
+            }
+#endif
         }
         break;
     }
@@ -11262,10 +11267,9 @@ void Compiler::JitTestCheckVN()
     {
         printf("\nJit Testing: Value numbering.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node   = ki.Get();
         ValueNum        nodeVN = node->GetVN(VNK_Liberal);
 
         bool b = testData->Lookup(node, &tlAndN);

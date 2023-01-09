@@ -1322,12 +1322,12 @@ namespace System.Diagnostics.Tracing
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if MONO && !TARGET_BROWSER
+#if MONO && !TARGET_BROWSER && !TARGET_WASI
                         // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
                         // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
-#endif // MONO && !TARGET_BROWSER
+#endif // MONO && !TARGET_BROWSER && !TARGET_WASI
                         {
                             var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
                             WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
