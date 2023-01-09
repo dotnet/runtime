@@ -342,8 +342,7 @@ namespace Mono.Options
         {
             if (c.Option == null)
                 throw new InvalidOperationException("OptionContext.Option is null.");
-            if (index >= c.Option.MaxValueCount)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index);
             if (c.Option.OptionValueType == OptionValueType.Required &&
                     index >= values.Count)
                 throw new OptionException(string.Format(
@@ -453,8 +452,7 @@ namespace Mono.Options
         protected Option(string prototype, string description, int maxValueCount, bool hidden)
         {
             ArgumentException.ThrowIfNullOrEmpty(prototype);
-            if (maxValueCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(maxValueCount));
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValueCount);
 
             this.prototype = prototype;
             this.description = description;
