@@ -200,6 +200,7 @@
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" />
+      <_EmccCommonFlags Include="--tracing"                         Condition="'$(WasmMemorySnapshotClearUnmanaged)' != 'false'" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
@@ -671,8 +672,9 @@
     </PropertyGroup>
     <ItemGroup>
       <WasmMemorySnapshotCaptureLine Include="const dotnet = (await import('./dotnet.js')).dotnet%3B" />
-      <WasmMemorySnapshotCaptureLine Include="const { Module } = await dotnet.create()%3B" />
+      <WasmMemorySnapshotCaptureLine Include="const { Module, totalFreed } = await dotnet.withMemoryCleanup().create()%3B" />
       <WasmMemorySnapshotCaptureLine Include="(await import('fs')).promises.writeFile('./$(WasmMemorySnapshotFileName)', Module.HEAP8)%3B" />
+      <WasmMemorySnapshotCaptureLine Include="console.log(`Total zeroed unmanaged memory '${totalFreed}'`)%3B" />
     </ItemGroup>
     <WriteLinesToFile File="$(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Lines="@(WasmMemorySnapshotCaptureLine)" Overwrite="true" Encoding="UTF-8" />
     <Message Text="Snapshot runner generated at $(WasmAppDir)$(WasmMemorySnapshotCaptureGenerator)" Importance="High" />

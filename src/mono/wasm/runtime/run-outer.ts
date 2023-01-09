@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
+import { emscriptenEntrypoint, Module, runtimeHelpers } from "./imports";
 import { setup_proxy_console } from "./logging";
 import { mono_exit } from "./run";
 import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
@@ -30,6 +30,7 @@ class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
     private applicationArguments?: string[];
     private virtualWorkingDirectory?: string;
+    private totalFreed = 0;
     private moduleConfig: DotnetModuleConfig = {
         disableDotnet6Compatibility: true,
         configSrc: "./mono-config.json",
@@ -251,6 +252,22 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withMemoryCleanup(): DotnetHostBuilder {
+        const pointers:any[] = [];
+        return this.withModuleConfig({ 
+            onMalloc: (pointer:number, length:number) => pointers[pointer] = length, 
+            onFree: (pointer) => {
+                const length = pointers[pointer];
+                if (length) {
+                    this.totalFreed += length;
+                    for (let p = 0; p < length; p++) { 
+                        Module.HEAP8.set([0], pointer + p); 
+                    }
+                }
+            }
+        });
+    }
+
     withApplicationArgumentsFromQuery(): DotnetHostBuilder {
         try {
             if (!globalThis.window) {
@@ -287,6 +304,7 @@ class HostBuilder implements DotnetHostBuilder {
                 mono_assert(this.moduleConfig, "Null moduleConfig");
                 mono_assert(this.moduleConfig.config, "Null moduleConfig.config");
                 this.instance = await emscriptenEntrypoint(this.moduleConfig);
+                (this.instance as any).totalFreed = this.totalFreed;
             }
             if (this.virtualWorkingDirectory) {
                 const FS = (this.instance!.Module as any).FS;

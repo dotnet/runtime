@@ -179,6 +179,8 @@ type DotnetModuleConfig = {
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onMalloc?: (pointer: number, length: number) => void;
+    onFree?: (pointer: number) => void;
     imports?: any;
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
