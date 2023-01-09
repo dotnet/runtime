@@ -8554,9 +8554,9 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     {
         GenTreeIntCon* cns1 = tree->gtGetOp1()->AsIntCon();
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if ((cns1->gtFieldSeq == nullptr) && (cns2->gtFieldSeq != nullptr))
+        if (cns2->gtFieldSeq != nullptr)
         {
-            *pAddress = cns1->IconValue() + cns2->IconValue();
+            *pAddress = -1;
             *pFseq    = cns2->gtFieldSeq;
             return true;
         }
@@ -8635,6 +8635,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
         else
         {
+            assert(address == -1);
             assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic);
         }
 

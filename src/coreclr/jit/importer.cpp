@@ -4238,14 +4238,13 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         case CORINFO_FIELD_STATIC_DATASEGMENT:
         {
 #ifdef FEATURE_READYTORUN
-            assert((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) == 0);
             assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+            assert(innerFldSeq != nullptr);
 
-            GenTree*  baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
-            FieldSeq* fseq     = GetFieldSeqStore()->Create(pResolvedToken->hField, pFieldInfo->offset, fieldKind);
-            GenTree*  offset   = gtNewIconNode(pFieldInfo->offset, fseq);
-            op1                = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, offset);
+            GenTree* baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
+            GenTree* offset   = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            op1               = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, offset);
 #else
             unreached();
 #endif // FEATURE_READYTORUN
@@ -9400,7 +9399,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                        case CORINFO_FIELD_STATIC_DATASEGMENT:
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
