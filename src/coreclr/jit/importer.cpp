@@ -4235,7 +4235,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             break;
         }
 
-        case CORINFO_FIELD_STATIC_DATASEGMENT:
+        case CORINFO_FIELD_STATIC_RELOCATABLE:
         {
 #ifdef FEATURE_READYTORUN
             assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
@@ -9253,7 +9253,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                    case CORINFO_FIELD_STATIC_DATASEGMENT:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -9504,7 +9504,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                    case CORINFO_FIELD_STATIC_DATASEGMENT:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;

@@ -2143,7 +2143,7 @@ namespace Internal.JitInterface
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType) && !field.HasGCStaticBase)
                     {
-                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_DATASEGMENT;
+                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
                         ISymbolNode baseAddress = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
                         pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddress);
