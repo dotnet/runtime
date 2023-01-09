@@ -34,7 +34,12 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
 
-        internal static bool VerifyAotCompatibility => !RuntimeFeature.IsDynamicCodeSupported;
+        internal static bool VerifyAotCompatibility =>
+#if NETFRAMEWORK || NETSTANDARD2_0
+            false;
+#else
+            !RuntimeFeature.IsDynamicCodeSupported;
+#endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
