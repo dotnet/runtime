@@ -377,7 +377,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 {
     _ASSERTE(pUnk != nullptr);
 
-    // If the first Vtable entry is part of the ManagedObjectWrapper IUnknown impl,
+    // If the first Vtable entry is part of a ManagedObjectWrapper impl,
     // we know how to interpret the IUnknown.
     void** vtable = *reinterpret_cast<void***>(pUnk);
     if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface
