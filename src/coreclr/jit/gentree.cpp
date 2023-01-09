@@ -21373,37 +21373,7 @@ GenTree* Compiler::gtNewSimdLoadNode(var_types   type,
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
-
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
-    {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        intrinsic = NI_AVX_LoadVector256;
-    }
-    else if (simdBaseType != TYP_FLOAT)
-    {
-        intrinsic = NI_SSE2_LoadVector128;
-    }
-    else
-    {
-        intrinsic = NI_SSE_LoadVector128;
-    }
-#elif defined(TARGET_ARM64)
-    if (simdSize == 16)
-    {
-        intrinsic = NI_AdvSimd_LoadVector128;
-    }
-    else
-    {
-        intrinsic = NI_AdvSimd_LoadVector64;
-    }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-    assert(intrinsic != NI_Illegal);
-    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    return gtNewIndir(type, op1);
 }
 
 //----------------------------------------------------------------------------------------------
