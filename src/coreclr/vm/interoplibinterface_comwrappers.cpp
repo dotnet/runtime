@@ -1573,8 +1573,13 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetObject(
 
     BEGIN_QCALL;
 
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    HRESULT hr = ((IUnknown*)wrapperMaybe)->QueryInterface(IID_IUnknown, &identity);
+    _ASSERTE(hr == S_OK);
+
     InteropLib::OBJECTHANDLE handle;
-    if (InteropLib::Com::GetObjectForWrapper((IUnknown*)wrapperMaybe, &handle) ==  S_OK)
+    if (InteropLib::Com::GetObjectForWrapper(identity, &handle) ==  S_OK)
     {
         // Switch to Cooperative mode since object references
         // are being manipulated.
