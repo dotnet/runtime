@@ -1393,7 +1393,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/dotnet/linker");
+			Console.WriteLine ("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
 		}
 
 		static Pipeline GetStandardPipeline ()
