@@ -174,13 +174,16 @@
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;
         $(LibrariesNativeArtifactsPath)*.so;
-        $(LibrariesNativeArtifactsPath)*.dex;
-        $(LibrariesNativeArtifactsPath)*.jar;
         $(LibrariesNativeArtifactsPath)*.dbg;
         $(LibrariesNativeArtifactsPath)*.dwarf;
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Android'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)*.dex;
+        $(LibrariesNativeArtifactsPath)*.jar;"
+        IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
