@@ -113,6 +113,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ManagedBinary>
   </ItemDefinitionGroup>
 
+  <Target Name="_ComputeManagedAssemblyForILLink"
+          AfterTargets="_ComputeManagedAssemblyToLink"
+          Condition="'$(NativeCompilationDuringPublish)' == 'true'">
+    <ItemGroup>
+      <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
+      <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies);@(_ManagedResolvedAssembliesToPublish);@(ManagedBinary)" />
+    </ItemGroup>
+  </Target>
+
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
   <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
     <PropertyGroup>
