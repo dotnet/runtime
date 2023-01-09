@@ -10,6 +10,10 @@ ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCa
 
 ARGS_NON_NULL_ALL jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle)
 {
+    // X509TrustManager dotnetProxyTrustManager = new DotnetProxyTrustManager(sslStreamProxyHandle);
+    // TrustManager[] trustManagers = new TrustManager[] { dotnetProxyTrustManager };
+    // return trustManagers;
+
     jobjectArray trustManagers = NULL;
     INIT_LOCALS(loc, dotnetProxyTrustManager);
 
