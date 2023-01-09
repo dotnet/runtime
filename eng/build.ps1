@@ -241,6 +241,10 @@ if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "Brow
   # make sure it is capitalized
   $PSBoundParameters['os'] = "Browser"
 }
+if ($PSBoundParameters.ContainsKey('os') -and $PSBoundParameters['os'] -eq "wasi") {
+  # make sure it is not capitalized
+  $PSBoundParameters['os'] = "wasi"
+}
 
 foreach ($argument in $PSBoundParameters.Keys)
 {

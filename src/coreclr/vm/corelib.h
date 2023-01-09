@@ -732,7 +732,6 @@ DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
 DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)

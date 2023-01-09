@@ -4035,16 +4035,10 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optUnrollLoops()\n");
-    }
-#endif
-
     /* Look for loop unrolling candidates */
 
     bool change                 = false;
+    bool anyIRchange            = false;
     bool anyNestedLoopsUnrolled = false;
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
@@ -4272,6 +4266,11 @@ PhaseStatus Compiler::optUnrollLoops()
             continue;
         }
         // clang-format on
+
+        // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
+        // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, if
+        // the size heuristics don't succeed, or if cloning any individual block fails.
+        anyIRchange = true;
 
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
@@ -4544,6 +4543,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
     if (change)
     {
+        assert(anyIRchange);
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -4588,7 +4589,7 @@ PhaseStatus Compiler::optUnrollLoops()
     fgDebugCheckBBlist(true);
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -6603,11 +6604,10 @@ PhaseStatus Compiler::optHoistLoopCode()
     if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
-        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+        for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
         {
             TestLabelAndNum tlAndN;
-            GenTree*        node = ki.Get();
-            bool            b    = testData->Lookup(node, &tlAndN);
+            bool            b = testData->Lookup(node, &tlAndN);
             assert(b);
             if (tlAndN.m_tl != TL_LoopHoist)
             {
@@ -10309,11 +10309,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
         if (removedTrackedDefs)
         {
-            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
-            LclVarRefCounts::KeyIterator end(defsInBlock.End());
-            for (; !iter.Equal(end); iter++)
+            for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
             {
-                unsigned int lclNum = iter.Get();
                 if (defsInBlock[lclNum] == 0)
                 {
                     VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
