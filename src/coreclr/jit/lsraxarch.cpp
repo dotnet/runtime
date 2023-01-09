@@ -2396,9 +2396,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             regMaskTP op1RegCandidates = RBM_NONE;
 #if defined(TARGET_AMD64)
-            if (!isEvexCompatible)
+            if (!isEvexCompatible && (varTypeIsFloating(op1->gtType) || varTypeIsSIMD(op1->gtType)))
             {
-                op1RegCandidates = RBM_LOWSIMD;
+                //op1RegCandidates = RBM_LOWSIMD;
+                op1RegCandidates = lowSIMDRegs();
             }
 #endif
 
@@ -2420,9 +2421,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 regMaskTP op2RegCandidates = RBM_NONE;
 #if defined(TARGET_AMD64)
-                if (!isEvexCompatible)
+                if (!isEvexCompatible && (varTypeIsFloating(op2->gtType) || varTypeIsSIMD(op2->gtType)))
                 {
-                    op2RegCandidates = RBM_LOWSIMD;
+                    op2RegCandidates = lowSIMDRegs();
                 }
 #endif
                 if (op2->OperIs(GT_HWINTRINSIC) && op2->AsHWIntrinsic()->OperIsMemoryLoad() && op2->isContained())
@@ -2464,9 +2465,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     regMaskTP op3RegCandidates = RBM_NONE;
 #if defined(TARGET_AMD64)
-                    if (!isEvexCompatible)
+                    if (!isEvexCompatible && (varTypeIsFloating(op3->gtType) || varTypeIsSIMD(op3->gtType)))
                     {
-                        op3RegCandidates = RBM_LOWSIMD;
+                        op3RegCandidates = lowSIMDRegs();
                     }
 #endif
                     srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
@@ -2481,7 +2482,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        if (!intrinsicTree->isEvexCompatibleHWIntrinsic())
+        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() && (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
         {
             dstCandidates = RBM_LOWSIMD;
         }
