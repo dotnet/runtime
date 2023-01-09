@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
         <source>Insufficient or invalid hexadecimal digits.</source>
-        <target state="needs-review-translation">Chiffres hexadécimaux insuffisants.</target>
+        <target state="translated">Chiffres hexadécimaux insuffisants ou non valides.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \p{X} character escape.</source>
-        <target state="needs-review-translation">Échappement de caractère \\p{X} incomplet.</target>
+        <target state="translated">Échappement de caractère \p{X} incomplet.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -139,12 +139,12 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \k&lt;...&gt; named back reference.</source>
-        <target state="needs-review-translation">Référence arrière nommée \\k&lt;...&gt; maformée.</target>
+        <target state="translated">Référence arrière nommée \k&lt;...&gt; incorrecte.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
         <source>Malformed \p{X} character escape.</source>
-        <target state="needs-review-translation">Échappement de caractère \\p{X} malformé.</target>
+        <target state="translated">Échappement de caractère \p{X} malformé.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">Le délai d'attente du moteur RegEx a expiré pendant la tentative d'appariement d'un modèle avec une chaîne d'entrée. Ce problème peut se produire pour de nombreuses raisons, notamment en cas d'entrées volumineuses ou de retour sur trace excessif causé par les quantificateurs imbriqués, les références arrière et d'autres facteurs.</target>
+        <target state="translated">Le délai d’attente du moteur Regex a expiré pendant la tentative de mise en correspondance d’un modèle avec une chaîne d’entrée. Ce problème peut se produire pour de nombreuses raisons, notamment en cas d’entrées volumineuses ou de retour sur trace excessif causé par les quantificateurs imbriqués, les références arrière et d’autres facteurs.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
         <source>Cannot include class \{0} in character range.</source>
-        <target state="needs-review-translation">Impossible d'inclure la classe \\{0} dans la plage de caractères.</target>
+        <target state="translated">Impossible d’inclure la classe \{0} dans la plage de caractères.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \ at end of pattern.</source>
-        <target state="needs-review-translation">\\ non conforme à la fin du modèle.</target>
+        <target state="translated">\ non conforme à la fin du modèle.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -239,7 +239,7 @@
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
         <source>Unrecognized escape sequence \{0}.</source>
-        <target state="needs-review-translation">Séquence d'échappement non reconnue \\{0}.</target>
+        <target state="translated">Séquence d’échappement non reconnue \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

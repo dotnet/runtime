@@ -89,7 +89,7 @@
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
         <source>Insufficient or invalid hexadecimal digits.</source>
-        <target state="needs-review-translation">Nicht genügend Hexadezimalziffern.</target>
+        <target state="translated">Unzureichende oder ungültige Hexadezimalziffern.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
@@ -114,7 +114,7 @@
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \p{X} character escape.</source>
-        <target state="needs-review-translation">Unvollständiges \\p{X}-Escape-Zeichen.</target>
+        <target state="translated">Unvollständiges \p{X}-Escape-Zeichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -139,12 +139,12 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \k&lt;...&gt; named back reference.</source>
-        <target state="needs-review-translation">Falsch formatierter \\k&lt;...&gt; benannter Rückverweis.</target>
+        <target state="translated">Falsch formatierter \k&lt;...&gt; benannter Verweis.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
         <source>Malformed \p{X} character escape.</source>
-        <target state="needs-review-translation">Falsch formatiertes \\p{X}-Escape-Zeichen.</target>
+        <target state="translated">Falsch formatiertes \p{X}-Escape-Zeichen.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="needs-review-translation">Zeitüberschreitung des RegEx-Moduls beim Versuch, ein Muster mit einer Eingabezeichenfolge in Übereinstimmung zu bringen. Dies kann viele Ursachen haben, darunter sehr große Eingaben oder übermäßige Rückverfolgung aufgrund von geschachtelten Quantifizierern, Rückverweisen und anderen Faktoren.</target>
+        <target state="translated">Zeitüberschreitung des RegEx-Moduls beim Versuch, ein Muster mit einer Eingabezeichenfolge in Übereinstimmung zu bringen. Dies kann viele Ursachen haben, darunter sehr große Eingaben oder übermäßige Rückverfolgung aufgrund von geschachtelten Quantifizierern, Rückverweisen und anderen Faktoren.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
         <source>Cannot include class \{0} in character range.</source>
-        <target state="needs-review-translation">Die Klasse \\{0} kann nicht in den Zeichenbereich eingeschlossen werden.</target>
+        <target state="translated">Die Klasse \{0} kann nicht in den Zeichenbereich eingeschlossen werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
@@ -229,7 +229,7 @@
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \ at end of pattern.</source>
-        <target state="needs-review-translation">Unzulässiger \\ am Ende des Musters.</target>
+        <target state="translated">Unzulässiger \ am Ende des Musters.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -239,7 +239,7 @@
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
         <source>Unrecognized escape sequence \{0}.</source>
-        <target state="needs-review-translation">Unbekannte Escapesequenz \\{0}.</target>
+        <target state="translated">Nicht erkannte Escapesequenz \{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">

@@ -702,8 +702,8 @@ namespace System.ComponentModel
     }
     public partial interface ITypedList
     {
-        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors);
-        string GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors);
+        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors);
+        string GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors);
     }
     public abstract partial class License : System.IDisposable
     {

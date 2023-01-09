@@ -4453,6 +4453,11 @@ mono_aot_can_dedup (MonoMethod *method)
 			/* Handled using linkonce */
 			return FALSE;
 #endif
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
+		if (sig->ret->has_cmods) {
+			// FIXME:
+			return FALSE;
+		}
 		return TRUE;
 	}
 	default:

@@ -628,10 +628,20 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
-        pThread = ThreadStore::GetCurrentThread();
+        pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL)
+        {
+            ASSERT(!"a not attached thread got signaled");
+            // perhaps we share the signal with something else?
+            return;
+        }
 
-        ASSERT(pThread != NULL);
-        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+        if (pThread == ThreadStore::GetSuspendingThread())
+        {
+            ASSERT(!"trying to suspend suspending thread");
+            // perhaps we share the signal with something else?
+            return;
+        }
     }
 
     // we have a thread stopped, and we do not know where exactly.
@@ -1074,6 +1084,23 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
+bool Thread::IsActivationPending()
+{
+    return IsStateSet(TSF_ActivationPending);
+}
+
+void Thread::SetActivationPending(bool isPending)
+{
+    if (isPending)
+    {
+        SetState(TSF_ActivationPending);
+    }
+    else
+    {
+        ClearState(TSF_ActivationPending);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1124,6 +1151,10 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
 
         return false; // bad transition
     }
+
+    // this is an ordinary transition to managed code
+    // GC threads should not do that
+    ASSERT(!IsGCSpecial());
 
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
