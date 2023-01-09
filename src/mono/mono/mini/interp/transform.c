@@ -3722,8 +3722,8 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
  *
  *   Compute the set of IL level basic blocks.
  */
-static void
-get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list, MonoBitSet *il_targets, MonoError *error)
+static gboolean
+get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list, MonoBitSet *il_targets)
 {
 	guint8 *start = (guint8*)td->il_code;
 	guint8 *end = (guint8*)td->il_code + td->code_size;
@@ -3737,25 +3737,19 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
-		if (start + c->try_offset <= 0) {
-			mono_error_set_generic_error (error, "System", "InvalidProgramException", "Try block length <= 0");
-		}
-		if (start + c->try_offset >= end || start + c->try_offset + c->try_len >= end) {
-			mono_error_set_generic_error (error, "System", "InvalidProgramException", "Try block offset or length > code size");
-		}
+		if (start + c->try_offset >= end || start + c->try_offset + c->try_len >= end)
+			return FALSE;
 		get_bb (td, start + c->try_offset, make_list);
 		mono_bitset_set(il_targets, c->try_offset);
 		mono_bitset_set(il_targets, c->try_offset + c->try_len);
-		if (start + c->handler_offset >= end || start + c->handler_offset + c->handler_len >= end) {
-			mono_error_set_generic_error (error, "System", "InvalidProgramException", "Handler block offset or length > code size");
-		}
+		if (start + c->handler_offset >= end || start + c->handler_offset + c->handler_len >= end)
+			return FALSE;
 		get_bb (td, start + c->handler_offset, make_list);
 		mono_bitset_set(il_targets, c->handler_offset);
 		mono_bitset_set(il_targets, c->handler_offset + c->handler_len);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			if (start + c->data.filter_offset >= end) {
-				mono_error_set_generic_error (error, "System", "InvalidProgramException", "Filter block offset > code size");
-			}
+			if (start + c->data.filter_offset >= end)
+				return FALSE;
 			get_bb (td, start + c->data.filter_offset, make_list);
 			mono_bitset_set(il_targets, c->data.filter_offset);
 		}
@@ -3787,23 +3781,21 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			break;
 		case MonoShortInlineBrTarget:
 			target = start + cli_addr + 2 + (signed char)ip [1];
-			if (target >= end) {
-				mono_error_set_generic_error (error, "System", "InvalidProgramException", "Jump target out of range at offset %04tx", cli_addr);
-			}
+			if (target >= end)
+				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 2;
 			get_bb (td, ip, make_list);
-			mono_bitset_set(il_targets, target - start);
+			mono_bitset_set (il_targets, target - start);
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
-			if (target >= end) {
-				mono_error_set_generic_error (error, "System", "InvalidProgramException", "Jump target out of range at offset %04tx", cli_addr);
-			}
+			if (target >= end)
+				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 5;
 			get_bb (td, ip, make_list);
-			mono_bitset_set(il_targets, target - start);
+			mono_bitset_set (il_targets, target - start);
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -3811,16 +3803,14 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			ip += 5;
 			cli_addr += 5 + 4 * n;
 			target = start + cli_addr;
-			if (target >= end) {
-				mono_error_set_generic_error (error, "System", "InvalidProgramException", "Jump target out of range at offset %04tx", cli_addr);
-			}
+			if (target >= end)
+				return FALSE;
 			get_bb (td, target, make_list);
-			mono_bitset_set(il_targets, target - start);
+			mono_bitset_set (il_targets, target - start);
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
-				if (target >= end) {
-					mono_error_set_generic_error (error, "System", "InvalidProgramException", "Jump target out of range at offset %04tx", cli_addr);
-				}
+				if (target >= end)
+					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
 				mono_bitset_set(il_targets, target - start);
@@ -3840,9 +3830,11 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, ip, make_list);
 	}
 
-        /* get_bb added blocks in reverse order, unreverse now */
-        if (make_list)
-                td->basic_blocks = g_list_reverse (td->basic_blocks);
+	/* get_bb added blocks in reverse order, unreverse now */
+	if (make_list)
+		td->basic_blocks = g_list_reverse (td->basic_blocks);
+
+	return TRUE;
 }
 
 static void
@@ -4588,7 +4580,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	il_targets = mono_bitset_mem_new(mono_mempool_alloc0(td->mempool, mono_bitset_alloc_size(header->code_size, 0)), header->code_size, 0);
-	get_basic_blocks (td, header, td->gen_sdb_seq_points, il_targets, error);
+	if (!get_basic_blocks (td, header, td->gen_sdb_seq_points, il_targets)) {
+		td->has_invalid_code = TRUE;
+		goto exit;
+	}
 
 	if (!inlining)
 		initialize_clause_bblocks (td);
@@ -4788,10 +4783,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		/* Checks that a jump target isn't in the middle of opcode offset */
 		int op_size = mono_opcode_size (td->ip, end);
-		for (int i = 1; i < op_size; i++)
-		{
+		for (int i = 1; i < op_size; i++) {
 			if (mono_bitset_test(il_targets, in_offset + i)) {
-				mono_error_set_generic_error (error, "System", "InvalidProgramException", "Jump into the middle of an opcode at offset %04x\n", in_offset + i);
+				td->has_invalid_code = TRUE;
+				goto exit;
 			}
 		}
 		if (bb->dead || td->cbb->dead) {
@@ -7882,7 +7877,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	g_assert (td->ip == end);
-	mono_bitset_free(il_targets);
 
 	if (inlining) {
 		// When inlining, all return points branch to this bblock. Code generation inside the caller
@@ -7911,6 +7905,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
+	mono_bitset_free(il_targets);
 	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
 
