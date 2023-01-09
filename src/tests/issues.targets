@@ -904,6 +904,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_ro/*">
             <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_r/*">
+            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_ro/*">
+            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
             <Issue>Not compatible with multifile testing.</Issue>
         </ExcludeList>
@@ -1076,6 +1082,12 @@
             <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/Vector256_1_ro/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_r/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_ro/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/*">
@@ -3085,7 +3097,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
-        
+
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
@@ -3330,6 +3342,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
