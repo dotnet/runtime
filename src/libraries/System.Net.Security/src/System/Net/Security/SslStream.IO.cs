@@ -511,8 +511,8 @@ namespace System.Net.Security
 
             if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
             {
-                // We may slect client cert but it may not be used.
-                // This is primarily issue on Windows with credential caching
+                // We may select client cert but it may not be used.
+                // This is primarily an issue on Windows with credential caching.
                 _selectedClientCertificate = null;
             }
 
