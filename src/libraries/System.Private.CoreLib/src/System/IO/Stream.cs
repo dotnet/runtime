@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
+    public abstract class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable, IReadOnlyStream
     {
         public static readonly Stream Null = new NullStream();
 
