@@ -175,10 +175,10 @@ To install dotnet symbol issue the command
      dotnet tool install -g dotnet-symbol
 ```
 
-To download symbols for all native libraries and store them next to them:
+To download symbols for **all native libraries** (including .NET runtime/framework as well as any other installed frameworks like ASP.NET) and store them next to them:
 
 ```
-    sudo dotnet symbol --recurse-subdirectories --symbols '/usr/share/dotnet/lib*.so'
+    sudo dotnet symbol --recurse-subdirectories --symbols '/usr/share/dotnet/*.so'
 ```
 
 ## Collecting in a Docker Container ##
