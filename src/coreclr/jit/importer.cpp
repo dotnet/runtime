@@ -4238,7 +4238,6 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         case CORINFO_FIELD_STATIC_DATASEGMENT:
         {
 #ifdef FEATURE_READYTORUN
-            assert(opts.IsReadyToRun());
             assert((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) == 0);
             assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
