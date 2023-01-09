@@ -3737,18 +3737,18 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
-		if (start + c->try_offset >= end || start + c->try_offset + c->try_len >= end)
+		if (start + c->try_offset > end || start + c->try_offset + c->try_len > end)
 			return FALSE;
 		get_bb (td, start + c->try_offset, make_list);
 		mono_bitset_set(il_targets, c->try_offset);
 		mono_bitset_set(il_targets, c->try_offset + c->try_len);
-		if (start + c->handler_offset >= end || start + c->handler_offset + c->handler_len >= end)
+		if (start + c->handler_offset > end || start + c->handler_offset + c->handler_len > end)
 			return FALSE;
 		get_bb (td, start + c->handler_offset, make_list);
 		mono_bitset_set(il_targets, c->handler_offset);
 		mono_bitset_set(il_targets, c->handler_offset + c->handler_len);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-			if (start + c->data.filter_offset >= end)
+			if (start + c->data.filter_offset > end)
 				return FALSE;
 			get_bb (td, start + c->data.filter_offset, make_list);
 			mono_bitset_set(il_targets, c->data.filter_offset);
@@ -3781,7 +3781,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			break;
 		case MonoShortInlineBrTarget:
 			target = start + cli_addr + 2 + (signed char)ip [1];
-			if (target >= end)
+			if (target > end)
 				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 2;
@@ -3790,7 +3790,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
-			if (target >= end)
+			if (target > end)
 				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 5;
@@ -3803,13 +3803,13 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			ip += 5;
 			cli_addr += 5 + 4 * n;
 			target = start + cli_addr;
-			if (target >= end)
+			if (target > end)
 				return FALSE;
 			get_bb (td, target, make_list);
 			mono_bitset_set (il_targets, target - start);
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
-				if (target >= end)
+				if (target > end)
 					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
