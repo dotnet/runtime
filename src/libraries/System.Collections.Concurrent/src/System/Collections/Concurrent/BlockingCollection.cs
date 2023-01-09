@@ -1639,16 +1639,9 @@ namespace System.Collections.Concurrent
             }
 
             using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-            while (true)
+            while (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
             {
-                if (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
-                {
-                    yield return item;
-                }
-                else
-                {
-                    break;
-                }
+                yield return item;
             }
         }
 
