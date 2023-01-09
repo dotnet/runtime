@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             }
 
                             sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
-                            IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken) as IMethodSymbol;
+                            IMethodSymbol? logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
 
@@ -188,17 +188,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                         break;
                                     }
 
-                                    IMethodSymbol? methodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
-                                    if (methodSymbol != null)
+                                    if (logMethodSymbol != null)
                                     {
                                         var lm = new LoggerMethod
                                         {
-                                            Name = methodSymbol.Name,
+                                            Name = logMethodSymbol.Name,
                                             Level = level,
                                             Message = message,
                                             EventId = eventId,
                                             EventName = eventName,
-                                            IsExtensionMethod = methodSymbol.IsExtensionMethod,
+                                            IsExtensionMethod = logMethodSymbol.IsExtensionMethod,
                                             Modifiers = method.Modifiers.ToString(),
                                             SkipEnabledCheck = skipEnabledCheck
                                         };
@@ -214,7 +213,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                         }
 
-                                        if (!methodSymbol.ReturnsVoid)
+                                        if (!logMethodSymbol.ReturnsVoid)
                                         {
                                             // logging methods must return void
                                             Diag(DiagnosticDescriptors.LoggingMethodMustReturnVoid, method.ReturnType.GetLocation());
@@ -279,7 +278,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         bool foundLogger = false;
                                         bool foundException = false;
                                         bool foundLogLevel = level != null;
-                                        foreach (IParameterSymbol paramSymbol in methodSymbol.Parameters)
+                                        foreach (IParameterSymbol paramSymbol in logMethodSymbol.Parameters)
                                         {
                                             string paramName = paramSymbol.Name;
                                             bool needsAtSign = false;
