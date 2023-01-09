@@ -40,9 +40,9 @@ namespace System.Xml.Xsl.Qil
         private QilValidationVisitor() { }
 
 #if DEBUG
-        private Hashtable allNodes = new ObjectHashtable();
-        private Hashtable parents = new ObjectHashtable();
-        private Hashtable scope = new ObjectHashtable();
+        private readonly ObjectHashtable allNodes = new ObjectHashtable();
+        private readonly ObjectHashtable parents = new ObjectHashtable();
+        private readonly ObjectHashtable scope = new ObjectHashtable();
 
 
         //-----------------------------------------------

@@ -2248,19 +2248,17 @@ namespace System
 
         [DoesNotReturn]
         private static void ThrowInvalidRuntimeType(Type enumType) =>
-            throw (enumType is not RuntimeType ?
-                new ArgumentException(SR.Arg_MustBeType, nameof(enumType)) :
-                new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType)));
+            throw new ArgumentException(enumType is not RuntimeType ? SR.Arg_MustBeType : SR.Arg_MustBeEnum, nameof(enumType));
 
         private static void ThrowInvalidEmptyParseArgument() =>
             throw new ArgumentException(SR.Arg_MustContainEnumInfo, "value");
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/78300
-        private static Exception CreateInvalidFormatSpecifierException() =>
+        private static FormatException CreateInvalidFormatSpecifierException() =>
             new FormatException(SR.Format_InvalidEnumFormatSpecification);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateUnknownEnumTypeException() =>
+        private static InvalidOperationException CreateUnknownEnumTypeException() =>
             new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
 
         public TypeCode GetTypeCode() =>

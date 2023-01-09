@@ -376,7 +376,7 @@ namespace System.Net
 
         public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
-        private IAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
+        private GetClientCertificateAsyncResult BeginGetClientCertificateCore(AsyncCallback? requestCallback, object? state)
         {
             var asyncResult = new GetClientCertificateAsyncResult(this, state, requestCallback);
 
