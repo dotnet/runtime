@@ -62,6 +62,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+#define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested
@@ -189,6 +190,10 @@ void GCLogConfig (const char *fmt, ... );
 #endif //SERVER_GC
 
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
+
+#ifdef USE_REGIONS
+#define MAX_REGION_SIZE 0x80000000 
+#endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
 #define MIN_NUM_FREE_SPACES 5
@@ -1222,9 +1227,11 @@ enum bookkeeping_element
 
 class mark_queue_t
 {
+#ifdef MARK_PHASE_PREFETCH
     static const size_t slot_count = 16;
     uint8_t* slot_table[slot_count];
     size_t curr_slot_index;
+#endif //MARK_PHASE_PREFETCH
 
 public:
     mark_queue_t();
@@ -4113,12 +4120,6 @@ public:
     size_t heap_hard_limit_oh[total_oh_count];
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_heap;
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_bookkeeping;
-
-    PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
 
     PER_HEAP_ISOLATED
@@ -5741,6 +5742,7 @@ public:
     uint8_t*        saved_allocated;
     uint8_t*        saved_bg_allocated;
 #ifdef USE_REGIONS
+    size_t          survived;
     // These generation numbers are initialized to -1.
     // For plan_gen_num:
     // for all regions in condemned generations it needs
@@ -5755,7 +5757,6 @@ public:
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
     int             plan_gen_num;
-    int             survived;
     int             old_card_survived;
     int             pinned_survived;
     // at the end of each GC, we increase each region in the region free list
@@ -6194,7 +6195,7 @@ int& heap_segment_age_in_free (heap_segment* inst)
     return inst->age_in_free;
 }
 inline
-int& heap_segment_survived (heap_segment* inst)
+size_t& heap_segment_survived (heap_segment* inst)
 {
     return inst->survived;
 }

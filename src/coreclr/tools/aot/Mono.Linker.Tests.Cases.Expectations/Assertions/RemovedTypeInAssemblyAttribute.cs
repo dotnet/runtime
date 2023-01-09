@@ -10,18 +10,14 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public RemovedTypeInAssemblyAttribute (string assemblyFileName, Type type)
 		{
-			if (type == null)
-				throw new ArgumentNullException (nameof (type));
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
+			ArgumentNullException.ThrowIfNull (type);
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
 		}
 
 		public RemovedTypeInAssemblyAttribute (string assemblyFileName, string typeName)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
-			if (string.IsNullOrEmpty (typeName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeName));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentException.ThrowIfNullOrEmpty (typeName);
 		}
 	}
 }

@@ -2424,32 +2424,41 @@ void Lowering::ContainCheckConditionalCompare(GenTreeOp* cmp)
     }
 }
 
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
 // ContainCheckSelect : determine whether the source of a select should be contained.
 //
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckSelect(GenTreeConditional* node)
+void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+#ifdef TARGET_ARM
+    noway_assert(!"GT_SELECT nodes are not supported on arm32");
+#else
     if (!comp->opts.OptimizationEnabled())
     {
         return;
     }
 
-    if (node->gtCond->OperIsCompare())
+    GenTree* cond = node->AsConditional()->gtCond;
+    GenTree* op1  = node->gtOp1;
+    GenTree* op2  = node->gtOp2;
+
+    if (cond->OperIsCompare())
     {
         // All compare node types (including TEST_) are containable.
-        if (IsSafeToContainMem(node, node->gtCond))
+        if (IsSafeToContainMem(node, cond))
         {
-            node->gtCond->AsOp()->SetContained();
+            cond->AsOp()->SetContained();
         }
     }
     else
     {
         // Check for a compare chain and try to contain it.
         GenTree* startOfChain = nullptr;
-        ContainCheckCompareChain(node->gtCond, node, &startOfChain);
+        ContainCheckCompareChain(cond, node, &startOfChain);
 
         if (startOfChain != nullptr)
         {
@@ -2461,17 +2470,16 @@ void Lowering::ContainCheckSelect(GenTreeConditional* node)
         }
     }
 
-    if (node->gtOp1->IsIntegralConst(0))
+    if (op1->IsIntegralConst(0))
     {
-        MakeSrcContained(node, node->gtOp1);
+        MakeSrcContained(node, op1);
     }
-    if (node->gtOp2->IsIntegralConst(0))
+    if (op2->IsIntegralConst(0))
     {
-        MakeSrcContained(node, node->gtOp2);
+        MakeSrcContained(node, op2);
     }
+#endif
 }
-
-#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
@@ -2487,38 +2495,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInit:
-        {
-            GenTree* op1 = simdNode->Op(1);
-            if (op1->IsIntegralConst(0))
-            {
-                MakeSrcContained(simdNode, op1);
-            }
-            break;
-        }
-
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
-            break;
-
-        default:
-            break;
-    }
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 

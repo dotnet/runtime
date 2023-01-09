@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 
@@ -15,17 +16,22 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static IEnumerable<object[]> DataFlow ()
 		{
-			return TestNamesBySuiteName ("DataFlow");
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> DynamicDependencies ()
+		{
+			return TestNamesBySuiteName ();
 		}
 
 		public static IEnumerable<object[]> Repro ()
 		{
-			return TestNamesBySuiteName ("Repro");
+			return TestNamesBySuiteName ();
 		}
 
 		public static IEnumerable<object[]> RequiresCapability ()
 		{
-			return TestNamesBySuiteName ("RequiresCapability");
+			return TestNamesBySuiteName ();
 		}
 
 		public static TestCaseCollector CreateCollector ()
@@ -57,7 +63,7 @@ namespace Mono.Linker.Tests.TestCases
 			return AllCases ().FirstOrDefault (c => c.Name == name);
 		}
 
-		private static IEnumerable<object[]> TestNamesBySuiteName (string suiteName)
+		private static IEnumerable<object[]> TestNamesBySuiteName ([CallerMemberName] string suiteName = "")
 		{
 			return AllCases ()
 				.Where (c => c.TestSuiteDirectory.FileName == suiteName)

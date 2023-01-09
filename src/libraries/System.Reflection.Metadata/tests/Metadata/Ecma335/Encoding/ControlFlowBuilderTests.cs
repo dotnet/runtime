@@ -361,7 +361,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             AssertEx.Equal(new byte[]
             {
-                0x13, 0x30, 0x08, 0x00, 0x0A, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,// header
+                0x13, 0x30, 0x08, 0x00, 0x0A, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // header
                 (byte)ILOpCode.Br, 0x04, 0x01, 0x00, 0x00,
                 (byte)ILOpCode.Call, 0x01, 0x00, 0x00, 0x06,
                 (byte)ILOpCode.Call, 0x01, 0x00, 0x00, 0x06,
@@ -416,6 +416,50 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Call, 0x01, 0x00, 0x00, 0x06,
                 (byte)ILOpCode.Call, 0x01, 0x00, 0x00, 0x06,
                 (byte)ILOpCode.Ret
+            }, builder.ToArray());
+        }
+
+        [Fact]
+        public void Switch()
+        {
+            var code = new BlobBuilder();
+            var il = new InstructionEncoder(code, new ControlFlowBuilder());
+
+            var lStart = il.DefineLabel();
+            var l1 = il.DefineLabel();
+            var l2 = il.DefineLabel();
+            var l3 = il.DefineLabel();
+
+            il.OpCode(ILOpCode.Nop);
+            il.MarkLabel(lStart);
+            var switchEncoder = il.Switch(4);
+            switchEncoder.Branch(l1);
+            switchEncoder.Branch(l2);
+            switchEncoder.Branch(l3);
+            switchEncoder.Branch(lStart);
+
+            il.MarkLabel(l1);
+            il.OpCode(ILOpCode.Nop);
+            il.MarkLabel(l2);
+            il.OpCode(ILOpCode.Nop);
+            il.MarkLabel(l3);
+            il.OpCode(ILOpCode.Nop);
+
+            var builder = new BlobBuilder();
+            new MethodBodyStreamEncoder(builder).AddMethodBody(il);
+
+            AssertEx.Equal(new byte[]
+            {
+                0x66, // header
+                (byte)ILOpCode.Nop,
+                (byte)ILOpCode.Switch, 0x04, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x00, 0x00,
+                0x02, 0x00, 0x00, 0x00,
+                0xeb, 0xff, 0xff, 0xff,
+                (byte)ILOpCode.Nop,
+                (byte)ILOpCode.Nop,
+                (byte)ILOpCode.Nop
             }, builder.ToArray());
         }
 

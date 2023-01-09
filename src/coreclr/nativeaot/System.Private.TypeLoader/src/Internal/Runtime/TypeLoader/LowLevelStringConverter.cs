@@ -123,12 +123,6 @@ namespace Internal.Runtime.TypeLoader
             // Try to get the name from metadata
             if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
-#if ECMA_METADATA_SUPPORT
-                string result = EcmaMetadataFullName(qTypeDefinition);
-                if (result != null)
-                    return result;
-#endif
-
                 reader = qTypeDefinition.NativeFormatReader;
                 TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 return typeDefHandle.GetFullName(reader);

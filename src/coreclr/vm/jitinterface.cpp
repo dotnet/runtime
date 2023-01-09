@@ -256,21 +256,6 @@ void CEEInfo::GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext *pTy
     }
 }
 
-// Returns true if context is providing any generic variables
-BOOL CEEInfo::ContextIsInstantiated(CORINFO_CONTEXT_HANDLE context)
-{
-    LIMITED_METHOD_CONTRACT;
-    MethodDesc* pMD = GetMethodFromContext(context);
-    if (pMD != NULL)
-    {
-        return pMD->HasClassOrMethodInstantiation();
-    }
-    else
-    {
-        return GetTypeFromContext(context).HasInstantiation();
-    }
-}
-
 /*********************************************************************/
 // This normalizes EE type information into the form expected by the JIT.
 //
@@ -969,7 +954,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             // Activate target if required
             if (tokenType != CORINFO_TOKENKIND_Ldtoken)
             {
-                ScanTokenForDynamicScope(pResolvedToken, th, pMD);
+                EnsureActive(th, pMD);
             }
         }
         else
@@ -984,7 +969,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
             if (pFD->IsStatic() && (tokenType != CORINFO_TOKENKIND_Ldtoken))
             {
-                ScanTokenForDynamicScope(pResolvedToken, th);
+                EnsureActive(th);
             }
         }
         else
@@ -998,7 +983,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
             if (tokenType == CORINFO_TOKENKIND_Box || tokenType == CORINFO_TOKENKIND_Constrained)
             {
-                ScanTokenForDynamicScope(pResolvedToken, th);
+                EnsureActive(th);
             }
         }
 
@@ -1119,23 +1104,26 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         }
 
         //
-        // Module dependency tracking
+        // Module activation tracking
         //
-        if (pMD != NULL)
+        if (!pModule->IsSystem())
         {
-            ScanToken(pModule, pResolvedToken, th, pMD);
-        }
-        else
-        if (pFD != NULL)
-        {
-            if (pFD->IsStatic())
-                ScanToken(pModule, pResolvedToken, th);
-        }
-        else
-        {
-            // It should not be required to trigger the modules cctors for ldtoken, it is done for backward compatibility only.
-            if (tokenType == CORINFO_TOKENKIND_Box || tokenType == CORINFO_TOKENKIND_Constrained || tokenType == CORINFO_TOKENKIND_Ldtoken)
-                ScanToken(pModule, pResolvedToken, th);
+            if (pMD != NULL)
+            {
+                EnsureActive(th, pMD);
+            }
+            else
+            if (pFD != NULL)
+            {
+                if (pFD->IsStatic())
+                    EnsureActive(th);
+            }
+            else
+            {
+                // It should not be required to trigger the modules cctors for ldtoken, it is done for backward compatibility only.
+                if (tokenType == CORINFO_TOKENKIND_Box || tokenType == CORINFO_TOKENKIND_Constrained || tokenType == CORINFO_TOKENKIND_Ldtoken)
+                    EnsureActive(th);
+            }
         }
     }
 
@@ -1480,6 +1468,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     DWORD fieldFlags = 0;
 
     pResult->offset = pField->GetOffset();
+    pResult->fieldLookup.addr = nullptr;
+
     if (pField->IsStatic())
     {
         fieldFlags |= CORINFO_FLG_FIELD_STATIC;
@@ -1502,10 +1492,12 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_RVA_ADDRESS;
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle(NULL);
+                pResult->fieldLookup.accessType = IAT_VALUE;
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassPreInited())
+            if (!pFieldMT->IsClassInited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1545,9 +1537,43 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
 
+                // Allocate space for the local class if necessary, but don't trigger
+                // class construction.
+                DomainLocalModule* pLocalModule = pFieldMT->GetDomainLocalModule();
+                pLocalModule->PopulateClass(pFieldMT);
+
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassPreInited())
+                if (!pFieldMT->IsClassInited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
+
+                GCX_COOP();
+
+                _ASSERT(!pFieldMT->Collectible());
+                // Field address is expected to be pinned so we don't need to protect it from GC here
+                pResult->fieldLookup.addr = pField->GetStaticAddressHandle((void*)pField->GetBase());
+                pResult->fieldLookup.accessType = IAT_VALUE;
+                if (fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                {
+                    Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+
+                    if (frozenObj == nullptr)
+                    {
+                        // Boxed static is not yet set, allocate it
+                        pFieldMT->AllocateRegularStaticBox(pField, (Object**)pResult->fieldLookup.addr);
+                        frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
+                    }
+
+                    _ASSERT(frozenObj != nullptr);
+
+                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                    // for structs containing gc handles
+                    if (!frozenObj->GetMethodTable()->ContainsPointers() &&
+                        GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
+                    {
+                        pResult->fieldLookup.addr = frozenObj->GetData();
+                        fieldFlags &= ~CORINFO_FLG_FIELD_STATIC_IN_HEAP;
+                    }
+                }
             }
         }
 
@@ -2634,142 +2660,11 @@ void CEEInfo::embedGenericHandle(
     EE_TO_JIT_TRANSITION();
 }
 
-void CEEInfo::ScanForModuleDependencies(Module* pModule, SigPointer psig)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pModule && !pModule->IsSystem());
-
-    CorElementType eType;
-    IfFailThrow(psig.GetElemType(&eType));
-
-    switch (eType)
-    {
-        case ELEMENT_TYPE_GENERICINST:
-        {
-            ScanForModuleDependencies(pModule,psig);
-            IfFailThrow(psig.SkipExactlyOne());
-
-            uint32_t ntypars;
-            IfFailThrow(psig.GetData(&ntypars));
-            for (uint32_t i = 0; i < ntypars; i++)
-            {
-              ScanForModuleDependencies(pModule,psig);
-              IfFailThrow(psig.SkipExactlyOne());
-            }
-            break;
-        }
-
-        case ELEMENT_TYPE_VALUETYPE:
-        case ELEMENT_TYPE_CLASS:
-        {
-            mdToken tk;
-            IfFailThrow(psig.GetToken(&tk));
-            if (TypeFromToken(tk) ==  mdtTypeRef)
-            {
-                Module * pTypeDefModule;
-                mdToken tkTypeDef;
-
-                if  (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pTypeDefModule, &tkTypeDef))
-                    break;
-
-                if (!pTypeDefModule->IsSystem() && (pModule != pTypeDefModule))
-                {
-                    addActiveDependency((CORINFO_MODULE_HANDLE)pModule, (CORINFO_MODULE_HANDLE)pTypeDefModule);
-                }
-            }
-            break;
-        }
-
-        default:
-            break;
-    }
-}
-
-void CEEInfo::ScanMethodSpec(Module * pModule, PCCOR_SIGNATURE pMethodSpec, ULONG cbMethodSpec)
-{
-    STANDARD_VM_CONTRACT;
-
-    SigPointer sp(pMethodSpec, cbMethodSpec);
-
-    BYTE etype;
-    IfFailThrow(sp.GetByte(&etype));
-
-    _ASSERT(etype == (BYTE)IMAGE_CEE_CS_CALLCONV_GENERICINST);
-
-    uint32_t nGenericMethodArgs;
-    IfFailThrow(sp.GetData(&nGenericMethodArgs));
-
-    for (uint32_t i = 0; i < nGenericMethodArgs; i++)
-    {
-        ScanForModuleDependencies(pModule,sp);
-        IfFailThrow(sp.SkipExactlyOne());
-    }
-}
-
-bool CEEInfo::ScanTypeSpec(Module * pModule, PCCOR_SIGNATURE pTypeSpec, ULONG cbTypeSpec)
-{
-    STANDARD_VM_CONTRACT;
-
-    SigPointer sp(pTypeSpec, cbTypeSpec);
-
-    CorElementType eType;
-    IfFailThrow(sp.GetElemType(&eType));
-
-    // Filter out non-instantiated types and typedescs (typevars, arrays, ...)
-    if (eType != ELEMENT_TYPE_GENERICINST)
-    {
-        // Scanning of the parent chain is required for reference types only.
-        // Note that the parent chain MUST NOT be scanned for instantiated
-        // generic variables because of they are not a real dependencies.
-        return (eType == ELEMENT_TYPE_CLASS);
-    }
-
-    IfFailThrow(sp.SkipExactlyOne());
-
-    uint32_t ntypars;
-    IfFailThrow(sp.GetData(&ntypars));
-
-    for (uint32_t i = 0; i < ntypars; i++)
-    {
-        ScanForModuleDependencies(pModule,sp);
-        IfFailThrow(sp.SkipExactlyOne());
-    }
-
-    return true;
-}
-
-void CEEInfo::ScanInstantiation(Module * pModule, Instantiation inst)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        TypeHandle th = inst[i];
-        if (th.IsTypeDesc())
-            continue;
-
-        MethodTable * pMT = th.AsMethodTable();
-
-        Module * pDefModule = pMT->GetModule();
-
-        if (!pDefModule->IsSystem() && (pModule != pDefModule))
-        {
-            addActiveDependency((CORINFO_MODULE_HANDLE)pModule, (CORINFO_MODULE_HANDLE)pDefModule);
-        }
-
-        if (pMT->HasInstantiation())
-        {
-            ScanInstantiation(pModule, pMT->GetInstantiation());
-        }
-    }
-}
-
 //
-// ScanToken is used to track triggers for creation of per-AppDomain state instead, including allocations required for statics and
+// EnsureActive is used to track triggers for creation of per-AppDomain state instead, including allocations required for statics and
 // triggering of module cctors.
 //
-// The basic rule is: There should be no possibility of a shared module that is "active" to have a direct call into a  module that
+// The basic rule is: There should be no possibility of a module that is "active" to have a direct call into a  module that
 // is not "active". And we don't want to intercept every call during runtime, so during compile time we track static calls and
 // everything that can result in new virtual calls.
 //
@@ -2777,108 +2672,14 @@ void CEEInfo::ScanInstantiation(Module * pModule, Instantiation inst)
 // One could come up with a more efficient algorithm that still maintains the invariant, but it may introduce backward compatibility
 // issues.
 //
-// For efficiency, the implementation leverages the loaded types as much as possible. Unfortunately, we still have to go back to
-// metadata when the generic variables could have been substituted via generic context.
-//
-void CEEInfo::ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD)
+void CEEInfo::EnsureActive(TypeHandle th, MethodDesc * pMD)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pModule->IsSystem())
-        return;
-
-    //
-    // Scan method instantiation
-    //
-    if (pMD != NULL && pResolvedToken->pMethodSpec != NULL)
-    {
-        if (ContextIsInstantiated(pResolvedToken->tokenContext))
-        {
-            ScanMethodSpec(pModule, pResolvedToken->pMethodSpec, pResolvedToken->cbMethodSpec);
-        }
-        else
-        {
-            ScanInstantiation(pModule, pMD->GetMethodInstantiation());
-        }
-    }
-
-    if (th.IsTypeDesc())
-        return;
-
-    MethodTable * pMT = th.AsMethodTable();
-
-    //
-    // Scan type instantiation
-    //
-    if (pResolvedToken->pTypeSpec != NULL)
-    {
-        if (ContextIsInstantiated(pResolvedToken->tokenContext))
-        {
-            if (!ScanTypeSpec(pModule, pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec))
-                return;
-        }
-        else
-        {
-            ScanInstantiation(pModule, pMT->GetInstantiation());
-        }
-    }
-
-    //
-    // Scan chain of parent types
-    //
-    while (true)
-    {
-        Module * pDefModule = pMT->GetModule();
-        if (pDefModule->IsSystem())
-            break;
-
-        if (pModule != pDefModule)
-        {
-            addActiveDependency((CORINFO_MODULE_HANDLE)pModule, (CORINFO_MODULE_HANDLE)pDefModule);
-        }
-
-        MethodTable * pParentMT = pMT->GetParentMethodTable();
-        if (pParentMT == NULL)
-            break;
-
-        if (pParentMT->HasInstantiation())
-        {
-            IMDInternalImport* pInternalImport = pDefModule->GetMDImport();
-
-            mdToken tkParent;
-            IfFailThrow(pInternalImport->GetTypeDefProps(pMT->GetCl(), NULL, &tkParent));
-
-            if (TypeFromToken(tkParent) == mdtTypeSpec)
-            {
-                PCCOR_SIGNATURE pTypeSpec;
-                ULONG           cbTypeSpec;
-                IfFailThrow(pInternalImport->GetTypeSpecFromToken(tkParent, &pTypeSpec, &cbTypeSpec));
-
-                ScanTypeSpec(pDefModule, pTypeSpec, cbTypeSpec);
-            }
-        }
-
-        pMT = pParentMT;
-    }
-}
-
-void CEEInfo::ScanTokenForDynamicScope(CORINFO_RESOLVED_TOKEN * pResolvedToken, TypeHandle th, MethodDesc * pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (m_pMethodBeingCompiled->IsLCGMethod())
-    {
-        // The dependency tracking for LCG is irrelevant. Perform immediate activation.
-        if (pMD != NULL && pMD->HasMethodInstantiation())
-            pMD->EnsureActive();
-        if (!th.IsTypeDesc())
-            th.AsMethodTable()->EnsureInstanceActive();
-        return;
-    }
-
-    // Stubs-as-IL have to do regular dependency tracking because they can be shared cross-domain.
-    Module * pModule = GetDynamicResolver(pResolvedToken->tokenScope)->GetDynamicMethod()->GetModule();
-    ScanToken(pModule, pResolvedToken, th, pMD);
+    if (pMD != NULL && pMD->HasMethodInstantiation())
+        pMD->EnsureActive();
+    if (!th.IsTypeDesc())
+        th.AsMethodTable()->EnsureInstanceActive();
 }
 
 CORINFO_OBJECT_HANDLE CEEInfo::getJitHandleForObject(OBJECTREF objref, bool knownFrozen)
@@ -6791,7 +6592,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef() ||
-             tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_POINTER)->GetMemberDef() ||
              tk == CoreLibBinder::GetMethod(METHOD__UNSAFE__AS_REF_IN)->GetMemberDef())
     {
         // Return the argument that was passed in.
@@ -7195,39 +6995,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
 
         setILIntrinsicMethodInfo(methInfo,const_cast<BYTE*>(ilcode),sizeof(ilcode), 2);
 
-        return true;
-    }
-
-    return false;
-}
-
-bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
-                                                  CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__MEMORY_MARSHAL));
-
-    mdMethodDef tk = ftn->GetMemberDef();
-
-    if (tk == CoreLibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE_SZARRAY)->GetMemberDef())
-    {
-        mdToken tokRawSzArrayData = CoreLibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
-
-        static BYTE ilcode[] = { CEE_LDARG_0,
-                                 CEE_LDFLDA,0,0,0,0,
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawSzArrayData);
-        ilcode[3] = (BYTE)(tokRawSzArrayData >> 8);
-        ilcode[4] = (BYTE)(tokRawSzArrayData >> 16);
-        ilcode[5] = (BYTE)(tokRawSzArrayData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
         return true;
     }
 
@@ -7684,10 +7451,6 @@ getMethodInfoHelper(
             if (CoreLibBinder::IsClass(pMT, CLASS__UNSAFE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__MEMORY_MARSHAL))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForMemoryMarshal(ftn, methInfo);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
@@ -10970,31 +10733,6 @@ PCODE CEEJitInfo::getHelperFtnStatic(CorInfoHelpFunc ftnNum)
     return GetEEFuncEntryPoint(pfnHelper);
 }
 
-void CEEJitInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(moduleFrom));
-        PRECONDITION(!IsDynamicScope(moduleFrom));
-        PRECONDITION(CheckPointer(moduleTo));
-        PRECONDITION(!IsDynamicScope(moduleTo));
-        PRECONDITION(moduleFrom != moduleTo);
-    }
-    CONTRACTL_END;
-
-    // This is only called internaly. JIT-EE transition is not needed.
-    // JIT_TO_EE_TRANSITION();
-
-    Module *dependency = (Module *)moduleTo;
-    _ASSERTE(!dependency->IsSystem());
-
-    dependency->EnsureActive();
-
-    // EE_TO_JIT_TRANSITION();
-}
-
-
 // Wrapper around CEEInfo::GetProfilingHandle.  The first time this is called for a
 // method desc, it calls through to EEToProfInterfaceImpl::EEFunctionIDMappe and caches the
 // result in CEEJitInfo::GetProfilingHandleCache.  Thereafter, this wrapper regurgitates the cached values
@@ -11909,55 +11647,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-/*********************************************************************/
-void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
-                                  void **ppIndirection)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void *result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* field = (FieldDesc*) fieldHnd;
-
-    MethodTable* pMT = field->GetEnclosingMethodTable();
-
-    _ASSERTE(!pMT->ContainsGenericVariables());
-
-    void *base = NULL;
-
-    if (!field->IsRVA())
-    {
-        // <REVISIT_TODO>@todo: assert that the current method being compiled is unshared</REVISIT_TODO>
-        // We must not call here for statics of collectible types.
-        _ASSERTE(!pMT->Collectible());
-
-        // Allocate space for the local class if necessary, but don't trigger
-        // class construction.
-        DomainLocalModule *pLocalModule = pMT->GetDomainLocalModule();
-        pLocalModule->PopulateClass(pMT);
-
-        GCX_COOP();
-
-        base = (void *) field->GetBase();
-    }
-
-    result = field->GetStaticAddressHandle(base);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11968,6 +11658,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
     _ASSERT(fieldHnd != NULL);
     _ASSERT(buffer != NULL);
     _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
 
     bool result = false;
 
@@ -11975,7 +11666,6 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
     _ASSERTE(field->IsStatic());
-    _ASSERTE((unsigned)bufferSize == field->GetSize());
 
     MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
     _ASSERTE(!pEnclosingMT->IsSharedByGenericInstantiations());
@@ -11991,6 +11681,10 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         GCX_COOP();
         if (field->IsObjRef())
         {
+            _ASSERT(!field->IsRVA());
+            _ASSERT(valueOffset == 0); // there is no point in returning a chunk of a gc handle
+            _ASSERT((UINT)bufferSize == field->GetSize());
+
             OBJECTREF fieldObj = field->GetStaticOBJECTREF();
             if (fieldObj != NULL)
             {
@@ -12021,10 +11715,17 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
         }
         else
         {
-            void* fldAddr = field->GetCurrentStaticAddress();
-            _ASSERTE(fldAddr != nullptr);
-            memcpy(buffer, fldAddr, bufferSize);
-            result = true;
+            // Either RVA, primitive or struct (or even part of that struct)
+            size_t baseAddr = (size_t)field->GetCurrentStaticAddress();
+            UINT size = field->GetSize();
+            _ASSERTE(baseAddr > 0);
+            _ASSERTE(size > 0);
+          
+            if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
+            {
+                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                result = true;
+            }
         }
     }
 
@@ -14508,33 +14209,6 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
     UNREACHABLE();      // only called on derived class.
 }
 
-void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
-                                  void **ppIndirection)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void *result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* field = (FieldDesc*)fieldHnd;
-
-    _ASSERTE(field->IsRVA());
-
-    result = field->GetStaticAddressHandle(NULL);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                          bool* pIsSpeculative)
 {
@@ -14645,13 +14319,6 @@ PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
 
 void* CEEInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                             void **            ppIndirection)  /* OUT */
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
-}
-
-// Active dependency helpers
-void CEEInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

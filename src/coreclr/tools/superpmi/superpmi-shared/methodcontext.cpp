@@ -3535,50 +3535,17 @@ CORINFO_METHOD_HANDLE MethodContext::repEmbedMethodHandle(CORINFO_METHOD_HANDLE 
     return (CORINFO_METHOD_HANDLE)value.B;
 }
 
-void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection, void* result, CorInfoType cit)
-{
-    if (GetFieldAddress == nullptr)
-        GetFieldAddress = new LightWeightMap<DWORDLONG, Agnostic_GetFieldAddress>();
-
-    Agnostic_GetFieldAddress value;
-    if (ppIndirection == nullptr)
-        value.ppIndirection = 0;
-    else
-        value.ppIndirection = CastPointer(*ppIndirection);
-    value.fieldAddress      = CastPointer(result);
-
-    DWORDLONG key = CastHandle(field);
-    GetFieldAddress->Add(key, value);
-    DEBUG_REC(dmpGetFieldAddress(key, value));
-}
-void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value)
-{
-    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX", key, value.ppIndirection, value.fieldAddress);
-}
-void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
-{
-    DWORDLONG key = CastHandle(field);
-    Agnostic_GetFieldAddress value = LookupByKeyOrMiss(GetFieldAddress, key, ": key %016llX", key);
-
-    DEBUG_REP(dmpGetFieldAddress(key, value));
-
-    if (ppIndirection != nullptr)
-    {
-        *ppIndirection = (void*)value.ppIndirection;
-    }
-    return (void*)value.fieldAddress;
-}
-
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects, bool result)
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result)
 {
     if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DLDD, DD>();
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLDDD, DD>();
 
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)ignoreMovableObjects;
+    key.D = (DWORD)valueOffset;
 
     DWORD tmpBuf = (DWORD)-1;
     if (buffer != nullptr && result)
@@ -3591,18 +3558,19 @@ void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
     GetReadonlyStaticFieldValue->Add(key, value);
     DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
 }
-void MethodContext::dmpGetReadonlyStaticFieldValue(DLDD key, DD value)
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLDDD key, DD value)
 {
-    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, ignoremovable-%u, result-%u", key.A, key.B, key.C, value.A);
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, ignoremovable-%u, valOffset-%u result-%u", key.A, key.B, key.C, key.D, value.A);
     GetReadonlyStaticFieldValue->Unlock();
 }
-bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool ignoreMovableObjects)
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    DLDD key;
+    DLDDD key;
     ZeroMemory(&key, sizeof(key));
     key.A = CastHandle(field);
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)ignoreMovableObjects;
+    key.D = (DWORD)valueOffset;
 
     DD value = LookupByKeyOrMiss(GetReadonlyStaticFieldValue, key, ": key %016llX", key.A);
 

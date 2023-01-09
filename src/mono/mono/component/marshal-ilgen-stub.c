@@ -12,7 +12,7 @@ marshal_ilgen_available (void)
 static int
 stub_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoMarshalSpec *spec, int conv_arg,	
-		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweigth_cb)
+		MonoType **conv_arg_type, MarshalAction action, MonoMarshalLightweightCallbacks* lightweight_cb)
 {
 	return 0;
 }

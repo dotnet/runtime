@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public double m_dField2 = 47.26;
         public static float m_fForward1;
@@ -19,7 +19,7 @@ namespace Test
                 } while ((object)m_fForward1 != param2);
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

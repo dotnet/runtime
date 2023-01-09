@@ -1926,11 +1926,9 @@ void Compiler::optPrintVnAssertionMapping()
 {
     printf("\nVN Assertion Mapping\n");
     printf("---------------------\n");
-    for (ValueNumToAssertsMap::KeyIterator ki = optValueNumToAsserts->Begin(); !ki.Equal(optValueNumToAsserts->End());
-         ++ki)
+    for (ValueNumToAssertsMap::Node* const iter : ValueNumToAssertsMap::KeyValueIteration(optValueNumToAsserts))
     {
-        printf("(%d => ", ki.Get());
-        printf("%s)\n", BitVecOps::ToString(apTraits, ki.GetValue()));
+        printf("(%d => %s)\n", iter->GetKey(), BitVecOps::ToString(apTraits, iter->GetValue()));
     }
 }
 #endif
@@ -3335,7 +3333,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
-    GenTree* newTree = tree;
+    GenTree* newTree       = tree;
+    bool     propagateType = false;
 
     // Update 'newTree' with the new value from our table
     // Typically newTree == tree and we are updating the node in place
@@ -3364,9 +3363,16 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
         case O2K_CONST_INT:
 
             // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && curAssertion->op2.HasIconFlag())
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
             {
-                return nullptr;
+                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
+                {
+                    propagateType = true;
+                }
+                else
+                {
+                    return nullptr;
+                }
             }
 
             // We assume that we do not try to do assertion prop on mismatched
@@ -3394,6 +3400,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                         // Conservatively don't allow propagation of ICON TYP_REF into BYREF
                         return nullptr;
                     }
+                    propagateType = true;
+                }
+
+                if (propagateType)
+                {
                     newTree->ChangeType(tree->TypeGet());
                 }
             }
@@ -3671,7 +3682,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 {
     // If we have a var definition then bail or
     // If this is the address of the var then it will have the GTF_DONT_CSE
-    // flag set and we don't want to to assertion prop on it.
+    // flag set and we don't want to assertion prop on it.
     if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
     {
         return nullptr;
@@ -3776,7 +3787,7 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 {
     // If we have a var definition then bail or
     // If this is the address of the var then it will have the GTF_DONT_CSE
-    // flag set and we don't want to to assertion prop on it.
+    // flag set and we don't want to assertion prop on it.
     if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
     {
         return nullptr;
@@ -4678,6 +4689,8 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
     {
         return true;
     }
+
+    op = op->gtEffectiveVal(/* commaOnly */ true);
 
     if (!op->OperIs(GT_LCL_VAR))
     {
@@ -6106,6 +6119,9 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_NEG:
         case GT_CAST:
         case GT_INTRINSIC:
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+#endif
         case GT_ARR_LENGTH:
             break;
 

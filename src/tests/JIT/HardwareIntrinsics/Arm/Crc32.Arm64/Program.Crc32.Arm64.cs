@@ -11,8 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm._Crc32.Arm64
         static Program()
         {
             JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
-
-
         }
     }
 }

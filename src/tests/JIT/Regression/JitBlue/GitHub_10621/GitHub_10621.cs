@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_10621
+public class GitHub_10621
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int F(int x) 

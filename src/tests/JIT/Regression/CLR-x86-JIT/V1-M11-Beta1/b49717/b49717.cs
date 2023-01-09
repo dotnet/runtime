@@ -6,10 +6,10 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static void DoAnything() { throw new Exception(); }
-        static int Main()
+        public static int Main()
         {
             bool FALSE = true;
             try

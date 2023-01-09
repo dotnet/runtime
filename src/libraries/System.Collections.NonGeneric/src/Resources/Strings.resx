@@ -78,14 +78,8 @@
   <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
-  </data>
-  <data name="ArgumentOutOfRange_QueueGrowFactor" xml:space="preserve">
-    <value>Queue grow factor must be between {0} and {1}.</value>
   </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>

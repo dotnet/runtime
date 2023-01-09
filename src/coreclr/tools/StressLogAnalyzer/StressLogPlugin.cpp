@@ -151,6 +151,7 @@ d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())   
 d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
 d(IS_START_BGC_THREAD,          ThreadStressLog::gcStartBgcThread())                                                        \
 d(IS_RELOCATE_REFERENCE,        ThreadStressLog::gcRelocateReferenceMsg())                                                  \
+d(IS_LOGGING_OFF,               ThreadStressLog::gcLoggingIsOffMsg())                                                       \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -385,6 +386,9 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         }
         break;
     }
+
+    case    IS_LOGGING_OFF:
+        return true;
 
     case    IS_GCSTART:
     {

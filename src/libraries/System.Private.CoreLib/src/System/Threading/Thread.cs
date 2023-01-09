@@ -120,10 +120,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            if (maxStackSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
             _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 
@@ -143,17 +140,14 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(start);
 
-            if (maxStackSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxStackSize);
 
             _startHelper = new StartHelper(start) { _maxStackSize = maxStackSize };
 
             Initialize();
         }
 
-#if !TARGET_BROWSER || FEATURE_WASM_THREADS
+#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_THREADS
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
@@ -369,8 +363,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static void Sleep(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
             SleepInternal(millisecondsTimeout);
         }
 

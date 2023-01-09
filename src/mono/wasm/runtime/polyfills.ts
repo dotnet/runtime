@@ -201,8 +201,18 @@ export async function init_polyfills_async(): Promise<void> {
             globalThis.crypto = <any>{};
         }
         if (!globalThis.crypto.getRandomValues) {
-            const nodeCrypto = INTERNAL.require("node:crypto");
-            if (nodeCrypto.webcrypto) {
+            let nodeCrypto: any = undefined;
+            try {
+                nodeCrypto = INTERNAL.require("node:crypto");
+            } catch (err: any) {
+                // Noop, error throwing polyfill provided bellow
+            }
+            
+            if (!nodeCrypto) {
+                globalThis.crypto.getRandomValues = () => { 
+                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module."); 
+                };
+            } else if (nodeCrypto.webcrypto) {
                 globalThis.crypto = nodeCrypto.webcrypto;
             } else if (nodeCrypto.randomBytes) {
                 globalThis.crypto.getRandomValues = (buffer: TypedArray) => {

@@ -60,7 +60,8 @@ namespace Microsoft.Extensions.Logging.Generators
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
                         string t = lm.TemplateList[i];
-                        if (!t.Equals(lm.TemplateParameters[i].Name, StringComparison.OrdinalIgnoreCase))
+                        var (template, parameter) = SanitizeAtSign(t, lm.TemplateParameters[i].CodeName);
+                        if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
                             return false;
@@ -198,7 +199,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} _{p.Name};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {ProtectAtSymbol(p.CodeName)};");
                 }
             }
 
@@ -206,7 +207,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this._{p.Name} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this.{ProtectAtSymbol(p.CodeName)} = {p.CodeName};");
                 }
             }
 
@@ -217,7 +218,8 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                        var (key, parameter) = SanitizeAtSign(t.Key, p.Name);
+                        if (key.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
@@ -231,13 +233,13 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                {nestedIndentation}var {t.Key} = "
-                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this._{lm.TemplateParameters[index].Name});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{ProtectAtSymbol(lm.TemplateParameters[index].CodeName)});");
 
                             _needEnumerationHelper = true;
                         }
                         else
                         {
-                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this._{lm.TemplateParameters[index].Name};");
+                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{ProtectAtSymbol(lm.TemplateParameters[index].CodeName)};");
                         }
                     }
                 }
@@ -248,14 +250,15 @@ namespace {lc.Namespace}
                 int index = 0;
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    string name = p.Name;
+                    // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
+                    string name = p.CodeName;
                     if (lm.TemplateMap.ContainsKey(name))
                     {
                         // take the letter casing from the template
                         name = lm.TemplateMap[name];
                     }
 
-                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this._{p.Name}),");
+                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{ProtectAtSymbol(p.CodeName)}),");
                 }
 
                 _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
@@ -602,6 +605,17 @@ internal static class __LoggerMessageGenerator
             }
 
             return sb.ToString();
+        }
+
+        private static bool ContainsAtSymbol(string value) => value.Length > 0 && value[0] == '@';
+
+        private static string ProtectAtSymbol(string value) =>
+            ContainsAtSymbol(value) ? value : $"_{value}";
+
+        private static (string template, string parameter) SanitizeAtSign(string template, string parameter)
+        {
+            static string SanitizeSingle(string input) => input.Length > 0 && input[0] == '@' ? input.Substring(1) : input;
+            return (SanitizeSingle(template), SanitizeSingle(parameter));
         }
     }
 }

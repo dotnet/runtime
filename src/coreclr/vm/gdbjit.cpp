@@ -3610,7 +3610,7 @@ const char * NotifyGdb::SplitFilename(const char* path)
     const char *pSlash = nullptr;
     for (const char *p = path; *p != '\0'; p++)
     {
-        if (*p == '/' || *p == '\\')
+        if (*p == DIRECTORY_SEPARATOR_CHAR_A)
             pSlash = p;
     }
 

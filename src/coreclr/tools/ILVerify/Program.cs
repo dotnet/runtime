@@ -456,7 +456,7 @@ namespace ILVerify
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILVerifyRootCommand())
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption()
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()

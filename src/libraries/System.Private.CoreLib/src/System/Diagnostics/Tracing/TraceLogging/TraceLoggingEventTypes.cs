@@ -82,10 +82,7 @@ namespace System.Diagnostics.Tracing
             EventTags tags,
             System.Reflection.ParameterInfo[] paramInfos)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             this.typeInfos = MakeArray(paramInfos);
 #if FEATURE_PERFTRACING
@@ -121,10 +118,7 @@ namespace System.Diagnostics.Tracing
             string defaultName,
             TraceLoggingTypeInfo[] typeInfos)
         {
-            if (defaultName is null)
-            {
-                throw new ArgumentNullException(nameof(defaultName));
-            }
+            ArgumentNullException.ThrowIfNull(defaultName);
 
             this.typeInfos = typeInfos;
             this.name = defaultName;
@@ -178,10 +172,7 @@ namespace System.Diagnostics.Tracing
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private static TraceLoggingTypeInfo[] MakeArray(System.Reflection.ParameterInfo[] paramInfos)
         {
-            if (paramInfos is null)
-            {
-                throw new ArgumentNullException(nameof(paramInfos));
-            }
+            ArgumentNullException.ThrowIfNull(paramInfos);
 
             var recursionCheck = new List<Type>(paramInfos.Length);
             var result = new TraceLoggingTypeInfo[paramInfos.Length];
@@ -196,10 +187,7 @@ namespace System.Diagnostics.Tracing
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         private static TraceLoggingTypeInfo[] MakeArray(Type[] types)
         {
-            if (types is null)
-            {
-                throw new ArgumentNullException(nameof(types));
-            }
+            ArgumentNullException.ThrowIfNull(types);
 
             var recursionCheck = new List<Type>(types.Length);
             var result = new TraceLoggingTypeInfo[types.Length];
@@ -214,10 +202,7 @@ namespace System.Diagnostics.Tracing
         private static TraceLoggingTypeInfo[] MakeArray(
             TraceLoggingTypeInfo[] typeInfos)
         {
-            if (typeInfos is null)
-            {
-                throw new ArgumentNullException(nameof(typeInfos));
-            }
+            ArgumentNullException.ThrowIfNull(typeInfos);
 
             return (TraceLoggingTypeInfo[])typeInfos.Clone();
         }

@@ -2286,14 +2286,14 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **splitted;
+			char **split;
 
-			splitted = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*splitted) {
-				char *tmp = *splitted;
+			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
+			while (*split) {
+				char *tmp = *split;
 				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
 				g_free (tmp);
-				splitted++;
+				split++;
 			}
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;

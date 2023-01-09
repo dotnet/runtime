@@ -1017,6 +1017,20 @@
         "krwq",
         "layomia",
         "tarekgh",
+        "dotnet/area-system-io-ports"
+      ],
+      "label": "area-System.IO.Ports"
+    },
+    {
+      "lead": "jeffhandley",
+      "pod": "eirik-krzysztof-layomi-tarek",
+      "owners": [
+        "eiriktsarpalis",
+        "ericstj",
+        "jeffhandley",
+        "krwq",
+        "layomia",
+        "tarekgh",
         "dotnet/area-system-linq"
       ],
       "label": "area-System.Linq"

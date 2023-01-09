@@ -142,7 +142,7 @@ export async function http_wasm_get_streamed_response_bytes(res: ResponseExtensi
 interface ResponseExtension extends Response {
     __buffer?: ArrayBuffer
     __reader?: ReadableStreamDefaultReader<Uint8Array>
-    __chunk?: ReadableStreamDefaultReadResult<Uint8Array>
+    __chunk?: ReadableStreamReadResult<Uint8Array>
     __source_offset: number
     __abort_controller: AbortController
     __headerNames: string[];

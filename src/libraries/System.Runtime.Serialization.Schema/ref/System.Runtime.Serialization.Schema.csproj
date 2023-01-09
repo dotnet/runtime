@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

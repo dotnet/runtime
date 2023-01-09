@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         static void Func()
         {
@@ -14,7 +14,7 @@ namespace Test
             while (a == 1)
                 throw new Exception();
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

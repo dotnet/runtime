@@ -301,14 +301,13 @@ namespace R2RTest
         public Option<DirectoryInfo> AspNetPath { get; } =
             new Option<DirectoryInfo>(new[] { "--asp-net-path", "-asp" }, "Path to SERP's ASP.NET Core folder").AcceptExistingOnly();
 
-        static int Main(string[] args)
-        {
-            return new CommandLineBuilder(new R2RTestRootCommand())
+        private static int Main(string[] args) =>
+            new CommandLineBuilder(new R2RTestRootCommand())
+                .UseVersionOption("--version", "-v")
                 .UseHelp()
                 .UseParseErrorReporting()
                 .Build()
                 .Invoke(args);
-        }
     }
 
     public partial class BuildOptions

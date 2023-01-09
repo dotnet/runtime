@@ -4035,16 +4035,10 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optUnrollLoops()\n");
-    }
-#endif
-
     /* Look for loop unrolling candidates */
 
     bool change                 = false;
+    bool anyIRchange            = false;
     bool anyNestedLoopsUnrolled = false;
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
@@ -4272,6 +4266,11 @@ PhaseStatus Compiler::optUnrollLoops()
             continue;
         }
         // clang-format on
+
+        // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
+        // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, if
+        // the size heuristics don't succeed, or if cloning any individual block fails.
+        anyIRchange = true;
 
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
@@ -4544,6 +4543,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
     if (change)
     {
+        assert(anyIRchange);
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -4588,364 +4589,11 @@ PhaseStatus Compiler::optUnrollLoops()
     fgDebugCheckBBlist(true);
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
-
-//-----------------------------------------------------------------------------
-// optIfConvert
-//
-// Find blocks representing simple if statements represented by conditional jumps
-// over another block. Try to replace the jumps by use of SELECT nodes.
-//
-// Arguments:
-//   block -- block that may represent the conditional jump in an if statement.
-//
-// Returns:
-//   true if any IR changes possibly made.
-//
-// Notes:
-//
-// Example of simple if conversion:
-//
-// This is optimising a simple if statement. There is a single condition being
-// tested, and a single assignment inside the body. There must be no else
-// statement. For example:
-// if (x < 7) { a = 5; }
-//
-// This is represented in IR by two basic blocks. The first block (block) ends with
-// a JTRUE statement which conditionally jumps to the second block (asgBlock).
-// The second block just contains a single assign statement. Both blocks then jump
-// to the same destination (finalBlock).  Note that the first block may contain
-// additional statements prior to the JTRUE statement.
-//
-// For example:
-//
-// ------------ BB03 [009..00D) -> BB05 (cond), preds={BB02} succs={BB04,BB05}
-// STMT00004
-//   *  JTRUE     void   $VN.Void
-//   \--*  GE        int    $102
-//      +--*  LCL_VAR   int    V02
-//      \--*  CNS_INT   int    7 $46
-//
-// ------------ BB04 [00D..010), preds={BB03} succs={BB05}
-// STMT00005
-//   *  ASG       int    $VN.Void
-// +--*  LCL_VAR   int    V00 arg0
-// \--*  CNS_INT   int    5 $47
-//
-//
-// This is optimised by conditionally executing the store and removing the conditional
-// jumps. First the JTRUE is replaced with a NOP. The assignment is updated so that
-// the source of the store is a SELECT node with the condition set to the inverse of
-// the original JTRUE condition. If the condition passes the original assign happens,
-// otherwise the existing source value is used.
-//
-// In the example above, local var 0 is set to 5 if the LT returns true, otherwise
-// the existing value of local var 0 is used:
-//
-// ------------ BB03 [009..00D) -> BB05 (always), preds={BB02} succs={BB05}
-// STMT00004
-//   *  NOP       void
-//
-// STMT00005
-//   *  ASG       int    $VN.Void
-//   +--*  LCL_VAR   int    V00 arg0
-//   \--*  SELECT    int
-//      +--*  LT        int    $102
-//      |  +--*  LCL_VAR   int    V02
-//      |  \--*  CNS_INT   int    7 $46
-//      +--*  CNS_INT   int    5 $47
-//      \--*  LCL_VAR   int    V00
-//
-// ------------ BB04 [00D..010), preds={} succs={BB05}
-//
-bool Compiler::optIfConvert(BasicBlock* block)
-{
-#ifndef TARGET_ARM64
-    return false;
-#else
-
-    // Don't optimise the block if it is inside a loop
-    // When inside a loop, branches are quicker than selects.
-    // Detect via the block weight as that will be high when inside a loop.
-    if ((block->getBBWeight(this) > BB_UNITY_WEIGHT) && !compStressCompile(STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    {
-        return false;
-    }
-
-    // Does the block end by branching via a JTRUE after a compare?
-    if (block->bbJumpKind != BBJ_COND || block->NumSucc() != 2)
-    {
-        return false;
-    }
-
-    // Verify the test block ends with a condition that we can manipulate.
-    GenTree* last = block->lastStmt()->GetRootNode();
-    noway_assert(last->OperIs(GT_JTRUE));
-    GenTree* cond = last->gtGetOp1();
-    if (!cond->OperIsCompare())
-    {
-        return false;
-    }
-
-    // Block where the flows merge.
-    BasicBlock* finalBlock = block->bbNext;
-    // The node, statement and block of the assignment.
-    GenTree*    asgNode  = nullptr;
-    Statement*  asgStmt  = nullptr;
-    BasicBlock* asgBlock = nullptr;
-
-    // Check the block is followed by a block or chain of blocks that only contain NOPs and
-    // a single ASG statement. The destination of the final block must point to the same as the
-    // true path of the JTRUE block.
-    bool foundMiddle = false;
-    while (!foundMiddle)
-    {
-        BasicBlock* middleBlock = finalBlock;
-        noway_assert(middleBlock != nullptr);
-
-        // middleBlock should have a single successor.
-        finalBlock = middleBlock->GetUniqueSucc();
-        if (finalBlock == nullptr)
-        {
-            return false;
-        }
-
-        if (finalBlock == block->bbJumpDest)
-        {
-            // This is our final middle block.
-            foundMiddle = true;
-        }
-
-        // Check that we have linear flow and are still in the same EH region
-
-        if (middleBlock->GetUniquePred(this) == nullptr)
-        {
-            return false;
-        }
-
-        if (!BasicBlock::sameEHRegion(middleBlock, block))
-        {
-            return false;
-        }
-
-        // Can all the nodes within the middle block be made to conditionally execute?
-        for (Statement* const stmt : middleBlock->Statements())
-        {
-            GenTree* tree = stmt->GetRootNode();
-            switch (tree->gtOper)
-            {
-                case GT_ASG:
-                {
-                    GenTree* op1 = tree->gtGetOp1();
-                    GenTree* op2 = tree->gtGetOp2();
-
-                    // Only one per assignment per block can be conditionally executed.
-                    if (asgNode != nullptr || op2->OperIs(GT_SELECT))
-                    {
-                        return false;
-                    }
-
-                    // Ensure the destination of the assign is a local variable with integer type.
-                    if (!op1->OperIs(GT_LCL_VAR) || !varTypeIsIntegralOrI(op1))
-                    {
-                        return false;
-                    }
-
-                    // Ensure the nodes of the assign won't cause any additional side effects.
-                    if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
-                        (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-
-                    // Ensure the source isn't a phi.
-                    if (op2->OperIs(GT_PHI))
-                    {
-                        return false;
-                    }
-
-                    asgNode  = tree;
-                    asgStmt  = stmt;
-                    asgBlock = middleBlock;
-                    break;
-                }
-
-                // These do not need conditional execution.
-                case GT_NOP:
-                    if (tree->gtGetOp1() != nullptr || (tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
-                    {
-                        return false;
-                    }
-                    break;
-
-                // Cannot optimise this block.
-                default:
-                    return false;
-            }
-        }
-    }
-    if (asgNode == nullptr)
-    {
-        // The blocks checked didn't contain any ASG nodes.
-        return false;
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", asgBlock->bbNum, block->bbNum);
-        fgDumpBlock(block);
-        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
-        {
-            fgDumpBlock(dumpBlock);
-        }
-        JITDUMP("\n");
-    }
-#endif
-
-    // Using SELECT nodes means that full assignment is always evaluated.
-    // Put a limit on the original source and destination of the assignment.
-    if (!compStressCompile(STRESS_IF_CONVERSION_COST, 25))
-    {
-        int cost = asgNode->gtGetOp2()->GetCostEx() + (gtIsLikelyRegVar(asgNode->gtGetOp1()) ? 0 : 2);
-
-        // Cost to allow for "x = cond ? a + b : x".
-        if (cost > 7)
-        {
-            JITDUMP("Skipping if-conversion that will evaluate RHS unconditionally at cost %d", cost);
-            return false;
-        }
-    }
-
-    // Duplicate the destination of the assign.
-    // This will be used as the false result of the select node.
-    assert(asgNode->AsOp()->gtOp1->IsLocal());
-    GenTreeLclVarCommon* destination = asgNode->AsOp()->gtOp1->AsLclVarCommon();
-    GenTree*             falseInput  = gtCloneExpr(destination);
-    falseInput->gtFlags &= GTF_EMPTY;
-
-    // Create a new SSA entry for the false result.
-    if (destination->HasSsaName())
-    {
-        unsigned      lclNum            = destination->GetLclNum();
-        unsigned      destinationSsaNum = destination->GetSsaNum();
-        LclSsaVarDsc* destinationSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
-
-        // Create a new SSA num.
-        unsigned newSsaNum = lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(getAllocator(CMK_SSA));
-        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
-        LclSsaVarDsc* newSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(newSsaNum);
-
-        // Copy across the SSA data.
-        newSsaDef->SetBlock(destinationSsaDef->GetBlock());
-        newSsaDef->SetAssignment(destinationSsaDef->GetAssignment());
-        newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
-        falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
-
-        if (newSsaDef->m_vnPair.BothDefined())
-        {
-            fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
-        }
-    }
-
-    // Invert the condition.
-    GenTree* revCond = gtReverseCond(cond);
-    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-
-    // Create a select node.
-    GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, asgNode->TypeGet());
-
-    // Use the select as the source of the assignment.
-    asgNode->AsOp()->gtOp2 = select;
-    asgNode->AsOp()->gtFlags |= (select->gtFlags & GTF_ALL_EFFECT);
-    gtSetEvalOrder(asgNode);
-    fgSetStmtSeq(asgStmt);
-
-    // Remove the JTRUE statement.
-    last->ReplaceWith(gtNewNothingNode(), this);
-    gtSetEvalOrder(last);
-    fgSetStmtSeq(block->lastStmt());
-
-    // Before moving anything, fix up any SSAs in the asgBlock
-    for (Statement* const stmt : asgBlock->Statements())
-    {
-        for (GenTree* const node : stmt->TreeList())
-        {
-            if (node->IsLocal())
-            {
-                GenTreeLclVarCommon* lclVar = node->AsLclVarCommon();
-                unsigned             lclNum = lclVar->GetLclNum();
-                unsigned             ssaNum = lclVar->GetSsaNum();
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-                    if (ssaDef->GetBlock() == asgBlock)
-                    {
-                        JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum,
-                                ssaDef->GetBlock()->bbNum, block->bbNum);
-                        ssaDef->SetBlock(block);
-                    }
-                }
-            }
-        }
-    }
-
-    // Move the Asg to the end of the original block
-    Statement* stmtList1 = block->firstStmt();
-    Statement* stmtList2 = asgBlock->firstStmt();
-    Statement* stmtLast1 = block->lastStmt();
-    Statement* stmtLast2 = asgBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    asgBlock->bbStmtList = nullptr;
-
-    // Update the flow from the original block.
-    fgRemoveAllRefPreds(block->bbNext, block);
-    block->bbJumpKind = BBJ_ALWAYS;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("\nAfter if conversion\n");
-        fgDumpBlock(block);
-        for (BasicBlock* dumpBlock = block->bbNext; dumpBlock != finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
-        {
-            fgDumpBlock(dumpBlock);
-        }
-        JITDUMP("\n");
-    }
-#endif
-
-    return true;
-#endif
-}
-
-//-----------------------------------------------------------------------------
-// optIfConversion: If conversion
-//
-// Returns:
-//   suitable phase status
-//
-PhaseStatus Compiler::optIfConversion()
-{
-    bool madeChanges = false;
-
-    // Reverse iterate through the blocks.
-    BasicBlock* block = fgLastBB;
-    while (block != nullptr)
-    {
-        madeChanges |= optIfConvert(block);
-        block = block->bbPrev;
-    }
-
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
 
 /*****************************************************************************
  *
@@ -6374,27 +6022,37 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 return WALK_CONTINUE;
             }
 
-            // Check for calls and determine what's written.
+            // Determine what's written and check for calls.
             //
-            GenTree* dest = nullptr;
             if (tree->OperIs(GT_CALL))
             {
                 m_dsc->ivaMaskCall = optCallInterf(tree->AsCall());
-
-                dest = m_compiler->gtCallGetDefinedRetBufLclAddr(tree->AsCall());
-                if (dest == nullptr)
-                {
-                    return WALK_CONTINUE;
-                }
-
-                dest = dest->AsOp()->gtOp1;
             }
             else
             {
-                dest = tree->AsOp()->gtOp1;
-            }
+                assert(tree->OperIs(GT_ASG));
 
-            genTreeOps const destOper = dest->OperGet();
+                genTreeOps destOper = tree->gtGetOp1()->OperGet();
+                if (destOper == GT_LCL_FLD)
+                {
+                    // We can't track every field of every var. Moreover, indirections
+                    // may access different parts of the var as different (but
+                    // overlapping) fields. So just treat them as indirect accesses
+                    //
+                    // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
+                    // noway_assert(lvaTable[lclNum].lvAddrTaken);
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+                else if (destOper == GT_IND)
+                {
+                    // Set the proper indirection bits
+                    //
+                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+                }
+            }
 
             // Determine if the tree modifies a particular local
             //
@@ -6420,26 +6078,6 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
                 {
                     return WALK_ABORT;
                 }
-            }
-
-            if (destOper == GT_LCL_FLD)
-            {
-                // We can't track every field of every var. Moreover, indirections
-                // may access different parts of the var as different (but
-                // overlapping) fields. So just treat them as indirect accesses
-                //
-                // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
-                // noway_assert(lvaTable[lclNum].lvAddrTaken);
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
-            }
-            else if (destOper == GT_IND)
-            {
-                // Set the proper indirection bits
-                //
-                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
             }
 
             return WALK_CONTINUE;
@@ -6966,11 +6604,10 @@ PhaseStatus Compiler::optHoistLoopCode()
     if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
-        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+        for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
         {
             TestLabelAndNum tlAndN;
-            GenTree*        node = ki.Get();
-            bool            b    = testData->Lookup(node, &tlAndN);
+            bool            b = testData->Lookup(node, &tlAndN);
             assert(b);
             if (tlAndN.m_tl != TL_LoopHoist)
             {
@@ -8081,7 +7718,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         weight_t    blockWeight = block->getBBWeight(this);
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB ">\n",
-                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
+                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loopNum,
+                loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
@@ -10817,6 +10455,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
+                                lclVar->gtFlags |= GTF_VAR_EXPLICIT_INIT;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
                             }
                         }
@@ -10831,11 +10470,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
         if (removedTrackedDefs)
         {
-            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
-            LclVarRefCounts::KeyIterator end(defsInBlock.End());
-            for (; !iter.Equal(end); iter++)
+            for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
             {
-                unsigned int lclNum = iter.Get();
                 if (defsInBlock[lclNum] == 0)
                 {
                     VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
@@ -10884,7 +10520,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 
         LclVarDsc* varDsc   = lvaGetDesc(lclNum);
         unsigned   defCount = varDsc->lvPerSsaData.GetCount();
-        if (defCount <= 2)
+        if (defCount <= 1)
         {
             continue;
         }
@@ -10901,22 +10537,53 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
 
                 GenTree* lhs = store->gtGetOp1();
-                if (!lhs->OperIs(GT_LCL_FLD) || ((lhs->gtFlags & GTF_VAR_USEASG) == 0) ||
-                    (lhs->AsLclFld()->GetLclNum() != lclNum))
+                if (lhs->AsLclVarCommon()->GetLclNum() != lclNum)
                 {
+                    JITDUMP(" -- no; composite definition\n");
                     continue;
                 }
 
-                ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
-                ValueNum oldStoreValue =
-                    vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
-                                       lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                ValueNum oldStoreValue;
+                if ((lhs->gtFlags & GTF_VAR_USEASG) == 0)
+                {
+                    LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
+                    if (lastDefDsc->GetBlock() != defDsc->GetBlock())
+                    {
+                        JITDUMP(" -- no; last def not in the same block\n");
+                        continue;
+                    }
+
+                    if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                    {
+                        // Removing explicit inits is not profitable for primitives and not safe for structs.
+                        JITDUMP(" -- no; 'explicit init'\n");
+                        continue;
+                    }
+
+                    // CQ heuristic: avoid removing defs of enregisterable locals where this is likely to
+                    // make them "must-init", extending live ranges. Here we assume the first SSA def was
+                    // the implicit "live-in" one, which is not guaranteed, but very likely.
+                    if ((defIndex == 1) && (varDsc->TypeGet() != TYP_STRUCT))
+                    {
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        continue;
+                    }
+
+                    oldStoreValue = lastDefDsc->m_vnPair.GetConservative();
+                }
+                else
+                {
+                    ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                    oldStoreValue =
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                           lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                }
 
                 GenTree* rhs = store->gtGetOp2();
                 ValueNum storeValue;
                 if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
                 {
-                    storeValue = vnStore->VNForZeroObj(lhs->AsLclFld()->GetLayout());
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
                 }
                 else
                 {
@@ -10941,6 +10608,10 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     gtUpdateTreeAncestorsSideEffects(store);
 
                     madeChanges = true;
+                }
+                else
+                {
+                    JITDUMP(" -- no; not redundant\n");
                 }
             }
         }
