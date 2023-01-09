@@ -33330,10 +33330,12 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
     for (int i = condemned_gen_number; i >= stop_gen_idx; i--)
     {
         generation* condemned_gen = generation_of (i);
-        heap_segment*  current_heap_segment = generation_start_segment (condemned_gen);
-        current_heap_segment = walk_relocation_special_segments (current_heap_segment, profiling_context, fn);
+        heap_segment*  current_heap_segment = heap_segment_rw (generation_start_segment (condemned_gen));
+#ifdef USE_REGIONS
+        current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
         if (!current_heap_segment)
             continue;
+#endif // USE_REGIONS
         uint8_t*  start_address = get_soh_start_object (current_heap_segment, condemned_gen);
         size_t  current_brick = brick_of (start_address);
 
@@ -33358,8 +33360,10 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
                             &args);
                     args.last_plug = 0;
                 }
-                current_heap_segment = heap_segment_next (current_heap_segment);
-                current_heap_segment = walk_relocation_special_segments (current_heap_segment, profiling_context, fn);
+                current_heap_segment = heap_segment_next_rw (current_heap_segment);
+#ifdef USE_REGIONS
+                current_heap_segment = walk_relocation_sip (current_heap_segment, profiling_context, fn);
+#endif // USE_REGIONS
                 if (current_heap_segment)
                 {
                     current_brick = brick_of (heap_segment_mem (current_heap_segment));
@@ -33385,58 +33389,44 @@ void gc_heap::walk_relocation (void* profiling_context, record_surv_fn fn)
     }
 }
 
-heap_segment* gc_heap::walk_relocation_special_segments (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn)
-{
-    while (current_heap_segment)
-    {
-        if (heap_segment_read_only_p (current_heap_segment))
-        {
-            uint8_t* start = heap_segment_mem (current_heap_segment);
-            uint8_t* end = heap_segment_allocated (current_heap_segment);
-            fn (start, end, 0, profiling_context, !!settings.compaction, false);
-            current_heap_segment = heap_segment_next (current_heap_segment);
-        }
 #ifdef USE_REGIONS
-        else if (heap_segment_swept_in_plan (current_heap_segment))
+heap_segment* gc_heap::walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn)
+{
+    while (current_heap_segment && heap_segment_swept_in_plan (current_heap_segment))
+    {
+        uint8_t* start = heap_segment_mem (current_heap_segment);
+        uint8_t* end = heap_segment_allocated (current_heap_segment);
+        uint8_t* obj = start;
+        uint8_t* plug_start = nullptr;
+        while (obj < end)
         {
-            uint8_t* start = heap_segment_mem (current_heap_segment);
-            uint8_t* end = heap_segment_allocated (current_heap_segment);
-            uint8_t* obj = start;
-            uint8_t* plug_start = nullptr;
-            while (obj < end)
+            if (((CObjectHeader*)obj)->IsFree())
             {
-                if (((CObjectHeader*)obj)->IsFree())
+                if (plug_start)
                 {
-                    if (plug_start)
-                    {
-                        fn (plug_start, obj, 0, profiling_context, !!settings.compaction, false);
-                        plug_start = nullptr;
-                    }
+                    fn (plug_start, obj, 0, profiling_context, false, false);
+                    plug_start = nullptr;
                 }
-                else
+            }
+            else
+            {
+                if (!plug_start)
                 {
-                    if (!plug_start)
-                    {
-                        plug_start = obj;
-                    }
+                    plug_start = obj;
                 }
+            }
 
-                obj += Align (size (obj));
-            }
-            if (plug_start)
-            {
-                fn (plug_start, end, 0, profiling_context, false, false);
-            }
-            current_heap_segment = heap_segment_next (current_heap_segment);
+            obj += Align (size (obj));
         }
-#endif //USE_REGIONS
-        else
+        if (plug_start)
         {
-            break;
+            fn (plug_start, end, 0, profiling_context, false, false);
         }
+        current_heap_segment = heap_segment_next_rw (current_heap_segment);
     }
     return current_heap_segment;
 }
+#endif // USE_REGIONS
 
 void gc_heap::walk_survivors (record_surv_fn fn, void* context, walk_surv_type type)
 {
