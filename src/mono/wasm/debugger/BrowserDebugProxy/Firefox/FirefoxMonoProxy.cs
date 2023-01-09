@@ -282,19 +282,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         }
                         if (message["resourceType"].Value<string>() != "console-message")
                             continue;
-                        //var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
                         var ctx = GetContextFixefox(sessionId);
                         ctx.GlobalName = args["from"].Value<string>();
-                        /*if (messageArgs != null && messageArgs.Count == 2)
-                        {
-                            if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                            {
-                                ResetCmdId();
-                                await Task.WhenAll(
-                                    ForwardMessageToIde(args, token),
-                                    RuntimeReady(sessionId, token));
-                            }
-                        }*/
                     }
                     break;
                 }
