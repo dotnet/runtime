@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -643,18 +644,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_extract_epi16 (__m128i a,  int immediate)
         ///   PEXTRW reg, xmm, imm8
         /// </summary>
-        public static ushort Extract(Vector128<ushort> value, byte index) { throw new PlatformNotSupportedException(); }
+        public static ushort Extract(Vector128<ushort> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         ///   PINSRW xmm, reg/m16, imm8
         /// </summary>
-        public static Vector128<short> Insert(Vector128<short> value, short data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> Insert(Vector128<short> value, short data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_insert_epi16 (__m128i a,  int i, int immediate)
         ///   PINSRW xmm, reg/m16, imm8
         /// </summary>
-        public static Vector128<ushort> Insert(Vector128<ushort> value, ushort data, byte index) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> Insert(Vector128<ushort> value, ushort data, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
@@ -1005,39 +1006,39 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_shuffle_epi32 (__m128i a,  int immediate)
         ///   PSHUFD xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<int> Shuffle(Vector128<int> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> Shuffle(Vector128<int> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_shuffle_epi32 (__m128i a,  int immediate)
         ///   PSHUFD xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<uint> Shuffle(Vector128<uint> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> Shuffle(Vector128<uint> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_shuffle_pd (__m128d a,  __m128d b, int immediate)
         ///   SHUFPD xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<double> Shuffle(Vector128<double> left, Vector128<double> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> Shuffle(Vector128<double> left, Vector128<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_shufflehi_epi16 (__m128i a,  int immediate)
         ///   PSHUFHW xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<short> ShuffleHigh(Vector128<short> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShuffleHigh(Vector128<short> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_shufflehi_epi16 (__m128i a,  int control)
         ///   PSHUFHW xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<ushort> ShuffleHigh(Vector128<ushort> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShuffleHigh(Vector128<ushort> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_shufflelo_epi16 (__m128i a,  int control)
         ///   PSHUFLW xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<short> ShuffleLow(Vector128<short> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShuffleLow(Vector128<short> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_shufflelo_epi16 (__m128i a,  int control)
         ///   PSHUFLW xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<ushort> ShuffleLow(Vector128<ushort> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShuffleLow(Vector128<ushort> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_sll_epi16 (__m128i a, __m128i count)
@@ -1074,73 +1075,73 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_slli_epi16 (__m128i a,  int immediate)
         ///   PSLLW xmm, imm8
         /// </summary>
-        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftLeftLogical(Vector128<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_slli_epi16 (__m128i a,  int immediate)
         ///   PSLLW xmm, imm8
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftLeftLogical(Vector128<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_slli_epi32 (__m128i a,  int immediate)
         ///   PSLLD xmm, imm8
         /// </summary>
-        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftLeftLogical(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_slli_epi32 (__m128i a,  int immediate)
         ///   PSLLD xmm, imm8
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftLeftLogical(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_slli_epi64 (__m128i a,  int immediate)
         ///   PSLLQ xmm, imm8
         /// </summary>
-        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ShiftLeftLogical(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_slli_epi64 (__m128i a,  int immediate)
         ///   PSLLQ xmm, imm8
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<sbyte> ShiftLeftLogical128BitLane(Vector128<sbyte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftLeftLogical128BitLane(Vector128<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<byte> ShiftLeftLogical128BitLane(Vector128<byte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftLeftLogical128BitLane(Vector128<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<short> ShiftLeftLogical128BitLane(Vector128<short> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftLeftLogical128BitLane(Vector128<short> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<ushort> ShiftLeftLogical128BitLane(Vector128<ushort> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftLeftLogical128BitLane(Vector128<ushort> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<int> ShiftLeftLogical128BitLane(Vector128<int> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftLeftLogical128BitLane(Vector128<int> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<uint> ShiftLeftLogical128BitLane(Vector128<uint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftLeftLogical128BitLane(Vector128<uint> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<long> ShiftLeftLogical128BitLane(Vector128<long> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ShiftLeftLogical128BitLane(Vector128<long> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
         ///   PSLLDQ xmm, imm8
         /// </summary>
-        public static Vector128<ulong> ShiftLeftLogical128BitLane(Vector128<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ShiftLeftLogical128BitLane(Vector128<ulong> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_sra_epi16 (__m128i a, __m128i count)
@@ -1157,12 +1158,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_srai_epi16 (__m128i a,  int immediate)
         ///   PSRAW xmm, imm8
         /// </summary>
-        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightArithmetic(Vector128<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srai_epi32 (__m128i a,  int immediate)
         ///   PSRAD xmm, imm8
         /// </summary>
-        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightArithmetic(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_srl_epi16 (__m128i a, __m128i count)
@@ -1199,73 +1200,73 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_srli_epi16 (__m128i a,  int immediate)
         ///   PSRLW xmm, imm8
         /// </summary>
-        public static Vector128<short> ShiftRightLogical(Vector128<short> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightLogical(Vector128<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srli_epi16 (__m128i a,  int immediate)
         ///   PSRLW xmm, imm8
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srli_epi32 (__m128i a,  int immediate)
         ///   PSRLD xmm, imm8
         /// </summary>
-        public static Vector128<int> ShiftRightLogical(Vector128<int> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightLogical(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srli_epi32 (__m128i a,  int immediate)
         ///   PSRLD xmm, imm8
         /// </summary>
-        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogical(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srli_epi64 (__m128i a,  int immediate)
         ///   PSRLQ xmm, imm8
         /// </summary>
-        public static Vector128<long> ShiftRightLogical(Vector128<long> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ShiftRightLogical(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_srli_epi64 (__m128i a,  int immediate)
         ///   PSRLQ xmm, imm8
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<sbyte> ShiftRightLogical128BitLane(Vector128<sbyte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> ShiftRightLogical128BitLane(Vector128<sbyte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<byte> ShiftRightLogical128BitLane(Vector128<byte> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> ShiftRightLogical128BitLane(Vector128<byte> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<short> ShiftRightLogical128BitLane(Vector128<short> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightLogical128BitLane(Vector128<short> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<ushort> ShiftRightLogical128BitLane(Vector128<ushort> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogical128BitLane(Vector128<ushort> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<int> ShiftRightLogical128BitLane(Vector128<int> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ShiftRightLogical128BitLane(Vector128<int> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<uint> ShiftRightLogical128BitLane(Vector128<uint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ShiftRightLogical128BitLane(Vector128<uint> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<long> ShiftRightLogical128BitLane(Vector128<long> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ShiftRightLogical128BitLane(Vector128<long> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
         ///   PSRLDQ xmm, imm8
         /// </summary>
-        public static Vector128<ulong> ShiftRightLogical128BitLane(Vector128<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ShiftRightLogical128BitLane(Vector128<ulong> value, [ConstantExpected] byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_sqrt_pd (__m128d a)

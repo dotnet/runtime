@@ -168,7 +168,9 @@ void ThreadStore::DetachCurrentThread()
     }
 
     // Run pre-mortem callbacks while we still can run managed code and not holding locks.
-    if (g_threadExitCallback != NULL)
+    // NOTE: background GC threads are attached/suspendable threads, but should not run ordinary
+    // managed code. Make sure that does not happen here.
+    if (g_threadExitCallback != NULL && !pDetachingThread->IsGCSpecial())
     {
         g_threadExitCallback();
     }

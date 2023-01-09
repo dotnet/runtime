@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private Delegate CreateDelegateWorker(Type delegateType, object target, bool allowClosed)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));

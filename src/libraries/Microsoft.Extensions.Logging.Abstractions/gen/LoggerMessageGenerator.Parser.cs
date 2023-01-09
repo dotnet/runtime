@@ -351,11 +351,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
                                                 forceAsTemplateParams = true;
                                             }
-                                            else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName))
+                                            else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                             }
-                                            else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName))
+                                            else if (lp.IsTemplateParameter && !lm.TemplateMap.ContainsKey(paramName) && !lm.TemplateMap.ContainsKey($"@{paramName}") && !lm.TemplateMap.ContainsKey(lp.CodeName))
                                             {
                                                 Diag(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate, paramSymbol.Locations[0], paramName);
                                             }
@@ -419,7 +419,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 bool found = false;
                                                 foreach (LoggerParameter p in lm.AllParameters)
                                                 {
-                                                    if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                                                    if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase) ||
+                                                        t.Key.Equals(p.CodeName, StringComparison.OrdinalIgnoreCase) ||
+                                                        t.Key[0] == '@' && t.Key.Substring(1).Equals(p.CodeName, StringComparison.OrdinalIgnoreCase))
                                                     {
                                                         found = true;
                                                         break;
@@ -669,21 +671,6 @@ namespace Microsoft.Extensions.Logging.Generators
             {
                 int findIndex = message.IndexOfAny(chars, startIndex, endIndex - startIndex);
                 return findIndex == -1 ? endIndex : findIndex;
-            }
-
-            private string GetStringExpression(SemanticModel sm, SyntaxNode expr)
-            {
-                Optional<object?> optional = sm.GetConstantValue(expr, _cancellationToken);
-                if (optional.HasValue)
-                {
-                    object o = optional.Value;
-                    if (o != null)
-                    {
-                        return o.ToString();
-                    }
-                }
-
-                return string.Empty;
             }
 
             private static object GetItem(TypedConstant arg) => arg.Kind == TypedConstantKind.Array ? arg.Values : arg.Value;

@@ -207,6 +207,12 @@ function flush_wasm_entry_trampoline_jit_queue () {
         trampBuilder = builder = new WasmBuilder(constantSlots);
     else
         builder.clear(constantSlots);
+
+    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+        jitQueue.length = 0;
+        return;
+    }
+
     const started = _now();
     let compileStarted = 0;
     let rejected = true, threw = false;
@@ -321,6 +327,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
