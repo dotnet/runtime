@@ -93,9 +93,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
-    <Exec Command="$(IlcHostPackagePath)/native/src/libs/build-local.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath) System.Globalization.Native" Condition="'$(StaticICULinking)' == 'true'"/>
+    <Exec Command="&quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Globalization.Native" Condition="'$(StaticICULinking)' == 'true'"/>
 
-    <Exec Command="$(IlcHostPackagePath)/native/src/libs/build-local.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath) System.Security.Cryptography.Native" Condition="'$(StaticOpenSslLinking)' == 'true'"/>
+    <Exec Command="&quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Security.Cryptography.Native" Condition="'$(StaticOpenSslLinking)' == 'true'"/>
 
     <ItemGroup>
       <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true'" />
