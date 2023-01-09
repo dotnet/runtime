@@ -4,6 +4,10 @@
   <PropertyGroup>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
   </PropertyGroup>
+<!--Temporary workaround to control EventPipe in AOT-->
+  <PropertyGroup>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
+  </PropertyGroup>
 
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
@@ -39,6 +43,7 @@
 
     <!-- Ignore all previous constants since we are sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>NATIVEAOT;NETCOREAPP</DefineConstants>
+    <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
 
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 

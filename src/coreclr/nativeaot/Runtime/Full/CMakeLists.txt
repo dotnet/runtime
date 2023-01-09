@@ -24,6 +24,9 @@ add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIM
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 
+add_library(Aot.EventPipe STATIC ${EVENTPIPE_SOURCES})
+add_library(Aot.Disabled.EventPipe STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
@@ -63,6 +66,23 @@ add_custom_command(
 
 set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERTIES GENERATED TRUE)
 
+set_source_files_properties(${SHARED_EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
+set_source_files_properties(${SHARED_DIAGNOSTIC_SERVER_SOURCES} PROPERTIES LANGUAGE CXX)
+
+if(CLR_CMAKE_HOST_UNIX)
+  if (CMAKE_VERSION VERSION_GREATER 3.11 OR CMAKE_VERSION VERSION_EQUAL 3.11)
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
+    set_source_files_properties(${SHARED_DIAGNOSTIC_SERVER_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
+  endif()
+endif(CLR_CMAKE_HOST_UNIX)
+
+add_definitions(-DFEATURE_PERFTRACING)
+
+if (WIN32)
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${SHARED_DIAGNOSTIC_SERVER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+endif()
+
 # Runtime.WorkstationGC and Runtime.ServerGC share AsmOffsets.inc and assembler helpers (for Windows ARM/ARM64).
 # Avoid a race condition by adding this target as a dependency for both libraries.
 add_custom_target(
@@ -78,6 +98,8 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
+install_static_library(Aot.EventPipe aotsdk nativeaot)
+install_static_library(Aot.Disabled.EventPipe aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)
