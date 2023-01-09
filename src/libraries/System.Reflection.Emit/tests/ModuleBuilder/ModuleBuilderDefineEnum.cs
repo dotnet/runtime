@@ -19,6 +19,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "Name", TypeAttributes.Public, typeof(uint) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(long) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(char) };
+            yield return new object[] { "Name", TypeAttributes.Public, typeof(bool) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(ulong) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(float) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(double) };

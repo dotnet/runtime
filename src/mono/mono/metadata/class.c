@@ -6494,6 +6494,7 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR:

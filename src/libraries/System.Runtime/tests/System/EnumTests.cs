@@ -1215,6 +1215,7 @@ namespace System.Tests
             if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { s_charEnumType, typeof(char) };
+                yield return new object[] { s_boolEnumType, typeof(bool) };
                 yield return new object[] { s_floatEnumType, typeof(float) };
                 yield return new object[] { s_doubleEnumType, typeof(double) };
                 yield return new object[] { s_intPtrEnumType, typeof(IntPtr) };
@@ -1593,20 +1594,6 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => Enum.GetName(genericArgumentWithEnumConstraint, 1));
             Assert.Throws<ArgumentException>(() => Enum.GetNames(genericArgumentWithEnumConstraint));
             Assert.Throws<ArgumentException>(() => Enum.GetValues(genericArgumentWithEnumConstraint));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        public void DeclaringEnumWithBoolUnderlyingTypeFailsInCoreclr()
-        {
-            var exception = Assert.Throws<ArgumentException>(GetBoolEnumType);
-            Assert.Equal("System.Boolean is not a supported constant type.", exception.Message);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        public void DeclaringEnumWithBoolUnderlyingTypeFailsInMono()
-        {
-            var exception = Assert.Throws<TypeLoadException>(GetBoolEnumType);
-            Assert.Equal("Not a valid enumeration", exception.Message);
         }
 
         public static IEnumerable<object[]> ToString_Format_TestData()
@@ -2349,6 +2336,7 @@ namespace System.Tests
             return module.DefineEnum("TestName_" + underlyingType.Name, TypeAttributes.Public, underlyingType);
         }
 
+        private static Type s_boolEnumType = GetBoolEnumType();
         private static Type GetBoolEnumType()
         {
             EnumBuilder enumBuilder = GetNonRuntimeEnumTypeBuilder(typeof(bool));

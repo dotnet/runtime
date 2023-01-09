@@ -345,14 +345,9 @@ namespace System.Reflection.Emit
 
                 switch (corType)
                 {
-                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                        if (destType.IsEnum)
-                        {
-                            throw new ArgumentException(SR.Format(SR.Argument_ConstantNotSupported, type));
-                        }
-                        goto case CorElementType.ELEMENT_TYPE_I1;
                     case CorElementType.ELEMENT_TYPE_I1:
                     case CorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     case CorElementType.ELEMENT_TYPE_I2:
                     case CorElementType.ELEMENT_TYPE_U2:
                     case CorElementType.ELEMENT_TYPE_CHAR:
