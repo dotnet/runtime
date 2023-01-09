@@ -59,8 +59,9 @@ namespace Microsoft.Extensions.Logging.Generators
                     // make sure the order of the templates matches the order of the logging method parameter
                     for (int i = 0; i < lm.TemplateList.Count; i++)
                     {
-                        string t = lm.TemplateList[i];
-                        var (template, parameter) = SanitizeAtSign(t, lm.TemplateParameters[i].CodeName);
+                        var template = SanitizeSpecialSign(lm.TemplateList[i].AsSpan());
+                        var parameter = SanitizeSpecialSign(lm.TemplateParameters[i].CodeName.AsSpan());
+
                         if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             // order doesn't match, can't use LoggerMessage.Define
@@ -199,7 +200,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {ProtectAtSymbol(p.CodeName)};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()};");
                 }
             }
 
@@ -207,7 +208,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this.{ProtectAtSymbol(p.CodeName)} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this.{ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()} = {p.CodeName};");
                 }
             }
 
@@ -218,8 +219,9 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        var (key, parameter) = SanitizeAtSign(t.Key, p.Name);
-                        if (key.Equals(parameter, StringComparison.OrdinalIgnoreCase))
+                        var template = SanitizeSpecialSign(t.Key.AsSpan());
+                        var parameter = SanitizeSpecialSign(p.Name.AsSpan());
+                        if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
@@ -233,13 +235,13 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                {nestedIndentation}var {t.Key} = "
-                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{ProtectAtSymbol(lm.TemplateParameters[index].CodeName)});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{ProtectSpecialSymbolInVariable(lm.TemplateParameters[index].CodeName.AsSpan()).ToString()});");
 
                             _needEnumerationHelper = true;
                         }
                         else
                         {
-                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{ProtectAtSymbol(lm.TemplateParameters[index].CodeName)};");
+                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{ProtectSpecialSymbolInVariable(lm.TemplateParameters[index].CodeName.AsSpan()).ToString()};");
                         }
                     }
                 }
@@ -258,7 +260,7 @@ namespace {lc.Namespace}
                         name = lm.TemplateMap[name];
                     }
 
-                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{ProtectAtSymbol(p.CodeName)}),");
+                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{ProtectSpecialSymbolInVariable(p.CodeName.AsSpan()).ToString()}),");
                 }
 
                 _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
@@ -387,7 +389,7 @@ namespace {lc.Namespace}
 
                     GenDefineTypes(lm, brackets: true);
 
-                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }}); 
+                    _builder.Append(@$"({level}, new global::Microsoft.Extensions.Logging.EventId({lm.EventId}, {eventName}), ""{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}"", new global::Microsoft.Extensions.Logging.LogDefineOptions() {{ SkipEnabledCheck = true }});
 ");
                 }
 
@@ -606,16 +608,28 @@ internal static class __LoggerMessageGenerator
 
             return sb.ToString();
         }
+        /// <summary>
+        /// Checks if string contains a special symbol ('@') as starting char
+        /// </summary>
+        /// <param name="input">true if contains special symbol, otherwise false.</param>
+        /// <returns></returns>
+        private static bool ContainsSpecialSymbol(ReadOnlySpan<char> input)
+            => input.Length > 0 && input[0] == '@';
 
-        private static bool ContainsAtSymbol(string value) => value.Length > 0 && value[0] == '@';
+        /// <summary>
+        /// Removes '@' from input, allowing local variables to be declared when creating code.
+        /// </summary>
+        /// <param name="input">input that might contain '@' symbol</param>
+        /// <returns>If input starts with a symbol ('@'), returns a new string starting with underscore with '@' symbol removed, otherwise returns current string.</returns>
+        private static ReadOnlySpan<char> ProtectSpecialSymbolInVariable(ReadOnlySpan<char> input) =>
+            ContainsSpecialSymbol(input) ? input : $"_{input.ToString()}".AsSpan();
 
-        private static string ProtectAtSymbol(string value) =>
-            ContainsAtSymbol(value) ? value : $"_{value}";
-
-        private static (string template, string parameter) SanitizeAtSign(string template, string parameter)
-        {
-            static string SanitizeSingle(string input) => input.Length > 0 && input[0] == '@' ? input.Substring(1) : input;
-            return (SanitizeSingle(template), SanitizeSingle(parameter));
-        }
+        /// <summary>
+        /// Remove leading symbol from input.
+        /// </summary>
+        /// <param name="input">String that might contains special symbol.</param>
+        /// <returns>If input starts with a symbol ('@'), returns a new string starting with underscore with '@' symbol removed, otherwise returns current string.</returns>
+        private static ReadOnlySpan<char> SanitizeSpecialSign(ReadOnlySpan<char> input)
+            => ContainsSpecialSymbol(input) ? input.Slice(1) : input;
     }
 }
