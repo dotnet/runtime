@@ -1997,7 +1997,7 @@ void UnlockedLoaderHeap::DumpFreeList()
                 }
             }
 
-            printf("Addr = %pxh, Size = %lxh", pBlock, ((ULONG)dwsize));
+            printf("Addr = %pxh, Size = %xh", pBlock, ((ULONG)dwsize));
             if (ccbad) printf(" *** ERROR: NOT CC'd ***");
             if (sizeunaligned) printf(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
             printf("\n");

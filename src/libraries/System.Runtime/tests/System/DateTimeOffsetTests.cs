@@ -1381,6 +1381,29 @@ namespace System.Tests
             Assert.Equal(expectedString, actual.ToString("u"));
         }
 
+        [Theory]
+        [InlineData(5)]
+        [InlineData(-5)]
+        [InlineData(0)]
+        [InlineData(14 * 60)]  // max offset
+        [InlineData(-14 * 60)] // min offset
+        public static void TotalNumberOfMinutesTest(int minutesCount)
+        {
+            DateTimeOffset dto = new DateTimeOffset(new DateTime(2022, 11, 12), TimeSpan.FromMinutes(minutesCount));
+            Assert.Equal(minutesCount, dto.TotalOffsetMinutes);
+            Assert.Equal(minutesCount, dto.Offset.TotalMinutes);
+        }
+
+        [Fact]
+        public static void TotalNumberOfMinutesNowTest()
+        {
+            DateTimeOffset dto = DateTimeOffset.UtcNow;
+            Assert.Equal(0, dto.TotalOffsetMinutes);
+
+            dto = DateTimeOffset.Now;
+            Assert.Equal(dto.Offset.TotalMinutes, dto.TotalOffsetMinutes);
+        }
+
         [Fact]
         public static void TryFormat_ToString_EqualResults()
         {

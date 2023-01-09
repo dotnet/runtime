@@ -112,7 +112,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public static NameValueHeaderValue Parse(string? input)
+        public static NameValueHeaderValue Parse(string input)
         {
             int index = 0;
             return (NameValueHeaderValue)GenericHeaderParser.SingleValueNameValueParser.ParseValue(

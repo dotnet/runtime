@@ -279,6 +279,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -514,6 +521,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

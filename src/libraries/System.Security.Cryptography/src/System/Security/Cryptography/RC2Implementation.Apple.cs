@@ -32,11 +32,9 @@ namespace System.Security.Cryptography
 
         private static ILiteSymmetricCipher CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
-            int feedbackSizeInBytes,
             int paddingSize,
             bool encrypting)
         {
@@ -47,7 +45,7 @@ namespace System.Security.Cryptography
                 key,
                 iv,
                 encrypting,
-                feedbackSizeInBytes,
+                feedbackSizeInBytes: 0,
                 paddingSize);
         }
     }

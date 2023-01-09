@@ -16,7 +16,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.RegularExpressions.Generator
@@ -56,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             context.RegisterCodeFix(
                 CodeAction.Create(
                     SR.UseRegexSourceGeneratorTitle,
-                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, context.Diagnostics[0], cancellationToken),
+                    cancellationToken => ConvertToSourceGenerator(context.Document, root, nodeToFix, cancellationToken),
                     equivalenceKey: SR.UseRegexSourceGeneratorTitle),
                 context.Diagnostics);
         }
@@ -71,7 +70,7 @@ namespace System.Text.RegularExpressions.Generator
         /// <param name="diagnostic">The diagnostic to fix.</param>
         /// <param name="cancellationToken">The cancellation token for the async operation.</param>
         /// <returns>The new document with the replaced nodes after applying the code fix.</returns>
-        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, Diagnostic diagnostic, CancellationToken cancellationToken)
+        private static async Task<Document> ConvertToSourceGenerator(Document document, SyntaxNode root, SyntaxNode nodeToFix, CancellationToken cancellationToken)
         {
             // We first get the compilation object from the document
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
@@ -119,7 +118,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            // Walk the type hirerarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
+            // Walk the type hierarchy of the node to fix, and add the partial modifier to each ancestor (if it doesn't have it already)
             // We also keep a count of how many partial keywords we added so that we can later find the nodeToFix again on the new root using the text offset.
             int typesModified = 0;
             root = root.ReplaceNodes(
@@ -129,7 +128,7 @@ namespace System.Text.RegularExpressions.Generator
                     if (!typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)))
                     {
                         typesModified++;
-                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword)).WithAdditionalAnnotations(Simplifier.Annotation);
+                        return typeDeclaration.AddModifiers(SyntaxFactory.Token(SyntaxKind.PartialKeyword));
                     }
 
                     return typeDeclaration;
@@ -162,7 +161,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 operationArguments = invocationOperation.Arguments;
                 IEnumerable<SyntaxNode> arguments = operationArguments
-                    .Where(arg => arg.Parameter.Name is not (UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName))
+                    .Where(arg => arg.Parameter?.Name is not (UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName))
                     .Select(arg => arg.Syntax);
 
                 replacement = generator.InvocationExpression(generator.MemberAccessExpression(replacement, invocationOperation.TargetMethod.Name), arguments);
@@ -193,8 +192,17 @@ namespace System.Text.RegularExpressions.Generator
             // we also need to parse the pattern in case there are options that were specified inside the pattern via the `(?i)` switch.
             SyntaxNode? cultureNameValue = null;
             RegexOptions regexOptions = regexOptionsValue is not null ? GetRegexOptionsFromArgument(operationArguments) : RegexOptions.None;
-            string pattern = GetRegexPatternFromArgument(operationArguments);
-            regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+            string pattern = GetRegexPatternFromArgument(operationArguments)!;
+
+            try
+            {
+                regexOptions |= RegexParser.ParseOptionsInPattern(pattern, regexOptions);
+            }
+            catch (RegexParseException)
+            {
+                // We can't safely make the fix without knowing the options
+                return document;
+            }
 
             // If the options include IgnoreCase and don't specify CultureInvariant then we will have to calculate the user's current culture in order to pass
             // it in as a parameter. If the user specified IgnoreCase, but also selected CultureInvariant, then we skip as the default is to use Invariant culture.
@@ -240,9 +248,9 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            static string GetRegexPatternFromArgument(ImmutableArray<IArgumentOperation> arguments)
+            static string? GetRegexPatternFromArgument(ImmutableArray<IArgumentOperation> arguments)
             {
-                IArgumentOperation? patternArgument = arguments.SingleOrDefault(arg => arg.Parameter.Name == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
+                IArgumentOperation? patternArgument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
                 if (patternArgument is null)
                 {
                     return null;
@@ -253,16 +261,17 @@ namespace System.Text.RegularExpressions.Generator
 
             static RegexOptions GetRegexOptionsFromArgument(ImmutableArray<IArgumentOperation> arguments)
             {
-                IArgumentOperation? optionsArgument = arguments.SingleOrDefault(arg => arg.Parameter.Name == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
+                IArgumentOperation? optionsArgument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName);
 
-                return optionsArgument is null ? RegexOptions.None :
-                    (RegexOptions)(int)optionsArgument.Value.ConstantValue.Value;
+                return optionsArgument is null || !optionsArgument.Value.ConstantValue.HasValue ?
+                    RegexOptions.None :
+                    (RegexOptions)(int)optionsArgument.Value.ConstantValue.Value!;
             }
 
             // Helper method that looks generates the node for pattern argument or options argument.
             static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> arguments, SyntaxGenerator generator, string parameterName)
             {
-                IArgumentOperation? argument = arguments.SingleOrDefault(arg => arg.Parameter.Name == parameterName);
+                IArgumentOperation? argument = arguments.SingleOrDefault(arg => arg.Parameter?.Name == parameterName);
                 if (argument is null)
                 {
                     return null;
@@ -271,8 +280,12 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
                 if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
                 {
-                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value).ToString());
+                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
                     return SyntaxFactory.ParseExpression(optionsLiteral);
+                }
+                else if (argument.Value is ILiteralOperation literalOperation)
+                {
+                    return literalOperation.Syntax;
                 }
                 else
                 {

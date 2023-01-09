@@ -5,15 +5,17 @@
 using System;
 using System.Reflection;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Popcnt.X64
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             ulong sl = 0;
             ulong resl;
@@ -70,7 +72,7 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public struct POPCNT<T, U> where T : struct where U : struct

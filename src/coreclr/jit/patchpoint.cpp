@@ -177,8 +177,7 @@ private:
         //
         // call PPHelper(&ppCounter, ilOffset)
         GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree*     ppCounterRef  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree*     ppCounterAddr = compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, ppCounterRef);
+        GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
         GenTreeCall* helperCall =
             compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
 

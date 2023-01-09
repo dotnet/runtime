@@ -23,9 +23,9 @@ namespace Test
                     ulong[] param4, double[] param5, double param6) { return new AA[7]; }
     }
 
-    class App
+    public class App
     {
-        static int Main()
+        public static int Main()
         {
             try
             {

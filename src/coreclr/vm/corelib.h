@@ -693,8 +693,6 @@ DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_NULLREF,          NullRef, NoSig)
 DEFINE_METHOD(UNSAFE,               AS_REF_IN,              AsRef, GM_RefT_RetRefT)
-DEFINE_METHOD(UNSAFE,               AS_REF_POINTER,         AsRef, GM_VoidPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, GM_RefTFrom_RetRefTTo)
 DEFINE_METHOD(UNSAFE,               OBJECT_AS,              As, GM_Obj_RetT)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
@@ -733,7 +731,6 @@ DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
 DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
@@ -939,11 +936,12 @@ DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,          
 DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
 DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
 
-DEFINE_CLASS_U(System,                 WeakReference,          WeakReferenceObject)
-DEFINE_FIELD_U(m_handle,               WeakReferenceObject,    m_Handle)
+DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
+DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
+DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
-DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
+DEFINE_CLASS_U(Threading,           WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)

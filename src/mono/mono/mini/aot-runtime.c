@@ -1928,6 +1928,13 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	if (image_is_dynamic (assembly->image))
 		return;
 
+	if (mono_image_get_alc (assembly->image)->collectible)
+		/*
+		 * Assemblies loaded into collectible ALCs require different codegen
+		 * due to static variable access etc.
+		 */
+		return;
+
 	gboolean loaded = FALSE;
 
 	mono_aot_lock ();
@@ -3113,6 +3120,7 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		/* Get the length first */
 		decode_llvm_mono_eh_frame (amodule, NULL, code, code_len, clauses, num_clauses, nesting, &this_reg, &this_offset, &num_llvm_clauses);
 		len = mono_jit_info_size (flags, num_llvm_clauses, num_holes);
+		g_assert (!mem_manager->collectible);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		mono_jit_info_init (jinfo, method, code, code_len, flags, num_llvm_clauses, num_holes);
 
@@ -4445,6 +4453,11 @@ mono_aot_can_dedup (MonoMethod *method)
 			/* Handled using linkonce */
 			return FALSE;
 #endif
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
+		if (sig->ret->has_cmods) {
+			// FIXME:
+			return FALSE;
+		}
 		return TRUE;
 	}
 	default:

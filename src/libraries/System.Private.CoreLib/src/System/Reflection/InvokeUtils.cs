@@ -11,7 +11,7 @@ namespace System.Reflection
     internal static class InvokeUtils
     {
         // This method is similar to the NativeAot method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
-        public static object ConvertOrWiden(Type srcType, CorElementType srcElementType, object srcObject, Type dstType, CorElementType dstElementType)
+        public static object ConvertOrWiden(Type srcType, object srcObject, Type dstType, CorElementType dstElementType)
         {
             object dstObject;
 

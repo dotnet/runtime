@@ -116,7 +116,7 @@ namespace Build.Tasks
                 }
 
                 // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                if (itemSpec.Contains("microsoft.netcore.app") && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
+                if (itemSpec.IndexOf("microsoft.netcore.app", StringComparison.OrdinalIgnoreCase) != -1 && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
                 {
                     assembliesToSkipPublish.Add(taskItem);
                     continue;

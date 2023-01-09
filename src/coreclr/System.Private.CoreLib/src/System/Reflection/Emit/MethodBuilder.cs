@@ -652,8 +652,7 @@ namespace System.Reflection.Emit
 
         public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
         {
-            if (position < 0)
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
             ThrowIfGeneric();
             m_containingType.ThrowIfCreated();

@@ -30,7 +30,6 @@ nativeStringResourceTable_mscorrc
 #PAL_free
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
-#PAL_GetNumaProcessorNode
 #PAL_GetUnwindInfoSize
 #PAL_get_stdout
 #PAL_get_stderr
@@ -50,7 +49,6 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_memcpy
 #PAL_malloc
 #PAL_realloc
 #PAL_printf
@@ -74,12 +72,9 @@ nativeStringResourceTable_mscorrc
 #_wcsicmp
 #_stricmp
 #sprintf_s
-#swprintf_s
 #vsprintf_s
 #_snprintf_s
-#_snwprintf_s
 #_vsnprintf_s
-#_vsnwprintf_s
 #_itow_s
 #_i64tow_s
 #memcpy_s
@@ -123,7 +118,6 @@ nativeStringResourceTable_mscorrc
 #GetFullPathNameW
 #GetLastError
 #GetModuleFileNameW
-#GetNumaHighestNodeNumber
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
@@ -164,7 +158,6 @@ nativeStringResourceTable_mscorrc
 #SwitchToThread
 #TerminateProcess
 #VirtualAlloc
-#VirtualAllocExNuma
 #VirtualFree
 #VirtualProtect
 #VirtualQuery

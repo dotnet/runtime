@@ -9,7 +9,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitDoAssertionProp" Value="0" />
-    <CLRTestEnvironmentVariable Include="COMPlus_JitNoCSE" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitDoAssertionProp" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoCSE" Value="1" />
   </ItemGroup>
 </Project>

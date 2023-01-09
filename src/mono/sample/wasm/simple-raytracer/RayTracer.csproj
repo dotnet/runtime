@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>preview</LangVersion>
+    <EnableAOTAndTrimming>true</EnableAOTAndTrimming>
+    <EnableAggressiveTrimming>$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
+    <PublishTrimmed>$(EnableAOTAndTrimming)</PublishTrimmed>
+    <RunAOTCompilation>$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- don't need to run this on helix -->
+    <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+</Project>

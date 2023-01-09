@@ -50,7 +50,7 @@ namespace System
         {
             if (b.Length != 16)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+                ThrowArgumentException();
             }
 
             if (BitConverter.IsLittleEndian)
@@ -71,6 +71,12 @@ namespace System
             _h = b[12];
             _i = b[13];
             _j = b[14];
+
+            [StackTraceHidden]
+            static void ThrowArgumentException()
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+            }
         }
 
         [CLSCompliant(false)]
@@ -868,6 +874,7 @@ namespace System
 
         public bool Equals(Guid g) => EqualsCore(this, g);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool EqualsCore(in Guid left, in Guid right)
         {
             if (Vector128.IsHardwareAccelerated)

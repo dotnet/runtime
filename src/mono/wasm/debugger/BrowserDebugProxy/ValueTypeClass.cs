@@ -17,7 +17,7 @@ namespace BrowserDebugProxy
 {
     internal sealed class ValueTypeClass
     {
-        private readonly bool autoExpand;
+        private bool autoExpand;
         private JArray proxy;
         private GetMembersResult _combinedResult;
         private bool propertiesExpanded;
@@ -52,7 +52,6 @@ namespace BrowserDebugProxy
                                                 long initialPos,
                                                 string className,
                                                 int typeId,
-                                                int numValues,
                                                 bool isEnum,
                                                 bool includeStatic,
                                                 CancellationToken token)
@@ -99,15 +98,15 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
                 FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
-                fieldValue["__section"] = attr == FieldAttributes.Private ? "private" : "result";
+                fieldValue[InternalUseFieldName.Section.Name] = attr == FieldAttributes.Private ? "private" : "result";
 
                 if (field.IsBackingField)
                 {
-                    fieldValue["__isBackingField"] = true;
+                    fieldValue[InternalUseFieldName.IsBackingField.Name] = true;
                     return fieldValue;
                 }
                 typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                fieldValue["__state"] = state?.ToString();
+                fieldValue[InternalUseFieldName.State.Name] = state?.ToString();
                 return fieldValue;
             }
         }
@@ -202,6 +201,8 @@ namespace BrowserDebugProxy
         public async Task<GetMembersResult> GetMemberValues(
             MonoSDBHelper sdbHelper, GetObjectCommandOptions getObjectOptions, bool sortByAccessLevel, bool includeStatic, CancellationToken token)
         {
+            if (getObjectOptions.HasFlag(GetObjectCommandOptions.AutoExpandable) && !getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
+                autoExpand = true;
             // 1
             if (!propertiesExpanded)
             {
@@ -214,9 +215,7 @@ namespace BrowserDebugProxy
             if (!getObjectOptions.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
                 // FIXME: cache?
-                result = await sdbHelper.GetValuesFromDebuggerProxyAttribute(Id.Value, TypeId, token);
-                if (result != null)
-                    Console.WriteLine($"Investigate GetValuesFromDebuggerProxyAttribute\n{result}. There was a change of logic from loop to one iteration");
+                result = await sdbHelper.GetValuesFromDebuggerProxyAttributeForValueTypes(Id.Value, TypeId, token);
             }
 
             if (result == null && getObjectOptions.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
@@ -253,7 +252,7 @@ namespace BrowserDebugProxy
             JArray visibleFields = new();
             foreach (JObject field in fields)
             {
-                if (!Enum.TryParse(field["__state"]?.Value<string>(), out DebuggerBrowsableState state))
+                if (!Enum.TryParse(field[InternalUseFieldName.State.Name]?.Value<string>(), out DebuggerBrowsableState state))
                 {
                     visibleFields.Add(field);
                     continue;

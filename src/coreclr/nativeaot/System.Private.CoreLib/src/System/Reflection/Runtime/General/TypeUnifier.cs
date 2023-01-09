@@ -253,7 +253,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: false, rank: 1);
+                ValidateElementType(key.ElementType, multiDim: false, rank: 1);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: false, rank: 1);
             }
@@ -270,7 +270,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: true, rank: _rank);
+                ValidateElementType(key.ElementType, multiDim: true, rank: _rank);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: true, rank: _rank);
             }
@@ -292,7 +292,7 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly TypeTableForMultiDimArrayTypeTables Table = new TypeTableForMultiDimArrayTypeTables();
         }
 
-        private static void ValidateElementType(RuntimeTypeInfo elementType, RuntimeTypeHandle typeHandle, bool multiDim, int rank)
+        private static void ValidateElementType(RuntimeTypeInfo elementType, bool multiDim, int rank)
         {
             Debug.Assert(multiDim || rank == 1);
 

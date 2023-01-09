@@ -857,7 +857,7 @@ namespace System.Transactions
                     etwLog.InternalError("TransactionScopeTimerObjectInvalid");
                 }
 
-                throw TransactionException.Create(TraceSourceType.TraceSourceBase, SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
+                throw TransactionException.Create(SR.InternalError + SR.TransactionScopeTimerObjectInvalid, null);
             }
 
             scope.Timeout();
@@ -1054,7 +1054,7 @@ namespace System.Transactions
                     EnterpriseServices.VerifyEnterpriseServicesOk();
                     if (EnterpriseServices.UseServiceDomainForCurrent())
                     {
-                        EnterpriseServices.PushServiceDomain(newCurrent);
+                        EnterpriseServices.PushServiceDomain();
                     }
                     else
                     {
@@ -1064,7 +1064,7 @@ namespace System.Transactions
 
                 case EnterpriseServicesInteropOption.Full:
                     EnterpriseServices.VerifyEnterpriseServicesOk();
-                    EnterpriseServices.PushServiceDomain(newCurrent);
+                    EnterpriseServices.PushServiceDomain();
                     break;
             }
         }
@@ -1122,10 +1122,7 @@ namespace System.Transactions
         // Scope timeouts are not governed by MaxTimeout and therefore need a special validate function
         private static void ValidateScopeTimeout(string? paramName, TimeSpan scopeTimeout)
         {
-            if (scopeTimeout < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(paramName);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(scopeTimeout, TimeSpan.Zero, paramName);
         }
 
         private void ValidateAndSetAsyncFlowOption(TransactionScopeAsyncFlowOption asyncFlowOption)

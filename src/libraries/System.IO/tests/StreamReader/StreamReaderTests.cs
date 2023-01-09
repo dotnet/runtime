@@ -676,5 +676,158 @@ namespace System.IO.Tests
                 Assert.False(tempStream.CanRead);
             }
         }
+
+        [Fact]
+        public void Read_ShortStream_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream(new byte[] { 0x61 /* 'a' */, 0xF0 });
+
+            // First, use ReadToEnd API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", reader.ReadToEnd());
+
+            // Next, use Read() API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal('a', reader.Read());
+            Assert.Equal('\uFFFD', reader.Read());
+            Assert.Equal(-1, reader.Read());
+
+            // Next, use Read(Span<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Span<char> destBuffer = new char[1024];
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            int charsRead;
+            while ((charsRead = reader.Read(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal("a\uFFFD", builder.ToString());
+
+            // Finally, use ReadLine API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", reader.ReadLine());
+            Assert.Null(reader.ReadLine());
+        }
+
+        [Fact]
+        public void Read_LongStreamIntoShortBuffer_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream();
+            memStream.Write(Enumerable.Repeat((byte)'a', 32 * 1024).ToArray());
+            memStream.WriteByte(0xF0);
+            string expected = new string('a', 32 * 1024) + "\uFFFD";
+
+            // First, use ReadToEnd API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, reader.ReadToEnd());
+
+            // Next, use Read() API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            for (int i = 0; i < 32 * 1024; i++)
+            {
+                Assert.Equal('a', reader.Read());
+            }
+            Assert.Equal('\uFFFD', reader.Read());
+            Assert.Equal(-1, reader.Read());
+
+            // Next, use Read(Span<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Span<char> destBuffer = new char[47]; // prime number, because why not
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            int charsRead;
+            while ((charsRead = reader.Read(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal(expected, builder.ToString());
+
+            // Finally, use ReadLine API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, reader.ReadLine());
+            Assert.Null(reader.ReadLine());
+        }
+
+        [Fact]
+        public async Task ReadAsync_ShortStream_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream(new byte[] { 0x61 /* 'a' */, 0xF0 });
+
+            // First, use ReadToEndAsync API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", await reader.ReadToEndAsync());
+
+            // Next, use ReadAsync(Memory<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Memory<char> destBuffer = new char[1024];
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            int charsRead;
+            while ((charsRead = await reader.ReadAsync(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal("a\uFFFD", builder.ToString());
+
+            // Finally, use ReadLineAsync API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, Encoding.UTF8);
+            Assert.Equal("a\uFFFD", await reader.ReadLineAsync());
+            Assert.Null(await reader.ReadLineAsync());
+        }
+
+        [Fact]
+        public async Task ReadAsync_LongStreamIntoShortBuffer_PerformsFinalFlushCorrectly()
+        {
+            MemoryStream memStream = new MemoryStream();
+            memStream.Write(Enumerable.Repeat((byte)'a', 32 * 1024).ToArray());
+            memStream.WriteByte(0xF0);
+            string expected = new string('a', 32 * 1024) + "\uFFFD";
+
+            // First, use ReadToEndAsync API.
+
+            memStream.Position = 0;
+            StreamReader reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, await reader.ReadToEndAsync());
+
+            // Next, use Read(Memory<char>) API.
+
+            StringBuilder builder = new StringBuilder();
+            Memory<char> destBuffer = new char[47]; // prime number, because why not
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            int charsRead;
+            while ((charsRead = await reader.ReadAsync(destBuffer)) > 0)
+            {
+                builder.Append(destBuffer.Slice(0, charsRead));
+            }
+            Assert.Equal(expected, builder.ToString());
+
+            // Finally, use ReadLineAsync API.
+
+            memStream.Position = 0;
+            reader = new StreamReader(memStream, encoding: Encoding.UTF8, bufferSize: 32);
+            Assert.Equal(expected, await reader.ReadLineAsync());
+            Assert.Null(await reader.ReadLineAsync());
+        }
     }
 }

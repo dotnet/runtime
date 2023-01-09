@@ -214,6 +214,9 @@ dotnet_diagnostic.CA1420.severity = warning
 # CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
 dotnet_diagnostic.CA1421.severity = suggestion
 
+# CA1422: Validate platform compatibility
+dotnet_diagnostic.CA1422.severity = warning
+
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
 
@@ -234,6 +237,18 @@ dotnet_diagnostic.CA1508.severity = none
 
 # CA1509: Invalid entry in code metrics rule specification file
 dotnet_diagnostic.CA1509.severity = none
+
+# CA1510: Use ArgumentNullException throw helper
+dotnet_diagnostic.CA1510.severity = warning
+
+# CA1511: Use ArgumentException throw helper
+dotnet_diagnostic.CA1511.severity = warning
+
+# CA1512: Use ArgumentOutOfRangeException throw helper
+dotnet_diagnostic.CA1512.severity = warning
+
+# CA1513: Use ObjectDisposedException throw helper
+dotnet_diagnostic.CA1513.severity = warning
 
 # CA1700: Do not name enum values 'Reserved'
 dotnet_diagnostic.CA1700.severity = none
@@ -414,6 +429,18 @@ dotnet_diagnostic.CA1853.severity = warning
 # CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
 dotnet_diagnostic.CA1854.severity = warning
 
+# CA1855: Prefer 'Clear' over 'Fill'
+dotnet_diagnostic.CA1855.severity = warning
+
+# CA1856: Incorrect usage of ConstantExpected attribute
+dotnet_diagnostic.CA1856.severity = error
+
+# CA1857: A constant is expected for the parameter
+dotnet_diagnostic.CA1857.severity = warning
+
+# CA1858: Use 'StartsWith' instead of 'IndexOf'
+dotnet_diagnostic.CA1858.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -464,9 +491,6 @@ dotnet_diagnostic.CA2100.severity = none
 
 # CA2101: Specify marshaling for P/Invoke string arguments
 dotnet_diagnostic.CA2101.severity = none
-
-# CA2109: Review visible event handlers
-dotnet_diagnostic.CA2109.severity = none
 
 # CA2119: Seal methods that satisfy private interfaces
 dotnet_diagnostic.CA2119.severity = none
@@ -594,6 +618,9 @@ dotnet_diagnostic.CA2258.severity = warning
 
 # CA2259: 'ThreadStatic' only affects static fields
 dotnet_diagnostic.CA2259.severity = warning
+
+# CA2260: Use correct type parameter
+dotnet_diagnostic.CA2260.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -1476,7 +1503,7 @@ dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
-dotnet_diagnostic.IDE0060.severity = silent
+dotnet_diagnostic.IDE0060.severity = warning
 dotnet_code_quality_unused_parameters = non_public
 
 # IDE0061: Use expression body for local functions
@@ -1579,16 +1606,25 @@ dotnet_diagnostic.IDE0180.severity = suggestion
 dotnet_diagnostic.IDE0200.severity = warning
 
 # IDE0210: Use top-level statements
-dotnet_diagnostic.IDE0210.severity = silent
+dotnet_diagnostic.IDE0210.severity = none
 
 # IDE0211: Use program main
-dotnet_diagnostic.IDE0211.severity = silent
+dotnet_diagnostic.IDE0211.severity = none
 
 # IDE0220: foreach cast
 dotnet_diagnostic.IDE0220.severity = silent
 
 # IDE0230: Use UTF8 string literal
 dotnet_diagnostic.IDE0230.severity = suggestion
+
+# IDE0240: Remove redundant nullable directive
+dotnet_diagnostic.IDE0240.severity = suggestion
+
+# IDE0241: Remove unnecessary nullable directive
+dotnet_diagnostic.IDE0241.severity = suggestion
+
+# IDE0250: Make struct readonly
+dotnet_diagnostic.IDE0250.severity = suggestion
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = warning

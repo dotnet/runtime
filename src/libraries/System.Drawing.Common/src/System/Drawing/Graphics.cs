@@ -3297,7 +3297,7 @@ namespace System.Drawing
                 {
                     _previousContext = context.Previous;
 
-                    // This will dipose all context object up the stack.
+                    // This will dispose all context object up the stack.
                     context.Dispose();
                     return;
                 }

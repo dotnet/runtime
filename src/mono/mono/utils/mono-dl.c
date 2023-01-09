@@ -176,8 +176,9 @@ fix_libc_name (const char *name)
  * mono_dl_open_self:
  * \param error pointer to MonoError
  *
- * Returns a handle to the main program, on android x86 it's not possible to
- * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
+ * Returns a handle to the main program, on Android it's not possible to
+ * call dl_open(null) with RTLD_LAZY, it returns a null handle, so this
+ * function uses RTLD_NOW.
  * handle in this platform.
  * \p error points to MonoError where an error will be stored in
  * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
@@ -195,7 +196,7 @@ mono_dl_open_self (MonoError *error)
 		return NULL;
 	}
 	mono_refcount_init (module, NULL);
-	module->handle = RTLD_DEFAULT;
+	module->handle = dlopen(NULL, RTLD_NOW);
 	module->dl_fallback = NULL;
 	module->full_name = NULL;
 	return module;

@@ -35,7 +35,7 @@ struct Struct1 : Inter1, Inter2, Inter3
 
 public class Test
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Inter1 i1 = new Struct1();
 

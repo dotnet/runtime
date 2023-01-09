@@ -1546,7 +1546,7 @@ class AssemblyNameBaseObject : public Object
 class WeakReferenceObject : public Object
 {
 public:
-    Volatile<OBJECTHANDLE> m_Handle;
+    uintptr_t m_taggedHandle;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
@@ -1566,8 +1566,6 @@ typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
-
-typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
 
 inline ARG_SLOT ObjToArgSlot(OBJECTREF objRef)
 {
@@ -1611,10 +1609,6 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
-
-#ifndef DACCESS_COMPILE
-typedef WeakReferenceObject* WEAKREFERENCEREF;
-#endif // #ifndef DACCESS_COMPILE
 
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))

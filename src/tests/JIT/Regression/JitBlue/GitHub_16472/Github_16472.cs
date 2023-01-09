@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         int expected = BitConverter.IsLittleEndian ? 0x78563412 : 0x12345678;
         int actual = Test();

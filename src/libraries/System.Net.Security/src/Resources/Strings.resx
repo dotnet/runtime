@@ -162,7 +162,7 @@
     <value>The write operation failed, see inner exception.</value>
   </data>
   <data name="net_io_eof" xml:space="preserve">
-    <value> Received an unexpected EOF or 0 bytes from the transport stream.</value>
+    <value>Received an unexpected EOF or 0 bytes from the transport stream.</value>
   </data>
   <data name="net_log_listener_no_cbt_disabled" xml:space="preserve">
     <value>No channel binding check because extended protection is disabled.</value>

@@ -7,9 +7,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly c4{}
+.assembly 'b56780'{}
 
-.method	static int32 main(class System.String[]) {
+.class public auto ansi Test_b56780 extends [mscorlib] System.Object {
+.method	public static int32 main() {
 	.entrypoint
 	.maxstack	10
 
@@ -29,4 +30,5 @@ END:
 	call	void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
 	ldc.i4 100
 	ret
+}
 }

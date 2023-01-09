@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main(string[] args)
+    public static int Main()
     {
         int result = 0;
 

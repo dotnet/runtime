@@ -7,6 +7,6 @@
   <ItemGroup>
     <Compile Include="McjRecorderTimeoutBeforeStop.cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_MultiCoreJitProfileWriteDelay" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_MultiCoreJitProfileWriteDelay" Value="1" />
   </ItemGroup>
 </Project>

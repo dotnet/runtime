@@ -7,10 +7,10 @@ using System.Numerics;
 
 namespace GitHub_23861
 {
-    class Program
+    public class Program
     {
         static int returnVal = 100;
-        static int Main(string[] args)
+        public static int Main()
         {
             LessThanAllDouble();
 

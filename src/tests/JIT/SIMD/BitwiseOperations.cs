@@ -108,7 +108,7 @@ namespace VectorMathTests
             return 100;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             if (TestDouble() != 100)
             {

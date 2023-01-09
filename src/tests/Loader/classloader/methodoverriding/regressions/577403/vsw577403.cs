@@ -20,7 +20,7 @@ using System;
 
 class Program 
 { 
-	static int Main(string[] args) 
+	static int Main() 
        { 
        	ITest test = new Level3();
         ITest gen_test = new GenericLevel4();

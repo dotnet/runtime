@@ -86,11 +86,36 @@ bool LoggingEnabled();
 bool LoggingOn(DWORD facility, DWORD level);
 bool Logging2On(DWORD facility, DWORD level);
 
-#define LOG(x)      do { if (LoggingEnabled()) { LogSpew x; } } while (0)
+#ifdef DACCESS_COMPILE
 
-#define LOG2(x)     do { if (LoggingEnabled()) { LogSpew2 x; } } while (0)
+/*
+ *
+ * Logging for the DAC is an incomplete feature, see more in
+ * https://github.com/dotnet/runtime/issues/77922
+ *
+ * As of now, logging need to be opt-in. Any logging done through
+ * DAC_LOG (or it variants) will be available in the log for both the runtime and the DAC build
+ * And the normal LOG macro will be available only for the runtime.
+ *
+ */
 
-#define LOGALWAYS(x)   LogSpewAlways x
+#define LOG(x)           do {  } while (0)
+#define LOG2(x)          do {  } while (0)
+#define LOGALWAYS(x)     do {  } while (0)
+#define DAC_LOG(x)       do { if (LoggingEnabled()) { LogSpew x; } } while (0)
+#define DAC_LOG2(x)      do { if (LoggingEnabled()) { LogSpew2 x; } } while (0)
+#define DAC_LOGALWAYS(x) LogSpewAlways x
+
+#else 
+
+#define LOG(x)           do { if (LoggingEnabled()) { LogSpew x; } } while (0)
+#define LOG2(x)          do { if (LoggingEnabled()) { LogSpew2 x; } } while (0)
+#define LOGALWAYS(x)     LogSpewAlways x
+#define DAC_LOG(x)       LOG(x)
+#define DAC_LOG2(x)      LOG2(x)
+#define DAC_LOGALWAYS(x) LOGALWAYS(x)
+
+#endif
 
 #endif
 

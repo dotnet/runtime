@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- There is a 32 and 64 version of this test to allow it to be compiled for all targets -->
-    <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '64'">true</CLRTestTargetUnsupported>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GitHub_23199.cs" />
+    <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_GcStressOnDirectCalls" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GcStressOnDirectCalls" Value="1" />
   </ItemGroup>
 </Project>

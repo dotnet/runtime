@@ -71,7 +71,7 @@ Add `~/.jsvu` to your `PATH`:
 
 * Install node/npm from https://nodejs.org/en/ and add its npm and nodejs directories to the `PATH` environment variable
 
-* * Install jsvu with npm:
+* Install jsvu with npm:
 
 `npm install jsvu -g`
 
@@ -135,7 +135,7 @@ Exceptions thrown after the runtime starts get symbolicating from js itself. Exc
 
 If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
 
-```
+```console
 src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
 ```
 
@@ -155,7 +155,7 @@ To run a test with `FooBar` in the name:
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
-- Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
+Chrome can be installed for testing by setting `InstallChromeForDebuggerTests=true` when building the tests.
 
 ## Run samples
 
@@ -175,6 +175,10 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
+## Wasm App Host
+
+[Use dotnet run to run wasm applications](host/README.md)
+
 ## Templates
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
@@ -185,13 +189,15 @@ To test changes in the templates, use `dotnet new install --force src/mono/wasm/
 
 Example use of the `wasmconsole` template:
 
-    > dotnet new wasmconsole
-    > dotnet publish
-    > cd bin/Debug/net7.0/browser-wasm/AppBundle
-    > node main.mjs
-    mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
-    Hello World!
-    Args:
+```console
+> dotnet new wasmconsole
+> dotnet publish
+> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> node main.mjs
+mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
+Hello World!
+Args:
+```
 
 ## Upgrading Emscripten
 
@@ -206,22 +212,55 @@ Bumping Emscripten version involves these steps:
 * update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages
+
+Two things to keep in mind:
+
+1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+   updating `package.json`, you will need to be logged in (see instructions for Windows and
+   mac/Linux, below) in order for the registry to populate with the correct package versions.
+   Otherwise, CI builds will fail.
+
+2. Currently the Emscripten SDK uses NPM version 6 which creates `package-lock.json` files in the
+  "v1" format.  When updating NPM packages, it is important to use this older version of NPM (for
+  example by using the `emsdk_env.sh` script to set the right environment variables) or by using the
+  `--lockfile-format=1` option with more recent versions of NPM.
+
+### Windows
+
+The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
+
 In folder `src\mono\wasm\runtime\`
+
 ```sh
 rm -rf node_modules
 rm package-lock.json
-npm install -g vsts-npm-aut`
+npm install -g vsts-npm-auth`
 vsts-npm-auth -config .npmrc
-npm npm cache clean --force
+npm cache clean --force
 npm outdated
-npm update
+npm update --lockfile-version=1
+```
+
+### mac/Linux
+
+Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
+Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
+
+In folder `src/mono/wasm/runtime/`
+
+```sh
+rm -rf node_modules
+rm package-lock.json
+npm cache clean --force
+npm outdated
+npm update --lockfile-version=1
 ```
 
 ## Code style
+
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
 * You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
-
 
 ## Builds on CI
 
@@ -246,7 +285,6 @@ npm update
 | Wasm.Build.Tests  | linux+windows:        only-pc |
 | Debugger tests    | linux+windows:        only-pc |
 | Runtime tests     | linux+windows:        only-pc |
-
 
 ### Run manually with `/azp run ..`
 

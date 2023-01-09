@@ -6,6 +6,13 @@
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
+    <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
+    <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <!-- the default heap size is ~512MB, which is too much because AppStart loads more copies
+      of the wasm runtime and can leak a few of them. the result is that browser-bench's memory
+      usage can climb as high as 3GB or more and then fail -->
+    <EmccInitialHeapSize>83886080</EmccInitialHeapSize>
   </PropertyGroup>
 
   <ItemGroup>

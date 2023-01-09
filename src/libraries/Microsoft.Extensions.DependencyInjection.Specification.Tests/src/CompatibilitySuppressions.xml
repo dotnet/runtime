@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- StructWithPublicDefaultConstructor test re-enabled in .NET 7 that added a new parameter to the ctor. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.Specification.ClassWithOptionalArgsCtorWithStructs.#ctor(System.DateTime,System.DateTime,System.TimeSpan,System.TimeSpan,System.DateTimeOffset,System.DateTimeOffset,System.Guid,System.Guid,Microsoft.Extensions.DependencyInjection.Specification.ClassWithOptionalArgsCtorWithStructs.CustomStruct,Microsoft.Extensions.DependencyInjection.Specification.ClassWithOptionalArgsCtorWithStructs.CustomStruct,System.Nullable{System.ConsoleColor},System.Nullable{System.ConsoleColor},System.Nullable{System.Int32},System.Nullable{System.Int32})</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <!-- Typo fixed in the .NET 7 version of the package. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.ExplictServiceRegisterationWithIsService</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <!-- Test renamed to TypeActivatorCreateInstanceUsesLongestAvailableConstructor. -->
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.Specification.DependencyInjectionSpecificationTests.TypeActivatorCreateInstanceUsesFirstMathchedConstructor(System.Object,System.String)</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>

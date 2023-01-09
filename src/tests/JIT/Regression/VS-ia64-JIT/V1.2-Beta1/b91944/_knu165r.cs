@@ -168,7 +168,7 @@ public struct AA
 
 public class App
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

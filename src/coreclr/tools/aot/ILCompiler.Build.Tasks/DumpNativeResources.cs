@@ -8,7 +8,6 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 
 namespace Build.Tasks
 {
@@ -69,11 +68,11 @@ namespace Build.Tasks
     }
 
     /// <summary>
-    /// Helper class that converts from a Win32 PE resource directory format to 
+    /// Helper class that converts from a Win32 PE resource directory format to
     /// a set of RESOURCEHEADER structures (https://docs.microsoft.com/en-us/windows/desktop/menurc/resourceheader)
     /// that form the basis of Win32 RES files.
     /// </summary>
-    class ResWriter
+    internal sealed class ResWriter
     {
         private readonly PEMemoryBlock _memoryBlock;
         private readonly PEReader _peReader;
@@ -234,7 +233,7 @@ namespace Build.Tasks
         }
     }
 
-    static class ResourceHelper
+    internal static class ResourceHelper
     {
         public static void WriteNameOrId(this BinaryWriter bw, object nameOrId)
         {

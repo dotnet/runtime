@@ -60,9 +60,9 @@ namespace R3Trasher1
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        public static int Main()
         {
             var board = new Board();
             int ret = 100;

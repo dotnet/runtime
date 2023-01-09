@@ -321,12 +321,12 @@ namespace System.Resources
             return rs;
         }
 
-        private Stream? GetManifestResourceStream(Assembly satellite, string fileName)
+        private static Stream? GetManifestResourceStream(Assembly satellite, string fileName)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            return satellite.GetManifestResourceStream(_mediator.LocationInfo!, fileName) ??
+            return satellite.GetManifestResourceStream(fileName) ??
                 CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);
         }
 
@@ -334,22 +334,15 @@ namespace System.Resources
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.
-        private Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
+        private static Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(name != null, "name shouldn't be null; check caller");
 
-            string? nameSpace = _mediator.LocationInfo?.Namespace;
-
-            char c = Type.Delimiter;
-            string resourceName = nameSpace != null && name != null ?
-                string.Concat(nameSpace, new ReadOnlySpan<char>(in c), name) :
-                string.Concat(nameSpace, name);
-
             string? canonicalName = null;
             foreach (string existingName in satellite.GetManifestResourceNames())
             {
-                if (string.Equals(existingName, resourceName, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(existingName, name, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (canonicalName == null)
                     {
@@ -357,7 +350,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_MultipleBlobs, resourceName, satellite.ToString()));
+                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_MultipleBlobs, name, satellite.ToString()));
                     }
                 }
             }
@@ -488,16 +481,10 @@ namespace System.Resources
                 const string MesgFailFast = System.CoreLib.Name + ResourceManager.ResFileExtension + " couldn't be found!  Large parts of the BCL won't work!";
                 System.Environment.FailFast(MesgFailFast);
             }
-            // We really don't think this should happen - we always
-            // expect the neutral locale's resources to be present.
-            string resName = string.Empty;
-            if (_mediator.LocationInfo != null && _mediator.LocationInfo.Namespace != null)
-                resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
-            resName += fileName;
             Debug.Assert(_mediator.MainAssembly != null);
             throw new MissingManifestResourceException(
                             SR.Format(SR.MissingManifestResource_NoNeutralAsm,
-                            resName, _mediator.MainAssembly.GetName().Name, GetManifestResourceNamesList(_mediator.MainAssembly)));
+                            fileName, _mediator.MainAssembly.GetName().Name, GetManifestResourceNamesList(_mediator.MainAssembly)));
         }
     }
 }

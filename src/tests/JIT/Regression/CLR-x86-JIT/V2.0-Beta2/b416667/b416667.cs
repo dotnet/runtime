@@ -6,7 +6,7 @@ using System;
 public class CMain
 {
     public static int Count = 0;
-    public static int Main(String[] args)
+    public static int Main()
     {
         String s;
         s = Gen<String>.x;

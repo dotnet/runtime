@@ -72,7 +72,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
         }
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
         }

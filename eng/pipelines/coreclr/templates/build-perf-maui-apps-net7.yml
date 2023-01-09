@@ -117,7 +117,7 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
   
   - script: |
-      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/main/NuGet.config'
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/net7.0/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       curl -Lo maui-supported-sdk-version.json 'https://aka.ms/dotnet/sdk/maui/net7.0.json'
       version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-supported-sdk-version.json)

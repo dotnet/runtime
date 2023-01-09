@@ -23,10 +23,10 @@ namespace System.Collections.ObjectModel
             this.list = list;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/76028: Make this public.
         /// <summary>Gets an empty <see cref="ReadOnlyCollection{T}"/>.</summary>
+        /// <value>An empty <see cref="ReadOnlyCollection{T}"/>.</value>
         /// <remarks>The returned instance is immutable and will always be empty.</remarks>
-        internal static ReadOnlyCollection<T> Empty { get; } = new ReadOnlyCollection<T>(Array.Empty<T>());
+        public static ReadOnlyCollection<T> Empty { get; } = new ReadOnlyCollection<T>(Array.Empty<T>());
 
         public int Count => list.Count;
 
@@ -140,7 +140,7 @@ namespace System.Collections.ObjectModel
                 Type sourceType = typeof(T);
                 if (!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType)))
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 //
@@ -150,7 +150,7 @@ namespace System.Collections.ObjectModel
                 object?[]? objects = array as object[];
                 if (objects == null)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 int count = list.Count;
@@ -163,7 +163,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
             }
         }

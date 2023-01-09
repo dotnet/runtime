@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -732,7 +733,7 @@ namespace System.Xml
 
         private void InternalWriteBase64Text(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);
@@ -753,7 +754,7 @@ namespace System.Xml
 
         private async Task InternalWriteBase64TextAsync(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);

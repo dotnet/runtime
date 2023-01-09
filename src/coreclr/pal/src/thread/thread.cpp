@@ -572,7 +572,7 @@ CorUnix::InternalCreateThread(
             // When coming here from the public API surface, the incoming value is originally a nonnegative signed int32, so
             // this shouldn't happen
             ASSERT(
-                "Couldn't align the requested stack size (%Iu) to the page size because the stack size was too large\n",
+                "Couldn't align the requested stack size (%zu) to the page size because the stack size was too large\n",
                 alignedStackSize);
             palError = ERROR_INVALID_PARAMETER;
             goto EXIT;
@@ -645,10 +645,10 @@ CorUnix::InternalCreateThread(
             alignedStackSize = MinStackSize;
         }
 
-        TRACE("setting thread stack size to %Iu\n", alignedStackSize);
+        TRACE("setting thread stack size to %zu\n", alignedStackSize);
         if (0 != pthread_attr_setstacksize(&pthreadAttr, alignedStackSize))
         {
-            ERROR("couldn't set pthread stack size to %Iu\n", alignedStackSize);
+            ERROR("couldn't set pthread stack size to %zu\n", alignedStackSize);
             palError = ERROR_INTERNAL_ERROR;
             goto EXIT;
         }

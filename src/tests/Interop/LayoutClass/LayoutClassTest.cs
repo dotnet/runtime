@@ -320,7 +320,7 @@ namespace PInvokeTests
             Assert.Throws<TypeLoadException>(() => RecursiveNativeLayoutInvalid(new RecursiveTestStruct()));
         }
 
-        public static int Main(string[] argv)
+        public static int Main()
         {
             try
             {

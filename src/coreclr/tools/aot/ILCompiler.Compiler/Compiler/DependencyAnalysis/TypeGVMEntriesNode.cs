@@ -143,9 +143,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    Debug.Assert(!method.Signature.IsStatic);
-
-                    if (!method.HasInstantiation)
+                    if (method.Signature.IsStatic || !method.HasInstantiation)
                         continue;
 
                     DefaultInterfaceMethodResolution resolution = DefaultInterfaceMethodResolution.None;

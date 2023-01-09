@@ -1060,7 +1060,7 @@ namespace System.Diagnostics
 
         public bool Responding => true;
 
-        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnknownError);
+        private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
         private static unsafe void EnsureInitialized()
         {

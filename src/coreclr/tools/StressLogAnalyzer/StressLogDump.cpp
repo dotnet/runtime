@@ -4,6 +4,7 @@
 #include "strike.h"
 #include "util.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <minipal/utils.h>
 
@@ -15,14 +16,9 @@ class MapViewHolder
     void* whatever;
 };
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#ifdef HOST_WINDOWS
-typedef long long int64_t;
-#else
+#ifndef HOST_WINDOWS
 #define FEATURE_PAL
 #endif
-typedef size_t uint64_t;
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"

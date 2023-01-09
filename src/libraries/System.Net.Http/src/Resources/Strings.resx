@@ -357,14 +357,11 @@
   <data name="net_http_buffer_insufficient_length" xml:space="preserve">
     <value>The buffer was not long enough.</value>
   </data>
+  <data name="net_http_request_headers_exceeded_length" xml:space="preserve">
+    <value>The HTTP request headers length exceeded the server limit of {0} bytes.</value>
+  </data>
   <data name="net_http_response_headers_exceeded_length" xml:space="preserve">
     <value>The HTTP response headers length exceeded the set limit of {0} bytes.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegativeNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
-    <value>Positive number required.</value>
   </data>
   <data name="NotSupported_UnreadableStream" xml:space="preserve">
     <value>Stream does not support reading.</value>

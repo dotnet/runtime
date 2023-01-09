@@ -11,9 +11,6 @@ namespace System.Reflection
         private readonly MethodBase _method;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if MONO // Temporary until Mono is updated.
-        public unsafe object? InlinedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr) => InterpretedInvoke(obj, args, invokeAttr);
-#else
         public unsafe object? InlinedInvoke(object? obj, IntPtr* args, BindingFlags invokeAttr)
         {
             if (_invokeFunc != null && (invokeAttr & BindingFlags.DoNotWrapExceptions) != 0)
@@ -22,9 +19,7 @@ namespace System.Reflection
             }
             return Invoke(obj, args, invokeAttr);
         }
-#endif
 
-#if !MONO // Temporary until Mono is updated.
         private bool _invoked;
         private bool _strategyDetermined;
         private InvokerEmitUtil.InvokeFunc? _invokeFunc;
@@ -80,6 +75,5 @@ namespace System.Reflection
 
             return ret;
         }
-#endif
     }
 }

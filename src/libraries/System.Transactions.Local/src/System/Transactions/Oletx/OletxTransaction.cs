@@ -121,10 +121,7 @@ namespace System.Transactions.Oletx
 
         protected OletxTransaction(SerializationInfo? serializationInfo, StreamingContext context)
         {
-            if (serializationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(serializationInfo));
-            }
+            ArgumentNullException.ThrowIfNull(serializationInfo);
 
             // Simply store the propagation token from the serialization info.  GetRealObject will
             // decide whether or not we will use it.
@@ -431,10 +428,7 @@ namespace System.Transactions.Oletx
 
         public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
-            if (serializationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(serializationInfo));
-            }
+            ArgumentNullException.ThrowIfNull(serializationInfo);
 
             byte[] propagationToken;
 
@@ -619,8 +613,7 @@ namespace System.Transactions.Oletx
             TransactionShim? transactionShim,
             OutcomeEnlistment? outcomeEnlistment,
             Guid identifier,
-            OletxTransactionIsolationLevel oletxIsoLevel,
-            bool isRoot)
+            OletxTransactionIsolationLevel oletxIsoLevel)
         {
             bool successful = false;
 

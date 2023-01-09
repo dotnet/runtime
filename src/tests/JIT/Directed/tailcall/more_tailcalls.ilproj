@@ -9,6 +9,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_JitStressModeNamesNot" Value="STRESS_UNSAFE_BUFFER_CHECKS" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNamesNot" Value="STRESS_UNSAFE_BUFFER_CHECKS" />
   </ItemGroup>
 </Project>

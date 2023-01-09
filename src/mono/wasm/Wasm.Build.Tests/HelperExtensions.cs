@@ -58,6 +58,9 @@ namespace Wasm.Build.Tests
             => data.SelectMany(row =>
                         rowsWithColumnArrays.Select(new_cols => row.Concat(new_cols)));
 
+        public static IEnumerable<IEnumerable<object?>> MultiplyWithSingleArgs(this IEnumerable<IEnumerable<object?>> data, params object?[] arrayOfArgs)
+            => data.SelectMany(row => arrayOfArgs.Select(argCol => row.Concat(new[] { argCol })));
+
         public static object?[] Enumerate(this RunHost host)
         {
             if (host == RunHost.None)

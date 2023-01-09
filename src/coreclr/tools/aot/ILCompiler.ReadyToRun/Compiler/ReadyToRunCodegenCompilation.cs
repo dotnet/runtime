@@ -430,7 +430,7 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
 
             componentGraph.AddRoot(componentFactory.Header, "Component module R2R header");
-            OwnerCompositeExecutableNode ownerExecutableNode = new OwnerCompositeExecutableNode(_nodeFactory.Target, ownerExecutableName);
+            OwnerCompositeExecutableNode ownerExecutableNode = new OwnerCompositeExecutableNode(ownerExecutableName);
             componentGraph.AddRoot(ownerExecutableNode, "Owner composite executable name");
             componentGraph.AddRoot(copiedCorHeader, "Copied COR header");
             componentGraph.AddRoot(debugDirectory, "Debug directory");
@@ -576,6 +576,7 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
+            bool generatedColdCode = false;
 
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
@@ -678,6 +679,11 @@ namespace ILCompiler
             if (_nodeFactory.CompilationCurrentPhase == 2)
             {
                 _finishedFirstCompilationRunInPhase2 = true;
+            }
+
+            if (generatedColdCode)
+            {
+                _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
             void ProcessMutableMethodBodiesList()
@@ -833,6 +839,10 @@ namespace ILCompiler
 
                         CorInfoImpl corInfoImpl = _corInfoImpls[compileThreadId];
                         corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
+                        if (corInfoImpl.HasColdCode)
+                        {
+                            generatedColdCode = true;
+                        }
                     }
                 }
                 catch (TypeSystemException ex)

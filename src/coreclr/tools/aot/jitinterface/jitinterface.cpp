@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "dllexport.h"
-#include "jitinterface.h"
+#include "jitinterface_generated.h"
 
 static void NotImplemented()
 {

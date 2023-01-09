@@ -155,7 +155,8 @@ struct _MonoClassField {
 	 * field, it's the offset from the start of the object, if
 	 * it's static, it's from the start of the memory chunk
 	 * allocated for statics for the class.
-	 * For special static fields, this is set to -1 during vtable construction.
+	 * -1 means its a special static field.
+	 * -2 means its a collectible static field.
 	 */
 	int              offset;
 };
@@ -360,6 +361,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
+	MonoGCHandle loader_alloc; /* LoaderAllocator object for objects in collectible alcs */
 	guint32     max_interface_id;
 	guint8      rank;
 	/* Keep this a guint8, the jit depends on it */
@@ -921,8 +923,6 @@ typedef struct {
 	MonoClass *generic_ienumerator_class;
 	MonoClass *alc_class;
 	MonoClass *appcontext_class;
-	MonoClass *weakreference_class;
-	MonoClass *generic_weakreference_class;
 } MonoDefaults;
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
@@ -1352,13 +1352,13 @@ MONO_COMPONENT_API
 void
 mono_class_set_nested_classes_property (MonoClass *klass, GList *value);
 
-MonoClassPropertyInfo*
+MONO_COMPONENT_API MonoClassPropertyInfo*
 mono_class_get_property_info (MonoClass *klass);
 
 void
 mono_class_set_property_info (MonoClass *klass, MonoClassPropertyInfo *info);
 
-MonoClassEventInfo*
+MONO_COMPONENT_API MonoClassEventInfo*
 mono_class_get_event_info (MonoClass *klass);
 
 void

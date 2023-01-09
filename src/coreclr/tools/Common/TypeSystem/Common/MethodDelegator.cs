@@ -24,6 +24,7 @@ namespace Internal.TypeSystem
         public override Instantiation Instantiation => _wrappedMethod.Instantiation;
 
         public override bool IsDefaultConstructor => _wrappedMethod.IsDefaultConstructor;
+        public override bool IsStaticConstructor => _wrappedMethod.IsStaticConstructor;
 
         public override string Name => _wrappedMethod.Name;
 

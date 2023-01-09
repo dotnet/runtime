@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
             _owningMethod = owningMethod;
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

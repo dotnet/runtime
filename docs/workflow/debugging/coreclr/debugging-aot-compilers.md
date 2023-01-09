@@ -51,9 +51,9 @@ At the time of writing the current supported sets of valid arguments are:
 |`--targetos osx --targetarch x64` |
 |`--targetos osx --targetarch arm64` |
 
-Passing special jit behavior flags to the compiler is done via the `--codegenopt` switch. As an example to turn on tailcall loop optimizations and dump all code compiled, use a pair of them like `--codegenopt NgenDump=* --codegenopt TailCallLoopOpt=1`.
+Passing special jit behavior flags to the compiler is done via the `--codegenopt` switch. As an example to turn on tailcall loop optimizations and dump all code compiled, use a pair of them like `--codegenopt JitDump=* --codegenopt TailCallLoopOpt=1`.
 
-When using the NgenDump feature of the JIT, disable parallelism as described above or specify a single method to be compiled. Otherwise, output from multiple functions will be interleaved and inscrutable.
+When using the JitDump feature of the JIT, disable parallelism as described above or specify a single method to be compiled. Otherwise, output from multiple functions will be interleaved and inscrutable.
 
 Since there are 2 jits in the process, when debugging in the JIT, if the source files match up, there is a decent chance that a native debugger will stop at unfortunate and unexpected locations. This is extremely annoying, and to combat this, we generally recommend making a point of using a runtime which doesn't exactly match that of the compiler in use. However, if that isn't feasible, it is also possible to disable symbol loading in most native debuggers. For instance, in Visual Studio, one would use the "Specify excluded modules" feature.
 
@@ -143,10 +143,10 @@ Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --
 Emitting R2R PE file: c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll
 ```
 
-I then wanted to see some more detail from the jit. To keep the size of this example small, I'm just using the `NgenOrder=1`switch, but jit developers would more likely use `NgenDump=*` switch.
+I then wanted to see some more detail from the jit. To keep the size of this example small, I'm just using the `JitOrder=1`switch, but jit developers would more likely use `JitDump=*` switch.
 
 ```cmd
-C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1
+C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1
 C:\git2\runtime\.dotnet
 Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1
          |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | x64 codesize|
@@ -159,7 +159,7 @@ Emitting R2R PE file: c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\
 And finally, as the last `--targetarch` and `--targetos` switch is the meaningful one, it is simple to target a different architecture for ad hoc exploration...
 
 ```cmd
-C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1 --targetarch arm64
+C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1 --targetarch arm64
 C:\git2\runtime\.dotnet
 Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1
          |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | arm64 codesize|
@@ -176,7 +176,7 @@ Finally, attaching a debugger to crossgen2.
 Since this example uses `dotnet` as the `__TestDotNetCmd` you will need to debug the `c:\git2\runtime\.dotnet\dotnet.exe` process.
 
 ```cmd
-devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1 --targetarch arm64
+devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1 --targetarch arm64
 ```
 
 This will launch the Visual Studio debugger, with a solution setup for debugging the dotnet.exe process. By default this solution will debug the native code of the process only. To debug the managed components, edit the properties on the solution and set the `Debugger Type` to `Managed (.NET Core, .NET 5+)` or `Mixed (.NET Core, .NET 5+)`.

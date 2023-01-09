@@ -80,7 +80,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private Option<bool> _includeReadyToRun { get; } =
             new("--includeReadyToRun", "Include ReadyToRun methods in the trace file");
         private Option<Verbosity> _verbosity { get; } =
-            new(new[] { "--verbose", "-v" }, () => Verbosity.normal, "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic");
+            new(new[] { "--verbose" }, () => Verbosity.normal, "Adjust verbosity level. Supported levels are minimal, normal, detailed, and diagnostic");
         private Option<bool> _isSorted { get; } =
             new("--sorted", "Generate sorted output.");
         private Option<bool> _showTimestamp { get; } =
@@ -170,14 +170,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 FileType = PgoFileType.jittrace;
                 ProcessJitEvents = true;
                 ValidateOutputFile = false;
-                ProcessR2REvents = context.ParseResult.GetValueForOption(_includeReadyToRun);
+                ProcessR2REvents = context.ParseResult.GetValue(_includeReadyToRun);
 
-                if (context.ParseResult.GetValueForOption(_isSorted))
+                if (context.ParseResult.GetValue(_isSorted))
                 {
                     JitTraceOptions |= JitTraceOptions.sorted;
                 }
 
-                if (context.ParseResult.GetValueForOption(_showTimestamp))
+                if (context.ParseResult.GetValue(_showTimestamp))
                 {
                     JitTraceOptions |= JitTraceOptions.showtimestamp;
                 }
@@ -218,7 +218,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 OutputFilePath,
             };
 
-            dumpCommand.SetHandler(context => TryExecuteWithContext(context, true));
+            dumpCommand.SetHandler(context =>
+            {
+                DumpMibc = true;
+                TryExecuteWithContext(context, true);
+            });
 
             AddCommand(dumpCommand);
 
@@ -229,11 +233,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 DumpWorstOverlapGraphsTo
             };
 
-            compareMbicCommand.SetHandler(context =>
-            {
-                DumpMibc = true;
-                TryExecuteWithContext(context, false);
-            });
+            compareMbicCommand.SetHandler(context => TryExecuteWithContext(context, false));
 
             AddCommand(compareMbicCommand);
 
@@ -243,7 +243,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 if (setVerbosity)
                 {
-                    Verbosity verbosity = context.ParseResult.GetValueForOption(_verbosity);
+                    Verbosity verbosity = context.ParseResult.GetValue(_verbosity);
                     BasicProgressMessages = (int)verbosity >= (int)Verbosity.normal;
                     Warnings = (int)verbosity >= (int)Verbosity.normal;
                     VerboseWarnings = (int)verbosity >= (int)Verbosity.detailed;
@@ -270,9 +270,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<HelpSectionDelegate> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
         {
-            foreach (HelpSectionDelegate sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")

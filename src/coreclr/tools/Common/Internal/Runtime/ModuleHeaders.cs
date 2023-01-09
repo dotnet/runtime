@@ -69,6 +69,7 @@ namespace Internal.Runtime
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
         CrossModuleInlineInfo = 119, // Added in 6.3
+        HotColdMap = 120, // Added in 8.0
 
         //
         // NativeAOT ReadyToRun sections
@@ -80,7 +81,7 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        // 207 is unused - it was used by GCStaticDesc
+        DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
         // 209 is unused - it was used by ThreadStaticGCDescRegion
         // 210 is unused - it was used by ThreadStaticIndex

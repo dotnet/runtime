@@ -45,7 +45,7 @@ internal class BufferState
     }
 }
 
-class Program
+public class Program
 {
     bool forceUpload;
     BufferState currentState;

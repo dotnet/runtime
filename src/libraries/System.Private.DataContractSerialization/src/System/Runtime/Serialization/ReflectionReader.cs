@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
                 obj = context.GetRealObject(objectReference, context.GetObjectId());
             }
 
-            obj = ResolveAdapterObject(obj, classContract);
+            obj = ResolveAdapterObject(obj);
             InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
 
@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization
 
             int arraySize = context.GetArraySize();
             object? resultArray;
-            if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.UnderlyingType, collectionContract.ItemType, arraySize, out resultArray))
+            if (isArray && ReflectionTryReadPrimitiveArray(xmlReader, context, collectionItemName, collectionItemNamespace, collectionContract.ItemType, arraySize, out resultArray))
             {
                 return resultArray;
             }
@@ -434,7 +434,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        private static object ResolveAdapterObject(object obj, ClassDataContract classContract)
+        private static object ResolveAdapterObject(object obj)
         {
             Type objType = obj.GetType();
             if (objType == Globals.TypeOfDateTimeOffsetAdapter)
@@ -621,7 +621,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type type, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
+        private static bool ReflectionTryReadPrimitiveArray(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString collectionItemName, XmlDictionaryString collectionItemNamespace, Type itemType, int arraySize, [NotNullWhen(true)] out object? resultArray)
         {
             resultArray = null;
 

@@ -125,7 +125,7 @@ namespace System.Numerics
         /// <summary>Determines if a value represents a complex value.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a complex number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where either <c>a</c> or <c>b</c> is zero. In other words, it excludes real numbers and pure imaginary numbers.</remarks>
         static abstract bool IsComplexNumber(TSelf value);
 
         /// <summary>Determines if a value represents an even integral value.</summary>
@@ -143,10 +143,10 @@ namespace System.Numerics
         /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsInfinity(TSelf)" /> will return <c>true</c>. <c>NaN</c> is not finite nor infinite.</remarks>
         static abstract bool IsFinite(TSelf value);
 
-        /// <summary>Determines if a value represents an imaginary value.</summary>
+        /// <summary>Determines if a value represents a pure imaginary value.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is an imaginary number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>a</c> is non-zero.</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> is a pure imaginary number; otherwise, <c>false</c>.</returns>
+        /// <remarks>This function returns <c>false</c> for a complex number <c>a + bi</c> where <c>a</c> is non-zero, as that number is not purely imaginary.</remarks>
         static abstract bool IsImaginaryNumber(TSelf value);
 
         /// <summary>Determines if a value is infinite.</summary>
@@ -166,10 +166,13 @@ namespace System.Numerics
         /// <returns><c>true</c> if <paramref name="value" /> is NaN; otherwise, <c>false</c>.</returns>
         static abstract bool IsNaN(TSelf value);
 
-        /// <summary>Determines if a value is negative.</summary>
+        /// <summary>Determines if a value represents a negative real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is negative; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> represents negative zero or a negative real number; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>If this type has signed zero, then <c>-0</c> is also considered negative.</para>
+        ///     <para>This function returning <c>false</c> does not imply that <see cref="IsPositive(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</para>
+        /// </remarks>
         static abstract bool IsNegative(TSelf value);
 
         /// <summary>Determines if a value is negative infinity.</summary>
@@ -191,10 +194,13 @@ namespace System.Numerics
         /// </remarks>
         static abstract bool IsOddInteger(TSelf value);
 
-        /// <summary>Determines if a value is positive.</summary>
+        /// <summary>Determines if a value represents zero or a positive real number.</summary>
         /// <param name="value">The value to be checked.</param>
-        /// <returns><c>true</c> if <paramref name="value" /> is positive; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</remarks>
+        /// <returns><c>true</c> if <paramref name="value" /> represents (positive) zero or a positive real number; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        ///     <para>If this type has signed zero, then <c>-0</c> is not considered positive, but <c>+0</c> is.</para>
+        ///     <para>This function returning <c>false</c> does not imply that <see cref="IsNegative(TSelf)" /> will return <c>true</c>. A complex number, <c>a + bi</c> for non-zero <c>b</c>, is not positive nor negative</para>
+        /// </remarks>
         static abstract bool IsPositive(TSelf value);
 
         /// <summary>Determines if a value is positive infinity.</summary>

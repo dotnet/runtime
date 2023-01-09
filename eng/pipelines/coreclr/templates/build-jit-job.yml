@@ -5,8 +5,8 @@ parameters:
   crossBuild: false
   osGroup: ''
   osSubgroup: ''
+  condition: true
   pool: ''
-  stagedBuild: false
   timeoutInMinutes: ''
   variables: {}
   dependOnEvaluatePaths: false
@@ -20,9 +20,9 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    condition: ${{ parameters.condition }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
@@ -85,7 +85,7 @@ jobs:
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies (OSX)
 
     # Install internal tools on official builds

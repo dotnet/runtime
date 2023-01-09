@@ -5,7 +5,7 @@ using System;
 
 namespace bug
 {
-    class Program
+    public class Program
     {
         static int Pass = 100;
         static int Fail = -1;
@@ -15,7 +15,7 @@ namespace bug
         // 'test' instruction incorrectly, because shift
         // operations on xarch don't modify flags if the
         // shift count is zero.
-        static int Main(string[] args)
+        public static int Main()
         {
             // Absolute bits
             int bitCount = 0;

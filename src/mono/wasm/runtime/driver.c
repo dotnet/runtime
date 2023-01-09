@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -55,7 +56,6 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
-void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -67,6 +67,7 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+char *mono_method_full_name (MonoMethod *method, int signature);
 
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -127,11 +128,11 @@ static int resolved_datetime_class = 0,
 int mono_wasm_enable_gc = 1;
 
 /* Not part of public headers */
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
+#define MONO_ICALL_TABLE_CALLBACKS_VERSION 3
 
 typedef struct {
 	int version;
-	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles);
+	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *flags);
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
@@ -345,7 +346,7 @@ compare_int (const void *k1, const void *k2)
 }
 
 static void*
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles)
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
 {
 	uint32_t token = mono_method_get_token (method);
 	assert (token);
@@ -354,27 +355,18 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 
 	int *indexes = NULL;
 	int indexes_size = 0;
-	uint8_t *handles = NULL;
+	uint8_t *flags = NULL;
 	void **funcs = NULL;
 
-	*uses_handles = 0;
+	*out_flags = 0;
 
 	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
 
-#if defined(ICALL_TABLE_mscorlib)
-	if (!strcmp (image_name, "mscorlib")) {
-		indexes = mscorlib_icall_indexes;
-		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
-		handles = mscorlib_icall_handles;
-		funcs = mscorlib_icall_funcs;
-		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
-	}
-#endif
 #if defined(ICALL_TABLE_corlib)
 	if (!strcmp (image_name, "System.Private.CoreLib")) {
 		indexes = corlib_icall_indexes;
 		indexes_size = sizeof (corlib_icall_indexes) / 4;
-		handles = corlib_icall_handles;
+		flags = corlib_icall_flags;
 		funcs = corlib_icall_funcs;
 		assert (sizeof (corlib_icall_indexes [0]) == 4);
 	}
@@ -383,7 +375,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	if (!strcmp (image_name, "System")) {
 		indexes = System_icall_indexes;
 		indexes_size = sizeof (System_icall_indexes) / 4;
-		handles = System_icall_handles;
+		flags = System_icall_flags;
 		funcs = System_icall_funcs;
 	}
 #endif
@@ -397,7 +389,7 @@ icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char 
 	}
 
 	uint32_t idx = (int*)p - indexes;
-	*uses_handles = handles [idx];
+	*out_flags = flags [idx];
 
 	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
 
@@ -505,13 +497,14 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+
 #ifdef DEBUG
 	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
@@ -595,7 +588,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
@@ -1233,6 +1225,12 @@ mono_wasm_array_length (MonoArray *array)
 	return mono_array_length (array);
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_array_length_ref (MonoArray **array)
+{
+	return mono_array_length (*array);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_array_get (MonoArray *array, int idx)
 {
@@ -1240,10 +1238,10 @@ mono_wasm_array_get (MonoArray *array, int idx)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+mono_wasm_array_get_ref (PPVOLATILE(MonoArray) array, int idx, PPVOLATILE(MonoObject) result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
+	mono_gc_wbarrier_generic_store_atomic((void*)result, mono_array_get ((MonoArray*)*array, MonoObject*, idx));
 	MONO_EXIT_GC_UNSAFE;
 }
 
@@ -1410,9 +1408,21 @@ mono_wasm_copy_managed_pointer (PPVOLATILE(MonoObject) destination, PPVOLATILE(M
 void mono_profiler_init_aot (const char *desc);
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_profiler_aot (const char *desc)
+mono_wasm_profiler_init_aot (const char *desc)
 {
 	mono_profiler_init_aot (desc);
+}
+
+#endif
+
+#ifdef ENABLE_BROWSER_PROFILER
+
+void mono_profiler_init_browser (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_browser (const char *desc)
+{
+	mono_profiler_init_browser (desc);
 }
 
 #endif
@@ -1477,4 +1487,13 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 	*destination = (int64_t)value;
 	return I52_ERROR_NONE;
+}
+
+// JS is responsible for freeing this
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
+	return mono_method_get_full_name(method);
+}
+
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
+	return mono_method_get_name(method);
 }

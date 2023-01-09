@@ -4,7 +4,7 @@
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.props" />
 
   <PropertyGroup>
-    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'WorkloadBuildTasks.dll'))</WorkloadTasksAssemblyPath>
   </PropertyGroup>
   <PropertyGroup>
     <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>

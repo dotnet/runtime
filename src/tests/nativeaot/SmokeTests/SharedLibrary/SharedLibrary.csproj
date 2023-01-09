@@ -14,11 +14,11 @@ mkdir native 2>nul
 copy /y SharedLibraryDriver.exe native\SharedLibrary.exe
 ]]></CLRTestBatchPreCommands>
 
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 mkdir -p native
 cp SharedLibraryDriver native/SharedLibrary
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 
   <ItemGroup>

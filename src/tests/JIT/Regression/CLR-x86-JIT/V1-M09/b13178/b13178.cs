@@ -12,7 +12,7 @@ namespace DefaultNamespace
 
     public class Ternary3b
     {
-        public static int Main(String[] argv)
+        public static int Main()
         {
             Ternary3b hmm = new Ternary3b();
             hmm.Problem();

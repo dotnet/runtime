@@ -301,6 +301,13 @@ namespace System
         public virtual object? ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfGreaterThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfLessThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfLessThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
     }
     public partial class ArithmeticException : System.SystemException
     {
@@ -1745,6 +1752,7 @@ namespace System
         public int Second { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeSpan TimeOfDay { get { throw null; } }
+        public int TotalOffsetMinutes { get { throw null; } }
         public System.DateTime UtcDateTime { get { throw null; } }
         public static System.DateTimeOffset UtcNow { get { throw null; } }
         public long UtcTicks { get { throw null; } }
@@ -2303,7 +2311,7 @@ namespace System
         public EntryPointNotFoundException(string? message) { }
         public EntryPointNotFoundException(string? message, System.Exception? inner) { }
     }
-    public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.IFormattable
+    public abstract partial class Enum : System.ValueType, System.IComparable, System.IConvertible, System.ISpanFormattable
     {
         protected Enum() { }
         public int CompareTo(object? target) { throw null; }
@@ -2366,6 +2374,8 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format) { throw null; }
         [System.ObsoleteAttribute("The provider argument is not used. Use ToString(String) instead.")]
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryFormat<TEnum>(TEnum value, System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("EnumFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>)) where TEnum : struct { throw null; }
+        bool ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, System.ReadOnlySpan<char> value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? result) { throw null; }
@@ -2384,6 +2394,7 @@ namespace System
         public static bool HasShutdownStarted { get { throw null; } }
         public static bool Is64BitOperatingSystem { get { throw null; } }
         public static bool Is64BitProcess { get { throw null; } }
+        public static bool IsPrivilegedProcess { get { throw null; } }
         public static string MachineName { get { throw null; } }
         public static string NewLine { get { throw null; } }
         public static System.OperatingSystem OSVersion { get { throw null; } }
@@ -7050,6 +7061,16 @@ namespace System.Buffers
     {
         System.Memory<T> Memory { get; }
     }
+    public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
+    {
+        internal IndexOfAnyValues() { }
+        public bool Contains(T value) { throw null; }
+    }
+    public static class IndexOfAnyValues
+    {
+        public static System.Buffers.IndexOfAnyValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.IndexOfAnyValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+    }
     public partial interface IPinnable
     {
         System.Buffers.MemoryHandle Pin(int elementIndex);
@@ -7531,6 +7552,7 @@ namespace System.Collections.ObjectModel
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
         public int Count { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> Empty { get { throw null; } }
         public T this[int index] { get { throw null; } }
         protected System.Collections.Generic.IList<T> Items { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
@@ -7564,6 +7586,7 @@ namespace System.Collections.ObjectModel
         public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
         public int Count { get { throw null; } }
         protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> Empty { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } }
         public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
@@ -9668,8 +9691,8 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
-        public static bool EndsInDirectorySeparator(string path) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
+        public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string? GetDirectoryName(string? path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }
@@ -13795,6 +13818,33 @@ namespace System.Security.Principal
 }
 namespace System.Text
 {
+    public static class Ascii
+    {
+        public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsValid(byte value) { throw null; }
+        public static bool IsValid(char value) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
+    }
     public abstract partial class Decoder
     {
         protected Decoder() { }
@@ -14455,6 +14505,7 @@ namespace System.Threading.Tasks
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
         public bool IsCompletedSuccessfully { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, nameof(System.Exception))]
         public bool IsFaulted { get { throw null; } }
         public System.Threading.Tasks.TaskStatus Status { get { throw null; } }
         System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { throw null; } }

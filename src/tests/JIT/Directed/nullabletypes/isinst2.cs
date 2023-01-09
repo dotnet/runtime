@@ -17260,7 +17260,7 @@ internal class Program
         }
     }  // end of test case 0036
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Threading;
 using Xunit;
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
 
@@ -29,6 +30,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var instance1 = first.GetPropertyAsJSObject("instance");
             var instance2 = second.GetPropertyAsJSObject("instance");
             Assert.Same(instance1, instance2);
+        }
+
+        [Fact]
+        public async Task CancelableImportAsync()
+        {
+            var cts = new CancellationTokenSource();
+            var exTask = Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", cts.Token));
+            cts.Cancel();
+            var actualEx2 = await exTask;
+            Assert.Equal("OperationCanceledException", actualEx2.Message);
+
+            var actualEx = await Assert.ThrowsAsync<JSException>(async () => await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs", new CancellationToken(true)));
+            Assert.Equal("OperationCanceledException", actualEx.Message);
         }
 
         [Fact]
@@ -357,7 +371,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [MemberData(nameof(MarshalObjectArrayCasesThrow))]
         public unsafe void JsImportObjectArrayThrows(object[]? expected)
         {
-            Assert.Throws<NotImplementedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
+            Assert.Throws<NotSupportedException>(() => JavaScriptTestHelper.echo1_ObjectArray(expected));
         }
 
         [Fact]
@@ -541,8 +555,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             yield return new object[] { (char)42 };
             yield return new object[] { (char)1 };
-            yield return new object[] { 'Ž' };
-            yield return new object[] { '♡' };
+            yield return new object[] { '\u017D' };
+            yield return new object[] { '\u2661' };
             yield return new object[] { char.MaxValue };
             yield return new object[] { char.MinValue };
         }
@@ -1391,6 +1405,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public void JSImportReturnError()
+        {
+            var err = JavaScriptTestHelper.returnError() as Exception;
+            Assert.NotNull(err);
+            Assert.Contains("this-is-error", err.Message);
+        }
+
+        [Fact]
         public void JsExportCatchToString()
         {
             var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
@@ -1475,6 +1497,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task JsImportSleep()
         {
             await JavaScriptTestHelper.sleep(100);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77334")]
+        public async Task JsImportTaskTypes()
+        {
+            object a = new object();
+            Exception e = new Exception();
+            JSObject j = JSHost.GlobalThis;
+            Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+            Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+            Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
         }
 
         [Fact]

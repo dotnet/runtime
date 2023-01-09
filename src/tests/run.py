@@ -93,6 +93,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
+parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
@@ -220,8 +221,8 @@ class DebugEnv:
         dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
-            "COMPlus_AssertOnNYI": "1",
-            "COMPlus_ContinueOnAssert": "0"
+            "DOTNET_AssertOnNYI": "1",
+            "DOTNET_ContinueOnAssert": "0"
         }
 
         if self.env is not None:
@@ -394,7 +395,7 @@ def create_and_use_test_env(_os, env, func):
 
     Args:
         _os(str)                        : OS name
-        env(defaultdict(lambda: None))  : complus variables, key,value dict
+        env(defaultdict(lambda: None))  : DOTNET variables, key,value dict
         func(lambda)                    : lambda to call, after creating the
                                         : test_env
 
@@ -408,15 +409,15 @@ def create_and_use_test_env(_os, env, func):
 
     ret_code = 0
 
-    complus_vars = defaultdict(lambda: None)
+    dotnet_vars = defaultdict(lambda: None)
 
     for key in env:
         value = env[key]
-        if "complus" in key.lower() or "superpmi" in key.lower():
-            complus_vars[key] = value
+        if "dotnet" in key.lower() or "superpmi" in key.lower():
+            dotnet_vars[key] = value
 
-    if len(list(complus_vars.keys())) > 0:
-        print("Found COMPlus variables in the current environment")
+    if len(list(dotnet_vars.keys())) > 0:
+        print("Found DOTNET variables in the current environment")
         print("")
 
         contents = ""
@@ -451,15 +452,15 @@ def create_and_use_test_env(_os, env, func):
             test_env.write(file_header)
             contents += file_header
 
-            for key in complus_vars:
-                value = complus_vars[key]
+            for key in dotnet_vars:
+                value = dotnet_vars[key]
                 command = None
                 if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
 
-                if key.lower() == "complus_gcstress":
+                if key.lower() == "dotnet_gcstress":
                     gc_stress = True
 
                 print("Unset %s" % key)
@@ -500,10 +501,10 @@ def create_and_use_test_env(_os, env, func):
     return ret_code
 
 def get_environment(test_env=None):
-    """ Get all the COMPlus_* Environment variables
+    """ Get all the DOTNET_* Environment variables
 
     Notes:
-        All COMPlus variables need to be captured as a test_env script to avoid
+        All DOTNET variables need to be captured as a test_env script to avoid
         influencing the test runner.
 
         On Windows, os.environ keys (the environment variable names) are all upper case,
@@ -511,14 +512,14 @@ def get_environment(test_env=None):
     """
     global gc_stress
 
-    complus_vars = defaultdict(lambda: "")
+    dotnet_vars = defaultdict(lambda: "")
 
     for key in os.environ:
-        if "complus" in key.lower():
-            complus_vars[key] = os.environ[key]
+        if "dotnet" in key.lower():
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
         elif "superpmi" in key.lower():
-            complus_vars[key] = os.environ[key]
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
 
     # Get the env from the test_env
@@ -541,15 +542,15 @@ def get_environment(test_env=None):
                 except:
                     pass
 
-                complus_vars[key] = value
+                dotnet_vars[key] = value
 
                 # Supoort looking up case insensitive.
-                complus_vars[key.lower()] = value
+                dotnet_vars[key.lower()] = value
 
-        if "complus_gcstress" in complus_vars:
+        if "dotnet_gcstress" in dotnet_vars:
             gc_stress = True
 
-    return complus_vars
+    return dotnet_vars
 
 def call_msbuild(args):
     """ Call msbuild to run the tests built.
@@ -867,12 +868,16 @@ def run_tests(args,
 
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
-        print("Setting RunCrossGen2=true")
-        os.environ["RunCrossGen2"] = "true"
+        print("Setting RunCrossGen2=1")
+        os.environ["RunCrossGen2"] = "1"
 
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
-        os.environ["LargeVersionBubble"] = "true"
+        os.environ["LargeVersionBubble"] = "1"
+
+    if args.synthesize_pgo:
+        print("Synthesizing PGO")
+        os.environ["CrossGen2SynthesizePgo"] = "1"
 
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
@@ -880,7 +885,7 @@ def run_tests(args,
     if args.run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
-        os.environ["RunInUnloadableContext"] = "1";
+        os.environ["RunInUnloadableContext"] = "1"
         per_test_timeout = 40*60*1000
 
     if args.tiering_test:
@@ -995,6 +1000,11 @@ def setup_args(args):
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
+
+    coreclr_setup_args.verify(args,
+                              "synthesize_pgo",
+                              lambda arg: True,
+                              "Error setting synthesize_pgo")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
@@ -1195,7 +1205,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     Args:
         xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : dictionary of individual test results
+        tests                : list of individual test results
         assemblies           : dictionary of per-assembly aggregations
     """
 
@@ -1242,14 +1252,13 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
-                    assert tests[test_name] == None
-                    tests[test_name] = defaultdict(lambda: None, {
+                    tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
                         "result" : result,
                         "time": time,
                         "test_output": test_output
-                    })
+                    }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
                     elif result == "Fail":
@@ -1273,7 +1282,6 @@ def print_summary(tests, assemblies):
     failed_tests = []
 
     for test in tests:
-        test = tests[test]
         if test["result"] == "Fail":
             print("Failed test: %s" % test["name"])
 
@@ -1340,7 +1348,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
+    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1385,7 +1393,7 @@ def main(args):
 
     if not args.skip_test_run:
         assemblies = defaultdict(lambda: None)
-        tests = defaultdict(lambda: None)
+        tests = []
         parse_test_results(args, tests, assemblies)
         print_summary(tests, assemblies)
         create_repro(args, env, tests)

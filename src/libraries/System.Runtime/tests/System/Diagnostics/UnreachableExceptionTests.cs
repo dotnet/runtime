@@ -31,7 +31,7 @@ namespace System.Tests
         {
             string message = "MessageConstructor";
             Exception innerException = new Exception();
-            UnreachableException unreachableException = new UnreachableException();
+            UnreachableException unreachableException = new UnreachableException(message, innerException);
 
             Assert.Equal(message, unreachableException.Message);
             Assert.Same(innerException, unreachableException.InnerException);

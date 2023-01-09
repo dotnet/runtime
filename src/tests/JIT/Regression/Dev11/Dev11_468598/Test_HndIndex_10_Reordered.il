@@ -33,10 +33,10 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private abstract auto ansi sealed beforefieldinit Test_Test_HndIndex_10_Reordered.App
+.class public abstract auto ansi sealed beforefieldinit Test_Test_HndIndex_10_Reordered.App
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

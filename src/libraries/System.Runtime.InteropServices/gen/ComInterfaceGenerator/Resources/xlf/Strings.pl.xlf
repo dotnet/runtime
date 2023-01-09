@@ -39,22 +39,42 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
-        <target state="new">Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</target>
+        <target state="translated">Metody oznaczone jako atrybut „LibraryImportAttribute” powinny być „statyczne”, „częściowe” i nieogólne. Generowanie źródła funkcji P/Invoke zignoruje metody, które nie są „statyczne”, nie są „częściowe” lub ogólne.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessage">
         <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="new">Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</target>
+        <target state="translated">Metoda „{0}” powinna być „statyczna”, „częściowa” i nieogólna, gdy jest oznaczona za pomocą atrybutu „LibraryImportAttribute”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
-        <source>Invalid 'LibraryImportAttribute' usage</source>
-        <target state="new">Invalid 'LibraryImportAttribute' usage</target>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
+        <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</source>
+        <target state="translated">Konfiguracja elementów „ExceptionMarshalling” i „ExceptionMarshallingCustomType” jest nieprawidłowa.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationMessage">
+        <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">Konfiguracja elementów „ExceptionMarshalling” i „ExceptionMarshallingCustomType” w metodzie „{0}” jest nieprawidłowa. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationMissingCustomType">
+        <source>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</source>
+        <target state="translated">Element „ExceptionMarshallingCustomType” musi być określony kiedy „ExceptionMarshalling” jest ustawiony na „ExceptionMarshalling.Custom”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingConfigurationNotCustom">
+        <source>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</source>
+        <target state="translated">Element „ExceptionMarshalling” powinien być ustawiony na „ExceptionMarshalling.Custom” kiedy typ „ExceptionMarshallingCustomType” jest określony.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidExceptionMarshallingValue">
+        <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
+        <target state="translated">Podana wartość nie jest znaną flagą wyliczenia „'ExceptionMarshalling”.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -75,6 +95,11 @@
       <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
         <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
         <target state="translated">Element „StringMarshalling” należy ustawić na wartość „StringMarshalling.Custom”, gdy określono element „StringMarshallingCustomType”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
+        <source>Invalid 'VirtualMethodIndexAttribute' usage</source>
+        <target state="translated">Nieprawidłowe użycie elementu "VirtualMethodIndexAttribute"</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
