@@ -282,9 +282,13 @@
       <MonoForceInterpreter Condition="'$(TargetOS)' == 'iOSSimulator'">True</MonoForceInterpreter>
     </PropertyGroup>
 
+   <Message Text="!!!naricc_debug!!! TargetOS: $(TargetOS)" Importance="high"/>
+
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.iossimulator-$(TargetArchitecture)/$(Configuration)/runtimes/iossimulator-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iOSSimulator'" >iossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iOS'" >ios</RuntimePackOSSuffix>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
     <ItemGroup>
@@ -386,6 +390,7 @@
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
       <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
+      <DevTeamProvisioning>-</DevTeamProvisioning>
     </PropertyGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
@@ -408,6 +413,7 @@
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
 
+    <Message Importance = "High" Text="!!!naricc_debug!!! MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
@@ -568,7 +574,6 @@
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
