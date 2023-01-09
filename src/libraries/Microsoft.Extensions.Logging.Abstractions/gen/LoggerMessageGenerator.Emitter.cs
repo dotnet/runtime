@@ -628,7 +628,7 @@ internal static class __LoggerMessageGenerator
         /// <summary>
         /// Remove leading symbol from variableOrTemplateName.
         /// </summary>
-        /// <param name="input">String that might contains special symbol.</param>
+        /// <param name="variableOrTemplateName">String that might contains special symbol.</param>
         /// <returns>current variableOrTemplateName value if it does not contains starting '@' symbol, otherwise returns a new string with first char '@' removed.</returns>
         /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
         private static ReadOnlySpan<char> RemoveSpecialSymbol(ReadOnlySpan<char> variableOrTemplateName)
