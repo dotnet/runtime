@@ -361,7 +361,7 @@
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>
   <data name="ExtensionDataConflictsWithUnmappedMemberHandling" xml:space="preserve">
-    <value>The type '{0}' is marked 'UnmappedMemberHandling.Strict' which conflicts with extension data property '{1}'.</value>
+    <value>The type '{0}' is marked 'JsonUnmappedMemberHandling.Disallow' which conflicts with extension data property '{1}'.</value>
   </data>
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
