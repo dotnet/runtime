@@ -68,8 +68,8 @@ namespace System.Security.Cryptography
 
         private SecKeyPair GenerateKey(int keySizeInBits)
         {
-            SafeSecKeyRefHandle publicKey;
-            SafeSecKeyRefHandle privateKey;
+            SafeSecKeyHandle publicKey;
+            SafeSecKeyHandle privateKey;
 
             Interop.AppleCrypto.EccGenerateKey(keySizeInBits, out publicKey, out privateKey);
 
@@ -219,13 +219,13 @@ namespace System.Security.Cryptography
                 // match the public key fields and the system determines an integrity failure.
                 //
                 // Public import should go off without a hitch.
-                SafeSecKeyRefHandle privateKey = ImportKey(parameters);
-                SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
+                SafeSecKeyHandle privateKey = ImportKey(parameters);
+                SafeSecKeyHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                 newKeys = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
             }
             else
             {
-                SafeSecKeyRefHandle publicKey = ImportKey(parameters);
+                SafeSecKeyHandle publicKey = ImportKey(parameters);
                 newKeys = SecKeyPair.PublicOnly(publicKey);
             }
 
@@ -242,7 +242,7 @@ namespace System.Security.Cryptography
             return size;
         }
 
-        private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
+        private static SafeSecKeyHandle ImportKey(ECParameters parameters)
         {
             int fieldSize = parameters.Q!.X!.Length;
 

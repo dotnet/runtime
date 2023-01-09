@@ -14,14 +14,14 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_EcdhKeyAgree(
-            SafeSecKeyRefHandle privateKey,
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle privateKey,
+            SafeSecKeyHandle publicKey,
             out SafeCFDataHandle cfDataOut,
             out SafeCFErrorHandle cfErrorOut);
 
         internal static byte[]? EcdhKeyAgree(
-            SafeSecKeyRefHandle privateKey,
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle privateKey,
+            SafeSecKeyHandle publicKey,
             Span<byte> opportunisticDestination,
             out int bytesWritten)
         {

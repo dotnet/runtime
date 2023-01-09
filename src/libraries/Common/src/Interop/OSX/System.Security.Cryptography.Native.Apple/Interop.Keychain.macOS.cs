@@ -101,7 +101,7 @@ internal static partial class Interop
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeKeychainItemHandle item)
             => SecKeychainItemCopyKeychain((SafeHandle)item);
 
-        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeSecKeyRefHandle item)
+        internal static SafeKeychainHandle SecKeychainItemCopyKeychain(SafeSecKeyHandle item)
             => SecKeychainItemCopyKeychain((SafeHandle)item);
 
         internal static SafeKeychainHandle SecKeychainItemCopyKeychain(IntPtr item)

@@ -28,12 +28,12 @@ namespace System.Security.Cryptography
                 base.KeySize = keySize;
             }
 
-            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal RSASecurityTransforms(SafeSecKeyHandle publicKey)
             {
                 SetKey(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal RSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal RSASecurityTransforms(SafeSecKeyHandle publicKey, SafeSecKeyHandle privateKey)
             {
                 SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
@@ -152,13 +152,13 @@ namespace System.Security.Cryptography
                     // don't match the public key fields.
                     //
                     // Public import should go off without a hitch.
-                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
-                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
+                    SafeSecKeyHandle privateKey = ImportKey(parameters);
+                    SafeSecKeyHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                     SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
                 else
                 {
-                    SafeSecKeyRefHandle publicKey = ImportKey(parameters);
+                    SafeSecKeyHandle publicKey = ImportKey(parameters);
                     SetKey(SecKeyPair.PublicOnly(publicKey));
                 }
             }
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography
                             manager.Memory,
                             out int localRead);
 
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
+                        SafeSecKeyHandle publicKey = Interop.AppleCrypto.CreateDataKey(
                             source.Slice(0, localRead),
                             Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
                             isPublic: true);
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography
             }
 
             private bool TryDecrypt(
-                SafeSecKeyRefHandle privateKey,
+                SafeSecKeyHandle privateKey,
                 ReadOnlySpan<byte> data,
                 Span<byte> destination,
                 RSAEncryptionPadding padding,
@@ -509,7 +509,7 @@ namespace System.Security.Cryptography
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
-                    SafeSecKeyRefHandle publicKey = GetKeys().PublicKey;
+                    SafeSecKeyHandle publicKey = GetKeys().PublicKey;
 
                     int keySize = KeySize;
                     int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
@@ -616,8 +616,8 @@ namespace System.Security.Cryptography
                     return current;
                 }
 
-                SafeSecKeyRefHandle publicKey;
-                SafeSecKeyRefHandle privateKey;
+                SafeSecKeyHandle publicKey;
+                SafeSecKeyHandle privateKey;
 
                 Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey);
 
@@ -640,7 +640,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            private static SafeSecKeyRefHandle ImportKey(RSAParameters parameters)
+            private static SafeSecKeyHandle ImportKey(RSAParameters parameters)
             {
                 AsnWriter keyWriter;
                 bool hasPrivateKey;

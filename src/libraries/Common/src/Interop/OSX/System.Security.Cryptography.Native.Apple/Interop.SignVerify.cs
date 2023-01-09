@@ -23,7 +23,7 @@ internal static partial class Interop
         }
 
         private static unsafe int AppleCryptoNative_SecKeyVerifySignature(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> dataHash,
             ReadOnlySpan<byte> signature,
             PAL_HashAlgorithm hashAlgorithm,
@@ -47,7 +47,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyVerifySignature(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             byte* pbDataHash,
             int cbDataHash,
             byte* pbSignature,
@@ -57,7 +57,7 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut);
 
         private static unsafe int AppleCryptoNative_SecKeyCreateSignature(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm,
             PAL_SignatureAlgorithm signatureAlgorithm,
@@ -79,7 +79,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCreateSignature(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             byte* pbDataHash,
             int cbDataHash,
             PAL_HashAlgorithm hashAlgorithm,
@@ -88,7 +88,7 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut);
 
         internal static bool VerifySignature(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> dataHash,
             ReadOnlySpan<byte> signature,
             PAL_HashAlgorithm hashAlgorithm,
@@ -125,7 +125,7 @@ internal static partial class Interop
         }
 
         private static SafeCFDataHandle NativeCreateSignature(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm,
             PAL_SignatureAlgorithm signatureAlgorithm)
@@ -156,7 +156,7 @@ internal static partial class Interop
         }
 
         internal static byte[] CreateSignature(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm,
             PAL_SignatureAlgorithm signatureAlgorithm)
@@ -168,7 +168,7 @@ internal static partial class Interop
         }
 
         internal static bool TryCreateSignature(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> dataHash,
             Span<byte> destination,
             PAL_HashAlgorithm hashAlgorithm,

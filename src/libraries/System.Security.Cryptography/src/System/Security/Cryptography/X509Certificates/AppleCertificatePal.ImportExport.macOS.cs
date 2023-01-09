@@ -101,13 +101,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert(_identityHandle != null);
 
-            using (SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle))
+            using (SafeSecKeyHandle key = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle))
             {
                 return ExportPkcs8(key, password);
             }
         }
 
-        internal static unsafe byte[] ExportPkcs8(SafeSecKeyRefHandle key, ReadOnlySpan<char> password)
+        internal static unsafe byte[] ExportPkcs8(SafeSecKeyHandle key, ReadOnlySpan<char> password)
         {
             using (SafeCFDataHandle data = Interop.AppleCrypto.SecKeyExportData(key, exportPrivate: true, password))
             {
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal AppleCertificatePal? MoveToKeychain(SafeKeychainHandle keychain, SafeSecKeyRefHandle? privateKey)
+        internal AppleCertificatePal? MoveToKeychain(SafeKeychainHandle keychain, SafeSecKeyHandle? privateKey)
         {
             SafeSecIdentityHandle? identity = Interop.AppleCrypto.X509MoveToKeychain(
                 _certHandle,

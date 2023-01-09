@@ -24,12 +24,12 @@ namespace System.Security.Cryptography
                 base.KeySize = keySize;
             }
 
-            internal DSASecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal DSASecurityTransforms(SafeSecKeyHandle publicKey)
             {
                 SetKey(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal DSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal DSASecurityTransforms(SafeSecKeyHandle publicKey, SafeSecKeyHandle privateKey)
             {
                 SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }

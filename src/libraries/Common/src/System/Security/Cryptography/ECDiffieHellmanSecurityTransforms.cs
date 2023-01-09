@@ -17,12 +17,12 @@ namespace System.Security.Cryptography
                 base.KeySize = 521;
             }
 
-            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyHandle publicKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal ECDiffieHellmanSecurityTransforms(SafeSecKeyHandle publicKey, SafeSecKeyHandle privateKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    SafeSecKeyRefHandle otherPublic = secTransPubKey.KeyHandle;
+                    SafeSecKeyHandle otherPublic = secTransPubKey.KeyHandle;
 
                     if (Interop.AppleCrypto.EccGetKeySizeInBits(otherPublic) != KeySize)
                     {
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
                             nameof(otherPartyPublicKey));
                     }
 
-                    SafeSecKeyRefHandle? thisPrivate = GetKeys().PrivateKey;
+                    SafeSecKeyHandle? thisPrivate = GetKeys().PrivateKey;
 
                     if (thisPrivate == null)
                     {
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography
                 public override ECParameters ExportParameters() =>
                     _ecc.ExportParameters(includePrivateParameters: false, keySizeInBits: -1);
 
-                internal SafeSecKeyRefHandle KeyHandle =>
+                internal SafeSecKeyHandle KeyHandle =>
                     _ecc.GetOrGenerateKeys(-1).PublicKey;
             }
         }

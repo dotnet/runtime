@@ -73,7 +73,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509CopyWithPrivateKey(
             SafeSecCertificateHandle certHandle,
-            SafeSecKeyRefHandle privateKeyHandle,
+            SafeSecKeyHandle privateKeyHandle,
             SafeKeychainHandle targetKeychain,
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
@@ -82,7 +82,7 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_X509MoveToKeychain(
             SafeSecCertificateHandle certHandle,
             SafeKeychainHandle targetKeychain,
-            SafeSecKeyRefHandle privateKeyHandle,
+            SafeSecKeyHandle privateKeyHandle,
             out SafeSecIdentityHandle pIdentityHandleOut,
             out int pOSStatus);
 
@@ -251,7 +251,7 @@ internal static partial class Interop
 
         internal static SafeSecIdentityHandle X509CopyWithPrivateKey(
             SafeSecCertificateHandle certHandle,
-            SafeSecKeyRefHandle privateKeyHandle,
+            SafeSecKeyHandle privateKeyHandle,
             SafeKeychainHandle targetKeychain)
         {
             SafeSecIdentityHandle identityHandle;
@@ -284,7 +284,7 @@ internal static partial class Interop
         internal static SafeSecIdentityHandle? X509MoveToKeychain(
             SafeSecCertificateHandle cert,
             SafeKeychainHandle targetKeychain,
-            SafeSecKeyRefHandle? privateKey)
+            SafeSecKeyHandle? privateKey)
         {
             SafeSecIdentityHandle identityHandle;
             int osStatus;
@@ -292,7 +292,7 @@ internal static partial class Interop
             int result = AppleCryptoNative_X509MoveToKeychain(
                 cert,
                 targetKeychain,
-                privateKey ?? SafeSecKeyRefHandle.InvalidHandle,
+                privateKey ?? SafeSecKeyHandle.InvalidHandle,
                 out identityHandle,
                 out osStatus);
 

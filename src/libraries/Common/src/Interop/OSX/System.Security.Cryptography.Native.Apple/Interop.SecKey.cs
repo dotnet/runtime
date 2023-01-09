@@ -24,7 +24,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AppleCryptoNative)]
-        private static partial ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
+        private static partial ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyHandle publicKey);
 
         private delegate int SecKeyTransform(ReadOnlySpan<byte> source, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle);
 
@@ -80,7 +80,7 @@ internal static partial class Interop
             }
         }
 
-        internal static int GetSimpleKeySizeInBits(SafeSecKeyRefHandle publicKey)
+        internal static int GetSimpleKeySizeInBits(SafeSecKeyHandle publicKey)
         {
             ulong keySizeInBytes = AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(publicKey);
 
@@ -90,7 +90,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe SafeSecKeyRefHandle CreateDataKey(
+        internal static unsafe SafeSecKeyHandle CreateDataKey(
             ReadOnlySpan<byte> keyData,
             PAL_KeyAlgorithm keyAlgorithm,
             bool isPublic)
@@ -102,7 +102,7 @@ internal static partial class Interop
                     keyData.Length,
                     keyAlgorithm,
                     isPublic ? 1 : 0,
-                    out SafeSecKeyRefHandle dataKey,
+                    out SafeSecKeyHandle dataKey,
                     out SafeCFErrorHandle errorHandle);
 
                 using (errorHandle)
@@ -122,7 +122,7 @@ internal static partial class Interop
         }
 
         internal static bool TrySecKeyCopyExternalRepresentation(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyHandle key,
             out byte[] externalRepresentation)
         {
             const int errSecPassphraseRequired = -25260;
@@ -160,25 +160,25 @@ internal static partial class Interop
             int cbKey,
             PAL_KeyAlgorithm keyAlgorithm,
             int isPublic,
-            out SafeSecKeyRefHandle pDataKey,
+            out SafeSecKeyHandle pDataKey,
             out SafeCFErrorHandle pErrorOut);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCopyExternalRepresentation(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyHandle key,
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
-        internal static unsafe partial SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
+        internal static unsafe partial SafeSecKeyHandle CopyPublicKey(SafeSecKeyHandle privateKey);
     }
 }
 
 namespace System.Security.Cryptography.Apple
 {
-    internal sealed class SafeSecKeyRefHandle : SafeHandle
+    internal sealed class SafeSecKeyHandle : SafeHandle
     {
-        public SafeSecKeyRefHandle()
+        public SafeSecKeyHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Apple
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && SafeHandleCache<SafeSecKeyRefHandle>.IsCachedInvalidHandle(this))
+            if (disposing && SafeHandleCache<SafeSecKeyHandle>.IsCachedInvalidHandle(this))
             {
                 return;
             }
@@ -202,8 +202,8 @@ namespace System.Security.Cryptography.Apple
             base.Dispose(disposing);
         }
 
-        public static SafeSecKeyRefHandle InvalidHandle =>
-            SafeHandleCache<SafeSecKeyRefHandle>.GetInvalidHandle(
-                () => new SafeSecKeyRefHandle());
+        public static SafeSecKeyHandle InvalidHandle =>
+            SafeHandleCache<SafeSecKeyHandle>.GetInvalidHandle(
+                () => new SafeSecKeyHandle());
     }
 }

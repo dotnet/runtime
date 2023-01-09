@@ -7,10 +7,10 @@ namespace System.Security.Cryptography
 {
     internal sealed class SecKeyPair : IDisposable
     {
-        internal SafeSecKeyRefHandle PublicKey { get; private set; }
-        internal SafeSecKeyRefHandle? PrivateKey { get; private set; }
+        internal SafeSecKeyHandle PublicKey { get; private set; }
+        internal SafeSecKeyHandle? PrivateKey { get; private set; }
 
-        private SecKeyPair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle? privateKey)
+        private SecKeyPair(SafeSecKeyHandle publicKey, SafeSecKeyHandle? privateKey)
         {
             PublicKey = publicKey;
             PrivateKey = privateKey;
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             PublicKey = null!;
         }
 
-        internal static SecKeyPair PublicPrivatePair(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+        internal static SecKeyPair PublicPrivatePair(SafeSecKeyHandle publicKey, SafeSecKeyHandle privateKey)
         {
             if (publicKey == null || publicKey.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             return new SecKeyPair(publicKey, privateKey);
         }
 
-        internal static SecKeyPair PublicOnly(SafeSecKeyRefHandle publicKey)
+        internal static SecKeyPair PublicOnly(SafeSecKeyHandle publicKey)
         {
             if (publicKey == null || publicKey.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(publicKey));

@@ -330,8 +330,8 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
-            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            SafeSecKeyHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
             return new RSAImplementation.RSASecurityTransforms(publicKey, privateKey);
@@ -343,8 +343,8 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
-            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            SafeSecKeyHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
@@ -356,8 +356,8 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
-            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            SafeSecKeyHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
             Debug.Assert(!publicKey.IsInvalid);
 
             return new ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms(publicKey, privateKey);

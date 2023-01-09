@@ -92,10 +92,10 @@ namespace System.Security.Cryptography.X509Certificates
                 foreach (UnixPkcs12Reader.CertAndKey certAndKey in _pkcs12.EnumerateAll())
                 {
                     AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
-                    SafeSecKeyRefHandle? safeSecKeyRefHandle =
-                        ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
 
-                    using (safeSecKeyRefHandle)
+                    SafeSecKeyHandle? privateKey = ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
+
+                    using (privateKey)
                     {
                         ICertificatePal newPal;
 
@@ -104,17 +104,17 @@ namespace System.Security.Cryptography.X509Certificates
                         //
                         // So, as part of reading this PKCS#12 we now need to write the minimum
                         // PKCS#12 in a normalized form, and ask the OS to import it.
-                        if (!_exportable && safeSecKeyRefHandle != null)
+                        if (!_exportable && privateKey != null)
                         {
                             newPal = AppleCertificatePal.ImportPkcs12NonExportable(
                                 pal,
-                                safeSecKeyRefHandle,
+                                privateKey,
                                 _password,
                                 _keychain);
                         }
                         else
                         {
-                            newPal = pal.MoveToKeychain(_keychain, safeSecKeyRefHandle) ?? pal;
+                            newPal = pal.MoveToKeychain(_keychain, privateKey) ?? pal;
                         }
 
                         X509Certificate2 cert = new X509Certificate2(newPal);

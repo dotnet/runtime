@@ -26,7 +26,7 @@ internal static partial class Interop
             out SafeCFStringHandle cfSubjectSummaryOut);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
-        private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
+        private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyHandle publicKey, out int pOSStatus);
 
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
             => X509GetContentType(ref MemoryMarshal.GetReference(data), data.Length);
@@ -42,7 +42,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509CopyPrivateKeyFromIdentity(
             SafeSecIdentityHandle identity,
-            out SafeSecKeyRefHandle key);
+            out SafeSecKeyHandle key);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509DemuxAndRetainHandle(
@@ -102,9 +102,9 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        internal static SafeSecKeyRefHandle X509GetPrivateKeyFromIdentity(SafeSecIdentityHandle identity)
+        internal static SafeSecKeyHandle X509GetPrivateKeyFromIdentity(SafeSecIdentityHandle identity)
         {
-            SafeSecKeyRefHandle key;
+            SafeSecKeyHandle key;
             int osStatus = AppleCryptoNative_X509CopyPrivateKeyFromIdentity(identity, out key);
 
             if (osStatus != 0)
@@ -122,9 +122,9 @@ internal static partial class Interop
             return key;
         }
 
-        internal static SafeSecKeyRefHandle X509GetPublicKey(SafeSecCertificateHandle cert)
+        internal static SafeSecKeyHandle X509GetPublicKey(SafeSecCertificateHandle cert)
         {
-            SafeSecKeyRefHandle publicKey;
+            SafeSecKeyHandle publicKey;
             int osStatus;
             int ret = AppleCryptoNative_X509GetPublicKey(cert, out publicKey, out osStatus);
 

@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
 
         private static void ExtractPublicKeyFromPrivateKey(ref ECParameters ecParameters)
         {
-            using (SafeSecKeyRefHandle secPrivateKey = ImportLegacyPrivateKey(ref ecParameters))
+            using (SafeSecKeyHandle secPrivateKey = ImportLegacyPrivateKey(ref ecParameters))
             {
                 const string ExportPassword = "DotnetExportPassphrase";
                 byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(secPrivateKey, exportPrivate: true, password: ExportPassword);
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static SafeSecKeyRefHandle ImportLegacyPrivateKey(ref ECParameters parameters)
+        private static SafeSecKeyHandle ImportLegacyPrivateKey(ref ECParameters parameters)
         {
             AsnWriter keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
 

@@ -15,13 +15,13 @@ internal static partial class Interop
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaGenerateKey(
             int keySizeInBits,
-            out SafeSecKeyRefHandle pPublicKey,
-            out SafeSecKeyRefHandle pPrivateKey,
+            out SafeSecKeyHandle pPublicKey,
+            out SafeSecKeyHandle pPrivateKey,
             out SafeCFErrorHandle pErrorOut);
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaSignaturePrimitive(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ref byte pbData,
             int cbData,
             out SafeCFDataHandle pDataOut,
@@ -29,7 +29,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaVerificationPrimitive(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ref byte pbData,
             int cbData,
             out SafeCFDataHandle pDataOut,
@@ -37,7 +37,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_RsaEncryptionPrimitive(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ref byte pbData,
             int cbData,
             out SafeCFDataHandle pDataOut,
@@ -45,7 +45,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
         private static partial int RsaEncryptOaep(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
@@ -54,7 +54,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptPkcs")]
         private static partial int RsaEncryptPkcs(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
@@ -62,7 +62,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
         private static partial int RsaDecryptOaep(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
@@ -71,7 +71,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
         private static partial int RsaDecryptPkcs(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
@@ -79,11 +79,11 @@ internal static partial class Interop
 
         internal static void RsaGenerateKey(
             int keySizeInBits,
-            out SafeSecKeyRefHandle pPublicKey,
-            out SafeSecKeyRefHandle pPrivateKey)
+            out SafeSecKeyHandle pPublicKey,
+            out SafeSecKeyHandle pPrivateKey)
         {
-            SafeSecKeyRefHandle publicKey;
-            SafeSecKeyRefHandle privateKey;
+            SafeSecKeyHandle publicKey;
+            SafeSecKeyHandle privateKey;
             SafeCFErrorHandle error;
 
             int result = AppleCryptoNative_RsaGenerateKey(
@@ -116,7 +116,7 @@ internal static partial class Interop
         }
 
         internal static byte[] RsaEncrypt(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             byte[] data,
             RSAEncryptionPadding padding)
         {
@@ -142,7 +142,7 @@ internal static partial class Interop
         }
 
         internal static bool TryRsaEncrypt(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             RSAEncryptionPadding padding,
@@ -162,7 +162,7 @@ internal static partial class Interop
         }
 
         internal static byte[] RsaDecrypt(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             byte[] data,
             RSAEncryptionPadding padding)
         {
@@ -188,7 +188,7 @@ internal static partial class Interop
         }
 
         internal static bool TryRsaDecrypt(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             RSAEncryptionPadding padding,
@@ -229,7 +229,7 @@ internal static partial class Interop
         }
 
         internal static bool TryRsaEncryptionPrimitive(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             out int bytesWritten)
@@ -245,7 +245,7 @@ internal static partial class Interop
         }
 
         internal static bool TryRsaSignaturePrimitive(
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             out int bytesWritten)
@@ -261,7 +261,7 @@ internal static partial class Interop
         }
 
         internal static bool TryRsaVerificationPrimitive(
-            SafeSecKeyRefHandle publicKey,
+            SafeSecKeyHandle publicKey,
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             out int bytesWritten)

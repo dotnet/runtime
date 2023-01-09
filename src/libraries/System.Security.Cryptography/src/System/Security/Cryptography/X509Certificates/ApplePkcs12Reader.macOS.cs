@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.X509Certificates
             return key;
         }
 
-        internal static SafeSecKeyRefHandle? GetPrivateKey(AsymmetricAlgorithm? key)
+        internal static SafeSecKeyHandle? GetPrivateKey(AsymmetricAlgorithm? key)
         {
             if (key == null)
             {

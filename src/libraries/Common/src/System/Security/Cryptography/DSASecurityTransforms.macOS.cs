@@ -91,12 +91,12 @@ namespace System.Security.Cryptography
 
                 if (hasPrivateKey)
                 {
-                    SafeSecKeyRefHandle privateKey = ImportKey(parameters);
+                    SafeSecKeyHandle privateKey = ImportKey(parameters);
 
                     DSAParameters publicOnly = parameters;
                     publicOnly.X = null;
 
-                    SafeSecKeyRefHandle publicKey;
+                    SafeSecKeyHandle publicKey;
                     try
                     {
                         publicKey = ImportKey(publicOnly);
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    SafeSecKeyRefHandle publicKey = ImportKey(parameters);
+                    SafeSecKeyHandle publicKey = ImportKey(parameters);
                     SetKey(SecKeyPair.PublicOnly(publicKey));
                 }
             }
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
+            private static SafeSecKeyHandle ImportKey(DSAParameters parameters)
             {
                 AsnWriter keyWriter;
                 bool hasPrivateKey;
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
                             manager.Memory,
                             out int localRead);
 
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
+                        SafeSecKeyHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
                         SetKey(SecKeyPair.PublicOnly(publicKey));
 
                         bytesRead = localRead;

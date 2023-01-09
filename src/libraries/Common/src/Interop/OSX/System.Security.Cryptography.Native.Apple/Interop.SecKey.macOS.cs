@@ -17,7 +17,7 @@ internal static partial class Interop
         private static int AppleCryptoNative_SecKeyImportEphemeral(
             ReadOnlySpan<byte> pbKeyBlob,
             int isPrivateKey,
-            out SafeSecKeyRefHandle ppKeyOut,
+            out SafeSecKeyHandle ppKeyOut,
             out int pOSStatus) =>
             AppleCryptoNative_SecKeyImportEphemeral(
                 ref MemoryMarshal.GetReference(pbKeyBlob),
@@ -31,14 +31,14 @@ internal static partial class Interop
             ref byte pbKeyBlob,
             int cbKeyBlob,
             int isPrivateKey,
-            out SafeSecKeyRefHandle ppKeyOut,
+            out SafeSecKeyHandle ppKeyOut,
             out int pOSStatus);
 
-        internal static SafeSecKeyRefHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
+        internal static SafeSecKeyHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
         {
             Debug.Assert(keyBlob != null);
 
-            SafeSecKeyRefHandle keyHandle;
+            SafeSecKeyHandle keyHandle;
             int osStatus;
 
             int ret = AppleCryptoNative_SecKeyImportEphemeral(
@@ -66,14 +66,14 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SecKeyExport(
-            SafeSecKeyRefHandle? key,
+            SafeSecKeyHandle? key,
             int exportPrivate,
             SafeCreateHandle cfExportPassphrase,
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
         internal static SafeCFDataHandle SecKeyExportData(
-            SafeSecKeyRefHandle? key,
+            SafeSecKeyHandle? key,
             bool exportPrivate,
             ReadOnlySpan<char> password)
         {
@@ -119,7 +119,7 @@ internal static partial class Interop
         }
 
         internal static byte[] SecKeyExport(
-            SafeSecKeyRefHandle? key,
+            SafeSecKeyHandle? key,
             bool exportPrivate,
             string password)
         {

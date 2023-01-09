@@ -20,8 +20,8 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
-            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+            SafeSecKeyHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
 
             if (publicKey.IsInvalid)
             {
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             using (PinAndClear.Track(ecPrivateKey))
-            using (SafeSecKeyRefHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
+            using (SafeSecKeyHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
             {
                 return CopyWithPrivateKey(privateSecKey);
             }
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             using (PinAndClear.Track(ecPrivateKey))
-            using (SafeSecKeyRefHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
+            using (SafeSecKeyHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
             {
                 return CopyWithPrivateKey(privateSecKey);
             }
@@ -133,13 +133,13 @@ namespace System.Security.Cryptography.X509Certificates
             byte[] rsaPrivateKey = privateKey.ExportRSAPrivateKey();
 
             using (PinAndClear.Track(rsaPrivateKey))
-            using (SafeSecKeyRefHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(rsaPrivateKey, true))
+            using (SafeSecKeyHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(rsaPrivateKey, true))
             {
                 return CopyWithPrivateKey(privateSecKey);
             }
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeSecKeyRefHandle? privateKey)
+        private ICertificatePal CopyWithPrivateKey(SafeSecKeyHandle? privateKey)
         {
             if (privateKey == null)
             {

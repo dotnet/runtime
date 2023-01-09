@@ -22,27 +22,26 @@ namespace System.Security.Cryptography.X509Certificates
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
                 AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
 
-                SafeSecKeyRefHandle? safeSecKeyRefHandle =
-                    ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
+                SafeSecKeyHandle? privateKey = ApplePkcs12Reader.GetPrivateKey(certAndKey.Key);
 
                 AppleCertificatePal? newPal;
 
-                using (safeSecKeyRefHandle)
+                using (privateKey)
                 {
                     // SecItemImport doesn't seem to respect non-exportable import for PKCS#8,
                     // only PKCS#12.
                     //
                     // So, as part of reading this PKCS#12 we now need to write the minimum
                     // PKCS#12 in a normalized form, and ask the OS to import it.
-                    if (!exportable && safeSecKeyRefHandle != null)
+                    if (!exportable && privateKey != null)
                     {
                         using (pal)
                         {
-                            return ImportPkcs12NonExportable(pal, safeSecKeyRefHandle, password, keychain);
+                            return ImportPkcs12NonExportable(pal, privateKey, password, keychain);
                         }
                     }
 
-                    newPal = pal.MoveToKeychain(keychain, safeSecKeyRefHandle);
+                    newPal = pal.MoveToKeychain(keychain, privateKey);
 
                     if (newPal != null)
                     {
@@ -57,7 +56,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static AppleCertificatePal ImportPkcs12NonExportable(
             AppleCertificatePal cert,
-            SafeSecKeyRefHandle privateKey,
+            SafeSecKeyHandle privateKey,
             SafePasswordHandle password,
             SafeKeychainHandle keychain)
         {
@@ -90,9 +89,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         private sealed class Pkcs12SmallExport : UnixExportProvider
         {
-            private readonly SafeSecKeyRefHandle _privateKey;
+            private readonly SafeSecKeyHandle _privateKey;
 
-            internal Pkcs12SmallExport(ICertificatePalCore cert, SafeSecKeyRefHandle privateKey)
+            internal Pkcs12SmallExport(ICertificatePalCore cert, SafeSecKeyHandle privateKey)
                 : base(cert)
             {
                 Debug.Assert(!privateKey.IsInvalid);

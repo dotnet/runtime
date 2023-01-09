@@ -18,12 +18,12 @@ namespace System.Security.Cryptography
                 base.KeySize = 521;
             }
 
-            internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey)
+            internal ECDsaSecurityTransforms(SafeSecKeyHandle publicKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicOnly(publicKey));
             }
 
-            internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+            internal ECDsaSecurityTransforms(SafeSecKeyHandle publicKey, SafeSecKeyHandle privateKey)
             {
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
