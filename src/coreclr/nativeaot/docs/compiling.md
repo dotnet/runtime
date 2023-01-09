@@ -98,8 +98,8 @@ apk add cmake icu-static icu-dev
 
 ## Using statically linked OpenSSL
 This feature can statically link OpenSSL libraries (such as libssl.a and libcrypto.a) into your applications at build time.
-NativeAOT binaries built with this feature can run even when OpenSSL libraries are not installed. 
-**WARNING:** *This is scenario for advanced users, please use with extreme caution. Incorrect usage of this feature, can cause security vulnerabilities in your product* 
+NativeAOT binaries built with this feature can run even when OpenSSL libraries are not installed.
+**WARNING:** *This is scenario for advanced users, please use with extreme caution. Incorrect usage of this feature, can cause security vulnerabilities in your product*
 
 You can use this feature by adding the `StaticOpenSslLinking` property to your project file as follows:
 
@@ -109,7 +109,7 @@ You can use this feature by adding the `StaticOpenSslLinking` property to your p
     </PropertyGroup>
 ```
 
-This feature is only supported on Linux. This feature is not supported when crosscompiling. 
+This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
 ### Prerequisites
 
