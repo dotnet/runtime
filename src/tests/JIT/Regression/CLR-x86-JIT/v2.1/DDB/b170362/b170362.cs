@@ -11,7 +11,7 @@ public struct MyStruct
 
 }
 
-class MainApp
+public class MainApp
 {
     static byte s = 1;
 

@@ -31,8 +31,6 @@
   <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -57,6 +55,21 @@
           <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
         </ResolvedRuntimePack>
       </ItemGroup>
+  </Target>
+
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
+      <PropertyGroup>
+        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+      </PropertyGroup>
+
+      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+            EchoOff="true"
+            ConsoleToMsBuild="true"
+            StandardOutputImportance="Low">
+        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      </Exec>
   </Target>
 
 </Project>

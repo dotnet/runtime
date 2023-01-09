@@ -136,8 +136,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError, JObject fullContent = null)
         {
-            if (resultOrError == null)
-                throw new ArgumentNullException(nameof(resultOrError));
+            ArgumentNullException.ThrowIfNull(resultOrError);
 
             bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             resultHasError |= resultOrError["exceptionDetails"] != null;
@@ -425,6 +424,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string PauseKind { get; set; }
 
         public object AuxData { get; set; }
+
+        public bool AutoEvaluateProperties { get; set; }
 
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 

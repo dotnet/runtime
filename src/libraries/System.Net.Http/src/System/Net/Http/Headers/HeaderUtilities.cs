@@ -63,20 +63,6 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool ContainsNonAscii(string input)
-        {
-            Debug.Assert(input != null);
-
-            foreach (char c in input)
-            {
-                if ((int)c > 0x7f)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Encode a string using RFC 5987 encoding.
         // encoding'lang'PercentEncodedSpecials
         internal static string Encode5987(string input)

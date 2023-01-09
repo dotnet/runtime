@@ -24,7 +24,7 @@
 
 } // end of class MyTest
 
-.class private auto ansi beforefieldinit MyClass
+.class public auto ansi beforefieldinit MyClass
        extends [mscorlib]System.Object
 {
   .field private class MyTest tc

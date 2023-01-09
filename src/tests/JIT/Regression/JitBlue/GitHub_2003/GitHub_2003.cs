@@ -8,7 +8,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_2003
+public class GitHub_2003
 {
     static byte[] byteArray;
     struct MyByte
@@ -45,7 +45,7 @@ class GitHub_2003
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         byteArray = new byte[100];
         myByteArray = new MyByte[100];

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
         public static bool[] m_abStatic1 = new bool[7];
         public uint Method1()
@@ -27,7 +27,7 @@ namespace Test
             }
             return 0;
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

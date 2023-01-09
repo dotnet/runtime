@@ -11,9 +11,9 @@
 {
 }
 
-.class _simple
+.class public _simple
 {
-	.method static int32 main() {
+	.method public static int32 main() {
 	.entrypoint
 	.maxstack	100
 
