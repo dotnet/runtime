@@ -1,12 +1,11 @@
-// Implementation of ds-rt.h targeting Mono runtime.
-#ifndef __DIAGNOSTICS_RT_MONO_H__
-#define __DIAGNOSTICS_RT_MONO_H__
+// Implementation of ds-rt.h targeting AOT runtime.
+#ifndef __DIAGNOSTICS_RT_AOT_H__
+#define __DIAGNOSTICS_RT_AOT_H__
 
 #include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-rt-coreclr.h"
-#include <clrconfignocache.h>
+#include "ep-rt-aot.h"
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -360,4 +359,4 @@ ds_rt_server_log_pause_message (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_RT_MONO_H__ */
+#endif /* __DIAGNOSTICS_RT_AOT_H__ */
