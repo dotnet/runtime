@@ -132,8 +132,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3172 - analyzer
-			// https://github.com/dotnet/runtime/issues/80255 - NativeAOT
-			[ExpectedWarning ("IL2110", nameof (AnnotatedField._annotatedField), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2110", nameof (AnnotatedField._annotatedField), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			static void LdToken ()
 			{
 				Expression<Action> a = () => PotentialWriteAccess (ref _annotatedField);
@@ -264,8 +263,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3172 - analyzer
-			// https://github.com/dotnet/runtime/issues/80255 - NativeAOT
-			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2067", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Analyzer)]
 			static void LdToken ()
 			{
@@ -391,8 +389,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3172 - analyzer
-			// https://github.com/dotnet/runtime/issues/80255 - NativeAOT
-			[ExpectedWarning ("IL2111", nameof (VirtualMethodWithAnnotatedReturnValue), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2111", nameof (VirtualMethodWithAnnotatedReturnValue), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			static void LdTokenOnVirtual ()
 			{
 				Expression<Action<AnnotatedMethodReturnValue>> _ = (a) => a.VirtualMethodWithAnnotatedReturnValue ();
@@ -668,7 +665,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresAll ();
 			}
 
-			// https://github.com/dotnet/runtime/issues/80255
+			// https://github.com/dotnet/runtime/issues/80255 - NativeAOT
 			[ExpectedWarning ("IL2091", nameof (GenericWithAnnotation), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 			static void LdToken<TUnknown> ()
 			{
@@ -747,8 +744,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3172 - analyzer doesn't produce this warning
-			// https://github.com/dotnet/runtime/issues/80255 - NativeAOT doesn't produce this warning
-			[ExpectedWarning ("IL2111", "GenericWithAnnotatedMethod", "AnnotatedMethod", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2111", "GenericWithAnnotatedMethod", "AnnotatedMethod", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			static void LdToken ()
 			{
 				// Note that this should warn even though the code looks "Correct"

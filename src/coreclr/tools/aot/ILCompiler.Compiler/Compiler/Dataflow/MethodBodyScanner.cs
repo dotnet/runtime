@@ -477,7 +477,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleCallableMethodAccess(methodBody, offset, methodOperand);
+                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -531,14 +531,14 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldtoken:
                         object obj = methodBody.GetObject(reader.ReadILToken());
-                        ScanLdtoken(obj, currentStack);
+                        ScanLdtoken(methodBody, offset, obj, currentStack);
                         break;
 
                     case ILOpcode.ldvirtftn:
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleCallableMethodAccess(methodBody, offset, methodOperand);
+                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
                             }
 
                             PopUnknown(currentStack, 1, methodBody, offset);
@@ -927,7 +927,7 @@ namespace ILCompiler.Dataflow
             currentStack.Push(newSlot);
         }
 
-        private static void ScanLdtoken(object operand, Stack<StackSlot> currentStack)
+        private void ScanLdtoken(MethodIL methodBody, int offset, object operand, Stack<StackSlot> currentStack)
         {
             if (operand is TypeDesc type)
             {
@@ -969,10 +969,16 @@ namespace ILCompiler.Dataflow
             {
                 StackSlot slot = new StackSlot(new RuntimeMethodHandleValue(method));
                 currentStack.Push(slot);
+
+                HandleMethodReflectionAccess(methodBody, offset, method);
             }
             else
             {
+                Debug.Assert(operand is FieldDesc);
+
                 PushUnknown(currentStack);
+
+                HandleFieldReflectionAccess(methodBody, offset, (FieldDesc)operand);
             }
         }
 
@@ -1218,7 +1224,15 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        protected abstract void HandleCallableMethodAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+        /// <summary>
+        /// Called to handle reflection access to a method without any other specifics (ldtoken or ldftn for example)
+        /// </summary>
+        protected abstract void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+
+        /// <summary>
+        /// Called to handle reflection access to a field without any other specifics (ldtoken for example)
+        /// </summary>
+        protected abstract void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
 
         private void HandleCall(
             MethodIL callingMethodBody,
