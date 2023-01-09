@@ -84,7 +84,7 @@ namespace {lc.Namespace}
                 }
 
                 LoggerClass parent = lc.ParentClass;
-                List<string>() parentClasses = new List<string>();
+                List<string> parentClasses = new List<string>();
                 // loop until you find top level nested class
                 while (parent != null)
                 {
@@ -200,7 +200,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {NormalizeSpecialSymbol(p.CodeName).ToString()};");
+                    _builder.AppendLine($"            {nestedIndentation}private readonly {p.Type} {NormalizeSpecialSymbol(p.CodeName)};");
                 }
             }
 
@@ -208,7 +208,7 @@ namespace {lc.Namespace}
             {
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
-                    _builder.AppendLine($"                {nestedIndentation}this.{NormalizeSpecialSymbol(p.CodeName).ToString()} = {p.CodeName};");
+                    _builder.AppendLine($"                {nestedIndentation}this.{NormalizeSpecialSymbol(p.CodeName)} = {p.CodeName};");
                 }
             }
 
@@ -235,13 +235,13 @@ namespace {lc.Namespace}
                         if (lm.TemplateParameters[index].IsEnumerable)
                         {
                             _builder.AppendLine($"                {nestedIndentation}var {t.Key} = "
-                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName).ToString()});");
+                                + $"global::__LoggerMessageGenerator.Enumerate((global::System.Collections.IEnumerable ?)this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName)});");
 
                             _needEnumerationHelper = true;
                         }
                         else
                         {
-                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName).ToString()};");
+                            _builder.AppendLine($"                {nestedIndentation}var {t.Key} = this.{NormalizeSpecialSymbol(lm.TemplateParameters[index].CodeName)};");
                         }
                     }
                 }
@@ -260,7 +260,7 @@ namespace {lc.Namespace}
                         name = lm.TemplateMap[name];
                     }
 
-                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName).ToString()}),");
+                    _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName)}),");
                 }
 
                 _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{{OriginalFormat}}\", \"{ConvertEndOfLineAndQuotationCharactersToEscapeForm(lm.Message)}\"),");
@@ -623,7 +623,7 @@ internal static class __LoggerMessageGenerator
         /// <returns>current variableName value if variableOrTemplateName if it does not starts with symbol ('@'), otherwise returns a new string with its first char '@' replaced by '_'.</returns>
         /// <remarks>This code only handles starting symbols. Symbols inside string will be kept.</remarks>
         private static string NormalizeSpecialSymbol(string variableOrTemplateName) =>
-            ContainsSpecialSymbol(variableOrTemplateName.AsSpan()) ? variableOrTemplateName : $"_{variableOrTemplateName.ToString()}";
+            ContainsSpecialSymbol(variableOrTemplateName.AsSpan()) ? variableOrTemplateName : $"_{variableOrTemplateName}";
 
         /// <summary>
         /// Remove leading symbol from variableOrTemplateName.
