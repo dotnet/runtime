@@ -58,7 +58,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(TargetOS)' == 'osx'" />
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -77,6 +77,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
+      <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a"/>
+      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
+      <StaticSslLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticSslLibs Include="-lssl -lcrypto" />
+      <StaticSslLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetOS)' == 'osx'">
       <NativeFramework Include="CoreFoundation" />
       <NativeFramework Include="CryptoKit" />
@@ -86,6 +94,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Globalization.Native/local_build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' == 'true'"/>
+
+    <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Security.Cryptography.Native/local_build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticOpenSslLinking)' == 'true'"/>
 
     <ItemGroup>
       <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true'" />
@@ -111,6 +121,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'osx'" />
       <LinkerArg Include="-L/usr/lib/swift" Condition="'$(TargetOS)' == 'osx'" />
       <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
+      <LinkerArg Include="@(StaticSslLibs)" Condition="'$(StaticOpenSslLinking)' == 'true'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
