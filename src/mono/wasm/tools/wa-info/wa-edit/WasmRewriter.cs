@@ -154,6 +154,9 @@ namespace WebAssemblyInfo
 
         void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
         {
+            if (Program.Verbose2)
+                Console.WriteLine($"  write data segment at offset: {memoryOffset} chunk index: {chunk.index} size: {chunk.size}");
+
             // data segment
             WriteU32((uint)mode);
 
@@ -223,7 +226,7 @@ namespace WebAssemblyInfo
                 byte b = (byte)(n & 0x7f);
                 n >>= 7;
 
-                if ((n == 0 && ((n & 0x80000000) == 0)) || (n == -1 && ((n & 0x80000000) == 0x80)))
+                if ((n == 0 && ((b & 0x40) == 0)) || (n == -1 && ((b & 0x40) == 0x40)))
                     final = true;
                 else
                     b |= 0x80;
@@ -238,9 +241,10 @@ namespace WebAssemblyInfo
             var len = 0u;
             do
             {
+                byte b = (byte)(n & 0x7f);
                 n >>= 7;
 
-                if ((n == 0 && ((n & 0x80000000) == 0)) || (n == -1 && ((n & 0x80000000) == 0x80)))
+                if ((n == 0 && ((b & 0x40) == 0)) || (n == -1 && ((b & 0x40) == 0x40)))
                     final = true;
 
                 len++;
