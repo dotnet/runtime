@@ -4,7 +4,7 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 #
 
-# This script is used only for building libSystem.Security.Cryptography.Native.a
+# This script is used only for building native libraries
 # in the end-user's computer for NativeAOT purposes (static linking).
 # This file is not used during the dotnet runtime build.
 
