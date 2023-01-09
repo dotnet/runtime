@@ -22702,6 +22702,181 @@ GenTree* Compiler::gtNewSimdSqrtNode(
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdStoreNode: Creates a new simd Store node
+//
+//  Arguments:
+//    op1                 - The address to which op2 is stored
+//    op2                 - The SIMD value to be stored at op1
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//    isSimdAsHWIntrinsic - true if this is a SimdAsHWIntrinsic node; otherwise, false
+//
+// Returns:
+//    The created Store node
+//
+GenTree* Compiler::gtNewSimdStoreNode(GenTree*    op1,
+                                      GenTree*    op2,
+                                      CorInfoType simdBaseJitType,
+                                      unsigned    simdSize,
+                                      bool        isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+
+    assert(varTypeIsSIMD(op2));
+    assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_AVX_Store;
+    }
+    else if (simdBaseType != TYP_FLOAT)
+    {
+        intrinsic = NI_SSE2_Store;
+    }
+    else
+    {
+        intrinsic = NI_SSE_Store;
+    }
+#elif defined(TARGET_ARM64)
+    intrinsic = NI_AdvSimd_Store;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdStoreAlignedNode: Creates a new simd StoreAligned node
+//
+//  Arguments:
+//    op1                 - The address to which op2 is stored
+//    op2                 - The SIMD value to be stored at op1
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//    isSimdAsHWIntrinsic - true if this is a SimdAsHWIntrinsic node; otherwise, false
+//
+// Returns:
+//    The created StoreAligned node
+//
+GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree*    op1,
+                                             GenTree*    op2,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize,
+                                             bool        isSimdAsHWIntrinsic)
+{
+#if defined(TARGET_XARCH)
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+
+    assert(varTypeIsSIMD(op2));
+    assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_AVX_StoreAligned;
+    }
+    else if (simdBaseType != TYP_FLOAT)
+    {
+        intrinsic = NI_SSE2_StoreAligned;
+    }
+    else
+    {
+        intrinsic = NI_SSE_StoreAligned;
+    }
+
+    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#elif defined(TARGET_ARM64)
+    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
+
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdStoreNonTemporalNode: Creates a new simd StoreNonTemporal node
+//
+//  Arguments:
+//    op1                 - The address to which op2 is stored
+//    op2                 - The SIMD value to be stored at op1
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//    isSimdAsHWIntrinsic - true if this is a SimdAsHWIntrinsic node; otherwise, false
+//
+// Returns:
+//    The created StoreNonTemporal node
+//
+GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree*    op1,
+                                                 GenTree*    op2,
+                                                 CorInfoType simdBaseJitType,
+                                                 unsigned    simdSize,
+                                                 bool        isSimdAsHWIntrinsic)
+{
+#if defined(TARGET_XARCH)
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+
+    assert(varTypeIsSIMD(op2));
+    assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_AVX_StoreAlignedNonTemporal;
+    }
+    else if (simdBaseType != TYP_FLOAT)
+    {
+        intrinsic = NI_SSE2_StoreAlignedNonTemporal;
+    }
+    else
+    {
+        intrinsic = NI_SSE_StoreAlignedNonTemporal;
+    }
+
+    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#elif defined(TARGET_ARM64)
+    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+    // aligned when optimizations are disable, so only skip the intrinsic handling
+    // if optimizations are enabled
+
+    assert(opts.OptimizationEnabled());
+    return gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
 GenTree* Compiler::gtNewSimdSumNode(
     var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {

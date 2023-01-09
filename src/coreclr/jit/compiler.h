@@ -2633,6 +2633,15 @@ public:
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdStoreNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdStoreAlignedNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdStoreNonTemporalNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 

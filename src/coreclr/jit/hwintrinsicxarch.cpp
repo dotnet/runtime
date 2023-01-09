@@ -2033,100 +2033,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Store:
         case NI_Vector256_Store:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                storeIntrinsic = NI_AVX_Store;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_Store;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_Store;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector128_StoreAligned:
-        case NI_Vector256_StoreAligned:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                storeIntrinsic = NI_AVX_StoreAligned;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_StoreAligned;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_StoreAligned;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector128_StoreAlignedNonTemporal:
-        case NI_Vector256_StoreAlignedNonTemporal:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-            if (simdSize == 32)
-            {
-                storeIntrinsic = NI_AVX_StoreAlignedNonTemporal;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_StoreAlignedNonTemporal;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_StoreAlignedNonTemporal;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_StoreUnsafe:
         case NI_Vector256_StoreUnsafe:
         {
+            assert(retType == TYP_VOID);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
             if (sig->numArgs == 3)
@@ -2148,7 +2058,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
+            }
 
             if (sig->numArgs == 3)
             {
@@ -2157,22 +2072,60 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            NamedIntrinsic storeIntrinsic = NI_Illegal;
+            op1 = impSIMDPopStack(simdType);
 
-            if (simdSize == 32)
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector128_StoreAligned:
+        case NI_Vector256_StoreAligned:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+            op2 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
             {
-                storeIntrinsic = NI_AVX_Store;
-            }
-            else if (simdBaseType != TYP_FLOAT)
-            {
-                storeIntrinsic = NI_SSE2_Store;
-            }
-            else
-            {
-                storeIntrinsic = NI_SSE_Store;
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
             }
 
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector128_StoreAlignedNonTemporal:
+        case NI_Vector256_StoreAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+            op2 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
+            }
+
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
+                                                    /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
