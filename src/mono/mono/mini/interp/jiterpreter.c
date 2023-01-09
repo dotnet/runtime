@@ -585,7 +585,7 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 			* Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
 			*/
 			MonoDelegate *del = (MonoDelegate*)this_arg;
-			MonoMethod *method = mono_marshal_get_delegate_invoke (method, del);
+			MonoMethod *method = mono_marshal_get_delegate_invoke (rmethod->method, del);
 			data->header.rmethod = rmethod = mono_interp_get_imethod (method);
 
 			// Cache the delegate invoke. This works because data was allocated statically
