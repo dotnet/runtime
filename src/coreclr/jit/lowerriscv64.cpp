@@ -331,7 +331,41 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
+    assert(size < INT32_MAX);
+
+    if (addr->OperIsLocalAddr())
+    {
+        addr->SetContained();
+        return;
+    }
+
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !addr->AsOp()->gtGetOp2()->OperIs(GT_CNS_INT))
+    {
+        return;
+    }
+
+    GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
+    ssize_t        offset     = offsetNode->IconValue();
+
+    // TODO-LoongArch64: not including the ldptr and SIMD offset which not used right now.
+    if (!emitter::isValidSimm12(offset) || !emitter::isValidSimm12(offset + static_cast<int>(size)))
+    {
+        return;
+    }
+
+    if (!IsSafeToContainMem(blkNode, addr))
+    {
+        return;
+    }
+
+    BlockRange().Remove(offsetNode);
+
+    addr->ChangeOper(GT_LEA);
+    addr->AsAddrMode()->SetIndex(nullptr);
+    addr->AsAddrMode()->SetScale(0);
+    addr->AsAddrMode()->SetOffset(static_cast<int>(offset));
+    addr->SetContained();
 }
 
 //------------------------------------------------------------------------

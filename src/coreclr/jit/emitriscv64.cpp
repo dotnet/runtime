@@ -285,7 +285,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         ssize_t imm2 = imm + imm3;
 
         assert(isValidSimm20((imm + 0x800) >> 12));
-        fprintf(stderr, "[CLAMP] #1\n");
         emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
 
         emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
@@ -530,7 +529,58 @@ void emitter::emitIns_Mov(
 void emitter::emitIns_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts opt /* = INS_OPTS_NONE */)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    code_t code = emitInsCode(ins);
+
+    if (INS_mov == ins)
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+    }
+    else if ((INS_fcvt_w_s <= ins && INS_fmv_x_w >= ins) ||
+             (INS_fclass_s == ins || INS_fclass_d == ins) ||
+             (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) ||
+             (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
+             (INS_fmv_x_d == ins))
+    {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isFloatReg(reg2));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+    }
+    else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) ||
+             (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
+             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) ||
+             (INS_fmv_d_x == ins))
+
+    {
+        assert(isFloatReg(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+    }
+    else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
+    {
+        assert(isFloatReg(reg1));
+        assert(isFloatReg(reg2));
+        code |= reg1 << 7;
+        code |= reg2 << 15;
+    }
+    else
+    {
+        NYI_RISCV64("illegal ins within emitIns_R_R!");
+    }
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idAddr()->iiaSetInstrEncode(code);
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 /*****************************************************************************
@@ -811,7 +861,57 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(dst->bbFlags & BBF_HAS_LABEL);
+
+    // if for reloc!  4-ins:
+    //   auipc reg, offset-hi20
+    //   addi  reg, reg, offset-lo12
+    //
+    // else:  3-ins:
+    //   lui  tmp, dst-hi-20bits
+    //   ori  tmp, tmp, dst-lo-12bits
+    //   lui  reg, 0xff << 12
+    //   slli reg, reg, 32
+    //   add  reg, tmp, reg
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(INS_OPTS_RL);
+    id->idAddr()->iiaBBlabel = dst;
+
+    if (emitComp->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+        id->idCodeSize(8);
+    }
+    else
+        id->idCodeSize(20);
+
+    id->idReg1(reg);
+
+    if (EA_IS_GCREF(attr))
+    {
+        /* A special value indicates a GCref pointer value */
+        id->idGCref(GCT_GCREF);
+        id->idOpSize(EA_PTRSIZE);
+    }
+    else if (EA_IS_BYREF(attr))
+    {
+        /* A special value indicates a Byref pointer value */
+        id->idGCref(GCT_BYREF);
+        id->idOpSize(EA_PTRSIZE);
+    }
+
+#ifdef DEBUG
+    // Mark the catch return
+    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    {
+        id->idDebugOnlyInfo()->idCatchRet = true;
+    }
+#endif // DEBUG
+
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
@@ -871,7 +971,55 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    // TODO-RISCV64:
+    //   Now the emitIns_J_cond_la() is only the short condition branch.
+    //   There is no long condition branch for RISCV64 so far.
+    //   For RISCV64 , the long condition branch is like this:
+    //     --->  branch_condition  condition_target;     //here is the condition branch, short branch is enough.
+    //     --->  jump jump_target; (this supporting the long jump.)
+    //     condition_target:
+    //     ...
+    //     ...
+    //     jump_target:
+    //
+    //
+    // INS_OPTS_J_cond: placeholders.  1-ins.
+    //   ins  reg1, reg2, dst
+
+    assert(dst != nullptr);
+    assert(dst->bbFlags & BBF_HAS_LABEL);
+
+    instrDescJmp* id = emitNewInstrJmp();
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idjShort = false;
+
+    id->idInsOpt(INS_OPTS_J_cond);
+    id->idAddr()->iiaBBlabel = dst;
+
+    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
+#ifdef DEBUG
+    if (emitComp->opts.compLongAddress) // Force long branches
+        id->idjKeepLong = 1;
+#endif // DEBUG
+
+    /* Record the jump's IG and offset within it */
+    id->idjIG   = emitCurIG;
+    id->idjOffs = emitCurIGsize;
+
+    /* Append this jump to this IG's jump list */
+    id->idjNext      = emitCurIGjmpList;
+    emitCurIGjmpList = id;
+
+#if EMITTER_STATS
+    emitTotalIGjmps++;
+#endif
+
+    id->idCodeSize(4);
+
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
@@ -1883,7 +2031,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     ssize_t high = (imm >> 32) & 0xffffffff;
                     code = emitInsCode(INS_lui);
-                    code |= (code_t)reg1;
+                    code |= (code_t)reg1 << 7;
                     code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
 
                     *(code_t*)dstRW = code;
@@ -2000,7 +2148,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     assert(code == 0x00000013);
 #endif
                     code            = 0x00000013 | (1 << 15);
-                    *(code_t*)dstRW = code | (code_t)reg1 | (((code_t)doff & 0xfff) << 20);
+                    *(code_t*)dstRW = code | ((code_t)reg1 << 7) | (((code_t)doff & 0xfff) << 20);
                 }
                 else
                 {
@@ -2023,8 +2171,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     assert((imm >> 32) == 0xff);
 
                     doff = (int)imm >> 12;
-                    code |= (code_t)REG_RA; // TODO R21 => RA
-                    code |= ((code_t)doff & 0xfffff) << 5;
+                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                    code |= ((code_t)doff & 0xfffff) << 12;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -2140,25 +2288,26 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
-                assert((imm >> 32) == 0xff);
+                // assert((imm >> 32) == 0xff);
+                assert((imm >> (32 + 20)) == 0);
 
                 code = emitInsCode(INS_lui);
-                code |= (code_t)REG_RA; // TODO CHECK R21 => RA
-                code |= ((code_t)(imm >> 12) & 0xfffff) << 5;
+                code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
+                code |= ((code_t)(imm >> 12) & 0xfffff) << 12;
 
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
                 code = emitInsCode(INS_ori);
-                code |= (code_t)REG_RA;
-                code |= (code_t)REG_RA << 5;
-                code |= (code_t)(imm & 0xfff) << 10;
+                code |= (code_t)REG_RA << 7;
+                code |= (code_t)REG_RA << 15;
+                code |= (code_t)(imm & 0xfff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
                 code = emitInsCode(INS_lui);
                 code |= (code_t)reg1 << 7;
-                code |= 0xff << 12;
+                code |= ((imm >> 32) & 0xfffff) << 12;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 

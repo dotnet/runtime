@@ -1002,8 +1002,160 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 //
 int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return 0;
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+    unsigned size    = blkNode->Size();
+
+    GenTree* srcAddrOrFill = nullptr;
+
+    regMaskTP dstAddrRegMask = RBM_NONE;
+    regMaskTP srcRegMask     = RBM_NONE;
+    regMaskTP sizeRegMask    = RBM_NONE;
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            assert(src->isContained());
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        srcAddrOrFill = src;
+
+        switch (blkNode->gtBlkOpKind)
+        {
+            case GenTreeBlk::BlkOpKindUnroll:
+            {
+                if (dstAddr->isContained())
+                {
+                    // Since the dstAddr is contained the address will be computed in CodeGen.
+                    // This might require an integer register to store the value.
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+
+                if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
+                {
+                    // TODO-LoongArch64: For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
+                    // here just used a temp register.
+                    buildInternalIntRegisterDefForNode(blkNode);
+                }
+            }
+            break;
+
+            case GenTreeBlk::BlkOpKindHelper:
+                assert(!src->isContained());
+                dstAddrRegMask = RBM_ARG_0;
+                srcRegMask     = RBM_ARG_1;
+                sizeRegMask    = RBM_ARG_2;
+                break;
+
+            default:
+                unreached();
+        }
+    }
+    else
+    {
+        if (src->OperIs(GT_IND))
+        {
+            assert(src->isContained());
+            srcAddrOrFill = src->AsIndir()->Addr();
+        }
+
+        if (blkNode->OperIs(GT_STORE_OBJ))
+        {
+            // We don't need to materialize the struct size but we still need
+            // a temporary register to perform the sequence of loads and stores.
+            // We can't use the special Write Barrier registers, so exclude them from the mask
+            regMaskTP internalIntCandidates =
+                allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
+            buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+
+            if (size >= 2 * REGSIZE_BYTES)
+            {
+                // TODO-RISCV64: We will use ld/st paired to reduce code size and improve performance
+                // so we need to reserve an extra internal register.
+                buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+            }
+
+            // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
+            dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
+
+            // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
+            // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
+            // which is killed by a StoreObj (and thus needn't be reserved).
+            if (srcAddrOrFill != nullptr)
+            {
+                assert(!srcAddrOrFill->isContained());
+                srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
+            }
+        }
+        else
+        {
+            switch (blkNode->gtBlkOpKind)
+            {
+                case GenTreeBlk::BlkOpKindUnroll:
+                    buildInternalIntRegisterDefForNode(blkNode);
+                    break;
+
+                case GenTreeBlk::BlkOpKindHelper:
+                    dstAddrRegMask = RBM_ARG_0;
+                    if (srcAddrOrFill != nullptr)
+                    {
+                        assert(!srcAddrOrFill->isContained());
+                        srcRegMask = RBM_ARG_1;
+                    }
+                    sizeRegMask = RBM_ARG_2;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
+    }
+
+    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    {
+        // Reserve a temp register for the block size argument.
+        buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
+    }
+
+    int useCount = 0;
+
+    if (!dstAddr->isContained())
+    {
+        useCount++;
+        BuildUse(dstAddr, dstAddrRegMask);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        useCount += BuildAddrUses(dstAddr->AsAddrMode()->Base());
+    }
+
+    if (srcAddrOrFill != nullptr)
+    {
+        if (!srcAddrOrFill->isContained())
+        {
+            useCount++;
+            BuildUse(srcAddrOrFill, srcRegMask);
+        }
+        else if (srcAddrOrFill->OperIsAddrMode())
+        {
+            useCount += BuildAddrUses(srcAddrOrFill->AsAddrMode()->Base());
+        }
+    }
+
+    if (blkNode->OperIs(GT_STORE_DYN_BLK))
+    {
+        useCount++;
+        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
+    }
+
+    buildInternalRegisterUses();
+    regMaskTP killMask = getKillSetForBlockStore(blkNode);
+    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    return useCount;
 }
 
 //------------------------------------------------------------------------
