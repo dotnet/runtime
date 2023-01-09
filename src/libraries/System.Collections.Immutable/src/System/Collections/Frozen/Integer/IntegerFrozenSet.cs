@@ -3,14 +3,16 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen set optimized for value types using the default comparer.</summary>
+    /// <summary>Provides a frozen set optimized for integer types using the default comparer.</summary>
     /// <typeparam name="T">The type of values in the set.</typeparam>
-    internal sealed class ValueTypeDefaultComparerFrozenSet<T> : ItemsFrozenSet<T, ValueTypeDefaultComparerFrozenSet<T>.GSW>
+    internal sealed class IntegerFrozenSet<T> : ItemsFrozenSet<T, IntegerFrozenSet<T>.GSW>
+        where T : struct, IBinaryInteger<T>
     {
-        internal ValueTypeDefaultComparerFrozenSet(HashSet<T> source) :
+        internal IntegerFrozenSet(HashSet<T> source) :
             base(source, EqualityComparer<T>.Default)
         {
             Debug.Assert(typeof(T).IsValueType);
@@ -26,7 +28,7 @@ namespace System.Collections.Frozen
             {
                 if (hashCode == _hashTable.HashCodes[index])
                 {
-                    if (EqualityComparer<T>.Default.Equals(item, _items[index]))
+                    if (item == _items[index])
                     {
                         return index;
                     }
@@ -40,8 +42,8 @@ namespace System.Collections.Frozen
 
         internal struct GSW : IGenericSpecializedWrapper
         {
-            private ValueTypeDefaultComparerFrozenSet<T> _set;
-            public void Store(FrozenSet<T> set) => _set = (ValueTypeDefaultComparerFrozenSet<T>)set;
+            private IntegerFrozenSet<T> _set;
+            public void Store(FrozenSet<T> set) => _set = (IntegerFrozenSet<T>)set;
 
             public int Count => _set.Count;
             public IEqualityComparer<T> Comparer => _set.Comparer;
