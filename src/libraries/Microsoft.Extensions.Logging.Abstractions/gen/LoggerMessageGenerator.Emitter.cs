@@ -617,7 +617,7 @@ internal static class __LoggerMessageGenerator
             => variableOrTemplateName.Length > 0 && variableOrTemplateName[0] == '@';
 
         /// <summary>
-        /// Normalizes variableOrTemplateName replacing starting '@' with '_', allowing local variables to be declared when creating code.
+        /// prefix the symbol name with _ if the symbol don't start with @, allowing local variables to be declared when creating code.
         /// </summary>
         /// <param name="variableOrTemplateName">variable that might contain '@' symbol</param>
         /// <returns>current variableName value if variableOrTemplateName if it does not starts with symbol ('@'), otherwise returns a new string with its first char '@' replaced by '_'.</returns>
