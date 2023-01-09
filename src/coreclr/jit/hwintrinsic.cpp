@@ -1141,34 +1141,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
                 if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
-                    op1                       = impPopStack().val;
-                    ClassLayout* layout       = op1->GetLayout(this);
-                    unsigned     structSize   = layout->GetSize();
-                    unsigned     slotCount    = layout->GetSlotCount();
-                    var_types    typeOfLayout = layout->GetType();
-                    if (typeOfLayout == TYP_STRUCT)
+                    op1 = impPopStack().val;
+                    if (op1->TypeGet() == TYP_STRUCT)
                     {
                         unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
-                        op1->AsLclVar()->SetMultiRegUse();
-                        GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                        int               offset    = 0;
-                        for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
-                        {
-                            unsigned   lclNum    = lvaGrabTemp(true DEBUGARG("VectorTableLookup"));
-                            LclVarDsc* fldVarDsc = lvaGetDesc(lclNum);
-                            fldVarDsc->lvType    = TYP_SIMD16;
-
-                            CORINFO_FIELD_HANDLE fieldHandle =
-                                info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, fieldId);
-                            CORINFO_CLASS_HANDLE classHandle = info.compCompHnd->getFieldClass(fieldHandle);
-                            lvaSetStruct(lclNum, classHandle, true);
-
-                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, TYP_SIMD16, offset);
-                            fieldList->AddField(this, fldNode, 0, TYP_SIMD16);
-
-                            offset += 16;
-                        }
-
                         switch (fieldCount)
                         {
                             case 1:
@@ -1193,14 +1169,19 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                             default:
                                 noway_assert("Unknown field count");
                         }
+
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                        // The `op1` although is used as parameter in SIMD intrinsic, we like to independently promotion all
+                        // the fields of it so they can enregistered and get consecutive registers.
+                        op1->AsLclVar()->SetMultiRegUse();
+                        lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                     }
                     else
                     {
-                        assert(typeOfLayout == TYP_SIMD16);
+                        assert(op1->TypeGet() == TYP_SIMD16);
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                     }
-
-                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-                    lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                 }
                 else
 #endif
