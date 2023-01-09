@@ -188,8 +188,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                         break;
                                     }
 
-                                    if (logMethodSymbol != null)
-                                    {
                                         var lm = new LoggerMethod
                                         {
                                             Name = logMethodSymbol.Name,
@@ -502,7 +500,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             lc.Methods.Add(lm);
                                         }
-                                    }
                                 }
                             }
                         }
