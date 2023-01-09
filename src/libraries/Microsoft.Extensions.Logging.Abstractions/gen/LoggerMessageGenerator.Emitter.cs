@@ -221,7 +221,7 @@ namespace {lc.Namespace}
                     {
                         ReadOnlySpan<char> template = RemoveSpecialSymbol(t.Key.AsSpan());
                         ReadOnlySpan<char> parameter = RemoveSpecialSymbol(p.Name.AsSpan());
-                        if (!template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
+                        if (template.Equals(parameter, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
