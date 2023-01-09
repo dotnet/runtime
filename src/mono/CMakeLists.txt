@@ -193,13 +193,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(HOST_IOS 1)
   if(CMAKE_SYSTEM_NAME STREQUAL "tvOS")
     set(HOST_TVOS 1)
-    # with -fembed-bitcode passing -headerpad_max_install_names is not allowed so remove it from the CMake flags
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_C_LINK_FLAGS ${CMAKE_C_LINK_FLAGS})
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS})
-    string(REPLACE "-Wl,-headerpad_max_install_names" "" CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS ${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS})
-    add_compile_options(-fembed-bitcode)
-    add_link_options(-fembed-bitcode)
   endif()
   set(PTHREAD_POINTER_ID 1)
   set(USE_MACH_SEMA 1)
@@ -245,23 +238,17 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
+  add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
-  add_definitions(-DGEN_PINVOKE)
+  add_definitions(-DDISABLE_SOCKET_TRANSPORT)
+  add_definitions(-DDISABLE_EGD_SOCKET)
+  add_definitions(-DDISABLE_EVENTPIPE)
+  set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(STATIC_COMPONENTS 1)
-
-  set(WASI_DRIVER_SOURCES
-    wasi/mono-wasi-driver/driver.c
-    wasi/mono-wasi-driver/stubs.c
-    wasi/mono-wasi-driver/synthetic-pthread.c
-  )
-  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
-  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
-  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -333,6 +320,9 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
   set(TARGET_WASI 1)
+  if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-Os)
+  endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
@@ -571,70 +561,54 @@ if(LLVM_PREFIX)
     message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
 
-  if(CMAKE_CROSSCOMPILING)
-    # Can't run llvm-config, hardcode results
-    set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
+  set(llvm_config_path "${LLVM_PREFIX}/include/llvm/Config/llvm-config.h")
 
-    # llvm-config --mono-api-version
-    file(STRINGS ${llvm_config_path} llvm_api_version_line REGEX "MONO_API_VERSION ")
-    string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
+  # llvm-config --mono-api-version
+  file(STRINGS ${llvm_config_path} llvm_api_version_line REGEX "MONO_API_VERSION ")
+  string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
-    # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-    if(${llvm_api_version} LESS 1200)
-      set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
-    else()
-      set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
-    endif()
-  
-    # llvm-config --libs x86codegen
-    set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
+  # llvm-config --libs analysis core bitwriter mcjit orcjit
+  set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
+  if(${llvm_api_version} LESS 1200)
+    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
+  else()
+    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
+  endif()
 
-    # llvm-config --libs armcodegen
-    set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
+  # llvm-config --libs x86codegen
+  set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
-    # llvm-config --libs aarch64codegen
-    set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
+  # llvm-config --libs armcodegen
+  set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
 
+  # llvm-config --libs aarch64codegen
+  set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
-    # llvm-config --cflags
-    set(llvm_cflags "")
-    set(llvm_cxxflags "")
-    set(llvm_includedir "${LLVM_PREFIX}/include")
+  # llvm-config --cflags
+  set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_includedir "${LLVM_PREFIX}/include")
 
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
-
-    # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs ${MONO_llvm_core_libs})
-
-    # Check codegen libs and add needed libraries.
-    set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}})
-    if("${llvm_extra}" STREQUAL "")
-      message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
-    endif()
-
-    set(llvm_libs ${llvm_core_libs} ${llvm_extra})
-    list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
-    list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-  else()
-    set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config${EXE_SUFFIX})
-    if (NOT EXISTS ${LLVM_CONFIG})
-      message(FATAL_ERROR "LLVM executable '${LLVM_CONFIG}' not found.")
-    endif()
-
-    execute_process(COMMAND ${LLVM_CONFIG} --mono-api-version RESULT_VARIABLE llvm_config_res OUTPUT_VARIABLE llvm_api_version OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if (NOT ${llvm_config_res} EQUAL 0)
-      message(FATAL_ERROR "'${LLVM_CONFIG} --mono-api-version' failed. Use the llvm fork at https://github.com/dotnet/llvm-project.")
-    endif()
-    execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --includedir OUTPUT_VARIABLE llvm_includedir OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libfiles analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
-    separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    # llvm-config --system-libs
+    set(llvm_system_libs "-lz" "-lm")
   endif()
+
+  # llvm-config --libs analysis core bitwriter mcjit orcjit
+  set(llvm_core_libs ${MONO_llvm_core_libs})
+
+  # Check codegen libs and add needed libraries.
+  set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}})
+  if("${llvm_extra}" STREQUAL "" AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
+    message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
+  endif()
+
+  set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+  list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
+  list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
   if (${llvm_api_version} LESS 1100)
     message(FATAL_ERROR "LLVM version too old.")
@@ -679,7 +653,11 @@ elseif(HOST_OSX AND NOT HOST_MACCAT)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
-elseif(HOST_WASM)
+elseif(HOST_WASI)
+  set(HAVE_SYS_ICU 0)
+  set(STATIC_ICU 1)
+  set(ICU_LIBS "icucore")
+elseif(HOST_BROWSER)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
@@ -735,6 +713,8 @@ elseif(GC_SUSPEND STREQUAL "default")
   elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
     # use preemptive
   elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
+    # use preemptive
+  elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
     # use preemptive
   else()
     set(ENABLE_HYBRID_SUSPEND 1)
@@ -903,7 +883,7 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
   add_subdirectory(dlls/dbgshim)
 endif()

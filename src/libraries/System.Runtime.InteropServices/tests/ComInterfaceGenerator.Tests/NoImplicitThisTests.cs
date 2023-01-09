@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace ComInterfaceGenerator.Tests
@@ -18,13 +14,20 @@ namespace ComInterfaceGenerator.Tests
         {
             public readonly record struct NoCasting;
 
-            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<NoCasting>
+            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>
             {
-                static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
+                static int IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.VirtualMethodTableLength => 2;
+                static void* IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.VirtualMethodTableManagedImplementation => null;
 
-                [VirtualMethodIndex(0, ImplicitThisParameter = false)]
+                static void* IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.GetUnmanagedWrapperForObject(IStaticMethodTable obj) => null;
+
+                static IStaticMethodTable IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
+
+                static NoCasting IUnmanagedInterfaceType<IStaticMethodTable, NoCasting>.TypeKey => default;
+
+                [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged, ImplicitThisParameter = false)]
                 int Add(int x, int y);
-                [VirtualMethodIndex(1, ImplicitThisParameter = false)]
+                [VirtualMethodIndex(1, Direction = MarshalDirection.ManagedToUnmanaged, ImplicitThisParameter = false)]
                 int Multiply(int x, int y);
             }
 
@@ -38,7 +41,8 @@ namespace ComInterfaceGenerator.Tests
                     _vtableStart = vtableStart;
                 }
 
-                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, 2));
+                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) =>
+                    new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, IUnmanagedVirtualMethodTableProvider<NoCasting>.GetVirtualMethodTableLength<IStaticMethodTable>()));
             }
 
             [CustomMarshaller(typeof(StaticMethodTable), MarshalMode.ManagedToUnmanagedOut, typeof(StaticMethodTableMarshaller))]

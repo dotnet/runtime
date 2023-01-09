@@ -21,8 +21,6 @@
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -82,6 +80,28 @@
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" />
       <ResolvedFileToPublish Include="@(__NewResolvedFiles)" />
     </ItemGroup>
+  </Target>
+
+  <!--
+    Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
+    This target is essentially an override hook which is called before `SetupOSSpecificProps` in
+    `Microsoft.NETCore.Native.Unix.targets`. Note that the input is `CppCompilerAndLinker`
+    and the output is `CppLinker`, because from `SetupOSSpecificProps` onwards, we only use `CppLinker`
+    (when alternative compiler, i.e. gcc, is not selected)
+  -->
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
+      <PropertyGroup>
+        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+      </PropertyGroup>
+
+      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+            EchoOff="true"
+            ConsoleToMsBuild="true"
+            StandardOutputImportance="Low">
+        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      </Exec>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

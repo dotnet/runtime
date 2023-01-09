@@ -44,9 +44,9 @@ interface EventPipeCollectTracingCommandProvider {
     provider_name: string;
     filter_data: string | null;
 }
-declare type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T, "command_set" | "command">;
+type RemoveCommandSetAndId<T extends ProtocolClientCommandBase> = Omit<T, "command_set" | "command">;
 
-declare type FilterPredicate = (data: ArrayBuffer) => boolean;
+type FilterPredicate = (data: ArrayBuffer) => boolean;
 interface MockScriptConnection {
     waitForSend(filter: FilterPredicate): Promise<void>;
     waitForSend<T>(filter: FilterPredicate, extract: (data: ArrayBuffer) => T): Promise<T>;

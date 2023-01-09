@@ -17,7 +17,7 @@ namespace Mono.Linker
 			Instruction? previousMeaningful = null;
 			int meaningfulCount = 0;
 			foreach (var ins in body.Instructions) {
-				// Handle ignoring noops because because (1) it's a valid case to ignore
+				// Handle ignoring noops because (1) it's a valid case to ignore
 				// and (2) When running the tests on .net core roslyn tosses in no ops
 				// and that leads to a difference in test results between mcs and .net framework csc.
 				if (ins.OpCode.Code == Code.Nop)

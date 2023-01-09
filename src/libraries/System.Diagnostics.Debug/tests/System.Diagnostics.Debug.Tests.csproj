@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <!-- Some tests need types like System.Diagnostics.DebugProvider which are only exposed from System.Private.CoreLib -->
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>

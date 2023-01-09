@@ -5616,7 +5616,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 
 /*****************************************************************************
  *
- *  Returns the extra argument passed to to shared generic code if it is still alive.
+ *  Returns the extra argument passed to shared generic code if it is still alive.
  *  Returns NULL in all other cases.
  */
 PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,

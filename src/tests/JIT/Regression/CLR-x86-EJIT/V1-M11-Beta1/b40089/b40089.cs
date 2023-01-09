@@ -6,14 +6,14 @@ namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         public BB Method1(float param2)
         {
             return new BB();
         }
 
-        static int Main()
+        public static int Main()
         {
             new BB().Method1(0.0f);
             return 100;

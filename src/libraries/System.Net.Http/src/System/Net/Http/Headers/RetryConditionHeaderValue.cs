@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
             return _delta.Value.GetHashCode();
         }
 
-        public static RetryConditionHeaderValue Parse(string? input)
+        public static RetryConditionHeaderValue Parse(string input)
         {
             int index = 0;
             return (RetryConditionHeaderValue)GenericHeaderParser.RetryConditionParser.ParseValue(

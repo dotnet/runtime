@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,8 +20,13 @@ internal sealed class IcallTableGenerator
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass>();
 
     private TaskLoggingHelper Log { get; set; }
+    private readonly Func<string, string> _fixupSymbolName;
 
-    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
+    public IcallTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
+    {
+        Log = log;
+        _fixupSymbolName = fixupSymbolName;
+    }
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -86,7 +88,7 @@ internal sealed class IcallTableGenerator
             if (assembly == "System.Private.CoreLib")
                 aname = "corlib";
             else
-                aname = assembly.Replace(".", "_");
+                aname = _fixupSymbolName(assembly);
             w.WriteLine($"#define ICALL_TABLE_{aname} 1\n");
 
             w.WriteLine($"static int {aname}_icall_indexes [] = {{");
@@ -204,7 +206,7 @@ internal sealed class IcallTableGenerator
                 }
                 catch (NotImplementedException nie)
                 {
-                    Log.LogWarning($"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
+                    Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0, $"Failed to generate icall function for method '[{method.DeclaringType!.Assembly.GetName().Name}] {className}::{method.Name}'" +
                                     $" because type '{nie.Message}' is not supported for parameter named '{par.Name}'. Ignoring.");
                     return null;
                 }

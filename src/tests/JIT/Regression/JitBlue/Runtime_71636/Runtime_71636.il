@@ -6,7 +6,7 @@
 
 .assembly Runtime_71636.dll { }
 
-.class Runtime_71636 extends [System.Runtime]System.Object
+.class public Runtime_71636 extends [System.Runtime]System.Object
 {
   .field private static native int s_globalCounter;
 

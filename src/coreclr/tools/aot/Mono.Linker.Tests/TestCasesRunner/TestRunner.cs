@@ -112,9 +112,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			AddLinkOptions (sandbox, compilationResult, builder, metadataProvider);
 
 			var logWriter = new TestLogWriter ();
-			trimmer.Trim (builder.Options, logWriter);
+			var trimmingResults = trimmer.Trim (builder.Options, logWriter);
 
-			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, logWriter);
+			return new ILCompilerTestCaseResult (testCase, compilationResult.InputAssemblyPath, compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult, trimmingResults, logWriter);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, ILCompilerOptionsBuilder builder, TestCaseMetadataProvider metadataProvider)

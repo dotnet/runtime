@@ -4,7 +4,7 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD } from "../../imports";
+import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers } from "../../imports";
 import { isMonoThreadMessageApplyMonoConfig, makeChannelCreatedMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
 import { mono_assert, is_nullish, MonoConfig } from "../../types";
@@ -17,6 +17,7 @@ import {
     WorkerThreadEventTarget
 } from "./events";
 import { setup_proxy_console } from "../../logging";
+import { afterConfigLoaded, preRunWorker } from "../../startup";
 
 // re-export some of the events types
 export {
@@ -80,18 +81,22 @@ function setupChannelToMainThread(pthread_ptr: pthread_ptr): PThreadSelf {
     return pthread_self;
 }
 
-// TODO: should we just assign to Module.config here?
-let workerMonoConfig: MonoConfig = null as unknown as MonoConfig;
+let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
 function onMonoConfigReceived(config: MonoConfig): void {
-    if (workerMonoConfig !== null) {
+    if (workerMonoConfigReceived) {
         console.debug("MONO_WASM: mono config already received");
         return;
     }
-    workerMonoConfig = config;
-    console.debug("MONO_WASM: mono config received", config);
-    if (workerMonoConfig.diagnosticTracing) {
+
+    console.debug("MONO_WASM: mono config received");
+    config = runtimeHelpers.config = Module.config = Object.assign(Module.config || {} as any, config);
+    workerMonoConfigReceived = true;
+
+    afterConfigLoaded.promise_control.resolve(config);
+
+    if (config.diagnosticTracing) {
         setup_proxy_console("pthread-worker", console, self.location.href);
     }
 }
@@ -102,6 +107,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): 
     const self = pthread_self;
     mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
     console.debug("MONO_WASM: attaching pthread to runtime", pthread_id);
+    preRunWorker();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
 }
 

@@ -176,13 +176,7 @@ namespace System.Collections.Concurrent
         public BlockingCollection(IProducerConsumerCollection<T> collection, int boundedCapacity)
         {
             ArgumentNullException.ThrowIfNull(collection);
-
-            if (boundedCapacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(boundedCapacity), boundedCapacity,
-                    SR.BlockingCollection_ctor_BoundedCapacityRange);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(boundedCapacity);
 
             int count = collection.Count;
             if (count > boundedCapacity)

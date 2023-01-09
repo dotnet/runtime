@@ -127,6 +127,11 @@ public:
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
     bool BudgetCheck() const override;
 
+    virtual unsigned EstimatedTotalILSize() const
+    {
+        return m_CodeSize;
+    }
+
     // Policy policies
     bool PropagateNeverToRuntime() const override;
 
@@ -227,6 +232,8 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     double DetermineMultiplier() override;
+
+    unsigned EstimatedTotalILSize() const override;
 
     bool RequiresPreciseScan() override
     {

@@ -673,21 +673,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 return findIndex == -1 ? endIndex : findIndex;
             }
 
-            private string GetStringExpression(SemanticModel sm, SyntaxNode expr)
-            {
-                Optional<object?> optional = sm.GetConstantValue(expr, _cancellationToken);
-                if (optional.HasValue)
-                {
-                    object o = optional.Value;
-                    if (o != null)
-                    {
-                        return o.ToString();
-                    }
-                }
-
-                return string.Empty;
-            }
-
             private static object GetItem(TypedConstant arg) => arg.Kind == TypedConstantKind.Array ? arg.Values : arg.Value;
         }
 

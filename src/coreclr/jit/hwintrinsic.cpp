@@ -88,6 +88,8 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
 {
+    assert(varTypeIsSIMD(simdType));
+
     if (m_simdHandleCache == nullptr)
     {
         return NO_CLASS_HANDLE;
@@ -546,12 +548,13 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         else
         {
-            assert((newobjThis->gtOper == GT_ADDR) && (newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR));
+            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
             arg = newobjThis;
 
             // push newobj result on type stack
-            unsigned tmp = arg->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(argClass).NormaliseForStack());
+            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
+            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
+                           verMakeTypeInfo(argClass).NormaliseForStack());
         }
     }
     else

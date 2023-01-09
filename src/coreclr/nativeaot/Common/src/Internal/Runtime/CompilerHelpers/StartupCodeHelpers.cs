@@ -262,9 +262,44 @@ namespace Internal.Runtime.CompilerHelpers
                 switch (command)
                 {
                     case DehydratedDataCommand.Copy:
-                        // TODO: can we do any kind of memcpy here?
-                        for (; payload > 0; payload--)
-                            *pDest++ = *pCurrent++;
+                        Debug.Assert(payload != 0);
+                        if (payload < 4)
+                        {
+                            *pDest = *pCurrent;
+                            if (payload > 1)
+                                *(short*)(pDest + payload - 2) = *(short*)(pCurrent + payload - 2);
+                        }
+                        else if (payload < 8)
+                        {
+                            *(int*)pDest = *(int*)pCurrent;
+                            *(int*)(pDest + payload - 4) = *(int*)(pCurrent + payload - 4);
+                        }
+                        else if (payload <= 16)
+                        {
+#if TARGET_64BIT
+                            *(long*)pDest = *(long*)pCurrent;
+                            *(long*)(pDest + payload - 8) = *(long*)(pCurrent + payload - 8);
+#else
+                            *(int*)pDest = *(int*)pCurrent;
+                            *(int*)(pDest + 4) = *(int*)(pCurrent + 4);
+                            *(int*)(pDest + payload - 8) = *(int*)(pCurrent + payload - 8);
+                            *(int*)(pDest + payload - 4) = *(int*)(pCurrent + payload - 4);
+#endif
+                        }
+                        else
+                        {
+                            // At the time of writing this, 90% of DehydratedDataCommand.Copy cases
+                            // would fall into the above specialized cases. 10% fall back to memmove.
+                            memmove(pDest, pCurrent, (nuint)payload);
+
+                            // Not a DllImport - we don't need a GC transition since this is early startup
+                            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+                            [RuntimeImport("*", "memmove")]
+                            static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+                        }
+
+                        pDest += payload;
+                        pCurrent += payload;
                         break;
                     case DehydratedDataCommand.ZeroFill:
                         pDest += payload;

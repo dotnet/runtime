@@ -27,7 +27,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module ddb173569.exe
 // MVID: {0019E28F-AD1E-40AC-B6B2-5554D213CAAE}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -67,14 +66,14 @@
 
 } // end of class MyDelegate
 
-.class private auto ansi beforefieldinit My
+.class public auto ansi beforefieldinit My
        extends [mscorlib]System.Object
 {
   .method private hidebysig static pinvokeimpl("kernel32" winapi) 
           int32  GetTickCount() cil managed preservesig
   {
   }
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

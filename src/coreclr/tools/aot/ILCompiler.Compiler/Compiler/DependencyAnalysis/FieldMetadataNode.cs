@@ -37,6 +37,11 @@ namespace ILCompiler.DependencyAnalysis
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaField)_field));
 
+            if (_field is EcmaField ecmaField)
+            {
+                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)

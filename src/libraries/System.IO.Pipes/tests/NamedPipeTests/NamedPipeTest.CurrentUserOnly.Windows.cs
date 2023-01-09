@@ -118,6 +118,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
     public class NamedPipeTest_CurrentUserOnly_Windows : IClassFixture<TestAccountImpersonator>
     {
         public static bool IsSupportedWindowsVersionAndPrivilegedProcess => PlatformDetection.IsPrivilegedProcess
@@ -197,6 +198,7 @@ namespace System.IO.Pipes.Tests
                 {
                     // When CurrentUserOnly is only on client side and asks for ReadOnly access, the connection is not rejected
                     // but we get the UnauthorizedAccessException on the client regardless.
+                    Assert.True(serverTask.Wait(TimeSpan.FromSeconds(10)));
                     Assert.True(serverTask.IsCompletedSuccessfully);
                 }
                 else

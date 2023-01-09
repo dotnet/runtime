@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices
         private const ulong DestroySentinel = 0x0000000080000000UL;
         private const ulong TrackerRefCountMask = 0xffffffff00000000UL;
         private const ulong ComRefCountMask = 0x000000007fffffffUL;
+        private const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
@@ -161,6 +162,12 @@ namespace System.Runtime.InteropServices
 
             public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
             {
+                if (GetComCount(RefCount) == 0)
+                {
+                    ppvObject = IntPtr.Zero;
+                    return COR_E_ACCESSING_CCW;
+                }
+
                 ppvObject = AsRuntimeDefined(in riid);
                 if (ppvObject == IntPtr.Zero)
                 {
@@ -270,6 +277,8 @@ namespace System.Runtime.InteropServices
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
+            public uint AddRef() => _wrapper->AddRef();
+
             ~ManagedObjectWrapperHolder()
             {
                 // Release GC handle created when MOW was built.
@@ -280,8 +289,8 @@ namespace System.Runtime.InteropServices
 
         internal unsafe class NativeObjectWrapper
         {
-            private readonly IntPtr _externalComObject;
-            private readonly ComWrappers _comWrappers;
+            private IntPtr _externalComObject;
+            private ComWrappers _comWrappers;
             internal GCHandle _proxyHandle;
 
             public NativeObjectWrapper(IntPtr externalComObject, ComWrappers comWrappers, object comProxy)
@@ -292,15 +301,29 @@ namespace System.Runtime.InteropServices
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
             }
 
-            ~NativeObjectWrapper()
+            public void Release()
             {
-                _comWrappers.RemoveRCWFromCache(_externalComObject);
+                if (_comWrappers != null)
+                {
+                    _comWrappers.RemoveRCWFromCache(_externalComObject);
+                    _comWrappers = null;
+                }
+
                 if (_proxyHandle.IsAllocated)
                 {
                     _proxyHandle.Free();
                 }
 
-                Marshal.Release(_externalComObject);
+                if (_externalComObject != IntPtr.Zero)
+                {
+                    Marshal.Release(_externalComObject);
+                    _externalComObject = IntPtr.Zero;
+                }
+            }
+
+            ~NativeObjectWrapper()
+            {
+                Release();
             }
         }
 
@@ -327,12 +350,12 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public unsafe IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             ManagedObjectWrapperHolder? ccwValue;
             if (_ccwTable.TryGetValue(instance, out ccwValue))
             {
+                ccwValue.AddRef();
                 return ccwValue.ComIp;
             }
 
@@ -347,6 +370,10 @@ namespace System.Runtime.InteropServices
         private unsafe ManagedObjectWrapper* CreateCCW(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
+            if ((userDefined == null && userDefinedCount != 0) || userDefinedCount < 0)
+            {
+                throw new ArgumentException();
+            }
 
             // Maximum number of runtime supplied vtables.
             Span<IntPtr> runtimeDefinedVtable = stackalloc IntPtr[4];
@@ -443,8 +470,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
-            if (wrapper == null)
-                throw new ArgumentNullException(nameof(wrapper));
+            ArgumentNullException.ThrowIfNull(wrapper);
 
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
@@ -485,6 +511,9 @@ namespace System.Runtime.InteropServices
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
+            if (innerMaybe != IntPtr.Zero && !flags.HasFlag(CreateObjectFlags.Aggregation))
+                throw new InvalidOperationException(SR.InvalidOperation_SuppliedInnerMustBeMarkedAggregation);
+
             if (flags.HasFlag(CreateObjectFlags.Aggregation))
                 throw new NotImplementedException();
 
@@ -505,6 +534,22 @@ namespace System.Runtime.InteropServices
                     if (_rcwCache.TryGetValue(externalComObject, out GCHandle handle))
                     {
                         retValue = handle.Target;
+                        return true;
+                    }
+
+                    if (wrapperMaybe is not null)
+                    {
+                        retValue = wrapperMaybe;
+                        NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                            externalComObject,
+                            this,
+                            retValue);
+                        if (!_rcwTable.TryAdd(retValue, wrapper))
+                        {
+                            wrapper.Release();
+                            throw new NotSupportedException();
+                        }
+                        _rcwCache.Add(externalComObject, wrapper._proxyHandle);
                         return true;
                     }
                 }
@@ -565,8 +610,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
             {
@@ -590,8 +634,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))
             {
@@ -667,7 +710,7 @@ namespace System.Runtime.InteropServices
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
             uint refcount = wrapper->Release();
-            if (refcount == 0)
+            if (wrapper->RefCount == 0)
             {
                 wrapper->Destroy();
             }

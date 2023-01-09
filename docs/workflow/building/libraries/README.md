@@ -223,6 +223,10 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.
 
+## Debugging
+
+Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that the debugging libraries that shipped with the .NET Runtime are correctly signed before loading them. See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+
 ## Running tests
 
 For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).

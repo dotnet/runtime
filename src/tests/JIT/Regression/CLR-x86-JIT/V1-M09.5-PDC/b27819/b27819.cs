@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         bool m_bFlag = false;
         static int[] m_anStatic2;

@@ -1115,8 +1115,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                             pFile = NULL;
                             if(fopen_s(&pFile,szFileName,"rt") != 0)
                             {
-                                char* pch = strrchr(szFileName,'\\');
+                                char* pch = strrchr(szFileName, DIRECTORY_SEPARATOR_CHAR_A);
+#ifdef HOST_WINDOWS
                                 if(pch == NULL) pch = strrchr(szFileName,':');
+#endif
                                 pFile = NULL;
                                 if(pch) fopen_s(&pFile,pch+1,"rt");
                             }

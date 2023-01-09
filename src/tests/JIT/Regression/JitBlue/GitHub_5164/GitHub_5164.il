@@ -37,7 +37,7 @@
 
 } // end of class LargeStruct
 
-.class private auto ansi beforefieldinit Test_GitHub_5164
+.class public auto ansi beforefieldinit Test_GitHub_5164
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

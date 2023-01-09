@@ -3524,10 +3524,20 @@ is_async_method (MonoMethod *method)
  */
 gboolean
 mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars,
-										   gboolean allow_partial, gboolean allow_gsharedvt)
+									  gboolean allow_partial, gboolean allow_gsharedvt)
 {
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
+
+	if (m_method_get_mem_manager (method)->collectible) {
+		/*
+		 * Generic sharing needs to be disabled for instances in collectible ALCs, because
+		 * static variables are handled differently:
+		 * - stores to them need write barriers since they are stored in the GC heap.
+		 * - their address cannot be computed using MONO_RGCTX_INFO_STATIC_DATA + offset.
+		 */
+		return FALSE;
+	}
 
 	/*
 	if (!mono_debug_count ())
