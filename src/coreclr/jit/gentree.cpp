@@ -19348,7 +19348,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                         GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
 
                         // op2Dup = op2
-                        GenTree* op2Dup = fgMakeMultiUse(&op2, clsHnd);;
+                        GenTree* op2Dup = fgMakeMultiUse(&op2, clsHnd);
+                        ;
 
                         // op1 = Sse2.ShiftRightLogical128BitLane(op1, 4)
                         op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(4, TYP_INT),
