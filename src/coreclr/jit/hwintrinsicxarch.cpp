@@ -1629,6 +1629,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_LoadVector128:
+        case NI_SSE2_LoadVector128:
+        case NI_AVX_LoadVector256:
         case NI_Vector128_Load:
         case NI_Vector256_Load:
         case NI_Vector128_LoadUnsafe:
