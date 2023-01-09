@@ -8411,64 +8411,61 @@ interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
  * Check if the given basic block has a known pattern for inlining into callers blocks, if so, return a pointer to the conditional branch instruction.
  *
  * The known patterns are:
- * - `branch`: a branch instruction (either MINT_IS_CONDITIONAL_BRANCH or MINT_BR).
+ * - `branch`: a conditional branch instruction.
  * - `ldc; branch`: a load instruction followed by a binary conditional branch.
  * - `compare; branch`: a compare instruction followed by a unary conditional branch.
  * - `ldc; compare; branch`: a load instruction followed by a compare instruction and a unary conditional branch.
  */
-static gboolean
-interp_inline_into_callers(InterpBasicBlock *bb, InterpInst** cond_ins) {
-	InterpInst *first = interp_first_ins (bb);
-	InterpInst *second = first ? interp_next_ins(first) : NULL;
-	InterpInst *third = second ? interp_next_ins(second) : NULL;
-	
+static InterpInst*
+interp_inline_into_callers(InterpInst *first) {
 	// pattern `branch`
-	if (first && (MINT_IS_CONDITIONAL_BRANCH(first->opcode) || first->opcode == MINT_BR)) {
-		*cond_ins = first;
-		return TRUE;
+	if (MINT_IS_CONDITIONAL_BRANCH(first->opcode)) {
+		return first;
 	}
+	
+	InterpInst *second = interp_next_ins(first);
+	if (!second) 
+		return NULL;
 	// pattern `ldc; unop conditional branch`
-	if (first && second 
-		&& MINT_IS_LDC(first->opcode)
+	if (MINT_IS_LDC(first->opcode)
 		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
-		*cond_ins = second;
-		return TRUE;
+		return second;
 	}
 	// pattern `ldc; binop conditional branch`
-	if (first && second 
-		&& MINT_IS_LDC(first->opcode)
+	if (MINT_IS_LDC(first->opcode)
 		&& MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])) {
-		*cond_ins = second;
-		return TRUE;
+		return second;
 	}
 	// pattern `compare; unop conditional branch`
-	if (first && second 
-		&& MINT_IS_COMPARE(first->opcode)
+	if (MINT_IS_COMPARE(first->opcode)
 		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
-		*cond_ins = second;
-		return TRUE;
-	}
-	// pattern `ldc; compare; conditional branch`
-	if (first && second && third 
-		&& MINT_IS_LDC(first->opcode)
-		&& MINT_IS_COMPARE(second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])
-		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0]) {
-		*cond_ins = third;
-		return TRUE;
+		return second;
 	}
 
-	return FALSE;
+	InterpInst *third = interp_next_ins(second);
+	if (!third) 
+		return NULL;
+	// pattern `ldc; compare; conditional branch`
+	if (MINT_IS_LDC(first->opcode)
+		&& MINT_IS_COMPARE(second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])
+		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0]) {
+		return third;
+	}
+
+	return NULL;
 }
 
 static void
 interp_reorder_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb;
-	InterpInst *cond_ins;
-
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-		gboolean can_inline_into_callers = interp_inline_into_callers(bb, &cond_ins);
-		if (can_inline_into_callers && MINT_IS_CONDITIONAL_BRANCH(cond_ins->opcode)) {
+		InterpInst *first = interp_first_ins (bb);
+		if (!first)
+			continue;
+
+		InterpInst *cond_ins = interp_inline_into_callers(first);
+		if (cond_ins) {
 			// This means this bblock match a pattern for inlining into callers, with a conditional branch
 			int i = 0;
 			while (i < bb->in_count) {
@@ -8483,31 +8480,23 @@ interp_reorder_bblocks (TransformData *td)
 
 					// parent bb will do the conditional branch
 					interp_unlink_bblocks (in_bb, bb);
-
-					last_ins->opcode = cond_ins->opcode;
-					last_ins->sregs [0] = cond_ins->sregs [0];
-					last_ins->sregs [1] = cond_ins->sregs [1];
-					last_ins->info.target_bb = cond_true_bb;
-					InterpInst *src_ins = interp_prev_ins(cond_ins);
-					InterpInst *dest_ins = interp_prev_ins(last_ins);
-
-					// Copy a pattern into caller bb
-					while (src_ins) {
-						InterpInst *new_ins = interp_insert_ins_bb(td, in_bb, dest_ins, src_ins->opcode);
-
-						if (MINT_IS_LDC(new_ins->opcode))
-							new_ins->dreg = src_ins->dreg;
-						else if (MINT_IS_COMPARE(new_ins->opcode)) {
-							new_ins->sregs[0] = src_ins->sregs[0];
-							new_ins->sregs[1] = src_ins->sregs[1];
-							new_ins->dreg = src_ins->dreg;
-						} else
-							g_assert_not_reached ();
-
-						src_ins = interp_prev_ins(src_ins);
-						dest_ins = interp_prev_ins(new_ins);
+					// remove ending MINT_BR
+					interp_clear_ins(last_ins);
+					// copy a pattern into caller bb
+					InterpInst *copy_ins = first;
+					while (copy_ins) {
+						InterpInst *new_ins = interp_insert_ins_bb(td, in_bb, in_bb->last_ins, copy_ins->opcode);
+						new_ins->dreg = copy_ins->dreg;
+						new_ins->sregs[0] = copy_ins->sregs[0];
+						if (mono_interp_op_sregs[copy_ins->opcode] > 1)
+							new_ins->sregs[1] = copy_ins->sregs[1];
+						new_ins->data [0] = copy_ins->data [0];
+						if (copy_ins->opcode == MINT_LDC_I4) {
+							new_ins->data [1] = copy_ins->data [1];
+						}
+						copy_ins = interp_next_ins(copy_ins);
 					}
-
+					in_bb->last_ins->info.target_bb = cond_true_bb;
 					interp_link_bblocks (td, in_bb, cond_true_bb);
 
 					// Create new fallthrough bb between in_bb and in_bb->next_bb
@@ -8538,7 +8527,7 @@ interp_reorder_bblocks (TransformData *td)
 					i++;
 				}
 			}
-		} else if (can_inline_into_callers && cond_ins->opcode == MINT_BR) {
+		} else if (first->opcode == MINT_BR) {
 			// All bblocks jumping into this bblock can jump directly into the br target only if it is a single instruction in a bb
 			int i = 0;
 			while (i < bb->in_count) {
@@ -8547,7 +8536,7 @@ interp_reorder_bblocks (TransformData *td)
 				if (last_ins && (MINT_IS_CONDITIONAL_BRANCH (last_ins->opcode) ||
 						MINT_IS_UNCONDITIONAL_BRANCH (last_ins->opcode)) &&
 						last_ins->info.target_bb == bb) {
-					InterpBasicBlock *target_bb = cond_ins->info.target_bb;
+					InterpBasicBlock *target_bb = first->info.target_bb;
 					last_ins->info.target_bb = target_bb;
 					interp_unlink_bblocks (in_bb, bb);
 					interp_link_bblocks (td, in_bb, target_bb);
