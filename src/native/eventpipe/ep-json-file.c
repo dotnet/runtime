@@ -141,7 +141,9 @@ ep_json_file_write_event_data (
 			json_file_write_string (json_file, buffer);
 	}
 
-	characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "\"Thread (%" PRIu64 ")\"]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
+	// TODO: AOT Event Port, PRIu64 changed to
+	//characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "\"Thread (%" PRIu64 ")\"]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
+	characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "\"%lu\",\n]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
 	if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
 		json_file_write_string (json_file, buffer);
 }

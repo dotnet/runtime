@@ -1,6 +1,9 @@
 #ifndef __DIAGNOSTICS_IPC_PAL_NAMEDPIPE_H__
 #define __DIAGNOSTICS_IPC_PAL_NAMEDPIPE_H__
 
+#undef __AOT_WINDOWS_DEF_NOT_NEEDED___
+#define __AOT_WINDOWS_DEF_NOT_NEEDED___
+
 #include "ds-rt-config.h"
 
 #ifdef ENABLE_PERFTRACING
