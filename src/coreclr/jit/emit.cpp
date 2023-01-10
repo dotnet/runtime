@@ -1035,11 +1035,16 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
-        {
-            unsigned int index    = (emitInsCount - i) % ArrLen(emitLastInstrs);
-            emitLastInstrs[index] = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastInstrs[index] - (BYTE*)emitCurIGfreeBase));
-        }
+        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] =
+            (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
+
+        emitCurLastInsCnt = 1;
+
+        //for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
+        //{
+        //    unsigned int index    = (emitInsCount - i) % ArrLen(emitLastInstrs);
+        //    emitLastInstrs[index] = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastInstrs[index] - (BYTE*)emitCurIGfreeBase));
+        //}
     }
 
     // Reset the buffer free pointers
@@ -1188,9 +1193,7 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    // Clear the last instr at index 0.
-    // We must do this so 'emitHasLastIns' returns 'false' at the beginning of codegen.
-    emitLastInstrs[0] = nullptr;
+    emitCurLastInsCnt = 0;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1512,6 +1515,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     instrDesc* const id = emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] =
         (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
     emitCurIGfreeNext += fullSize;
+    emitCurLastInsCnt++;
 
     assert(sz >= sizeof(void*));
     memset(id, 0, sz);

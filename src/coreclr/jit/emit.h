@@ -2181,6 +2181,7 @@ private:
 
     // A recording of the last instructions, used for peephole optimizations.
     instrDesc* emitLastInstrs[EMIT_MAX_LAST_INS_COUNT];
+    unsigned   emitCurLastInsCnt;
 
     inline instrDesc* emitGetLastIns() const
     {
@@ -2189,7 +2190,7 @@ private:
 
     inline bool emitHasLastIns() const
     {
-        return (emitGetLastIns() != nullptr);
+        return (emitCurLastInsCnt > 0);
     }
 
     // Check if a peephole optimization involving emitLastIns is safe.
@@ -2219,13 +2220,9 @@ private:
     {
         assert(emitCanPeepholeLastIns());
 
-        instrDesc* id;
-
-        // We use 'emitCurIGinsCnt' because we do not want to reference an instruction
-        // from a previous IG as to protect from GC holes.
-        for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
+        for (unsigned i = 0; i < min(emitCurLastInsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
         {
-            id = emitLastInstrs[(emitInsCount - i) % ArrLen(emitLastInstrs)];
+            instrDesc* id = emitLastInstrs[(emitInsCount - i) % ArrLen(emitLastInstrs)];
 
             assert(id != nullptr);
 
