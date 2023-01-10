@@ -12,9 +12,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class UnsupportedTypesTests_Metadata : UnsupportedTypesTests
     {
         public UnsupportedTypesTests_Metadata() : base(
-            new StringSerializerWrapper(
-                UnsupportedTypesTestsContext_Metadata.Default,
-                (options) => new UnsupportedTypesTestsContext_Metadata(options)),
+            new StringSerializerWrapper(UnsupportedTypesTestsContext_Metadata.Default),
             supportsJsonPathOnSerialize: true)
         {
         }
@@ -52,9 +50,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class UnsupportedTypesTests_Default : UnsupportedTypesTests
     {
         public UnsupportedTypesTests_Default() : base(
-            new StringSerializerWrapper(
-                UnsupportedTypesTestsContext_Default.Default,
-                (options) => new UnsupportedTypesTestsContext_Default(options)),
+            new StringSerializerWrapper(UnsupportedTypesTestsContext_Default.Default),
             supportsJsonPathOnSerialize: false)
         {
         }

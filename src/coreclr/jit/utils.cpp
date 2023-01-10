@@ -1384,10 +1384,17 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_GETREFANY:
             case CORINFO_HELP_LDELEMA_REF:
 
                 isPure = true;
+                break;
+
+            // GETREFANY is pure up to the value of the struct argument. We
+            // only support that when it is not an implicit byref.
+            case CORINFO_HELP_GETREFANY:
+#ifndef WINDOWS_AMD64_ABI
+                isPure = true;
+#endif
                 break;
 
             // helpers that return internal handle

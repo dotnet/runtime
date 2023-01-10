@@ -5575,12 +5575,11 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 					decode_int (buf, &buf, limit); //not used
 				}
 			} else if (type == MONO_TYPE_VALUETYPE) {
-				MonoClass *klass;
 				MonoDomain *d;
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
-				klass = decode_typeid (buf, &buf, limit, &d, &err);
+				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
 				goto end;
