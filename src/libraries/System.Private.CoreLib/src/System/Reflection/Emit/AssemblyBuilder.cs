@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Emit
 {
@@ -38,5 +39,16 @@ namespace System.Reflection.Emit
 
         public override Stream? GetManifestResourceStream(Type type, string name) =>
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+
+        internal static void EnsureDynamicCodeSupported()
+        {
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                ThrowDynamicCodeNotSupported();
+            }
+        }
+
+        private static void ThrowDynamicCodeNotSupported() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
     }
 }
