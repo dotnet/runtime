@@ -3740,18 +3740,18 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 		if (start + c->try_offset > end || start + c->try_offset + c->try_len > end)
 			return FALSE;
 		get_bb (td, start + c->try_offset, make_list);
-		mono_bitset_set(il_targets, c->try_offset);
-		mono_bitset_set(il_targets, c->try_offset + c->try_len);
+		mono_bitset_set (il_targets, c->try_offset);
+		mono_bitset_set (il_targets, c->try_offset + c->try_len);
 		if (start + c->handler_offset > end || start + c->handler_offset + c->handler_len > end)
 			return FALSE;
 		get_bb (td, start + c->handler_offset, make_list);
-		mono_bitset_set(il_targets, c->handler_offset);
-		mono_bitset_set(il_targets, c->handler_offset + c->handler_len);
+		mono_bitset_set (il_targets, c->handler_offset);
+		mono_bitset_set (il_targets, c->handler_offset + c->handler_len);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			if (start + c->data.filter_offset > end)
 				return FALSE;
 			get_bb (td, start + c->data.filter_offset, make_list);
-			mono_bitset_set(il_targets, c->data.filter_offset);
+			mono_bitset_set (il_targets, c->data.filter_offset);
 		}
 	}
 	while (ip < end) {
@@ -3813,7 +3813,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
-				mono_bitset_set(il_targets, target - start);
+				mono_bitset_set (il_targets, target - start);
 			}
 			get_bb (td, ip, make_list);
 			break;
@@ -4579,7 +4579,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		exit_bb->stack_height = -1;
 	}
 
-	il_targets = mono_bitset_mem_new(mono_mempool_alloc0(td->mempool, mono_bitset_alloc_size(header->code_size, 0)), header->code_size, 0);
+	il_targets = mono_bitset_mem_new (
+		mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)),
+		header->code_size, 0);
 	if (!get_basic_blocks (td, header, td->gen_sdb_seq_points, il_targets)) {
 		td->has_invalid_code = TRUE;
 		goto exit;
@@ -7905,7 +7907,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
-	mono_bitset_free(il_targets);
+	mono_bitset_free (il_targets);
 	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
 
