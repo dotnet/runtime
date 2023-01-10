@@ -3339,68 +3339,122 @@ void Compiler::fgDebugCheckLinkedLocals()
         return;
     }
 
-    ArrayStack<GenTree*> locals(getAllocator(CMK_DebugOnly));
+    class DebugLocalSequencer : public GenTreeVisitor<DebugLocalSequencer>
+    {
+        ArrayStack<GenTree*> m_locals;
 
+        bool ShouldLink(GenTree* node)
+        {
+            return node->OperIsLocal() || node->OperIsLocalAddr();
+        }
+
+    public:
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        DebugLocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_locals(comp->getAllocator(CMK_DebugOnly))
+        {
+        }
+
+        void Sequence(Statement* stmt)
+        {
+            m_locals.Reset();
+            WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        ArrayStack<GenTree*>* GetSequence()
+        {
+            return &m_locals;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (ShouldLink(node))
+            {
+                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
+                {
+                }
+                else if ((user != nullptr) && user->IsCall() &&
+                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                {
+                }
+                else
+                {
+                    m_locals.Push(node);
+                }
+            }
+
+            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
+            {
+                m_locals.Push(node->gtGetOp1());
+            }
+
+            if (node->IsCall())
+            {
+                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
+                if (defined != nullptr)
+                {
+                    assert(ShouldLink(defined));
+                    m_locals.Push(defined);
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    DebugLocalSequencer seq(this);
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->Statements())
         {
-            locals.Reset();
-
             GenTree* first = stmt->GetRootNode()->gtNext;
             CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
 
+            seq.Sequence(stmt);
+
+            ArrayStack<GenTree*>* expected = seq.GetSequence();
+
+            bool success   = true;
+            int  nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
-                assert((cur->OperIsLocal() || cur->OperIsLocalAddr()) && "Expected locals list to contain only locals");
-                locals.Push(cur);
+                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
+                nodeIndex++;
             }
 
-            if (locals.Height() > 0)
-            {
-                assert(stmt->GetRootNode()->gtPrev == locals.Top());
-            }
-            else
-            {
-                assert(stmt->GetRootNode()->gtPrev == nullptr);
-            }
+            success &= nodeIndex == expected->Height();
 
-            fgSequenceLocals(stmt);
-
-            int index = 0;
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            if (!success && verbose)
             {
-                if (locals.Bottom(index++) == lcl)
+                printf("Locals are improperly linked in the following statement:\n");
+                DISPSTMT(stmt);
+
+                printf("\nExpected:\n");
+                const char* pref = "  ";
+                for (int i = 0; i < expected->Height(); i++)
                 {
-                    continue;
+                    printf("%s[%06u]", pref, dspTreeID(expected->Bottom(i)));
+                    pref = " -> ";
                 }
 
-                if (verbose)
+                printf("\n\nActual:\n");
+                pref = "  ";
+                for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
                 {
-                    printf("Locals are improperly linked in the following statement:\n");
-                    DISPSTMT(stmt);
-
-                    printf("\nExpected:\n");
-                    const char* pref = "  ";
-                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                    {
-                        printf("%s[%06u]", pref, dspTreeID(lcl));
-                        pref = " -> ";
-                    }
-
-                    printf("\n\nActual:\n");
-                    pref = "  ";
-                    for (int i = 0; i < locals.Height(); i++)
-                    {
-                        printf("%s[%06u]", pref, dspTreeID(locals.Bottom(i)));
-                        pref = " -> ";
-                    }
-
-                    printf("\n");
+                    printf("%s[%06u]", pref, dspTreeID(cur));
+                    pref = " -> ";
                 }
 
-                assert(!"Locals are improperly linked!");
+                printf("\n");
             }
+
+            assert(success && "Locals are improperly linked!");
         }
     }
 }
