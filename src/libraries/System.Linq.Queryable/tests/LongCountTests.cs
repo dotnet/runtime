@@ -58,14 +58,14 @@ namespace System.Linq.Tests
         [Fact]
         public void LongCount1()
         {
-            var count = (new int[] { 0 }).AsQueryable().LongCount();
+            var count = new[] { 0 }.AsQueryable().LongCount();
             Assert.Equal(1L, count);
         }
 
         [Fact]
         public void LongCount2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().LongCount(n => n > 0);
+            var count = new[] { 0, 1, 2 }.AsQueryable().LongCount(n => n > 0);
             Assert.Equal(2L, count);
         }
     }

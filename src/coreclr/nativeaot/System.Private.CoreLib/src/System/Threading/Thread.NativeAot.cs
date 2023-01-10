@@ -320,9 +320,22 @@ namespace System.Threading
         /// appropriate for the processor.
         /// TODO: See issue https://github.com/dotnet/corert/issues/4430
         /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 64;
+        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Max iterations to be done in RhSpinWait.
+        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
+        private const int SpinWaitCoopThreshold = 1024;
+
+        internal static void SpinWaitInternal(int iterations)
+        {
+            Debug.Assert(iterations <= SpinWaitCoopThreshold);
+            if (iterations > 0)
+            {
+                RuntimeImports.RhSpinWait(iterations);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         private static void LongSpinWait(int iterations)
         {
             RuntimeImports.RhLongSpinWait(iterations);
@@ -330,20 +343,13 @@ namespace System.Threading
 
         public static void SpinWait(int iterations)
         {
-            if (iterations <= 0)
-                return;
-
-            // Max iterations to be done in RhSpinWait.
-            // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-            const int spinWaitCoopThreshold = 10000;
-
-            if (iterations > spinWaitCoopThreshold)
+            if (iterations > SpinWaitCoopThreshold)
             {
                 LongSpinWait(iterations);
             }
             else
             {
-                RuntimeImports.RhSpinWait(iterations);
+                SpinWaitInternal(iterations);
             }
         }
 

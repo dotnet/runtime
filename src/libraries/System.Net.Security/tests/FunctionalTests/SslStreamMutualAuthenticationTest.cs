@@ -33,23 +33,53 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
+        public enum ClientCertSource
+        {
+            ClientCertificate,
+            SelectionCallback,
+            CertificateContext
+        }
+
+        public static TheoryData<bool, ClientCertSource> BoolAndCertSourceData()
+        {
+            TheoryData<bool, ClientCertSource> data = new();
+
+            foreach (var source in Enum.GetValues<ClientCertSource>())
+            {
+                data.Add(true, source);
+                data.Add(false, source);
+            }
+
+            return data;
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, bool useClientSelectionCallback)
+        [MemberData(nameof(BoolAndCertSourceData))]
+        public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, ClientCertSource certSource)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyCertificate))
             using (var server = new SslStream(stream2, false, AllowAnyCertificate))
             {
-                Task t2 = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                var clientOptions = new SslClientAuthenticationOptions
                 {
-                    ClientCertificates = useClientSelectionCallback ? null : new X509CertificateCollection() { _clientCertificate },
-                    LocalCertificateSelectionCallback = useClientSelectionCallback ? ClientCertSelectionCallback : null,
                     TargetHost = Guid.NewGuid().ToString("N")
-                });
+                };
+
+                switch (certSource)
+                {
+                    case ClientCertSource.ClientCertificate:
+                        clientOptions.ClientCertificates = new X509CertificateCollection() { _clientCertificate };
+                        break;
+                    case ClientCertSource.SelectionCallback:
+                        clientOptions.LocalCertificateSelectionCallback = ClientCertSelectionCallback;
+                        break;
+                    case ClientCertSource.CertificateContext:
+                        clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
+                        break;
+                }
+
+                Task t2 = client.AuthenticateAsClientAsync(clientOptions);
                 Task t1 = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                 {
                     ServerCertificate = _serverCertificate,
@@ -58,35 +88,23 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                if (Capability.IsTrustedRootCertificateInstalled())
+                if (clientCertificateRequired)
                 {
-                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
-                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                    // The behavior to send the Trusted Issuers List by default is off.
-                    //
-                    // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
-                    // by the server using certificates from the Trusted Root Authorities certificate store.
-                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
-
-                    if (clientCertificateRequired)
-                    {
-                        Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                        Assert.True(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
-                    }
-                    else
-                    {
-                        // Even though the certificate was provided, it was not requested by the server and thus the client
-                        // was not authenticated.
-                        Assert.False(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
-                        Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
-                    }
+                    Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+                    Assert.True(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
+                }
+                else
+                {
+                    // Even though the certificate was provided, it was not requested by the server and thus the client
+                    // was not authenticated.
+                    Assert.False(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+                    Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
                 }
             }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65563", TestPlatforms.Android)]
         public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
         {
@@ -133,6 +151,7 @@ namespace System.Net.Security.Tests
         {
             return true;
         }
+
         private X509Certificate ClientCertSelectionCallback(
             object sender,
             string targetHost,

@@ -9,7 +9,8 @@
 {
 }
 
-.method assembly static int32  main() cil managed
+.class public auto ansi Test_DevDiv_216571 extends [mscorlib] System.Object {
+.method public assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  3
@@ -37,3 +38,4 @@
   IL_0032:  ret
 
 } // end of global method main
+}

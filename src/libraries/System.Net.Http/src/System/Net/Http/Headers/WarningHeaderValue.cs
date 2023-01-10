@@ -132,7 +132,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static WarningHeaderValue Parse(string? input)
+        public static WarningHeaderValue Parse(string input)
         {
             int index = 0;
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);

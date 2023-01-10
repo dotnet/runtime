@@ -477,6 +477,7 @@ extern jmethodID g_SSLContextCreateSSLEngineMethodWithHostAndPort;
 extern jclass    g_SSLSession;
 extern jmethodID g_SSLSessionGetApplicationBufferSize;
 extern jmethodID g_SSLSessionGetCipherSuite;
+extern jmethodID g_SSLSessionGetLocalCertificates;
 extern jmethodID g_SSLSessionGetPacketBufferSize;
 extern jmethodID g_SSLSessionGetPeerCertificates;
 extern jmethodID g_SSLSessionGetProtocol;

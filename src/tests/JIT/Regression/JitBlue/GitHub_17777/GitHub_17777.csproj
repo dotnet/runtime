@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <!-- Timeout on Arm64 -->
     <GCStressIncompatible>true</GCStressIncompatible>

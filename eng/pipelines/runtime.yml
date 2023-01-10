@@ -203,7 +203,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:UseNativeAotCoreLib=true
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -225,7 +225,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:UseNativeAotCoreLib=true
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -249,7 +249,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release /p:UseNativeAotCoreLib=true
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             condition: >-
               or(
@@ -274,7 +274,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT
-            buildArgs: -s clr.runtime+clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true /p:UseNativeAotCoreLib=true
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -311,7 +311,7 @@ extends:
           buildConfig: release
           platforms:
           - Android_x64
-          #- Browser_wasm - unused
+          - Browser_wasm
           - tvOS_arm64
           - iOS_arm64
           - MacCatalyst_x64
@@ -445,7 +445,7 @@ extends:
           platforms:
             - Browser_wasm
           nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
           alwaysRun: ${{ variables.isRollingBuild }}
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -453,7 +453,14 @@ extends:
           platforms:
             - Browser_wasm
           nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:WasmEnablePerfTracing=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
+          alwaysRun: ${{ variables.isRollingBuild }}
+
+      # BUILD ONLY - WASI/Wasm
+      - template: /eng/pipelines/common/templates/wasi-build-only.yml
+        parameters:
+          platforms:
+            - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #
@@ -670,10 +677,10 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
-            #- mono_browser_offsets - unused
+            - mono_browser_offsets
             monoCrossAOTTargetOS:
             - Android
-            #- Browser - unused
+            - Browser
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -691,19 +698,39 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
-            #- mono_browser_offsets - unused
+            - mono_browser_offsets
             - mono_tvos_offsets
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
             - Android
-            #- Browser - unused
+            - Browser
             - tvOS
             - iOS
             - MacCatalyst
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+                
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - Linux_arm64
+          - OSX_arm64
+          jobParameters:
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - Browser
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 

@@ -225,6 +225,7 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 value1, float value2)
         {
@@ -279,6 +280,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, float right)
         {
@@ -290,6 +292,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(float left, Vector4 right)
         {
@@ -317,6 +320,7 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_UnaryNegation" /> method defines the unary negation operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator -(Vector4 value)
         {
@@ -629,13 +633,18 @@ namespace System.Numerics
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Transform(Vector4 vector, Matrix4x4 matrix)
+            => Transform(vector, in matrix.AsImpl());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector4 Transform(Vector4 vector, in Matrix4x4.Impl matrix)
         {
-            return new Vector4(
-                (vector.X * matrix.M11) + (vector.Y * matrix.M21) + (vector.Z * matrix.M31) + (vector.W * matrix.M41),
-                (vector.X * matrix.M12) + (vector.Y * matrix.M22) + (vector.Z * matrix.M32) + (vector.W * matrix.M42),
-                (vector.X * matrix.M13) + (vector.Y * matrix.M23) + (vector.Z * matrix.M33) + (vector.W * matrix.M43),
-                (vector.X * matrix.M14) + (vector.Y * matrix.M24) + (vector.Z * matrix.M34) + (vector.W * matrix.M44)
-            );
+            Vector4 result = matrix.X * vector.X;
+
+            result += matrix.Y * vector.Y;
+            result += matrix.Z * vector.Z;
+            result += matrix.W * vector.W;
+
+            return result;
         }
 
         /// <summary>Transforms a four-dimensional vector by the specified Quaternion rotation value.</summary>
@@ -672,11 +681,17 @@ namespace System.Numerics
         /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array)
         {
-            CopyTo(array, 0);
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if (array.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -689,37 +704,31 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="index" /> is greater than or equal to the array length.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
-            if ((index < 0) || (index >= array.Length))
+            if ((uint)index >= (uint)array.Length)
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
-            if ((array.Length - index) < 4)
+            if ((array.Length - index) < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            array[index] = X;
-            array[index + 1] = Y;
-            array[index + 2] = Z;
-            array[index + 3] = W;
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 4.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <exception cref="System.ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if (destination.Length < 4)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -730,15 +739,15 @@ namespace System.Numerics
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 4.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <returns><see langword="true" /> if the source vector was successfully copied to <paramref name="destination" />. <see langword="false" /> if <paramref name="destination" /> is not large enough to hold the source vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if (destination.Length < 4)
+            if (destination.Length < Count)
             {
                 return false;
             }
 
             Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
-
             return true;
         }
 

@@ -57,6 +57,7 @@ internal static class ReflectionTest
 #if !REFLECTION_FROM_USAGE
         TestNotReflectedIsNotReflectable.Run();
         TestGenericInstantiationsAreEquallyReflectable.Run();
+        TestStackTraces.Run();
 #endif
         TestAttributeInheritance2.Run();
         TestInvokeMethodMetadata.Run();
@@ -80,6 +81,8 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
+        TestBaseOnlyUsedFromCode.Run();
+        TestEntryPoint.Run();
         return 100;
     }
 
@@ -1506,6 +1509,33 @@ internal static class ReflectionTest
         }
     }
 
+    class TestBaseOnlyUsedFromCode
+    {
+        class SomeReferenceType { }
+
+        class SomeGenericClass<T>
+        {
+            public static string Cookie;
+        }
+
+        class OtherGenericClass<T>
+        {
+            public override string ToString() => SomeGenericClass<T>.Cookie;
+        }
+
+        public static void Run()
+        {
+            SomeGenericClass<SomeReferenceType>.Cookie = "Hello";
+
+            var inst = Activator.CreateInstance(typeof(OtherGenericClass<>).MakeGenericType(GetSomeReferenceType()));
+
+            if (inst.ToString() != "Hello")
+                throw new Exception();
+
+            static Type GetSomeReferenceType() => typeof(SomeReferenceType);
+        }
+    }
+
     class TestRuntimeLab929Regression
     {
         static Type s_atom = typeof(Atom);
@@ -1598,6 +1628,58 @@ internal static class ReflectionTest
             var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+        }
+    }
+
+    class TestStackTraces
+    {
+        class RefType { }
+        struct ValType { }
+
+        class C1<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M1(T c1m1param) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M2(T c1m2param) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M3<U>(T c1m3param1, U c1m3param2) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M4<U>(T c1m4param1, U c1m4param2) => Environment.StackTrace;
+        }
+
+        public static void Run()
+        {
+            // These methods are visible to reflection
+            typeof(C1<RefType>).GetMethod(nameof(C1<RefType>.M1));
+            typeof(C1<RefType>).GetMethod(nameof(C1<RefType>.M3));
+            typeof(C1<ValType>).GetMethod(nameof(C1<ValType>.M1));
+            typeof(C1<ValType>).GetMethod(nameof(C1<ValType>.M3));
+
+            Check("C1", "M1", "c1m1param", true, C1<RefType>.M1(default));
+            Check("C1", "M1", "c1m1param", true, C1<ValType>.M1(default));
+            Check("C1", "M2", "c1m2param", false, C1<RefType>.M2(default));
+            Check("C1", "M2", "c1m2param", false, C1<ValType>.M2(default));
+            Check("C1", "M3", "c1m3param", true, C1<RefType>.M3<RefType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<RefType>.M3<ValType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<ValType>.M3<RefType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<ValType>.M3<ValType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<RefType>.M4<RefType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<RefType>.M4<ValType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<ValType>.M4<RefType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<ValType>.M4<ValType>(default, default));
+
+            static void Check(string type, string method, string param, bool hasParam, string s)
+            {
+                if (!s.Contains(type))
+                    throw new Exception($"'{s}' doesn't contain '{type}'");
+                if (!s.Contains(method))
+                    throw new Exception($"'{s}' doesn't contain '{method}'");
+                if (hasParam && !s.Contains(param))
+                    throw new Exception($"'{s}' doesn't contain '{param}'");
+                if (!hasParam && s.Contains(param))
+                    throw new Exception($"'{s}' contains '{param}'");
+            }
         }
     }
 #endif
@@ -2038,6 +2120,16 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestEntryPoint
+    {
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestEntryPoint));
+			if (Assembly.GetEntryAssembly().EntryPoint == null)
+				throw new Exception();
         }
     }
 

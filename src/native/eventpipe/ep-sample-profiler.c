@@ -211,7 +211,7 @@ ep_sample_profiler_init (EventPipeProviderCallbackDataQueue *provider_callback_d
 	ep_requires_lock_held ();
 
 	if (!_sampling_provider) {
-		_sampling_provider = provider_create_register (ep_config_get_sample_profiler_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
+		_sampling_provider = provider_create_register (ep_config_get_sample_profiler_provider_name_utf8 (), NULL, NULL, provider_callback_data_queue);
 		ep_raise_error_if_nok (_sampling_provider != NULL);
 		_thread_time_event = provider_add_event (
 			_sampling_provider,

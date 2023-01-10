@@ -67,7 +67,7 @@ namespace BadMax1
     }
 
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int RunRepro()
@@ -109,7 +109,7 @@ namespace BadMax1
         }
 
 
-        private static int Main()
+        public static int Main()
         {
             return App.RunRepro();
         }

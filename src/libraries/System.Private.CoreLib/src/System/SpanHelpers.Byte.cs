@@ -986,13 +986,21 @@ namespace System
 
                 for (; (nint)i <= (nint)length - 4; i += 4)
                 {
-                    if (Unsafe.Add(ref first, i + 0) != Unsafe.Add(ref second, i + 0)) return i + 0;
-                    if (Unsafe.Add(ref first, i + 1) != Unsafe.Add(ref second, i + 1)) return i + 1;
-                    if (Unsafe.Add(ref first, i + 2) != Unsafe.Add(ref second, i + 2)) return i + 2;
-                    if (Unsafe.Add(ref first, i + 3) != Unsafe.Add(ref second, i + 3)) return i + 3;
+                    if (Unsafe.Add(ref first, i + 0) != Unsafe.Add(ref second, i + 0)) goto Found0;
+                    if (Unsafe.Add(ref first, i + 1) != Unsafe.Add(ref second, i + 1)) goto Found1;
+                    if (Unsafe.Add(ref first, i + 2) != Unsafe.Add(ref second, i + 2)) goto Found2;
+                    if (Unsafe.Add(ref first, i + 3) != Unsafe.Add(ref second, i + 3)) goto Found3;
                 }
 
                 return length;
+            Found0:
+                return i;
+            Found1:
+                return i + 1;
+            Found2:
+                return i + 2;
+            Found3:
+                return i + 3;
             }
 
             Debug.Assert(length >= (uint)Vector128<byte>.Count);

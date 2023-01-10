@@ -130,7 +130,7 @@ public:
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();
@@ -258,14 +258,6 @@ public:
         return GetPEAssembly()->HashIdentity();
     }
 
-    //****************************************************************************************
-    //
-    // Uses the given token to load a module or another assembly. Returns the module in
-    // which the implementation resides.
-
-    mdFile GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile);
-    mdFile GetManifestFileToken(LPCSTR name);
-
     // On failure:
     //      if loadFlag == Loader::Load => throw
     //      if loadFlag != Loader::Load => return NULL
@@ -278,8 +270,6 @@ public:
                                         mdTypeRef        typeRef,
                                         Loader::LoadFlag loadFlag,
                                         BOOL *           pfNoResolutionScope);
-
-    Module *FindModuleByName(LPCSTR moduleName);
 
     //****************************************************************************************
     //

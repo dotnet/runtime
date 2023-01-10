@@ -295,10 +295,7 @@ namespace Internal.Runtime.TypeLoader
         public int GcDataSize;
         public int ThreadDataSize;
 
-        public bool HasStaticConstructor
-        {
-            get { return TypeBeingBuilt.HasStaticConstructor; }
-        }
+        public bool HasStaticConstructor => ClassConstructorPointer.HasValue;
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
