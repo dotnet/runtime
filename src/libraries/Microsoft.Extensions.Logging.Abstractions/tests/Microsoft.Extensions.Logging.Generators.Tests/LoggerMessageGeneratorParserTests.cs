@@ -675,6 +675,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterOut.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
