@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -50,7 +51,7 @@ namespace System.Runtime.InteropServices
             return true;
         }
 
-        public static unsafe bool TryGetObject(void* unknown, out object? obj)
+        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
             if (unknown == null)

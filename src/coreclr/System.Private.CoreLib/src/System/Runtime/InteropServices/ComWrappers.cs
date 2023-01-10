@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -60,7 +61,7 @@ namespace System.Runtime.InteropServices
         /// <param name="unknown">An unmanaged wrapper</param>
         /// <param name="obj">A managed object</param>
         /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
-        public static unsafe bool TryGetObject(void* unknown, out object? obj)
+        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
             if (unknown == null)

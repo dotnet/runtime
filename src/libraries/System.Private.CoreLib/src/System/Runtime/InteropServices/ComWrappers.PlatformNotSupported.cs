@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
@@ -13,7 +14,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        public static unsafe bool TryGetObject(void* unknown, out object? obj)
+        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
         {
             throw new PlatformNotSupportedException();
         }
