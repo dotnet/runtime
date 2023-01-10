@@ -14,7 +14,7 @@
   <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
 
   <Target Name="BuildAllFrameworkLibraries"
-    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);$(BuildAllFrameworkLibrariesCore)" />
+    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);BuildAllFrameworkLibrariesCore" />
 
   <Target Name="BuildAllFrameworkLibrariesCore"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
