@@ -600,9 +600,9 @@ namespace System.Security.Cryptography
             {
                 SecKeyPair? current = _keys;
 
-                if (current != null && current.PublicKey == null)
+                if (current != null)
                 {
-                    throw new ObjectDisposedException(nameof(RSA));
+                    ObjectDisposedException.ThrowIf(current.PublicKey is null, this);
                 }
             }
 

@@ -65,6 +65,9 @@
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-browser'))">
     <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-wasi'))">
+    <CrossPlatformAndHasNoWasiTarget>true</CrossPlatformAndHasNoWasiTarget>
+  </PropertyGroup>
 
   <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
   <ItemGroup>
@@ -77,6 +80,9 @@
   <!-- Enables browser warnings for cross platform or Browser targeted builds -->
   <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'wasi' or '$(CrossPlatformAndHasNoWasiTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="wasi"/>
   </ItemGroup>
 
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
