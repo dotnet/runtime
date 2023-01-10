@@ -12,6 +12,7 @@
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(MSBuildProjectExtension)' != '.pkgproj'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
 
   <!--

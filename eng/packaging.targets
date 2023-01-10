@@ -28,9 +28,7 @@
     <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
                                        '$(BuildAllConfigurations)' == 'true' and
                                        '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
-    <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
-    <LibIntellisenseDocumentationFilePath>$(XmlDocFileRoot)1033\$(AssemblyName).xml</LibIntellisenseDocumentationFilePath>
-    <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
+
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
@@ -107,28 +105,6 @@
                             Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
                                        ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48')))" />
   </ItemGroup>
-
-  <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
-  <Target Name="ChangeDocumentationFileForPackaging"
-          AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
-    <ItemGroup>
-      <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
-      <DocumentationProjectOutputGroupOutput Include="$(LibIntellisenseDocumentationFilePath)" />
-    </ItemGroup>
-  </Target>
-
-  <!-- <Target Name="CopyDocumentationFileToXmlDocDir"
-          AfterTargets="CoreCompile"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'"
-          BeforeTargets="ChangeDocumentationFileForPackaging">
-
-    <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
-          DestinationFolder="$(XmlDocDir)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-  </Target> -->
 
   <!-- Add runtime specific file into the package if the tfm is RID specific. -->
   <Target Name="AddRuntimeSpecificFilesToPackage"

@@ -1,0 +1,32 @@
+<Project>
+
+  <PropertyGroup>
+      <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
+    <IntellisensePackageFolderName Condition="'$(IsPackable)' == '' or '$(IsPackable)' == 'false'">net</IntellisensePackageFolderName>
+    <IntellisensePackageFolderName Condition="'$(IsPackable)' == 'true'">dotnet-plat-ext</IntellisensePackageFolderName>
+    <LibIntellisenseDocumentationFilePath Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', '$(MSBuildProjectName)', '$(LibrariesConfiguration)', '$(NetCoreAppCurrent)', '$(MSBuildProjectName).xml'))</LibIntellisenseDocumentationFilePath>
+    <LibIntellisenseDocumentationFilePath Condition="'$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false'">$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', '$(IntellisensePackageFolderName)', '1033', '$(AssemblyName).xml'))</LibIntellisenseDocumentationFilePath>
+    <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
+  </PropertyGroup>
+
+  <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
+  <Target Name="ChangeDocumentationFileForPackaging"
+          AfterTargets="DocumentationProjectOutputGroup"
+          Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
+    <ItemGroup>
+      <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
+      <DocumentationProjectOutputGroupOutput Include="$(LibIntellisenseDocumentationFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyDocumentationFileToXmlDocDir"
+          AfterTargets="CoreCompile"
+          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+          DependsOnTargets="ChangeDocumentationFileForPackaging">
+    <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
+          DestinationFolder="$(XmlDocDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+  </Target>
+
+</Project>
