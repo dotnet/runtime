@@ -624,6 +624,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetTypeRefProps(
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::ResolveTypeRef(mdTypeRef tr, REFIID riid, IUnknown** ppIScope, mdTypeDef* ptd)
 {
+    UNREFERENCED_PARAMETER(tr);
+    UNREFERENCED_PARAMETER(riid);
+    UNREFERENCED_PARAMETER(ppIScope);
+    UNREFERENCED_PARAMETER(ptd);
+
     // Requires VM knowledge
     return E_NOTIMPL;
 }
@@ -1001,6 +1006,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     ULONG       cbSigBlob,
     mdToken* pmb)
 {
+    UNREFERENCED_PARAMETER(td);
+    UNREFERENCED_PARAMETER(szName);
+    UNREFERENCED_PARAMETER(pvSigBlob);
+    UNREFERENCED_PARAMETER(cbSigBlob);
+    UNREFERENCED_PARAMETER(pmb);
+
     return E_NOTIMPL;
 }
 
@@ -1011,6 +1022,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     ULONG       cbSigBlob,
     mdMethodDef* pmb)
 {
+    UNREFERENCED_PARAMETER(td);
+    UNREFERENCED_PARAMETER(szName);
+    UNREFERENCED_PARAMETER(pvSigBlob);
+    UNREFERENCED_PARAMETER(cbSigBlob);
+    UNREFERENCED_PARAMETER(pmb);
+
     return E_NOTIMPL;
 }
 
@@ -1021,6 +1038,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     ULONG       cbSigBlob,
     mdFieldDef* pmb)
 {
+    UNREFERENCED_PARAMETER(td);
+    UNREFERENCED_PARAMETER(szName);
+    UNREFERENCED_PARAMETER(pvSigBlob);
+    UNREFERENCED_PARAMETER(cbSigBlob);
+    UNREFERENCED_PARAMETER(pmb);
+
     return E_NOTIMPL;
 }
 
@@ -1031,6 +1054,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     ULONG       cbSigBlob,
     mdMemberRef* pmr)
 {
+    UNREFERENCED_PARAMETER(td);
+    UNREFERENCED_PARAMETER(szName);
+    UNREFERENCED_PARAMETER(pvSigBlob);
+    UNREFERENCED_PARAMETER(cbSigBlob);
+    UNREFERENCED_PARAMETER(pmr);
+
     return E_NOTIMPL;
 }
 
@@ -1053,6 +1082,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
     mdcursor_t cursor;
     if (!md_token_to_cursor(_md_ptr.get(), mb, &cursor))
         return CLDB_E_INDEX_NOTFOUND;
+
+    mdTypeDef classDef;
+    if (!md_find_token_of_range_element(cursor, &classDef))
+        return CLDB_E_RECORD_NOTFOUND;
+    *pClass = classDef;
 
     uint32_t attrs;
     if (1 != md_get_column_value_as_constant(cursor, mdtMethodDef_Flags, 1, &attrs))
@@ -1727,6 +1761,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumUnresolvedMethods(
     ULONG       cMax,
     ULONG* pcTokens)
 {
+    UNREFERENCED_PARAMETER(phEnum);
+    UNREFERENCED_PARAMETER(rMethods);
+    UNREFERENCED_PARAMETER(cMax);
+    UNREFERENCED_PARAMETER(pcTokens);
+
     // IMetaDataEmit only
     return E_NOTIMPL;
 }
@@ -2880,6 +2919,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParams(
     ULONG       cMax,
     ULONG* pcGenericParams)
 {
+    UNREFERENCED_PARAMETER(phEnum);
+    UNREFERENCED_PARAMETER(tk);
+    UNREFERENCED_PARAMETER(rGenericParams);
+    UNREFERENCED_PARAMETER(cMax);
+    UNREFERENCED_PARAMETER(pcGenericParams);
+
     return E_NOTIMPL;
 }
 
@@ -2894,6 +2939,15 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamProps(
     ULONG        cchName,
     ULONG* pchName)
 {
+    UNREFERENCED_PARAMETER(gp);
+    UNREFERENCED_PARAMETER(pulParamSeq);
+    UNREFERENCED_PARAMETER(pdwParamFlags);
+    UNREFERENCED_PARAMETER(ptOwner);
+    UNREFERENCED_PARAMETER(reserved);
+    UNREFERENCED_PARAMETER(wzname);
+    UNREFERENCED_PARAMETER(cchName);
+    UNREFERENCED_PARAMETER(pchName);
+
     return E_NOTIMPL;
 }
 
@@ -2903,6 +2957,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSpecProps(
     PCCOR_SIGNATURE* ppvSigBlob,
     ULONG* pcbSigBlob)
 {
+    UNREFERENCED_PARAMETER(mi);
+    UNREFERENCED_PARAMETER(tkParent);
+    UNREFERENCED_PARAMETER(ppvSigBlob);
+    UNREFERENCED_PARAMETER(pcbSigBlob);
+
     return E_NOTIMPL;
 }
 
@@ -2913,6 +2972,12 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParamConstraints(
     ULONG       cMax,
     ULONG* pcGenericParamConstraints)
 {
+    UNREFERENCED_PARAMETER(phEnum);
+    UNREFERENCED_PARAMETER(tk);
+    UNREFERENCED_PARAMETER(rGenericParamConstraints);
+    UNREFERENCED_PARAMETER(cMax);
+    UNREFERENCED_PARAMETER(pcGenericParamConstraints);
+
     return E_NOTIMPL;
 }
 
@@ -2921,6 +2986,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamConstraintProps(
     mdGenericParam* ptGenericParam,
     mdToken* ptkConstraintType)
 {
+    UNREFERENCED_PARAMETER(gpc);
+    UNREFERENCED_PARAMETER(ptGenericParam);
+    UNREFERENCED_PARAMETER(ptkConstraintType);
+
     return E_NOTIMPL;
 }
 
@@ -2928,6 +2997,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPEKind(
     DWORD* pdwPEKind,
     DWORD* pdwMAchine)
 {
+    UNREFERENCED_PARAMETER(pdwPEKind);
+    UNREFERENCED_PARAMETER(pdwMAchine);
+
     return E_NOTIMPL;
 }
 
@@ -2937,6 +3009,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(
     DWORD       ccBufSize,
     DWORD* pccBufSize)
 {
+    UNREFERENCED_PARAMETER(pwzBuf);
+    UNREFERENCED_PARAMETER(ccBufSize);
+    UNREFERENCED_PARAMETER(pccBufSize);
+
     return E_NOTIMPL;
 }
 
@@ -2947,5 +3023,11 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSpecs(
     ULONG       cMax,
     ULONG* pcMethodSpecs)
 {
+    UNREFERENCED_PARAMETER(phEnum);
+    UNREFERENCED_PARAMETER(tk);
+    UNREFERENCED_PARAMETER(rMethodSpecs);
+    UNREFERENCED_PARAMETER(cMax);
+    UNREFERENCED_PARAMETER(pcMethodSpecs);
+
     return E_NOTIMPL;
 }

@@ -603,6 +603,7 @@ static int32_t col_compare_2bytes(void const* key, void const* row, void* cxt)
     assert(col_len == 2);
     bool success = read_u16(&col_data, &col_len, &rhs);
     assert(success && col_len == 0);
+    (void)success;
 
     return (lhs == rhs) ? 0
         : (lhs < rhs) ? -1
@@ -622,6 +623,7 @@ static int32_t col_compare_4bytes(void const* key, void const* row, void* cxt)
     assert(col_len == 4);
     bool success = read_u32(&col_data, &col_len, &rhs);
     assert(success && col_len == 0);
+    (void)success;
 
     return (lhs == rhs) ? 0
         : (lhs < rhs) ? -1

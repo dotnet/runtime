@@ -311,6 +311,7 @@ namespace Regression.UnitTests
                 Assert.Equal(0, hr);
                 return ptd;
             }
+
             static uint GetTypeDefBaseToken(IMetaDataImport import, uint tk)
             {
                 var name = new char[CharBuffer];
@@ -1004,6 +1005,7 @@ namespace Regression.UnitTests
             values.Add((uint)hr);
             if (hr >= 0)
             {
+                values.Add(typeDef);
                 uint hash = HashCharArray(name, pchMethod);
                 values.Add(hash);
                 values.Add((uint)pchMethod);

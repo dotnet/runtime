@@ -39,9 +39,9 @@ namespace Common
         private static unsafe nint GetBaselineRaw()
         {
 #if NETFX_20_BASELINE
-            var baseline = Path.Combine(NetFx20Dir, "mscorwks.dll");
+            var baseline = Path.Combine(GetNetFx20Install(), "mscorwks.dll");
 #elif NETFX_40_BASELINE
-            var baseline = Path.Combine(NetFx40Dir, "clr.dll");
+            var baseline = Path.Combine(GetNetFx40Install(), "clr.dll");
 #else
             var runtimeName =
                 OperatingSystem.IsWindows() ? "coreclr.dll"
@@ -73,11 +73,6 @@ namespace Common
             return dispenser;
         }
 
-        private static string GetCurrentDirectory()
-        {
-            return @"";
-        }
-
         private static unsafe IMetaDataDispenser GetCurrent()
         {
             var runtimeName =
@@ -85,9 +80,7 @@ namespace Common
                 : OperatingSystem.IsMacOS() ? "libdnmd_interfaces.dylib"
                 : "libdnmd_interfaces.so";
 
-            var current = Path.Combine(GetCurrentDirectory(), runtimeName);
-
-            nint mod = NativeLibrary.Load(current);
+            nint mod = NativeLibrary.Load(runtimeName);
             var getter = (delegate* unmanaged<in Guid, out IMetaDataDispenser, int>)NativeLibrary.GetExport(mod, "GetDispenser");
 
             Guid iid = typeof(IMetaDataDispenser).GUID;

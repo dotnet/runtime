@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="$(NativeOutputPath)/*dnmd_interfaces*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="$(ArtifactsDir)bin/Regression.TargetAssembly/$(TargetFrameworkLatest)/Regression.TargetAssembly.dll" />
   </ItemGroup>
 

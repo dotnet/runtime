@@ -104,7 +104,7 @@ bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index
     coded_index_entry const* ci_entry = &coded_index_map[ci_idx];
 
     // Verify the supplied table type is valid for encoding.
-    uint32_t tgt_table = ExtractTokenType(tk);
+    mdtable_id_t tgt_table = ExtractTokenType(tk);
     uint32_t row;
     for (uint8_t i = 0; i < ci_entry->lookup_len; ++i)
     {
@@ -205,6 +205,8 @@ bool initialize_table_details(
 
 #define CODED_INDEX_ARGS(x) all_table_row_counts, x
 #define TABLE_INDEX_ARGS(x) all_table_row_counts, x
+#pragma warning(push)
+#pragma warning(disable:4063)
     switch (id)
     {
     case mdtid_Module: // II.22.30
@@ -529,11 +531,14 @@ bool initialize_table_details(
         assert(!"Unknown metadata table ID");
         return false;
     }
+#pragma warning(pop)
 #undef TABLE_INDEX_ARGS
 #undef CODED_INDEX_ARGS
 
     assert(table->column_count != 0);
-    table->row_size_bytes = compute_row_offsets_size(table->column_details, table->column_count);
+    uint32_t size_bytes = compute_row_offsets_size(table->column_details, table->column_count);
+    assert(size_bytes <= UINT8_MAX);
+    table->row_size_bytes = (uint8_t)size_bytes;
     return true;
 }
 

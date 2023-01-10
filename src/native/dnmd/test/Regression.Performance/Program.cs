@@ -85,15 +85,20 @@ namespace Regression.Performance
     {
         public static void Main(string[] args)
         {
-            if (args.Length != 1)
+            string regperfPath;
+            if (args.Length > 0)
             {
-                Console.Error.WriteLine("Must provide path to regperf.");
-                return;
+                regperfPath = args[0];
+            }
+            else
+            {
+                regperfPath =
+                    OperatingSystem.IsWindows() ? "regperf.dll"
+                    : OperatingSystem.IsMacOS() ? "libregperf.dylib"
+                    : "libregperf.so";
             }
 
-            var path = args[0];
-
-            var test = new Compare(path);
+            var test = new Compare(regperfPath);
 
             Console.WriteLine("Warm-up");
             test.Run(100);
