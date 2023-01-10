@@ -53,6 +53,8 @@ namespace ComWrappersTests.Common
 
     public struct IUnknownVtbl
     {
+        public static Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+
         public IntPtr QueryInterface;
         public IntPtr AddRef;
         public IntPtr Release;
@@ -162,6 +164,12 @@ namespace ComWrappersTests.Common
         [SuppressGCTransition]
         [DllImport(nameof(MockReferenceTrackerRuntime))]
         extern public static byte IsTrackerObjectConnected(IntPtr instance);
+
+        // API used to wrap a QueryInterface(). This is used for testing
+        // scenarios where triggering off of the QueryInterface() slot is
+        // done by the runtime.
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static IntPtr WrapQueryInterface(IntPtr queryInterface);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]

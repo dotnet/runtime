@@ -345,19 +345,32 @@ namespace
     // 5c13e51c-4f32-4726-a3fd-f3edd63da3a0
     const GUID IID_TaggedImpl = { 0x5c13e51c, 0x4f32, 0x4726, { 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0 } };
 
+    class DECLSPEC_UUID("5c13e51c-4f32-4726-a3fd-f3edd63da3a0") ITaggedImpl : public IUnknown
+    {
+    public:
+        STDMETHOD(IsCurrentVersion)(_In_ void* version) = 0;
+    };
+
+    HRESULT STDMETHODCALLTYPE ITaggedImpl_IsCurrentVersion(_In_ void*, _In_ void* version)
+    {
+        return (version == (void*)&ITaggedImpl_IsCurrentVersion) ? S_OK : E_FAIL;
+    }
+
     // Hard-coded ManagedObjectWrapper tagged vtable.
     const struct
     {
         decltype(&ManagedObjectWrapper_QueryInterface) QueryInterface;
         decltype(&ManagedObjectWrapper_AddRef) AddRef;
         decltype(&ManagedObjectWrapper_Release) Release;
+        decltype(&ITaggedImpl_IsCurrentVersion) IsCurrentVersion;
     } ManagedObjectWrapper_TaggedImpl {
         &ManagedObjectWrapper_QueryInterface,
         &ManagedObjectWrapper_AddRef,
-        &ManagedObjectWrapper_Release
+        &ManagedObjectWrapper_Release,
+        &ITaggedImpl_IsCurrentVersion,
     };
 
-    static_assert(sizeof(ManagedObjectWrapper_TaggedImpl) == (3 * sizeof(void*)), "Unexpected vtable size");
+    static_assert(sizeof(ManagedObjectWrapper_TaggedImpl) == (4 * sizeof(void*)), "Unexpected vtable size");
 }
 
 void ManagedObjectWrapper::GetIUnknownImpl(
@@ -388,9 +401,12 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
         // It is possible the user has defined their own IUnknown impl so
         // we fallback to the tagged interface approach to be sure. This logic isn't
         // handled by the DAC logic and that is by-design.
-        ComHolder<IUnknown> implMaybe;
-        if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe))
+        ComHolder<ITaggedImpl> implMaybe;
+        if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe)
+            || S_OK != implMaybe->IsCurrentVersion(&ITaggedImpl_IsCurrentVersion))
+        {
             return nullptr;
+        }
     }
 
     ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);

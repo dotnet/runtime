@@ -36,35 +36,35 @@ namespace System.Runtime.InteropServices
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
-        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
         {
-            externalComObject = null;
-            if (wrapperMaybe == null
-                || !s_rcwTable.TryGetValue(wrapperMaybe, out NativeObjectWrapper? wrapper))
+            unknown = null;
+            if (obj == null
+                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
                 return false;
             }
 
             Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out nint pUnk);
-            externalComObject = (void*)pUnk;
+            unknown = (void*)pUnk;
             return true;
         }
 
-        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        public static unsafe bool TryGetObject(void* unknown, out object? obj)
         {
-            instance = null;
-            if (wrapperMaybe == null)
+            obj = null;
+            if (unknown == null)
             {
                 return false;
             }
 
-            ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch((nint)wrapperMaybe);
+            ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch((nint)unknown);
             if (comInterfaceDispatch == null)
             {
                 return false;
             }
 
-            instance = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+            obj = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
             return true;
         }
 
@@ -565,7 +565,14 @@ namespace System.Runtime.InteropServices
                 {
                     return null;
                 }
+
+                IntPtr currentVersion = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
+                int hr = ((delegate* unmanaged<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
                 Marshal.Release(implMaybe);
+                if (hr != 0)
+                {
+                    return null;
+                }
             }
 
             return (ComInterfaceDispatch*)comObject;
@@ -730,7 +737,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        protected internal static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
             fpAddRef = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
@@ -835,6 +842,14 @@ namespace System.Runtime.InteropServices
             return wrapper->Unpeg();
         }
 
+        [UnmanagedCallersOnly]
+        internal static unsafe int ITaggedImpl_IsCurrentVersion(IntPtr pThis, IntPtr version)
+        {
+            return version == (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion
+                ? HResults.S_OK
+                : HResults.E_FAIL;
+        }
+
         private static unsafe IntPtr CreateDefaultIUnknownVftbl()
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));
@@ -842,10 +857,13 @@ namespace System.Runtime.InteropServices
             return (IntPtr)vftbl;
         }
 
+        // This IID represents an internal interface we define to tag any ManagedObjectWrappers we create.
+        // This interface type and GUID do not correspond to any public interface; it is an internal implementation detail.
         private static unsafe IntPtr CreateTaggedImplVftbl()
         {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 4 * sizeof(IntPtr));
             GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
+            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
             return (IntPtr)vftbl;
         }
 

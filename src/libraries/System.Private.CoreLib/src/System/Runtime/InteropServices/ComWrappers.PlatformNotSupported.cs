@@ -8,12 +8,12 @@ namespace System.Runtime.InteropServices
 {
     public abstract partial class ComWrappers
     {
-        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        public static unsafe bool TryGetObject(void* unknown, out object? obj)
         {
             throw new PlatformNotSupportedException();
         }
@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             throw new PlatformNotSupportedException();
         }

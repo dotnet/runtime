@@ -28,8 +28,8 @@ namespace System.Runtime.InteropServices
         /// Given a managed object, determine if it is a ComWrappers created
         /// managed wrapper and if so, return the wrapped unmanaged pointer.
         /// </summary>
-        /// <param name="wrapperMaybe">A managed wrapper</param>
-        /// <param name="externalComObject">An unmanaged COM object</param>
+        /// <param name="obj">A managed wrapper</param>
+        /// <param name="unknown">An unmanaged COM object</param>
         /// <returns>True if the wrapper was resolved to an external COM object, otherwise false.</returns>
         /// <remarks>
         /// If a COM object is returned, the caller is expected to call Release() on the object.
@@ -38,15 +38,15 @@ namespace System.Runtime.InteropServices
         /// understand the COM object may have apartment affinity and therefore if the current thread is not
         /// in the correct apartment or the COM object is not a proxy this call may fail.
         /// </remarks>
-        public static unsafe bool TryGetComInstance(object wrapperMaybe, out void* externalComObject)
+        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
         {
-            if (wrapperMaybe == null)
+            if (obj == null)
             {
-                externalComObject = null;
+                unknown = null;
                 return false;
             }
 
-            return TryGetComInstanceInternal(ObjectHandleOnStack.Create(ref wrapperMaybe), out externalComObject);
+            return TryGetComInstanceInternal(ObjectHandleOnStack.Create(ref obj), out unknown);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetComInstance")]
@@ -57,18 +57,18 @@ namespace System.Runtime.InteropServices
         /// Given a COM object, determine if it is a ComWrappers created
         /// unmanaged wrapper and if so, return the wrapped managed object.
         /// </summary>
-        /// <param name="wrapperMaybe"></param>
-        /// <param name="instance"></param>
+        /// <param name="unknown">An unmanaged wrapper</param>
+        /// <param name="obj">A managed object</param>
         /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
-        public static unsafe bool TryGetObject(void* wrapperMaybe, out object? instance)
+        public static unsafe bool TryGetObject(void* unknown, out object? obj)
         {
-            instance = null;
-            if (wrapperMaybe == null)
+            obj = null;
+            if (unknown == null)
             {
                 return false;
             }
 
-            return TryGetObjectInternal(wrapperMaybe, ObjectHandleOnStack.Create(ref instance));
+            return TryGetObjectInternal(unknown, ObjectHandleOnStack.Create(ref obj));
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetObject")]
@@ -375,7 +375,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
