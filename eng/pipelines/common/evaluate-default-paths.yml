@@ -181,7 +181,7 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest.Current/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
