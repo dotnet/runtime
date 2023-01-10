@@ -316,8 +316,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmIcuDataFileNames Condition="'$(IsIcuDataCustom)' != 'true'" Include="icudt.dat;icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
-      <WasmIcuDataFileNames Condition="'$(IsIcuDataCustom)' == 'true'" Include="$(IcuFileName)"/>
+      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IsIcuDataCustom)' != 'true'" Include="icudt.dat;icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
+      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IsIcuDataCustom)' == 'true'" Include="$(IcuFileName)"/>
 
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
@@ -328,7 +328,8 @@
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
 
-      <WasmNativeAsset Include="@(WasmIcuDataFileNames->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
+      <WasmNativeAsset Condition="Exists('@(WasmIcuDataFileNames)')" Include="@(WasmIcuDataFileNames)"/>
+      <WasmNativeAsset Condition="!Exists('@(WasmIcuDataFileNames)')" Include="@(WasmIcuDataFileNames->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
 
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />

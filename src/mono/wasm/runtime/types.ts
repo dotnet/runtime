@@ -176,7 +176,7 @@ export interface AssetEntry extends ResourceRequest {
     /**
      * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
      */
-    loadRemote?: boolean, //
+    loadRemote?: boolean,
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
