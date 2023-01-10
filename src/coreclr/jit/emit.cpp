@@ -1039,12 +1039,6 @@ insGroup* emitter::emitSavIG(bool emitAdd)
             (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
 
         emitCurLastInsCnt = 1;
-
-        //for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
-        //{
-        //    unsigned int index    = (emitInsCount - i) % ArrLen(emitLastInstrs);
-        //    emitLastInstrs[index] = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastInstrs[index] - (BYTE*)emitCurIGfreeBase));
-        //}
     }
 
     // Reset the buffer free pointers
