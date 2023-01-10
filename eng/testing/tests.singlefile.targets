@@ -25,7 +25,6 @@
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkNativePath>
     <NoWarn>$(NoWarn);IL1005;IL3002</NoWarn>
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
