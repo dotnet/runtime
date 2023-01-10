@@ -89,7 +89,7 @@ namespace WebAssemblyInfo
             if (f1 == null && f2 != null)
             {
                 if (Program.ShowFunctionSize)
-                    Console.WriteLine($"code size difference: +{other.funcsCode[idx].Size} bytes");
+                    Console.WriteLine($"code size difference: +{other.funcsCode[otherIdx].Size} bytes");
 
                 other.PrintFunctionWithPrefix(otherIdx, other.GetFunctionName(otherIdx), "+ ");
                 return;
@@ -110,7 +110,7 @@ namespace WebAssemblyInfo
             int sizeDelta = 0;
             if (Program.ShowFunctionSize)
             {
-                sizeDelta = (int)other.funcsCode[idx].Size - (int)funcsCode[idx].Size;
+                sizeDelta = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
                 sizeDiff = $" code size difference: {sizeDelta} bytes";
             }
 
@@ -228,7 +228,7 @@ namespace WebAssemblyInfo
 
             if (f1 == null && f2 != null)
             {
-                sizeDiffs[$"+{other.GetFunctionName(idx)}"] = (int)other.funcsCode[idx].Size;
+                sizeDiffs[$"+{other.GetFunctionName(otherIdx)}"] = (int)other.funcsCode[otherIdx].Size;
 
                 return;
             }
@@ -242,7 +242,7 @@ namespace WebAssemblyInfo
             if (name == null && otherName == null)
                 return;
 
-            sizeDiffs[name == null ? otherName : name] = (int)other.funcsCode[idx].Size - (int)funcsCode[idx].Size;
+            sizeDiffs[name == null ? otherName : name] = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
         }
 
         void CompareFunctionSizes(UInt32 idx, string name, object? data)
