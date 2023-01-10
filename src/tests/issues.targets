@@ -3024,6 +3024,13 @@
             <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
         </ExcludeList>
 
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_r/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80467</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80467</Issue>
+        </ExcludeList>
+
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
             <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
         </ExcludeList>
