@@ -180,10 +180,13 @@ namespace System.Text.Json.Serialization.Tests
         #region JsonExtensionData Interop
 
         [Fact]
-        public async Task ClassWithExtensionData_GlobalDisallowHandling_ThrowsInvalidOperationException()
+        public async Task ClassWithExtensionData_GlobalDisallowHandling_ClassConfigurationOverridesGlobalSetting()
         {
             var options = new JsonSerializerOptions { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
-            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<ClassWithExtensionData>("{}", options));
+            ClassWithExtensionData result = await Serializer.DeserializeWrapper<ClassWithExtensionData>("""{"unmappedMember":null}""", options);
+
+            Assert.NotNull(result.ExtensionData);
+            Assert.True(result.ExtensionData.ContainsKey("unmappedMember"));
         }
 
         [Fact]

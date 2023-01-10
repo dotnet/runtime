@@ -510,7 +510,8 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private JsonUnmappedMemberHandling? _unmappedMemberHandling;
-        internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling => _unmappedMemberHandling ?? Options.UnmappedMemberHandling;
+
+        internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
@@ -835,7 +836,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (jsonPropertyInfo.IsExtensionData)
             {
-                if (EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                if (UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type, jsonPropertyInfo);
                 }
@@ -962,7 +963,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (property.IsExtensionData)
                     {
-                        if (EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        if (UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                         {
                             ThrowHelper.ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type, property);
                         }
@@ -1017,6 +1018,12 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;
+            // Override global UnmappedMemberHandling configuration
+            // if type specifies an extension data property.
+            EffectiveUnmappedMemberHandling = UnmappedMemberHandling ??
+                (ExtensionDataProperty is null
+                    ? Options.UnmappedMemberHandling
+                    : JsonUnmappedMemberHandling.Skip);
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)
