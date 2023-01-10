@@ -127,6 +127,51 @@ namespace System.Security.Cryptography.Cng.Tests
             RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
         }
 
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        public static void RSACng_PlatformCryptoProvider_Roundtrip()
+        {
+            CngKey key = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key = CngKey.Create(
+                    CngAlgorithm.Rsa,
+                    nameof(RSACng_PlatformCryptoProvider_Roundtrip),
+                    cngCreationParameters);
+
+                using (RSACng rsaKey = new RSACng(key))
+                {
+                    byte[] data = new byte[] { 1, 2, 3 };
+                    byte[] signature = rsaKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    bool valid = rsaKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
+
+                    byte[] hash = SHA256.HashData(data);
+
+                    byte[] buffer = new byte[1];
+                    bool success = rsaKey.TrySignHash(hash, buffer, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out int bytesWritten);
+                    Assert.False(success, "buffer large enough");
+
+                    success = rsaKey.TrySignHash(hash, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1, out bytesWritten);
+                    Assert.True(success, "buffer large enough");
+                    Assert.Equal(signature.Length, bytesWritten);
+
+                    valid = rsaKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
+                }
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        }
+
         private static void RSACng_Ctor_UnusualKeysize(
             int expectedKeySize,
             byte[] keyBlob,

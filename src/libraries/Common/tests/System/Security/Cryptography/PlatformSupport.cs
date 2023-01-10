@@ -2,12 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace Test.Cryptography
 {
     internal static class PlatformSupport
     {
+        private static Lazy<bool> s_lazyPlatformCryptoProviderFunctional = new Lazy<bool>(static () =>
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return false;
+            }
+
+            CngKey key = null;
+
+            try
+            {
+                key = CngKey.Create(
+                    CngAlgorithm.ECDsaP256,
+                    $"{nameof(PlatformCryptoProviderFunctional)}Key",
+                    new CngKeyCreationParameters
+                    {
+                        Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                        KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                    });
+
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        });
+
         // Platforms that use Apple Cryptography
         internal const TestPlatforms AppleCrypto = TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
         internal const TestPlatforms MobileAppleCrypto = TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst;
@@ -23,5 +56,8 @@ namespace Test.Cryptography
 #else
         internal static readonly bool IsAndroidVersionAtLeast31 = false;
 #endif
+
+        internal static bool PlatformCryptoProviderFunctional => s_lazyPlatformCryptoProviderFunctional.Value;
+
     }
 }

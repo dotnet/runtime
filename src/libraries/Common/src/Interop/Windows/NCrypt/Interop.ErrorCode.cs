@@ -20,6 +20,12 @@ internal static partial class Interop
             NTE_NO_MORE_ITEMS = unchecked((int)0x8009002a),
             E_FAIL = unchecked((int)0x80004005),
             STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001),
+            TPMAPI_E_BUFFER_TOO_SMALL = unchecked((int)0x80290406),
         }
+    }
+
+    internal static bool IsBufferTooSmall(this NCrypt.ErrorCode errorCode)
+    {
+        return errorCode is NCrypt.ErrorCode.NTE_BUFFER_TOO_SMALL or NCrypt.ErrorCode.TPMAPI_E_BUFFER_TOO_SMALL;
     }
 }
