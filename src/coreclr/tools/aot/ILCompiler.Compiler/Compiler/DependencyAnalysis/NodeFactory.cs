@@ -255,6 +255,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            {
+                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+            });
+
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
@@ -837,6 +842,19 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrCreateValue(method);
+        }
+
+        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
+        {
+            // We might be able to optimize the method body away if the owning type was never seen as allocated.
+            if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
+            {
+                Debug.Assert(!unboxingStub);
+                return _tentativeMethods.GetOrAdd(method);
+            }
+
+            return MethodEntrypoint(method, unboxingStub);
         }
 
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
