@@ -8139,8 +8139,8 @@ mono_runtime_run_startup_hooks (void)
 	if (!method)
 		return;
 	mono_runtime_invoke_checked (method, NULL, NULL, error);
-	// FIXME: the design doc says exceptions should terminate the host app.
-	mono_error_cleanup (error);
+	// runtime hooks design doc says not to catch exceptions from the hooks
+	mono_error_raise_exception_deprecated (error);
 }
 
 #if NEVER_DEFINED
