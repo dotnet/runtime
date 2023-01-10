@@ -190,6 +190,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void PlatformCryptoProvider_DeriveKeyMaterial()
         {
             CngKey key1 = null;

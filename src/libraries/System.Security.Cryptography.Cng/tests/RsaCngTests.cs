@@ -128,6 +128,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void RSACng_PlatformCryptoProvider_SignHash_Roundtrip()
         {
             CngKey key = null;
@@ -173,6 +174,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip()
         {
             CngKey key = null;
