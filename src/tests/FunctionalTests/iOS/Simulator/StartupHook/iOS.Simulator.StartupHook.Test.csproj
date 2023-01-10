@@ -8,6 +8,7 @@
     <MainLibraryFileName>iOS.Simulator.StartupHook.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <StartupHookSupport>true</StartupHookSupport>
   </PropertyGroup>
 
   <ItemGroup>

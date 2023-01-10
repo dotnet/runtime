@@ -1,6 +1,6 @@
 using System;
 
-private class StartupHook
+internal class StartupHook
 {
     public static void Initialize()
     {

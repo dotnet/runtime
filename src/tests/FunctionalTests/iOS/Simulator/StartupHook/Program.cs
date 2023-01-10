@@ -13,18 +13,20 @@ public static class Program
     [DllImport("__Internal")]
     public static extern void mono_ios_set_summary (string value);
 
-    public static int int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         string appContextKey = "Test.StartupHookForFunctionalTest.DidRun";
         mono_ios_set_summary($"Starting functional test");
 
-        var data = AppContext.GetData (appContextKey);
+        await Task.Delay(10);
+
+        var data = (string) AppContext.GetData (appContextKey);
 
         if (data != "Yes") {
-            string msg = $"Expected startup hook to set {appContextKey} to 'Yes', got {data}";
+            string msg = $"Expected startup hook to set {appContextKey} to 'Yes', got '{data}'";
             mono_ios_set_summary(msg);
             Console.Error.WriteLine(msg);
-            return 100;
+            return 104;
         }
         return 42;
     }
