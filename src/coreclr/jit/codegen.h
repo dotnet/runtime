@@ -670,7 +670,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
-    void genIPmappingUpdateForReplacedInstruction(emitLocation oldLoc, emitLocation newLoc);
     void genIPmappingGen();
     void genAddRichIPMappingHere(const DebugInfo& di);
 

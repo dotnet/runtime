@@ -8632,6 +8632,12 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     {
         of = ig->igSize;
     }
+    else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) && no == ig->igInsCnt + 1)
+    {
+        // This can happen if a instruction was replaced, but the replacement couldn't fit into
+        // the same IG and instead was place in a new IG.
+        return ig->igNext->igOffs + emitFindOffset(ig->igNext, 1);
+    }
     else if (ig->igFlags & IGF_UPD_ISZ)
     {
         /*
@@ -9118,10 +9124,8 @@ void emitter::emitNxtIG(bool extend)
 // (using emitLocation::CaptureLocation()) after the instruction was generated. This is because the
 // emitLocation stores the current IG instruction number and code size. If the instruction is
 // removed and not replaced (e.g., it is at the end of the IG, and any replacement creates a new
-// EXTEND IG), then the saved instruction number is incorrect. Alternatively, if the instruction is
-// removed and replaced, the new instruction might end if in a different instruction group - this
-// should be fixed up once the new instruction is generated via
-// genIPmappingUpdateForReplacedInstruction().
+// EXTEND IG), then the saved instruction number is incorrect. The IGF_HAS_REMOVED_INSTR flag is
+// used to check for this later.
 //
 // NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
 // generated replacement(s).
@@ -9157,6 +9161,9 @@ void emitter::emitRemoveLastInstruction()
 
     // We're going to overwrite the memory; zero it.
     memset(emitCurIGfreeNext, 0, insSize);
+
+    // Remember this happened.
+    emitCurIG->igFlags |= IGF_HAS_REMOVED_INSTR;
 
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;

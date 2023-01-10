@@ -7318,50 +7318,6 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 #endif // DEBUG
 }
 
-//------------------------------------------------------------------------
-// genIPmappingUpdateForReplacedInstruction: Update the IP mapping table for a replaced instruction.
-// If the last IP mapping corresponds to the location of the old location, then
-// update it to the new location.
-//
-// Arguments:
-//    oldLoc - the emitter location of the removed instruction.
-//    newLoc - the emitter location of the new instruction.
-//
-void CodeGen::genIPmappingUpdateForReplacedInstruction(emitLocation oldLoc, emitLocation newLoc)
-{
-    if (!compiler->opts.compDbgInfo)
-    {
-        return;
-    }
-
-    if (compiler->genIPmappings.size() <= 0)
-    {
-        return;
-    }
-
-    IPmappingDsc& prev = compiler->genIPmappings.back();
-    if (prev.ipmdNativeLoc == oldLoc)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            JITDUMP("Updating last IP mapping: ");
-            genIPmappingDisp(unsigned(-1), &prev);
-        }
-#endif // DEBUG
-
-        prev.ipmdNativeLoc.SetLocation(newLoc);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            JITDUMP("                      to: ");
-            genIPmappingDisp(unsigned(-1), &prev);
-        }
-#endif // DEBUG
-    }
-}
-
 /*****************************************************************************/
 
 void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)

@@ -16218,8 +16218,6 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
                 break;
         }
 
-        emitLocation removedLoc = emitLocation(this);
-
         // Remove the last instruction written.
         emitRemoveLastInstruction();
 
@@ -16234,9 +16232,6 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
             // The SECOND register is at the lower offset
             emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
         }
-
-        // The new instruction may have had to be put in a new group. Ensure the IP mappings are correct.
-        codeGen->genIPmappingUpdateForReplacedInstruction(removedLoc, emitLocation(this));
 
         // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
         return true;

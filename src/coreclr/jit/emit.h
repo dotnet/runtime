@@ -294,6 +294,7 @@ struct insGroup
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
 #define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#define IGF_HAS_REMOVED_INSTR 0x2000 // this group has an instruction that was removed.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
