@@ -168,6 +168,10 @@ namespace ILCompiler
 
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
+                // This allows to disable cycle detection completely (typically for perf reasons as the algorithm is pretty slow)
+                if (_cutoffPoint < 0)
+                    return;
+
                 // Not clear if generic recursion through fields is a thing
                 if (referent is FieldDesc)
                 {

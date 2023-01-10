@@ -327,6 +327,9 @@
   <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
     <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
   </data>
+  <data name="HotColdSplittingOption" xml:space="preserve">
+    <value>Turn on hot cold splitting optimization.</value>
+  </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
   </data>

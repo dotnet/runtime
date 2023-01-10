@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
     {
-        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(ECDiffieHellmanCng)) { DefaultKeyType = CngAlgorithm.ECDiffieHellman };
+        private CngAlgorithmCore _core = new CngAlgorithmCore(typeof(ECDiffieHellmanCng)) { DefaultKeyType = CngAlgorithm.ECDiffieHellman };
         private CngAlgorithm _hashAlgorithm = CngAlgorithm.Sha256;
         private ECDiffieHellmanKeyDerivationFunction _kdf = ECDiffieHellmanKeyDerivationFunction.Hash;
         private byte[]? _hmacKey;

@@ -75,11 +75,11 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
 void Compiler::optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName)
 {
     JITDUMP("{ ");
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned             defLclNum  = iter.Get();
-        GenTreeLclVarCommon* lclDefNode = iter.GetValue()->Top().GetDefNode()->AsLclVarCommon();
-        LclSsaVarDsc*        ssaDef     = iter.GetValue()->Top().GetSsaDef();
+        unsigned             defLclNum  = iter->GetKey();
+        GenTreeLclVarCommon* lclDefNode = iter->GetValue()->Top().GetDefNode()->AsLclVarCommon();
+        LclSsaVarDsc*        ssaDef     = iter->GetValue()->Top().GetSsaDef();
 
         if (ssaDef != nullptr)
         {
@@ -146,6 +146,7 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 //               definitions share the same value number. If so, then we can make the replacement.
 //
 // Arguments:
+//    block       -  BasicBlock containing stmt
 //    stmt        -  Statement the tree belongs to
 //    tree        -  The local tree to perform copy propagation on
 //    lclNum      -  Number of the local "tree" refers to
@@ -154,7 +155,8 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 // Returns:
 //    Whether any changes were made.
 //
-bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
+bool Compiler::optCopyProp(
+    BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
 {
     assert(((tree->gtFlags & GTF_VAR_DEF) == 0) && (tree->GetLclNum() == lclNum) && tree->gtVNPair.BothDefined());
 
@@ -163,9 +165,9 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
     ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
-    for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
-        unsigned newLclNum = iter.Get();
+        unsigned newLclNum = iter->GetKey();
 
         // Nothing to do if same.
         if (lclNum == newLclNum)
@@ -173,8 +175,8 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
             continue;
         }
 
-        CopyPropSsaDef newLclDef    = iter.GetValue()->Top();
-        LclSsaVarDsc*  newLclSsaDef = newLclDef.GetSsaDef();
+        CopyPropSsaDef      newLclDef    = iter->GetValue()->Top();
+        LclSsaVarDsc* const newLclSsaDef = newLclDef.GetSsaDef();
 
         // Likewise, nothing to do if the most recent def is not available.
         if (newLclSsaDef == nullptr)
@@ -195,7 +197,7 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
         // is not marked 'lvDoNotEnregister'.
         // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
         // existing use of an enregisterable lclVar.
-        LclVarDsc* newLclVarDsc = lvaGetDesc(newLclNum);
+        LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
         if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
             continue;
@@ -262,6 +264,7 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
         gtUpdateSideEffects(stmt, tree);
+        newLclSsaDef->AddUse(block);
 
 #ifdef DEBUG
         if (verbose)
@@ -323,20 +326,12 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
         assert(varDsc->lvPromoted);
 
-        if (varDsc->CanBeReplacedWithItsField(this))
+        for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
         {
-            // TODO-CQ: remove this zero-diff quirk.
-            pushDef(varDsc->lvFieldLclStart, SsaConfig::RESERVED_SSA_NUM);
-        }
-        else
-        {
-            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            unsigned ssaNum = lclNode->GetSsaNum(this, index);
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
             {
-                unsigned ssaNum = lclNode->GetSsaNum(this, index);
-                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-                {
-                    pushDef(varDsc->lvFieldLclStart + index, ssaNum);
-                }
+                pushDef(varDsc->lvFieldLclStart + index, ssaNum);
             }
         }
     }
@@ -415,7 +410,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                     continue;
                 }
 
-                madeChanges |= optCopyProp(stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
+                madeChanges |= optCopyProp(block, stmt, tree->AsLclVarCommon(), lclNum, curSsaName);
             }
         }
     }
@@ -499,12 +494,12 @@ PhaseStatus Compiler::optVnCopyProp()
 
 #ifdef DEBUG
             // Verify the definitions remaining are only those we pushed for parameters.
-            for (LclNumToLiveDefsMap::KeyIterator iter = m_curSsaName.Begin(); !iter.Equal(m_curSsaName.End()); ++iter)
+            for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(&m_curSsaName))
             {
-                unsigned lclNum = iter.Get();
+                unsigned lclNum = iter->GetKey();
                 assert(m_compiler->lvaGetDesc(lclNum)->lvIsParam || (lclNum == m_compiler->info.compThisArg));
 
-                CopyPropSsaDefStack* defStack = iter.GetValue();
+                CopyPropSsaDefStack* defStack = iter->GetValue();
                 assert(defStack->Height() == 1);
             }
 #endif // DEBUG

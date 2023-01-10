@@ -10,6 +10,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Target Name="GenerateReproProjectResponseFile"

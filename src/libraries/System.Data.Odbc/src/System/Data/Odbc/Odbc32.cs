@@ -111,6 +111,7 @@ namespace System.Data.Odbc
         }
         internal const string Pwd = "pwd";
 
+        [Conditional("DEBUG")]
         internal static void TraceODBC(int level, string method, ODBC32.SQLRETURN retcode)
         {
         }

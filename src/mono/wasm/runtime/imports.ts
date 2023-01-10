@@ -31,7 +31,6 @@ export function set_imports_exports(
     IMPORTS = exports.marshaled_imports;
     Module = exports.module;
 
-    set_environment(imports);
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
@@ -40,14 +39,6 @@ export function set_imports_exports(
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;
-}
-
-export function set_environment(imports: any) {
-    ENVIRONMENT_IS_NODE = imports.isNode;
-    ENVIRONMENT_IS_SHELL = imports.isShell;
-    ENVIRONMENT_IS_WEB = imports.isWeb;
-    ENVIRONMENT_IS_WORKER = imports.isWorker;
-    ENVIRONMENT_IS_PTHREAD = imports.isPThread;
 }
 
 export function set_emscripten_entrypoint(
@@ -67,5 +58,6 @@ const initialRuntimeHelpers: Partial<RuntimeHelpers> =
         environmentVariables: {},
     },
     diagnosticTracing: false,
+    enablePerfMeasure: true,
 };
 export const runtimeHelpers: RuntimeHelpers = initialRuntimeHelpers as any;

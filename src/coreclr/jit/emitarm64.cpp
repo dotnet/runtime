@@ -525,8 +525,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_3D: // DR_3D   X..........mmmmm cccc..nnnnnmmmmm      Rd Rn Rm cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
-            assert(isGeneralRegister(id->idReg3()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg3()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -7345,8 +7345,8 @@ void emitter::emitIns_R_R_R_COND(
         case INS_csinv:
         case INS_csneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
-            assert(isGeneralRegister(reg3));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert(isGeneralRegisterOrZR(reg3));
             cfi.cond = cond;
             fmt      = IF_DR_3D;
             break;
@@ -15957,7 +15957,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return false;
     }
 
-    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+    const bool canOptimize = emitCanPeepholeLastIns();
 
     if (dst == src)
     {
@@ -15977,8 +15977,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
         {
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if (!isFirstInstrInBlock && (emitLastIns != nullptr) && (emitLastIns->idReg1() == dst) &&
-                (emitLastIns->idOpSize() == size) && emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
+            if (canOptimize && (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == size) &&
+                emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
             {
                 JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
                 return true;
@@ -15986,8 +15986,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
-        (emitLastIns != nullptr) &&
+    if (canOptimize &&                       // Don't optimize if unsafe.
         (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
         (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
     {
@@ -16065,9 +16064,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
-
-    if (((ins != INS_ldr) && (ins != INS_str)) || (isFirstInstrInBlock) || (emitLastIns == nullptr))
+    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
     {
         return false;
     }

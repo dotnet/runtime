@@ -3451,7 +3451,7 @@ namespace Chaos
     public class Program
     {
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             A0 v0 = new A0();
             v0.CreateAllTypesA0();

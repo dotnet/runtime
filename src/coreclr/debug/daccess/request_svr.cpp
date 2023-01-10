@@ -135,18 +135,28 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
 
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->current_c_gc_state = c_gc_state_free;
-    if (g_gcDacGlobals->current_c_gc_state != NULL)
+    if (IsBackgroundGCEnabled())
     {
         detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+        detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
+        detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
+        detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
+        detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
     }
+    else
+    {
+        detailsData->current_c_gc_state = 0;
+        detailsData->mark_array = -1;
+        detailsData->next_sweep_obj = 0;
+        detailsData->background_saved_lowest_address = 0;
+        detailsData->background_saved_highest_address = 0;
+    }
+
     // now get information specific to this heap (server mode gives us several heaps; we're getting
     // information about only one of them.
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)pHeap->alloc_allocated;
     detailsData->ephemeral_heap_segment = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->ephemeral_heap_segment);
     detailsData->card_table = (CLRDATA_ADDRESS)pHeap->card_table;
-    detailsData->mark_array = (CLRDATA_ADDRESS)pHeap->mark_array;
-    detailsData->next_sweep_obj = (CLRDATA_ADDRESS)pHeap->next_sweep_obj;
     if (IsRegionGCEnabled())
     {
         // with regions, we don't have these variables anymore
@@ -156,11 +166,17 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     }
     else
     {
-        detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
-        detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        if (IsBackgroundGCEnabled())
+        {
+            detailsData->saved_sweep_ephemeral_seg = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeap->saved_sweep_ephemeral_seg);
+            detailsData->saved_sweep_ephemeral_start = (CLRDATA_ADDRESS)pHeap->saved_sweep_ephemeral_start;
+        }
+        else
+        {
+            detailsData->saved_sweep_ephemeral_seg = 0;
+            detailsData->saved_sweep_ephemeral_start = 0;
+        }
     }
-    detailsData->background_saved_lowest_address = (CLRDATA_ADDRESS)pHeap->background_saved_lowest_address;
-    detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
 
     // get bounds for the different generations
     for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)

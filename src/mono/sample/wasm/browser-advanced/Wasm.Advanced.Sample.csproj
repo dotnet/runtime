@@ -8,6 +8,8 @@
     <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot;</_ServeHeaders>
+    <!-- enable reporting to profiler in browser dev tools -->
+    <WasmProfilers>browser;</WasmProfilers>
   </PropertyGroup>
   <ItemGroup>
     <!-- add export GL object from Module -->

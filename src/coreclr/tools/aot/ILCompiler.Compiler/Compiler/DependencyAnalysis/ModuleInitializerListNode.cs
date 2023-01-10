@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -141,7 +141,11 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var module in sortedModules)
             {
-                builder.EmitPointerReloc(factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor()));
+                IMethodNode entrypoint = factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor());
+                if (factory.Target.SupportsRelativePointers)
+                    builder.EmitReloc(entrypoint, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    builder.EmitPointerReloc(entrypoint);
             }
 
             var result = builder.ToObjectData();

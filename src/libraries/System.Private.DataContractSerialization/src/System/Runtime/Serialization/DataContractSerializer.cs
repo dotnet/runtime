@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
+using System.Text;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
@@ -32,6 +32,18 @@ namespace System.Runtime.Serialization
 
         private static SerializationOption s_option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
         private static bool s_optionAlreadySet;
+
+        internal static UTF8Encoding UTF8NoBom { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+        internal static UTF8Encoding ValidatingUTF8 { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+        internal static UnicodeEncoding UTF16NoBom { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static UnicodeEncoding BEUTF16NoBom { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static UnicodeEncoding ValidatingUTF16 { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
+        internal static UnicodeEncoding ValidatingBEUTF16 { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true);
+
+        internal static Base64Encoding Base64Encoding { get; } = new Base64Encoding();
+        internal static BinHexEncoding BinHexEncoding { get; } = new BinHexEncoding();
+
         internal static SerializationOption Option
         {
             get { return RuntimeFeature.IsDynamicCodeSupported ? s_option : SerializationOption.ReflectionOnly; }
@@ -67,11 +79,11 @@ namespace System.Runtime.Serialization
         }
 
         public DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes)
-            : this(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false)
+            : this(type, rootName, rootNamespace, knownTypes, false, false)
         {
         }
 
-        internal DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes, int maxItemsInObjectGraph,
+        internal DataContractSerializer(Type type, string rootName, string rootNamespace, IEnumerable<Type>? knownTypes,
                 bool ignoreExtensionDataObject, bool preserveObjectReferences)
         {
             XmlDictionary dictionary = new XmlDictionary(2);
@@ -422,7 +434,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                return DataContract.GetDataContract(objectType.TypeHandle, objectType);
+                return DataContract.GetDataContract(objectType);
             }
         }
 

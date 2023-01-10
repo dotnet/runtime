@@ -23,7 +23,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _materializedSignature;
 
         public InstanceEntryPointTableNode(NodeFactory factory)
-            : base(factory.Target)
         {
             _factory = factory;
             _factory.ManifestMetadataTable.RegisterEmitter(this);

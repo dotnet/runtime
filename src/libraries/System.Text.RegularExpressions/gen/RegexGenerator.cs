@@ -36,13 +36,24 @@ namespace System.Text.RegularExpressions.Generator
             "#pragma warning disable CS0219 // Variable assigned but never used",
         };
 
+        private record struct CompilationData(bool AllowUnsafe, bool CheckOverflow);
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // To avoid invalidating every regex's output when anything from the compilation changes,
+            // we extract from it the only things we care about.
+            IncrementalValueProvider<CompilationData> compilationDataProvider =
+                context.CompilationProvider
+                .Select((x, _) =>
+                    x.Options is CSharpCompilationOptions options ?
+                        new CompilationData(options.AllowUnsafe, options.CheckOverflow) :
+                        default);
+
             // Produces one entry per generated regex.  This may be:
             // - Diagnostic in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
             // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
-            IncrementalValueProvider<ImmutableArray<object>> codeOrDiagnostics =
+            IncrementalValueProvider<ImmutableArray<object>> results =
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
@@ -52,9 +63,13 @@ namespace System.Text.RegularExpressions.Generator
                     GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
+                // Incorporate the compilation data, as it impacts code generation.
+                .Combine(compilationDataProvider)
+
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
-                .Select((state, _) =>
+                .Select((methodOrDiagnosticAndCompilationData, _) =>
                 {
+                    object? state = methodOrDiagnosticAndCompilationData.Left;
                     if (state is not RegexMethod regexMethod)
                     {
                         Debug.Assert(state is Diagnostic);
@@ -74,26 +89,16 @@ namespace System.Text.RegularExpressions.Generator
                     var writer = new IndentedTextWriter(sw);
                     writer.Indent += 2;
                     writer.WriteLine();
-                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers);
+                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, methodOrDiagnosticAndCompilationData.Right.CheckOverflow);
                     writer.Indent -= 2;
-                    return (regexMethod, sw.ToString(), requiredHelpers);
+                    return (regexMethod, sw.ToString(), requiredHelpers, methodOrDiagnosticAndCompilationData.Right);
                 })
                 .Collect();
 
-            // To avoid invalidating every regex's output when anything from the compilation changes,
-            // we extract from it the only things we care about: whether unsafe code is allowed,
-            // and a name based on the assembly's name, and only that information is then fed into
-            // RegisterSourceOutput along with all of the cached generated data from each regex.
-            IncrementalValueProvider<(bool AllowUnsafe, string? AssemblyName)> compilationDataProvider =
-                context.CompilationProvider
-                .Select((x, _) => (x.Options is CSharpCompilationOptions { AllowUnsafe: true }, x.AssemblyName));
-
             // When there something to output, take all the generated strings and concatenate them to output,
             // and raise all of the created diagnostics.
-            context.RegisterSourceOutput(codeOrDiagnostics.Combine(compilationDataProvider), static (context, compilationDataAndResults) =>
+            context.RegisterSourceOutput(results, static (context, results) =>
             {
-                ImmutableArray<object> results = compilationDataAndResults.Left;
-
                 // Report any top-level diagnostics.
                 bool allFailures = true;
                 foreach (object result in results)
@@ -150,7 +155,7 @@ namespace System.Text.RegularExpressions.Generator
                         context.ReportDiagnostic(limitedSupportResult.Item3);
                         regexMethod = limitedSupportResult.Item1;
                     }
-                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>> regexImpl)
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
                     {
                         foreach (KeyValuePair<string, string[]> helper in regexImpl.Item3)
                         {
@@ -193,6 +198,7 @@ namespace System.Text.RegularExpressions.Generator
                 // a user's partial type.  We can now rely on binding rules mapping to these usings and don't need to
                 // use global-qualified names for the rest of the implementation.
                 writer.WriteLine($"    using System;");
+                writer.WriteLine($"    using System.Buffers;");
                 writer.WriteLine($"    using System.CodeDom.Compiler;");
                 writer.WriteLine($"    using System.Collections;");
                 writer.WriteLine($"    using System.ComponentModel;");
@@ -214,11 +220,11 @@ namespace System.Text.RegularExpressions.Generator
                             writer.WriteLine();
                         }
                     }
-                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>> regexImpl)
+                    else if (result is ValueTuple<RegexMethod, string, Dictionary<string, string[]>, CompilationData> regexImpl)
                     {
                         if (!regexImpl.Item1.IsDuplicate)
                         {
-                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, compilationDataAndResults.Right.AllowUnsafe);
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, regexImpl.Item4.AllowUnsafe);
                             writer.WriteLine();
                         }
                     }
@@ -235,7 +241,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine($"{{");
                     writer.Indent++;
                     bool sawFirst = false;
-                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers)
+                    foreach (KeyValuePair<string, string[]> helper in requiredHelpers.OrderBy(h => h.Key, StringComparer.Ordinal))
                     {
                         if (sawFirst)
                         {

@@ -16,8 +16,8 @@
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
+#include "assemblyhashtraits.hpp"
 #include "bindertracing.h"
-#include "loadcontext.hpp"
 #include "bindresult.inl"
 #include "failurecache.hpp"
 #include "utils.hpp"
@@ -118,7 +118,6 @@ namespace BINDER_SPACE
             IF_FAIL_GO(pAssembly->Init(pPEImage, /* fIsInTPA */ FALSE ));
 
             pBindResult->SetResult(pAssembly);
-            pBindResult->SetIsFirstRequest(TRUE);
 
         Exit:
             return hr;
@@ -474,22 +473,22 @@ namespace BINDER_SPACE
         HRESULT hr = S_OK;
 
         bool isTpaListProvided = pApplicationContext->IsTpaListProvided();
-        ContextEntry *pContextEntry = NULL;
-        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
+        Assembly *pAssembly = NULL;
+        hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pAssembly);
 
         // Add the attempt to the bind result on failure / not found. On success, it will be added after the version check.
-        if (FAILED(hr) || pContextEntry == NULL)
-            pBindResult->SetAttemptResult(hr, pContextEntry);
+        if (FAILED(hr) || pAssembly == NULL)
+            pBindResult->SetAttemptResult(hr, pAssembly, /*isInContext*/ true);
 
         IF_FAIL_GO(hr);
-        if (pContextEntry != NULL)
+        if (pAssembly != NULL)
         {
             if (!skipVersionCompatibilityCheck)
             {
                 // Can't give higher version than already bound
-                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pContextEntry->GetAssemblyName());
+                bool isCompatible = IsCompatibleAssemblyVersion(pAssemblyName, pAssembly->GetAssemblyName());
                 hr = isCompatible ? S_OK : FUSION_E_APP_DOMAIN_LOCKED;
-                pBindResult->SetAttemptResult(hr, pContextEntry);
+                pBindResult->SetAttemptResult(hr, pAssembly, /*isInContext*/ true);
 
                 // TPA binder returns FUSION_E_REF_DEF_MISMATCH for incompatible version
                 if (hr == FUSION_E_APP_DOMAIN_LOCKED && isTpaListProvided)
@@ -497,12 +496,12 @@ namespace BINDER_SPACE
             }
             else
             {
-                pBindResult->SetAttemptResult(hr, pContextEntry);
+                pBindResult->SetAttemptResult(hr, pAssembly, /*isInContext*/ true);
             }
 
             IF_FAIL_GO(hr);
 
-            pBindResult->SetResult(pContextEntry);
+            pBindResult->SetResult(pAssembly, /*isInContext*/ true);
         }
         else
         if (isTpaListProvided)
@@ -536,29 +535,29 @@ namespace BINDER_SPACE
     /* static */
     HRESULT AssemblyBinderCommon::FindInExecutionContext(ApplicationContext  *pApplicationContext,
                                                          AssemblyName        *pAssemblyName,
-                                                         ContextEntry       **ppContextEntry)
+                                                         Assembly           **ppAssembly)
     {
         _ASSERTE(pApplicationContext != NULL);
         _ASSERTE(pAssemblyName != NULL);
-        _ASSERTE(ppContextEntry != NULL);
+        _ASSERTE(ppAssembly != NULL);
 
         ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
-        ContextEntry *pContextEntry = pExecutionContext->Lookup(pAssemblyName);
+        Assembly *pAssembly = pExecutionContext->Lookup(pAssemblyName);
 
         // Set any found context entry. It is up to the caller to check the returned HRESULT
         // for errors due to validation
-        *ppContextEntry = pContextEntry;
-        if (pContextEntry != NULL)
+        *ppAssembly = pAssembly;
+        if (pAssembly == NULL)
+            return S_FALSE;
+
+        AssemblyName *pContextName = pAssembly->GetAssemblyName();
+        if (pAssemblyName->GetIsDefinition() &&
+            (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
         {
-            AssemblyName *pContextName = pContextEntry->GetAssemblyName();
-            if (pAssemblyName->GetIsDefinition() &&
-                (pContextName->GetArchitecture() != pAssemblyName->GetArchitecture()))
-            {
-                return FUSION_E_APP_DOMAIN_LOCKED;
-            }
+            return FUSION_E_APP_DOMAIN_LOCKED;
         }
 
-        return pContextEntry != NULL ? S_OK : S_FALSE;
+        return S_OK;
     }
 
 
@@ -1041,32 +1040,29 @@ namespace BINDER_SPACE
     HRESULT AssemblyBinderCommon::Register(ApplicationContext *pApplicationContext,
                                            BindResult         *pBindResult)
     {
-        HRESULT hr = S_OK;
-
         _ASSERTE(!pBindResult->GetIsContextBound());
 
         pApplicationContext->IncrementVersion();
 
         // Register the bindResult in the ExecutionContext only if we dont have it already.
         // This method is invoked under a lock (by its caller), so we are thread safe.
-        ContextEntry *pContextEntry = NULL;
-        hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pContextEntry);
-        if (SUCCEEDED(hr))
+        Assembly *pAssembly = NULL;
+        HRESULT hr = FindInExecutionContext(pApplicationContext, pBindResult->GetAssemblyName(), &pAssembly);
+        if (FAILED(hr))
+            return hr;
+
+        if (pAssembly == NULL)
         {
-            if (pContextEntry == NULL)
-            {
-                ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
-                IF_FAIL_GO(pExecutionContext->Register(pBindResult));
-            }
-            else
-            {
-                // Update the BindResult with the contents of the ContextEntry we found
-                pBindResult->SetResult(pContextEntry);
-            }
+            ExecutionContext *pExecutionContext = pApplicationContext->GetExecutionContext();
+            pExecutionContext->Add(pBindResult->GetAssembly(/*fAddRef*/ TRUE));
+        }
+        else
+        {
+            // Update the BindResult with the assembly we found
+            pBindResult->SetResult(pAssembly, /*isContextBound*/ true);
         }
 
-    Exit:
-        return hr;
+        return S_OK;
     }
 
     /* static */
@@ -1133,11 +1129,9 @@ namespace BINDER_SPACE
 
         if (hr == S_OK)
         {
-            ContextEntry *pContextEntry = NULL;
-
-            hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pContextEntry);
-
-            if (SUCCEEDED(hr) && (pContextEntry == NULL))
+            Assembly *pAssembly = NULL;
+            hr = FindInExecutionContext(pApplicationContext, pAssemblyName, &pAssembly);
+            if (SUCCEEDED(hr) && (pAssembly == NULL))
             {
                 // We can accept this bind in the domain
                 GO_WITH_HRESULT(S_OK);

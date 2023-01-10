@@ -24,11 +24,9 @@ pr: none
 
 variables:
 - template: /eng/pipelines/common/variables.yml
-# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
-- name: TeamName
-  value: dotnet-core-acquisition
-- name: PostBuildSign
-  value: true
+- template: /eng/pipelines/common/internal-variables.yml
+  parameters:
+    teamName: dotnet-core-acquisition
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -129,6 +127,7 @@ extends:
           - Linux_arm64
           - Linux_musl_x64
           - Browser_wasm
+          - wasi_wasm
           - Linux_bionic_arm64
           - Linux_bionic_x64
           # - Linux_musl_arm
@@ -224,6 +223,27 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
+          - Linux_arm64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - Browser
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
           - Windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
@@ -265,6 +285,27 @@ extends:
             - tvOS
             - iOS
             - MacCatalyst
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - OSX_arm64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - Browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:

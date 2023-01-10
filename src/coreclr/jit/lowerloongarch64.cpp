@@ -252,7 +252,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
             src->AsIntCon()->SetIconValue(fill);
 
-            ContainBlockStoreAddress(blkNode, size, dstAddr);
+            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
         else
         {
@@ -307,10 +307,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             if (src->OperIs(GT_IND))
             {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr());
+                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
             }
 
-            ContainBlockStoreAddress(blkNode, size, dstAddr);
+            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
         }
         else
         {
@@ -328,8 +328,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //    blkNode - the block store node
 //    size - the block size
 //    addr - the address node to try to contain
+//    addrParent - the parent of addr, in case this is checking containment of the source address.
 //
-void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr)
+void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
+
 {
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
@@ -354,7 +356,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!IsSafeToContainMem(blkNode, addr))
+    if (!IsSafeToContainMem(blkNode, addrParent, addr))
     {
         return;
     }
@@ -406,9 +408,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
             src->ChangeOper(GT_OBJ);
             src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->AsObj()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
@@ -502,19 +502,6 @@ void Lowering::LowerRotate(GenTree* tree)
     }
     ContainCheckShiftRotate(tree->AsOp());
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("LowerSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
@@ -788,6 +775,17 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
+// ContainCheckSelect : determine whether the source of a select should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckSelect(GenTreeOp* node)
+{
+    noway_assert(!"GT_SELECT nodes are not supported on loongarch64");
+}
+
+//------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
 //
 // Arguments:
@@ -801,19 +799,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("ContainCheckSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------

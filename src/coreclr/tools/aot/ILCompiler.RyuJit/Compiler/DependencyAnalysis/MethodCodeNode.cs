@@ -49,14 +49,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                return _method.Context.Target.IsWindows ?
-                    (_isFoldable ? ObjectNodeSection.FoldableManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeWindowsContentSection) :
-                    (_isFoldable ? ObjectNodeSection.FoldableManagedCodeUnixContentSection : ObjectNodeSection.ManagedCodeUnixContentSection);
-            }
+            return factory.Target.IsWindows ?
+                (_isFoldable ? ObjectNodeSection.FoldableManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeWindowsContentSection) :
+                (_isFoldable ? ObjectNodeSection.FoldableManagedCodeUnixContentSection : ObjectNodeSection.ManagedCodeUnixContentSection);
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;

@@ -568,12 +568,15 @@ namespace System.Numerics.Tests
         public void Matrix3x2GetHashCodeTest()
         {
             Matrix3x2 target = GenerateIncrementalMatrixNumber();
-            int expected = HashCode.Combine(target.M11, target.M12,
-                                     target.M21, target.M22,
-                                     target.M31, target.M32);
-            int actual;
 
-            actual = target.GetHashCode();
+            int expected = HashCode.Combine(
+                new Vector2(target.M11, target.M12),
+                new Vector2(target.M21, target.M22),
+                new Vector2(target.M31, target.M32)
+            );
+
+            int actual = target.GetHashCode();
+
             Assert.Equal(expected, actual);
         }
 

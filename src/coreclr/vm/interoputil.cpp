@@ -120,27 +120,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             hr = EnsureComStartedNoThrow();
             if (SUCCEEDED(hr) && pThrownObject != NULL)
             {
-#ifdef _DEBUG
-                EX_TRY
-                {
-                    StackSString message;
-                    GetExceptionMessage(pThrownObject, message);
-
-                    if (g_pConfig->ShouldExposeExceptionsInCOMToConsole())
-                    {
-                        PrintToStdOutW(W(".NET exception in COM\n"));
-                        if (!message.IsEmpty())
-                            PrintToStdOutW(message.GetUnicode());
-                        else
-                            PrintToStdOutW(W("No exception info available"));
-                    }
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH (SwallowAllExceptions);
-#endif
-
 #ifdef FEATURE_COMINTEROP
                 IErrorInfo* pErr = NULL;
                 EX_TRY
@@ -1316,11 +1295,8 @@ static void ReleaseRCWsInCaches(LPVOID pCtxCookie)
     }
     CONTRACTL_END;
 
-    // Go through all the app domains and for each one release all the
-    // RCW's that live in the current context.
-    AppDomainIterator i(TRUE);
-    while (i.Next())
-        i.GetDomain()->ReleaseRCWs(pCtxCookie);
+    // Release all the RCW's that live in the AppDomain.
+    AppDomain::GetCurrentDomain()->ReleaseRCWs(pCtxCookie);
 
     if (!g_fEEShutDown)
     {

@@ -187,6 +187,7 @@ typedef struct MonoAotOptions {
 	char *outfile;
 	char *llvm_outfile;
 	char *data_outfile;
+	char *export_symbols_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -3011,6 +3012,7 @@ mono_get_field_token (MonoClassField *field)
 	MonoClass *klass = m_field_get_parent (field);
 	int i;
 
+	/* metadata-update: there are no updates during AOT */
 	g_assert (!m_field_is_from_update (field));
 	int fcount = mono_class_get_field_count (klass);
 	MonoClassField *klass_fields = m_class_get_fields (klass);
@@ -4344,9 +4346,11 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 			return;
 		}
 
-		if (g_hash_table_lookup (acfg->prefer_instances, method))
-			/* Compile an instance as well */
+		if (g_hash_table_lookup (acfg->prefer_instances, method) && !is_open_method (orig)) {
+			/* Compile an instance instead */
 			add_extra_method_full (acfg, orig, FALSE, depth);
+			return;
+		}
 
 		/* Add it to profile_methods so its not skipped later */
 		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
@@ -5102,6 +5106,7 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	GString *export_symbols = g_string_new ("");
 	/* native-to-managed wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
@@ -5251,8 +5256,10 @@ MONO_RESTORE_WARNING
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
-				if (export_name)
+				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
+					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+				}
 			}
 
 			g_free (cattr);
@@ -5262,6 +5269,19 @@ MONO_RESTORE_WARNING
 			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
+	}
+
+	if (acfg->aot_opts.export_symbols_outfile) {
+		char *export_symbols_out = g_string_free (export_symbols, FALSE);
+		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		if (!export_symbols_outfile) {
+			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
+			g_free (export_symbols_out);
+			exit (1);
+		}
+		fprintf (export_symbols_outfile, "%s", export_symbols_out);
+		g_free (export_symbols_out);
+		fclose (export_symbols_outfile);
 	}
 
 	/* StructureToPtr/PtrToStructure wrappers */
@@ -8416,6 +8436,7 @@ parse_cpu_features (const gchar *attr)
 	else if (!strcmp (attr + prefix, "dotprod"))
 		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
+	// MONO_CPU_WASM_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
 #else
@@ -8443,6 +8464,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
+		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
+			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9261,6 +9284,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		 * for performance reasons, since gshared methods cannot implement some
 		 * features like static virtual methods efficiently.
 		 */
+		/* Instances encountered later will be handled in add_extra_method_full () */
 		g_hash_table_insert (acfg->prefer_instances, method, method);
 		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
 		if (instances) {

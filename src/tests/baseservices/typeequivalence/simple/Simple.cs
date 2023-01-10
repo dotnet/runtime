@@ -268,7 +268,7 @@ public class Simple
         Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
-    public static int Main(string[] noArgs)
+    public static int Main()
     {
         if (!OperatingSystem.IsWindows())
         {

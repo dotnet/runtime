@@ -95,7 +95,7 @@
 //          COMPlusThrow(kArgumentException, L"InvalidFlags");
 //
 //      // No need to worry about GC moving strings passed into QCall. Marshaling pins them for us.
-//      printf("%S", wszString);
+//      wprintf("%s", wszString);
 //
 //      // This is the most efficient way to return strings back to managed code. No need to use StringBuilder.
 //      retString.Set(L"Hello");

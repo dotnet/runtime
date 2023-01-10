@@ -112,7 +112,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     SetFlag<Flag_typeHasGenericArgs>(methInfo->args.sigInst.classInstCount > 0);
     SetFlag<Flag_methHasGenericArgs>(methInfo->args.sigInst.methInstCount > 0);
     _ASSERTE_MSG(!GetFlag<Flag_hasGenericsContextArg>()
-                 || ((GetFlag<Flag_typeHasGenericArgs>() & !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
+                 || ((GetFlag<Flag_typeHasGenericArgs>() && !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
                  "If the method takes a generic parameter, is a static method of generic class (or meth of a value class), and/or itself takes generic parameters");
 
     if (GetFlag<Flag_hasThisArg>())
@@ -1802,7 +1802,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             CodeVersionManager::LockHolder _lockHolder;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
-            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            if (!activeCodeVersion.IsFinalTier() &&
                 !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
                 tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);

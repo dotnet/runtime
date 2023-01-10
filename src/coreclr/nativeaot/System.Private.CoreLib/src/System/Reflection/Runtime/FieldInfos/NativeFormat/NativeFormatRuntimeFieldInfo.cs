@@ -94,8 +94,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             if (!(other is NativeFormatRuntimeFieldInfo otherField))
                 return false;

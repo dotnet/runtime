@@ -7,8 +7,18 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
+    public class A
+    {
+        public string P { get; set; }
+        public int F;
+#pragma warning disable CS0067
+        public event EventHandler E;
+#pragma warning restore CS0067
+        public void M() { }
+    }
+
     [Collection(nameof(DisableParallelization))]
-    public class ReflectionCacheTests
+    public class ReflectionCacheTests : A
     {
         private static bool IsMetadataUpdateAndRemoteExecutorSupported => PlatformDetection.IsMetadataUpdateSupported && RemoteExecutor.IsSupported;
 
@@ -47,6 +57,12 @@ namespace System.Reflection.Tests
             AssertSameEqualAndHashCodeEqual(fi1, fi2);
             AssertSameEqualAndHashCodeEqual(ei1, ei2);
             AssertSameEqualAndHashCodeEqual(ci1, ci2);
+
+            PropertyInfo parentProperty = typeof(A).GetProperty("P");
+            PropertyInfo childProperty = s_type.GetProperty("P");
+            Assert.NotNull(parentProperty);
+            Assert.NotNull(childProperty);
+            Assert.NotEqual(parentProperty, childProperty);
         }
 
         void AssertSameEqualAndHashCodeEqual(object o1, object o2)
@@ -87,6 +103,20 @@ namespace System.Reflection.Tests
                 EventInfo ei1 = s_type.GetEvent(nameof(Event1));
                 ConstructorInfo ci1 = s_type.GetConstructor(Type.EmptyTypes);
 
+                PropertyInfo parentProperty = typeof(A).GetProperty("P");
+                PropertyInfo childProperty = s_type.GetProperty("P");
+                FieldInfo parentField = typeof(A).GetField("F");
+                FieldInfo childField = s_type.GetField("F");
+                MethodInfo parentMethod = typeof(A).GetMethod("M");
+                MethodInfo childMethod = s_type.GetMethod("M");
+                EventInfo parentEvent = typeof(A).GetEvent("E");
+                EventInfo childEvent = s_type.GetEvent("E");
+
+                Assert.NotEqual(parentProperty, childProperty);
+                Assert.NotEqual(parentField, childField);
+                Assert.NotEqual(parentMethod, childMethod);
+                Assert.NotEqual(parentEvent, childEvent);
+
                 clearCache(new[] { typeof(ReflectionCacheTests) });
 
                 MethodInfo mi2 = s_type.GetMethod(nameof(Method));
@@ -94,6 +124,11 @@ namespace System.Reflection.Tests
                 FieldInfo fi2 = s_type.GetField(nameof(Field1));
                 EventInfo ei2 = s_type.GetEvent(nameof(Event1));
                 ConstructorInfo ci2 = s_type.GetConstructor(Type.EmptyTypes);
+
+                Assert.NotEqual(parentProperty, childProperty);
+                Assert.NotEqual(parentField, childField);
+                Assert.NotEqual(parentMethod, childMethod);
+                Assert.NotEqual(parentEvent, childEvent);
 
                 AssertNotSameSameButEqualAndHashCodeEqual(mi1, mi2);
                 AssertNotSameSameButEqualAndHashCodeEqual(pi1, pi2);

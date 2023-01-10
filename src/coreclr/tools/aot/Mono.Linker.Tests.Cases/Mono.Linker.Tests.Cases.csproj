@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 

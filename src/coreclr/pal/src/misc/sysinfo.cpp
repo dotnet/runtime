@@ -504,7 +504,7 @@ PAL_HasGetCurrentProcessorNumber()
 }
 
 bool
-ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char *line = nullptr;
@@ -585,11 +585,11 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            if (PAL_ReadMemoryValueFromFile(path_to_size_file, &size))
             {
                 path_to_level_file[index] = (char)(48 + i);
 
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
+                if (PAL_ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }

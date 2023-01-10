@@ -201,5 +201,56 @@ namespace System.Numerics.Tests
             }
             return true;
         }
+
+        public static T ShiftLeft<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value << shiftAmount;
+        }
+
+        public static float ShiftLeft(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) << shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftLeft(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) << shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static T ShiftRightArithmetic<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value >> shiftAmount;
+        }
+
+        public static float ShiftRightArithmetic(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) >> shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftRightArithmetic(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) >> shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static T ShiftRightLogical<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value >>> shiftAmount;
+        }
+
+        public static float ShiftRightLogical(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) >>> shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftRightLogical(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) >>> shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
+        }
     }
 }

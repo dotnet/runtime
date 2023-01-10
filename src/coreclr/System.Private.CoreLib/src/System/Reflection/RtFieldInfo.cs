@@ -118,7 +118,10 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported && CacheEquals(obj));
+            (MetadataUpdater.IsSupported &&
+                obj is RtFieldInfo fi &&
+                fi.m_fieldHandle == m_fieldHandle &&
+                ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());

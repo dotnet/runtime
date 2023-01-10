@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace System.DirectoryServices.Interop
+namespace System.DirectoryServices
 {
 
     [StructLayout(LayoutKind.Explicit)]

@@ -3,6 +3,7 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Metadata
@@ -118,7 +119,6 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         void ClassWithCustomAttributes()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -190,7 +190,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         public void CustomAttributeDelete()
         {
@@ -230,7 +229,7 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79043", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         public void AsyncMethodChanges()
         {
@@ -304,6 +303,113 @@ namespace System.Reflection.Metadata
 
                 string result = x.GetField;
                 Assert.Equal("4567", result);
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76702", TestRuntimes.CoreCLR)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddInstanceField()
+        {
+            // Test that adding a new instance field to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField).Assembly;
+
+                var x1 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
+
+                x1.TestMethod();
+
+                Assert.Equal ("abcd", x1.GetStringField);
+                Assert.Equal (3.14159, x1.GetDoubleField);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x1.TestMethod();
+
+                Assert.Equal ("4567", x1.GetStringField);
+                Assert.Equal (0.707106, x1.GetDoubleField);
+
+                Assert.Equal (-1, x1.GetIntArrayLength ()); // new field on existing object is initially null
+
+                var x2 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
+
+                Assert.Equal ("New Initial Value", x2.GetStringField);
+                Assert.Equal (6.5, x2.GetDoubleField);
+
+                Assert.Equal (6, x2.GetIntArrayLength());
+                Assert.Equal (7, x2.GetIntArrayElt (3));
+                
+                // now check that reflection can get/set the new fields
+                var fi = x2.GetType().GetField("NewStructField");
+
+                Assert.NotNull(fi);
+
+                var s = fi.GetValue (x2);
+
+                Assert.NotNull(x2);
+
+                var fid = fi.FieldType.GetField("D");
+                Assert.NotNull(fid);
+                Assert.Equal(-1984.0, fid.GetValue(s));
+                var tr = TypedReference.MakeTypedReference (x2, new FieldInfo[] {fi});
+                fid.SetValueDirect(tr, (object)34567.0);
+                Assert.Equal (34567.0, fid.GetValueDirect (tr));
+
+                fi = x2.GetType().GetField("_doubleField2", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                Assert.NotNull(fi);
+
+                fi.SetValue(x2, 65535.01);
+                Assert.Equal(65535.01, x2.GetDoubleField);
+
+                tr = __makeref(x2);
+                fi.SetValueDirect (tr, 32768.2);
+                Assert.Equal (32768.2, x2.GetDoubleField);
+                Assert.Equal ((object)32768.2, fi.GetValueDirect (tr));
+
+                Assert.Equal("abcd", x2.GetStringProp);
+
+                var propInfo = x2.GetType().GetProperty("AddedStringAutoProp", BindingFlags.Public | BindingFlags.Instance);
+
+                Assert.NotNull(propInfo);
+                Assert.Equal("abcd", propInfo.GetMethod.Invoke (x2, new object[] {}));
+
+                x2.TestMethod();
+
+                Assert.Equal("abcdTest", x2.GetStringProp);
+
+                var addedPropToken = propInfo.MetadataToken;
+
+                Assert.True (addedPropToken > 0);
+
+                // we don't know exactly what token Roslyn will assign to the added property, but
+                // since the AddInstanceField.dll assembly is relatively small, assume that the
+                // total number of properties in the updated generation is less than 64 and the
+                // token is in that range.  If more code is added, revise this test.
+
+                Assert.True ((addedPropToken & 0x00ffffff) < 64);
+
+
+                var accumResult = x2.FireEvents();
+
+                Assert.Equal (246.0, accumResult);
+
+                var eventInfo = x2.GetType().GetEvent("AddedEvent", BindingFlags.Public | BindingFlags.Instance);
+
+                Assert.NotNull (eventInfo);
+
+                var addedEventToken = eventInfo.MetadataToken;
+
+                Assert.True (addedEventToken > 0);
+
+                // we don't know exactly what token Roslyn will assign to the added event, but
+                // since the AddInstanceField.dll assembly is relatively small, assume that the
+                // total number of events in the updated generation is less than 4 and the
+                // token is in that range.  If more code is added, revise this test.
+
+                Assert.True ((addedEventToken & 0x00ffffff) < 4);
+                
+
             });
         }
 
@@ -629,5 +735,87 @@ namespace System.Reflection.Metadata
                 System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.ZExistingClass.ExistingMethod ();
             });
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestReflectionAddNewMethod()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+                var assm = ty.Assembly;
+
+		var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+                var allMethods = ty.GetMethods(bindingFlags);
+
+                int objectMethods = typeof(object).GetMethods(bindingFlags).Length;
+                Assert.Equal (objectMethods + 1, allMethods.Length);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
+
+                allMethods = ty.GetMethods(bindingFlags);
+                Assert.Equal (objectMethods + 2, allMethods.Length);
+
+                var mi = ty.GetMethod ("AddedNewMethod");
+
+                Assert.NotNull (mi);
+
+                var retParm = mi.ReturnParameter;
+                Assert.NotNull (retParm);
+                Assert.NotNull (retParm.ParameterType);
+                Assert.Equal (-1, retParm.Position);
+
+                var retCas = retParm.GetCustomAttributes(false);
+                Assert.NotNull(retCas);
+                Assert.Equal(0, retCas.Length);
+
+                var parms = mi.GetParameters();
+                Assert.Equal (5, parms.Length);
+
+                int parmPos = 0;
+                foreach (var parm in parms)
+                {
+                    Assert.NotNull(parm);
+                    Assert.NotNull(parm.ParameterType);
+                    Assert.Equal(parmPos, parm.Position);
+                    Assert.NotNull(parm.Name);
+                    
+                    var cas = parm.GetCustomAttributes(false);
+                    foreach (var ca in cas) {
+                        Assert.NotNull (ca);
+                    }
+
+                    parmPos++;
+                }
+
+		var parmAttrs = parms[4].GetCustomAttributes(false);
+                Assert.Equal (2, parmAttrs.Length);
+		bool foundCallerMemberName = false;
+		bool foundOptional = false;
+		foreach (var pa in parmAttrs) {
+		    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
+		    {
+			foundCallerMemberName = true;
+		    }
+		    if (typeof (OptionalAttribute).Equals(pa.GetType()))
+		    {
+			foundOptional = true;
+		    }
+		}
+		Assert.True(foundCallerMemberName);
+		Assert.True(foundOptional);
+
+		// n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
+		Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
+
+                Assert.True(parms[3].HasDefaultValue);
+		Assert.True(parms[4].HasDefaultValue);
+
+		Assert.Null(parms[3].DefaultValue);
+		Assert.Equal(string.Empty, parms[4].DefaultValue);
+            });
+	} 
     }
 }

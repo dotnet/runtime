@@ -19,7 +19,7 @@ namespace DefaultNamespace {
         internal FragNode fnM = null;
         internal FragNode [] CvA_FNodes;
 
-        public static int Main ( String [] Args)
+        public static int Main ()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             FragMan test = new FragMan( );

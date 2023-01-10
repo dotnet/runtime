@@ -5,8 +5,8 @@ parameters:
   crossBuild: false
   osGroup: ''
   osSubgroup: ''
+  condition: true
   pool: ''
-  stagedBuild: false
   timeoutInMinutes: ''
   variables: {}
   dependOnEvaluatePaths: false
@@ -20,9 +20,9 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    condition: ${{ parameters.condition }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 

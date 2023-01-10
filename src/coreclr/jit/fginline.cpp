@@ -194,14 +194,12 @@ private:
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
             //
-            BasicBlock* prevInlineeBB   = nullptr;
             BasicBlock* inlineeBB       = nullptr;
             GenTree*    inlineCandidate = tree;
             do
             {
                 GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
                 inlineCandidate         = retExpr->gtSubstExpr;
-                prevInlineeBB           = inlineeBB;
                 inlineeBB               = retExpr->gtSubstBB;
             } while (inlineCandidate->OperIs(GT_RET_EXPR));
 
@@ -242,34 +240,12 @@ private:
             *use          = inlineCandidate;
             m_madeChanges = true;
 
-            // TODO-Inlining: The inliner had strange previous behavior where
-            // it for successful inlines that were chains would propagate the
-            // flags from the second-to-last inlinee's BB. Remove this once we
-            // can take these changes. We still need to propagate the mandatory
-            // "IR-presence" flags.
-            // Furthermore, we should really only propagate BBF_COPY_PROPAGATE
-            // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
-            // propagating that has the effect that inlining a tree from a hot
-            // block into a block without profile weights means we suddenly
-            // start to see the inliner block as hot and treat future inline
-            // candidates more aggressively.
-            //
-            BasicBlockFlags newBBFlags = BBF_EMPTY;
-            if (prevInlineeBB != nullptr)
+            if (inlineeBB != nullptr)
             {
-                newBBFlags |= prevInlineeBB->bbFlags;
-
-                if (inlineeBB != nullptr)
-                {
-                    newBBFlags |= inlineeBB->bbFlags & BBF_COPY_PROPAGATE;
-                }
+                // IR may potentially contain nodes that requires mandatory BB flags to be set.
+                // Propagate those flags from the containing BB.
+                m_compiler->compCurBB->bbFlags |= inlineeBB->bbFlags & BBF_COPY_PROPAGATE;
             }
-            else if (inlineeBB != nullptr)
-            {
-                newBBFlags |= inlineeBB->bbFlags;
-            }
-
-            m_compiler->compCurBB->bbFlags |= (newBBFlags & BBF_SPLIT_GAINED);
 
 #ifdef DEBUG
             if (m_compiler->verbose)
@@ -408,7 +384,7 @@ private:
         }
 
         GenTree* dst = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src, /* isVolatile */ false, /* isCopyBlock */ true);
+        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src);
 
         // If inlinee was comma, new inlinee is (, , , lcl = inlinee).
         if (inlinee->OperIs(GT_COMMA))
@@ -561,7 +537,8 @@ private:
             {
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
                         block->bbNum);
-                noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+
+                noway_assert(!m_compiler->fgComputePredsDone);
 
                 // We have a constant operand, and should have the all clear to optimize.
                 // Update side effects on the tree, assert there aren't any, and bash to nop.
@@ -570,36 +547,20 @@ private:
                 tree->gtBashToNOP();
                 m_madeChanges = true;
 
-                BasicBlock* bNotTaken = nullptr;
-
-                if (condTree->AsIntCon()->gtIconVal != 0)
+                if (!condTree->IsIntegralConst(0))
                 {
                     block->bbJumpKind = BBJ_ALWAYS;
-                    bNotTaken         = block->bbNext;
                 }
                 else
                 {
                     block->bbJumpKind = BBJ_NONE;
-                    bNotTaken         = block->bbJumpDest;
-                }
-
-                m_compiler->fgRemoveRefPred(bNotTaken, block);
-
-                // If that was the last ref, a subsequent flow-opt pass
-                // will clean up the now-unreachable bNotTaken, and any
-                // other transitively unreachable blocks.
-                if (bNotTaken->bbRefs == 0)
-                {
-                    JITDUMP("... it looks like " FMT_BB " is now unreachable!\n", bNotTaken->bbNum);
                 }
             }
         }
         else
         {
-            const var_types retType    = tree->TypeGet();
-            GenTree*        foldedTree = m_compiler->gtFoldExpr(tree);
-            *pTree                     = foldedTree;
-            m_madeChanges              = true;
+            *pTree        = m_compiler->gtFoldExpr(tree);
+            m_madeChanges = true;
         }
     }
 };
@@ -1355,6 +1316,15 @@ _Done:
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+    // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+    // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+    if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
+    {
+        opts.compProcedureSplitting = false;
+        JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
+                "implementation limitation.\n");
+    }
+
 #ifdef FEATURE_SIMD
     if (InlineeCompiler->usesSIMDTypes())
     {
@@ -1631,7 +1601,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                             GenTree* op2 = argNode->AsOp()->gtOp2;
                             if (op1->IsCall() &&
                                 ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                                op2->OperIs(GT_IND) && op2->gtGetOp1()->IsIconHandle() &&
+                                ((op2->gtFlags & GTF_EXCEPT) == 0))
                             {
                                 JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                         " actual arg [%06u] helper call [%06u]\n",
@@ -1773,10 +1744,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
-                                          gtNewIconNode(0),              // Value
-                                          false,                         // isVolatile
-                                          false);                        // not copyBlock
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), gtNewIconNode(0));
 
                     newStmt = gtNewStmt(tree, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);

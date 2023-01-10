@@ -316,12 +316,12 @@ internal static partial class Interop
                 {
                     using (var reader = new StreamReader(procCGroupFilePath))
                     {
+                        Span<Range> lineParts = stackalloc Range[4];
                         string? line;
                         while ((line = reader.ReadLine()) != null)
                         {
-                            string[] lineParts = line.Split(':');
-
-                            if (lineParts.Length != 3)
+                            ReadOnlySpan<char> lineSpan = line;
+                            if (lineSpan.Split(lineParts, ':') != 3)
                             {
                                 // Malformed line.
                                 continue;
@@ -333,13 +333,13 @@ internal static partial class Interop
                                 // list. See man page for cgroups for /proc/[pid]/cgroups format, e.g:
                                 //     hierarchy-ID:controller-list:cgroup-path
                                 //     5:cpuacct,cpu,cpuset:/daemons
-                                if (Array.IndexOf(lineParts[1].Split(','), subsystem) < 0)
+                                if (Array.IndexOf(line[lineParts[1]].Split(','), subsystem) < 0)
                                 {
                                     // Not the relevant entry.
                                     continue;
                                 }
 
-                                path = lineParts[2];
+                                path = line[lineParts[2]];
                                 return true;
                             }
                             else if (cgroupVersion == CGroupVersion.CGroup2)
@@ -347,9 +347,9 @@ internal static partial class Interop
                                 // cgroup v2: Find the first entry that matches the cgroup v2 hierarchy:
                                 //     0::$PATH
 
-                                if ((lineParts[0] == "0") && (lineParts[1].Length == 0))
+                                if (lineSpan[lineParts[0]] is "0" && lineSpan[lineParts[1]].IsEmpty)
                                 {
-                                    path = lineParts[2];
+                                    path = line[lineParts[2]];
                                     return true;
                                 }
                             }

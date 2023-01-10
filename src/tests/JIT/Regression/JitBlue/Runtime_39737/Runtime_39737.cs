@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System;
 
-class Runtime_39403
+public class Runtime_39403
 { 
     public static int Main()
     {

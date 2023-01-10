@@ -3,13 +3,9 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Serialization.SerializationInfo.StartDeserialization</Target>
-    <Left>ref/net7.0/System.Runtime.dll</Left>
-    <Right>lib/net7.0/System.Runtime.dll</Right>
   </Suppression>
 </Suppressions>

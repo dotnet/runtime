@@ -39,7 +39,7 @@ variables:
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release

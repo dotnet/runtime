@@ -7,28 +7,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
     class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Yield()
         {
-            int testResult = ArmBase.IsSupported ? Pass : Fail;
-
-            try
+            if (ArmBase.IsSupported)
             {
                 ArmBase.Yield();
             }
-            catch (Exception e)
+            else
             {
-                testResult = (ArmBase.IsSupported || (e is not PlatformNotSupportedException)) ? Fail : Pass;
+                Assert.Throws<PlatformNotSupportedException>(ArmBase.Yield);
             }
-
-            return testResult;
         }
     }
 }

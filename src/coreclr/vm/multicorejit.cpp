@@ -155,7 +155,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     {
         CFileStream fileStream;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName)))
+        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
         {
             hr = WriteOutput(& fileStream);
         }
@@ -187,7 +187,7 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
     return hr;
 }
 
-// Write string, round to to DWORD alignment
+// Write string, round to DWORD alignment
 HRESULT WriteString(const void * pString, unsigned len, IStream * pStream)
 {
     CONTRACTL
@@ -995,9 +995,9 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
 
-        if ((len != 0) && (m_fullFileName[len - 1] != W('\\')))
+        if ((len != 0) && (m_fullFileName[len - 1] != DIRECTORY_SEPARATOR_CHAR_W))
         {
-            m_fullFileName.Append(W('\\'));
+            m_fullFileName.Append(DIRECTORY_SEPARATOR_CHAR_W);
         }
 
         m_fullFileName.Append(pFile);
@@ -1467,16 +1467,11 @@ void MulticoreJitManager::StopProfileAll()
     }
     CONTRACTL_END;
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().StopProfile(true);
-        }
+        pDomain->GetMulticoreJitManager().StopProfile(true);
     }
 }
 
@@ -1508,16 +1503,11 @@ void MulticoreJitManager::DisableMulticoreJit()
 
 #ifdef PROFILING_SUPPORTED
 
-    AppDomainIterator domain(TRUE);
+    AppDomain * pDomain = AppDomain::GetCurrentDomain();
 
-    while (domain.Next())
+    if (pDomain != NULL)
     {
-        AppDomain * pDomain = domain.GetDomain();
-
-        if (pDomain != NULL)
-        {
-            pDomain->GetMulticoreJitManager().AbortProfile();
-        }
+        pDomain->GetMulticoreJitManager().AbortProfile();
     }
 
 #endif

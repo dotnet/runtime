@@ -201,12 +201,9 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
 
             if (!IsLiteral)
@@ -228,15 +225,12 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
-                throw new FieldAccessException("Cannot set a constant field");
+                throw new FieldAccessException(SR.Acc_ReadOnly);
 
             binder ??= Type.DefaultBinder;
             CheckGeneric();

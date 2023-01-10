@@ -66,15 +66,12 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_nodeFactory.Target.IsWindows || _nodeFactory.Target.SupportsRelativePointers)
-                    return ObjectNodeSection.ReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows || factory.Target.SupportsRelativePointers)
+                return ObjectNodeSection.ReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;

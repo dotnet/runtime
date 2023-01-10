@@ -16,8 +16,7 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-               ,
-               unsigned maxTmpSize);
+               );
 
 void emitEndFN();
 

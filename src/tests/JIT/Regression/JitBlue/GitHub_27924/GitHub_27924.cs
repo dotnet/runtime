@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-class Program
+public class Program
 {
     static int returnVal = 100;
     static byte[][] s = new byte[1000][];
@@ -38,7 +38,7 @@ class Program
         }
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         for(int i = 0; i < s.Length; i++) s[i] = new byte[2];
 

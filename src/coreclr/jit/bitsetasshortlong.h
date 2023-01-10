@@ -28,7 +28,7 @@ private:
 
     inline static bool IsShort(Env env)
     {
-        return BitSetTraits::GetArrSize(env, sizeof(size_t)) <= 1;
+        return BitSetTraits::GetArrSize(env) <= 1;
     }
 
     // The operations on the "long" (pointer-to-array-of-size_t) versions of the representation.
@@ -496,7 +496,7 @@ public:
                 assert(bs != BitSetOps::UninitVal());
                 m_bits = bs[0];
 
-                unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+                unsigned len = BitSetTraits::GetArrSize(env);
                 m_bsEnd      = bs + len;
             }
         }
@@ -554,7 +554,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::AssignLong(Env env, BitSetShortLongRep& lhs, BitSetShortLongRep rhs)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         lhs[i] = rhs[i];
@@ -582,7 +582,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
 {
     assert(!IsShort(env));
     BitSetShortLongRep res = MakeUninitArrayBits(env);
-    unsigned           len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned           len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         res[i] = bs[i];
@@ -597,7 +597,7 @@ bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::IsEmptyLong(Env env, BitSetShortLongRep bs)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         if (bs[i] != 0)
@@ -615,7 +615,7 @@ unsigned BitSetOps</*BitSetType*/ BitSetShortLongRep,
                    /*BitSetTraits*/ BitSetTraits>::CountLong(Env env, BitSetShortLongRep bs)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     unsigned res = 0;
     for (unsigned i = 0; i < len; i++)
     {
@@ -631,7 +631,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         bs1[i] |= bs2[i];
@@ -645,7 +645,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         bs1[i] &= ~bs2[i];
@@ -699,7 +699,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::ClearDLong(Env env, BitSetShortLongRep& bs)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         bs[i] = 0;
@@ -713,7 +713,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
                              /*BitSetTraits*/ BitSetTraits>::MakeUninitArrayBits(Env env)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     assert(len > 1); // Or else would not require an array.
     return (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
 }
@@ -725,7 +725,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
                              /*BitSetTraits*/ BitSetTraits>::MakeEmptyArrayBits(Env env)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     assert(len > 1); // Or else would not require an array.
     BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
     for (unsigned i = 0; i < len; i++)
@@ -742,7 +742,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
                              /*BitSetTraits*/ BitSetTraits>::MakeFullArrayBits(Env env)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     assert(len > 1); // Or else would not require an array.
     BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
     for (unsigned i = 0; i < len - 1; i++)
@@ -777,7 +777,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                                                                  BitSetShortLongRep  bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         bs1[i] &= bs2[i];
@@ -793,7 +793,7 @@ bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                                                                        BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         if ((bs1[i] & bs2[i]) != 0)
@@ -811,7 +811,7 @@ bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         if ((bs1[i] | bs2[i]) != 0)
@@ -832,7 +832,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                                                              const BitSetShortLongRep in)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         out[i] = out[i] & (gen[i] | in[i]);
@@ -850,7 +850,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
                                                              const BitSetShortLongRep out)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         in[i] = use[i] | (out[i] & ~def[i]);
@@ -864,7 +864,7 @@ bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::EqualLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         if (bs1[i] != bs2[i])
@@ -882,7 +882,7 @@ bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*BitSetTraits*/ BitSetTraits>::IsSubsetLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
-    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned len = BitSetTraits::GetArrSize(env);
     for (unsigned i = 0; i < len; i++)
     {
         if ((bs1[i] & bs2[i]) != bs1[i])
@@ -901,7 +901,7 @@ const char* BitSetOps</*BitSetType*/ BitSetShortLongRep,
                       /*BitSetTraits*/ BitSetTraits>::ToStringLong(Env env, BitSetShortLongRep bs)
 {
     assert(!IsShort(env));
-    unsigned  len           = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    unsigned  len           = BitSetTraits::GetArrSize(env);
     const int CharsForSizeT = sizeof(size_t) * 2;
     unsigned  allocSz       = len * CharsForSizeT + 4;
     unsigned  remaining     = allocSz;

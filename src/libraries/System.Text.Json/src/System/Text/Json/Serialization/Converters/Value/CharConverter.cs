@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class CharConverter : JsonConverter<char>
+    internal sealed class CharConverter : JsonPrimitiveConverter<char>
     {
         private const int MaxEscapedCharacterLength = JsonConstants.MaxExpansionFactorWhileEscaping;
 
@@ -40,7 +40,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override char ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            => Read(ref reader, typeToConvert, options);
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+            return Read(ref reader, typeToConvert, options);
+        }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, char value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {

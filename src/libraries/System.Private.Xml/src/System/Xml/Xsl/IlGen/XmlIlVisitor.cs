@@ -70,7 +70,7 @@ namespace System.Xml.Xsl.IlGen
 
             // Build the root expression
             _helper.MethodBegin(methRoot, null, true);
-            StartNestedIterator(qil.Root);
+            StartNestedIterator();
             Visit(qil.Root);
             Debug.Assert(_iterCurr.Storage.Location == ItemLocation.None, "Root expression should have been pushed to the writer.");
             EndNestedIterator(qil.Root);
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Emit(OpCodes.Brtrue, lblGetGlobal);
 
                 // Compute value of global value
-                StartNestedIterator(iter);
+                StartNestedIterator();
 
                 if (param != null)
                 {
@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.IlGen
                     _helper.Emit(OpCodes.Brfalse, lblLocalComputed);
 
                     // Compute default value of this parameter
-                    StartNestedIterator(iter);
+                    StartNestedIterator();
                     NestedVisitEnsureStack(iter.Binding, GetItemStorageType(iter), /*isCached:*/!iter.XmlType.IsSingleton);
                     EndNestedIterator(iter);
 
@@ -271,7 +271,7 @@ namespace System.Xml.Xsl.IlGen
                 }
             }
 
-            StartNestedIterator(ndFunc);
+            StartNestedIterator();
 
             // If function did not push results to writer, then function will return value(s) (rather than void)
             if (useWriter)
@@ -624,19 +624,19 @@ namespace System.Xml.Xsl.IlGen
             Label lblOnFalse;
 
             // Visit left branch
-            StartNestedIterator(ndAnd.Left);
+            StartNestedIterator();
             lblOnFalse = StartConjunctiveTests(iterParent.CurrentBranchingContext, iterParent.LabelBranch);
             Visit(ndAnd.Left);
             EndNestedIterator(ndAnd.Left);
 
             // Visit right branch
-            StartNestedIterator(ndAnd.Right);
+            StartNestedIterator();
             StartLastConjunctiveTest(iterParent.CurrentBranchingContext, iterParent.LabelBranch, lblOnFalse);
             Visit(ndAnd.Right);
             EndNestedIterator(ndAnd.Right);
 
             // End And expression
-            EndConjunctiveTests(iterParent.CurrentBranchingContext, iterParent.LabelBranch, lblOnFalse);
+            EndConjunctiveTests(iterParent.CurrentBranchingContext, lblOnFalse);
 
             return ndAnd;
         }
@@ -689,7 +689,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Anchor any remaining labels.
         /// </summary>
-        private void EndConjunctiveTests(BranchingContext brctxt, Label lblBranch, Label lblOnFalse)
+        private void EndConjunctiveTests(BranchingContext brctxt, Label lblOnFalse)
         {
             switch (brctxt)
             {
@@ -1080,7 +1080,7 @@ namespace System.Xml.Xsl.IlGen
                 // length = 0;
                 _helper.Emit(OpCodes.Ldc_I4_0);
 
-                StartNestedIterator(ndSetLen.Child, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
 
                 // foreach (item in expr) {
                 Visit(ndSetLen.Child);
@@ -1391,7 +1391,7 @@ namespace System.Xml.Xsl.IlGen
             _helper.Call(methods.AggCreate!);
 
             // foreach (num in expr) {
-            StartNestedIterator(ndAgg.Child, lblOnEnd);
+            StartNestedIterator(lblOnEnd);
             _helper.Emit(OpCodes.Ldloca, locAgg);
             Visit(ndAgg.Child);
 
@@ -1583,7 +1583,7 @@ namespace System.Xml.Xsl.IlGen
 
             // str = each string;
             lblOnEnd = _helper.DefineLabel();
-            StartNestedIterator(ndStr, lblOnEnd);
+            StartNestedIterator(lblOnEnd);
             Visit(ndStr);
 
             // strcat.Concat(str);
@@ -1896,7 +1896,7 @@ namespace System.Xml.Xsl.IlGen
             _iterCurr.SetIterator(_iterNested!);
 
             // If filter is false, skip the current item
-            StartNestedIterator(ndFilter.Body);
+            StartNestedIterator();
             _iterCurr.SetBranching(BranchingContext.OnFalse, _iterCurr.ParentIterator!.GetLabelNext());
             Visit(ndFilter.Body);
             EndNestedIterator(ndFilter.Body);
@@ -2062,7 +2062,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Emit(OpCodes.Ldloc, locIndex);
 
                 // Generate code to iterate over the nodes which are being indexed ($iterNodes in the pattern)
-                StartNestedIterator(nodes, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
                 StartBinding(nodes);
 
                 // Generate code to iterate over the keys for each node ($bindingKeys in the pattern)
@@ -2141,9 +2141,9 @@ namespace System.Xml.Xsl.IlGen
 
             // For expression iterator will be unnested as part of parent iterator
             if (_iterCurr.HasLabelNext)
-                StartNestedIterator(ndFor.Binding, _iterCurr.GetLabelNext());
+                StartNestedIterator(_iterCurr.GetLabelNext());
             else
-                StartNestedIterator(ndFor.Binding);
+                StartNestedIterator();
 
             if (patt.MatchesPattern(OptimizerPatternName.IsPositional))
             {
@@ -2202,7 +2202,7 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(!ndLet.XmlType!.IsSingleton);
 
             // Construct nested iterator
-            StartNestedIterator(ndLet);
+            StartNestedIterator();
 
             // Allow base internal class to dispatch based on QilExpression node type
             NestedVisit(ndLet.Binding!, GetItemStorageType(ndLet), !ndLet.XmlType.IsSingleton);
@@ -2280,7 +2280,7 @@ namespace System.Xml.Xsl.IlGen
 
             // Construct nested iterator
             // foreach (item in sort-expr) {
-            StartNestedIterator(ndSort.Variable, lblOnEndSort);
+            StartNestedIterator(lblOnEndSort);
             StartBinding(ndSort.Variable);
             Debug.Assert(!_iterNested!.Storage.IsCached);
 
@@ -2353,7 +2353,7 @@ namespace System.Xml.Xsl.IlGen
             else
             {
                 lblOnEndKey = _helper.DefineLabel();
-                StartNestedIterator(ndKey.Key, lblOnEndKey);
+                StartNestedIterator(lblOnEndKey);
                 Visit(ndKey.Key);
                 _iterCurr.EnsureStackNoCache();
                 _iterCurr.EnsureItemStorageType(ndKey.Key.XmlType, GetItemStorageType(ndKey.Key));
@@ -2513,7 +2513,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Call(XmlILMethods.DodMergeCreate);
                 _helper.Emit(OpCodes.Ldloca, locMerge);
 
-                StartNestedIterator(ndDod.Child, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
 
                 // foreach (seq in expr) {
                 Visit(ndDod.Child);
@@ -3389,9 +3389,9 @@ namespace System.Xml.Xsl.IlGen
 
                 // Forward any LabelOnEnd jumps to LabelBranch if BranchingContext.OnTrue
                 if (iterParent.CurrentBranchingContext == BranchingContext.OnTrue)
-                    StartNestedIterator(ndIsEmpty.Child, _iterCurr.LabelBranch);
+                    StartNestedIterator(_iterCurr.LabelBranch);
                 else
-                    StartNestedIterator(ndIsEmpty.Child, lblOnEnd);
+                    StartNestedIterator(lblOnEnd);
 
                 Visit(ndIsEmpty.Child);
 
@@ -3451,7 +3451,7 @@ namespace System.Xml.Xsl.IlGen
                 lblOnEnd = _helper.DefineLabel();
 
                 // Construct nested iterator and iterate over results
-                StartNestedIterator(ndVal.Child, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
                 Visit(ndVal.Child);
                 _iterCurr.EnsureStackNoCache();
 
@@ -3526,7 +3526,7 @@ namespace System.Xml.Xsl.IlGen
                 lblOnEnd = _helper.DefineLabel();
 
                 // Construct nested iterator and iterate over results
-                StartNestedIterator(ndGenId.Child, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
                 Visit(ndGenId.Child);
                 _iterCurr.EnsureStackNoCache();
                 _iterCurr.EnsureItemStorageType(ndGenId.Child.XmlType, typeof(XPathNavigator));
@@ -3995,7 +3995,7 @@ namespace System.Xml.Xsl.IlGen
 
             // Generate nested iterator (branch to lblOnEndNested when iteration is complete)
             lblOnEndNested = _helper.DefineLabel();
-            StartNestedIterator(ndLoop, lblOnEndNested);
+            StartNestedIterator(lblOnEndNested);
             StartBinding(ndLoop.Variable);
             EndBinding(ndLoop.Variable);
             EndNestedIterator(ndLoop.Variable);
@@ -4656,7 +4656,7 @@ namespace System.Xml.Xsl.IlGen
         /// current iterator.
         /// </summary>
         [MemberNotNull(nameof(_iterCurr))]
-        private void StartNestedIterator(QilNode? nd)
+        private void StartNestedIterator()
         {
             IteratorDescriptor? iterParent = _iterCurr;
 
@@ -4679,9 +4679,9 @@ namespace System.Xml.Xsl.IlGen
         /// Calls StartNestedIterator(nd) and also sets up the nested iterator to branch to "lblOnEnd" when iteration
         /// is complete.
         /// </summary>
-        private void StartNestedIterator(QilNode? nd, Label lblOnEnd)
+        private void StartNestedIterator(Label lblOnEnd)
         {
-            StartNestedIterator(nd);
+            StartNestedIterator();
             _iterCurr.SetIterator(lblOnEnd, StorageDescriptor.None());
         }
 
@@ -4733,7 +4733,7 @@ namespace System.Xml.Xsl.IlGen
             if (XmlILConstructInfo.Read(nd).PushToWriterLast)
             {
                 // Push results to output, so nothing is left to store
-                StartNestedIterator(nd);
+                StartNestedIterator();
                 Visit(nd);
                 EndNestedIterator(nd);
                 _iterCurr.Storage = StorageDescriptor.None();
@@ -4741,7 +4741,7 @@ namespace System.Xml.Xsl.IlGen
             else if (!isCached && nd.XmlType!.IsSingleton)
             {
                 // Storage of result will be a non-cached singleton
-                StartNestedIterator(nd);
+                StartNestedIterator();
                 Visit(nd);
                 _iterCurr.EnsureNoCache();
                 _iterCurr.EnsureItemStorageType(nd.XmlType, itemStorageType);
@@ -4769,7 +4769,7 @@ namespace System.Xml.Xsl.IlGen
         private void NestedVisit(QilNode nd, Label lblOnEnd)
         {
             Debug.Assert(!XmlILConstructInfo.Read(nd).PushToWriterLast);
-            StartNestedIterator(nd, lblOnEnd);
+            StartNestedIterator(lblOnEnd);
             Visit(nd);
             _iterCurr.EnsureNoCache();
             _iterCurr.EnsureItemStorageType(nd.XmlType!, GetItemStorageType(nd));
@@ -4822,7 +4822,7 @@ namespace System.Xml.Xsl.IlGen
         private void NestedVisitWithBranch(QilNode nd, BranchingContext brctxt, Label lblBranch)
         {
             Debug.Assert(nd.XmlType!.IsSingleton && !XmlILConstructInfo.Read(nd).PushToWriterLast);
-            StartNestedIterator(nd);
+            StartNestedIterator();
             _iterCurr.SetBranching(brctxt, lblBranch);
             Visit(nd);
             EndNestedIterator(nd);
@@ -4845,7 +4845,7 @@ namespace System.Xml.Xsl.IlGen
             // If bound expression will already be cached correctly, then don't create an XmlQuerySequence
             if (cachesResult)
             {
-                StartNestedIterator(nd);
+                StartNestedIterator();
                 Visit(nd);
                 EndNestedIterator(nd);
                 _iterCurr.Storage = _iterNested!.Storage;
@@ -4890,7 +4890,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Emit(OpCodes.Stloc, locCache);
                 _helper.Emit(OpCodes.Ldloc, locCache);
 
-                StartNestedIterator(nd, lblOnEnd);
+                StartNestedIterator(lblOnEnd);
 
                 if (cachesResult)
                     _iterCurr.Storage = _iterCurr.ParentIterator!.Storage;

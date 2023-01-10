@@ -44,7 +44,7 @@ struct VType3<T0> : IType<VType3<int>>
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

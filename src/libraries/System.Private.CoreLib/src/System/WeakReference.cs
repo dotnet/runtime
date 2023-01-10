@@ -2,11 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
+using static System.WeakReferenceHandleTags;
+
 namespace System
 {
+    internal static class WeakReferenceHandleTags
+    {
+        // the lowermost bit is used to indicate whether the handle is tracking resurrection
+        // handles are at least 2-byte aligned, so we can use one bit for tagging
+        internal const nint TracksResurrectionBit = 1;
+
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+        // one more bit is used to track whether the handle refers to an instance of ComAwareWeakReference
+        // we can use this bit because on COM-supporting platforms a handle is at least 4-byte aligned
+        internal const nint ComAwareBit = 2;
+        internal const nint HandleTagBits = TracksResurrectionBit | ComAwareBit;
+#else
+        internal const nint HandleTagBits = TracksResurrectionBit;
+#endif
+    }
+
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class WeakReference : ISerializable
@@ -17,13 +36,7 @@ namespace System
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-#if !CORECLR
-        // the handle field is effectively readonly until the object is finalized.
-        private IntPtr _handleAndKind;
-
-        // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private const nint TracksResurrectionBit = 1;
-#endif
+        private nint _taggedHandle;
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -60,20 +73,40 @@ namespace System
         // or just until they're finalized (false).
         public virtual bool TrackResurrection => IsTrackResurrection();
 
-#if !CORECLR
         private void Create(object? target, bool trackResurrection)
         {
-            IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            _handleAndKind = trackResurrection ?
+            nint h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            _taggedHandle = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
+
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+            ComAwareWeakReference.ComInfo? comInfo = ComAwareWeakReference.ComInfo.FromObject(target);
+            if (comInfo != null)
+            {
+                ComAwareWeakReference.SetComInfoInConstructor(ref _taggedHandle, comInfo);
+            }
+#endif
         }
 
         // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         // or just until they're finalized (false).
-        private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
+        private bool IsTrackResurrection() => (_taggedHandle & TracksResurrectionBit) != 0;
 
-        internal IntPtr Handle => _handleAndKind & ~TracksResurrectionBit;
+        internal nint WeakHandle
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                nint th = _taggedHandle;
+
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+                if ((th & ComAwareBit) != 0)
+                    return ComAwareWeakReference.GetWeakHandle(th);
+#endif
+                return th & ~HandleTagBits;
+            }
+        }
 
         // Determines whether or not this instance of WeakReference still refers to an object
         // that has not been collected.
@@ -81,14 +114,14 @@ namespace System
         {
             get
             {
-                IntPtr h = Handle;
+                nint wh = WeakHandle;
 
                 // In determining whether it is valid to use this object, we need to at least expose this
                 // without throwing an exception.
-                if (default(IntPtr) == h)
+                if (wh == 0)
                     return false;
 
-                bool result = GCHandle.InternalGet(h) != null;
+                bool result = GCHandle.InternalGet(wh) != null;
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -101,9 +134,11 @@ namespace System
         // Or sets it.
         public virtual object? Target
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                IntPtr h = Handle;
+                nint th = _taggedHandle & ~TracksResurrectionBit;
+
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
@@ -114,10 +149,16 @@ namespace System
                 // There is a possibility that a derived type overrides the default finalizer and arranges concurrent access.
                 // There is nothing that we can do about that and a few other exotic ways to break this.
                 //
-                if (default(IntPtr) == h)
+                if (th == 0)
                     return default;
 
-                object? target = GCHandle.InternalGet(h);
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+                if ((th & ComAwareBit) != 0)
+                    return ComAwareWeakReference.GetTarget(th);
+#endif
+
+                // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
+                object? target = GCHandle.InternalGet(th);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -127,13 +168,24 @@ namespace System
 
             set
             {
-                IntPtr h = Handle;
+                nint th = _taggedHandle & ~TracksResurrectionBit;
+
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
-                // See the comment in the getter.
-                if (default(IntPtr) == h)
+                // GC can finalize the instance if it becomes F-Reachable.
+                // That, however, cannot happen while we use the instance.
+                if (th == 0)
                     throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
 
-                GCHandle.InternalSet(h, value);
+#if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+                var comInfo = ComAwareWeakReference.ComInfo.FromObject(value);
+                if ((th & ComAwareBit) != 0 || comInfo != null)
+                {
+                    ComAwareWeakReference.SetTarget(ref _taggedHandle, value, comInfo);
+                    return;
+                }
+#endif
+
+                GCHandle.InternalSet(th, value);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -152,15 +204,14 @@ namespace System
 
             Debug.Assert(this.GetType() != typeof(WeakReference));
 
-            IntPtr handle = Handle;
-            if (handle != default(IntPtr))
+            nint handle = _taggedHandle & ~HandleTagBits;
+            if (handle != 0)
             {
                 GCHandle.InternalFree(handle);
 
-                // keep the bit that indicates whether this reference was tracking resurrection
-                _handleAndKind &= TracksResurrectionBit;
+                // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+                _taggedHandle &= TracksResurrectionBit;
             }
         }
-#endif
     }
 }

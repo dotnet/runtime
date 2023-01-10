@@ -109,8 +109,6 @@
           Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
-
-    
     </ItemGroup>
 
     <PropertyGroup>
@@ -176,10 +174,13 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(IsDesktopOS)' == 'true' " >
-      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' != 'windows'" Include="$(MonoArtifactsPath)/libcoreclr$(LibSuffix)" TargetDir=""  />
-      <RuntimeDependencyCopyLocal Condition="'$(TargetOS)' == 'windows'" Include="$(MonoArtifactsPath)coreclr$(LibSuffix)" TargetDir=""  />
+      <!-- Copy the mono version of the coreclr library and SPCL instead of the corceclr one -->
+      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" />
+      <RuntimeDependencyCopyLocal Remove="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll" />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)$(LibPrefix)coreclr$(LibSuffix)" TargetDir="" />
+
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
-       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="/"  />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
     </ItemGroup>
 
     <Copy

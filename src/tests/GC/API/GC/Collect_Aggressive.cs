@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 public class AggressiveCollect
 {
-    public static int Main(string[] args )
+    public static int Main()
     {
         long before = CreateGarbage();
         GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);

@@ -7,7 +7,7 @@ namespace CrossBoundaryLayout
 {
     class Program
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             int failure = ATest.Test();
             failure += BTest.Test();

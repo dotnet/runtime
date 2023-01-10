@@ -456,7 +456,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks can be generated.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, false };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, false };
@@ -465,7 +465,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -474,7 +474,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -483,7 +483,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
             {
                 string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };

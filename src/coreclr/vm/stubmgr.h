@@ -86,7 +86,7 @@ public:
     // Get a string representation of this TraceDestination
     // Uses the supplied buffer to store the memory (or may return a string literal).
     // This will also print the TD's arguments.
-    const WCHAR * DbgToString(SString &buffer);
+    const CHAR * DbgToString(SString &buffer);
 #endif
 
     // Initialize for unmanaged code.

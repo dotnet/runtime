@@ -291,6 +291,9 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
         // actualValClone has small tree node size, it is safe to use CopyFrom here.
         tree->ReplaceWith(actualValClone, this);
 
+        // update SSA accounting
+        optRecordSsaUses(tree, compCurBB);
+
         // Propagating a constant may create an opportunity to use a division by constant optimization
         //
         if ((tree->gtNext != nullptr) && tree->gtNext->OperIsBinary())
@@ -361,13 +364,10 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     LclSsaVarDsc* ssaVarDsc = lvaTable[lclNum].GetPerSsaData(ssaNum);
     GenTreeOp*    ssaDefAsg = ssaVarDsc->GetAssignment();
 
-    if (ssaDefAsg == nullptr)
-    {
-        // Incoming parameters or live-in variables don't have actual definition tree node
-        // for their FIRST_SSA_NUM. See SsaBuilder::RenameVariables.
-        assert(ssaNum == SsaConfig::FIRST_SSA_NUM);
-    }
-    else
+    // Incoming parameters or live-in variables don't have actual definition tree node for
+    // their FIRST_SSA_NUM. Definitions induced by calls do not record the store node. See
+    // SsaBuilder::RenameDef.
+    if (ssaDefAsg != nullptr)
     {
         assert(ssaDefAsg->OperIs(GT_ASG));
 
@@ -468,6 +468,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         // Re-morph the statement.
         Statement* curStmt = compCurStmt;
         fgMorphBlockStmt(compCurBB, nullCheckStmt DEBUGARG("optFoldNullCheck"));
+        optRecordSsaUses(nullCheckStmt->GetRootNode(), compCurBB);
         compCurStmt = curStmt;
 
         folded = true;
@@ -565,8 +566,19 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             return nullptr;
         }
 
-        GenTree* defRHS = defLoc->GetAssignment()->gtGetOp2();
+        GenTree* defNode = defLoc->GetAssignment();
+        if (defNode == nullptr)
+        {
+            return nullptr;
+        }
 
+        GenTree* defLHS = defNode->gtGetOp1();
+        if (!defLHS->OperIs(GT_LCL_VAR) || (defLHS->AsLclVar()->GetLclNum() != lclNum))
+        {
+            return nullptr;
+        }
+
+        GenTree* defRHS = defNode->gtGetOp2();
         if (defRHS->OperGet() != GT_COMMA)
         {
             return nullptr;

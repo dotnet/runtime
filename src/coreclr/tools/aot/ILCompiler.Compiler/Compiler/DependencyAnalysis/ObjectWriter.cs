@@ -131,6 +131,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadOnly = 0x0000,
             Writeable = 0x0001,
             Executable = 0x0002,
+            Uninitialized = 0x0004,
         };
 
         /// <summary>
@@ -150,6 +151,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SectionType.Writeable:
                     attributes |= CustomSectionAttributes.Writeable;
+                    break;
+                case SectionType.Uninitialized:
+                    attributes |= CustomSectionAttributes.Uninitialized | CustomSectionAttributes.Writeable;
                     break;
             }
 
@@ -894,7 +898,7 @@ namespace ILCompiler.DependencyAnalysis
         private bool ShouldShareSymbol(ObjectNode node)
         {
             // Foldable sections are always COMDATs
-            ObjectNodeSection section = node.Section;
+            ObjectNodeSection section = node.GetSection(_nodeFactory);
             if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
                 section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
                 section == ObjectNodeSection.FoldableReadOnlyDataSection)
@@ -1006,7 +1010,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
 
-                    ObjectNodeSection section = node.Section;
+                    ObjectNodeSection section = node.GetSection(factory);
                     if (objectWriter.ShouldShareSymbol(node))
                     {
                         section = GetSharedSection(section, ((ISymbolNode)node).GetMangledName(factory.NameMangler));

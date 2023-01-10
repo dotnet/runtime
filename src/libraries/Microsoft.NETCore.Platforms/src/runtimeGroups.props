@@ -45,6 +45,11 @@
       <Architectures>wasm</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="wasi">
+      <Parent>any</Parent>
+      <Architectures>wasm</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="maccatalyst">
       <Parent>ios</Parent>
       <Architectures>x64;arm64</Architectures>
@@ -250,7 +255,7 @@
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>x86;armel;arm64</Architectures>
-      <Versions>4.0.0;5.0.0;5.5.0;6.0.0;6.5.0</Versions>
+      <Versions>4.0.0;5.0.0;5.5.0;6.0.0;6.5.0;7.0.0</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

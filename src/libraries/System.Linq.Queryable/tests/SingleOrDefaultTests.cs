@@ -69,14 +69,14 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleOrDefault1()
         {
-            var val = (new int[] { 2 }).AsQueryable().SingleOrDefault();
+            var val = new[] { 2 }.AsQueryable().SingleOrDefault();
             Assert.Equal(2, val);
         }
 
         [Fact]
         public void SingleOrDefault2()
         {
-            var val = (new int[] { 2 }).AsQueryable().SingleOrDefault(n => n > 1);
+            var val = new[] { 2 }.AsQueryable().SingleOrDefault(n => n > 1);
             Assert.Equal(2, val);
         }
 

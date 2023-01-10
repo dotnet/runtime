@@ -78,6 +78,9 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanCancelAcquireAsyncAfterQueuing();
 
         [Fact]
+        public abstract Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually();
+
+        [Fact]
         public abstract Task CanCancelAcquireAsyncBeforeQueuing();
 
         [Fact]

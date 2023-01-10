@@ -339,8 +339,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     HRESULT hr = S_OK;
     PCODE retAddr = NULL;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     PCODE pStub = NULL;
     BOOL fNonTransientExceptionThrown = FALSE;
 
@@ -530,9 +528,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     retAddr = NULL;
 
 Exit:
-
-    END_ENTRYPOINT_VOIDRET;
-
     RETURN retAddr;
 }
 
@@ -4707,8 +4702,8 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             GuidToLPSTR(IClassXIID, rIID);
             SString ssName;
             thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%ls, IID:%s, vTbl:%#08x\n",
-                 ssName.GetUnicode(), rIID, pComVtable));
+            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+                 ssName.GetUTF8(), rIID, pComVtable));
 #else
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
                  thClass.AsPtr(), IClassXIID.Data1, pComVtable));

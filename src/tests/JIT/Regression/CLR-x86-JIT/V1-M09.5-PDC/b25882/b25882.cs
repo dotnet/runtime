@@ -389,7 +389,7 @@ public class Co1245GetBytes_double
 
 
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         bool bResult = false; // Assume FAiL
         StringBuilder sblMsg = new StringBuilder(99);

@@ -90,7 +90,7 @@ namespace Prog
 
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             Callback obj = new Callback();
 

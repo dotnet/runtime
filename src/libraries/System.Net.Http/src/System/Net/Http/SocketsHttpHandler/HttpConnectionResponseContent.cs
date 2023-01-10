@@ -51,9 +51,9 @@ namespace System.Net.Http
         protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(stream);
-            return Impl(stream, context, cancellationToken);
+            return Impl(stream, cancellationToken);
 
-            async Task Impl(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+            async Task Impl(Stream stream, CancellationToken cancellationToken)
             {
                 using (Stream contentStream = ConsumeStream())
                 {
