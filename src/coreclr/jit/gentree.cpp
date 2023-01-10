@@ -22732,29 +22732,11 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree*    op1,
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
-
-#if defined(TARGET_XARCH)
-    if (simdSize == 32)
+    if (!op1->OperIsIndir())
     {
-        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-        intrinsic = NI_AVX_Store;
+        op1 = gtNewIndir(op2->TypeGet(), op1);
     }
-    else if (simdBaseType != TYP_FLOAT)
-    {
-        intrinsic = NI_SSE2_Store;
-    }
-    else
-    {
-        intrinsic = NI_SSE_Store;
-    }
-#elif defined(TARGET_ARM64)
-    intrinsic = NI_AdvSimd_Store;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-    return gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    return gtNewAssignNode(op1, op2);
 }
 
 //----------------------------------------------------------------------------------------------
