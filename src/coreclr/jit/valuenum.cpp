@@ -5150,8 +5150,15 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
             // It's done to match the current crossgen/ILC behavior.
             ssize_t objHandle = 0;
             memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-            loadTree->gtVNPair.SetBoth(objHandle == 0 ? vnStore->VNForNull()
-                                                      : vnStore->VNForHandle(objHandle, GTF_ICON_OBJ_HDL));
+            if (objHandle == 0)
+            {
+                loadTree->gtVNPair.SetBoth(vnStore->VNForNull());
+            }
+            else
+            {
+                loadTree->gtVNPair.SetBoth(vnStore->VNForHandle(objHandle, GTF_ICON_OBJ_HDL));
+                setMethodHasFrozenObjects();
+            }
             return;
         }
     }
