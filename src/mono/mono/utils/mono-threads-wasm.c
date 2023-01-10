@@ -56,7 +56,10 @@ wasm_get_stack_base (void)
 static int
 wasm_get_stack_size (void)
 {
-	return (guint8*)wasm_stack_high () - (guint8*)wasm_stack_low ();
+	// keep in sync with src\mono\wasi\wasi.proj stack-size
+	return 8388608;
+    // TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
+	// return (guint8*)wasm_stack_high () - (guint8*)wasm_stack_low ();
 }
 
 #endif
