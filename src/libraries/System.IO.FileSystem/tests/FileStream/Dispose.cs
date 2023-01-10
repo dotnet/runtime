@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Tests
 {
-    [Collection(nameof(DisableParallelization))] // make sure no other tests are calling GC.Collect()
+    [Collection("NoParallelTests")]  // make sure no other tests are calling GC.Collect()
     public class FileStream_Dispose : FileSystemTest
     {
         [Fact]
