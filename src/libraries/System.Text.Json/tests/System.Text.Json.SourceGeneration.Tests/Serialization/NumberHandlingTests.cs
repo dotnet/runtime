@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class NumberHandlingTests_Metadata : NumberHandlingTests
     {
         public NumberHandlingTests_Metadata()
-            : base(new StringSerializerWrapper(NumberHandlingTestsContext_Metadata.Default, (options) => new NumberHandlingTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(NumberHandlingTestsContext_Metadata.Default))
         {
         }
 
@@ -398,7 +398,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class NumberHandlingTests_Default : NumberHandlingTests
     {
         public NumberHandlingTests_Default()
-            : base(new StringSerializerWrapper(NumberHandlingTestsContext_Default.Default, (options) => new NumberHandlingTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(NumberHandlingTestsContext_Default.Default))
         {
         }
 
