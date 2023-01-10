@@ -224,6 +224,8 @@ namespace DebuggerTests
                         case "trace": _logger.LogTrace(line); break;
                         default: _logger.LogInformation(line); break;
                     }
+                    if (line == "console.debug: #debugger-app-ready#")
+                        await Client.SendCommand("DotnetDebugger.runTests", JObject.FromObject(new { type = "DotnetDebugger.runTests", to = "root" }), token);
 
                     if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
                     {
