@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Specifies how number properties and fields should be processed when serializing and deserializing.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public JsonNumberHandling? NumberHandling { get; init; }
+        public JsonNumberHandling NumberHandling { get; init; }
 
         /// <summary>
         /// Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSourceGenerationOptionsAttribute"/>.

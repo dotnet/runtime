@@ -487,12 +487,11 @@ namespace {@namespace}
                 string metadataInitSource = @$"{JsonCollectionInfoValuesTypeRef}<{typeRef}> {InfoVarName} = new {JsonCollectionInfoValuesTypeRef}<{typeRef}>()
         {{
             {ObjectCreatorPropName} = {objectCreatorValue},
-            {NumberHandlingPropName} = {numberHandlingArg},
             {SerializeHandlerPropName} = {serializeHandlerValue}
         }};
 
         {JsonTypeInfoReturnValueLocalVariableName} = {collectionTypeInfoValue};
-";
+        {JsonTypeInfoReturnValueLocalVariableName}.{NumberHandlingPropName} = {numberHandlingArg};";
 
                 return GenerateForType(typeGenerationSpec, metadataInitSource, serializeHandlerSource);
             }
@@ -640,11 +639,11 @@ namespace {@namespace}
             ObjectWithParameterizedConstructorCreator = {parameterizedCreatorInvocation},
             PropertyMetadataInitializer = {propInitMethod},
             ConstructorParameterMetadataInitializer = {ctorParamMetadataInitMethodName},
-            {NumberHandlingPropName} = {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
             {SerializeHandlerPropName} = {serializeMethodName}
         }};
 
-        {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>({OptionsLocalVariableName}, {ObjectInfoVarName});";
+        {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeMetadata.TypeRef}>({OptionsLocalVariableName}, {ObjectInfoVarName});
+        {JsonTypeInfoReturnValueLocalVariableName}.{NumberHandlingPropName} = {GetNumberHandlingAsStr(typeMetadata.NumberHandling)};";
 
                 string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
 

@@ -1076,7 +1076,7 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonCollectionInfoValues() { }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo ElementInfo { get { throw null; } init { } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo? KeyInfo { get { throw null; } init { } }
-        public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } init { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } init { } }
         public System.Func<TCollection>? ObjectCreator { get { throw null; } init { } }
         public System.Action<System.Text.Json.Utf8JsonWriter, TCollection>? SerializeHandler { get { throw null; } init { } }
     }
@@ -1159,7 +1159,7 @@ namespace System.Text.Json.Serialization.Metadata
     {
         public JsonObjectInfoValues() { }
         public System.Func<System.Text.Json.Serialization.Metadata.JsonParameterInfoValues[]>? ConstructorParameterMetadataInitializer { get { throw null; } init { } }
-        public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } init { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } init { } }
         public System.Func<T>? ObjectCreator { get { throw null; } init { } }
         public System.Func<object[], T>? ObjectWithParameterizedConstructorCreator { get { throw null; } init { } }
         public System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? PropertyMetadataInitializer { get { throw null; } init { } }
