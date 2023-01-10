@@ -21,12 +21,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcToolsPath Condition="'$(IlcPath)' != '' and '$(IlcToolsPath)' == ''">$(IlcPath)\tools\</IlcToolsPath>
-    <IlcSdkPath Condition="'$(IlcPath)' != '' and '$(IlcSdkPath)' == ''">$(IlcPath)\sdk\</IlcSdkPath>
-    <IlcFrameworkPath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkPath)' == ''">$(IlcPath)\framework\</IlcFrameworkPath>
-    <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
-    <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
-    <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
@@ -111,18 +105,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
   </ItemGroup>
-  <ItemGroup>
-    <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
-
-    <!-- Exclude unmanaged dlls -->
-    <FrameworkAssemblies Include="$(IlcFrameworkPath)*.dll" Exclude="$(IlcFrameworkPath)*.Native.dll;$(IlcFrameworkPath)msquic.dll" />
-
-    <MibcFile Include="$(IlcMibcPath)*.mibc" Condition="'$(IlcPgoOptimize)' == 'true'" />
-
-    <DefaultFrameworkAssemblies Include="@(FrameworkAssemblies)" />
-    <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
-  </ItemGroup>
-
 
   <ItemDefinitionGroup>
     <ManagedBinary>
