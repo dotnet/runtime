@@ -246,6 +246,12 @@ namespace Microsoft.Interop
                 return true;
             }
 
+            if (!entryPointType.IsUnboundGenericType)
+            {
+                entryPoint = typeInAttribute;
+                return true;
+            }
+
             INamedTypeSymbol instantiatedEntryType = entryPointType.ResolveUnboundConstructedTypeToConstructedType(managedType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
 
             entryPoint = instantiatedEntryType;
@@ -281,6 +287,13 @@ namespace Microsoft.Interop
                 managed = typeInAttribute;
                 return true;
             }
+
+            if (!namedMarshallerType.IsUnboundGenericType)
+            {
+                managed = namedMarshallerType;
+                return true;
+            }
+
 
             INamedTypeSymbol instantiatedManagedType = namedMarshallerType.ResolveUnboundConstructedTypeToConstructedType(entryPointType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
 
