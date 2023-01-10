@@ -8,6 +8,7 @@ namespace Internal.Runtime
     //
     // Please keep the data structures in this file in sync with the native version at
     //  src/coreclr/inc/readytorun.h
+    //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
     //
 
     internal struct ReadyToRunHeaderConstants
