@@ -643,10 +643,11 @@
                     <!-- hot_reload.c -->
                     <method name="GetInstanceFieldFieldStore" />
                 </type>
-
-                <!-- FIXME: only if feature="System.StartupHookProvider.IsSupported" featurevalue="true" -->
-                <type fullname="System.StartupHookProvider">
-                    <method name="ProcessStartupHooks" />
-                </type>
 	</assembly>
+        <assembly fullname="System.Private.CoreLib" feature="System.StartupHookProvider.IsSupported" featurevalue="true" featuredefault="true">
+            <type fullname="System.StartupHookProvider">
+                <!-- object.c: mono_runtime_run_startup_hooks -->
+                <method name="ProcessStartupHooks" />
+            </type>
+        </assembly>
 </linker>
