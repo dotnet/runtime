@@ -5,6 +5,7 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -30,7 +31,7 @@ namespace Wasm.Build.Tests
             yield return new object[] { "icudt_no_CJK.dat", "new string[] { \"en-AU\", \"fr-FR\", \"sk-SK\" }", "new string[] { \"ja-JP\", \"ko-KR\", \"zh-CN\"}" };
         }
 
-        protected static string GetProgramText(string expectedLocales, string missingLocales) = $@"
+        protected static string GetProgramText(string expectedLocales, string missingLocales) => $@"
             using System;
             using System.Globalization;
 
@@ -48,7 +49,7 @@ namespace Wasm.Build.Tests
                 }}
                 catch()
                 {{
-                    Console.WriteLine("failed");
+                    Console.WriteLine(""failed"");
                 }}
             }}
             return 42;
