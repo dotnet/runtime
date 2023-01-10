@@ -19,11 +19,11 @@ namespace ILCompiler.DependencyAnalysis
     /// node indicates that a new reflectable type was forced into existence by e.g. dataflow
     /// analysis, and is not just a byproduct of allocating an instance of this type.
     /// </summary>
-    public class ReflectableTypeNode : DependencyNodeCore<NodeFactory>
+    public class ReflectedTypeNode : DependencyNodeCore<NodeFactory>
     {
         private readonly TypeDesc _type;
 
-        public ReflectableTypeNode(TypeDesc type)
+        public ReflectedTypeNode(TypeDesc type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any)
                 || type.ConvertToCanonForm(CanonicalFormKind.Specific) == type);

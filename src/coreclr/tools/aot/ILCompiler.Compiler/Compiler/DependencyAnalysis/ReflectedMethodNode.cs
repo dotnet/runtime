@@ -18,11 +18,11 @@ namespace ILCompiler.DependencyAnalysis
     /// reflection-accessible. Either the method is accessible on all instantiations or on none of them.
     /// Similar invariants hold for generic methods.
     /// </summary>
-    public class ReflectableMethodNode : DependencyNodeCore<NodeFactory>
+    public class ReflectedMethodNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
 
-        public ReflectableMethodNode(MethodDesc method)
+        public ReflectedMethodNode(MethodDesc method)
         {
             Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) ||
                 method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
@@ -50,13 +50,13 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc typicalMethod = _method.GetTypicalMethodDefinition();
             if (typicalMethod != _method)
             {
-                dependencies.Add(factory.ReflectableMethod(typicalMethod), "Definition of the reflectable method");
+                dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
             }
 
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonMethod != _method)
             {
-                dependencies.Add(factory.ReflectableMethod(canonMethod), "Canonical version of the reflectable method");
+                dependencies.Add(factory.ReflectedMethod(canonMethod), "Canonical version of the reflectable method");
             }
 
             // Make sure we generate the method body and other artifacts.

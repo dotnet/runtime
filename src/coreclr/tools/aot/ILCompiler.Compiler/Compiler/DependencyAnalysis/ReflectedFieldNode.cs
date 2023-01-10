@@ -17,11 +17,11 @@ namespace ILCompiler.DependencyAnalysis
     /// To match IL semantics, we maintain that a field on a generic type will be consistently
     /// reflection-accessible. Either the field is accessible on all instantiations or on none of them.
     /// </summary>
-    public class ReflectableFieldNode : DependencyNodeCore<NodeFactory>
+    public class ReflectedFieldNode : DependencyNodeCore<NodeFactory>
     {
         private readonly FieldDesc _field;
 
-        public ReflectableFieldNode(FieldDesc field)
+        public ReflectedFieldNode(FieldDesc field)
         {
             Debug.Assert(!field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any)
                 || field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific) == field.OwningType);
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Ensure we consistently apply reflectability to all fields sharing the same definition.
                 // Bases for different instantiations of the field have a conditional dependency on the definition node that
                 // brings a ReflectableField of the instantiated field if it's necessary for it to be reflectable.
-                dependencies.Add(factory.ReflectableField(typicalField), "Definition of the reflectable field");
+                dependencies.Add(factory.ReflectedField(typicalField), "Definition of the reflectable field");
             }
 
             // Runtime reflection stack needs to see the type handle of the owning type

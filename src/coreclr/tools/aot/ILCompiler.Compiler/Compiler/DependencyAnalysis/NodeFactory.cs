@@ -277,19 +277,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
+            _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
-                return new ReflectableMethodNode(method);
+                return new ReflectedMethodNode(method);
             });
 
-            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
+            _reflectedFields = new NodeCache<FieldDesc, ReflectedFieldNode>(field =>
             {
-                return new ReflectableFieldNode(field);
+                return new ReflectedFieldNode(field);
             });
 
-            _reflectableTypes = new NodeCache<TypeDesc, ReflectableTypeNode>(type =>
+            _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
             {
-                return new ReflectableTypeNode(type);
+                return new ReflectedTypeNode(type);
             });
 
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
@@ -886,22 +886,22 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmTableEntries.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
-        public ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
+        public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            return _reflectableMethods.GetOrAdd(method);
+            return _reflectedMethods.GetOrAdd(method);
         }
 
-        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
-        public ReflectableFieldNode ReflectableField(FieldDesc field)
+        private NodeCache<FieldDesc, ReflectedFieldNode> _reflectedFields;
+        public ReflectedFieldNode ReflectedField(FieldDesc field)
         {
-            return _reflectableFields.GetOrAdd(field);
+            return _reflectedFields.GetOrAdd(field);
         }
 
-        private NodeCache<TypeDesc, ReflectableTypeNode> _reflectableTypes;
-        public ReflectableTypeNode ReflectableType(TypeDesc type)
+        private NodeCache<TypeDesc, ReflectedTypeNode> _reflectedTypes;
+        public ReflectedTypeNode ReflectedType(TypeDesc type)
         {
-            return _reflectableTypes.GetOrAdd(type);
+            return _reflectedTypes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
