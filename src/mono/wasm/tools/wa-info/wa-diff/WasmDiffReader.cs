@@ -242,7 +242,9 @@ namespace WebAssemblyInfo
             if (name == null && otherName == null)
                 return;
 
-            sizeDiffs[name == null ? otherName : name] = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+            int delta = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+            if (delta != 0)
+                sizeDiffs[name == null ? otherName : name] = delta;
         }
 
         void CompareFunctionSizes(UInt32 idx, string name, object? data)
