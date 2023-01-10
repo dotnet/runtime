@@ -21354,11 +21354,8 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
 // Returns:
 //    The created Load node
 //
-GenTree* Compiler::gtNewSimdLoadNode(var_types   type,
-                                     GenTree*    op1,
-                                     CorInfoType simdBaseJitType,
-                                     unsigned    simdSize,
-                                     bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdLoadNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -21386,11 +21383,8 @@ GenTree* Compiler::gtNewSimdLoadNode(var_types   type,
 // Returns:
 //    The created LoadAligned node
 //
-GenTree* Compiler::gtNewSimdLoadAlignedNode(var_types   type,
-                                            GenTree*    op1,
-                                            CorInfoType simdBaseJitType,
-                                            unsigned    simdSize,
-                                            bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdLoadAlignedNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
 #if defined(TARGET_XARCH)
     assert(IsBaselineSimdIsaSupportedDebugOnly());
@@ -21446,11 +21440,8 @@ GenTree* Compiler::gtNewSimdLoadAlignedNode(var_types   type,
 // Returns:
 //    The created LoadNonTemporal node
 //
-GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
-                                                GenTree*    op1,
-                                                CorInfoType simdBaseJitType,
-                                                unsigned    simdSize,
-                                                bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdLoadNonTemporalNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
 #if defined(TARGET_XARCH)
     assert(IsBaselineSimdIsaSupportedDebugOnly());
@@ -21473,7 +21464,7 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
-            intrinsic = NI_AVX2_LoadAlignedVector256NonTemporal;
+            intrinsic     = NI_AVX2_LoadAlignedVector256NonTemporal;
             isNonTemporal = true;
         }
         else
@@ -21484,7 +21475,7 @@ GenTree* Compiler::gtNewSimdLoadNonTemporalNode(var_types   type,
     }
     else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
-        intrinsic = NI_SSE41_LoadAlignedVector128NonTemporal;
+        intrinsic     = NI_SSE41_LoadAlignedVector128NonTemporal;
         isNonTemporal = true;
     }
     else if (simdBaseType != TYP_FLOAT)
@@ -22715,11 +22706,8 @@ GenTree* Compiler::gtNewSimdSqrtNode(
 // Returns:
 //    The created Store node
 //
-GenTree* Compiler::gtNewSimdStoreNode(GenTree*    op1,
-                                      GenTree*    op2,
-                                      CorInfoType simdBaseJitType,
-                                      unsigned    simdSize,
-                                      bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdStoreNode(
+    GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -22752,11 +22740,8 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree*    op1,
 // Returns:
 //    The created StoreAligned node
 //
-GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree*    op1,
-                                             GenTree*    op2,
-                                             CorInfoType simdBaseJitType,
-                                             unsigned    simdSize,
-                                             bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdStoreAlignedNode(
+    GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
 #if defined(TARGET_XARCH)
     assert(IsBaselineSimdIsaSupportedDebugOnly());
@@ -22812,11 +22797,8 @@ GenTree* Compiler::gtNewSimdStoreAlignedNode(GenTree*    op1,
 // Returns:
 //    The created StoreNonTemporal node
 //
-GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree*    op1,
-                                                 GenTree*    op2,
-                                                 CorInfoType simdBaseJitType,
-                                                 unsigned    simdSize,
-                                                 bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdStoreNonTemporalNode(
+    GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
 #if defined(TARGET_XARCH)
     assert(IsBaselineSimdIsaSupportedDebugOnly());
