@@ -138,9 +138,9 @@ namespace ILCompiler
                 bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
-#if !READYTORUN
-                    LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
-#endif
+                    // NativeAOT doesn't have a way to eliminate all the occurrences of an attribute yet
+                    // https://github.com/dotnet/runtime/issues/80466
+                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
                     continue;
                 }
 
@@ -172,7 +172,7 @@ namespace ILCompiler
                 else
                 {
                     Debug.Assert(!processAllAssemblies);
-                    ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!);
+                    ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!, false);
 
                     if (assembly == null)
                     {

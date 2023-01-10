@@ -65,7 +65,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static TestCase? GetTestCaseFromName (string name)
 		{
-			return AllCases ().FirstOrDefault (c => c.Name == name);
+			return AllCases ().FirstOrDefault (c => c.DisplayName == name);
 		}
 
 		private static IEnumerable<object[]> TestNamesBySuiteName ([CallerMemberName] string suiteName = "")

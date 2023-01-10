@@ -96,7 +96,7 @@ namespace ILCompiler
         private void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
         {
             var bindingOptions = preserve switch {
-                TypePreserve.Methods => DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods,
+                TypePreserve.Methods => DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors,
                 TypePreserve.Fields => DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields,
                 TypePreserve.All => DynamicallyAccessedMemberTypes.All,
                 _ => DynamicallyAccessedMemberTypes.None,
