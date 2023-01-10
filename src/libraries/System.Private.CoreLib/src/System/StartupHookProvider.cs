@@ -32,11 +32,13 @@ namespace System
             if (!IsSupported)
                 return;
 
+#if FEATURE_PERFTRACING
             // Initialize tracing before any user code can be called if EventSource is enabled.
             if (EventSource.IsSupported)
             {
                 System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
             }
+#endif
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
             if (startupHooksVariable == null)
