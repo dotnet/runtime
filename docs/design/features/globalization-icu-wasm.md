@@ -12,8 +12,7 @@ We can specify the file we want to load, e.g. `icudt_no_CJK.dat` by adding to .c
 ```
 <IcuFileName>icudt_no_CJK.dat</IcuFileName>
 ```
-IcuFileName can also be a custom file, created by the developer. To create a custom ICU file, see `Custom ICU` section below.
-If no IcuFileName was specified, the application's culture will be checked and corresponding file will be loaded, e.g. for `en-US` file `icudt_EFIGS.dat` and for `zh-CN` - `icudt_CJK.dat`.
+Only one value for ICU file can be set. IcuFileName can also be a custom file, created by the developer. To create a custom ICU file, see `Custom ICU` section below. If no IcuFileName was specified, the application's culture will be checked and corresponding file will be loaded, e.g. for `en-US` file `icudt_EFIGS.dat` and for `zh-CN` - `icudt_CJK.dat`.
 
 ## Custom ICU
 
