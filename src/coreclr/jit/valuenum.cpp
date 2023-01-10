@@ -5148,9 +5148,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
             // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
             // value holding 32bit handle with upper half zeroed (hence, "= NULL").
             // It's done to match the current crossgen/ILC behavior.
-            ssize_t objHandle = NULL;
+            ssize_t objHandle = 0;
             memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-            loadTree->gtVNPair.SetBoth(vnStore->VNForHandle(objHandle, GTF_ICON_OBJ_HDL));
+            loadTree->gtVNPair.SetBoth(objHandle == 0 ? vnStore->VNForNull()
+                                                      : vnStore->VNForHandle(objHandle, GTF_ICON_OBJ_HDL));
             return;
         }
     }
