@@ -101,10 +101,6 @@ namespace System.IO.Strategies
             }
         }
 
-        ~Net5CompatFileStreamStrategy() => Dispose(false); // mandatory to Flush the write buffer
-
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
-
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             // TODO: https://github.com/dotnet/runtime/issues/27643 (stop doing this synchronous work!!).
