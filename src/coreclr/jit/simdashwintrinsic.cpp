@@ -1446,11 +1446,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    GenTree* retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize,
-                                                          /* isSimdAsHWIntrinsic */ true);
-                    retNode->SetReverseOp();
-
-                    return retNode;
+                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_StoreAligned:
@@ -1466,11 +1462,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    GenTree* retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize,
-                                                                 /* isSimdAsHWIntrinsic */ true);
-                    retNode->SetReverseOp();
-
-                    return retNode;
+                    return gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_StoreAlignedNonTemporal:
@@ -1486,11 +1479,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    GenTree* retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
-                                                                     /* isSimdAsHWIntrinsic */ true);
-                    retNode->SetReverseOp();
-
-                    return retNode;
+                    return gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
+                                                         /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_op_Subtraction:
@@ -1579,11 +1569,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, tmp);
                     op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
 
-                    GenTree* retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize,
-                                                          /* isSimdAsHWIntrinsic */ true);
-                    retNode->SetReverseOp();
-
-                    return retNode;
+                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_Create:
