@@ -385,6 +385,14 @@ namespace Microsoft.Extensions.Configuration
                     }
                 }
             }
+
+            if (!bindingPoint.HasNewValue && !bindingPoint.IsReadOnly && bindingPoint.Value is not null)
+            {
+                // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved
+                // from the property getter. As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
+                // It is important to set the HasNewValue to true at this time to force the property setter to run. The reason is the setters can have a logic adjusting the Value.
+                bindingPoint.SetValue(bindingPoint.Value);
+            }
         }
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
