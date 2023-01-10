@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Xunit;
 
@@ -11,10 +12,12 @@ namespace Test.Cryptography
     {
         private static Lazy<bool> s_lazyPlatformCryptoProviderFunctional = new Lazy<bool>(static () =>
         {
-            if (!OperatingSystem.IsWindows())
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return false;
             }
+#endif
 
             CngKey key = null;
 
@@ -25,7 +28,7 @@ namespace Test.Cryptography
                     $"{nameof(PlatformCryptoProviderFunctional)}Key",
                     new CngKeyCreationParameters
                     {
-                        Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                        Provider = new CngProvider("Microsoft Platform Crypto Provider"),
                         KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
                     });
 
