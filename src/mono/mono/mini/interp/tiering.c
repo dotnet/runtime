@@ -32,6 +32,7 @@ get_tier_up_imethod (InterpMethod *imethod)
 	new_imethod->code_type = imethod->code_type;
 	new_imethod->rtype = imethod->rtype;
 	new_imethod->param_types = imethod->param_types;
+	new_imethod->is_invoke = imethod->is_invoke;
 	new_imethod->optimized = TRUE;
 	new_imethod->prof_flags = imethod->prof_flags;
 
