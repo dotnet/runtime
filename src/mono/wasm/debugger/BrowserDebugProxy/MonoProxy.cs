@@ -548,16 +548,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var urls = args["symbolOptions"]?["searchPaths"]?.Value<JArray>();
                         if (urls == null)
                             return true;
-                        var shouldUpdateSymbolStore = false;
-                        foreach (var url in urls.Values<string>())
-                        {
-                            if (!string.IsNullOrEmpty(url) && !UrlSymbolServerList.Contains(url))
-                            {
-                                UrlSymbolServerList.Add(url);
-                                shouldUpdateSymbolStore = true;
-                            }
-                        }
-                        if (shouldUpdateSymbolStore && !JustMyCode)
+                        UrlSymbolServerList.Clear();
+                        UrlSymbolServerList.AddRange(urls.Values<string>());
+                        if (!JustMyCode)
                             return await LoadSymbolsFromSymbolServer(id, context, token);
                         return true;
                     }

@@ -1777,6 +1777,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             foreach (var urlServer in monoProxy.UrlSymbolServerList)
             {
+                if (string.IsNullOrEmpty(urlServer))
+                    continue;
                 symbolStore = new HttpSymbolStore(tracer, symbolStore, new Uri($"{urlServer}/"), null);
             }
             if (!string.IsNullOrEmpty(monoProxy.CachePathSymbolServer))
