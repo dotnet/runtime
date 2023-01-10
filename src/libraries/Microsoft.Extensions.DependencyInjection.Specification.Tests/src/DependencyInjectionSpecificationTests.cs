@@ -761,6 +761,28 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.IsType<FakeService>(service);
         }
 
+        // Reproduces https://github.com/dotnet/runtime/issues/79938
+        [Fact]
+        public void ResolvingEnumerableContainingOpenGenericServiceUsesCorrectSlot()
+        {
+            // Arrange
+            TestServiceCollection collection = new();
+            collection.AddTransient<IFakeOpenGenericService<PocoClass>, FakeService>();
+            collection.AddTransient(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>));
+            collection.AddSingleton<PocoClass>(); // needed for FakeOpenGenericService<>
+            IServiceProvider provider = CreateServiceProvider(collection);
+
+            // Act
+            IFakeOpenGenericService<PocoClass> service = provider.GetService<IFakeOpenGenericService<PocoClass>>();
+            IFakeOpenGenericService<PocoClass>[] services = provider.GetServices<IFakeOpenGenericService<PocoClass>>().ToArray();
+
+            // Assert
+            Assert.IsType<FakeService>(service);
+            Assert.Equal(2, services.Length);
+            Assert.True(services.Any(s => s.GetType() == typeof(FakeService)));
+            Assert.True(services.Any(s => s.GetType() == typeof(FakeOpenGenericService<PocoClass>)));
+        }
+
         [Fact]
         public void AttemptingToResolveNonexistentServiceReturnsNull()
         {
@@ -905,6 +927,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.NotNull(enumerable[2]);
 
             Assert.Equal(instance, enumerable[2]);
+            Assert.True(enumerable[0] is FakeService, string.Join(", ", enumerable.Select(e => e.GetType())));
             Assert.IsType<FakeService>(enumerable[0]);
         }
 
