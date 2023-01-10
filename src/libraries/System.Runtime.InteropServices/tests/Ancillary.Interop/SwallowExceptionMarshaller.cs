@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Marshaller that swallows the exception.
     /// </summary>
-    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionHResultMarshaller<>))]
+    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(SwallowExceptionMarshaller))]
     public static class SwallowExceptionMarshaller
     {
         /// <summary>
