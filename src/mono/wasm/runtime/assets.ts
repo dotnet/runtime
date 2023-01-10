@@ -77,8 +77,8 @@ export function get_skipped_icu_assets() : { [name: string]: boolean; }
 }
 
 export function skipIcuAssets(asset : AssetEntryInternal, skipIcuByAssetNames: { [name: string]: boolean; }) : boolean{
-    // if custom then there is only one icu file in assets and it should not be skipped
-    return !(asset.behavior == "icu" && !runtimeHelpers.config.isIcuDataCustom && skipIcuByAssetNames[asset.name]);
+    // if icu predefined then there is only one icu file in assets and it should not be skipped
+    return !(asset.behavior == "icu" && !runtimeHelpers.config.isIcuFilePredefined && skipIcuByAssetNames[asset.name]);
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours) {
@@ -93,12 +93,13 @@ type AssetWithBuffer = {
     asset: AssetEntryInternal,
     buffer?: ArrayBuffer
 }
+const skipIcuByAssetNames = get_skipped_icu_assets();
+
 export async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
         const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
-        const skipIcuByAssetNames = get_skipped_icu_assets();
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;

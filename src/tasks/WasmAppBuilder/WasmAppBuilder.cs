@@ -38,7 +38,7 @@ public class WasmAppBuilder : Task
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public ITaskItem[]? IcuDataFileNames { get; set; }
-    public bool IsIcuDataCustom {get; set;}
+    public bool IsIcuFilePredefined {get; set;}
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -88,8 +88,8 @@ public class WasmAppBuilder : Task
         public List<string> RemoteSources { get; set; } = new List<string>();
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
-        [JsonPropertyName("isIcuDataCustom")]
-        public bool IsIcuDataCustom { get; set; }
+        [JsonPropertyName("isIcuFilePredefined")]
+        public bool IsIcuFilePredefined { get; set; }
     }
 
     private class AssetEntry
@@ -247,7 +247,7 @@ public class WasmAppBuilder : Task
         }
 
         config.DebugLevel = DebugLevel;
-        config.IsIcuDataCustom = IsIcuDataCustom;
+        config.IsIcuFilePredefined = IsIcuFilePredefined;
 
         if (SatelliteAssemblies != null)
         {

@@ -115,7 +115,7 @@ type MonoConfig = {
      * "icudt_no_CJK.dat" for all cultures, excluding "ja" "ko" "zh"
      *  "customName"
      */
-    isIcuDataCustom?: boolean;
+    isIcuFilePredefined?: boolean;
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
