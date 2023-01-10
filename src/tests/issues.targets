@@ -1255,9 +1255,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/201</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected\EmittingIgnoresAccessChecksToAttributeIsRespected/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Ref emit</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
@@ -3098,6 +3095,9 @@
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/**">
+            <Issue>Reflection.Emit is not supported on fullaot</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
