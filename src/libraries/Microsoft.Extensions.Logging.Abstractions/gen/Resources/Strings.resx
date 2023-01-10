@@ -216,4 +216,10 @@
   <data name="GeneratingForMax6ArgumentsMessage" xml:space="preserve">
     <value>Generating more than 6 arguments is not supported</value>
   </data>
+  <data name="InvalidLoggingMethodParameterOutMessage" xml:space="preserve">
+    <value>Argument '{0}' is using the unsupported out parameter modifier</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterOutTitle" xml:space="preserve">
+    <value>Argument is using the unsupported out parameter modifier</value>
+  </data>
 </root>
