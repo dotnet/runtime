@@ -1,4 +1,4 @@
-<Project DefaultTargets="Restore;Build">
+﻿<Project DefaultTargets="Restore;Build">
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
@@ -124,7 +124,7 @@
       <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.net">
         <Replacement>Mono.</Replacement>
       </ShortNames>
-      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.">
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Current.">
         <Replacement>Mono.</Replacement>
       </ShortNames>
       <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
