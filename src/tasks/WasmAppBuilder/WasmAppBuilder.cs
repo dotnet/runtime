@@ -317,7 +317,7 @@ public class WasmAppBuilder : Task
         if (!InvariantGlobalization)
         {
             foreach (var idfn in IcuDataFileNames!)
-                config.Assets.Add(new IcuData(idfn.GetMetadata("Identity")) { LoadRemote = RemoteSources?.Length > 0 });
+                config.Assets.Add(new IcuData(Path.GetFileName(idfn.GetMetadata("Identity"))) { LoadRemote = RemoteSources?.Length > 0 });
         }
 
 
