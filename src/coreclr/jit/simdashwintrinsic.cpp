@@ -1446,7 +1446,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    GenTree* retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize,
+                                                          /* isSimdAsHWIntrinsic */ true);
+                    retNode->SetReverseOp();
+
+                    return retNode;
                 }
 
                 case NI_VectorT128_StoreAligned:
@@ -1462,8 +1466,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    return gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize,
-                                                     /* isSimdAsHWIntrinsic */ true);
+                    GenTree* retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize,
+                                                                 /* isSimdAsHWIntrinsic */ true);
+                    retNode->SetReverseOp();
+
+                    return retNode;
                 }
 
                 case NI_VectorT128_StoreAlignedNonTemporal:
@@ -1479,8 +1486,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         op2 = op2->gtGetOp1();
                     }
 
-                    return gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
-                                                         /* isSimdAsHWIntrinsic */ true);
+                    GenTree* retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
+                                                                     /* isSimdAsHWIntrinsic */ true);
+                    retNode->SetReverseOp();
+
+                    return retNode;
                 }
 
                 case NI_Vector2_op_Subtraction:
@@ -1513,13 +1523,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
-            }
-
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic))
-            {
-                assert(newobjThis == nullptr);
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
@@ -1576,7 +1579,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, tmp);
                     op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
 
-                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                    GenTree* retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize,
+                                                          /* isSimdAsHWIntrinsic */ true);
+                    retNode->SetReverseOp();
+
+                    return retNode;
                 }
 
                 case NI_Vector2_Create:
@@ -1691,8 +1698,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              4 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
-
-            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             CORINFO_ARG_LIST_HANDLE arg2 = argList;
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
@@ -1813,8 +1818,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              5 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
-
-            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             CORINFO_ARG_LIST_HANDLE arg2 = argList;
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
