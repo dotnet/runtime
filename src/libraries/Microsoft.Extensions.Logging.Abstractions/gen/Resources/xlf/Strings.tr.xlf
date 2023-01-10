@@ -32,9 +32,14 @@
         <target state="translated">Günlüğe kaydetme yöntemi parametre adları _ ile başlayamaz</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOut">
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
         <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="new">Argument is using the unsupported out parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">

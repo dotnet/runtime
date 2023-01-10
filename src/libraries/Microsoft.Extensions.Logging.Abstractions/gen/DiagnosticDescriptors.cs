@@ -186,8 +186,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
         public static DiagnosticDescriptor InvalidLoggingMethodParameterOut { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1024",
-            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOut), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOut), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
