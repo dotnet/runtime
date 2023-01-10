@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <!-- Crossgen is not used for Mono, and does not currently create freebsd packages -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(RuntimeIdentifier)' == 'freebsd-x64'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
     <PgoSuffix Condition="'$(PgoInstrument)' != ''">.PGO</PgoSuffix>

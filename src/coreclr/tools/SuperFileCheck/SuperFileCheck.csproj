@@ -20,8 +20,8 @@
     <JITToolsRidWithoutPlatform>$(OutputRid.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
     <JITToolsRidPlatform>$(OutputRid.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
 
-    <!-- If it's not win/osx/linux-musl/freebsd, it's a non-portable Linux. Treat as Linux. -->
-    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl' and '$(JITToolsRidWithoutPlatform)' != 'freebsd'">linux</JITToolsRidWithoutPlatform>
+    <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>
 
     <!-- OSX builds have a version -->
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'x64'">osx.10.12</JITToolsRidWithoutPlatform>
@@ -40,7 +40,6 @@
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
-    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'freebsd-x64'">$(runtimefreebsdx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
   </PropertyGroup>
 
   <ItemGroup>

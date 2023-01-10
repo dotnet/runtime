@@ -124,7 +124,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Windows') and '$(NativeLib)' == 'Shared'" />
       <!-- FreeBSD has two versions of the GSSAPI it can use, but we only use the ports version (MIT version) here -->
       <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(TargetOS)' == 'FreeBSD'" />
-      <!-- FreeBSD's inotify is an installed package and not found in default libraries. Remove next line if using native kqueue -->
+      <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(TargetOS)' == 'FreeBSD'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
@@ -149,15 +149,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ObjCopyName Condition="$(CppCompilerAndLinker.Contains('clang'))">llvm-objcopy</ObjCopyName>
       <ObjCopyNameAlternative />
       <ObjCopyNameAlternative Condition="$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyNameAlternative>
-    </PropertyGroup>
-
-<!-- objwriter and jittools are built under LLVM12; FreeBSD's ports of llvm## name clang as clang## with objcopy as llvm-objcopy##
-     the system "clang" and "objcopy" are likely not the same version as the ports version but are left available as a fallback to smoke tests which seems to default to "clang" -->
-    <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' == 'FreeBSD'">
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang12'">objcopy</ObjCopyName>
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' == 'clang12'">llvm-objcopy12</ObjCopyName>
-      <ObjCopyNameAlternative />
-      <ObjCopyNameAlternative Condition="'$(CppCompilerAndLinker)' == 'clang'">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
     <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />

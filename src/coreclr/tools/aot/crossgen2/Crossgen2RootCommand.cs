@@ -327,7 +327,7 @@ namespace ILCompiler
                 Console.WriteLine();
 
                 string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64"};
-                string[] ValidOS = new string[] {"windows", "linux", "osx", "freebsd" };
+                string[] ValidOS = new string[] {"windows", "linux", "osx" };
 
                 Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
                 Console.WriteLine();

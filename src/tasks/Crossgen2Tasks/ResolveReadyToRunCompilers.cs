@@ -149,7 +149,6 @@ namespace Microsoft.NET.Build.Tasks
                 "linux-musl" => "linux",
                 "osx" => "osx",
                 "win" => "windows",
-                "freebsd" => "freebsd",
                 _ => null
             };
 
@@ -335,17 +334,6 @@ namespace Microsoft.NET.Build.Tasks
                 _crossgenTool.ToolPath = Path.Combine(_crossgenTool.PackagePath, "tools", "crossgen");
                 _crossgenTool.ClrJitPath = Path.Combine(_crossgenTool.PackagePath, "runtimes", _targetRuntimeIdentifier, "native", "libclrjit.dylib");
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-            {
-                // Only x64 supported for FreeBSD
-                if (_targetArchitecture != Architecture.X64 || RuntimeInformation.OSArchitecture != Architecture.X64)
-                {
-                    return false;
-                }
-
-                _crossgenTool.ToolPath = Path.Combine(_crossgenTool.PackagePath, "tools", "crossgen");
-                _crossgenTool.ClrJitPath = Path.Combine(_crossgenTool.PackagePath, "runtimes", _targetRuntimeIdentifier, "native", "libclrjit.so");
-            }
             else
             {
                 // Unknown platform
@@ -373,11 +361,6 @@ namespace Microsoft.NET.Build.Tasks
             {
                 toolFileName = "crossgen2";
                 v5_clrJitFileNamePattern = "libclrjit-{0}.dylib";
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-            {
-                toolFileName = "crossgen2";
-                v5_clrJitFileNamePattern = "libclrjit-{0}.so";
             }
             else
             {
