@@ -2031,6 +2031,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_Store:
+        case NI_SSE2_Store:
+        case NI_AVX_Store:
+        {
+            assert(retType == TYP_VOID);
+            assert(sig->numArgs == 2);
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            op1     = gtNewIndir(simdType, op1);
+            retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+
+            break;
+        }
+
         case NI_Vector128_Store:
         case NI_Vector256_Store:
         case NI_Vector128_StoreUnsafe:
