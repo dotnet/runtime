@@ -78,7 +78,7 @@ namespace WebAssemblyInfo
                     ReadElementSection();
                     break;
                 case SectionId.Code:
-                    if (Program.AotStats || Program.Disassemble)
+                    if (Program.AotStats || Program.Disassemble || Program.ShowFunctionSize)
                         ReadCodeSection();
                     break;
                 case SectionId.Data:

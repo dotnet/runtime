@@ -41,7 +41,12 @@ namespace WebAssemblyInfo
             reader2.Parse();
 
             if (!Disassemble)
+            {
+                if (Program.ShowFunctionSize)
+                    reader1.CompareFunctions(reader2);
+
                 return reader1.CompareSummary(reader2);
+            }
             else
                 return reader1.CompareDissasembledFunctions(reader2);
         }
