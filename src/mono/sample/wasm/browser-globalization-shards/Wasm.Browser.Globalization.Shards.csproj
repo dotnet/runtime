@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
-  <PropertyGroup>
-    <IcuFileName>icudt_EFIGS.dat</IcuFileName>
-    <_SampleProject>Wasm.Browser.Globalization.Shards.csproj</_SampleProject>
-  </PropertyGroup>
-</Project>

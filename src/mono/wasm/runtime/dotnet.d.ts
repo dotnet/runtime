@@ -110,7 +110,7 @@ type MonoConfig = {
     globalizationMode?: GlobalizationMode;
     /**
      * User can choose the option to load only partial globalization data:
-     * "icudt_EFIGS.dat" for "en-US" "fr-FR" "es-ES" "it-IT" "de-DE"
+     * "icudt_EFIGS.dat" for "en-*" "fr-FR" "es-ES" "it-IT" "de-DE"
      * "icudt_CJK.dat" for "ja" "ko" "zh" "en"
      * "icudt_no_CJK.dat" for all cultures, excluding "ja" "ko" "zh"
      *  "customName"
