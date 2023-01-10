@@ -271,10 +271,16 @@ namespace WebAssemblyInfo
             Console.WriteLine("in bytes   |");
             Console.WriteLine("------------------------------------------------");
 
+            long sum = 0;
             foreach (var v in list)
             {
                 Console.WriteLine($"{v.Value,10} | {v.Key}");
+                sum += v.Value;
             }
+
+            Console.WriteLine("------------------------------------------------");
+            Console.WriteLine($"{sum,10}   bytes total");
+            Console.WriteLine("------------------------------------------------");
 
             return 0;
         }
