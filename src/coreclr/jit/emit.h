@@ -2247,7 +2247,7 @@ private:
     // The emitters themselves use emitNewXXX, which might be thin wrappers over the emitAllocXXX functions.
     //
 
-    void* emitAllocAnyInstr(size_t sz, emitAttr attr);
+    __forceinline void* emitAllocAnyInstr(size_t sz, emitAttr attr);
 
     instrDesc* emitAllocInstr(emitAttr attr)
     {

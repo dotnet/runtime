@@ -1435,7 +1435,7 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
  *  The following series of methods allocates instruction descriptors.
  */
 
-void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
+FORCEINLINE void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
     instrDesc* id;
 
