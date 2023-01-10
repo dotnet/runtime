@@ -558,7 +558,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -609,7 +609,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -673,7 +673,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -864,7 +864,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -915,7 +915,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -979,7 +979,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2, T value3) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (sizeof(T) == sizeof(byte))
                 {
@@ -3067,7 +3067,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 nuint length = (uint)span.Length;
 

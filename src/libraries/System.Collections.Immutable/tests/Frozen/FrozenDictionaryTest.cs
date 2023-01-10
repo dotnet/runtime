@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
+using System.Numerics;
 
 namespace System.Collections.Frozen.Tests
 {
@@ -476,5 +477,143 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(new DictionaryEntry("hello", 123), deArray[2]);
             Assert.Equal(new DictionaryEntry("world", 456), deArray[3]);
         }
+
+        [Fact]
+        public void Sparse_LookupItems_AlltemsFoundAsExpected()
+        {
+            foreach (int size in new[] { 1, 2, 10, 63, 64, 65, 999, 1024 })
+            {
+                foreach (int skip in new[] { 2, 3, 5 })
+                {
+                    var sequence = Enumerable
+                        .Range(-3, size)
+                        .Where(i => i % skip == 0)
+                        .Select(i => new KeyValuePair<int, string>(i, i.ToString()));
+
+                    var original = new Dictionary<int, string>();
+                    foreach (var kvp in sequence)
+                    {
+                        original[kvp.Key] = kvp.Value;
+                    }
+
+                    var frozen = original.ToFrozenDictionary();
+
+                    for (int i = -10; i <= size + 66; i++)
+                    {
+                        Assert.Equal(original.ContainsKey(i), frozen.ContainsKey(i));
+
+                        if (original.ContainsKey(i))
+                        {
+                            Assert.Equal(original[i], frozen[i]);
+                        }
+                    }
+                }
+            }
+        }
+
+#if NET7_0_OR_GREATER
+        [Theory]
+        [InlineData(new int[] { 0 })]
+        [InlineData(new int[] { 0, 1 })]
+        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
+        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
+        public void FrozenIntDictionary_SanityCheck(int[] keys)
+        {
+            RunIntegerDictionaryTests<int>(keys);
+            RunIntegerDictionaryTests<uint>(keys.Select(x => (uint)x).ToArray());
+            RunIntegerDictionaryTests<long>(keys.Select(x => (long)x).ToArray());
+            RunIntegerDictionaryTests<ulong>(keys.Select(x => (ulong)x).ToArray());
+            RunIntegerDictionaryTests<short>(keys.Select(x => (short)x).ToArray());
+            RunIntegerDictionaryTests<ushort>(keys.Select(x => (ushort)x).ToArray());
+            RunIntegerDictionaryTests<byte>(keys.Select(x => (byte)x).ToArray());
+            RunIntegerDictionaryTests<sbyte>(keys.Select(x => (sbyte)x).ToArray());
+        }
+
+        private void RunIntegerDictionaryTests<T>(T[] keys)
+            where T : struct, IBinaryInteger<T>
+        {
+            var values = keys.Select(x => x.ToString()).ToArray();
+            var dict = new Dictionary<T, string>();
+            foreach (var key in keys)
+            {
+                dict[key] = key.ToString();
+            }
+
+            FrozenDictionary<T, string> d = new SmallIntegerFrozenDictionary<T, string>(keys, values);
+
+            Dictionary<T, string> hd = new();
+            foreach (var pairs in d)
+            {
+                hd[pairs.Key] = pairs.Value;
+            }
+
+            Assert.Equal(values.Length, hd.Count);
+            Assert.Equal(values.Length, d.Count);
+
+            foreach (var k in hd.Keys)
+            {
+                Assert.Equal(hd.ContainsKey(k), d.ContainsKey(k));
+
+                if (hd.ContainsKey(k))
+                {
+                    Assert.Equal(hd[k], d[k]);
+                }
+                else
+                {
+                    Assert.Throws<KeyNotFoundException>(() => d[k]);
+                }
+            }
+        }
+#endif
+
+#if !NET7_0_OR_GREATER
+        [Theory]
+        [InlineData(new int[] { 0 })]
+        [InlineData(new int[] { 0, 1 })]
+        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
+        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
+        [InlineData(new int[] { -1, 0, 2, 4, 6, 8, 10 })]
+        public void FrozenInt32Dictionary_SanityCheck(int[] keys)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                var values = keys.Select(x => x.ToString()).ToArray();
+                var dict = new Dictionary<int, string>();
+                foreach (var key in keys)
+                {
+                    dict[key] = key.ToString();
+                }
+
+                FrozenDictionary<int, string> d = i switch
+                {
+                    0 => d = new SmallInt32FrozenDictionary<string>(keys, values),
+                    _ => d = new Int32FrozenDictionary<string>(dict),
+                };
+
+                Dictionary<int, string> hd = new();
+                foreach (var pairs in d)
+                {
+                    hd[pairs.Key] = pairs.Value;
+                }
+
+                Assert.Equal(values.Length, hd.Count);
+                Assert.Equal(values.Length, d.Count);
+
+                for (int v = -1; v < 12; v++)
+                {
+                    Assert.Equal(hd.ContainsKey(v), d.ContainsKey(v));
+
+                    if (hd.ContainsKey(v))
+                    {
+                        Assert.Equal(hd[v], d[v]);
+                    }
+                    else
+                    {
+                        Assert.Throws<KeyNotFoundException>(() => d[v]);
+                    }
+                }
+            }
+        }
+#endif
     }
 }

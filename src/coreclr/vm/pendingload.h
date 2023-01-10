@@ -44,7 +44,7 @@ public:
         {
             SString name;
             TypeString::AppendTypeKeyDebug(name, &m_typeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Creating loading entry for type %S\n", name.GetUnicode()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Creating loading entry for type %s\n", name.GetUTF8()));
         }
 #endif
 

@@ -67,6 +67,9 @@ namespace System.Text.Json.SourceGeneration
 
         public ParameterGenerationSpec[]? CtorParamGenSpecArray { get; private set; }
 
+        public List<PropertyInitializerGenerationSpec>? PropertyInitializerSpecList { get; private set; }
+        public int PropertyInitializersWithoutMatchingConstructorParameters { get; private set; }
+
         public CollectionType CollectionType { get; private set; }
 
         public TypeGenerationSpec? CollectionKeyTypeMetadata { get; private set; }
@@ -74,6 +77,8 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? CollectionValueTypeMetadata { get; private set; }
 
         public ObjectConstructionStrategy ConstructionStrategy { get; private set; }
+
+        public bool ConstructorSetsRequiredParameters { get; private set; }
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
@@ -126,10 +131,12 @@ namespace System.Text.Json.SourceGeneration
             JsonNumberHandling? numberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
+            List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
+            bool constructorSetsRequiredMembers,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? runtimeTypeRef,
             TypeGenerationSpec? extensionDataPropertyTypeSpec,
@@ -147,11 +154,13 @@ namespace System.Text.Json.SourceGeneration
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
             PropertyGenSpecList = propertyGenSpecList;
+            PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
+            ConstructorSetsRequiredParameters = constructorSetsRequiredMembers;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             RuntimeTypeRef = runtimeTypeRef;
             ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;

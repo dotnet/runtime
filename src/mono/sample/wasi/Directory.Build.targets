@@ -1,0 +1,72 @@
+<Project>
+  <Import Project="../Directory.Build.targets" />
+  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets" />
+
+  <PropertyGroup>
+    <ShouldProvisionWasmtime Condition="!Exists($(WasmtimeDir))">true</ShouldProvisionWasmtime>
+  </PropertyGroup>
+
+
+  <Target Name="BuildSampleInTree"
+      Inputs="
+      Program.cs;
+      $(_SampleProject)
+      "
+      Outputs="
+      bin/publish/runtime/native/dotnet.wasm;
+      bin/publish/runtime/lib/$(NetCoreAppCurrent)/lib/mscorlib.dll;
+      bin/publish/$(_SampleAssembly);
+      "
+>
+    <PropertyGroup>
+      <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
+      <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
+      <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
+      <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
+      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    </PropertyGroup>
+    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=wasi $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
+
+    <ItemGroup>
+      <WasiRuntimeFiles Include="$(RepoRoot)artifacts/bin/microsoft.netcore.app.runtime.wasi-wasm/$(Configuration)/runtimes/wasi-wasm/**/*.*"/>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(WasiRuntimeFiles)"
+          DestinationFiles="@(WasiRuntimeFiles->'bin/publish/runtime/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+  
+  <Target Name="ProvisionWasmtime" Condition="'$(ShouldProvisionWasmtime)' == 'true'">
+    <ReadLinesFromFile File="$(MonoProjectRoot)/wasi/wasmtime-version.txt">
+      <Output TaskParameter="Lines" ItemName="_VersionLines" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <WasmtimeVersion>%(_VersionLines.Identity)</WasmtimeVersion>
+      <WasmtimeURL>https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-linux.tar.xz</WasmtimeURL>
+      <WasmtimeURL Condition="'$(HostOS)' == 'osx'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-macos.tar.xz</WasmtimeURL>
+      <WasmtimeURL Condition="'$(HostOS)' == 'windows'" >https://github.com/bytecodealliance/wasmtime/releases/download/v$(WasmtimeVersion)/wasmtime-v$(WasmtimeVersion)-x86_64-windows.zip</WasmtimeURL>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="$(WasmtimeURL)" DestinationFolder="$(ArtifactsObjDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+
+    <MakeDir Directories="$(WasmtimeDir)" />
+    <Exec Command="powershell -command &quot;Expand-Archive $(_DownloadedFile) . ; Move-Item wasmtime-v$(WasmtimeVersion)-x86_64-windows/*.* . &quot;" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' == 'windows'"/>
+    <Exec Command="tar -Jx --strip-components=1 -f $(_DownloadedFile)" WorkingDirectory="$(WasmtimeDir)" Condition="'$(HostOS)' != 'windows'"/>
+    <Copy SourceFiles="$(MonoProjectRoot)wasi/wasmtime-version.txt" DestinationFiles="$(WasmtimeDir).stamp-wasmtime-version.txt" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="RunSampleWithWasmtime" DependsOnTargets="ProvisionWasmtime;BuildSampleInTree">
+  <!-- 
+    TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
+  -->
+    <Exec 
+    WorkingDirectory="bin/publish"
+    Command="$(WasmtimeDir)wasmtime --dir . runtime/native/dotnet.wasm -- $(_SampleAssembly)" IgnoreExitCode="true" />
+  </Target>
+
+</Project>
