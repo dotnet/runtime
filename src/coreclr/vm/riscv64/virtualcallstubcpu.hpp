@@ -10,6 +10,8 @@
 #define RESOLVE_STUB_FIRST_DWORD 0x0
 #define VTABLECALL_STUB_FIRST_DWORD 0x0
 
+#define LOOKUP_STUB_FIRST_DWORD 0x00000097
+
 #define USES_LOOKUP_STUBS   1
 
 struct LookupStub
@@ -34,7 +36,21 @@ public:
 
     void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
     {
-        _ASSERTE(!"RISCV64:NYI");
+        // auipc ra, 0
+        // ld    t2, (12 + 12)(ra)
+        // ld    ra, (4 + 12)(ra)
+        // jalr  x0, ra, 0
+        //
+        // _resolveWorkerTarget
+        // _token
+
+        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; //auipc ra, 12  //0x00000097
+        _stub._entryPoint[1] = 0x0180b383; //ld   t2, 24(ra)
+        _stub._entryPoint[2] = 0x0100b083; //ld   ra, 16(ra)
+        _stub._entryPoint[3] = 0x00008067; //jalr r0, ra, 0
+
+        _stub._resolveWorkerTarget = resolveWorkerTarget;
+        _stub._token               = dispatchToken;
     }
 
     LookupStub*    stub()        { LIMITED_METHOD_CONTRACT; return &_stub; }
@@ -305,9 +321,50 @@ void VTableCallHolder::Initialize(unsigned slot)
 
 VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
 {
+    SUPPORTS_DAC;
+#ifdef DACCESS_COMPILE
 
-    _ASSERTE(!"RISCV64:NYI");
-    return SK_BREAKPOINT;
+    return SK_BREAKPOINT;  // Dac always uses the slower lookup
+
+#else
+
+    StubKind stubKind = SK_UNKNOWN;
+    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
+
+    EX_TRY
+    {
+        // If stubStartAddress is completely bogus, then this might AV,
+        // so we protect it with SEH. An AV here is OK.
+        AVInRuntimeImplOkayHolder AVOkay;
+
+        DWORD firstDword = *((DWORD*) pInstr);
+
+        if (firstDword == DISPATCH_STUB_FIRST_DWORD) // assembly of first instruction of DispatchStub :
+        {
+            stubKind = SK_DISPATCH;
+        }
+        else if (firstDword == RESOLVE_STUB_FIRST_DWORD) // assembly of first instruction of ResolveStub :
+        {
+            stubKind = SK_RESOLVE;
+        }
+        else if (firstDword == VTABLECALL_STUB_FIRST_DWORD) // assembly of first instruction of VTableCallStub :
+        {
+            stubKind = SK_VTABLECALL;
+        }
+        else if (firstDword == LOOKUP_STUB_FIRST_DWORD) // first instruction of LookupStub :
+        {
+            stubKind = SK_LOOKUP;
+        }
+    }
+    EX_CATCH
+    {
+        stubKind = SK_UNKNOWN;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    return stubKind;
+
+#endif // DACCESS_COMPILE
 }
 
 #endif //DECLARE_DATA
