@@ -181,6 +181,7 @@ namespace System
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// The new instance will have the <see cref="DateTimeKind.Unspecified"/> kind.
         /// </summary>
         /// <param name="date">
         /// The date part.
@@ -1926,7 +1927,7 @@ namespace System
         public void Deconstruct(out DateOnly date, out TimeOnly time)
         {
             date = DateOnly.FromDateTime(this);
-            time = new TimeOnly(_dateData);
+            time = TimeOnly.FromDateTime(this);
         }
 
         /// <summary>
@@ -1944,9 +1945,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out int year, out int month, out int day)
         {
-            year = Year;
-            month = Month;
-            day = Day;
+            GetDate(out year, out month, out day);
         }
 
         // Returns a string array containing all of the known date and time options for the

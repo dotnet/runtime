@@ -113,8 +113,8 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time);
-
-            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Unspecified);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond), dateTime);
         }
 
         [Theory]
@@ -124,8 +124,8 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second, millisecond);
             var dateTime = new DateTime(date, time, DateTimeKind.Local);
-
-            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Local);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local), dateTime);
         }
 
         [Theory]

@@ -299,6 +299,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(2022, 12, 31, 23, 59, 59)]
         [InlineData(2000, 1, 1, 12, 34, 59)]
         [InlineData(2005, 2, 3, 4, 4, 1)]
         public static void Deconstruct_DateOnly_TimeOnly_TimeSpan(int year, int month, int day, int hour, int minute, int second)
@@ -306,7 +307,8 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second);
 
-            var dateTimeOffset = new DateTimeOffset(date, time, TimeSpan.Zero);
+            var offset = new TimeSpan(10, 0, 1);
+            var dateTimeOffset = new DateTimeOffset(date, time, offset);
             var (obtainedDate, obtainedTime, obtainedOffset) = dateTimeOffset;
             
             Assert.Equal(date.Year, obtainedDate.Year);
@@ -315,7 +317,7 @@ namespace System.Tests
             Assert.Equal(time.Hour, obtainedTime.Hour);
             Assert.Equal(time.Minute, obtainedTime.Minute);
             Assert.Equal(time.Second, obtainedTime.Second);
-            Assert.Equal(TimeSpan.Zero, obtainedOffset);
+            Assert.Equal(offset, obtainedOffset);
         }
 
         [Fact]
