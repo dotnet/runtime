@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
-        public static void RSACng_PlatformCryptoProvider_Roundtrip()
+        public static void RSACng_PlatformCryptoProvider_SignHash_Roundtrip()
         {
             CngKey key = null;
 
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Cng.Tests
 
                 key = CngKey.Create(
                     CngAlgorithm.Rsa,
-                    nameof(RSACng_PlatformCryptoProvider_Roundtrip),
+                    nameof(RSACng_PlatformCryptoProvider_SignHash_Roundtrip),
                     cngCreationParameters);
 
                 using (RSACng rsaKey = new RSACng(key))
@@ -164,6 +164,48 @@ namespace System.Security.Cryptography.Cng.Tests
 
                     valid = rsaKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                     Assert.True(valid, "valid signature");
+                }
+            }
+            finally
+            {
+                key?.Delete();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        public static void RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip()
+        {
+            CngKey key = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key = CngKey.Create(
+                    CngAlgorithm.Rsa,
+                    nameof(RSACng_PlatformCryptoProvider_EncryptDecrypt_Roundtrip),
+                    cngCreationParameters);
+
+                using (RSACng pcpKey = new RSACng(key))
+                using (RSACng publicRsa = new RSACng())
+                {
+                    publicRsa.ImportParameters(pcpKey.ExportParameters(false));
+                    byte[] data = new byte[] { 1, 2, 3 };
+                    byte[] encrypted = publicRsa.Encrypt(data, RSAEncryptionPadding.Pkcs1);
+                    byte[] decrypted = pcpKey.Decrypt(encrypted, RSAEncryptionPadding.Pkcs1);
+                    Assert.Equal(data, decrypted);
+
+                    byte[] buffer = new byte[1];
+                    bool success = pcpKey.TryDecrypt(encrypted, buffer, RSAEncryptionPadding.Pkcs1, out int bytesWritten);
+                    Assert.False(success, "buffer large enough");
+
+                    success = pcpKey.TryDecrypt(encrypted, decrypted, RSAEncryptionPadding.Pkcs1, out bytesWritten);
+                    Assert.True(success, "buffer large enough");
+                    Assert.Equal(decrypted.Length, bytesWritten);
                 }
             }
             finally
