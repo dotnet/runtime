@@ -3329,6 +3329,82 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
     }
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckLinkedLocals: Check the linked list of locals.
+//
+void Compiler::fgDebugCheckLinkedLocals()
+{
+    if (fgNodeThreading != NodeThreading::AllLocals)
+    {
+        return;
+    }
+
+    ArrayStack<GenTree*> locals(getAllocator(CMK_DebugOnly));
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            locals.Reset();
+
+            GenTree* first = stmt->GetRootNode()->gtNext;
+            CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
+
+            for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+            {
+                assert((cur->OperIsLocal() || cur->OperIsLocalAddr()) && "Expected locals list to contain only locals");
+                locals.Push(cur);
+            }
+
+            if (locals.Height() > 0)
+            {
+                assert(stmt->GetRootNode()->gtPrev == locals.Top());
+            }
+            else
+            {
+                assert(stmt->GetRootNode()->gtPrev == nullptr);
+            }
+
+            fgSequenceLocals(stmt);
+
+            int index = 0;
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (locals.Bottom(index++) == lcl)
+                {
+                    continue;
+                }
+
+                if (verbose)
+                {
+                    printf("Locals are improperly linked in the following statement:\n");
+                    DISPSTMT(stmt);
+
+                    printf("\nExpected:\n");
+                    const char* pref = "  ";
+                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                    {
+                        printf("%s[%06u]", pref, dspTreeID(lcl));
+                        pref = " -> ";
+                    }
+
+                    printf("\n\nActual:\n");
+                    pref = "  ";
+                    for (int i = 0; i < locals.Height(); i++)
+                    {
+                        printf("%s[%06u]", pref, dspTreeID(locals.Bottom(i)));
+                        pref = " -> ";
+                    }
+
+                    printf("\n");
+                }
+
+                assert(!"Locals are improperly linked!");
+            }
+        }
+    }
+}
+
 /*****************************************************************************
  *
  * A DEBUG routine to check the correctness of the links between statements

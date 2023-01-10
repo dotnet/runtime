@@ -1454,13 +1454,14 @@ extern const char* PhaseEnums[];
 // clang-format off
 enum class PhaseChecks : unsigned int
 {
-    CHECK_NONE    = 0,
-    CHECK_IR      = 1 << 0, // ir flags, etc
-    CHECK_UNIQUE  = 1 << 1, // tree node uniqueness
-    CHECK_FG      = 1 << 2, // flow graph integrity
-    CHECK_EH      = 1 << 3, // eh table integrity
-    CHECK_LOOPS   = 1 << 4, // loop table integrity
-    CHECK_PROFILE = 1 << 5, // profile data integrity
+    CHECK_NONE          = 0,
+    CHECK_IR            = 1 << 0, // ir flags, etc
+    CHECK_UNIQUE        = 1 << 1, // tree node uniqueness
+    CHECK_FG            = 1 << 2, // flow graph integrity
+    CHECK_EH            = 1 << 3, // eh table integrity
+    CHECK_LOOPS         = 1 << 4, // loop table integrity
+    CHECK_PROFILE       = 1 << 5, // profile data integrity
+    CHECK_LINKED_LOCALS = 1 << 6, // check linked list of locals
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -5449,6 +5450,7 @@ public:
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
+    void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
