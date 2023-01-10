@@ -587,6 +587,17 @@ namespace System.Text.Json
 
         internal JsonSerializerContext? SerializerContext => _typeInfoResolver as JsonSerializerContext;
 
+        internal bool CanUseFastPathSerializationLogic
+        {
+            get
+            {
+                Debug.Assert(IsReadOnly);
+                return _canUseFastPathSerializationLogic ??= SerializerContext?.CanUseFastPathSerializationLogic(this) ?? false;
+            }
+        }
+
+        private bool? _canUseFastPathSerializationLogic;
+
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
         // Workaround https://github.com/dotnet/linker/issues/2715

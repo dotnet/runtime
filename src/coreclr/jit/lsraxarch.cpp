@@ -449,8 +449,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
-            BuildUse(tree->AsCmpXchg()->gtOpLocation, allRegs(TYP_INT) & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->gtOpValue, allRegs(TYP_INT) & ~RBM_RAX);
+            BuildUse(tree->AsCmpXchg()->gtOpLocation, availableIntRegs & ~RBM_RAX);
+            BuildUse(tree->AsCmpXchg()->gtOpValue, availableIntRegs & ~RBM_RAX);
             BuildUse(tree->AsCmpXchg()->gtOpComparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
@@ -989,8 +989,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     else
     {
-        srcCandidates = allRegs(TYP_INT) & ~RBM_RCX;
-        dstCandidates = allRegs(TYP_INT) & ~RBM_RCX;
+        srcCandidates = availableIntRegs & ~RBM_RCX;
+        dstCandidates = availableIntRegs & ~RBM_RCX;
     }
 
     // Note that Rotate Left/Right instructions don't set ZF and SF flags.
@@ -1277,7 +1277,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
-            ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
+            ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS);
         }
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
@@ -1402,7 +1402,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 case GenTreeBlk::BlkOpKindUnroll:
                     if ((size % XMM_REGSIZE_BYTES) != 0)
                     {
-                        regMaskTP regMask = allRegs(TYP_INT);
+                        regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                         if ((size & 1) != 0)
                         {
@@ -1622,7 +1622,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
             if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
-                regMaskTP regMask = allRegs(TYP_INT);
+                regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                 // Storing at byte granularity requires a byteable register.
                 if ((loadSize & 1) != 0)
@@ -1827,7 +1827,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         srcCount            = 1;
     }
 
-    srcCount += BuildDelayFreeUses(op2, op1, allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(RBM_RAX | RBM_RDX));
 
     buildInternalRegisterUses();
 
