@@ -8552,7 +8552,6 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     // offset
     if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
     {
-        GenTreeIntCon* cns1 = tree->gtGetOp1()->AsIntCon();
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
         if (cns2->gtFieldSeq != nullptr)
         {
