@@ -22720,10 +22720,7 @@ GenTree* Compiler::gtNewSimdStoreNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    if (!op1->OperIsIndir())
-    {
-        op1 = gtNewIndir(op2->TypeGet(), op1);
-    }
+    op1 = gtNewIndir(op2->TypeGet(), op1);
     return gtNewAssignNode(op1, op2);
 }
 
