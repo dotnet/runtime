@@ -8413,44 +8413,30 @@ interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
  * The known patterns are:
  * - `branch`: a conditional branch instruction.
  * - `ldc; branch`: a load instruction followed by a binary conditional branch.
- * - `compare; branch`: a compare instruction followed by a unary conditional branch.
  * - `ldc; compare; branch`: a load instruction followed by a compare instruction and a unary conditional branch.
  */
 static InterpInst*
 interp_inline_into_callers(InterpInst *first) {
 	// pattern `branch`
-	if (MINT_IS_CONDITIONAL_BRANCH(first->opcode)) {
+	if (MINT_IS_CONDITIONAL_BRANCH(first->opcode))
 		return first;
-	}
-	
-	InterpInst *second = interp_next_ins(first);
+
+	InterpInst *second = interp_next_ins (first);
 	if (!second) 
 		return NULL;
-	// pattern `ldc; unop conditional branch`
-	if (MINT_IS_LDC(first->opcode)
-		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
-		return second;
-	}
 	// pattern `ldc; binop conditional branch`
 	if (MINT_IS_LDC(first->opcode)
-		&& MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])) {
+		&& MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1]))
 		return second;
-	}
-	// pattern `compare; unop conditional branch`
-	if (MINT_IS_COMPARE(first->opcode)
-		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(second->opcode) && first->dreg == second->sregs [0]) {
-		return second;
-	}
 
-	InterpInst *third = interp_next_ins(second);
+	InterpInst *third = interp_next_ins (second);
 	if (!third) 
 		return NULL;
 	// pattern `ldc; compare; conditional branch`
 	if (MINT_IS_LDC(first->opcode)
 		&& MINT_IS_COMPARE(second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])
-		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0]) {
+		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0])
 		return third;
-	}
 
 	return NULL;
 }
@@ -8464,7 +8450,7 @@ interp_reorder_bblocks (TransformData *td)
 		if (!first)
 			continue;
 
-		InterpInst *cond_ins = interp_inline_into_callers(first);
+		InterpInst *cond_ins = interp_inline_into_callers (first);
 		if (cond_ins) {
 			// This means this bblock match a pattern for inlining into callers, with a conditional branch
 			int i = 0;
@@ -8478,23 +8464,24 @@ interp_reorder_bblocks (TransformData *td)
 					InterpBasicBlock *cond_true_bb = cond_ins->info.target_bb;
 					InterpBasicBlock *next_bb = bb->next_bb;
 
-					// parent bb will do the conditional branch
+					// Parent bb will do the conditional branch
 					interp_unlink_bblocks (in_bb, bb);
-					// remove ending MINT_BR
-					interp_clear_ins(last_ins);
-					// copy a pattern into caller bb
+					// Remove ending MINT_BR
+					interp_clear_ins (last_ins);
+					// Copy all instructions one by one, from interp_first_ins (bb) to the end of the in_bb
 					InterpInst *copy_ins = first;
 					while (copy_ins) {
-						InterpInst *new_ins = interp_insert_ins_bb(td, in_bb, in_bb->last_ins, copy_ins->opcode);
+						InterpInst *new_ins = interp_insert_ins_bb (td, in_bb, in_bb->last_ins, copy_ins->opcode);
 						new_ins->dreg = copy_ins->dreg;
 						new_ins->sregs[0] = copy_ins->sregs[0];
 						if (mono_interp_op_sregs[copy_ins->opcode] > 1)
 							new_ins->sregs[1] = copy_ins->sregs[1];
+
 						new_ins->data [0] = copy_ins->data [0];
-						if (copy_ins->opcode == MINT_LDC_I4) {
+						if (copy_ins->opcode == MINT_LDC_I4)
 							new_ins->data [1] = copy_ins->data [1];
-						}
-						copy_ins = interp_next_ins(copy_ins);
+
+						copy_ins = interp_next_ins (copy_ins);
 					}
 					in_bb->last_ins->info.target_bb = cond_true_bb;
 					interp_link_bblocks (td, in_bb, cond_true_bb);
