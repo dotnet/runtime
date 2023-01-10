@@ -1035,7 +1035,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)] =
+        emitLastInstrs[0] =
             (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
 
         emitCurLastInsCnt = 1;
@@ -1506,10 +1506,11 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     /* Grab the space for the instruction */
 
-    instrDesc* const id = emitLastInstrs[++emitInsCount % ArrLen(emitLastInstrs)] =
+    instrDesc* const id = emitLastInstrs[emitCurLastInsCnt++ % ArrLen(emitLastInstrs)] =
         (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+
+    emitInsCount++;
     emitCurIGfreeNext += fullSize;
-    emitCurLastInsCnt++;
 
     assert(sz >= sizeof(void*));
     memset(id, 0, sz);

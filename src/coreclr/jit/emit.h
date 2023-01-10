@@ -2185,7 +2185,7 @@ private:
 
     inline instrDesc* emitGetLastIns() const
     {
-        return emitLastInstrs[emitInsCount % ArrLen(emitLastInstrs)];
+        return emitLastInstrs[(emitCurLastInsCnt - 1) % ArrLen(emitLastInstrs)];
     }
 
     inline bool emitHasLastIns() const
@@ -2222,7 +2222,7 @@ private:
 
         for (unsigned i = 0; i < min(emitCurLastInsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
         {
-            instrDesc* id = emitLastInstrs[(emitInsCount - i) % ArrLen(emitLastInstrs)];
+            instrDesc* id = emitLastInstrs[(emitCurLastInsCnt - 1 - i) % ArrLen(emitLastInstrs)];
 
             assert(id != nullptr);
 
