@@ -423,7 +423,8 @@ namespace Wasm.Build.Tests
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
-                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                                         options.PredefinedIcudt ?? "");
                 }
 
                 if (options.UseCache)
@@ -616,7 +617,8 @@ namespace Wasm.Build.Tests
                                                    bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
-                                                   bool dotnetWasmFromRuntimePack = true)
+                                                   bool dotnetWasmFromRuntimePack = true,
+                                                   string predefinedIcudt = "")
         {
             AssertFilesExist(bundleDir, new []
             {
@@ -629,7 +631,10 @@ namespace Wasm.Build.Tests
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
+            if (!string.IsNullOrEmpty(predefinedIcudt))
+                AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+            else
+                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
             AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
@@ -1097,6 +1102,7 @@ namespace Wasm.Build.Tests
         string? Label                     = null,
         string? TargetFramework           = null,
         string? MainJS                    = null,
+        string? PredefinedIcudt               = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

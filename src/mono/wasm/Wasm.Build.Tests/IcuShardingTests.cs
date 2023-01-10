@@ -20,16 +20,12 @@ namespace Wasm.Build.Tests
 
          public static IEnumerable<object?[]> BuildAndRun_ShardData(bool aot, RunHost host)
             => ConfigWithAOTData(aot)
-                .Multiply(ShardData)
+                .Multiply(
+                    new object[] { "icudt_EFIGS.dat", "new string[] { \"en-US\", \"fr-FR\" }", "new string[] { \"pl-PL\", \"ko-KR\" \"cs-CZ\" }" },
+                    new object[] { "icudt_CJK.dat", "new string[] { \"en-GB\", \"zh-CN\" }", "new string[] { \"fr-FR\", \"hr-HR\", \"it-IT\" }" },
+                    new object[] { "icudt_no_CJK.dat", "new string[] { \"en-AU\", \"fr-FR\", \"sk-SK\" }", "new string[] { \"ja-JP\", \"ko-KR\", \"zh-CN\"}" })
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
-
-        public static IEnumerable<object[]> ShardData()
-        {
-            yield return new object[] { "icudt_EFIGS.dat", "new string[] { \"en-US\", \"fr-FR\" }", "new string[] { \"pl-PL\", \"ko-KR\" \"cs-CZ\" }" };
-            yield return new object[] { "icudt_CJK.dat", "new string[] { \"en-GB\", \"zh-CN\" }", "new string[] { \"fr-FR\", \"hr-HR\", \"it-IT\" }" };
-            yield return new object[] { "icudt_no_CJK.dat", "new string[] { \"en-AU\", \"fr-FR\", \"sk-SK\" }", "new string[] { \"ja-JP\", \"ko-KR\", \"zh-CN\"}" };
-        }
 
         protected static string GetProgramText(string expectedLocales, string missingLocales) => $@"
             using System;
@@ -71,13 +67,13 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programTest),
                                 DotnetWasmFromRuntimePack: true,
-                                CustomIcudt: shardName));
+                                PredefinedIcudt: shardName));
             System.Console.WriteLine($"Build output: {output}");
 
             string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                         test: output => {},
                         host: host, id: id);
-            Assert.Equals("failed\nfailed\nfailed\n", runOutput);
+            Assert.Equal("failed\nfailed\nfailed\n", runOutput);
             System.Console.WriteLine($"Run output: {runOutput}");
         }
     }
