@@ -44,13 +44,14 @@ wasm_get_stack_size (void)
 #else /* WASI */
 
 // see mono-threads-wasi.S
-uintptr_t wasm_stack_high(void);
-uintptr_t wasm_stack_low(void);
+uintptr_t get_wasm_stack_high(void);
+uintptr_t get_wasm_stack_low(void);
 
 static int
 wasm_get_stack_base (void)
 {
-	return wasm_stack_high();
+	return get_wasm_stack_high();
+	// this will need change for multithreading as the stack will allocated be per thread at different addresses
 }
 
 static int
@@ -59,7 +60,7 @@ wasm_get_stack_size (void)
 	// keep in sync with src\mono\wasi\wasi.proj stack-size
 	return 8388608;
     // TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
-	// return (guint8*)wasm_stack_high () - (guint8*)wasm_stack_low ();
+	// return (guint8*)get_wasm_stack_high () - (guint8*)get_wasm_stack_low ();
 }
 
 #endif
