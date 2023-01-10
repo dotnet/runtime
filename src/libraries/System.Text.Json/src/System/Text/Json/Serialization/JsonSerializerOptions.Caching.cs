@@ -156,11 +156,14 @@ namespace System.Text.Json
         internal sealed class CachingContext
         {
             private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
+            private readonly Func<Type, JsonTypeInfo?> _jsonTypeInfoFactory;
 
             public CachingContext(JsonSerializerOptions options, int hashCode)
             {
                 Options = options;
                 HashCode = hashCode;
+
+                _jsonTypeInfoFactory = options.GetTypeInfoNoCaching;
             }
 
             public JsonSerializerOptions Options { get; }
@@ -169,16 +172,7 @@ namespace System.Text.Json
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
 
-            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type)
-            {
-#if NETCOREAPP2_0_OR_GREATER
-                return _jsonTypeInfoCache.GetOrAdd(type, static (type, options) => options.GetTypeInfoNoCaching(type), Options);
-#else
-                return _jsonTypeInfoCache.TryGetValue(type, out JsonTypeInfo? value) ?
-                    value :
-                    _jsonTypeInfoCache.GetOrAdd(type, Options.GetTypeInfoNoCaching(type));
-#endif
-            }
+            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, _jsonTypeInfoFactory);
 
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
 
