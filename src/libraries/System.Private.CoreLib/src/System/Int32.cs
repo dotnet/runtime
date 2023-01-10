@@ -141,7 +141,7 @@ namespace System
             return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //
@@ -151,7 +151,7 @@ namespace System
             return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String in the given style.  If
+        // Parses an integer from a String in the given style. If
         // a NumberFormatInfo isn't specified, the current culture's
         // NumberFormatInfo is assumed.
         //

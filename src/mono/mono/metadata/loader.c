@@ -777,16 +777,21 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 	}
 
 	if (context) {
-		MonoMethodSignature *cached;
+		MonoMethodSignature *cached, *inflated;
 
 		/* This signature is not owned by a MonoMethod, so need to cache */
-		sig = inflate_generic_signature_checked (image, sig, context, error);
+		inflated = inflate_generic_signature_checked (image, sig, context, error);
 		if (!is_ok (error))
 			return NULL;
 
-		cached = mono_metadata_get_inflated_signature (sig, context);
-		if (cached != sig)
-			mono_metadata_free_inflated_signature (sig);
+		if (mono_metadata_signature_equal (sig, inflated)) {
+			mono_metadata_free_inflated_signature (inflated);
+			return sig;
+		}
+
+		cached = mono_metadata_get_inflated_signature (inflated, context);
+		if (cached != inflated)
+			mono_metadata_free_inflated_signature (inflated);
 		else
 			mono_atomic_fetch_add_i32 (&inflated_signatures_size, mono_metadata_signature_size (cached));
 		sig = cached;

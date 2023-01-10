@@ -11,7 +11,7 @@ struct S
     public Vector<float> v2;
 };
 
-static class GitHub_18497
+public static class GitHub_18497
 {
     static S sStatic;
 
@@ -28,7 +28,7 @@ static class GitHub_18497
         return Sum(sLocal);
     }
 
-    static int Main()
+    public static int Main()
     {
         bool pass = true;
         sStatic.v1 = new Vector<float>(0.0F);

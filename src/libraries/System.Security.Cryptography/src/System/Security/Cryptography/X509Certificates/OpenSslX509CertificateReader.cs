@@ -709,15 +709,26 @@ namespace System.Security.Cryptography.X509Certificates
 
                 int bioSize = Interop.Crypto.GetMemoryBioSize(bioHandle);
                 // Ensure space for the trailing \0
-                var buf = new byte[bioSize + 1];
-                int read = Interop.Crypto.BioGets(bioHandle, buf, buf.Length);
+                Span<byte> buffer = new byte[bioSize + 1];
+                Span<byte> current = buffer;
+                int total = 0;
+                int read;
 
-                if (read < 0)
+                do
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+                    read = Interop.Crypto.BioGets(bioHandle, current);
 
-                return Encoding.UTF8.GetString(buf, 0, read);
+                    if (read < 0)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    current = current.Slice(read);
+                    total += read;
+                }
+                while (read > 0);
+
+                return Encoding.UTF8.GetString(buffer.Slice(0, total));
             }
         }
 

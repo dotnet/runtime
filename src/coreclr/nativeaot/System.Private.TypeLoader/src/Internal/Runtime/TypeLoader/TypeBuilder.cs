@@ -17,7 +17,6 @@ namespace Internal.Runtime.TypeLoader
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
 
     internal static class LowLevelListExtensions
@@ -76,45 +75,16 @@ namespace Internal.Runtime.TypeLoader
         }
 
 
-        private static bool CheckAllHandlesValidForMethod(MethodDesc method)
-        {
-            if (!method.OwningType.RetrieveRuntimeTypeHandleIfPossible())
-                return false;
-
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                if (!method.Instantiation[i].RetrieveRuntimeTypeHandleIfPossible())
-                    return false;
-
-            return true;
-        }
-
-        internal static bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
-        {
-            result = IntPtr.Zero;
-
-            if (!method.IsNonSharableMethod || !CheckAllHandlesValidForMethod(method))
-                return false;
-
-            RuntimeTypeHandle[] genMethodArgs = method.Instantiation.Length > 0 ? new RuntimeTypeHandle[method.Instantiation.Length] : Empty<RuntimeTypeHandle>.Array;
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                genMethodArgs[i] = method.Instantiation[i].RuntimeTypeHandle;
-
-            return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
-        }
-
         internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
                 return true;
 
-            bool allHandlesValid = CheckAllHandlesValidForMethod(method);
-
-            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... " + (allHandlesValid ? "(All type arg handles valid)" : ""));
+            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... ");
 
             IntPtr methodDictionary;
 
-            if ((allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new HandleBasedGenericMethodLookup(method), out methodDictionary)) ||
-                 (!allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new MethodDescBasedGenericMethodLookup(method), out methodDictionary)))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -274,9 +244,6 @@ namespace Internal.Runtime.TypeLoader
                     {
                         Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer);
                     }
-
-                    // Assert that non-valuetypes are considered to have pointer size
-                    Debug.Assert(typeAsArrayType.ParameterType.IsValueType || state.ComponentSize == IntPtr.Size);
                 }
             }
             else
@@ -290,11 +257,7 @@ namespace Internal.Runtime.TypeLoader
                 PrepareBaseTypeAndDictionaries(type);
                 PrepareRuntimeInterfaces(type);
 
-                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete." +
-                    " IsHFA = " + (state.IsHFA ? "true" : "false") +
-                    " Type size = " + (state.TypeSize.HasValue ? state.TypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Fields size = " + (state.UnalignedTypeSize.HasValue ? state.UnalignedTypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Type alignment = " + (state.FieldAlignment.HasValue ? state.FieldAlignment.Value.LowLevelToString() : "UNDEF"));
+                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
             }
         }
 
@@ -414,13 +377,6 @@ namespace Internal.Runtime.TypeLoader
 
             NativeParser baseTypeParser = new NativeParser();
 
-            int nonGcDataSize = 0;
-            int gcDataSize = 0;
-            int threadDataSize = 0;
-            bool staticSizesMeaningful = (type is DefType) // Is type permitted to have static fields
-                                    && !isTemplateUniversalCanon; // Non-universal templates always specify their statics sizes
-                                                                  // if the size can be greater than 0
-
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
             {
@@ -446,22 +402,19 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.NonGcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.NonGcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        nonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.NonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        gcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.GcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.ThreadStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        threadDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.ThreadDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDesc:
@@ -487,11 +440,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
                         break;
 
-                    case BagElementKind.SealedVTableEntries:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.SealedVTableEntries");
-                        state.NumSealedVTableEntries = typeInfoParser.GetUnsigned();
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
@@ -510,13 +458,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger();
                         break;
                 }
-            }
-
-            if (staticSizesMeaningful)
-            {
-                Debug.Assert((state.NonGcDataSize + (state.HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0)) == nonGcDataSize);
-                Debug.Assert(state.GcDataSize == gcDataSize);
-                Debug.Assert(state.ThreadDataSize == threadDataSize);
             }
 
             type.ParseBaseType(context, baseTypeParser);
@@ -570,8 +511,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
             public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
             {
-                if (bitfield == null)
-                    throw new ArgumentNullException(nameof(bitfield));
+                ArgumentNullException.ThrowIfNull(bitfield);
 
                 if (IsNone)
                     return;
@@ -773,7 +713,6 @@ namespace Internal.Runtime.TypeLoader
             if (!state.HasStaticConstructor)
                 return;
 
-            Debug.Assert(state.ClassConstructorPointer.HasValue);
             IntPtr canonicalClassConstructorFunctionPointer = state.ClassConstructorPointer.Value;
 
             IntPtr generatedTypeStaticData = GetRuntimeTypeHandle(type).ToEETypePtr()->DynamicNonGcStaticsData;
@@ -866,9 +805,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (type is ArrayType typeAsSzArrayType)
                 {
-                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
+                    RuntimeTypeHandle elementTypeHandle = GetRuntimeTypeHandle(typeAsSzArrayType.ElementType);
+                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(elementTypeHandle);
 
-                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
+                    ushort componentSize = (ushort)IntPtr.Size;
+                    unsafe
+                    {
+                        if (typeAsSzArrayType.ElementType.IsValueType)
+                            componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
+                    }
+                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
 
                     FinishInterfaces(state);
                 }
@@ -888,8 +834,7 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
                         state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
-                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(type);
-                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
                     }
                 }
             }
@@ -1325,22 +1270,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             return true;
-        }
-
-        public static bool TryBuildGenericMethod(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature methodNameAndSignature, out IntPtr methodDictionary)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, methodNameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
-
-            bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
-
-            // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
-            if (success)
-                TypeSystemContextFactory.Recycle(context);
-
-            return success;
         }
 
         internal static bool TryBuildGenericMethod(InstantiatedMethod methodBeingLoaded, out IntPtr methodDictionary)

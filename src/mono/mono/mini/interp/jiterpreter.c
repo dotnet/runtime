@@ -687,14 +687,21 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 		case MINT_BR:
 		case MINT_BR_S:
-			if (*inside_branch_block)
-				return TRACE_CONTINUE;
-
-			return TRACE_ABORT;
-
-		case MINT_THROW:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+			// Detect backwards branches
+			if (ins->info.target_bb->il_offset <= ins->il_offset) {
+				if (*inside_branch_block)
+					return TRACE_CONTINUE;
+				else
+					return TRACE_ABORT;
+			}
+
+			*inside_branch_block = TRUE;
+			return TRACE_CONTINUE;
+
+		case MINT_MONO_RETHROW:
+		case MINT_THROW:
 			if (*inside_branch_block)
 				return TRACE_CONTINUE;
 
@@ -708,11 +715,15 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
-		case MINT_MONO_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
 		case MINT_SAFEPOINT:
 			return TRACE_ABORT;
+
+		case MINT_MOV_SRC_OFF:
+		case MINT_MOV_DST_OFF:
+			// These opcodes will turn into supported MOVs later
+			return TRACE_CONTINUE;
 
 		default:
 		if (
@@ -746,7 +757,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		)
 			return TRACE_CONTINUE;
 		else if (
-			(opcode >= MINT_MOV_SRC_OFF) &&
+			(opcode >= MINT_MOV_I4_I1) &&
 			(opcode <= MINT_MOV_8_4)
 		)
 			return TRACE_CONTINUE;
@@ -786,7 +797,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		else if (
 			// array operations
 			// some of these like the _I ones aren't implemented yet but are rare
-			(opcode >= MINT_LDELEM_I) &&
+			(opcode >= MINT_LDELEM_I1) &&
 			(opcode <= MINT_GETITEM_LOCALSPAN)
 		)
 			return TRACE_CONTINUE;

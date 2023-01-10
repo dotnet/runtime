@@ -2869,14 +2869,6 @@ FreeLibrary(
     IN OUT HMODULE hLibModule);
 
 PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode);
-
-PALIMPORT
 BOOL
 PALAPI
 DisableThreadLibraryCalls(

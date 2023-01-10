@@ -14,28 +14,11 @@ namespace Internal.Runtime.TypeLoader
     /// </summary>
     public partial class TypeLoaderTypeSystemContext : TypeSystemContext
     {
-        private static readonly NoMetadataFieldLayoutAlgorithm s_noMetadataFieldLayoutAlgorithm = new NoMetadataFieldLayoutAlgorithm();
         private static readonly NoMetadataRuntimeInterfacesAlgorithm s_noMetadataRuntimeInterfacesAlgorithm = new NoMetadataRuntimeInterfacesAlgorithm();
-        private static readonly NativeLayoutFieldAlgorithm s_nativeLayoutFieldAlgorithm = new NativeLayoutFieldAlgorithm();
         private static readonly NativeLayoutInterfacesAlgorithm s_nativeLayoutInterfacesAlgorithm = new NativeLayoutInterfacesAlgorithm();
 
         public TypeLoaderTypeSystemContext(TargetDetails targetDetails) : base(targetDetails)
         {
-        }
-
-        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
-        {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                // If the type is already constructed, use the NoMetadataFieldLayoutAlgorithm.
-                // its more efficient than loading from native layout or metadata.
-                return s_noMetadataFieldLayoutAlgorithm;
-            }
-            if (type.HasNativeLayout)
-            {
-                return s_nativeLayoutFieldAlgorithm;
-            }
-            return s_noMetadataFieldLayoutAlgorithm;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
@@ -167,15 +150,13 @@ namespace Internal.Runtime.TypeLoader
 
         protected internal override bool ComputeHasStaticConstructor(TypeDesc type)
         {
-            if (type.RetrieveRuntimeTypeHandleIfPossible())
-            {
-                unsafe
-                {
-                    return type.RuntimeTypeHandle.ToEETypePtr()->HasCctor;
-                }
-            }
-            Debug.Assert(type is not DefType);
-            return false;
+            // This assumes we can compute the information from a type definition
+            // (`type` is going to be a definition here because that's how the type system is structured).
+            // We don't maintain consistency for this at runtime. Different instantiations of
+            // a single definition may or may not have a static constructor after AOT compilation.
+            // Asking about this for a definition is an invalid question.
+            // If this is ever needed, we need to restructure things in the common type system.
+            throw new NotImplementedException();
         }
 
         public override bool SupportsUniversalCanon => false;

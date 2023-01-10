@@ -3,13 +3,11 @@
        package infra globs for .cs files. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <!-- This is a source package which includes all .cs files by default. -->
     <IsSourcePackage>true</IsSourcePackage>
-    <!-- This is non-shipping package. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <IsPackable>true</IsPackable>
     <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -16,8 +16,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
-    <MonoWasmThreadsNoUser Condition="('$(WasmEnableThreads)' != 'true' and '$(WasmEnablePerfTracing)' == 'true') or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
+    <MonoWasmThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreads>
+    <MonoWasmThreadsNoUser Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">true</MonoWasmThreadsNoUser>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Release'">false</MonoDiagnosticsMock>
     <MonoDiagnosticsMock Condition="'$(MonoDiagnosticsMock)' == '' and '$(Configuration)' == 'Debug'">true</MonoDiagnosticsMock>
   </PropertyGroup>
@@ -395,7 +395,7 @@
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.js"/>
   </ItemGroup>
 
-  <Target Name="SetMonoRollupEnvironment">
+  <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
       <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
     </PropertyGroup>

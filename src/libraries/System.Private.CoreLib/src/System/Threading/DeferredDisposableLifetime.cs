@@ -50,7 +50,8 @@ namespace System.Threading
                 int oldCount = Volatile.Read(ref _count);
 
                 // Have we been disposed?
-                ObjectDisposedException.ThrowIf(oldCount < 0, this);
+                if (oldCount < 0)
+                    throw new ObjectDisposedException(typeof(T).ToString());
 
                 int newCount = checked(oldCount + 1);
 

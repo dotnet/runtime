@@ -17,9 +17,8 @@
 
     <RuntimeIlcPackageName>runtime.$(OSIdentifier)-$(TargetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
 
-    <OSHostArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</OSHostArch>
-
-    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
+    <!-- Default to host that matches SDK architecture -->
+    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
     <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
     
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
@@ -42,7 +41,8 @@
   <!-- Generate a warning if the non-SDK path is used  -->
   <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''  and '$(NeedNativePublishSupportForSDK6)' != 'true'" 
       BeforeTargets="ImportRuntimeIlcPackageTarget">
-    <Warning Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
+    <Warning Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
+             Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->

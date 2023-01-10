@@ -107,9 +107,6 @@ private:
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
-#ifdef FEATURE_SIMD
-    void ContainCheckSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -281,11 +278,8 @@ private:
         GenTree* const op1 = tree->gtGetOp1();
         GenTree* const op2 = tree->gtGetOp2();
 
-        const unsigned operatorSize = genTypeSize(tree->TypeGet());
-
-        const bool op1Legal =
-            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
+        const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() && IsContainableMemoryOpSize(tree, op1);
+        const bool op2Legal = isSafeToMarkOp2 && IsContainableMemoryOpSize(tree, op2);
 
         GenTree* regOptionalOperand = nullptr;
 
@@ -349,9 +343,6 @@ private:
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
-#ifdef FEATURE_SIMD
-    void LowerSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
@@ -452,16 +443,36 @@ public:
         return m_lsra->isContainableMemoryOp(node);
     }
 
+    // Return true if 'childNode' is a containable memory op by its size relative to the 'parentNode'.
+    // Currently very conservative.
+    bool IsContainableMemoryOpSize(GenTree* parentNode, GenTree* childNode) const
+    {
+        if (parentNode->OperIsBinary())
+        {
+            const unsigned operatorSize = genTypeSize(parentNode->TypeGet());
+
+#ifdef TARGET_XARCH
+
+            // Conservative - only do this for AND, OR, XOR.
+            if (parentNode->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                return genTypeSize(childNode->TypeGet()) >= operatorSize;
+            }
+
+#endif // TARGET_XARCH
+
+            return genTypeSize(childNode->TypeGet()) == operatorSize;
+        }
+
+        return false;
+    }
+
 #ifdef TARGET_ARM64
     bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)
-    // Tries to get a containable node for a given HWIntrinsic
-    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
-                                        GenTree**           pNode,
-                                        bool*               supportsRegOptional,
-                                        GenTreeHWIntrinsic* transparentParentNode = nullptr);
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);

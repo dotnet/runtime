@@ -63,7 +63,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				oldInterproceduralState = interproceduralState.Clone ();
 
 				foreach (var method in oldInterproceduralState.Methods) {
-					if (method.Method.IsInRequiresUnreferencedCodeAttributeScope ())
+					if (method.Method.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						continue;
 
 					AnalyzeMethod (method, ref interproceduralState);

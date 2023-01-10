@@ -62,10 +62,6 @@ namespace System.Text.Json
         /// <returns>A <see cref="JsonElement"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
@@ -78,6 +74,29 @@ namespace System.Text.Json
 
             jsonTypeInfo.EnsureConfigured();
             return WriteElement(value, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the provided value into a <see cref="JsonElement"/>.
+        /// </summary>
+        /// <returns>A <see cref="JsonElement"/> representation of the value.</returns>
+        /// <param name="value">The value to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
+        /// </exception>
+        public static JsonElement SerializeToElement(object? value, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return WriteElementAsObject(value, jsonTypeInfo);
         }
 
         /// <summary>

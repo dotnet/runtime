@@ -250,6 +250,9 @@
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
   </data>
+  <data name="Arg_ContainsNonAscii" xml:space="preserve">
+    <value>Text must not contain non-ASCII characters.</value>
+  </data>
   <data name="Arg_CreatInstAccess" xml:space="preserve">
     <value>Cannot specify both CreateInstance and another access type.</value>
   </data>
@@ -1053,7 +1056,7 @@
   <data name="Argument_GenericsInvalid" xml:space="preserve">
     <value>Generic types are not valid.</value>
   </data>
-  <data name="Argument_GlobalFunctionHasToBeStatic" xml:space="preserve">
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
   </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
@@ -1110,7 +1113,7 @@
   <data name="Argument_InvalidArrayLength" xml:space="preserve">
     <value>Length of the array must be {0}.</value>
   </data>
-  <data name="Argument_InvalidArrayType" xml:space="preserve">
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
@@ -1690,9 +1693,6 @@
   <data name="ArgumentOutOfRange_FileTimeInvalid" xml:space="preserve">
     <value>Not a valid Win32 FileTime.</value>
   </data>
-  <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
-    <value>Value must be positive.</value>
-  </data>
   <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
     <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
   </data>
@@ -1784,15 +1784,6 @@
   <data name="ArgumentOutOfRange_NeedValidId" xml:space="preserve">
     <value>The ID parameter must be in the range {0} through {1}.</value>
   </data>
-  <data name="ArgumentOutOfRange_NegativeCapacity" xml:space="preserve">
-    <value>Capacity must be positive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegativeCount" xml:space="preserve">
-    <value>Count cannot be less than zero.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegativeLength" xml:space="preserve">
-    <value>Length cannot be less than zero.</value>
-  </data>
   <data name="ArgumentOutOfRange_OffsetLength" xml:space="preserve">
     <value>Offset and length must refer to a position in the string.</value>
   </data>
@@ -1804,9 +1795,6 @@
   </data>
   <data name="ArgumentOutOfRange_PartialWCHAR" xml:space="preserve">
     <value>Pointer startIndex and length do not refer to a valid string.</value>
-  </data>
-  <data name="ArgumentOutOfRange_PeriodTooLarge" xml:space="preserve">
-    <value>Period must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
     <value>The position may not be greater or equal to the capacity of the accessor.</value>
@@ -1823,9 +1811,6 @@
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
-  <data name="ArgumentOutOfRange_SmallMaxCapacity" xml:space="preserve">
-    <value>MaxCapacity must be one or greater.</value>
-  </data>
   <data name="ArgumentOutOfRange_StartIndex" xml:space="preserve">
     <value>StartIndex cannot be less than zero.</value>
   </data>
@@ -1834,9 +1819,6 @@
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
-  </data>
-  <data name="ArgumentOutOfRange_TimeoutTooLarge" xml:space="preserve">
-    <value>Time-out interval must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -1852,9 +1834,6 @@
   </data>
   <data name="ArgumentOutOfRange_UtcOffsetAndDaylightDelta" xml:space="preserve">
     <value>The sum of the BaseUtcOffset and DaylightDelta properties must within plus or minus 14.0 hours.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Version" xml:space="preserve">
-    <value>Version's parameters must be greater than or equal to zero.</value>
   </data>
   <data name="ArgumentOutOfRange_Week" xml:space="preserve">
     <value>The Week parameter must be in the range 1 through 5.</value>

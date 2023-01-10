@@ -463,6 +463,7 @@ jmethodID g_SSLContextCreateSSLEngineMethodWithHostAndPort;
 jclass    g_SSLSession;
 jmethodID g_SSLSessionGetApplicationBufferSize;
 jmethodID g_SSLSessionGetCipherSuite;
+jmethodID g_SSLSessionGetLocalCertificates;
 jmethodID g_SSLSessionGetPacketBufferSize;
 jmethodID g_SSLSessionGetPeerCertificates;
 jmethodID g_SSLSessionGetProtocol;
@@ -1054,6 +1055,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLSession =                          GetClassGRef(env, "javax/net/ssl/SSLSession");
     g_SSLSessionGetApplicationBufferSize =  GetMethod(env, false, g_SSLSession, "getApplicationBufferSize", "()I");
     g_SSLSessionGetCipherSuite =            GetMethod(env, false, g_SSLSession, "getCipherSuite", "()Ljava/lang/String;");
+    g_SSLSessionGetLocalCertificates =      GetMethod(env, false, g_SSLSession, "getLocalCertificates", "()[Ljava/security/cert/Certificate;");
     g_SSLSessionGetPacketBufferSize =       GetMethod(env, false, g_SSLSession, "getPacketBufferSize", "()I");
     g_SSLSessionGetPeerCertificates =       GetMethod(env, false, g_SSLSession, "getPeerCertificates", "()[Ljava/security/cert/Certificate;");
     g_SSLSessionGetProtocol =               GetMethod(env, false, g_SSLSession, "getProtocol", "()Ljava/lang/String;");

@@ -33,7 +33,7 @@ namespace UnsafeTesting
             }
             return true;
         }
-        static int Main()
+        public static int Main()
         {
             if (QuaternionAddTest())
             {

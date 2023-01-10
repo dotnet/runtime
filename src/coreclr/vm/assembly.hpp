@@ -29,12 +29,8 @@ class DomainAssembly;
 class DomainModule;
 class SystemDomain;
 class ClassLoader;
-class ComDynamicWrite;
-class AssemblySink;
 class AssemblyNative;
 class AssemblySpec;
-class ISharedSecurityDescriptor;
-class SecurityTransparencyBehavior;
 class Pending;
 class AllocMemTracker;
 class FriendAssemblyDescriptor;
@@ -134,7 +130,7 @@ public:
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();
@@ -257,25 +253,10 @@ public:
         m_debuggerFlags = flags;
     }
 
-    void SetCopiedPDBs()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_debuggerFlags = (DebuggerAssemblyControlFlags) (m_debuggerFlags | DACF_PDBS_COPIED);
-    }
-
     ULONG HashIdentity()
     {
         return GetPEAssembly()->HashIdentity();
     }
-
-    //****************************************************************************************
-    //
-    // Uses the given token to load a module or another assembly. Returns the module in
-    // which the implementation resides.
-
-    mdFile GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile);
-    mdFile GetManifestFileToken(LPCSTR name);
 
     // On failure:
     //      if loadFlag == Loader::Load => throw
@@ -289,8 +270,6 @@ public:
                                         mdTypeRef        typeRef,
                                         Loader::LoadFlag loadFlag,
                                         BOOL *           pfNoResolutionScope);
-
-    Module *FindModuleByName(LPCSTR moduleName);
 
     //****************************************************************************************
     //

@@ -12549,6 +12549,12 @@ namespace System.Runtime.CompilerServices
     {
         public PreserveBaseOverridesAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Module, AllowMultiple=false, Inherited=false)]
+    public sealed partial class RefSafetyRulesAttribute : System.Attribute
+    {
+        public RefSafetyRulesAttribute(int version) { }
+        public int Version { get { throw null; } }
+    }
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed class RequiredMemberAttribute : System.Attribute
     {
@@ -13818,6 +13824,33 @@ namespace System.Security.Principal
 }
 namespace System.Text
 {
+    public static class Ascii
+    {
+        public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
+        public static bool IsValid(byte value) { throw null; }
+        public static bool IsValid(char value) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLower(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpper(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToLowerInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<byte> value, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUpperInPlace(System.Span<char> value, out int charsWritten) { throw null; }
+        public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range Trim(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimEnd(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
+        public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
+    }
     public abstract partial class Decoder
     {
         protected Decoder() { }
@@ -14478,6 +14511,7 @@ namespace System.Threading.Tasks
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
         public bool IsCompletedSuccessfully { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, nameof(System.Exception))]
         public bool IsFaulted { get { throw null; } }
         public System.Threading.Tasks.TaskStatus Status { get { throw null; } }
         System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { throw null; } }
