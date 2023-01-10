@@ -13,6 +13,10 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a method that is visible to reflection.
+    /// The method can be on a non-generic type, generic type definition, or an instantiatied type.
+    /// To match IL semantics, we maintain that a method on a generic type will be consistently
+    /// reflection-accessible. Either the method is accessible on all instantiations or on none of them.
+    /// Similar invariants hold for generic methods.
     /// </summary>
     public class ReflectableMethodNode : DependencyNodeCore<NodeFactory>
     {

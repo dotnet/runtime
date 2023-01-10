@@ -13,6 +13,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a field that is gettable/settable from reflection.
+    /// The field can be on a non-generic type, generic type definition, or an instantiatied type.
+    /// To match IL semantics, we maintain that a field on a generic type will be consistently
+    /// reflection-accessible. Either the field is accessible on all instantiations or on none of them.
     /// </summary>
     public class ReflectableFieldNode : DependencyNodeCore<NodeFactory>
     {

@@ -12,7 +12,12 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a type that is visible from reflection.
+    /// Represents a type that is forced to be visible from reflection.
+    /// The system needs to implicitly assume that any allocated type could be visible from
+    /// reflection due to <see cref="object.GetType" />, so presence of this node is not
+    /// a necessary condition for a type to be reflection visible. However, the presence of this
+    /// node indicates that a new reflectable type was forced into existence by e.g. dataflow
+    /// analysis, and is not just a byproduct of allocating an instance of this type.
     /// </summary>
     public class ReflectableTypeNode : DependencyNodeCore<NodeFactory>
     {

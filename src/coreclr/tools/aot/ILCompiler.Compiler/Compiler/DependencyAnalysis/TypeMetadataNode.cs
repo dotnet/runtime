@@ -14,6 +14,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a type that has metadata generated in the current compilation.
+    /// This node corresponds to an ECMA-335 TypeDef record. It is however not a 1:1
+    /// mapping because IL could be compiled into machine code without generating a record
+    /// in the reflection metadata (which would not be possible in IL terms).
     /// </summary>
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
