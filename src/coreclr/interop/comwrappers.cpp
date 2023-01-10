@@ -340,6 +340,8 @@ namespace
 
 namespace
 {
+    // This IID represents an internal interface we define to tag any ManagedObjectWrappers we create.
+    // This interface type and GUID do not correspond to any public interface; it is an internal implementation detail.
     // 5c13e51c-4f32-4726-a3fd-f3edd63da3a0
     const GUID IID_TaggedImpl = { 0x5c13e51c, 0x4f32, 0x4726, { 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0 } };
 
