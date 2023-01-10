@@ -132,6 +132,50 @@ namespace System.IO.Tests
                 Assert.Equal(fileSize, fs.Position);
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task BypassingCacheInvalidatesCachedData(bool fsIsAsync, bool asyncReads)
+        {
+            const int bufferSize = 4096;
+            const int fileSize = bufferSize * 4;
+            string filePath = GetTestFilePath();
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+            File.WriteAllBytes(filePath, content);
+
+            await using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize, fsIsAsync);
+
+            // 1. Populates the private FileStream buffer, leaves bufferSize - 1 bytes available for next read.
+            await ReadAndAssertAsync(1);
+            // 2. Consumes all available data from the buffer, reads another bufferSize-many bytes from the disk and copies the 1 missing byte.
+            await ReadAndAssertAsync(bufferSize);
+            // 3. Seek back by the number of bytes consumed from the buffer, all buffered data is now available for next read.
+            fs.Position -= 1;
+            // 4. Consume all buffered data.
+            await ReadAndAssertAsync(bufferSize);
+            // 5. Bypass the cache (all buffered data has been consumed and we need bufferSize-many bytes).
+            // The cache should get invalidated now!!
+            await ReadAndAssertAsync(bufferSize);
+            // 6. Seek back by just a few bytes.
+            fs.Position -= 9;
+            // 7. Perform a read, which should not use outdated buffered data.
+            await ReadAndAssertAsync(bufferSize);
+
+            async Task ReadAndAssertAsync(int size)
+            {
+                var initialPosition = fs.Position;
+                var buffer = new byte[size];
+
+                var count = asyncReads
+                    ? await ReadAsync(fs, buffer, 0, size)
+                    : fs.Read(buffer);
+
+                Assert.Equal(content.Skip((int)initialPosition).Take(count), buffer.Take(count));
+            }
+        }
     }
 
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
