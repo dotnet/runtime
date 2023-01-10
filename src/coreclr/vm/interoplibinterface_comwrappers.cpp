@@ -1579,7 +1579,7 @@ extern "C" BOOL QCALLTYPE ComWrappers_TryGetObject(
     _ASSERTE(hr == S_OK);
 
     InteropLib::OBJECTHANDLE handle;
-    if (InteropLib::Com::GetObjectForWrapper(identity, &handle) ==  S_OK)
+    if (InteropLib::Com::GetObjectForWrapper(identity, &handle) == S_OK)
     {
         // Switch to Cooperative mode since object references
         // are being manipulated.

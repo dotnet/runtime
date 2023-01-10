@@ -239,7 +239,10 @@ namespace ComWrappersTests
             IntPtr managedWrapper = cw.GetOrCreateComInterfaceForObject(managedObj, CreateComInterfaceFlags.None);
             Assert.NotEqual(IntPtr.Zero, managedWrapper);
 
-            // Allocate wrapper with user defined IUnknown
+            // Allocate wrapper with user defined IUnknown.
+            // Using a new ComWrappers instance because
+            // a native wrapper for a managed object is associated
+            // with its allocating ComWrappers instance.
             var cwAlt = new TestComWrappers();
             IntPtr managedWrapper2 = cwAlt.GetOrCreateComInterfaceForObject(managedObj, CreateComInterfaceFlags.CallerDefinedIUnknown);
             Assert.NotEqual(IntPtr.Zero, managedWrapper2);
