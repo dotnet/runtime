@@ -436,6 +436,9 @@ namespace System
                     }
 
 #if RARE_ENUMS
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    goto case CorElementType.ELEMENT_TYPE_U1;
+
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     goto case CorElementType.ELEMENT_TYPE_U2;
 
@@ -1225,6 +1228,9 @@ namespace System
                     return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
 
 #if RARE_ENUMS
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    goto case CorElementType.ELEMENT_TYPE_U1;
+
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     goto case CorElementType.ELEMENT_TYPE_U2;
 
@@ -1272,6 +1278,7 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I => Unsafe.As<byte, IntPtr>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U => Unsafe.As<byte, UIntPtr>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_CHAR => Unsafe.As<byte, char>(ref data).GetHashCode(),
+                CorElementType.ELEMENT_TYPE_BOOLEAN => Unsafe.As<byte, bool>(ref data).GetHashCode(),
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -1324,6 +1331,9 @@ namespace System
 
                 case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    goto case CorElementType.ELEMENT_TYPE_U1;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     goto case CorElementType.ELEMENT_TYPE_U2;
