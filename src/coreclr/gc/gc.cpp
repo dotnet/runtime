@@ -31666,7 +31666,7 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
         size_t basic_region_size = (size_t)1 << min_segment_size_shr;
         assert (heap_segment_gen_num (region) == heap_segment_plan_gen_num (region));
 
-        uint8_t surv_ratio = (uint8_t)(((double)heap_segment_survived (region) * 100.0) / (double)basic_region_size);
+        int surv_ratio = (int)(((double)heap_segment_survived (region) * 100.0) / (double)basic_region_size);
         dprintf (2222, ("SSIP: region %p surv %hu / %zd = %d%%(%d)",
             heap_segment_mem (region),
             heap_segment_survived (region),
