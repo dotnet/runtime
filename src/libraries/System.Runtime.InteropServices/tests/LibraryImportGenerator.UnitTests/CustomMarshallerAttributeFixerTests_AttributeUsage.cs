@@ -210,6 +210,28 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
+        public async Task NonGenericManagedTypeNestedInGenericWithMarshallerEntryPointMatchingArity_ReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices.Marshalling;
+
+                class Container<T, U>
+                {
+                    public class ManagedType {}
+                }
+
+                [CustomMarshaller(typeof({|#0:Container<,>.ManagedType|}), MarshalMode.ManagedToUnmanagedIn, typeof(MarshallerType<>))]
+                static class MarshallerType<V>
+                {
+                    public static int ConvertToUnmanaged(int i) => 0;
+                }
+                """;
+
+            await VerifyCS.VerifyAnalyzerAsync(source,
+                VerifyCS.Diagnostic(ManagedTypeMustBeClosedOrMatchArityRule).WithLocation(0).WithArguments("Container<T, U>.ManagedType", "MarshallerType<V>"));
+        }
+
+        [Fact]
         public async Task PlaceholderManagedTypeWithMarshallerEntryPointMatchingArity_DoesNotReportDiagnostic()
         {
             string source = """
