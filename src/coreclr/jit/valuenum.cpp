@@ -5135,7 +5135,10 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     //   string GetName() => MyStr.Name; // <- loadTree
     //
     if ((baseAddr == nullptr) && loadTree->TypeIs(TYP_REF) &&
-        (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic) && (fieldSeq->GetOffset() == TARGET_POINTER_SIZE))
+        // it should be a static field
+        (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic) &&
+        // boxed static to be precise
+        (fieldSeq->GetOffset() == TARGET_POINTER_SIZE))
     {
         uint8_t buffer[TARGET_POINTER_SIZE] = {0};
         if (((UINT)offset < INT_MAX) &&
