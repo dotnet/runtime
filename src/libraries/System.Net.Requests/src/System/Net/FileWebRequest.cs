@@ -60,10 +60,7 @@ namespace System.Net
             get { return _contentLength; }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentException(SR.net_clsmall, nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _contentLength = value;
             }
         }

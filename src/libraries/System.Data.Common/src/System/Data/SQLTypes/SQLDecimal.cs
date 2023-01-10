@@ -1157,10 +1157,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
             }
 
-            if (destination.Length < 4)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destination));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, 4, nameof(destination));
 
             destination[0] = _data1;
             destination[1] = _data2;

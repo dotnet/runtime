@@ -360,10 +360,10 @@ namespace System.Net.Sockets
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue);
+
             return (int)totalMilliseconds;
         }
 
