@@ -19352,25 +19352,26 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
 
                         // op1Dup = Sse2.ShiftRightLogical128BitLane(op1Dup, 4)
                         op1Dup = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(4, TYP_INT),
-                                                         NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType, simdSize,
-                                                         isSimdAsHWIntrinsic);
+                                                          NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType,
+                                                          simdSize, isSimdAsHWIntrinsic);
 
                         // op2Dup = Sse2.ShiftRightLogical128BitLane(op2Dup, 4)
                         op2Dup = gtNewSimdHWIntrinsicNode(type, op2Dup, gtNewIconNode(4, TYP_INT),
-                                                          NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType, simdSize,
-                                                          isSimdAsHWIntrinsic);
+                                                          NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType,
+                                                          simdSize, isSimdAsHWIntrinsic);
 
                         // op2Dup = Sse2.Multiply(op1Dup.AsUInt32(), op2Dup.AsUInt32()).AsInt32()
-                        op2Dup = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, NI_SSE2_Multiply, CORINFO_TYPE_ULONG, simdSize,
-                                                          isSimdAsHWIntrinsic);
+                        op2Dup = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
+                                                          simdSize, isSimdAsHWIntrinsic);
 
                         // op2Dup = Sse2.Shuffle(op2Dup, (0, 0, 2, 0))
-                        op2Dup = gtNewSimdHWIntrinsicNode(type, op2Dup, gtNewIconNode(SHUFFLE_XXZX, TYP_INT), NI_SSE2_Shuffle,
-                                                          simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                        op2Dup =
+                            gtNewSimdHWIntrinsicNode(type, op2Dup, gtNewIconNode(SHUFFLE_XXZX, TYP_INT),
+                                                     NI_SSE2_Shuffle, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
                         // op1 = Sse2.Multiply(op1.AsUInt32(), op2.AsUInt32()).AsInt32()
-                        op1 = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE2_Multiply, CORINFO_TYPE_ULONG,
-                                                       simdSize, isSimdAsHWIntrinsic);
+                        op1 = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE2_Multiply, CORINFO_TYPE_ULONG, simdSize,
+                                                       isSimdAsHWIntrinsic);
 
                         // op1 = Sse2.Shuffle(op1, (0, 0, 2, 0))
                         op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(SHUFFLE_XXZX, TYP_INT), NI_SSE2_Shuffle,
@@ -22797,7 +22798,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
             GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
 
             op1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
-                                            isSimdAsHWIntrinsic);
+                                           isSimdAsHWIntrinsic);
 
             tmp1 = op1Dup;
         }
@@ -22970,7 +22971,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
             GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
 
             op1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
-                                            isSimdAsHWIntrinsic);
+                                           isSimdAsHWIntrinsic);
 
             tmp1 = op1Dup;
         }
