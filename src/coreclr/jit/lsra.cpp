@@ -683,7 +683,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
             availableRegs[i] = &availableDoubleRegs;
         }
 #ifdef FEATURE_SIMD
-        else if (varTypeIsSIMD(thisType))
+        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
         {
             availableRegs[i] = &availableDoubleRegs;
         }
