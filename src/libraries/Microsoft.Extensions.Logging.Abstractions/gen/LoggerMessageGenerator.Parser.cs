@@ -312,6 +312,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             qualifier = "ref";
                                         }
+                                        else if (paramSymbol.RefKind == RefKind.Out)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterOut, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));

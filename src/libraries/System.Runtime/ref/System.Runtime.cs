@@ -12549,6 +12549,12 @@ namespace System.Runtime.CompilerServices
     {
         public PreserveBaseOverridesAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Module, AllowMultiple=false, Inherited=false)]
+    public sealed partial class RefSafetyRulesAttribute : System.Attribute
+    {
+        public RefSafetyRulesAttribute(int version) { }
+        public int Version { get { throw null; } }
+    }
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed class RequiredMemberAttribute : System.Attribute
     {
