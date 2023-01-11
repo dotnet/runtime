@@ -251,6 +251,8 @@ namespace Regression.UnitTests
             {
                 Assert.Equal(GetCustomAttributeProps(baselineImport, custAttr), GetCustomAttributeProps(currentImport, custAttr));
             }
+
+            Assert.Equal(GetVersionString(baselineImport), GetVersionString(currentImport));
         }
 
         /// <summary>
@@ -1705,6 +1707,13 @@ namespace Regression.UnitTests
                 import.CloseEnum(hcorenum);
             }
             return tokens;
+        }
+
+        private static string GetVersionString(IMetaDataImport2 import)
+        {
+            var buffer = new char[CharBuffer];
+            Assert.True(0 <= import.GetVersionString(buffer, buffer.Length, out int written));
+            return new string(buffer, 0, Math.Min(written, buffer.Length));
         }
 
         private static string GetUserString(IMetaDataImport import, uint tk)
