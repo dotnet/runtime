@@ -16,7 +16,8 @@
   <!-- IlcDynamicBuildPropertyDependencies affects the inputs and outputs of BuildAllFrameworkLibrariesCore.
        This runs the dependencies always, then uses the new inputs and output to determine if BuildAllFrameworkLibrariesCore needs to run. -->
   <Target Name="BuildAllFrameworkLibraries"
-    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);BuildAllFrameworkLibrariesCore" />
+    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
+    BeforeTargets="BuildAllFrameworkLibrariesAsSingleLib" />
 
   <Target Name="BuildAllFrameworkLibrariesCore"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
