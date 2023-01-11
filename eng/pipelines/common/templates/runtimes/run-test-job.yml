@@ -433,6 +433,17 @@ jobs:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
+        # helixpublishwitharcade.proj processes one scenario per parallel MSBuild invocation. Each invocation only
+        # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
+        # computationally intensive. We want Helix to be provided with all the possible work items in up front,
+        # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
+        # to at least the maximum number of scenarios to be processed in a testGroup.
+        #
+        # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
+        # a problem to always do it. Thus, we only exempt this setting for a few cases.
+        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'clrinterpreter', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
+          msbuildParallelism: '/maxcpucount:55'
+
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
