@@ -233,8 +233,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "ms-MY", new [] { "ms-MY" } };
             yield return new object[] { "mt", new [] { "mt" }, true };
             yield return new object[] { "mt-MT", new [] { "mt-MT" }, true };
-            yield return new object[] { "nb", new [] { "nb" }, true };
-            yield return new object[] { "nb-NO", new [] { "nb-NO" }, true };
+            yield return new object[] { "nb", new [] { "nb" } };
+            yield return new object[] { "nb-NO", new [] { "nb-NO" } };
             yield return new object[] { "ne", new [] { "ne" }, true };
             yield return new object[] { "ne-NP", new [] { "ne-NP" }, true };
             yield return new object[] { "nl", new [] { "nl" } };
@@ -242,7 +242,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
             yield return new object[] { "nn", new [] { "nn" }, true };
             yield return new object[] { "nn-NO", new [] { "nn-NO" }, true };
-            yield return new object[] { "no", new [] { "no" }, true };
+            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nso", new [] { "nso" }, true };
             yield return new object[] { "nso-ZA", new [] { "nso-ZA" }, true };
             yield return new object[] { "oc", new [] { "oc" }, true };
