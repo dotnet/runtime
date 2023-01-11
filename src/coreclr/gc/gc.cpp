@@ -20337,7 +20337,6 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 
         // We don't have memory to commit the mark array so we cannot use the new region.
         decommit_region (region, gen_to_oh (gen_number), heap_number);
-        delete_region (region);
         return false;
     }
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
@@ -41068,14 +41067,6 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
         {
             heap_segment* region = global_regions_to_decommit[kind].unlink_region_front();
             size_t size = decommit_region (region, recorded_committed_free_bucket, -1);
-#ifdef MULTIPLE_HEAPS
-            gc_heap* hp = heap_segment_heap (region);
-#else
-            gc_heap* hp = pGenGCHeap;
-#endif
-            hp->decommit_mark_array_by_seg (region);
-            region->flags &= ~(heap_segment_flags_ma_committed);
-            delete_region (region);
             decommit_size += size;
             if (decommit_size >= max_decommit_step_size)
             {
@@ -41133,11 +41124,18 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
             end,
             size));
     }
-    return size;
-}
 
-void gc_heap::delete_region (heap_segment* region)
-{
+    if ((region->flags & heap_segment_flags_ma_committed) != 0)
+    {
+#ifdef MULTIPLE_HEAPS
+        gc_heap* hp = heap_segment_heap (region);
+#else
+        gc_heap* hp = pGenGCHeap;
+#endif
+        hp->decommit_mark_array_by_seg (region);
+        region->flags &= ~(heap_segment_flags_ma_committed);
+    }
+
     if (use_large_pages_p)
     {
         assert (heap_segment_used (region) == heap_segment_mem (region));
@@ -41148,6 +41146,8 @@ void gc_heap::delete_region (heap_segment* region)
     }
     assert ((region->flags & heap_segment_flags_ma_committed) == 0);
     global_region_allocator.delete_region (get_region_start (region));
+
+    return size;
 }
 #endif //USE_REGIONS
 

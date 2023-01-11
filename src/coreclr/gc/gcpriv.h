@@ -2078,8 +2078,6 @@ protected:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     size_t decommit_region (heap_segment* region, int bucket, int h_number);
-    PER_HEAP_ISOLATED
-    void delete_region (heap_segment* region);
 #endif //USE_REGIONS
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
