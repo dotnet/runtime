@@ -112,8 +112,8 @@ namespace Regression.UnitTests
             PEMemoryBlock block = managedLibrary.GetMetadata();
 
             // Load metadata
-            IMetaDataImport baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
-            IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
+            IMetaDataImport2 baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
+            IMetaDataImport2 currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
 
             // Verify APIs
             Assert.Equal(ResetEnum(baselineImport), ResetEnum(currentImport));
@@ -174,6 +174,12 @@ namespace Regression.UnitTests
                     Assert.Equal(GetNativeCallConvFromSig(baselineImport, sig, sigLen), GetNativeCallConvFromSig(currentImport, sig, sigLen));
                     Assert.Equal(GetNameFromToken(baselineImport, methoddef), GetNameFromToken(currentImport, methoddef));
                     Assert.Equal(GetRVA(baselineImport, methoddef), GetRVA(currentImport, methoddef));
+
+                    var methodSpecs = AssertAndReturn(EnumMethodSpecs(baselineImport, methoddef), EnumMethodSpecs(currentImport, methoddef));
+                    foreach (var methodSpec in methodSpecs)
+                    {
+                        Assert.Equal(GetMethodSpecProps(baselineImport, methodSpec), GetMethodSpecProps(currentImport, methodSpec));
+                    }
                 }
 
                 var events = AssertAndReturn(EnumEvents(baselineImport, typedef), EnumEvents(currentImport, typedef));
@@ -214,6 +220,18 @@ namespace Regression.UnitTests
                 Assert.Equal(GetNameFromToken(baselineImport, typedef), GetNameFromToken(currentImport, typedef));
                 Assert.Equal(GetNestedClassProps(baselineImport, typedef), GetNestedClassProps(currentImport, typedef));
                 Assert.Equal(GetClassLayout(baselineImport, typedef), GetClassLayout(currentImport, typedef));
+
+                var genericParameters = AssertAndReturn(EnumGenericParameters(baselineImport, typedef), EnumGenericParameters(currentImport, typedef));
+                foreach (var genericParam in genericParameters)
+                {
+                    Assert.Equal(GetGenericParameterProps(baselineImport, genericParam), GetGenericParameterProps(currentImport, genericParam));
+
+                    var genericParameterConstraints = AssertAndReturn(EnumGenericParameterConstraints(baselineImport, genericParam), EnumGenericParameterConstraints(currentImport, genericParam));
+                    foreach (var constraint in genericParameterConstraints)
+                    {
+                        Assert.Equal(GetGenericParameterConstraintProps(baselineImport, constraint), GetGenericParameterConstraintProps(currentImport, constraint));
+                    }
+                }
             }
 
             var sigs = AssertAndReturn(EnumSignatures(baselineImport), EnumSignatures(currentImport));
@@ -338,16 +356,16 @@ namespace Regression.UnitTests
             return baseline;
         }
 
-        private static IMetaDataImport GetIMetaDataImport(IMetaDataDispenser disp, ref PEMemoryBlock block)
+        private static IMetaDataImport2 GetIMetaDataImport(IMetaDataDispenser disp, ref PEMemoryBlock block)
         {
             var flags = CorOpenFlags.ReadOnly;
-            var iid = typeof(IMetaDataImport).GUID;
+            var iid = typeof(IMetaDataImport2).GUID;
 
             void* pUnk;
             int hr = disp.OpenScopeOnMemory(block.Pointer, block.Length, flags, &iid, &pUnk);
             Assert.Equal(0, hr);
             Assert.NotEqual(0, (nint)pUnk);
-            var import = (IMetaDataImport)Marshal.GetObjectForIUnknown((nint)pUnk);
+            var import = (IMetaDataImport2)Marshal.GetObjectForIUnknown((nint)pUnk);
             Marshal.Release((nint)pUnk);
             return import;
         }
@@ -1499,6 +1517,129 @@ namespace Regression.UnitTests
                 import.CloseEnum(hcorenum);
             }
             return tokens;
+        }
+
+        private static List<uint> EnumGenericParameters(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumGenericParameters(ref hcorenum, tk, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<nuint> GetGenericParameterProps(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<nuint> values = new();
+            var name = new char[CharBuffer];
+            int hr = import.GetGenericParamProps(tk, out uint sequenceNumber, out uint flags, out uint owner, out _, name, name.Length, out int nameWritten);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(sequenceNumber);
+                values.Add(flags);
+                values.Add(owner);
+                uint hash = HashCharArray(name, nameWritten);
+                values.Add(hash);
+            }
+            return values;
+        }
+
+        private static List<uint> EnumGenericParameterConstraints(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumGenericParamConstraints(ref hcorenum, tk, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<nuint> GetGenericParameterConstraintProps(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<nuint> values = new();
+            var name = new char[CharBuffer];
+            int hr = import.GetGenericParamConstraintProps(tk, out uint tkParam, out uint tkContraintType);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(tkParam);
+                values.Add(tkContraintType);
+            }
+            return values;
+        }
+
+        private static List<uint> EnumMethodSpecs(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<uint> tokens = new();
+            var tokensBuffer = new uint[EnumBuffer];
+            nint hcorenum = 0;
+            try
+            {
+                while (0 == import.EnumMethodSpecs(ref hcorenum, tk, tokensBuffer, tokensBuffer.Length, out uint returned)
+                    && returned != 0)
+                {
+                    for (int i = 0; i < returned; ++i)
+                    {
+                        tokens.Add(tokensBuffer[i]);
+                    }
+                }
+            }
+            finally
+            {
+                Assert.Equal(0, import.CountEnum(hcorenum, out int count));
+                Assert.Equal(count, tokens.Count);
+                import.CloseEnum(hcorenum);
+            }
+            return tokens;
+        }
+
+        private static List<nuint> GetMethodSpecProps(IMetaDataImport2 import, uint tk = 0)
+        {
+            List<nuint> values = new();
+            int hr = import.GetMethodSpecProps(tk, out uint tkParent, out nint ppvSigBlob, out uint pcbSigBlob);
+
+            values.Add((uint)hr);
+            if (hr >= 0)
+            {
+                values.Add(tkParent);
+                values.Add((nuint)ppvSigBlob);
+                values.Add(pcbSigBlob);
+            }
+            return values;
         }
 
         private static List<uint> EnumSignatures(IMetaDataImport import)
