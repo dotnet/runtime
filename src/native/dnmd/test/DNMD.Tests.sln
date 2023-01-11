@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.UnitTests", "Reg
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.Performance", "Regression.Performance\Regression.Performance.csproj", "{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Regression.TargetAssembly", "Regression.TargetAssembly\Regression.TargetAssembly.ilproj", "{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3ED137D0-B5A2-4309-BDA5-BD9DE3FFC752}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3BEEF3D-C137-49AC-96DD-E5B93E2F4C21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

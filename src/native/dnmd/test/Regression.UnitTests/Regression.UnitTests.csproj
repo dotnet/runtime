@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="$(ArtifactsDir)bin/Regression.TargetAssembly/$(TargetFrameworkLatest)/Regression.TargetAssembly.dll" />
+    <ProjectReference Include="../Regression.TargetAssembly/Regression.TargetAssembly.ilproj" />
   </ItemGroup>
 
   <ItemGroup>
