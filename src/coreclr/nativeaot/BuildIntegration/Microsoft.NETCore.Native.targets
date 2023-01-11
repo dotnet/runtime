@@ -129,7 +129,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcToolsPath Condition="'$(IlcToolsPath)' == ''">$(IlcHostPackagePath)\tools\</IlcToolsPath>
       <IlcSdkPath Condition="'$(IlcSdkPath)' == ''">$(RuntimePackagePath)\sdk\</IlcSdkPath>
       <IlcFrameworkPath Condition="'$(IlcFrameworkPath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkPath>
-      <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
+      <IlcFrameworkNativePath Condition="'$(RuntimePackagePath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(RuntimePackagePath)\framework\</IlcFrameworkNativePath>
+      <IlcFrameworkNativePath Condition="'$(IlcFrameworkPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
