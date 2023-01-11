@@ -23071,15 +23071,15 @@ void gc_heap::sync_promoted_bytes()
                     total_old_card_surv += g_heaps[hp_idx]->old_card_survived_per_region[region_index];
                 }
 
-                heap_segment_survived (current_region) = (int)total_surv;
+                heap_segment_survived (current_region) = total_surv;
                 heap_segment_old_card_survived (current_region) = (int)total_old_card_surv;
 #else
-                heap_segment_survived (current_region) = (int)(survived_per_region[region_index]);
+                heap_segment_survived (current_region) = survived_per_region[region_index];
                 heap_segment_old_card_survived (current_region) =
                     (int)(old_card_survived_per_region[region_index]);
 #endif //MULTIPLE_HEAPS
 
-                dprintf (REGIONS_LOG, ("region #%d %Ix surv %Id, old card surv %Id",
+                dprintf (REGIONS_LOG, ("region #%d %Ix surv %zd, old card surv %Id",
                     region_index,
                     heap_segment_mem (current_region),
                     heap_segment_survived (current_region),
@@ -23273,8 +23273,8 @@ void gc_heap::equalize_promoted_bytes()
                 {
                     break;
                 }
-                assert (surv_per_heap[i] >= (size_t)heap_segment_survived (region));
-                dprintf (REGIONS_LOG, ("heap: %d surv: %Id - %Id = %Id",
+                assert (surv_per_heap[i] >= heap_segment_survived (region));
+                dprintf (REGIONS_LOG, ("heap: %d surv: %Id - %zd = %Id",
                     i,
                     surv_per_heap[i],
                     heap_segment_survived (region),
@@ -23285,7 +23285,7 @@ void gc_heap::equalize_promoted_bytes()
                 heap_segment_next (region) = surplus_regions;
                 surplus_regions = region;
 
-                max_survived = max (max_survived, (size_t)heap_segment_survived (region));
+                max_survived = max (max_survived, heap_segment_survived (region));
             }
             if (surv_per_heap[i] < avg_surv_per_heap)
             {
@@ -23303,7 +23303,7 @@ void gc_heap::equalize_promoted_bytes()
         heap_segment* next_region;
         for (heap_segment* region = surplus_regions; region != nullptr; region = next_region)
         {
-            int size_class = (int)(heap_segment_survived (region)*survived_scale_factor);
+            size_t size_class = (size_t)(heap_segment_survived (region)*survived_scale_factor);
             assert ((0 <= size_class) && (size_class < NUM_SIZE_CLASSES));
             next_region = heap_segment_next (region);
             heap_segment_next (region) = surplus_regions_by_size_class[size_class];
@@ -23365,7 +23365,7 @@ void gc_heap::equalize_promoted_bytes()
             g_heaps[heap_num]->thread_rw_region_front (gen_idx, region);
 
             // adjust survival for this heap
-            dprintf (REGIONS_LOG, ("heap: %d surv: %Id + %Id = %Id",
+            dprintf (REGIONS_LOG, ("heap: %d surv: %Id + %zd = %Id",
                 heap_num,
                 surv_per_heap[heap_num],
                 heap_segment_survived (region),
@@ -31340,7 +31340,7 @@ heap_segment* gc_heap::find_first_valid_region (heap_segment* region, bool compa
     if (heap_segment_swept_in_plan (current_region))
     {
         int gen_num = heap_segment_gen_num (current_region);
-        dprintf (REGIONS_LOG, ("threading SIP region %Ix surv %Id onto gen%d",
+        dprintf (REGIONS_LOG, ("threading SIP region %Ix surv %zd onto gen%d",
             heap_segment_mem (current_region), heap_segment_survived (current_region), gen_num));
 
         generation* gen = generation_of (gen_num);
@@ -31667,7 +31667,7 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
         assert (heap_segment_gen_num (region) == heap_segment_plan_gen_num (region));
 
         int surv_ratio = (int)(((double)heap_segment_survived (region) * 100.0) / (double)basic_region_size);
-        dprintf (2222, ("SSIP: region %Ix surv %Id / %Id = %d%%(%d)",
+        dprintf (2222, ("SSIP: region %p surv %d / %zd = %d%%(%d)",
             heap_segment_mem (region),
             heap_segment_survived (region),
             basic_region_size,
@@ -31875,14 +31875,14 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
 
 #ifdef _DEBUG
     size_t region_index = get_basic_region_index_for_address (heap_segment_mem (region));
-    dprintf (REGIONS_LOG, ("region #%d %Ix survived %Id, %s recorded %Id",
+    dprintf (REGIONS_LOG, ("region #%d %Ix survived %zd, %s recorded %Id",
         region_index, heap_segment_mem (region), survived,
-        ((survived == (size_t)heap_segment_survived (region)) ? "same as" : "diff from"),
+        ((survived == heap_segment_survived (region)) ? "same as" : "diff from"),
         heap_segment_survived (region)));
 #ifdef MULTIPLE_HEAPS
-    assert (survived <= (size_t)heap_segment_survived (region));
+    assert (survived <= heap_segment_survived (region));
 #else
-    assert (survived == (size_t)heap_segment_survived (region));
+    assert (survived == heap_segment_survived (region));
 #endif //MULTIPLE_HEAPS
 #endif //_DEBUG
 
@@ -45286,8 +45286,14 @@ HRESULT GCHeap::Initialize()
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
 
-    // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would 
-    // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations 
+    // Constraining the size of region size to be < 2 GB.       
+    if (gc_region_size >= MAX_REGION_SIZE) 
+    {
+        return CLR_E_GC_BAD_REGION_SIZE;
+    }
+
+    // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would
+    // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations
     // below (unless its configured explictly) such that there are at least 2 regions available
     // except for the smallest case. Now the lowest limit possible is 4mb. 
     if (gc_region_size == 0)
