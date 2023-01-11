@@ -7,9 +7,10 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+    <IcuFileName>icudt.dat</IcuFileName>
   </PropertyGroup>
 
-  <!-- 
+  <!--
     Add special trait for running local timezone validation tests on certain devices e.g. in CI to make sure the local timezone is correct and not UTC. Disable these tests otherwise.
   -->
   <PropertyGroup>
