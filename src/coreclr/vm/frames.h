@@ -1907,7 +1907,7 @@ protected:
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
     ArgumentRegisters m_argumentRegisters;
-#elif defined (TARGET_LOONGARCH64)
+#elif defined (TARGET_LOONGARCH64) || defined (TARGET_RISCV64)
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;

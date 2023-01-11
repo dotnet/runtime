@@ -96,7 +96,7 @@ struct ArgLocDesc
 #if defined(TARGET_ARM64)
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         m_structFields = STRUCT_NO_FLOAT_FIELD;
 #endif
 #if defined(UNIX_AMD64_ABI)
@@ -965,6 +965,7 @@ protected:
 
 #ifdef TARGET_RISCV64
     int             m_idxGenReg;        // Next general register to be assigned a value
+    int             m_idxStack;         // Next stack slot to be assigned a value
     int             m_idxFPReg;         // Next FP register to be assigned a value
 #endif
 
@@ -1218,7 +1219,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #elif defined(TARGET_RISCV64)
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
-
         m_idxFPReg = 0;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
@@ -1960,7 +1960,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         break;
 
     case ELEMENT_TYPE_R4:
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         flags |= STRUCT_FLOAT_FIELD_ONLY_ONE << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP
@@ -1970,7 +1970,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
         break;
 
     case ELEMENT_TYPE_R8:
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         flags |= (STRUCT_FLOAT_FIELD_ONLY_ONE | STRUCT_FIRST_FIELD_SIZE_IS8) << RETURN_FP_SIZE_SHIFT;
 #else
 #ifndef ARM_SOFTFP

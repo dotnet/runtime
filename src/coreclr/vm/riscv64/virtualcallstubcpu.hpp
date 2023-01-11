@@ -10,7 +10,7 @@
 #define RESOLVE_STUB_FIRST_DWORD 0x0
 #define VTABLECALL_STUB_FIRST_DWORD 0x0
 
-#define LOOKUP_STUB_FIRST_DWORD 0x00000097
+#define LOOKUP_STUB_FIRST_DWORD 0x00000f97
 
 #define USES_LOOKUP_STUBS   1
 
@@ -36,18 +36,18 @@ public:
 
     void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
     {
-        // auipc ra, 0
+        // auipc t6, 0
         // ld    t2, (12 + 12)(ra)
-        // ld    ra, (4 + 12)(ra)
-        // jalr  x0, ra, 0
+        // ld    t6, (4 + 12)(ra)
+        // jalr  x0, t6, 0
         //
         // _resolveWorkerTarget
         // _token
 
-        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; //auipc ra, 12  //0x00000097
-        _stub._entryPoint[1] = 0x0180b383; //ld   t2, 24(ra)
-        _stub._entryPoint[2] = 0x0100b083; //ld   ra, 16(ra)
-        _stub._entryPoint[3] = 0x00008067; //jalr r0, ra, 0
+        _stub._entryPoint[0] = LOOKUP_STUB_FIRST_DWORD; //auipc ra, 0  //0x00000097
+        _stub._entryPoint[1] = 0x018fb383; //ld   t2, 24(ra)
+        _stub._entryPoint[2] = 0x010fbf83; //ld   ra, 16(ra)
+        _stub._entryPoint[3] = 0x000f8067; //jalr r0, ra, 0
 
         _stub._resolveWorkerTarget = resolveWorkerTarget;
         _stub._token               = dispatchToken;
