@@ -836,6 +836,22 @@ typedef struct
     UINT32 reserved;
 } COR_PRF_EVENT_DATA;
 
+typedef struct
+{
+    UINT64 Ptr;
+    UINT32 Size;
+    UINT32 Type;
+} COR_PRF_FILTER_DATA;
+
+typedef STDMETHODCALLTYPE void EventPipeProviderCallback(
+    const UINT8 *source_id,
+    UINT32 is_enabled,
+    UINT8 level,
+    UINT64 match_any_keywords,
+    UINT64 match_all_keywords,
+    COR_PRF_FILTER_DATA *filter_data,
+    void *callback_data);
+
 typedef enum _COR_PRF_HANDLE_TYPE
 {
     COR_PRF_HANDLE_TYPE_WEAK    = 0x1,
@@ -4270,6 +4286,11 @@ interface ICorProfilerInfo14 : ICorProfilerInfo13
                     [in] ULONG cObjectRanges,
                     [out] ULONG *pcObjectRanges,
                     [out, size_is(cObjectRanges), length_is(*pcObjectRanges)] COR_PRF_NONGC_HEAP_RANGE ranges[]);
+
+    HRESULT EventPipeCreateProvider2(
+                [in, string] const WCHAR        *providerName,
+                [in]  EventPipeProviderCallback *pCallback,
+                [out] EVENTPIPE_PROVIDER        *pProvider);
 }
 
 /*
