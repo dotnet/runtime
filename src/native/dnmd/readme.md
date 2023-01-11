@@ -14,8 +14,13 @@
 
 ## Test
 
-The `test/` directory contains all product tests.
+The `test/` directory contains all product tests. The native components for
+DNMD should be built first. See the Build section.
 
 The `DNMD.Tests.sln` file can be loaded in Visual Studio to run associated tests.
 The managed tests will use the latest build of the DNMD libraries. Keep in mind
-the native assets are built with an configuration independent of Visual Studio.
+the native assets are built with a configuration independent of the tests.
+
+The `test/Regression.TargetAssembly` must build built prior to running some tests.
+This project is written in IL and thus difficult to chain into the Visual Studio
+scenario.
