@@ -17,7 +17,7 @@
        This runs the dependencies always, then uses the new inputs and output to determine if BuildAllFrameworkLibrariesCore needs to run. -->
   <Target Name="BuildAllFrameworkLibraries"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
-    BeforeTargets="BuildAllFrameworkLibrariesAsSingleLib" />
+    BeforeTargets="BuildAllFrameworkLibrariesCore" />
 
   <Target Name="BuildAllFrameworkLibrariesCore"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
