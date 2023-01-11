@@ -157,6 +157,16 @@
         <target state="translated">여러 로깅 메서드가 한 클래스 내에서 동일한 이벤트 ID를 사용할 수는 없음</target>
         <note />
       </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
         <target state="translated">템플릿 {0}이(가) 로깅 메서드에 인수로 제공되지 않음</target>
