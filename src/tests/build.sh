@@ -358,7 +358,7 @@ else
 fi
 
 # Get the number of processors available to the scheduler
-platform="$(uname -s | tr '[A-Z]' '[a-z]')"
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
 if [[ "$platform" == "freebsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then

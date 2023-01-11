@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-OSName=$(uname -s | tr '[A-Z]' '[a-z]')
+OSName=$(uname -s | tr '[:upper:]' '[:lower:]')
 case $OSName in
     darwin)
         OS=osx

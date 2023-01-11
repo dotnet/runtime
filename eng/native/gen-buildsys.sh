@@ -61,7 +61,7 @@ done
 
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
-    platform="$(uname -s | tr '[A-Z]' '[a-z]')"
+    platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
     # OSX doesn't use rootfs
     if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Use uname to determine what the OS is.
-OSName=$(uname -s | tr '[A-Z]' '[a-z]')
+OSName=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 if command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android; then
     OSName="android"
