@@ -1,6 +1,8 @@
 <Project>
   <UsingTask TaskName="AppleAppBuilderTask" 
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="LibraryBuilderTask" 
+             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
@@ -16,6 +18,98 @@
 
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
+    </PropertyGroup>
+    <PropertyGroup>
+      <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
+      <_AotModuleTablePath>$(AppleAppBundleDir)\modules.m</_AotModuleTablePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_TargetsDevice Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</_TargetsDevice>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- static vs dylibs -->
+      <!-- add all non stub libs first -->
+      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
+      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+      <!-- libmonosgen needs to be statically linked always -->
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries 
+        Condition="'$(_TargetsDevice)' == 'true'"
+        Include="$(AppleAppDir)\*.a"
+        Exclude="$(AppleAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries 
+        Condition="'$(_TargetsDevice)' == ''"
+        Include="$(AppleAppDir)\*.dylib;$(AppleAppDir)\libmonosgen*.a;$(AppleAppDir)\*-static.a"
+        Exclude="$(AppleAppDir)\libmonosgen*.dylib;$(AppleAppDir)\*-stub-static.a" />
+
+      <!-- and not contains %(_UsedComponents)-static*.a -->
+      <!-- if count > 0, remove all *-static components except in _UsedComponents -->
+      <!-- if count > 0, include all stubs except the ones in _UsedComponents -->
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' &gt; 0"
+        Remove="$(AppleAppDir)\libmono-component-*-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' &gt; 0"
+        Include="$(AppleAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' == 0"
+        Remove="$(AppleAppDir)\*-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' == 0"
+        Include="$(AppleAppDir)\*-stub-static.a" />
+    </ItemGroup>
+
+    <!-- common linker arguments for app and library builds -->
+    <ItemGroup>
+      <_CommonLinkerArgs Include="-framework Foundation" />
+      <_CommonLinkerArgs Include="-framework Security" />
+      <_CommonLinkerArgs Include="-framework GSS" />
+      <_CommonLinkerArgs Include="-lz" />
+      <_CommonLinkerArgs Include="-lc++" />
+      <_CommonLinkerArgs Include="-liconv" />
+      <_CommonLinkerArgs Include="-Wl,-exported_symbols_list symbols.txt" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <_RuntimeSymbolsToKeep>
+_register_aot_modules
+_mono_jit_init_version
+_mono_jit_exec
+_mono_assembly_get_name
+_mono_assembly_name_get_culture
+_mono_assembly_name_get_name
+_mono_assembly_open
+_mono_class_get_method_from_name
+_mono_class_get_name
+_mono_class_get_namespace
+_mono_debug_init
+_mono_dllmap_insert
+_mono_domain_get
+_mono_gc_init_finalizer_thread
+_mono_get_exception_class
+_mono_install_assembly_preload_hook
+_mono_install_load_aot_data_hook
+_mono_install_unhandled_exception_hook
+_mono_jit_cleanup
+_mono_jit_parse_options
+_mono_jit_set_aot_mode
+_mono_object_get_class
+_mono_object_get_virtual_method
+_mono_runtime_invoke
+_mono_set_crash_chaining
+_mono_set_signal_chaining
+_mono_string_to_utf8
+_mono_trace_set_log_handler
+_monovm_initialize
+_monovm_runtimeconfig_initialize
+
+      </_RuntimeSymbolsToKeep>
     </PropertyGroup>
   </Target>
 
@@ -44,6 +138,10 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLibrary)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
     </PropertyGroup>
 
     <ItemGroup>
@@ -89,16 +187,17 @@
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(_AOTMode)"
-        OutputType="AsmOnly"
-        Assemblies="@(_AotInputAssemblies)"
-        AotModulesTablePath="$(AppleAppBundleDir)\modules.m"
+        AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
-        UseLLVM="$(MonoEnableLLVM)"
+        Assemblies="@(_AotInputAssemblies)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
+        IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LLVMPath="$(MonoAotCrossDir)"
-        IntermediateOutputPath="$(_MobileIntermediateOutputPath)">
+        Mode="$(_AOTMode)"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        OutputType="AsmOnly"
+        UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
     </MonoAOTCompiler>
 
@@ -122,7 +221,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
+        MonoRuntimeHeaders="$(_MonoHeaderPath)"
         Assemblies="@(_AppleAssembliesInternal)"
         MainLibraryFileName="$(MainLibraryFileName)"
         ForceAOT="$(RunAOTCompilation)"

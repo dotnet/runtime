@@ -5243,9 +5243,12 @@ MONO_RESTORE_WARNING
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
 						slen = mono_metadata_decode_value (named, &named);
+						slen = slen + strlen(acfg->user_symbol_prefix);
 						export_name = (char *)g_malloc (slen + 1);
 						memcpy (export_name, named, slen);
 						export_name [slen] = 0;
+
+						strcat(export_name, )
 					}
 				}
 				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
@@ -5256,7 +5259,7 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
-					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+					g_string_append_printf (export_symbols, "%s\n", export_name);
 				}
 			}
 

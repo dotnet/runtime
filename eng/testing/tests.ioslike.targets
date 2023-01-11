@@ -30,6 +30,8 @@
     <RunScriptCommand>$(_AOTBuildCommand) $(_AfterBuildCommands)</RunScriptCommand>
   </PropertyGroup>
 
+  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props"
+          Condition="'$(BuildTestsOn)' == 'local'" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.props"
           Condition="'$(BuildTestsOn)' == 'local'" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.InTree.targets"

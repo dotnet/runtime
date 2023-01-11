@@ -1,0 +1,29 @@
+<Project>
+  <UsingTask TaskName="LibraryBuilderTask" 
+             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
+
+  <Target Name="_BuildNativeLibrary"
+          Condition="'$(RunAOTCompilation)' == 'true'">
+
+    <ItemGroup>
+      <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
+      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <_ExtraLinkerArgs Include="@(_RuntimeSymbolsToKeep)" />
+    </ItemGroup>
+
+    <WriteLinesToFile 
+      File="$(AppleAppBundleDir)symbols.txt" 
+      Lines="$(_RuntimeSymbolsToKeep)" 
+      Overwrite="true" />
+
+    <LibraryBuilderTask
+      Assemblies="@(_AppleAssembliesInternal)"
+      ExtraLinkerArguments="@(_ExtraLinkerArgs)"
+      ExtraSources="@(_ExtraLibrarySources)"
+      Name="$(AssemblyName)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      OutputDirectory="$(AppleAppBundleDir)"
+      RuntimeLibraries="@(_RuntimeLibraries)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\*.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="LibraryBuilder.cs" />
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
+    <Compile Include="..\Common\Builders\AppBuilderTask.cs" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
+
+</Project>

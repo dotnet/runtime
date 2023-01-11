@@ -66,6 +66,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - AotDataFile (when using UseAotDataFile=true)
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
+    ///   - ExportsFile (used in LibraryMode only)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -609,6 +610,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseStaticLinking)
         {
             aotArgs.Add($"static");
+        }
+
+        if (UseDirectPInvoke)
+        {
+            aotArgs.Add("direct-pinvoke");
         }
 
         if (UseDwarfDebug)

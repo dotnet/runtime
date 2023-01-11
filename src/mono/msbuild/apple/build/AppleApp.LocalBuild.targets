@@ -20,6 +20,7 @@
         $(AppleBuildSupportDir)
 -->
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)LibraryBuilder.targets" />
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
@@ -71,6 +72,7 @@
       <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MicrosoftNetCoreAppRuntimePackRidDir>
       <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
+      <LibraryBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(LibraryBuilderDir)', 'LibraryBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
       <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
       <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'RuntimeConfigParser.dll'))</MonoTargetsTasksAssemblyPath>
     </PropertyGroup>

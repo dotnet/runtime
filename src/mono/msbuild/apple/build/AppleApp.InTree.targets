@@ -10,6 +10,7 @@
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
+  <Import Project="..\..\common\LibraryBuilder.targets" />
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />
 
   <!-- Use local runtime pack -->
@@ -23,23 +24,5 @@
                                       '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
-
-  <Target Name="CopyAppZipToHelixTestDir"
-          Condition="'$(AppleCopyAppZipToHelixTestDir)' == 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish">
-    <PropertyGroup>
-      <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
-      <!-- Helix properties -->
-      <!-- AnyCPU as Platform-->
-      <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-      <HelixArchiveRoot>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'helix'))</HelixArchiveRoot>
-      <HelixArchiveRunOnlyRoot>$([MSBuild]::NormalizeDirectory($(HelixArchiveRoot), 'runonly'))</HelixArchiveRunOnlyRoot>
-      <HelixArchiveRunOnlyAppsDir>$([MSBuild]::NormalizeDirectory($(HelixArchiveRunOnlyRoot), $(OSPlatformConfig), $(WasmHelixTestAppRelativeDir)))</HelixArchiveRunOnlyAppsDir>
-      <ZippedApp>$(OutputPath)$(AssemblyName).zip</ZippedApp>
-    </PropertyGroup>
-    <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
-    <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
 </Project>
