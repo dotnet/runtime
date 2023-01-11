@@ -21,8 +21,8 @@ namespace Wasm.Build.Tests
          public static IEnumerable<object?[]> BuildAndRun_ShardData(bool aot, RunHost host)
             => ConfigWithAOTData(aot)
                 .Multiply(
-                    new object[] { "icudt_EFIGS.dat", "new string[] { \"en-US\", \"fr-FR\" }", "new string[] { \"pl-PL\", \"ko-KR\" \"cs-CZ\" }" },
-                    new object[] { "icudt_CJK.dat", "new string[] { \"en-GB\", \"zh-CN\" }", "new string[] { \"fr-FR\", \"hr-HR\", \"it-IT\" }" },
+                    new object[] { "icudt_EFIGS.dat", "new string[] { \"en-US\", \"fr-FR\", \"es-ES\" }", "new string[] { \"pl-PL\", \"ko-KR\", \"cs-CZ\" }" },
+                    new object[] { "icudt_CJK.dat", "new string[] { \"en-GB\", \"zh-CN\", \"ja-JP\" }", "new string[] { \"fr-FR\", \"hr-HR\", \"it-IT\" }" },
                     new object[] { "icudt_no_CJK.dat", "new string[] { \"en-AU\", \"fr-FR\", \"sk-SK\" }", "new string[] { \"ja-JP\", \"ko-KR\", \"zh-CN\"}" })
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
@@ -33,9 +33,12 @@ namespace Wasm.Build.Tests
 
             string[] expectedLocales = {expectedLocales};
             string[] missingLocales = {missingLocales};
+            int missingLocalesCnt = 0;
+            int expectedLocalesCnt = 0;
             foreach (var loc in expectedLocales)
             {{
                 var culture = new CultureInfo(loc);
+                expectedLocalesCnt++;
             }}
             foreach (var loc in missingLocales)
             {{
@@ -43,14 +46,18 @@ namespace Wasm.Build.Tests
                 {{
                     var culture = new CultureInfo(loc);
                 }}
-                catch()
+                catch(Exception)
                 {{
-                    Console.WriteLine(""failed"");
+                    missingLocalesCnt++;
                 }}
             }}
+            Console.WriteLine($""Missing locales count: {{missingLocalesCnt}}, expected locales count: {{expectedLocalesCnt}}."");
             return 42;
             ";
 
+
+        // on Chrome: when loading only EFIGS or only CJK, CoreLib's failure on culture not found cannot be easily caught:
+        // Encountered infinite recursion while looking up resource 'Argument_CultureNotSupported' in System.Private.CoreLib.
         [Theory]
         [MemberData(nameof(BuildAndRun_ShardData), parameters: new object[] { false, RunHost.All })]
         [MemberData(nameof(BuildAndRun_ShardData), parameters: new object[] { true, RunHost.All })]
@@ -68,13 +75,11 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programTest),
                                 DotnetWasmFromRuntimePack: true,
                                 PredefinedIcudt: shardName));
-            System.Console.WriteLine($"Build output: {output}");
 
             string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
                         test: output => {},
                         host: host, id: id);
-            Assert.Equal("failed\nfailed\nfailed\n", runOutput);
-            System.Console.WriteLine($"Run output: {runOutput}");
+            Assert.Contains("Missing locales count: 3, expected locales count: 3.", runOutput);
         }
     }
 }
