@@ -64,6 +64,7 @@ namespace Wasm.Build.Tests
         public void TestIcuShard(BuildArgs buildArgs, string shardName, string expectedLocales, string missingLocales, RunHost host, string id)
         {
             string projectName = $"shard_{shardName}_{buildArgs.Config}_{buildArgs.AOT}";
+            bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<IcuFileName>{shardName}</IcuFileName>");
@@ -73,7 +74,7 @@ namespace Wasm.Build.Tests
                             id: id,
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programTest),
-                                DotnetWasmFromRuntimePack: true,
+                                DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                                 PredefinedIcudt: shardName));
 
             string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
