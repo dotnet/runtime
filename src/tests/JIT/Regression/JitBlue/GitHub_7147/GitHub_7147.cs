@@ -67,7 +67,7 @@ namespace N
             return x == y;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             int errors = 0;
 

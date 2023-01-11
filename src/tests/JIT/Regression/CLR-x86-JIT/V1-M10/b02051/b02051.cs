@@ -9,7 +9,7 @@ namespace DefaultNamespace
     {
         public
         static
-        int Main(String[] args)
+        int Main()
         {
             UInt32 x = (0xFFFFFFFF);
             Int64 y = x;

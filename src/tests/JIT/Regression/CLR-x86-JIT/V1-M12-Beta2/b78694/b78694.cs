@@ -5,7 +5,7 @@ using System;
 
 public class Foo
 {
-    static public int Main(string[] args)
+    static public int Main()
     {
         double inf = Double.PositiveInfinity;
         System.Console.WriteLine(System.Math.Atan2(inf, inf));

@@ -5,7 +5,7 @@ namespace DefaultNamespace
 {
     public class Prob
     {
-        public static int Main(System.String[] Args)
+        public static int Main()
         {
             System.Console.WriteLine(System.Math.Exp(System.Double.PositiveInfinity));
             System.Console.WriteLine(System.Math.Exp(System.Double.NegativeInfinity));
