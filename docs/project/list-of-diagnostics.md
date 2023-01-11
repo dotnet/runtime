@@ -136,11 +136,11 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
 |  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
-|  __`SYSLIB1025`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1026`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1027`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1028`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
-|  __`SYSLIB1029`__ | *_`SYSLIB1024`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
+|  __`SYSLIB1026`__ | *_`SYSLIB1026`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1027`__ | *_`SYSLIB1026`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1028`__ | *_`SYSLIB1026`-`SYSLIB1029` reserved for logging._* |
+|  __`SYSLIB1029`__ | *_`SYSLIB1026`-`SYSLIB1029` reserved for logging._* |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
