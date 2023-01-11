@@ -4782,7 +4782,13 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
-    GenTreeFlags lastUse = lclNode->gtFlags & GTF_VAR_DEATH;
+    GenTreeFlags lastUse = GTF_EMPTY;
+    VARSET_TP*   deadFields;
+    if (((lclNode->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lclNode, &deadFields))
+    {
+        lastUse = GTF_VAR_DEATH;
+    }
+
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
