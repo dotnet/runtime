@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using ILCompiler;
 using ILCompiler.Dataflow;
 using ILLink.Shared.TypeSystemProxy;
 using Internal.TypeSystem;
