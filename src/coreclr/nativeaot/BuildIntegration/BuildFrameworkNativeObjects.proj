@@ -13,14 +13,11 @@
   <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
   <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
 
-  <!-- IlcDynamicBuildPropertyDependencies affects the inputs and outputs of BuildAllFrameworkLibrariesCore.
-       This runs the dependencies always, then uses the new inputs and output to determine if BuildAllFrameworkLibrariesCore needs to run. -->
   <Target Name="BuildAllFrameworkLibraries"
-    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
-    BeforeTargets="BuildAllFrameworkLibrariesCore" />
+    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" />
 
   <Target Name="BuildAllFrameworkLibrariesCore"
-    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
+    BeforeTargets="BuildAllFrameworkLibraries"
     Inputs="@(DefaultFrameworkAssemblies)"
     Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
     <ItemGroup>
