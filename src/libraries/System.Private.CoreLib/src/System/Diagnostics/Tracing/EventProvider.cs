@@ -1254,6 +1254,8 @@ namespace System.Diagnostics.Tracing
     }
 #endif
 
+#pragma warning disable CA1852 // EventProviderImpl is not derived from in all targets
+
     internal class EventProviderImpl
     {
         internal virtual void Register(EventSource eventSource)
@@ -1287,4 +1289,7 @@ namespace System.Diagnostics.Tracing
             return IntPtr.Zero;
         }
     }
+
+#pragma warning restore CA1852
+
 }
