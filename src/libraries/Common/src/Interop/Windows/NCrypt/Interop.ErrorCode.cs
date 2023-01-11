@@ -11,6 +11,7 @@ internal static partial class Interop
         internal enum ErrorCode : int
         {
             ERROR_SUCCESS = 0,
+            E_FAIL = unchecked((int)0x80004005),
             NTE_BAD_SIGNATURE = unchecked((int)0x80090006),
             NTE_NOT_FOUND = unchecked((int)0x80090011),
             NTE_BAD_KEYSET = unchecked((int)0x80090016),
@@ -18,9 +19,8 @@ internal static partial class Interop
             NTE_BUFFER_TOO_SMALL = unchecked((int)0x80090028),
             NTE_NOT_SUPPORTED = unchecked((int)0x80090029),
             NTE_NO_MORE_ITEMS = unchecked((int)0x8009002a),
-            E_FAIL = unchecked((int)0x80004005),
-            STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001),
             TPM_E_PCP_BUFFER_TOO_SMALL = unchecked((int)0x80290406),
+            STATUS_UNSUCCESSFUL = unchecked((int)0xC0000001),
         }
     }
 
