@@ -2210,9 +2210,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
