@@ -360,14 +360,17 @@ public:
             return true;
         }
 
-        if ((lcl->gtFlags & GTF_VAR_DEATH) == 0)
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
+
+        if (dsc->lvPromoted)
         {
-            return false;
+            assert(!dsc->lvTracked);
+            GenTreeFlags allFieldsDying =
+                static_cast<GenTreeFlags>(((1 << dsc->lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+            return (lcl->gtFlags & allFieldsDying) == allFieldsDying;
         }
 
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
-        VARSET_TP* deadFields;
-        return !dsc->lvPromoted || !m_compiler->LookupPromotedStructDeathVars(lcl, &deadFields);
+        return (lcl->gtFlags & GTF_VAR_DEATH) != 0;
     }
 
 private:

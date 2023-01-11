@@ -9344,9 +9344,31 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_CLONED]");
                 }
-                if (tree->gtFlags & GTF_VAR_DEATH)
+                if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
-                    chars += printf("[VAR_DEATH]");
+                    if (tree->gtFlags & GTF_VAR_DEATH)
+                    {
+                        chars += printf("[VAR_DEATH]");
+                    }
+                }
+                else
+                {
+                    if (tree->gtFlags & GTF_VAR_FIELD_DEATH0)
+                    {
+                        chars += printf("[VAR_FIELD_DEATH0]");
+                    }
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH1)
+                {
+                    chars += printf("[VAR_FIELD_DEATH1]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH2)
+                {
+                    chars += printf("[VAR_FIELD_DEATH2]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH3)
+                {
+                    chars += printf("[VAR_FIELD_DEATH3]");
                 }
                 if (tree->gtFlags & GTF_VAR_EXPLICIT_INIT)
                 {

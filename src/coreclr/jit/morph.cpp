@@ -4782,12 +4782,37 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
-    GenTreeFlags lastUse = lclNode->gtFlags & GTF_VAR_DEATH;
+    // As a special case, for implicit byref args where we undid promotion we
+    // can still know whether the use of the implicit byref local is a last
+    // use, and whether we can omit a copy when passed as an argument (the
+    // common reason why promotion is undone).
+    bool isLastUse = false;
+    if (!varDsc->lvPromoted)
+    {
+        if (varDsc->lvFieldLclStart != 0)
+        {
+            // Was promoted but isn't anymore. Check if all fields are dying.
+            int fieldCnt = lvaGetDesc(varDsc->lvFieldLclStart)->lvFieldCnt;
+            assert(fieldCnt <= 4);
+            GenTreeFlags allFieldsDying = static_cast<GenTreeFlags>(((1 << fieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+            isLastUse                   = (lclNode->gtFlags & allFieldsDying) == allFieldsDying;
+        }
+        else
+        {
+            // Was never promoted, treated as single value.
+            isLastUse = (lclNode->gtFlags & GTF_VAR_DEATH) != 0;
+        }
+    }
+
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
-    lclNode->gtFlags |= lastUse;
+
+    if (isLastUse)
+    {
+        lclNode->gtFlags |= GTF_VAR_DEATH;
+    }
 
     GenTree* addrNode = lclNode;
     if (offset != 0)

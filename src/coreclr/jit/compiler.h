@@ -8066,48 +8066,6 @@ public:
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
 
-    // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
-    // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
-    // table, one may assume that all the (tracked) field vars die at this GT_OBJ.  Otherwise,
-    // the node maps to a pointer to a VARSET_TP, containing set bits for each of the tracked field
-    // vars of the promoted struct local that go dead at the given node (the set bits are the bits
-    // for the tracked var indices of the field vars, as in a live var set).
-    //
-    // The map is allocated on demand so all map operations should use one of the following three
-    // wrapper methods.
-
-    NodeToVarsetPtrMap* m_promotedStructDeathVars;
-
-    NodeToVarsetPtrMap* GetPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars == nullptr)
-        {
-            m_promotedStructDeathVars = new (getAllocator()) NodeToVarsetPtrMap(getAllocator());
-        }
-        return m_promotedStructDeathVars;
-    }
-
-    void ClearPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            m_promotedStructDeathVars->RemoveAll();
-        }
-    }
-
-    bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
-    {
-        *bits       = nullptr;
-        bool result = false;
-
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            result = m_promotedStructDeathVars->Lookup(tree, bits);
-        }
-
-        return result;
-    }
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

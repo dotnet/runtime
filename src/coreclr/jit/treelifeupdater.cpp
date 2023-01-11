@@ -211,6 +211,11 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
         // live.
         isDying = !isBorn && lclVarTree->HasLastUse();
     }
+    else if (!varDsc->lvTracked)
+    {
+        isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
+        isDying = lclVarTree->HasLastUse();
+    }
     else
     {
         isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
@@ -285,23 +290,6 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
         }
         else if (varDsc->lvPromoted)
         {
-            // If hasDeadTrackedFieldVars is true, then, for a LDOBJ(ADDR(<promoted struct local>)),
-            // *deadTrackedFieldVars indicates which tracked field vars are dying.
-            bool hasDeadTrackedFieldVars = false;
-
-            // TODO-Review: the code below does not look right. We can have last uses for simple LCL_VARs
-            // as well as indirect uses.
-            if ((tree != lclVarTree) && isDying)
-            {
-                assert(!isBorn); // GTF_VAR_DEATH only set for non-partial last use.
-                VARSET_TP* deadTrackedFieldVars = nullptr;
-                hasDeadTrackedFieldVars = compiler->LookupPromotedStructDeathVars(lclVarTree, &deadTrackedFieldVars);
-                if (hasDeadTrackedFieldVars)
-                {
-                    VarSetOps::Assign(compiler, varDeltaSet, *deadTrackedFieldVars);
-                }
-            }
-
             unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
             for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
             {
@@ -314,7 +302,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                     // IsMultiRegLclVar() returns true, in which case we've handled this above.
                     assert(!fldVarDsc->lvIsInReg());
                     noway_assert(fldVarIndex < compiler->lvaTrackedCount);
-                    if (!hasDeadTrackedFieldVars)
+                    bool isFieldDying = lclVarTree->IsLastUse(i);
+                    if (!isFieldDying)
                     {
                         VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
                         if (ForCodeGen)
@@ -323,10 +312,6 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                             // test in this, the common case, where we have no deadTrackedFieldVars.
                             VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                         }
-                    }
-                    else if (ForCodeGen && VarSetOps::IsMember(compiler, varDeltaSet, fldVarIndex))
-                    {
-                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
                     }
                 }
             }
