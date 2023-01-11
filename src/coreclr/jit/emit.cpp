@@ -1035,9 +1035,21 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitLastInstrs[0] = (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
-
-        emitCurLastInsCnt = 1;
+        if (emitAdd)
+        {
+            // The next IG is extended, so fix the last instructions that were recorded from the current IG.
+            for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
+            {
+                unsigned index = ((emitCurLastInsCnt - 1 - i) % ArrLen(emitLastInstrs));
+                emitLastInstrs[index] =
+                    (instrDesc*)((BYTE*)id + ((BYTE*)emitLastInstrs[index] - (BYTE*)emitCurIGfreeBase));
+            }
+        }
+        else
+        {
+            emitLastInstrs[0] = (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
+            emitCurLastInsCnt = 1;
+        }
     }
 
     // Reset the buffer free pointers
