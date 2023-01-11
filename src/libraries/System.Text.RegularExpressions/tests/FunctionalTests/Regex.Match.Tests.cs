@@ -382,11 +382,23 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a[^c]*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
                 yield return (@"a[^b]*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
                 yield return (@"a[^c]*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
+                yield return ("a[^b]*?[cdefgz]", "xyza123bc4", lineOption, 0, 10, false, "");
+                yield return ("a[^b]*?[bdefgz]", "xyza123bc4", lineOption, 0, 10, true, "a123b");
             }
 
             // Nested loops
             yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
             yield return ("a*(?:a[ab]*?)*?", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
+
+            // Sequences of loops
+            yield return (@"(ver\.? |[_ ]+)?\d+(\.\d+){2,3}$", " Ver 2.0", RegexOptions.IgnoreCase, 0, 8, false, "");
+            yield return (@"(?:|a)?(?:\b\d){2,}", " a 0", RegexOptions.None, 0, 4, false, "");
+            yield return (@"(?:|a)?(\d){2,}", " a00a", RegexOptions.None, 0, 5, true, "a00");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 12345678901234567", RegexOptions.None, 0, 18, false, "");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", " 123456789012345678", RegexOptions.None, 0, 19, true, " 123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "  123456789012345678", RegexOptions.None, 0, 20, true, "  123456789012345678");
+            yield return (@"^( |  )?((\w\d){3,}){3,}", "   123456789012345678", RegexOptions.None, 0, 21, false, "");
 
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
@@ -945,6 +957,9 @@ namespace System.Text.RegularExpressions.Tests
                 //mixed lazy and eager counting
                 yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
             }
+
+            // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
+            yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
         }
 
         [OuterLoop("Takes several seconds to run")]

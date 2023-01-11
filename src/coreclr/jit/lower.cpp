@@ -294,10 +294,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerJTrue(node->AsOp());
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            ContainCheckSelect(node->AsOp());
+            break;
+#endif
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -379,12 +383,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckIntrinsic(node->AsOp());
             break;
 #endif // TARGET_XARCH
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            LowerSIMD(node->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -1346,7 +1344,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             const LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVarCommon());
             type                    = varDsc->lvType;
         }
-        else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
+        else if (arg->OperIs(GT_HWINTRINSIC))
         {
             GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
 
@@ -3673,15 +3671,17 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-#ifndef JIT32_GCENCODER
-            objStore->gtBlkOpGcUnsafe = false;
-#endif
-            objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-            objStore->SetLayout(layout);
+            objStore->Initialize(layout);
             objStore->SetAddr(addr);
             objStore->SetData(src);
+
             BlockRange().InsertBefore(objStore, addr);
             LowerNode(objStore);
+
+            JITDUMP("lowering store lcl var/field (after):\n");
+            DISPTREERANGE(BlockRange(), objStore);
+            JITDUMP("\n");
+
             return;
         }
     }
@@ -3701,6 +3701,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
 
     LowerStoreLoc(lclStore);
+
     JITDUMP("lowering store lcl var/field (after):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
@@ -3769,12 +3770,26 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_BLK:
         case GT_OBJ:
-            retVal->ChangeOper(GT_IND);
-            FALLTHROUGH;
         case GT_IND:
+        {
+            // Spill to a local if sizes don't match so we can avoid the "load more than requested"
+            // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
+            {
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                comp->lvaSetStruct(tmpNum, comp->info.compMethodInfo->args.retTypeClass, false);
+
+                ReplaceWithLclVar(retValUse, tmpNum);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
+
+            retVal->ChangeOper(GT_IND);
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
             break;
+        }
 
         case GT_LCL_VAR:
             LowerRetSingleRegStructLclVar(ret);
@@ -6624,7 +6639,6 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             break;
 
 #ifdef FEATURE_SIMD
-        case GT_SIMD:
         case GT_HWINTRINSIC:
             assert(node->TypeGet() != TYP_SIMD12);
             break;
@@ -6963,9 +6977,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_ADD:
@@ -7037,11 +7049,6 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckIntrinsic(node->AsOp());
             break;
 #endif // TARGET_XARCH
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            ContainCheckSIMD(node->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
@@ -7548,70 +7555,36 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
     }
 }
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
 //
 //  Arguments:
-//     simdNode - The SIMD intrinsic node.
+//    simdType        - The return type of SIMD node being created
+//    op1             - The value of the lowest element of the simd value
+//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdSize        - the size of the SIMD type of the intrinsic
 //
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+// Returns:
+//    The inserted CreateScalarUnsafe node
+//
+// Remarks:
+//    If the created node is a vector constant, op1 will be removed from the block range
+//
+GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
+                                                       GenTree*    op1,
+                                                       CorInfoType simdBaseJitType,
+                                                       unsigned    simdSize)
 {
-    if (simdNode->TypeGet() == TYP_SIMD12)
+    assert(varTypeIsSIMD(simdType));
+
+    GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
+    BlockRange().InsertAfter(op1, result);
+
+    if (result->IsVectorConst())
     {
-        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
-        // produces a TYP_SIMD16 result
-        simdNode->gtType = TYP_SIMD16;
+        BlockRange().Remove(op1);
     }
-
-    if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN)
-    {
-        assert(simdNode->GetSimdBaseType() == TYP_FLOAT);
-
-        size_t argCount      = simdNode->GetOperandCount();
-        size_t constArgCount = 0;
-        float  constArgValues[4]{0, 0, 0, 0};
-
-        for (GenTree* arg : simdNode->Operands())
-        {
-            assert(arg->TypeIs(simdNode->GetSimdBaseType()));
-
-            if (arg->IsCnsFltOrDbl())
-            {
-                noway_assert(constArgCount < ArrLen(constArgValues));
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->DconValue());
-                constArgCount++;
-            }
-        }
-
-        if (constArgCount == argCount)
-        {
-            for (GenTree* arg : simdNode->Operands())
-            {
-                BlockRange().Remove(arg);
-            }
-
-            // For SIMD12, even though there might be 12 bytes of constants, we need to store 16 bytes of data
-            // since we've bashed the node the TYP_SIMD16 and do a 16-byte indirection.
-            assert(varTypeIsSIMD(simdNode));
-            const unsigned cnsSize = genTypeSize(simdNode);
-            assert(cnsSize <= sizeof(constArgValues));
-
-            const unsigned cnsAlign =
-                (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
-
-            CORINFO_FIELD_HANDLE hnd =
-                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());
-            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(TYP_I_IMPL, hnd);
-            BlockRange().InsertBefore(simdNode, clsVarAddr);
-            simdNode->ChangeOper(GT_IND);
-            simdNode->AsOp()->gtOp1 = clsVarAddr;
-            ContainCheckIndir(simdNode->AsIndir());
-
-            return;
-        }
-    }
-
-    ContainCheckSIMD(simdNode);
+    return result;
 }
-#endif // FEATURE_SIMD
+#endif // FEATURE_HW_INTRINSICS

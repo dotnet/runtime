@@ -10,7 +10,8 @@ namespace System.IO.Hashing
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     This implementation emits the answer in the Big Endian byte order so that
+    ///     For methods that return byte arrays or that write into spans of bytes,
+    ///     this implementation emits the answer in the Big Endian byte order so that
     ///     the CRC residue relationship (CRC(message concat CRC(message))) is a fixed value) holds.
     ///     For CRC-64 this stable output is the byte sequence
     ///     <c>{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }</c>.
@@ -75,6 +76,11 @@ namespace System.IO.Hashing
             _crc = InitialState;
         }
 
+        /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
+        /// <returns>The hash value for the data already provided.</returns>
+        [CLSCompliant(false)]
+        public ulong GetCurrentHashAsUInt64() => _crc;
+
         /// <summary>
         ///   Computes the CRC-64 hash of the provided data.
         /// </summary>
@@ -101,7 +107,8 @@ namespace System.IO.Hashing
         public static byte[] Hash(ReadOnlySpan<byte> source)
         {
             byte[] ret = new byte[Size];
-            StaticHash(source, ret);
+            ulong hash = HashToUInt64(source);
+            BinaryPrimitives.WriteUInt64BigEndian(ret, hash);
             return ret;
         }
 
@@ -125,7 +132,9 @@ namespace System.IO.Hashing
                 return false;
             }
 
-            bytesWritten = StaticHash(source, destination);
+            ulong hash = HashToUInt64(source);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
+            bytesWritten = Size;
             return true;
         }
 
@@ -144,16 +153,17 @@ namespace System.IO.Hashing
                 ThrowDestinationTooShort();
             }
 
-            return StaticHash(source, destination);
-        }
-
-        private static int StaticHash(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            ulong crc = InitialState;
-            crc = Update(crc, source);
-            BinaryPrimitives.WriteUInt64BigEndian(destination, crc);
+            ulong hash = HashToUInt64(source);
+            BinaryPrimitives.WriteUInt64BigEndian(destination, hash);
             return Size;
         }
+
+        /// <summary>Computes the CRC-64 hash of the provided data.</summary>
+        /// <param name="source">The data to hash.</param>
+        /// <returns>The computed CRC-64 hash.</returns>
+        [CLSCompliant(false)]
+        public static ulong HashToUInt64(ReadOnlySpan<byte> source) =>
+            Update(InitialState, source);
 
         private static ulong Update(ulong crc, ReadOnlySpan<byte> source)
         {

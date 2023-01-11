@@ -11,11 +11,11 @@ struct Foo
 #pragma warning restore 0414
 }
 
-class Bar
+public class Bar
 {
     static Foo[] _myArray;
 
-    public static void Bork(ref Foo arg)
+    static void Bork(ref Foo arg)
     {
         arg = _myArray[3];
     }

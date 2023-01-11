@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// to the TypeManager that contains the native layout info blob of interest, and the second item
     /// is an offset into that native layout info blob
     /// </summary>
-    public class NativeLayoutSignatureNode : ObjectNode, ISymbolDefinitionNode
+    public class NativeLayoutSignatureNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
         private TypeSystemEntity _identity;
         private Utf8String _identityPrefix;
@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.ReadOnlyDataSection;
@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)

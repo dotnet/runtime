@@ -119,7 +119,7 @@ public class Program
         return returnVal;
     }
 
-    static int Main()
+    public static int Main()
     {
         S s = new S();
         Vector128<float> v = Vector128.Create(1.0F);

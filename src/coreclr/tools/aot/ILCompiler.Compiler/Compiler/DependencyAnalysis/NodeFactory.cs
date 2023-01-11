@@ -50,7 +50,6 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = metadataManager;
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
-            InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
             PreinitializationManager = preinitializationManager;
         }
 
@@ -165,9 +164,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
-            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateNecessaryTypeNode);
+            _typeSymbols = new NecessaryTypeSymbolHashtable(this);
 
-            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateConstructedTypeNode);
+            _constructedTypeSymbols = new ConstructedTypeSymbolHashtable(this);
 
             _clonedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
@@ -206,13 +205,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _GCStaticsPreInitDataNodes = new NodeCache<MetadataType, GCStaticsPreInitDataNode>((MetadataType type) =>
-            {
-                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
-                Debug.Assert(gcStaticsNode is GCStaticsNode);
-                return ((GCStaticsNode)gcStaticsNode).NewPreInitDataNode();
-            });
-
             _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
             {
                 ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
@@ -242,11 +234,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
-            {
-                return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
-            });
-
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
@@ -266,7 +253,12 @@ namespace ILCompiler.DependencyAnalysis
                 return new PInvokeMethodFixupNode(methodData);
             });
 
-            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
+            _methodEntrypoints = new MethodEntrypointHashtable(this);
+
+            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            {
+                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+            });
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
@@ -300,33 +292,25 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectableFieldNode(field);
             });
 
+            _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
+            {
+                return new GenericStaticBaseInfoNode(type);
+            });
+
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
             {
                 return new ObjectGetTypeFlowDependenciesNode(type);
             });
 
-            _shadowConcreteMethods = new NodeCache<MethodKey, IMethodNode>(methodKey =>
-            {
-                MethodDesc canonMethod = methodKey.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            _shadowConcreteMethods = new ShadowConcreteMethodHashtable(this);
 
-                if (methodKey.IsUnboxingStub)
-                {
-                    return new ShadowConcreteUnboxingThunkNode(methodKey.Method, MethodEntrypoint(canonMethod, true));
-                }
-                else
-                {
-                    return new ShadowConcreteMethodNode(methodKey.Method, MethodEntrypoint(canonMethod));
-                }
+            _shadowConcreteUnboxingMethods = new NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode>(method =>
+            {
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                return new ShadowConcreteUnboxingThunkNode(method, MethodEntrypoint(canonMethod, true));
             });
 
-            _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
-            {
-                // We don't need to track virtual method uses for types that have a vtable with a known layout.
-                // It's a waste of CPU time and memory.
-                Debug.Assert(!VTable(method.OwningType).HasFixedSlots);
-
-                return new VirtualMethodUseNode(method);
-            });
+            _virtMethods = new VirtualMethodUseHashtable(this);
 
             _variantMethods = new NodeCache<MethodDesc, VariantInterfaceMethodUseNode>((MethodDesc method) =>
             {
@@ -414,13 +398,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new StructMarshallingDataNode(type);
             });
 
-            _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
-            {
-                if (CompilationModuleGroup.ShouldProduceFullVTable(type))
-                    return new EagerlyBuiltVTableSliceNode(type);
-                else
-                    return _vtableSliceProvider.GetSlice(type);
-            });
+            _vTableNodes = new VTableSliceHashtable(this);
 
             _methodGenericDictionaries = new NodeCache<MethodDesc, ISortableSymbolNode>(method =>
             {
@@ -492,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis
             return new ReadyToRunGenericLookupFromTypeNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
         }
 
-        protected virtual IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
+        private IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
         {
             Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
             if (_compilationModuleGroup.ContainsType(type))
@@ -520,7 +498,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected virtual IEETypeNode CreateConstructedTypeNode(TypeDesc type)
+        private IEETypeNode CreateConstructedTypeNode(TypeDesc type)
         {
             // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
             Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
@@ -554,7 +532,23 @@ namespace ILCompiler.DependencyAnalysis
             return new ThreadStaticsNode(type, this);
         }
 
-        private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
+        private abstract class TypeSymbolHashtable : LockFreeReaderHashtable<TypeDesc, IEETypeNode>
+        {
+            protected readonly NodeFactory _factory;
+            public TypeSymbolHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(TypeDesc key, IEETypeNode value) => key == value.Type;
+            protected override bool CompareValueToValue(IEETypeNode value1, IEETypeNode value2) => value1.Type == value2.Type;
+            protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(IEETypeNode value) => value.Type.GetHashCode();
+        }
+
+        private sealed class NecessaryTypeSymbolHashtable : TypeSymbolHashtable
+        {
+            public NecessaryTypeSymbolHashtable(NodeFactory factory) : base(factory) { }
+            protected override IEETypeNode CreateValueFromKey(TypeDesc key) => _factory.CreateNecessaryTypeNode(key);
+        }
+
+        private NecessaryTypeSymbolHashtable _typeSymbols;
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
@@ -570,10 +564,16 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert(!TypeCannotHaveEEType(type));
 
-            return _typeSymbols.GetOrAdd(type);
+            return _typeSymbols.GetOrCreateValue(type);
         }
 
-        private NodeCache<TypeDesc, IEETypeNode> _constructedTypeSymbols;
+        private sealed class ConstructedTypeSymbolHashtable : TypeSymbolHashtable
+        {
+            public ConstructedTypeSymbolHashtable(NodeFactory factory) : base(factory) { }
+            protected override IEETypeNode CreateValueFromKey(TypeDesc key) => _factory.CreateConstructedTypeNode(key);
+        }
+
+        private ConstructedTypeSymbolHashtable _constructedTypeSymbols;
 
         public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
@@ -584,7 +584,7 @@ namespace ILCompiler.DependencyAnalysis
 
             Debug.Assert(!TypeCannotHaveEEType(type));
 
-            return _constructedTypeSymbols.GetOrAdd(type);
+            return _constructedTypeSymbols.GetOrCreateValue(type);
         }
 
         private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
@@ -627,13 +627,6 @@ namespace ILCompiler.DependencyAnalysis
             return _GCStatics.GetOrAdd(type);
         }
 
-        private NodeCache<MetadataType, GCStaticsPreInitDataNode> _GCStaticsPreInitDataNodes;
-
-        public GCStaticsPreInitDataNode GCStaticsPreInitDataNode(MetadataType type)
-        {
-            return _GCStaticsPreInitDataNodes.GetOrAdd(type);
-        }
-
         private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
 
         public EmbeddedObjectNode GCStaticIndirection(MetadataType type)
@@ -668,7 +661,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<DispatchCellKey, InterfaceDispatchCellNode> _interfaceDispatchCells;
 
-        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, string callSite = null)
+        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
         {
             return _interfaceDispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
         }
@@ -706,13 +699,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
         {
             return _GCStaticEETypes.GetOrAdd(gcMap);
-        }
-
-        private NodeCache<UninitializedWritableDataBlobKey, BlobNode> _uninitializedWritableDataBlobs;
-
-        public BlobNode UninitializedWritableDataBlob(Utf8String name, int size, int alignment)
-        {
-            return _uninitializedWritableDataBlobs.GetOrAdd(new UninitializedWritableDataBlobKey(name, size, alignment));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -785,11 +771,28 @@ namespace ILCompiler.DependencyAnalysis
             return _pInvokeMethodFixups.GetOrAdd(methodData);
         }
 
-        private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
+        private sealed class VTableSliceHashtable : LockFreeReaderHashtable<TypeDesc, VTableSliceNode>
+        {
+            private readonly NodeFactory _factory;
+            public VTableSliceHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(TypeDesc key, VTableSliceNode value) => key == value.Type;
+            protected override bool CompareValueToValue(VTableSliceNode value1, VTableSliceNode value2) => value1.Type == value2.Type;
+            protected override VTableSliceNode CreateValueFromKey(TypeDesc key)
+            {
+                if (_factory.CompilationModuleGroup.ShouldProduceFullVTable(key))
+                    return new EagerlyBuiltVTableSliceNode(key);
+                else
+                    return _factory._vtableSliceProvider.GetSlice(key);
+            }
+            protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(VTableSliceNode value) => value.Type.GetHashCode();
+        }
+
+        private VTableSliceHashtable _vTableNodes;
 
         public VTableSliceNode VTable(TypeDesc type)
         {
-            return _vTableNodes.GetOrAdd(type);
+            return _vTableNodes.GetOrCreateValue(type);
         }
 
         private NodeCache<MethodDesc, ISortableSymbolNode> _methodGenericDictionaries;
@@ -816,7 +819,18 @@ namespace ILCompiler.DependencyAnalysis
             return _stringAllocators.GetOrAdd(stringConstructor);
         }
 
-        protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
+        private sealed class MethodEntrypointHashtable : LockFreeReaderHashtable<MethodDesc, IMethodNode>
+        {
+            private readonly NodeFactory _factory;
+            public MethodEntrypointHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, IMethodNode value) => key == value.Method;
+            protected override bool CompareValueToValue(IMethodNode value1, IMethodNode value2) => value1.Method == value2.Method;
+            protected override IMethodNode CreateValueFromKey(MethodDesc key) => _factory.CreateMethodEntrypointNode(key);
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(IMethodNode value) => value.Method.GetHashCode();
+        }
+
+        private MethodEntrypointHashtable _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
         private NodeCache<IMethodNode, MethodAssociatedDataNode> _methodAssociatedData;
 
@@ -827,7 +841,20 @@ namespace ILCompiler.DependencyAnalysis
                 return _unboxingStubs.GetOrAdd(method);
             }
 
-            return _methodEntrypoints.GetOrAdd(method);
+            return _methodEntrypoints.GetOrCreateValue(method);
+        }
+
+        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
+        {
+            // We might be able to optimize the method body away if the owning type was never seen as allocated.
+            if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
+            {
+                Debug.Assert(!unboxingStub);
+                return _tentativeMethods.GetOrAdd(method);
+            }
+
+            return MethodEntrypoint(method, unboxingStub);
         }
 
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
@@ -884,16 +911,38 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectableFields.GetOrAdd(field);
         }
 
+        private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
+        internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
+        {
+            return _genericStaticBaseInfos.GetOrAdd(type);
+        }
+
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
         internal ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(MetadataType type)
         {
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
         }
 
-        private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
+        private sealed class ShadowConcreteMethodHashtable : LockFreeReaderHashtable<MethodDesc, ShadowConcreteMethodNode>
+        {
+            private readonly NodeFactory _factory;
+            public ShadowConcreteMethodHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
+            protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
+            protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
+                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
+        }
+
+        private ShadowConcreteMethodHashtable _shadowConcreteMethods;
+        private NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode> _shadowConcreteUnboxingMethods;
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
-            return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
+            if (isUnboxingStub)
+                return _shadowConcreteUnboxingMethods.GetOrAdd(method);
+            else
+                return _shadowConcreteMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -959,11 +1008,28 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
+        private sealed class VirtualMethodUseHashtable : LockFreeReaderHashtable<MethodDesc, VirtualMethodUseNode>
+        {
+            private readonly NodeFactory _factory;
+            public VirtualMethodUseHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, VirtualMethodUseNode value) => key == value.Method;
+            protected override bool CompareValueToValue(VirtualMethodUseNode value1, VirtualMethodUseNode value2) => value1.Method == value2.Method;
+            protected override VirtualMethodUseNode CreateValueFromKey(MethodDesc key)
+            {
+                // We don't need to track virtual method uses for types that have a vtable with a known layout.
+                // It's a waste of CPU time and memory.
+                Debug.Assert(!_factory.VTable(key.OwningType).HasFixedSlots);
+                return new VirtualMethodUseNode(key);
+            }
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(VirtualMethodUseNode value) => value.Method.GetHashCode();
+        }
+
+        private VirtualMethodUseHashtable _virtMethods;
 
         public DependencyNodeCore<NodeFactory> VirtualMethodUse(MethodDesc decl)
         {
-            return _virtMethods.GetOrAdd(decl);
+            return _virtMethods.GetOrCreateValue(decl);
         }
 
         private NodeCache<MethodDesc, VariantInterfaceMethodUseNode> _variantMethods;
@@ -1122,14 +1188,11 @@ namespace ILCompiler.DependencyAnalysis
             "__DispatchMapTableEnd",
             new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
-        public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
-            "__FrozenSegmentRegionStart",
-            "__FrozenSegmentRegionEnd",
-            new SortableDependencyNode.EmbeddedObjectNodeComparer(CompilerComparer.Instance));
+        public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 
-        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection { get; }
+        public InterfaceDispatchCellSectionNode InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode();
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
@@ -1158,7 +1221,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion.StartSymbol, FrozenSegmentRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 
             var commonFixupsTableNode = new ExternalReferencesTableNode("CommonFixupsTable", this);
@@ -1233,9 +1296,9 @@ namespace ILCompiler.DependencyAnalysis
         protected struct DispatchCellKey : IEquatable<DispatchCellKey>
         {
             public readonly MethodDesc Target;
-            public readonly string CallsiteId;
+            public readonly ISortableSymbolNode CallsiteId;
 
-            public DispatchCellKey(MethodDesc target, string callsiteId)
+            public DispatchCellKey(MethodDesc target, ISortableSymbolNode callsiteId)
             {
                 Target = target;
                 CallsiteId = callsiteId;
@@ -1270,27 +1333,6 @@ namespace ILCompiler.DependencyAnalysis
             // The name is part of the symbolic name and we don't do any mangling on it.
             public bool Equals(ReadOnlyDataBlobKey other) => Name.Equals(other.Name);
             public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
-            public override int GetHashCode() => Name.GetHashCode();
-        }
-
-        protected struct UninitializedWritableDataBlobKey : IEquatable<UninitializedWritableDataBlobKey>
-        {
-            public readonly Utf8String Name;
-            public readonly int Size;
-            public readonly int Alignment;
-
-            public UninitializedWritableDataBlobKey(Utf8String name, int size, int alignment)
-            {
-                Name = name;
-                Size = size;
-                Alignment = alignment;
-            }
-
-            // The assumption here is that the name of the blob is unique.
-            // We can't emit two blobs with the same name and different contents.
-            // The name is part of the symbolic name and we don't do any mangling on it.
-            public bool Equals(UninitializedWritableDataBlobKey other) => Name.Equals(other.Name);
-            public override bool Equals(object obj) => obj is UninitializedWritableDataBlobKey && Equals((UninitializedWritableDataBlobKey)obj);
             public override int GetHashCode() => Name.GetHashCode();
         }
 

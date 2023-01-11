@@ -4321,9 +4321,9 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update flags
         //
-        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags;
-        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
-        jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
+        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
+        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
+        jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
         dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
 
         // Wire up the new control flow.
@@ -4388,6 +4388,20 @@ bool Compiler::fgOptimizeSwitchJumps()
         // But it no longer has a dominant case.
         //
         newBlock->bbJumpSwt->bbsHasDominantCase = false;
+
+        if (fgStmtListThreaded)
+        {
+            // The switch tree has been modified.
+            JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
+            gtSetStmtInfo(switchStmt);
+            fgSetStmtSeq(switchStmt);
+
+            // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
+            // added new nodes if a COMMA was introduced.
+            JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
+            gtSetStmtInfo(jmpStmt);
+            fgSetStmtSeq(jmpStmt);
+        }
 
         modified = true;
     }
@@ -4776,9 +4790,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     //
     if (fgIsUsingProfileWeights())
     {
-        //
-        // Note that this is currently not yet implemented
-        //
         optimizedSwitches = fgOptimizeSwitchJumps();
         if (optimizedSwitches)
         {

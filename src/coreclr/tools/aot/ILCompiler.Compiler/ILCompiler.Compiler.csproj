@@ -180,6 +180,9 @@
     <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs">
       <Link>TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\Internal\Runtime\DehydratedData.cs">
+      <Link>Common\DehydratedData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
@@ -265,6 +268,13 @@
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Compiler\Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\GenericParameterProxy.cs" Link="Compiler\Dataflow\GenericParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\MethodProxy.cs" Link="Compiler\Dataflow\MethodProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\ParameterProxy.cs" Link="Compiler\Dataflow\ParameterProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeProxy.cs" Link="Compiler\Dataflow\TypeProxy.cs" />
+    <Compile Include="..\..\Common\Compiler\Dataflow\TypeExtensions.cs" Link="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
@@ -303,6 +313,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" Link="Compiler\DependencyAnalysis\Target_X86\X86Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
@@ -310,8 +321,13 @@
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Compiler\ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\EventPseudoDesc.cs" Link="Compiler\EventPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\PseudoDescExtensions.cs" Link="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
@@ -319,7 +335,8 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
-    <Compile Include="Compiler\PseudoDescExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
@@ -341,13 +358,10 @@
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DiagnosticUtilities.cs" />
-    <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
-    <Compile Include="Compiler\Dataflow\EcmaExtensions.cs" />
     <Compile Include="Compiler\Dataflow\FieldReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\FieldValue.cs" />
     <Compile Include="Compiler\Dataflow\FlowAnnotations.cs" />
     <Compile Include="Compiler\Dataflow\GenericArgumentDataFlow.cs" />
-    <Compile Include="Compiler\Dataflow\GenericParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
     <Compile Include="Compiler\Dataflow\HoistedLocalKey.cs" />
@@ -356,10 +370,8 @@
     <Compile Include="Compiler\Dataflow\LocalVariableReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
-    <Compile Include="Compiler\Dataflow\MethodProxy.cs" />
     <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
     <Compile Include="Compiler\Dataflow\Origin.cs" />
-    <Compile Include="Compiler\Dataflow\ParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
@@ -369,8 +381,6 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
-    <Compile Include="Compiler\Dataflow\TypeExtensions.cs" />
-    <Compile Include="Compiler\Dataflow\TypeProxy.cs" />
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
@@ -381,6 +391,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
@@ -409,9 +420,7 @@
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
-    <Compile Include="Compiler\EventPseudoDesc.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
-    <Compile Include="Compiler\FeatureSettings.cs" />
     <Compile Include="Compiler\FeatureSwitchManager.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
@@ -569,8 +578,6 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\ProcessLinkerXmlBase.cs" />
-    <Compile Include="Compiler\ProcessXmlBase.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -578,10 +585,8 @@
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
-    <Compile Include="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
-    <Compile Include="Compiler\TypePreserve.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
@@ -649,9 +654,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs">
-      <Link>IL\Stubs\MemoryMarshalIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
       <Link>IL\Stubs\VolatileIntrinsics.cs</Link>

@@ -89,7 +89,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
 
             Process currentProcess = Process.GetCurrentProcess();

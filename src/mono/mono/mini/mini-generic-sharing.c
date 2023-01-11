@@ -1503,12 +1503,10 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 	csig->param_count ++;
 	csig->params [sig->param_count] = mono_get_int_type ();
-#ifdef ENABLE_ILGEN
 	char ** const param_names = g_new0 (char*, csig->param_count);
 	for (int i = 0; i < sig->param_count; ++i)
 		param_names [i] = g_strdup_printf ("%d", i);
 	param_names [sig->param_count] = g_strdup ("ftndesc");
-#endif
 
 	/* Create the signature for the gsharedvt callconv */
 	gsharedvt_sig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + ((sig->param_count + 2) * sizeof (MonoType*)));
@@ -1533,9 +1531,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, sig->hasthis ? "gsharedvt_in_sig" : "gsharedvt_in_sig_static", MONO_WRAPPER_OTHER);
-#ifdef ENABLE_ILGEN
 	mono_mb_set_param_names (mb, (const char**)param_names);
-#endif
 
 #ifndef DISABLE_JIT
 	int retval_var = 0;
@@ -1571,11 +1567,9 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	info->d.gsharedvt.sig = sig;
 
 	res = mono_mb_create (mb, csig, sig->param_count + 16, info);
-#ifdef ENABLE_ILGEN
 	for (int i = 0; i < sig->param_count + 1; ++i)
 		g_free (param_names [i]);
 	g_free (param_names);
-#endif
 
 	gshared_lock ();
 	cached = (MonoMethod*)g_hash_table_lookup (cache, sig);
@@ -1656,9 +1650,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 
 	// FIXME: Use shared signatures
 	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out_sig", MONO_WRAPPER_OTHER);
-#ifdef ENABLE_ILGEN
 	mono_mb_set_param_names (mb, (const char**)param_names);
-#endif
 
 #ifndef DISABLE_JIT
 	guint8 ldind_op, stind_op;
@@ -3532,10 +3524,20 @@ is_async_method (MonoMethod *method)
  */
 gboolean
 mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars,
-										   gboolean allow_partial, gboolean allow_gsharedvt)
+									  gboolean allow_partial, gboolean allow_gsharedvt)
 {
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
+
+	if (m_method_get_mem_manager (method)->collectible) {
+		/*
+		 * Generic sharing needs to be disabled for instances in collectible ALCs, because
+		 * static variables are handled differently:
+		 * - stores to them need write barriers since they are stored in the GC heap.
+		 * - their address cannot be computed using MONO_RGCTX_INFO_STATIC_DATA + offset.
+		 */
+		return FALSE;
+	}
 
 	/*
 	if (!mono_debug_count ())

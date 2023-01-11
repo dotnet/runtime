@@ -10,7 +10,7 @@ namespace GitHub_21899
     {
 
         [Fact]
-        public static int Main(string[] args)
+        public static int Main()
         {
             bool pass = true;
             pass = test1() && test2() && test3() && test4();

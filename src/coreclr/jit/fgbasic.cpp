@@ -121,6 +121,8 @@ void Compiler::fgInit()
     /* This is set by fgComputeReachability */
     fgEnterBlks = BlockSetOps::UninitVal();
 
+    fgUsedSharedTemps = nullptr;
+
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     fgAlwaysBlks = BlockSetOps::UninitVal();
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1171,13 +1173,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
                             case NI_System_Numerics_BitOperations_PopCount:
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
                             case NI_Vector128_Create:
+                            case NI_Vector128_CreateScalar:
+                            case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
                             case NI_Vector256_Create:
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+                            case NI_Vector256_CreateScalar:
+                            case NI_Vector256_CreateScalarUnsafe:
+#elif defined(TARGET_ARM64)
                             case NI_Vector64_Create:
-                            case NI_Vector128_Create:
+                            case NI_Vector64_CreateScalar:
+                            case NI_Vector64_CreateScalarUnsafe:
 #endif
+#endif // FEATURE_HW_INTRINSICS
                             {
                                 // Top() in order to keep it as is in case of foldableIntrinsic
                                 if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))

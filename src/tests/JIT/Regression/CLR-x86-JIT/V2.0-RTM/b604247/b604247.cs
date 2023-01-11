@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 public class Test
 {
-    public static int Main(String[] arguments)
+    public static int Main()
     {
         bool testCaseSucceeded = false;
         string[] theArray = { "Wrong =0", "Correct =1", "Wrong =2", "Wrong =3" };

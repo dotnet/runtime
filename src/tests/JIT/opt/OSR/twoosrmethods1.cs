@@ -31,7 +31,7 @@ class X
         return result;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int final = 1_000_000;
         int result1 = F(0, final, true);

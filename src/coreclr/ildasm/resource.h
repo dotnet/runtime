@@ -136,8 +136,6 @@
 #define IDS_E_MDIIMPORT                 456
 #define IDS_E_NOMANIFEST                457
 
-#define IDS_E_MULTIPLEINPUT             458
-#define IDS_E_INVALIDOPTION             459
 #define IDS_W_CREATEDW32RES             470
 #define IDS_E_CORRUPTW32RES             471
 #define IDS_E_CANTOPENW32RES            472

@@ -70,7 +70,7 @@ namespace System.Diagnostics
         private const int RequestIdMaxLength = 1024;
 
         // Used to generate an ID it represents the machine and process we are in.
-        private static readonly string s_uniqSuffix = "-" + GetRandomNumber().ToString("x") + ".";
+        private static readonly string s_uniqSuffix = $"-{GetRandomNumber():x}.";
 
         // A unique number inside the appdomain, randomized between appdomains.
         // Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications

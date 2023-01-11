@@ -45,6 +45,11 @@ namespace ILCompiler.DependencyAnalysis
                 TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
             }
 
+            if (_method is EcmaMethod ecmaMethod)
+            {
+                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)

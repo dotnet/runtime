@@ -7,8 +7,6 @@
 
 #include <config.h>
 
-#ifdef TARGET_WASM
-
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>
@@ -103,5 +101,3 @@ mono_profiler_init_browser (const char *desc)
 	mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
 #endif /* HOST_WASM */
 }
-
-#endif /* TARGET_WASM */

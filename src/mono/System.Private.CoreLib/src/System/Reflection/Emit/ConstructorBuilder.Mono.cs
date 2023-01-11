@@ -319,7 +319,7 @@ namespace System.Reflection.Emit
             if (((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0))
             {
                 if ((ilgen == null) || (ilgen.ILOffset == 0))
-                    throw new InvalidOperationException("Method '" + Name + "' does not have a method body.");
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
             }
             if (IsStatic &&
                 ((call_conv & CallingConventions.VarArgs) != 0 ||
@@ -351,22 +351,22 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (type.is_created)
-                throw new InvalidOperationException("Type definition of the method is complete.");
+                throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
 
         private static Exception not_supported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         private static Exception not_after_created()
         {
-            return new InvalidOperationException("Unable to change after type has been created.");
+            return new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
         }
 
         private static Exception not_created()
         {
-            return new NotSupportedException("The type is not yet created.");
+            return new NotSupportedException(SR.InvalidOperation_TypeNotCreated);
         }
     }
 }

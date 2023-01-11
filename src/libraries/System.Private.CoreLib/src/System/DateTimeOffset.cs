@@ -139,7 +139,7 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond and offset
+        // minute, second, millisecond and offset
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
@@ -161,7 +161,7 @@ namespace System
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
-        // minute, second, millsecond, Calendar and offset.
+        // minute, second, millisecond, Calendar and offset.
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
@@ -416,6 +416,11 @@ namespace System
         public int Month => ClockDateTime.Month;
 
         public TimeSpan Offset => new TimeSpan(0, _offsetMinutes, 0);
+
+        /// <summary>
+        /// Gets the total number of minutes representing the time's offset from Coordinated Universal Time (UTC).
+        /// </summary>
+        public int TotalOffsetMinutes => _offsetMinutes;
 
         // Returns the second part of this DateTimeOffset. The returned value is
         // an integer between 0 and 59.

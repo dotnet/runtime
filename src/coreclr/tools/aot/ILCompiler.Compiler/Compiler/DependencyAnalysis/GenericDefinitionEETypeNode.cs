@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
@@ -43,8 +43,6 @@ namespace ILCompiler.DependencyAnalysis
             EETypeRareFlags rareFlags = 0;
 
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-                rareFlags |= EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
@@ -66,6 +64,10 @@ namespace ILCompiler.DependencyAnalysis
             OutputTypeManagerIndirection(factory, ref dataBuilder);
             OutputWritableData(factory, ref dataBuilder);
             OutputOptionalFields(factory, ref dataBuilder);
+
+            // Generic composition only meaningful if there's variance
+            if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)
+                OutputGenericInstantiationDetails(factory, ref dataBuilder);
 
             return dataBuilder.ToObjectData();
         }

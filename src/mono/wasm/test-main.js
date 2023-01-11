@@ -23,7 +23,7 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
-if (typeof globalThis.crypto === 'undefined') {
+if (!is_node && !is_browser && typeof globalThis.crypto === 'undefined') {
     // **NOTE** this is a simple insecure polyfill for testing purposes only
     // /dev/random doesn't work on js shells, so define our own
     // See library_fs.js:createDefaultDevices ()

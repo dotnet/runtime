@@ -386,9 +386,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
                 set_arg_date(arg, value);
             }
             else if (value instanceof Error) {
-                set_arg_type(arg, MarshalerType.JSException);
-                const js_handle = mono_wasm_get_js_handle(value);
-                set_js_handle(arg, js_handle);
+                marshal_exception_to_cs(arg, value);
             }
             else if (value instanceof Uint8Array) {
                 marshal_array_to_cs_impl(arg, value, MarshalerType.Byte);

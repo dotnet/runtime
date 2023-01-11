@@ -22,7 +22,7 @@ namespace Test
             return null;
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

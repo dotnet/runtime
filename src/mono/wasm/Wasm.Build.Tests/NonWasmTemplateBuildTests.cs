@@ -30,20 +30,20 @@ public class NonWasmTemplateBuildTests : BuildTestBase
     private static string s_directoryBuildTargetsForPreviousTFM =
         $$"""
             <Project>
-              <Target Name="_FixupVersions" BeforeTargets="ProcessFrameworkReferences">
+              <Target Name="_FixupVersions" BeforeTargets="ProcessFrameworkReferences" Condition="'{{s_latestTargetFramework}}' != '{{DefaultTargetFramework}}'">
                 <ItemGroup>
-                  <!-- Get net8.0 entry -->
+                  <!-- Get {{s_latestTargetFramework}} entry -->
                   <_KnownFrameworkReferenceToCopyFrom
                           Include="@(KnownFrameworkReference)"
                           Condition="'%(Identity)' == 'Microsoft.NETCore.App' and '%(TargetFramework)' == '{{s_latestTargetFramework}}'" />
-                  <!-- patch it's TFM=net7.0 -->
+                  <!-- patch it's TFM={{DefaultTargetFramework}} -->
                   <_KnownFrameworkReferenceToCopyFrom Update="@(_KnownFrameworkReferenceToCopyFrom)" TargetFramework="{{DefaultTargetFramework}}" />
 
-                  <!-- remove the existing net7.0 entry -->
+                  <!-- remove the existing {{DefaultTargetFramework}} entry -->
                   <KnownFrameworkReference
                           Remove="@(KnownFrameworkReference)"
                           Condition="'%(Identity)' == 'Microsoft.NETCore.App' and '%(TargetFramework)' == '{{DefaultTargetFramework}}'" />
-                  <!-- add the new patched up net7.0 entry -->
+                  <!-- add the new patched up {{DefaultTargetFramework}} entry -->
                   <KnownFrameworkReference Include="@(_KnownFrameworkReferenceToCopyFrom)" />
                 </ItemGroup>
               </Target>
@@ -80,7 +80,7 @@ public class NonWasmTemplateBuildTests : BuildTestBase
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
-                               shouldRun: targetFramework != "net6.0");
+                               shouldRun: targetFramework == s_latestTargetFramework);
 
 
     [Theory]
@@ -90,7 +90,7 @@ public class NonWasmTemplateBuildTests : BuildTestBase
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
-                               shouldRun: targetFramework != "net6.0");
+                               shouldRun: targetFramework == s_latestTargetFramework);
 
     private void NonWasmConsoleBuild(string config,
                                      string extraBuildArgs,

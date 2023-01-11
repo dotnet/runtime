@@ -36,7 +36,7 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-aot-static LIBRARY)
   endif()
 
-  if(HOST_WASM)
+  if(HOST_BROWSER)
     add_library(mono-profiler-browser-static STATIC browser.c)
     target_link_libraries(mono-profiler-browser-static monoapi)
     set_target_properties(mono-profiler-browser-static PROPERTIES OUTPUT_NAME mono-profiler-browser)

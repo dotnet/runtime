@@ -85,7 +85,7 @@ public abstract class InternalContainerServices<TContainer, TItem> : ExternalCon
 
 class Test
 {
-    static int Main(string[] args)
+    static int Main()
     {
         ItemX treeItem = new ItemX();
 

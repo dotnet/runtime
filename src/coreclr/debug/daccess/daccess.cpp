@@ -7113,7 +7113,9 @@ CLRDataCreateInstance(REFIID iid,
     {
         return hr;
     }
-
+#ifdef LOGGING
+    InitializeLogging();
+#endif
     hr = pClrDataAccess->QueryInterface(iid, iface);
 
     pClrDataAccess->Release();

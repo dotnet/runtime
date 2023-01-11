@@ -38,14 +38,14 @@ namespace System.Web.Util
             }
 
             // Don't create string writer if we don't have nothing to encode
-            int pos = IndexOfHtmlAttributeEncodingChars(value, 0);
-            if (pos == -1)
+            int pos = IndexOfHtmlAttributeEncodingChars(value);
+            if (pos < 0)
             {
                 return value;
             }
 
             StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
-            HtmlAttributeEncode(value, writer);
+            HtmlAttributeEncodeInternal(value, pos, writer);
             return writer.ToString();
         }
 
@@ -58,49 +58,48 @@ namespace System.Web.Util
 
             ArgumentNullException.ThrowIfNull(output);
 
-            HtmlAttributeEncodeInternal(value, output);
+            int pos = IndexOfHtmlAttributeEncodingChars(value);
+            if (pos < 0)
+            {
+                output.Write(value);
+                return;
+            }
+
+            HtmlAttributeEncodeInternal(value, pos, output);
         }
 
-        private static void HtmlAttributeEncodeInternal(string s, TextWriter output)
+        private static void HtmlAttributeEncodeInternal(string s, int index, TextWriter output)
         {
-            int index = IndexOfHtmlAttributeEncodingChars(s, 0);
-            if (index == -1)
-            {
-                output.Write(s);
-            }
-            else
-            {
-                output.Write(s.AsSpan(0, index));
+            output.Write(s.AsSpan(0, index));
 
-                ReadOnlySpan<char> remaining = s.AsSpan(index);
-                for (int i = 0; i < remaining.Length; i++)
+            ReadOnlySpan<char> remaining = s.AsSpan(index);
+            for (int i = 0; i < remaining.Length; i++)
+            {
+                char ch = remaining[i];
+                if (ch <= '<')
                 {
-                    char ch = remaining[i];
-                    if (ch <= '<')
+                    switch (ch)
                     {
-                        switch (ch)
-                        {
-                            case '<':
-                                output.Write("&lt;");
-                                break;
-                            case '"':
-                                output.Write("&quot;");
-                                break;
-                            case '\'':
-                                output.Write("&#39;");
-                                break;
-                            case '&':
-                                output.Write("&amp;");
-                                break;
-                            default:
-                                output.Write(ch);
-                                break;
-                        }
+                        case '<':
+                            output.Write("&lt;");
+                            break;
+                        case '"':
+                            output.Write("&quot;");
+                            break;
+                        case '\'':
+                            output.Write("&#39;");
+                            break;
+                        case '&':
+                            output.Write("&amp;");
+                            break;
+                        default:
+                            output.Write(ch);
+                            break;
                     }
-                    else
-                    {
-                        output.Write(ch);
-                    }
+                }
+                else
+                {
+                    output.Write(ch);
                 }
             }
         }
@@ -125,29 +124,8 @@ namespace System.Web.Util
             output.Write(WebUtility.HtmlEncode(value));
         }
 
-        private static int IndexOfHtmlAttributeEncodingChars(string s, int startPos)
-        {
-            Debug.Assert(0 <= startPos && startPos <= s.Length, "0 <= startPos && startPos <= s.Length");
-
-            ReadOnlySpan<char> span = s.AsSpan(startPos);
-            for (int i = 0; i < span.Length; i++)
-            {
-                char ch = span[i];
-                if (ch <= '<')
-                {
-                    switch (ch)
-                    {
-                        case '<':
-                        case '"':
-                        case '\'':
-                        case '&':
-                            return startPos + i;
-                    }
-                }
-            }
-
-            return -1;
-        }
+        private static int IndexOfHtmlAttributeEncodingChars(string s) =>
+            s.AsSpan().IndexOfAny("<\"'&");
 
         private static bool IsNonAsciiByte(byte b) => b >= 0x7F || b < 0x20;
 

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public int[] m_anField1 = (new int[7]);
         public bool[] m_abField2 = (new bool[7]);
@@ -26,7 +26,7 @@ namespace Test
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

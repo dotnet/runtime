@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Options
 #if NET || NETSTANDARD2_1
             return _cache.GetOrAdd(
                 name ?? Options.DefaultName,
-                static (name, arg) => new Lazy<TOptions>(arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument)).Value;
+                static (name, arg) => new Lazy<TOptions>(() => arg.createOptions(name, arg.factoryArgument)), (createOptions, factoryArgument)).Value;
 #endif
         }
 

@@ -181,6 +181,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int LeadingZeroCount(uint value)
@@ -223,6 +224,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction LZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int LeadingZeroCount(ulong value)
@@ -557,6 +559,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int TrailingZeroCount(uint value)
@@ -610,6 +613,7 @@ namespace System.Numerics
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
         /// <param name="value">The value.</param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static int TrailingZeroCount(ulong value)
