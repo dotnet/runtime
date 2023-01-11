@@ -21357,8 +21357,6 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
 GenTree* Compiler::gtNewSimdLoadNode(
     var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
 
@@ -22709,8 +22707,6 @@ GenTree* Compiler::gtNewSimdSqrtNode(
 GenTree* Compiler::gtNewSimdStoreNode(
     GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
-    assert(IsBaselineSimdIsaSupportedDebugOnly());
-
     assert(op1 != nullptr);
     assert(op2 != nullptr);
 
