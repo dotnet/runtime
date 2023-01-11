@@ -228,7 +228,7 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
-        static unsafe void ValidateMappingAPIs()
+        static void ValidateMappingAPIs()
         {
             Console.WriteLine($"Running {nameof(ValidateMappingAPIs)}...");
 
@@ -254,17 +254,17 @@ namespace ComWrappersTests
             var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
 
             // Verify TryGetObject
-            Assert.True(ComWrappers.TryGetObject((void*)managedWrapper, out object managedObjOther));
+            Assert.True(ComWrappers.TryGetObject(managedWrapper, out object managedObjOther));
             Assert.Equal(managedObj, managedObjOther);
-            Assert.True(ComWrappers.TryGetObject((void*)managedWrapper2, out object managedObjOther2));
+            Assert.True(ComWrappers.TryGetObject(managedWrapper2, out object managedObjOther2));
             Assert.Equal(managedObj, managedObjOther2);
-            Assert.False(ComWrappers.TryGetObject((void*)unmanagedObj, out object _));
+            Assert.False(ComWrappers.TryGetObject(unmanagedObj, out object _));
 
             // Verify TryGetComInstance
-            Assert.False(ComWrappers.TryGetComInstance(managedObj, out void* _));
-            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out void* unmanagedObjOther));
-            Assert.Equal(unmanagedObjIUnknown, (IntPtr)unmanagedObjOther);
-            Marshal.Release((IntPtr)unmanagedObjOther);
+            Assert.False(ComWrappers.TryGetComInstance(managedObj, out IntPtr _));
+            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out IntPtr unmanagedObjOther));
+            Assert.Equal(unmanagedObjIUnknown, unmanagedObjOther);
+            Marshal.Release(unmanagedObjOther);
 
             // Release unmanaged resources
             int count = Marshal.Release(managedWrapper);

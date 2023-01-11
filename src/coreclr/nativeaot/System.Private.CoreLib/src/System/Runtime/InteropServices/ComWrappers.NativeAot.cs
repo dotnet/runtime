@@ -37,29 +37,28 @@ namespace System.Runtime.InteropServices
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
-        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
+        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
-            unknown = null;
+            unknown = IntPtr.Zero;
             if (obj == null
                 || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
             {
                 return false;
             }
 
-            Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out nint pUnk);
-            unknown = (void*)pUnk;
+            Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown);
             return true;
         }
 
-        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
+        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
-            if (unknown == null)
+            if (unknown == IntPtr.Zero)
             {
                 return false;
             }
 
-            ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch((nint)unknown);
+            ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(unknown);
             if (comInterfaceDispatch == null)
             {
                 return false;

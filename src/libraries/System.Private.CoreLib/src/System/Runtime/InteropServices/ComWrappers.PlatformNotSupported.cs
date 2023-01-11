@@ -9,12 +9,12 @@ namespace System.Runtime.InteropServices
 {
     public abstract partial class ComWrappers
     {
-        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
+        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
+        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             throw new PlatformNotSupportedException();
         }

@@ -39,11 +39,11 @@ namespace System.Runtime.InteropServices
         /// understand the COM object may have apartment affinity and therefore if the current thread is not
         /// in the correct apartment or the COM object is not a proxy this call may fail.
         /// </remarks>
-        public static unsafe bool TryGetComInstance(object obj, out void* unknown)
+        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             if (obj == null)
             {
-                unknown = null;
+                unknown = IntPtr.Zero;
                 return false;
             }
 
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetComInstance")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetComInstanceInternal(ObjectHandleOnStack wrapperMaybe, out void* externalComObject);
+        private static partial bool TryGetComInstanceInternal(ObjectHandleOnStack wrapperMaybe, out IntPtr externalComObject);
 
         /// <summary>
         /// Given a COM object, determine if it is a ComWrappers created
@@ -61,10 +61,10 @@ namespace System.Runtime.InteropServices
         /// <param name="unknown">An unmanaged wrapper</param>
         /// <param name="obj">A managed object</param>
         /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
-        public static unsafe bool TryGetObject(void* unknown, [NotNullWhen(true)] out object? obj)
+        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
-            if (unknown == null)
+            if (unknown == IntPtr.Zero)
             {
                 return false;
             }
@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_TryGetObject")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetObjectInternal(void* wrapperMaybe, ObjectHandleOnStack instance);
+        private static partial bool TryGetObjectInternal(IntPtr wrapperMaybe, ObjectHandleOnStack instance);
 
         /// <summary>
         /// ABI for function dispatch of a COM interface.
