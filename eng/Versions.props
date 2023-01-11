@@ -214,8 +214,8 @@
     <MicrosoftNETILLinkTasksVersion>7.0.100-1.22606.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23053.1</MicrosoftDotNetCecilVersion>
-    <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23053.1</MicrosoftDotNetCecilPdbVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23060.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23060.1</MicrosoftDotNetCecilPdbVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.23059.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
