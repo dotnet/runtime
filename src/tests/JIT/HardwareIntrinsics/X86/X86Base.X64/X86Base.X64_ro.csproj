@@ -12,8 +12,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DivRem.Int64.Tuple3Op.cs" />
-    <Compile Include="DivRem.UInt64.Tuple3Op.cs" />
     <Compile Include="Program.X86Base.X64.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
