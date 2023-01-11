@@ -22797,10 +22797,8 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
 
             GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
 
-            op1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
+            tmp1 = gtNewSimdHWIntrinsicNode(type, op1Dup, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
                                            isSimdAsHWIntrinsic);
-
-            tmp1 = op1Dup;
         }
 
         return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackLow, simdBaseJitType, simdSize,
@@ -22970,10 +22968,8 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
 
             GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
 
-            op1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
+            tmp1 = gtNewSimdHWIntrinsicNode(type, op1Dup, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize,
                                            isSimdAsHWIntrinsic);
-
-            tmp1 = op1Dup;
         }
 
         return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackHigh, simdBaseJitType, simdSize,
