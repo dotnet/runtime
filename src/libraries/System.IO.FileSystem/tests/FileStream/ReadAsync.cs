@@ -11,7 +11,7 @@ namespace System.IO.Tests
 {
     public abstract class FileStream_AsyncReads : FileSystemTest
     {
-        protected abstract Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
+        protected abstract Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
 
         [Fact]
         public async Task EmptyFileReadAsyncSucceedSynchronously()
@@ -146,32 +146,43 @@ namespace System.IO.Tests
             byte[] content = RandomNumberGenerator.GetBytes(FileSize);
             File.WriteAllBytes(filePath, content);
 
-            await using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BufferSize, fsIsAsync);
+            await Test(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BufferSize, fsIsAsync));
+            await Test(new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 0, fsIsAsync), BufferSize));
 
-            // 1. Populates the private FileStream buffer, leaves bufferSize - 1 bytes available for next read.
-            await ReadAndAssertAsync(1);
-            // 2. Consumes all available data from the buffer, reads another bufferSize-many bytes from the disk and copies the 1 missing byte.
-            await ReadAndAssertAsync(BufferSize);
-            // 3. Seek back by the number of bytes consumed from the buffer, all buffered data is now available for next read.
-            fs.Position -= 1;
-            // 4. Consume all buffered data.
-            await ReadAndAssertAsync(BufferSize);
-            // 5. Bypass the cache (all buffered data has been consumed and we need bufferSize-many bytes).
-            // The cache should get invalidated now!!
-            await ReadAndAssertAsync(BufferSize);
-            // 6. Seek back by just a few bytes.
-            fs.Position -= 9;
-            // 7. Perform a read, which should not use outdated buffered data.
-            await ReadAndAssertAsync(BufferSize);
-
-            async Task ReadAndAssertAsync(int size)
+            async Task Test(Stream stream)
             {
-                var initialPosition = fs.Position;
+                try
+                {
+                    // 1. Populates the private stream buffer, leaves bufferSize - 1 bytes available for next read.
+                    await ReadAndAssertAsync(stream, 1);
+                    // 2. Consumes all available data from the buffer, reads another bufferSize-many bytes from the disk and copies the 1 missing byte.
+                    await ReadAndAssertAsync(stream, BufferSize);
+                    // 3. Seek back by the number of bytes consumed from the buffer, all buffered data is now available for next read.
+                    stream.Position -= 1;
+                    // 4. Consume all buffered data.
+                    await ReadAndAssertAsync(stream, BufferSize);
+                    // 5. Bypass the cache (all buffered data has been consumed and we need bufferSize-many bytes).
+                    // The cache should get invalidated now!!
+                    await ReadAndAssertAsync(stream,BufferSize);
+                    // 6. Seek back by just a few bytes.
+                    stream.Position -= 9;
+                    // 7. Perform a read, which should not use outdated buffered data.
+                    await ReadAndAssertAsync(stream,BufferSize);
+                }
+                finally
+                {
+                    await stream.DisposeAsync();
+                }
+            }
+
+            async Task ReadAndAssertAsync(Stream stream, int size)
+            {
+                var initialPosition = stream.Position;
                 var buffer = new byte[size];
 
                 var count = asyncReads
-                    ? await ReadAsync(fs, buffer, 0, size)
-                    : fs.Read(buffer);
+                    ? await ReadAsync(stream, buffer, 0, size)
+                    : stream.Read(buffer);
 
                 Assert.Equal(content.Skip((int)initialPosition).Take(count), buffer.Take(count));
             }
@@ -180,13 +191,13 @@ namespace System.IO.Tests
 
     public class FileStream_ReadAsync_AsyncReads : FileStream_AsyncReads
     {
-        protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             stream.ReadAsync(buffer, offset, count, cancellationToken);
     }
 
     public class FileStream_BeginEndRead_AsyncReads : FileStream_AsyncReads
     {
-        protected override Task<int> ReadAsync(FileStream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             Task.Factory.FromAsync(
                 (callback, state) => stream.BeginRead(buffer, offset, count, callback, state),
                 iar => stream.EndRead(iar),
