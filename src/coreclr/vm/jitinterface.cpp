@@ -11723,8 +11723,45 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
           
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
-                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                result = true;
+                // For structs containing GC pointers we want to make sure those GC pointers belong to FOH
+                // so we expect valueOffset to be a real field offset (same for bufferSize)
+                if (!field->IsRVA() && (field->GetFieldType() == ELEMENT_TYPE_VALUETYPE))
+                {
+                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().GetMethodTable();
+                    if (structType->ContainsPointers())
+                    {
+                        for (WORD i = 0; i < structType->GetNumInstanceFields(); i++)
+                        {
+                            FieldDesc* subField = (FieldDesc*)((structType->GetApproxFieldDescListRaw()) + i);
+                            // TODO: If subField is also a struct we might want to inspect its fields too
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize && subField->IsObjRef())
+                            {
+                                GCX_COOP();
+                                Object* subFieldValue = nullptr;
+                                memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                                if (subFieldValue == nullptr || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+                                {
+                                    // GC handle from FOH or null
+                                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                                    result = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // No gc pointers in the struct
+                        memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                        result = true;
+                    }
+                }
+                else
+                {
+                    // Primitive or RVA
+                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                    result = true;
+                }
             }
         }
     }
