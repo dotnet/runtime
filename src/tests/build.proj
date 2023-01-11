@@ -568,7 +568,7 @@
   <Target Name="CreateIosApps"
       DependsOnTargets="BuildAlliOSApp"
       AfterTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator')" />
 
   <Target Name="BuildMonoAot"
       DependsOnTargets="MonoAotCompileTests"

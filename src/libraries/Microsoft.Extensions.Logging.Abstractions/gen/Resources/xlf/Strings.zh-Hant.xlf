@@ -157,6 +157,16 @@
         <target state="translated">多個記錄方法不能在類別內使用相同的事件識別碼</target>
         <note />
       </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
         <target state="translated">未將範本 '{0}' 提供做為記錄方法的引數</target>

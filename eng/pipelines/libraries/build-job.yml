@@ -85,7 +85,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+        - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 
@@ -101,7 +101,7 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+        - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
