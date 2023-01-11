@@ -640,18 +640,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (DirectPInvokes.Length > 0)
         {
-            foreach (var directPInvoke in DirectPInvokes)
-            {
-                aotArgs.Add($"direct-pinvokes={directPInvoke}");
-            }
+            aotArgs.Add($"direct-pinvokes={string.Join(",", DirectPInvokes)}");
         }
 
         if (DirectPInvokeLists.Length > 0)
         {
-            foreach (var directPInvokeList in DirectPInvokeLists)
-            {
-                aotArgs.Add($"direct-pinvoke-lists={directPInvokeList}");
-            }
+            aotArgs.Add($"direct-pinvoke-lists={string.Join(",", DirectPInvokeLists)}");
         }
 
         if (UseDwarfDebug)

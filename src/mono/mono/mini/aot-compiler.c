@@ -8530,9 +8530,23 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->gen_msym_dir = TRUE;
 			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));
 		} else if (str_begins_with (arg, "direct-pinvokes=")) {
-			opts->direct_pinvokes = g_list_append (opts->direct_pinvokes, g_strdup (arg + strlen ("direct-pinvokes=")));
+			char *direct_pinvokes = g_strdup (arg + strlen ("direct-pinvokes="));
+			gchar *direct_pinvoke_ctx = NULL;
+			gchar *direct_pinvoke = strtok_r (direct_pinvokes, ",", direct_pinvoke_ctx);
+			while (direct_pinvoke) {
+				opts->direct_pinvokes = g_list_append (opts->direct_pinvoke, g_strdup (direct_pinvoke));
+				direct_pinvoke = strtok_r (NULL, ",", direct_pinvoke_ctx);
+			}
+			g_free (direct_pinvokes);
 		} else if (str_begins_with (arg, "direct-pinvoke-lists=")) {
-			opts->direct_pinvoke_lists = g_list_append (opts->direct_pinvoke_lists, g_strdup (arg + strlen ("direct-pinvoke-lists=")));
+			char *direct_pinvoke_lists = g_strdup (arg + strlen ("direct-pinvoke-lists="));
+			gchar *direct_pinvoke_list_ctx = NULL;
+			gchar *direct_pinvoke_list = strtok_r (direct_pinvoke_lists, ",", direct_pinvoke_list_ctx);
+			while (direct_pinvoke_list) {
+				opts->direct_pinvoke_lists = g_list_append (opts->direct_pinvoke_lists, g_strdup (direct_pinvoke_list));
+				direct_pinvoke_list = strtok_r (NULL, ",", direct_pinvoke_list_ctx);
+			}
+			g_free (direct_pinvoke_lists);
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
@@ -14178,7 +14192,7 @@ is_direct_pinvoke_parsable (const char *direct_pinvoke)
 	if (!direct_pinvoke)
 		return FALSE;
 
-	if (strlen (direct_pinvoke) == 0)
+	if (direct_pinvoke[0] == '\0')
 		return FALSE;
 
 	if (direct_pinvoke[0] == '#')
@@ -14470,8 +14484,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 				// Strip whitespace from line read
 				g_strstrip (direct_pinvoke_list_content_line);
 
-				// Skip empty direct_pinvokes
-				if (direct_pinvoke_list_content_line [0] != '\0')
+				// Skip empty direct_pinvokes and comments
+				if (direct_pinvoke_list_content_line [0] != '\0' && direct_pinvoke_list_content_line [0] != '#')
 					added_direct_pinvoke = process_specified_direct_pinvokes (acfg, direct_pinvoke_list_content_line);
 
 				direct_pinvoke_list_content_line = strtok_r (NULL, "\n", &direct_pinvoke_list_content_ctx);
