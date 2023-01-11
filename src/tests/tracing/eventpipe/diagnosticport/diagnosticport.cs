@@ -408,9 +408,17 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     Logger.logger.Log($"Received: [{response.Payload.Select(b => b.ToString("X2") + " ").Aggregate(string.Concat)}]");
                     ProcessInfo2 processInfo2 = ProcessInfo2.TryParse(response.Payload);
 
-                    string expectedName = Assembly.GetExecutingAssembly().GetName().Name;
-                    Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
-                        $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
+                    if (Type.GetType("Mono.RuntimeStructs") != null)
+                    {
+                        // Mono currently returns empty string if the runtime is suspended before an assembly is loaded
+                        Utils.Assert(string.IsNullOrEmpty(processInfo2.ManagedEntrypointAssemblyName));
+                    }
+                    else
+                    {
+                        string expectedName = Assembly.GetExecutingAssembly().GetName().Name;
+                        Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
+                            $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
+                    }
 
                     // send resume command on this connection
                     var message = new IpcMessage(0x04,0x01);
