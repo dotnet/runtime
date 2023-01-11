@@ -11727,30 +11727,39 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 // so we expect valueOffset to be a real field offset (same for bufferSize)
                 if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
                 {
-                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().GetMethodTable();
+                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().AsMethodTable();
                     if (structType->ContainsPointers())
                     {
-                        for (WORD i = 0; i < structType->GetNumInstanceFields(); i++)
+                        ApproxFieldDescIterator fieldIterator(structType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+                        for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
                         {
-                            FieldDesc* subField = (FieldDesc*)((structType->GetApproxFieldDescListRaw()) + i);
                             // TODO: If subField is also a struct we might want to inspect its fields too
-                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize && subField->IsObjRef() &&
-                                subField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize &&
+                                subField->IsObjRef() && subField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
                             {
                                 GCX_COOP();
+
+                                // Read field's value
                                 Object* subFieldValue = nullptr;
                                 memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                                if (subFieldValue == nullptr || GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+
+                                if (subFieldValue == nullptr)
                                 {
-                                    // GC handle from FOH or null
-                                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                                    // Report null
+                                    memset(buffer, 0, bufferSize);
                                     result = true;
                                 }
-                                break;
-                            }
-                            
-                            if (subField->GetOffset() >= (DWORD)valueOffset)
-                            {
+                                else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+                                {
+                                    CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
+                                        ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+
+                                    // GC handle is either from FOH or null
+                                    memcpy(buffer, &handle, bufferSize);
+                                    result = true;
+                                }
+
+                                // We're done with this struct
                                 break;
                             }
                         }
