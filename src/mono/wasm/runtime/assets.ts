@@ -49,7 +49,7 @@ const skipInstantiateByAssetTypes: {
 
 export function get_skipped_icu_assets() : { [name: string]: boolean; }
 {
-    const preferredCulture = (navigator.languages && navigator.languages[0]);
+    const preferredCulture = Intl.DateTimeFormat().resolvedOptions().locale;
     const prefix = preferredCulture.split("-")[0];
     if (["en", "fr", "it", "de", "es"].includes(prefix))
     {
