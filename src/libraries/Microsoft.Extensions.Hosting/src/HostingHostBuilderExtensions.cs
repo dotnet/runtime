@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
 
@@ -79,7 +78,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<HostBuilderContext, ServiceProviderOptions> configure)
         {
             return hostBuilder.UseServiceProviderFactory(context =>
@@ -192,7 +190,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
             return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
