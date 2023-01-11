@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
 {
-    internal sealed class EventPipeEventProvider : IEventProvider
+    internal sealed class EventPipeEventProvider : EventProviderImpl
     {
         private WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Register an event provider.
-        unsafe void IEventProvider.EventRegister(EventSource eventSource)
+        internal override unsafe void Register(EventSource eventSource)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
-        void IEventProvider.EventUnregister()
+        internal override void Unregister()
         {
             if (_provHandle != 0)
             {
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
+        internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -87,20 +87,20 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
+        internal override int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
             return EventActivityIdControl(controlCode, ref activityId);
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
+        internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte *pMetadata, uint metadataLength)
         {
             return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
         }
 
         // Get or set the per-thread activity ID.
-        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
+        internal static int StaticEventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
             return EventPipeInternal.EventActivityIdControl((uint)controlCode, ref activityId);
         }
