@@ -11725,7 +11725,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             {
                 // For structs containing GC pointers we want to make sure those GC pointers belong to FOH
                 // so we expect valueOffset to be a real field offset (same for bufferSize)
-                if (!field->IsRVA() && (field->GetFieldType() == ELEMENT_TYPE_VALUETYPE))
+                if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
                 {
                     PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().GetMethodTable();
                     if (structType->ContainsPointers())
@@ -11734,7 +11734,8 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                         {
                             FieldDesc* subField = (FieldDesc*)((structType->GetApproxFieldDescListRaw()) + i);
                             // TODO: If subField is also a struct we might want to inspect its fields too
-                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize && subField->IsObjRef())
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->GetSize() == (UINT)bufferSize && subField->IsObjRef() &&
+                                subField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
                             {
                                 GCX_COOP();
                                 Object* subFieldValue = nullptr;
@@ -11745,6 +11746,11 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                                     memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
                                     result = true;
                                 }
+                                break;
+                            }
+                            
+                            if (subField->GetOffset() >= (DWORD)valueOffset)
+                            {
                                 break;
                             }
                         }
