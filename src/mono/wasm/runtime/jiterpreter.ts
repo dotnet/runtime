@@ -252,6 +252,8 @@ function getTraceImports () {
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
         ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
+        ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
+        ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -510,6 +512,16 @@ function generate_wasm (
                 "frame": WasmValtype.i32,
                 "ip": WasmValtype.i32,
             }, WasmValtype.void
+        );
+        builder.defineType(
+            "hashcode", {
+                "ppObj": WasmValtype.i32,
+            }, WasmValtype.i32
+        );
+        builder.defineType(
+            "hascsize", {
+                "ppObj": WasmValtype.i32,
+            }, WasmValtype.i32
         );
 
         builder.generateTypeSection();
@@ -1076,6 +1088,18 @@ function generate_wasm_body (
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
+            case MintOpcode.MINT_INTRINS_GET_HASHCODE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("hashcode");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            case MintOpcode.MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("hascsize");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
 
             case MintOpcode.MINT_CASTCLASS:
             case MintOpcode.MINT_ISINST:
