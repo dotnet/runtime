@@ -557,6 +557,11 @@ mono_ftnptr_to_delegate_impl (MonoClass *klass, gpointer ftn, MonoError *error)
 		MonoObjectHandle  this_obj;
 		int i;
 
+		if (!invoke) {
+			mono_error_set_argument_format (error, "t", "Type %s has no Invoke method.", m_class_get_name (klass));
+			goto leave;
+		}
+
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
 			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_defaults.int_class, &ftn, error));

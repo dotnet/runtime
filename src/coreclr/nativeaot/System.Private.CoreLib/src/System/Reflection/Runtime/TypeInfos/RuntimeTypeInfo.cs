@@ -199,8 +199,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            if (interfaceType is null)
-                throw new ArgumentNullException(nameof(interfaceType));
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
             if (!(interfaceType is RuntimeTypeInfo))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
@@ -440,8 +439,7 @@ namespace System.Reflection.Runtime.TypeInfos
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));

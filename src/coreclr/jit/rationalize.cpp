@@ -608,37 +608,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-        {
-            GenTreeSIMD* simdNode = node->AsSIMD();
-            unsigned     simdSize = simdNode->GetSimdSize();
-            var_types    simdType = comp->getSIMDTypeForSize(simdSize);
-
-            // Certain SIMD trees require rationalizing.
-            if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
-            {
-                // Rewrite this as an explicit load.
-                JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
-
-                GenTree* base    = simdNode->Op(1);
-                GenTree* index   = (simdNode->GetOperandCount() == 2) ? simdNode->Op(2) : nullptr;
-                GenTree* address = new (comp, GT_LEA)
-                    GenTreeAddrMode(TYP_BYREF, base, index, baseTypeSize, OFFSETOF__CORINFO_Array__data);
-                GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
-
-                BlockRange().InsertBefore(simdNode, address, ind);
-                use.ReplaceWith(ind);
-                BlockRange().Remove(simdNode);
-
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-            }
-        }
-        break;
-#endif // FEATURE_SIMD
-
         default:
             // Check that we don't have nodes not allowed in HIR here.
             assert((node->DebugOperKind() & DBK_NOTHIR) == 0);

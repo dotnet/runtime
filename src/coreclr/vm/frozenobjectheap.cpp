@@ -81,35 +81,6 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #endif // !FEATURE_BASICFREEZE
 }
 
-static void* ReserveMemory(size_t size)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // We have plenty of space in-range on X86/AMD64 so we can afford keeping
-    // FOH segments there so e.g. JIT can use relocs for frozen objects.
-    return ExecutableAllocator::Instance()->Reserve(size);
-#else
-    return ClrVirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
-#endif
-}
-
-static void* CommitMemory(void* ptr, size_t size)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    return ExecutableAllocator::Instance()->Commit(ptr, size, /*isExecutable*/ false);
-#else
-    return ClrVirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
-#endif
-}
-
-static void ReleaseMemory(void* ptr)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    ExecutableAllocator::Instance()->Release(ptr);
-#else
-    ClrVirtualFree(ptr, 0, MEM_RELEASE);
-#endif
-}
-
 // Reserve sizeHint bytes of memory for the given frozen segment.
 // The requested size can be be ignored in case of memory pressure and FOH_SEGMENT_DEFAULT_SIZE is used instead.
 FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
@@ -123,7 +94,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
 
-    void* alloc = ReserveMemory(m_Size);
+    void* alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
     if (alloc == nullptr)
     {
         // Try again with the default FOH size
@@ -132,7 +103,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
             m_Size = FOH_SEGMENT_DEFAULT_SIZE;
             _ASSERT(m_Size > FOH_COMMIT_SIZE);
             _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
-            alloc = ReserveMemory(m_Size);
+            alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
         }
 
         if (alloc == nullptr)
@@ -142,13 +113,15 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     }
 
     // Commit a chunk in advance
-    void* committedAlloc = CommitMemory(alloc, FOH_COMMIT_SIZE);
+    void* committedAlloc = ClrVirtualAlloc(alloc, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE);
     if (committedAlloc == nullptr)
     {
-        ReleaseMemory(alloc);
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
+    // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
+    // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 
     segment_info si;
@@ -161,7 +134,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
-        ReleaseMemory(alloc);
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
@@ -197,9 +170,9 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
 
-        if (CommitMemory(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE) == nullptr)
+        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
-            ReleaseMemory(m_pStart);
+            ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
             ThrowOutOfMemory();
         }
         m_SizeCommitted += FOH_COMMIT_SIZE;

@@ -32,6 +32,16 @@
         <target state="translated">Logging method パラメーター名は「 _ 」で始まることはできません</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">ログ メソッドは本文を含めることができません</target>
