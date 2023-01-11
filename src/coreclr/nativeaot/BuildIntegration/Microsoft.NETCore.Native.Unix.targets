@@ -49,6 +49,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(NativeLib)' == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
       <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
+      <NativeLibrary Include="$(IlcSdkPath)$(AotEventPipeName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
     </ItemGroup>
 
