@@ -191,6 +191,10 @@ void GCLogConfig (const char *fmt, ... );
 
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
 
+#ifdef USE_REGIONS
+#define MAX_REGION_SIZE 0x80000000 
+#endif // USE_REGIONS
+
 #define MAX_NUM_FREE_SPACES 200
 #define MIN_NUM_FREE_SPACES 5
 
@@ -5734,6 +5738,7 @@ public:
     uint8_t*        saved_allocated;
     uint8_t*        saved_bg_allocated;
 #ifdef USE_REGIONS
+    size_t          survived;
     // These generation numbers are initialized to -1.
     // For plan_gen_num:
     // for all regions in condemned generations it needs
@@ -5748,7 +5753,6 @@ public:
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
     int             plan_gen_num;
-    int             survived;
     int             old_card_survived;
     int             pinned_survived;
     // at the end of each GC, we increase each region in the region free list
@@ -6187,7 +6191,7 @@ int& heap_segment_age_in_free (heap_segment* inst)
     return inst->age_in_free;
 }
 inline
-int& heap_segment_survived (heap_segment* inst)
+size_t& heap_segment_survived (heap_segment* inst)
 {
     return inst->survived;
 }
