@@ -167,6 +167,7 @@ function getIsWasmEhSupported () : boolean {
         for (let i = 0; i < doJitCall16.length; i += 2)
             bytes[i / 2] = parseInt(doJitCall16.substring(i, i + 2), 16);
 
+        counters.bytesGenerated += bytes.length;
         doJitCallModule = new WebAssembly.Module(bytes);
         wasmEhSupported = true;
     } catch (exc) {
@@ -247,6 +248,11 @@ export function mono_interp_flush_jitcall_queue () : void {
         trampBuilder = builder = new WasmBuilder(0);
     else
         builder.clear(0);
+
+    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+        jitQueue.length = 0;
+        return;
+    }
 
     if (builder.options.enableWasmEh) {
         if (!getIsWasmEhSupported()) {
@@ -350,6 +356,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {

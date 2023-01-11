@@ -66,10 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (jse != null && jse.jsException != null)
                 {
                     // this is JSException roundtrip
-                    if (jse.jsException.IsDisposed)
-                    {
-                        throw new ObjectDisposedException(nameof(value));
-                    }
+                    ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
                     slot.Type = MarshalerType.JSException;
                     slot.JSHandle = jse.jsException.JSHandle;
                 }

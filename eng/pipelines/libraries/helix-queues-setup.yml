@@ -187,8 +187,8 @@ jobs:
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - Windows.11.Arm64.Open
 
-    # Browser WebAssembly
-    - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+    # Browser/WASI WebAssembly
+    - ${{ if in(parameters.platform, 'Browser_wasm', 'wasi_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
     # Browser WebAssembly Firefox

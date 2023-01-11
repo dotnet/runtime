@@ -278,8 +278,6 @@ void Thread::Construct()
     if (!PalGetMaximumStackBounds(&m_pStackLow, &m_pStackHigh))
         RhFailFast();
 
-    m_pTEB = PalNtCurrentTeb();
-
 #ifdef STRESS_LOG
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
@@ -341,12 +339,8 @@ bool Thread::IsCurrentThread()
 
 void Thread::Detach()
 {
-    // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
-    // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
-    // point.
-    SetDetached();
-
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    SetDetached();
 }
 
 void Thread::Destroy()
@@ -634,10 +628,20 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
-        pThread = ThreadStore::GetCurrentThread();
+        pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL)
+        {
+            ASSERT(!"a not attached thread got signaled");
+            // perhaps we share the signal with something else?
+            return;
+        }
 
-        ASSERT(pThread != NULL);
-        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+        if (pThread == ThreadStore::GetSuspendingThread())
+        {
+            ASSERT(!"trying to suspend suspending thread");
+            // perhaps we share the signal with something else?
+            return;
+        }
     }
 
     // we have a thread stopped, and we do not know where exactly.
@@ -1080,6 +1084,23 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
+bool Thread::IsActivationPending()
+{
+    return IsStateSet(TSF_ActivationPending);
+}
+
+void Thread::SetActivationPending(bool isPending)
+{
+    if (isPending)
+    {
+        SetState(TSF_ActivationPending);
+    }
+    else
+    {
+        ClearState(TSF_ActivationPending);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1097,20 +1118,6 @@ void Thread::ValidateExInfoStack()
     }
 #endif // _DEBUG
 #endif // !DACCESS_COMPILE
-}
-
-
-
-// Retrieve the start of the TLS storage block allocated for the given thread for a specific module identified
-// by the TLS slot index allocated to that module and the offset into the OS allocated block at which
-// Redhawk-specific data is stored.
-PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset)
-{
-#if 0
-    return (*(uint8_t***)(m_pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#else
-    return (*dac_cast<PTR_PTR_PTR_UInt8>(dac_cast<TADDR>(m_pTEB) + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -1144,6 +1151,10 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
 
         return false; // bad transition
     }
+
+    // this is an ordinary transition to managed code
+    // GC threads should not do that
+    ASSERT(!IsGCSpecial());
 
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;

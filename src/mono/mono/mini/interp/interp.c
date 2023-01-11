@@ -406,7 +406,8 @@ get_context (void)
 		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
 		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
-		context->stack_pointer = context->stack_start;
+		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
+		context->stack_pointer = context->stack_start + MINT_STACK_SLOT_SIZE;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
 		/* Make sure all data is initialized before publishing the context */
@@ -487,6 +488,8 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->hasthis = sig->hasthis;
 	imethod->vararg = sig->call_convention == MONO_CALL_VARARG;
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
+	// This flag allows us to optimize out the interp_entry 'is this a delegate invoke' checks
+	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
 	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
@@ -2160,12 +2163,6 @@ typedef struct {
 	gpointer *many_args;
 } InterpEntryData;
 
-static MONO_ALWAYS_INLINE gboolean
-is_method_multicastdelegate_invoke (MonoMethod *method)
-{
-	return m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke");
-}
-
 /* Main function for entering the interpreter from compiled code */
 // Do not inline in case order of frame addresses matters.
 static MONO_NEVER_INLINE void
@@ -2195,7 +2192,7 @@ interp_entry (InterpEntryData *data)
 
 	method = rmethod->method;
 
-	if (is_method_multicastdelegate_invoke(method)) {
+	if (rmethod->is_invoke) {
 		/*
 		 * This happens when AOT code for the invoke wrapper is not found.
 		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
@@ -3667,6 +3664,13 @@ static long total_executed_opcodes;
 
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
 
+// The start of the stack has a reserved slot for a GC visible temp object pointer
+#ifdef TARGET_WASM
+#define SET_TEMP_POINTER(value) (*((volatile MonoObject * volatile *)context->stack_start) = value)
+#else
+#define SET_TEMP_POINTER(value) (*((MonoObject **)context->stack_start) = value)
+#endif
+
 /*
  * Custom C implementations of the min/max operations for float and double.
  * We cannot directly use the C stdlib functions because their semantics do not match
@@ -3755,7 +3759,6 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 	};
 #endif
 
-	HANDLE_FUNCTION_ENTER ();
 	/*
 	 * GC SAFETY:
 	 *
@@ -3771,7 +3774,6 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 	 * cleared. If we will need to have more objects pinned simultaneously, additional handles
 	 * can be reserved here.
 	 */
-	MonoObjectHandle tmp_handle = MONO_HANDLE_NEW (MonoObject, NULL);
 	MonoException *method_entry_ex;
 	if (method_entry (context, frame,
 #if DEBUG_INTERP
@@ -6167,11 +6169,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			// FIXME push/pop LMF
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			SET_TEMP_POINTER(o);
 			stackval_to_data (m_class_get_byval_arg (vtable->klass), (stackval*)(locals + ip [2]), mono_object_get_data (o), FALSE);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6180,12 +6182,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MonoClass *c = vtable->klass;
 
 			// FIXME push/pop LMF
-			MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
+			SET_TEMP_POINTER(o);
 			mono_value_copy_internal (mono_object_get_data (o), locals + ip [2], c);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6194,12 +6196,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MonoClass *c = vtable->klass;
 
 			// FIXME push/pop LMF
-			MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
+			SET_TEMP_POINTER(o);
 			mono_value_copy_internal (mono_object_get_data (o), LOCAL_VAR (ip [2], gpointer), c);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -7510,6 +7512,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_TRY_GET_HASHCODE) {
+			LOCAL_VAR (ip [1], gint32) = mono_object_try_get_hash_internal (LOCAL_VAR (ip [2], MonoObject*));
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_GET_TYPE) {
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
@@ -7692,9 +7699,9 @@ exit_clause:
 		context->stack_pointer = (guchar*)frame->stack;
 
 	DEBUG_LEAVE ();
-
-	HANDLE_FUNCTION_RETURN ();
 }
+
+#undef SET_TEMP_POINTER
 
 static void
 interp_parse_options (const char *options)
@@ -8580,34 +8587,28 @@ mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source
 	*destination = imethod_to_ftnptr (del->interp_method, FALSE);
 }
 
-void
+MONO_ALWAYS_INLINE void
 mono_jiterp_check_pending_unwind (ThreadContext *context)
 {
 	return check_pending_unwind (context);
 }
 
-void *
+MONO_ALWAYS_INLINE void *
 mono_jiterp_get_context (void)
 {
 	return get_context ();
 }
 
-gpointer
+MONO_ALWAYS_INLINE gpointer
 mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size)
 {
 	return frame_data_allocator_alloc(stack, frame, size);
 }
 
-gboolean
+MONO_ALWAYS_INLINE gboolean
 mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 {
 	return mono_interp_isinst (object, klass);
-}
-
-gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method)
-{
-	return is_method_multicastdelegate_invoke (method);
 }
 
 // after interp_entry_prologue the wrapper will set up all the argument values

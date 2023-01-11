@@ -391,6 +391,7 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
@@ -577,7 +578,6 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\ProcessXmlBase.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -654,9 +654,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs">
-      <Link>IL\Stubs\MemoryMarshalIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
       <Link>IL\Stubs\VolatileIntrinsics.cs</Link>

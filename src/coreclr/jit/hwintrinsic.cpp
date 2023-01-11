@@ -88,6 +88,8 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
 {
+    assert(varTypeIsSIMD(simdType));
+
     if (m_simdHandleCache == nullptr)
     {
         return NO_CLASS_HANDLE;

@@ -877,7 +877,7 @@ namespace Microsoft.Win32
                 return Array.Empty<string>();
             }
 
-            var names = new List<string>(values);
+            string[] names = new string[values];
 
             // Names in the registry aren't usually very long, although they can go to as large
             // as 16383 characters (MaxValueLength).
@@ -888,6 +888,7 @@ namespace Microsoft.Win32
             // only if needed.
 
             char[]? name = ArrayPool<char>.Shared.Rent(100);
+            int cpt = 0;
 
             try
             {
@@ -896,7 +897,7 @@ namespace Microsoft.Win32
 
                 while ((result = Interop.Advapi32.RegEnumValue(
                     _hkey,
-                    names.Count,
+                    cpt,
                     name,
                     ref nameLength,
                     0,
@@ -909,7 +910,12 @@ namespace Microsoft.Win32
                         // The size is only ever reported back correctly in the case
                         // of ERROR_SUCCESS. It will almost always be changed, however.
                         case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
+                            if (cpt >= names.Length) // possible new item during loop
+                            {
+                                Array.Resize(ref names, names.Length * 2);
+                            }
+
+                            names[cpt++] = new string(name, 0, nameLength);
                             break;
                         case Interop.Errors.ERROR_MORE_DATA:
                             if (IsPerfDataKey())
@@ -919,9 +925,15 @@ namespace Microsoft.Win32
                                 // to be big enough however. 8 characters is the largest
                                 // known name. The size isn't returned, but the string is
                                 // null terminated.
+
+                                if (cpt >= names.Length) // possible new item during loop
+                                {
+                                    Array.Resize(ref names, names.Length * 2);
+                                }
+
                                 fixed (char* c = &name[0])
                                 {
-                                    names.Add(new string(c));
+                                    names[cpt++] = new string(c);
                                 }
                             }
                             else
@@ -949,7 +961,13 @@ namespace Microsoft.Win32
                     ArrayPool<char>.Shared.Return(name);
             }
 
-            return names.ToArray();
+            // Shrink array to fit found items, if necessary
+            if (cpt < names.Length)
+            {
+                Array.Resize(ref names, cpt);
+            }
+
+            return names;
         }
 
         /// <summary>Retrieves the specified value. <b>null</b> is returned if the value doesn't exist</summary>

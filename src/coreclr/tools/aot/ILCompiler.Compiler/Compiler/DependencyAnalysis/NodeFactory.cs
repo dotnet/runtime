@@ -255,6 +255,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            {
+                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+            });
+
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _methodAssociatedData = new NodeCache<IMethodNode, MethodAssociatedDataNode>(methodNode =>
@@ -285,6 +290,11 @@ namespace ILCompiler.DependencyAnalysis
             _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
             {
                 return new ReflectableFieldNode(field);
+            });
+
+            _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
+            {
+                return new GenericStaticBaseInfoNode(type);
             });
 
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
@@ -834,6 +844,19 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrCreateValue(method);
         }
 
+        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
+        {
+            // We might be able to optimize the method body away if the owning type was never seen as allocated.
+            if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
+            {
+                Debug.Assert(!unboxingStub);
+                return _tentativeMethods.GetOrAdd(method);
+            }
+
+            return MethodEntrypoint(method, unboxingStub);
+        }
+
         public MethodAssociatedDataNode MethodAssociatedData(IMethodNode methodNode)
         {
             return _methodAssociatedData.GetOrAdd(methodNode);
@@ -886,6 +909,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectableFieldNode ReflectableField(FieldDesc field)
         {
             return _reflectableFields.GetOrAdd(field);
+        }
+
+        private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
+        internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
+        {
+            return _genericStaticBaseInfos.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
