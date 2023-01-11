@@ -2426,7 +2426,9 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
         : relopBranchInfo;
 
     const relopInfo = binopTable[relop];
-    if (!relopInfo)
+    const intrinsicFpBinop = intrinsicFpBinops[relop];
+
+    if (!relopInfo && !intrinsicFpBinop)
         return false;
 
     // We have to wrap the computation of the branch condition inside the
@@ -2437,7 +2439,19 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
     if (traceBranchDisplacements)
         console.log(`relop @${ip} displacement=${displacement}`);
 
-    append_ldloc(builder, getArgU16(ip, 1), relopInfo[1]);
+    const operandLoadOp = relopInfo
+        ? relopInfo[1]
+        : (
+            intrinsicFpBinop == WasmOpcode.nop
+                ? WasmOpcode.f64_load
+                : WasmOpcode.f32_load
+        );
+
+    append_ldloc(builder, getArgU16(ip, 1), operandLoadOp);
+    // Promote f32 lhs to f64 if necessary
+    if (!relopInfo && (intrinsicFpBinop != WasmOpcode.nop))
+        builder.appendU8(intrinsicFpBinop);
+
     // Compare with immediate
     if (Array.isArray(relopBranchInfo) && relopBranchInfo[1]) {
         // For i8 immediates we need to generate an i64.const even though
@@ -2446,8 +2460,19 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
         builder.appendU8(relopBranchInfo[1]);
         builder.appendLeb(getArgI16(ip, 2));
     } else
-        append_ldloc(builder, getArgU16(ip, 2), relopInfo[1]);
-    builder.appendU8(relopInfo[0]);
+        append_ldloc(builder, getArgU16(ip, 2), operandLoadOp);
+
+    // Promote f32 rhs to f64 if necessary
+    if (!relopInfo && (intrinsicFpBinop != WasmOpcode.nop))
+        builder.appendU8(intrinsicFpBinop);
+
+    if (relopInfo) {
+        builder.appendU8(relopInfo[0]);
+    } else {
+        builder.i32_const(<any>relop);
+        builder.callImport("relop_fp");
+    }
+
     return emit_branch(builder, ip, opcode, displacement);
 }
 
