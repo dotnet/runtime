@@ -48,7 +48,7 @@ public class WasmAppBuilder : Task
     public string? MainHTMLPath { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
-    public bool DisableWebcil { get; set; }
+    public bool UseWebcil { get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -190,7 +190,7 @@ public class WasmAppBuilder : Task
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            if (!DisableWebcil)
+            if (UseWebcil)
             {
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
@@ -247,7 +247,7 @@ public class WasmAppBuilder : Task
         foreach (var assembly in _assemblies)
         {
             string assemblyPath = assembly;
-            if (!DisableWebcil)
+            if (UseWebcil)
                 assemblyPath = Path.ChangeExtension(assemblyPath, ".webcil");
             config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath)));
             if (DebugLevel != 0) {
@@ -276,7 +276,7 @@ public class WasmAppBuilder : Task
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
                 Directory.CreateDirectory(directory);
-                if (!DisableWebcil)
+                if (UseWebcil)
                 {
                     var tmpWebcil = Path.GetTempFileName();
                     var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);

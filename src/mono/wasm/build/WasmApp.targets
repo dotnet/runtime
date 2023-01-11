@@ -67,6 +67,7 @@
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
+      - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -117,6 +118,9 @@
 
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
+
+    <!-- by default, don't package assemblies as webcil -->
+    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''>false</WasmEnableWebcil>
   </PropertyGroup>
 
   <ItemGroup>
@@ -367,6 +371,7 @@
       DebugLevel="$(WasmDebugLevel)"
       IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      UseWebcil="$(WasmEnableWebcil)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
