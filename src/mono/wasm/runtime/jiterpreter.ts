@@ -917,6 +917,13 @@ function generate_wasm_body (
                 builder.callImport("value_copy");
                 break;
             }
+            case MintOpcode.MINT_CPOBJ_VT_NOREF: {
+                const sizeBytes = getArgU16(ip, 3);
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                append_memmove_dest_src(builder, sizeBytes);
+                break;
+            }
             case MintOpcode.MINT_LDOBJ_VT: {
                 const size = getArgU16(ip, 3);
                 append_ldloca(builder, getArgU16(ip, 1));

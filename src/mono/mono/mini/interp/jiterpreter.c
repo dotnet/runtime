@@ -660,6 +660,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
+		case MINT_CPOBJ_VT_NOREF:
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
