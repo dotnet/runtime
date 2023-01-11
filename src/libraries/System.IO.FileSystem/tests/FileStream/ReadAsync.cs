@@ -140,29 +140,29 @@ namespace System.IO.Tests
         [InlineData(false, true)]
         public async Task BypassingCacheInvalidatesCachedData(bool fsIsAsync, bool asyncReads)
         {
-            const int bufferSize = 4096;
-            const int fileSize = bufferSize * 4;
+            const int BufferSize = 4096;
+            const int FileSize = BufferSize * 4;
             string filePath = GetTestFilePath();
-            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+            byte[] content = RandomNumberGenerator.GetBytes(FileSize);
             File.WriteAllBytes(filePath, content);
 
-            await using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize, fsIsAsync);
+            await using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, BufferSize, fsIsAsync);
 
             // 1. Populates the private FileStream buffer, leaves bufferSize - 1 bytes available for next read.
             await ReadAndAssertAsync(1);
             // 2. Consumes all available data from the buffer, reads another bufferSize-many bytes from the disk and copies the 1 missing byte.
-            await ReadAndAssertAsync(bufferSize);
+            await ReadAndAssertAsync(BufferSize);
             // 3. Seek back by the number of bytes consumed from the buffer, all buffered data is now available for next read.
             fs.Position -= 1;
             // 4. Consume all buffered data.
-            await ReadAndAssertAsync(bufferSize);
+            await ReadAndAssertAsync(BufferSize);
             // 5. Bypass the cache (all buffered data has been consumed and we need bufferSize-many bytes).
             // The cache should get invalidated now!!
-            await ReadAndAssertAsync(bufferSize);
+            await ReadAndAssertAsync(BufferSize);
             // 6. Seek back by just a few bytes.
             fs.Position -= 9;
             // 7. Perform a read, which should not use outdated buffered data.
-            await ReadAndAssertAsync(bufferSize);
+            await ReadAndAssertAsync(BufferSize);
 
             async Task ReadAndAssertAsync(int size)
             {
