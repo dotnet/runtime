@@ -32,13 +32,6 @@ namespace System.Diagnostics.Tracing
         Disable = -3,
     }
 
-    internal unsafe delegate void EventEnableCallback(
-        int isEnabled,
-        byte level,
-        long matchAnyKeywords,
-        long matchAllKeywords,
-        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData);
-
     /// <summary>
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
     /// controller callback)
@@ -113,10 +106,10 @@ namespace System.Diagnostics.Tracing
             m_eventProvider = providerType switch
             {
 #if TARGET_WINDOWS
-                EventProviderType.ETW => new EtwEventProvider(),
+                EventProviderType.ETW => new EtwEventProvider(this),
 #endif
 #if FEATURE_PERFTRACING
-                EventProviderType.EventPipe => new EventPipeEventProvider(),
+                EventProviderType.EventPipe => new EventPipeEventProvider(this),
 #endif
                 _ => new NoOpEventProvider(),
             };
@@ -132,7 +125,7 @@ namespace System.Diagnostics.Tracing
             m_providerName = eventSource.Name;
             m_providerId = eventSource.Guid;
 
-            m_eventProvider.EventRegister(eventSource, new EventEnableCallback(EnableCallBack));
+            m_eventProvider.EventRegister(eventSource);
         }
 
         //
@@ -202,7 +195,7 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        private unsafe void EnableCallBack(
+        internal unsafe void EnableCallback(
                         int controlCode,
                         byte setLevel,
                         long anyKeyword,
@@ -1131,25 +1124,28 @@ namespace System.Diagnostics.Tracing
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : IEventProvider
     {
-        private EventEnableCallback? _enableCallback;
+        private WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
         private GCHandle _gcHandle;
+
+        internal EtwEventProvider(EventProvider eventProvider)
+        {
+            _eventProvider = new WeakReference<EventProvider>(eventProvider);
+        }
 
         [UnmanagedCallersOnly]
         private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            ((EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
-                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+
+            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
+                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
         }
 
         // Register an event provider.
-        unsafe void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        unsafe void IEventProvider.EventRegister(EventSource eventSource)
         {
-            _enableCallback = enableCallback;
-
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
@@ -1260,9 +1256,7 @@ namespace System.Diagnostics.Tracing
 
     internal sealed class NoOpEventProvider : IEventProvider
     {
-        void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        void IEventProvider.EventRegister(EventSource eventSource)
         {
         }
 

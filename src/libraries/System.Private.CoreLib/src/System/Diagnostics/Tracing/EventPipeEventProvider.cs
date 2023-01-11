@@ -7,25 +7,27 @@ namespace System.Diagnostics.Tracing
 {
     internal sealed class EventPipeEventProvider : IEventProvider
     {
-        private EventEnableCallback? _enableCallback;
+        private WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
         private GCHandle _gcHandle;
+
+        internal EventPipeEventProvider(EventProvider eventProvider)
+        {
+            _eventProvider = new WeakReference<EventProvider>(eventProvider);
+        }
 
         [UnmanagedCallersOnly]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            ((EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
-                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
+                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
         }
 
         // Register an event provider.
-        unsafe void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        unsafe void IEventProvider.EventRegister(EventSource eventSource)
         {
-            _enableCallback = enableCallback;
-
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 

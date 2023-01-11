@@ -7,9 +7,7 @@ namespace System.Diagnostics.Tracing
     internal interface IEventProvider
     {
         // Register an event provider.
-        unsafe void EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback);
+        unsafe void EventRegister(EventSource eventSource);
 
         // Unregister an event provider.
         void EventUnregister();
