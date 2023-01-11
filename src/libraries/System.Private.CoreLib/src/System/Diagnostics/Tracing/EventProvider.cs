@@ -1209,7 +1209,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        internal override int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return Interop.Advapi32.EventActivityIdControl(
                 ControlCode,
@@ -1277,7 +1277,7 @@ namespace System.Diagnostics.Tracing
             return EventProvider.WriteEventErrorCode.NoError;
         }
 
-        internal virtual int EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        internal virtual int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return 0;
         }

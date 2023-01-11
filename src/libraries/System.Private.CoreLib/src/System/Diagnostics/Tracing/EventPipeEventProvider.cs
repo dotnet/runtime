@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        internal override int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
+        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
             return EventActivityIdControl(controlCode, ref activityId);
         }
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        internal static int StaticEventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
+        internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
             return EventPipeInternal.EventActivityIdControl((uint)controlCode, ref activityId);
         }
