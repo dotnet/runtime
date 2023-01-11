@@ -8602,13 +8602,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                 }
                 // Otherwise, must be local lhs form.  I should assert that.
-                else if (lhs->OperGet() == GT_LCL_VAR)
+                else if (lhs->OperIsLocal())
                 {
-                    GenTreeLclVar* lhsLcl = lhs->AsLclVar();
-                    GenTree*       rhs    = tree->AsOp()->gtOp2;
-                    ValueNum       rhsVN  = rhs->gtVNPair.GetLiberal();
+                    GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
+                    ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();
                     // If we gave the RHS a value number, propagate it.
-                    if (rhsVN != ValueNumStore::NoVN)
+                    if (lhsLcl->OperIs(GT_LCL_VAR) && (rhsVN != ValueNumStore::NoVN))
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
                         if (lhsLcl->HasSsaName())
