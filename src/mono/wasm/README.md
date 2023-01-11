@@ -41,7 +41,7 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 * To build everything
 
-`build.cmd -os Browser -subset mono+libs` in the repo top level directory.
+`build.cmd -os browser -subset mono+libs` in the repo top level directory.
 
 # Running tests
 
@@ -104,8 +104,8 @@ Library tests on windows can be run as described in [testing-libraries](https://
 
 Examples of running tests for individual libraries:
 
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser src\libraries\System.Collections.Concurrent\tests`
-`.\dotnet.cmd build /t:Test /p:TargetOS=Browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser src\libraries\System.Collections.Concurrent\tests`
+`.\dotnet.cmd build /t:Test /p:TargetOS=browser /p:JSEngine="SpiderMonkey" src\libraries\System.Text.Json\tests`
 
 ### Browser tests on macOS
 

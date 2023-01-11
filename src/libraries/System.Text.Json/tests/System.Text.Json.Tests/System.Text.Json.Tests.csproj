@@ -10,9 +10,9 @@
 
     <!-- these tests depend on the pdb files. Causes test failures like:
           [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
-    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'Browser'">true</MetadataUpdaterSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>

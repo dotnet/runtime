@@ -55,8 +55,8 @@ function ExpandZip {
 function GetCurrentOS {
   local unameOut="$(uname -s)"
   case $unameOut in
-    Linux*)     echo "Linux";;
-    Darwin*)    echo "MacOS";;
+    Linux*)     echo "linux";;
+    Darwin*)    echo "macos";;
   esac
   return 0
 }

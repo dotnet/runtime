@@ -20,7 +20,7 @@ jobs:
         buildConfig: Release
         runtimeFlavor: mono
         platforms:
-        - Browser_wasm
+        - browser_wasm
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
           nameSuffix: wasm
@@ -36,7 +36,7 @@ jobs:
       buildConfig: Release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -87,7 +87,7 @@ jobs:
         buildConfig: Release
         runtimeFlavor: mono
         platforms:
-        - Browser_wasm
+        - browser_wasm
         jobParameters:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
           nameSuffix: wasm
@@ -103,7 +103,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -155,7 +155,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: wasm
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release

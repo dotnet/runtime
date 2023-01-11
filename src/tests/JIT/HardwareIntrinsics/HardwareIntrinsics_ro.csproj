@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
     <NumberOfStripesToUseInStress>20</NumberOfStripesToUseInStress>
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">true</GCStressIncompatible>
+    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>

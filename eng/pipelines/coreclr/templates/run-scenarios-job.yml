@@ -65,13 +65,13 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - HelixPreCommandWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
       - HelixPostCommandsWindows: 'set PYTHONPATH=%ORIGPYPATH%'
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), ne(parameters.osSubGroup, '_musl')) }}:
+    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), ne(parameters.osSubGroup, '_musl')) }}:
       - HelixPreCommandLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsLinux: 'export PYTHONPATH=$ORIGPYPATH'
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), eq(parameters.osSubGroup, '_musl')) }}:
+    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
       - HelixPreCommandMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandsMusl: 'export PYTHONPATH=$ORIGPYPATH'
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - HelixPreCommandOSX: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0 --force-reinstall;pip3 install azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
       - HelixPostCommandOSX: 'export PYTHONPATH=$ORIGPYPATH'
 
@@ -81,15 +81,15 @@ jobs:
         - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
         - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
         - IsInternal: -Internal
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), ne(parameters.osSubGroup, '_musl')) }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), ne(parameters.osSubGroup, '_musl')) }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
         - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
         - IsInternal: --internal
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX'), eq(parameters.osSubGroup, '_musl')) }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx'), eq(parameters.osSubGroup, '_musl')) }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandMusl)
         - AdditionalHelixPostCommands: $(HelixPostCommandsMusl)
         - IsInternal: --internal
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
         - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
         - IsInternal: --internal
@@ -100,10 +100,10 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandWindows)
         - AdditionalHelixPostCommands: $(HelixPostCommandsWindows)
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'OSX')) }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osGroup, 'osx')) }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandLinux)
         - AdditionalHelixPostCommands: $(HelixPostCommandsLinux)
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
         - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
         - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 

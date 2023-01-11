@@ -65,7 +65,7 @@ dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Conf
 In order to run the tests, execute:
 
 ```sh
-artifacts/tests/coreclr/(Windows/Linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(Windows/Linux).x64.Release/Tests/Core_Root
+artifacts/tests/coreclr/(windows/linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(windows/linux).x64.Release/Tests/Core_Root
 ```
 
 
