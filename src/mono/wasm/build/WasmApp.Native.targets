@@ -188,7 +188,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
