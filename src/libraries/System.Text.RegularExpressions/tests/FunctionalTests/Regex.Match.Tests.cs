@@ -1283,6 +1283,7 @@ namespace System.Text.RegularExpressions.Tests
             }, ((int)engine).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
+#if NET7_0_OR_GREATER
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Match_InstanceMethods_DefaultTimeout_SourceGenerated_Throws()
         {
@@ -1305,6 +1306,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [GeneratedRegex(@"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$")]
         private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+#endif
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RegexOptions.None)]
