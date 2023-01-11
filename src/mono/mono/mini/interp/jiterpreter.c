@@ -682,6 +682,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
 		case MINT_LDTSFLDA:
+		case MINT_SAFEPOINT:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -716,7 +717,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
-		case MINT_SAFEPOINT:
 			return TRACE_ABORT;
 
 		case MINT_MOV_SRC_OFF:

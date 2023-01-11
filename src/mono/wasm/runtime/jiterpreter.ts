@@ -251,6 +251,7 @@ function getTraceImports () {
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
+        ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -503,6 +504,12 @@ function generate_wasm (
                 "rhs": WasmValtype.f64,
                 "opcode": WasmValtype.i32,
             }, WasmValtype.i32
+        );
+        builder.defineType(
+            "safepoint", {
+                "frame": WasmValtype.i32,
+                "ip": WasmValtype.i32,
+            }, WasmValtype.void
         );
 
         builder.generateTypeSection();
@@ -885,6 +892,10 @@ function generate_wasm_body (
             case MintOpcode.MINT_SDB_INTR_LOC:
             case MintOpcode.MINT_SDB_SEQ_POINT:
                 is_dead_opcode = true;
+                break;
+
+            case MintOpcode.MINT_SAFEPOINT:
+                append_safepoint(builder, ip);
                 break;
 
             case MintOpcode.MINT_LDLOCA_S:
@@ -2387,11 +2398,10 @@ function emit_branch (
         //  so just return.
         // FIXME: Why is this not a safepoint?
         append_bailout(builder, destination, BailoutReason.BackwardBranch, true);
-    } else if (isSafepoint) {
-        // We set the high bit on our relative displacement so that the interpreter knows
-        //  it needs to perform a safepoint after the trace exits
-        append_bailout(builder, destination, BailoutReason.SafepointBranchTaken, true);
     } else {
+        // Do a safepoint *before* changing our IP, if necessary
+        if (isSafepoint)
+            append_safepoint(builder, ip);
         // Branching is enabled, so set eip and exit the current branch block
         builder.branchTargets.add(destination);
         builder.ip_const(destination);
@@ -2937,6 +2947,13 @@ function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: Bailou
         builder.callImport("bailout");
     }
     builder.appendU8(WasmOpcode.return_);
+}
+
+function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
 }
 
 const JITERPRETER_TRAINING = 0;
