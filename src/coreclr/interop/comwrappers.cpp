@@ -403,7 +403,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
         // handled by the DAC logic and that is by-design.
         ComHolder<ITaggedImpl> implMaybe;
         if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe)
-            || S_OK != implMaybe->IsCurrentVersion(&ITaggedImpl_IsCurrentVersion))
+            || S_OK != implMaybe->IsCurrentVersion((void*)&ITaggedImpl_IsCurrentVersion))
         {
             return nullptr;
         }
