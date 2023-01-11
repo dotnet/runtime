@@ -50,6 +50,7 @@ namespace Wasm.Build.Tests
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
+        public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                             // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
@@ -71,6 +72,8 @@ namespace Wasm.Build.Tests
                 Console.WriteLine ("");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
+                if (UseWebcil)
+                    Console.WriteLine($"=============== Using .webcil ===============");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ("");
             }
@@ -320,6 +323,7 @@ namespace Wasm.Build.Tests
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
+                ##USE_WEBCIL##
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -337,6 +341,7 @@ namespace Wasm.Build.Tests
             }
 
             string projectContents = projectTemplate
+                                        .Replace("##USE_WEBCIL##", UseWebcil ? "<WasmEnableWebcil>true</WasmEnableWebcil>" : "")
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
                                         .Replace("##EXTRA_ITEMS##", extraItems)
                                         .Replace("##INSERT_AT_END##", insertAtEnd);
@@ -424,7 +429,7 @@ namespace Wasm.Build.Tests
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                         options.UseWebcil);
+                                         UseWebcil);
                 }
 
                 if (options.UseCache)
@@ -551,6 +556,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
+                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
@@ -1098,8 +1104,7 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
-        bool    UseWebcil                 = true,
+        bool HasV8Script = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,

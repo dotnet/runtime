@@ -104,6 +104,11 @@ if [%TEST_USING_WORKLOADS%] == [true] (
     set _DIR_NAME=dotnet-none
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
+if [%TEST_USING_WEBCIL%] == [true] (
+   set USE_WEBCIL_FOR_TESTS=true
+) else (
+   set USE_WEBCIL_FOR_TESTS=false
+)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%_DIR_NAME% %EXECUTION_DIR%\%_DIR_NAME%
