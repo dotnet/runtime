@@ -719,33 +719,6 @@ namespace
             }
         }
 
-        // This may be an assembly name
-        // Format is "fileName, assemblyDisplayName"
-        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-        char *szComma = strchr(szLibName, ',');
-        if (szComma)
-        {
-            *szComma = '\0';
-            // Trim white spaces
-            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-            AssemblySpec spec;
-            SString ssAssemblyDisplayName(SString::Utf8, szComma);
-            if (SUCCEEDED(spec.InitNoThrow(ssAssemblyDisplayName)))
-            {
-                // Need to perform case insensitive hashing.
-                SString moduleName(SString::Utf8, szLibName);
-                moduleName.LowerCase();
-
-                szLibName = (LPSTR)moduleName.GetUTF8();
-
-                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-                Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
-            }
-        }
-
         return hmod;
     }
 
