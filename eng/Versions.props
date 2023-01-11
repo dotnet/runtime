@@ -184,7 +184,7 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>1.0.0-prerelease.23059.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.23059.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.23059.1</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.1.0-alpha.0.23059.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.1.0-alpha.0.23061.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2</XUnitVersion>
     <XUnitAnalyzersVersion>1.0.0</XUnitAnalyzersVersion>
     <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
