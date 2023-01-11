@@ -939,6 +939,13 @@ function generate_wasm_body (
                 builder.callImport("value_copy");
                 break;
             }
+            case MintOpcode.MINT_STOBJ_VT_NOREF: {
+                const sizeBytes = getArgU16(ip, 3);
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                append_ldloca(builder, getArgU16(ip, 2));
+                append_memmove_dest_src(builder, sizeBytes);
+                break;
+            }
 
             case MintOpcode.MINT_STRLEN:
                 builder.block();
@@ -2375,15 +2382,15 @@ function emit_branch (
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
 
-    if (isSafepoint) {
-        // We set the high bit on our relative displacement so that the interpreter knows
-        //  it needs to perform a safepoint after the trace exits
-        append_bailout(builder, destination, BailoutReason.SafepointBranchTaken, true);
-    } else if (displacement < 0) {
+    if (displacement < 0) {
         // This is a backwards branch, and right now we always bail out for those -
         //  so just return.
         // FIXME: Why is this not a safepoint?
         append_bailout(builder, destination, BailoutReason.BackwardBranch, true);
+    } else if (isSafepoint) {
+        // We set the high bit on our relative displacement so that the interpreter knows
+        //  it needs to perform a safepoint after the trace exits
+        append_bailout(builder, destination, BailoutReason.SafepointBranchTaken, true);
     } else {
         // Branching is enabled, so set eip and exit the current branch block
         builder.branchTargets.add(destination);
