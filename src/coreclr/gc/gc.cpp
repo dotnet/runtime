@@ -44359,6 +44359,8 @@ bool gc_heap::is_pm_ratio_exceeded()
 
 void gc_heap::update_recorded_gen_data (last_recorded_gc_info* gc_info)
 {
+    memset (gc_info->gen_info, 0, sizeof (gc_info->gen_info));
+
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
