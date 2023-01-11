@@ -3651,6 +3651,15 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
 
+    // Copy prop and last-use copy elision happens at the same time in morph.
+    // This node may potentially not be a last use of the new local.
+    //
+    // TODO-CQ: It is probably better to avoid doing this propagation if we
+    // would otherwise omit an implicit byref copy since this propagation will
+    // force us to create another copy anyway.
+    //
+    tree->gtFlags &= ~GTF_VAR_DEATH;
+
 #ifdef DEBUG
     if (verbose)
     {

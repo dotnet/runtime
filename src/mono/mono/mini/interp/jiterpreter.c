@@ -563,7 +563,6 @@ EMSCRIPTEN_KEEPALIVE stackval *
 mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 {
 	stackval *sp_args;
-	MonoMethod *method;
 	InterpMethod *rmethod;
 	ThreadContext *context;
 
@@ -572,15 +571,13 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	jiterp_assert(data);
 	rmethod = data->header.rmethod;
 	jiterp_assert(rmethod);
-	method = rmethod->method;
-	jiterp_assert(method);
 
-	if (mono_interp_is_method_multicastdelegate_invoke(method)) {
+	// Is this method MulticastDelegate.Invoke?
+	if (rmethod->is_invoke) {
 		// Copy the current state of the cache before using it
 		JiterpEntryDataCache cache = data->cache;
 		if (this_arg && (cache.delegate_invoke_is_for == (MonoDelegate*)this_arg)) {
 			// We previously cached the invoke for this delegate
-			method = cache.delegate_invoke;
 			data->header.rmethod = rmethod = cache.delegate_invoke_rmethod;
 		} else {
 			/*
@@ -588,7 +585,7 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 			* Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
 			*/
 			MonoDelegate *del = (MonoDelegate*)this_arg;
-			method = mono_marshal_get_delegate_invoke (method, del);
+			MonoMethod *method = mono_marshal_get_delegate_invoke (rmethod->method, del);
 			data->header.rmethod = rmethod = mono_interp_get_imethod (method);
 
 			// Cache the delegate invoke. This works because data was allocated statically
@@ -663,6 +660,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
+		case MINT_STOBJ_VT_NOREF:
+		case MINT_CPOBJ_VT_NOREF:
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
@@ -683,6 +682,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
 		case MINT_LDTSFLDA:
+		case MINT_SAFEPOINT:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -717,7 +717,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
-		case MINT_SAFEPOINT:
 			return TRACE_ABORT;
 
 		case MINT_MOV_SRC_OFF:

@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen dictionary to use when the key is an <see cref="int"/> and the default comparer is used.</summary>
-    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
     /// <remarks>
     /// This key type is specialized as a memory optimization, as the frozen hash table already contains the array of all
     /// int values, and we can thus use its array as the keys rather than maintaining a duplicate copy.
@@ -52,9 +50,10 @@ namespace System.Collections.Frozen
         {
             _hashTable.FindMatchingEntries(key, out int index, out int endIndex);
 
+            int[] hashCodes = _hashTable.HashCodes;
             while (index <= endIndex)
             {
-                if (key == _hashTable.HashCodes[index])
+                if (key == hashCodes[index])
                 {
                     return ref _values[index];
                 }
