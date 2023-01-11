@@ -4782,6 +4782,10 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
+    // As a special case, for implicit byref args where we undid promotion we
+    // can often still know whether the use of the implicit byref local is a
+    // last use, and whether we can omit a copy when passed as an argument (the
+    // common reason why promotion is undone).
     GenTreeFlags lastUse = GTF_EMPTY;
     VARSET_TP*   deadFields;
     if (((lclNode->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lclNode, &deadFields))
