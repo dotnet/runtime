@@ -352,7 +352,8 @@ The .NET Foundation licenses this file to you under the MIT license.
   </Target>
 
   <Target Name="CreateLib"
-    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps;CreateLibCore" />
+    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps"
+    BeforeTargets="CreateLibCore" />
 
   <Target Name="CreateLibCore"
     Inputs="@(LibInputs)"
