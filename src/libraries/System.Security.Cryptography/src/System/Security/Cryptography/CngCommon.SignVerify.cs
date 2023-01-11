@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
-            estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL and TPMAPI_E_BUFFER_TOO_SMALL scenario gets exercised.
+            estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL and TPM_E_PCP_BUFFER_TOO_SMALL scenario gets exercised.
 #endif
             byte[] signature = new byte[estimatedSize];
             int numBytesNeeded;
