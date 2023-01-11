@@ -1035,8 +1035,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        emitLastInstrs[0] =
-            (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
+        emitLastInstrs[0] = (instrDesc*)((BYTE*)id + ((BYTE*)emitGetLastIns() - (BYTE*)emitCurIGfreeBase));
 
         emitCurLastInsCnt = 1;
     }
