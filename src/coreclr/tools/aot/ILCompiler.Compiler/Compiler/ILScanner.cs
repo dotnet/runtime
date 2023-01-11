@@ -249,7 +249,7 @@ namespace ILCompiler
 
         public TypePreinit.TypePreinitializationPolicy GetPreinitializationPolicy()
         {
-            return new ScannedPreinitializationPolicy(MarkedNodes);
+            return new ScannedPreinitializationPolicy(_factory.PreinitializationManager, MarkedNodes);
         }
 
         private sealed class ScannedVTableProvider : VTableSliceProvider
@@ -401,6 +401,8 @@ namespace ILCompiler
                             }
                         }
 
+                        _constructedTypes.Add(type);
+
                         if (type.IsInterface)
                         {
                             if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
@@ -426,9 +428,6 @@ namespace ILCompiler
                             // 3. What types implement interfaces for which use we can assume whole
                             //    program view.
                             //
-
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                _constructedTypes.Add(type);
 
                             if (type is not MetadataType { IsAbstract: true })
                             {
@@ -639,7 +638,7 @@ namespace ILCompiler
         {
             private readonly HashSet<TypeDesc> _canonFormsWithCctorChecks = new HashSet<TypeDesc>();
 
-            public ScannedPreinitializationPolicy(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            public ScannedPreinitializationPolicy(PreinitializationManager preinitManager, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var markedNode in markedNodes)
                 {
@@ -663,6 +662,15 @@ namespace ILCompiler
                         && nonGCStatics.HasLazyStaticConstructor)
                     {
                         _canonFormsWithCctorChecks.Add(nonGCStatics.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    }
+
+                    // Also look at EETypes to cover the cases when the non-GC static base wasn't generated.
+                    // This makes assert around CanPreinitializeAllConcreteFormsForCanonForm happy.
+                    if (markedNode is EETypeNode eeType
+                        && eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific) != eeType.Type
+                        && preinitManager.HasLazyStaticConstructor(eeType.Type))
+                    {
+                        _canonFormsWithCctorChecks.Add(eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
                     }
                 }
             }

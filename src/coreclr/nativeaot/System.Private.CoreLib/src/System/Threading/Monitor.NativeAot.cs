@@ -149,20 +149,14 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalOne();
         }
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             GetCondition(obj).SignalAll();
         }

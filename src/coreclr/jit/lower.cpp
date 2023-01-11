@@ -1344,7 +1344,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             const LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVarCommon());
             type                    = varDsc->lvType;
         }
-        else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
+        else if (arg->OperIs(GT_HWINTRINSIC))
         {
             GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
 
@@ -6639,7 +6639,6 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             break;
 
 #ifdef FEATURE_SIMD
-        case GT_SIMD:
         case GT_HWINTRINSIC:
             assert(node->TypeGet() != TYP_SIMD12);
             break;

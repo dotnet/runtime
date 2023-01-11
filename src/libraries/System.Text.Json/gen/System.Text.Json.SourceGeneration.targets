@@ -52,6 +52,7 @@
     <Compile Include="ObjectConstructionStrategy.cs" />
     <Compile Include="ParameterGenerationSpec.cs" />
     <Compile Include="PropertyGenerationSpec.cs" />
+    <Compile Include="PropertyInitializerGenerationSpec.cs" />
     <Compile Include="Reflection\AssemblyWrapper.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
     <Compile Include="Reflection\FieldInfoWrapper.cs" />

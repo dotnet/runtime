@@ -10,5 +10,7 @@ namespace System.Text.Json.SourceGeneration
         public required TypeGenerationSpec TypeGenerationSpec { get; init; }
 
         public required ParameterInfo ParameterInfo { get; init; }
+
+        public required int ParameterIndex { get; init; }
     }
 }
