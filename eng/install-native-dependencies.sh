@@ -37,7 +37,10 @@ elif [[ "$1" == "MacCatalyst" || "$1" == "OSX" || "$1" == "tvOS" || "$1" == "iOS
         fi
     fi
 
-    brew update --preinstall
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+    export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+    # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
+    # brew update --preinstall
     brew bundle --no-upgrade --no-lock --file "${engdir}/Brewfile"
     if [ "$?" != "0" ]; then
         exit 1;
