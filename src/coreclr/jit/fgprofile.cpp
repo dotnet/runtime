@@ -1446,6 +1446,8 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                     break;
                 case EdgeKind::CriticalEdge:
                 {
+                    assert(block == source);
+
                     // See if the edge still exists.
                     //
                     bool found = false;
@@ -1460,6 +1462,15 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
+                        // Importer folding may have changed the block jump kind
+                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
+                        //
+                        if (block->bbJumpKind == BBJ_NONE)
+                        {
+                            block->bbJumpKind = BBJ_ALWAYS;
+                            block->bbJumpDest = target;
+                        }
+
                         instrumentedBlock = m_comp->fgSplitEdge(block, target);
                         instrumentedBlock->bbFlags |= BBF_IMPORTED;
                         edgesSplit++;
