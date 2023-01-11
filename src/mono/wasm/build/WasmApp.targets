@@ -120,7 +120,7 @@
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
 
     <!-- by default, don't package assemblies as webcil -->
-    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''>false</WasmEnableWebcil>
+    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
   </PropertyGroup>
 
   <ItemGroup>

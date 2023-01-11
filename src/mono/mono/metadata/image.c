@@ -260,7 +260,7 @@ mono_images_init (void)
 
 	install_pe_loader ();
 
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 	mono_webcil_loader_install ();
 #endif
 
@@ -957,7 +957,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 
 	int32_t ret = try_load_pe_cli_header (raw_data, raw_data_len, &cli_header);
 
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 	if (ret == -1) {
 		ret = mono_webcil_load_cli_header (raw_data, raw_data_len, 0, &cli_header);
 		is_pe = FALSE;
@@ -975,7 +975,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 			int i = 0;
 			gboolean found = FALSE;
 			for (i = 0; i < top; i++){
-				MonoSectionTable t;
+				MonoSectionTable t = {0,};
 
 				if (G_LIKELY (is_pe)) {
 					if (ret + sizeof (MonoSectionTable) > raw_data_len)
@@ -990,7 +990,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 					t.st_raw_data_ptr = GUINT32_FROM_LE (t.st_raw_data_ptr);
 		#endif
 				}
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 				else {
 					ret = mono_webcil_load_section_table (raw_data, raw_data_len, ret, &t);
 					if (ret == -1)

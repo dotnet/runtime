@@ -1453,7 +1453,7 @@ absolute_dir (const gchar *filename)
 static gboolean
 bundled_assembly_match (const char *bundled_name, const char *name)
 {
-#ifdef DISABLE_WEBCIL
+#ifndef ENABLE_WEBCIL
 	return strcmp (bundled_name, name) == 0;
 #else
 	if (strcmp (bundled_name, name) == 0)
@@ -2729,7 +2729,7 @@ mono_assembly_load_corlib (void)
 		corlib = mono_assembly_request_open (corlib_name, &req, &status);
 		g_free (corlib_name);
 	}
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 	if (!corlib) {
 		/* Maybe its in a bundle */
 		char *corlib_name = g_strdup_printf ("%s.webcil", MONO_ASSEMBLY_CORLIB_NAME);

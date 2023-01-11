@@ -933,8 +933,8 @@
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
 
-/* Disable WebCIL image loader */
-#cmakedefine DISABLE_WEBCIL 1
+/* Enable WebCIL image loader */
+#cmakedefine ENABLE_WEBCIL 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

@@ -1102,7 +1102,7 @@ bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
 {
 	if (!strcmp (bsymfile->aname, assembly_name))
 		return TRUE;
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 	const char *p = strstr (assembly_name, ".webcil");
 	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
 	if (p && *(p + 7) == 0) {

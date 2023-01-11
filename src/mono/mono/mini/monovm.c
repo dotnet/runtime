@@ -131,7 +131,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 				if (result)
 					break;
 			}
-#ifndef DISABLE_WEBCIL
+#ifdef ENABLE_WEBCIL
 			else {
 				/* /path/foo.dll -> /path/foo.webcil */
 				size_t n = strlen (fullpath) - 4;
