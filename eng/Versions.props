@@ -61,8 +61,8 @@
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
     <MicrosoftNETCoreAppRuntimewinx64Version>6.0.0-alpha.1.20612.4</MicrosoftNETCoreAppRuntimewinx64Version>
-    <MicrosoftNETCoreDotNetHostVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreDotNetHostVersion>6.0.13</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>6.0.13</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>6.0.0-rc.1.21415.6</MicrosoftNETCoreILAsmVersion>
