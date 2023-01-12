@@ -399,7 +399,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsUInt64:
         case NI_Vector128_AsVector:
         case NI_Vector128_AsVector4:
-        case NI_Vector128_AsVector128:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -433,6 +432,87 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impSIMDPopStack(TYP_SIMD16);
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_AsVector128:
+        {
+            assert(!sig->hasThis());
+            assert(numArgs == 1);
+            assert(retType == TYP_SIMD16);
+
+            switch (getSIMDTypeForSize(simdSize))
+            {
+                case TYP_SIMD8:
+                {
+                    assert((simdSize == 8) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD8);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[2] = 0.0f;
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(2, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                             /* isSimdAsHWIntrinsic */ false);
+
+                    idx     = gtNewIconNode(3, TYP_INT);
+                    zero    = gtNewZeroConNode(TYP_FLOAT);
+                    retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                       /* isSimdAsHWIntrinsic */ false);
+
+                    break;
+                }
+
+                case TYP_SIMD12:
+                {
+                    assert((simdSize == 12) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD12);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(3, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                             /* isSimdAsHWIntrinsic */ false);
+                    break;
+                }
+
+                case TYP_SIMD16:
+                {
+                    // We fold away the cast here, as it only exists to satisfy
+                    // the type system. It is safe to do this here since the retNode type
+                    // and the signature return type are both the same TYP_SIMD.
+
+                    retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                    SetOpLclRelatedToSIMDIntrinsic(retNode);
+                    assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
             break;
         }
 

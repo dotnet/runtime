@@ -645,6 +645,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsVector128:
         {
             assert(sig->numArgs == 1);
+            assert(retType == TYP_SIMD16);
             assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
 
             CorInfoType op1SimdBaseJitType =
@@ -655,11 +656,55 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             switch (getSIMDTypeForSize(simdSize))
             {
                 case TYP_SIMD8:
+                {
+                    assert((simdSize == 8) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD8);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[2] = 0.0f;
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(2, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                             /* isSimdAsHWIntrinsic */ false);
+
+                    idx     = gtNewIconNode(3, TYP_INT);
+                    zero    = gtNewZeroConNode(TYP_FLOAT);
+                    retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                       /* isSimdAsHWIntrinsic */ false);
+
+                    break;
+                }
+
                 case TYP_SIMD12:
                 {
-                    // TYP_SIMD8 and TYP_SIMD12 currently only expose "safe" versions
-                    // which zero the upper elements and so are implemented in managed.
-                    unreached();
+                    assert((simdSize == 12) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD12);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(3, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                             /* isSimdAsHWIntrinsic */ false);
+                    break;
                 }
 
                 case TYP_SIMD16:
