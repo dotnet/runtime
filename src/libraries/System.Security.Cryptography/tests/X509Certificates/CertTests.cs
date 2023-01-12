@@ -627,7 +627,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 key = CngKey.Create(
                     CngAlgorithm.Rsa,
-                    nameof(MicrosoftPlatformCryptoProvider_EcdsaKey),
+                    nameof(MicrosoftPlatformCryptoProvider_RsaKey),
                     cngCreationParameters);
 
                 using (RSACng rsa = new RSACng(key))
