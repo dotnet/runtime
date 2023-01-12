@@ -109,12 +109,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// <summary>
     /// PInvokes to call directly.
     /// </summary>
-    public string[] DirectPInvokes { get; set; } = Array.Empty<string>();
+    public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// File with list of PInvokes to call directly.
     /// </summary>
-    public string[] DirectPInvokeLists { get; set; } = Array.Empty<string>();
+    public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// Instructs the AOT compiler to emit DWARF debugging information.
@@ -386,7 +386,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
             foreach (var directPInvokeList in DirectPInvokeLists)
             {
-                if (!File.Exists(directPInvokeList))
+                if (!File.Exists(directPInvokeList.GetMetadata("FullPath")))
                     throw new LogAsErrorException($"Could not find file '{directPInvokeList}'.");
             }
         }
@@ -640,12 +640,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (DirectPInvokes.Length > 0)
         {
-            aotArgs.Add($"direct-pinvokes={string.Join(",", DirectPInvokes)}");
+            var directPInvokesSB = new StringBuilder("direct-pinvokes=");
+            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.GetMetadata("Identity")};"));
+            aotArgs.Add(directPInvokesSB.ToString());
         }
 
         if (DirectPInvokeLists.Length > 0)
         {
-            aotArgs.Add($"direct-pinvoke-lists={string.Join(",", DirectPInvokeLists)}");
+            var directPInvokeListsSB = new StringBuilder("direct-pinvoke-lists=");
+            Array.ForEach(DirectPInvokeLists, directPInvokeListItem => directPInvokeListsSB.Append($"{directPInvokeListItem.GetMetadata("FullPath")};"));
+            aotArgs.Add(directPInvokeListsSB.ToString());
         }
 
         if (UseDwarfDebug)

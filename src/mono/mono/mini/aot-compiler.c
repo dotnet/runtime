@@ -8532,19 +8532,19 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "direct-pinvokes=")) {
 			char *direct_pinvokes = g_strdup (arg + strlen ("direct-pinvokes="));
 			gchar *direct_pinvoke_ctx = NULL;
-			gchar *direct_pinvoke = strtok_r (direct_pinvokes, ",", direct_pinvoke_ctx);
+			gchar *direct_pinvoke = strtok_r (direct_pinvokes, ";", &direct_pinvoke_ctx);
 			while (direct_pinvoke) {
-				opts->direct_pinvokes = g_list_append (opts->direct_pinvoke, g_strdup (direct_pinvoke));
-				direct_pinvoke = strtok_r (NULL, ",", direct_pinvoke_ctx);
+				opts->direct_pinvokes = g_list_append (opts->direct_pinvokes, g_strdup (direct_pinvoke));
+				direct_pinvoke = strtok_r (NULL, ";", &direct_pinvoke_ctx);
 			}
 			g_free (direct_pinvokes);
 		} else if (str_begins_with (arg, "direct-pinvoke-lists=")) {
 			char *direct_pinvoke_lists = g_strdup (arg + strlen ("direct-pinvoke-lists="));
 			gchar *direct_pinvoke_list_ctx = NULL;
-			gchar *direct_pinvoke_list = strtok_r (direct_pinvoke_lists, ",", direct_pinvoke_list_ctx);
+			gchar *direct_pinvoke_list = strtok_r (direct_pinvoke_lists, ";", &direct_pinvoke_list_ctx);
 			while (direct_pinvoke_list) {
 				opts->direct_pinvoke_lists = g_list_append (opts->direct_pinvoke_lists, g_strdup (direct_pinvoke_list));
-				direct_pinvoke_list = strtok_r (NULL, ",", direct_pinvoke_list_ctx);
+				direct_pinvoke_list = strtok_r (NULL, ";", &direct_pinvoke_list_ctx);
 			}
 			g_free (direct_pinvoke_lists);
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
