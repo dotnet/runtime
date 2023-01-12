@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "eventpipewritingprofiler.h"
+#include <inttypes.h>
 
 EventPipeWritingProfiler *EventPipeWritingProfiler::s_singleton = nullptr;
 
