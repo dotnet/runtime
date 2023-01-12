@@ -847,7 +847,9 @@ namespace System.Net.Sockets.Tests
             {
                 int port = serverSocket.BindToAnonymousPort(listenOn);
                 serverSocket.Listen(1);
-                SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
+
+                Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                _ = client.ConnectAsync(connectTo, port);
                 Socket clientSocket = serverSocket.Accept();
                 Assert.True(clientSocket.Connected);
                 AssertDualModeEnabled(clientSocket, listenOn);
