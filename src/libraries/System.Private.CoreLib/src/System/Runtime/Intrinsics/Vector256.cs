@@ -236,7 +236,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, ulong>();
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector256{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
@@ -254,10 +254,10 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{T}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector{T}" />.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -796,7 +796,8 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m256i _mm256_setr_epi8</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
+        public static Vector256<byte> Create(byte e0,  byte e1,  byte e2,  byte e3,  byte e4,  byte e5,  byte e6,  byte e7,  byte e8,  byte e9,  byte e10, byte e11, byte e12, byte e13, byte e14, byte e15,
+                                             byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
         {
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
@@ -926,7 +927,8 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
+        public static Vector256<sbyte> Create(sbyte e0,  sbyte e1,  sbyte e2,  sbyte e3,  sbyte e4,  sbyte e5,  sbyte e6,  sbyte e7,  sbyte e8,  sbyte e9,  sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15,
+                                              sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
         {
             return Create(
                 Vector128.Create(e0,  e1,  e2,  e3,  e4,  e5,  e6,  e7,  e8,  e9,  e10, e11, e12, e13, e14, e15),
@@ -2743,6 +2745,41 @@ namespace System.Runtime.Intrinsics
             return vector.GetElementUnsafe(0);
         }
 
+        /// <summary>Converts the given vector to a new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of the given vector and the upper 256-bits initialized to zero.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector512<T> ToVector512<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            Vector512<T> result = default;
+            result.SetLowerUnsafe(vector);
+            return result;
+        }
+
+        /// <summary>Converts the given vector to a new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of the given vector and the upper 256-bits left uninitialized.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to extend.</param>
+        /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector512<T> result);
+            result.SetLowerUnsafe(vector);
+            return result;
+        }
+
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to copy.</param>
@@ -2808,7 +2845,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector256<ulong> Lower, Vector256<ulong> Upper) Widen(Vector256<uint> source) => (WidenLower(source), WidenUpper(source));
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Byte}" /> into a <see cref="Vector128{UInt16} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Byte}" /> into a <see cref="Vector256{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2824,7 +2861,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Int16}" /> into a <see cref="Vector128{Int32} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Int16}" /> into a <see cref="Vector256{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2839,7 +2876,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{Int32}" /> into a <see cref="Vector128{Int64} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Int32}" /> into a <see cref="Vector256{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2854,7 +2891,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{SByte}" /> into a <see cref="Vector128{Int16} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{SByte}" /> into a <see cref="Vector256{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2869,7 +2906,7 @@ namespace System.Runtime.Intrinsics
                 Vector128.WidenUpper(lower)
             );
         }
-        /// <summary>Widens the lower half of a <see cref="Vector128{Single}" /> into a <see cref="Vector128{Double} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{Single}" /> into a <see cref="Vector256{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
@@ -2884,7 +2921,7 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-        /// <summary>Widens the lower half of a <see cref="Vector128{UInt16}" /> into a <see cref="Vector128{UInt32} " />.</summary>
+        /// <summary>Widens the lower half of a <see cref="Vector256{UInt16}" /> into a <see cref="Vector256{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
