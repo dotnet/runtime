@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.General._NotSupported
+namespace JIT.HardwareIntrinsics.General._Vector512
 {
     public static partial class Program
     {

@@ -957,6 +957,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector256_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector256DebugView_1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector512.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector512_1.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector512DebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Vector64DebugView_1.cs" />
