@@ -196,6 +196,10 @@
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
     <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
     <TestFramework>GeneratedRunner</TestFramework>
+
+    <!-- Prevent project-specific NuGet props/targets from clashing with the ones we manually import below. -->
+    <ImportProjectExtensionProps>false</ImportProjectExtensionProps>
+    <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
