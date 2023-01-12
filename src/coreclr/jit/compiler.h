@@ -11699,7 +11699,7 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 #endif                                          // TARGET_LOONGARCH64
 
 #ifdef TARGET_RISCV64
-const instruction INS_BREAKPOINT = (instruction)0;
+const instruction INS_BREAKPOINT = INS_ebreak;
 #endif                                          // TARGET_RISCV64
 
 /*****************************************************************************/

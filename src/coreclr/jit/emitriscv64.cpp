@@ -3111,6 +3111,19 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             printf("fence        %d, %d\n", pred, succ);
             return;
         }
+        case 0x73:
+        {
+            if (code == emitInsCode(INS_ebreak))
+            {
+                printf("ebreak\n");
+            }
+            else
+            {
+                printf("Not implemented instruction: 0x%08X\n", code);
+                _ASSERTE(!"TODO RISCV64 NYI");
+            }
+            return;
+        }
         default:
             printf("Not implemented instruction: 0x%08X\n", code);
             _ASSERTE(!"TODO RISCV64 NYI");

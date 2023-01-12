@@ -101,7 +101,29 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
 void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool* pTmpRegIsZero, bool reportUnwindData)
 {
-    NYI("unimplemented on RISCV64 yet");
+    // Even though INS_addi is specified here, the encoder will choose either
+    // an INS_add_d or an INS_addi_d and encode the immediate as a positive value
+    //
+    bool wasTempRegisterUsedForImm =
+        !genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg, true);
+    if (wasTempRegisterUsedForImm)
+    {
+        if (pTmpRegIsZero != nullptr)
+        {
+            *pTmpRegIsZero = false;
+        }
+    }
+
+    if (reportUnwindData)
+    {
+        // spDelta is negative in the prolog, positive in the epilog,
+        // but we always tell the unwind codes the positive value.
+        ssize_t  spDeltaAbs    = abs(spDelta);
+        unsigned unwindSpDelta = (unsigned)spDeltaAbs;
+        assert((ssize_t)unwindSpDelta == spDeltaAbs); // make sure that it fits in a unsigned
+
+        compiler->unwindAllocStack(unwindSpDelta);
+    }
 }
 
 void CodeGen::genPrologSaveRegPair(regNumber reg1,
@@ -477,12 +499,238 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
 {
-    NYI("unimplemented on RISCV64 yet");
+#ifdef DEBUG
+    if (verbose)
+        printf("*************** In genFuncletProlog()\n");
+#endif
+
+    assert(block != NULL);
+    assert(block->bbFlags & BBF_FUNCLET_BEG);
+
+    ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
+
+    gcInfo.gcResetForBB();
+
+    compiler->unwindBegProlog();
+
+    regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
+
+    // Funclets must always save RA and FP, since when we have funclets we must have an FP frame.
+    assert((maskSaveRegsInt & RBM_RA) != 0);
+    assert((maskSaveRegsInt & RBM_FP) != 0);
+
+    bool isFilter  = (block->bbCatchTyp == BBCT_FILTER);
+    int  frameSize = genFuncletInfo.fiSpDelta1;
+
+    regMaskTP maskArgRegsLiveIn;
+    if (isFilter)
+    {
+        maskArgRegsLiveIn = RBM_A0 | RBM_A1;
+    }
+    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+    {
+        maskArgRegsLiveIn = RBM_NONE;
+    }
+    else
+    {
+        maskArgRegsLiveIn = RBM_A0;
+    }
+
+#ifdef DEBUG
+    if (compiler->opts.disAsm)
+    {
+        printf("DEBUG: CodeGen::genFuncletProlog, frameType:%d\n\n", genFuncletInfo.fiFrameType);
+    }
+#endif
+
+    int offset = 0;
+    if (genFuncletInfo.fiFrameType == 1)
+    {
+        // fiFrameType constraints:
+        assert(frameSize < 0);
+        assert(frameSize >= -2048);
+
+        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
+        genStackPointerAdjustment(frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6 
+
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
+        compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
+
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE,
+                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+        compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+
+        maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
+
+        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, genFuncletInfo.fiSP_to_PSP_slot_delta + 8,
+                                        0);
+    }
+    else if (genFuncletInfo.fiFrameType == 2)
+    {
+        // fiFrameType constraints:
+        assert(frameSize < -2048);
+
+        offset       = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
+        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
+        offset       = SP_delta - offset;
+
+        genStackPointerAdjustment(-SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
+        compiler->unwindSaveReg(REG_FP, offset);
+
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
+        compiler->unwindSaveReg(REG_RA, offset + 8);
+
+        maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
+
+        offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
+        genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
+
+        genStackPointerAdjustment(frameSize + SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+    }
+    else
+    {
+        unreached();
+    }
+
+    // This is the end of the OS-reported prolog for purposes of unwinding
+    compiler->unwindEndProlog();
+
+    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet
+    // frame.
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        if (isFilter)
+        {
+            // This is the first block of a filter
+            // Note that register a1 = CallerSP of the containing function
+            // A1 is overwritten by the first Load (new callerSP)
+            // A2 is scratch when we have a large constant offset
+
+            // Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or
+            // function)
+            genInstrWithConstant(INS_ld, EA_PTRSIZE, REG_A1, REG_A1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta,
+                                 REG_A2, false);
+            regSet.verifyRegUsed(REG_A1);
+
+            // Store the PSP value (aka CallerSP)
+            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta,
+                                 REG_A2, false);
+
+            // re-establish the frame pointer
+            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_A1,
+                                 genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
+        }
+        else // This is a non-filter funclet
+        {
+            // A3 is scratch, A2 can also become scratch.
+
+            // compute the CallerSP, given the frame pointer. a3 is scratch?
+            genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_A3, REG_FPBASE,
+                                 -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
+            regSet.verifyRegUsed(REG_A3);
+
+            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta,
+                                 REG_A2, false);
+        }
+    }
 }
 
 void CodeGen::genFuncletEpilog()
 {
-    NYI("unimplemented on RISCV64 yet");
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genFuncletEpilog()\n");
+    }
+#endif
+
+    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+
+    bool unwindStarted = false;
+    int  frameSize     = genFuncletInfo.fiSpDelta1;
+
+    if (!unwindStarted)
+    {
+        // We can delay this until we know we'll generate an unwindable instruction, if necessary.
+        compiler->unwindBegEpilog();
+        unwindStarted = true;
+    }
+
+    regMaskTP maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsInt   = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
+
+    // Funclets must always save RA and FP, since when we have funclets we must have an FP frame.
+    assert((maskRestoreRegsInt & RBM_RA) != 0);
+    assert((maskRestoreRegsInt & RBM_FP) != 0);
+
+#ifdef DEBUG
+    if (compiler->opts.disAsm)
+    {
+        printf("DEBUG: CodeGen::genFuncletEpilog, frameType:%d\n\n", genFuncletInfo.fiFrameType);
+    }
+#endif
+
+    regMaskTP regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
+
+    assert(frameSize < 0);
+    if (genFuncletInfo.fiFrameType == 1)
+    {
+        // fiFrameType constraints:
+        assert(frameSize >= -2048);
+        assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
+
+        regsToRestoreMask &= ~(RBM_RA | RBM_FP); // We restore FP/RA at the end
+
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, genFuncletInfo.fiSP_to_PSP_slot_delta + 8, 0);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE,
+                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+        compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
+        compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
+
+        // generate daddiu SP,SP,imm
+        genStackPointerAdjustment(-frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+    }
+    else if (genFuncletInfo.fiFrameType == 2)
+    {
+        // fiFrameType constraints:
+        assert(frameSize < -2048);
+
+        int offset   = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
+        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
+        offset       = SP_delta - offset;
+
+        // first, generate daddiu SP,SP,imm
+        genStackPointerAdjustment(-frameSize - SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+
+        int offset2 = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
+        assert(offset2 < 2040); // can amend.
+
+        regsToRestoreMask &= ~(RBM_RA | RBM_FP); // We restore FP/RA at the end
+        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, offset2, 0);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, offset + 8);
+        compiler->unwindSaveReg(REG_RA, offset + 8);
+
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
+        compiler->unwindSaveReg(REG_FP, offset);
+
+        // second, generate daddiu SP,SP,imm for remaine space.
+        genStackPointerAdjustment(SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+    }
+    else
+    {
+        unreached();
+    }
+    GetEmitter()->emitIns_R_R_I(INS_jalr, emitActualTypeSize(TYP_I_IMPL), REG_R0, REG_RA, 0);
+    compiler->unwindReturn(REG_RA);
+
+    compiler->unwindEndEpilog();
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
@@ -1892,7 +2140,116 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 //   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(node->OperIs(GT_STORE_BLK));
+
+    unsigned  dstLclNum      = BAD_VAR_NUM;
+    regNumber dstAddrBaseReg = REG_NA;
+    int       dstOffset      = 0;
+    GenTree*  dstAddr        = node->Addr();
+
+    if (!dstAddr->isContained())
+    {
+        dstAddrBaseReg = genConsumeReg(dstAddr);
+    }
+    else if (dstAddr->OperIsAddrMode())
+    {
+        assert(!dstAddr->AsAddrMode()->HasIndex());
+
+        dstAddrBaseReg = genConsumeReg(dstAddr->AsAddrMode()->Base());
+        dstOffset      = dstAddr->AsAddrMode()->Offset();
+    }
+    else
+    {
+        assert(dstAddr->OperIsLocalAddr());
+        dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
+        dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
+    }
+
+    regNumber srcReg;
+    GenTree*  src = node->Data();
+
+    if (src->OperIs(GT_INIT_VAL))
+    {
+        assert(src->isContained());
+        src = src->gtGetOp1();
+    }
+
+    if (!src->isContained())
+    {
+        srcReg = genConsumeReg(src);
+    }
+    else
+    {
+        assert(src->IsIntegralConst(0));
+        srcReg = REG_R0;
+    }
+
+    if (node->IsVolatile())
+    {
+        instGen_MemoryBarrier();
+    }
+
+    emitter* emit = GetEmitter();
+    unsigned size = node->GetLayout()->GetSize();
+
+    assert(size <= INT32_MAX);
+    assert(dstOffset < INT32_MAX - static_cast<int>(size));
+
+    for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
+    {
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, REG_NA, dstLclNum, dstOffset);
+            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, REG_NA, dstLclNum, dstOffset + 8);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(INS_sd, EA_8BYTE, srcReg, dstAddrBaseReg, dstOffset);
+            emit->emitIns_R_R_I(INS_sd, EA_8BYTE, srcReg, dstAddrBaseReg, dstOffset + 8);
+        }
+    }
+
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+    {
+        while (regSize > size)
+        {
+            regSize /= 2;
+        }
+
+        instruction storeIns;
+        emitAttr    attr;
+
+        switch (regSize)
+        {
+            case 1:
+                storeIns = INS_sb;
+                attr     = EA_4BYTE;
+                break;
+            case 2:
+                storeIns = INS_sh;
+                attr     = EA_4BYTE;
+                break;
+            case 4:
+                storeIns = INS_sw;
+                attr     = EA_ATTR(regSize);
+                break;
+            case 8:
+                storeIns = INS_sd;
+                attr     = EA_ATTR(regSize);
+                break;
+            default:
+                unreached();
+        }
+
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(storeIns, attr, srcReg, REG_NA, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
+        }
+    }
 }
 
 void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
@@ -4136,7 +4493,80 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 //
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
-    NYI("unimplemented on RISCV64 yet");
+    noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
+
+    // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
+    // executing GS cookie check will not collect the object pointed to by REG_INTRET (A0).
+    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
+    {
+        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
+    }
+
+    // We need two temporary registers, to load the GS cookie values and compare them. We can't use
+    // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
+    // callee-trash registers, which should not contain anything interesting at this point.
+    // We don't have any IR node representing this check, so LSRA can't communicate registers
+    // for us to use.
+
+    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
+    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+
+    if (compiler->gsGlobalSecurityCookieAddr == nullptr)
+    {
+        // load the GS cookie constant into a reg
+        //
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, compiler->gsGlobalSecurityCookieVal);
+    }
+    else
+    {
+        //// Ngen case - GS cookie constant needs to be accessed through an indirection.
+        // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
+        if (compiler->opts.compReloc)
+        {
+            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, regGSConst,
+                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        }
+        else
+        {
+            // TODO-RISCV64: maybe optimize further!
+            UINT32 upper = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
+            if (((upper + 0x800) >> 12) != 0)
+            {
+                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst,
+                                          (((upper + 0x800) >> 12) & 0xfffff));
+            }
+            if ((upper & 0xFFF) != 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
+                                            REG_R0, (upper & 0xfff));
+            }
+            UINT32 lower = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
+                                        regGSConst, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
+                                        regGSConst, (lower >> 21) & 0x7FF);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
+                                        regGSConst, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
+                                        regGSConst, (lower >> 10) & 0x7FF);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
+                                        regGSConst, 10);
+            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst,
+                                        regGSConst, lower & 0x3FF);
+        }
+        regSet.verifyRegUsed(regGSConst);
+    }
+    // Load this method's GS value from the stack frame
+    GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, regGSValue, compiler->lvaGSSecurityCookie, 0);
+
+    // Compare with the GC cookie constant
+    BasicBlock* gsCheckBlk = genCreateTempLabel();
+    GetEmitter()->emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
+
+    // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
+    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
+    genDefineTempLabel(gsCheckBlk);
 }
 
 //---------------------------------------------------------------------

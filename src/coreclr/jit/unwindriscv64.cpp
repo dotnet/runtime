@@ -894,7 +894,16 @@ void UnwindPrologCodes::AddHeaderWord(DWORD d)
 // AppendEpilog: copy the epilog bytes to the next epilog bytes slot
 void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(upcEpilogSlot != -1);
+
+    int epiSize = pEpi->Size();
+    memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
+             epiSize); // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() ==
+           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+
+    upcEpilogSlot += epiSize;
+    assert(upcEpilogSlot <= upcMemSize - 3);
 }
 
 // GetFinalInfo: return a pointer to the final unwind info to hand to the VM, and the size of this info in bytes
