@@ -2226,6 +2226,8 @@ size_t      gc_heap::g_promoted;
 size_t      gc_heap::g_bpromoted;
 #endif //BACKGROUND_GC
 
+const int n_heaps = 1;
+
 #endif //MULTIPLE_HEAPS
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
@@ -12777,7 +12779,6 @@ void gc_heap::distribute_free_regions()
         gc_heap* hp = pGenGCHeap;
         // just to reduce the number of #ifdefs in the code below
         const int i = 0;
-        const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
         for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12834,7 +12835,6 @@ void gc_heap::distribute_free_regions()
             gc_heap* hp = pGenGCHeap;
             // just to reduce the number of #ifdefs in the code below
             const int i = 0;
-            const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
             ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
             int kind = gen >= loh_generation;
@@ -12861,11 +12861,6 @@ void gc_heap::distribute_free_regions()
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
-
-#ifndef MULTIPLE_HEAPS
-    // just to reduce the number of #ifdefs in the code below
-    const int n_heaps = 1;
-#endif //!MULTIPLE_HEAPS
 
     size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
 
@@ -25287,6 +25282,7 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
         pSC = &sc;
 
     pSC->thread_number = hn;
+    pSC->thread_count = n_heaps;
 
     BOOL relocate_p = (fn == &GCHeap::Relocate);
 
@@ -26423,6 +26419,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
@@ -30915,6 +30912,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             ScanContext sc;
             sc.thread_number = heap_number;
+            sc.thread_count = n_heaps;
             sc.promotion = FALSE;
             sc.concurrent = FALSE;
             // new generations bounds are set can call this guy
@@ -31029,6 +31027,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
         ScanContext sc;
         sc.thread_number = heap_number;
+        sc.thread_count = n_heaps;
         sc.promotion = FALSE;
         sc.concurrent = FALSE;
 
@@ -33498,6 +33497,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
 {
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = FALSE;
     sc.concurrent = FALSE;
 
@@ -34915,6 +34915,7 @@ void gc_heap::background_mark_phase ()
 
     ScanContext sc;
     sc.thread_number = heap_number;
+    sc.thread_count = n_heaps;
     sc.promotion = TRUE;
     sc.concurrent = FALSE;
 
@@ -44977,6 +44978,7 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
         // limit its scope to handle table verification.
         ScanContext sc;
         sc.thread_number = heap_number;
+        sc.thread_count = n_heaps;
         GCScan::VerifyHandleTable(max_generation, max_generation, &sc);
     }
 
@@ -48469,8 +48471,10 @@ CFinalize::ScanForFinalization (promote_func* pfn, int gen, BOOL mark_only_p,
     sc.promotion = TRUE;
 #ifdef MULTIPLE_HEAPS
     sc.thread_number = hp->heap_number;
+    sc.thread_count = gc_heap::n_heaps;
 #else
     UNREFERENCED_PARAMETER(hp);
+    sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
 
     BOOL finalizedFound = FALSE;
@@ -48575,8 +48579,10 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
     sc.promotion = FALSE;
 #ifdef MULTIPLE_HEAPS
     sc.thread_number = hp->heap_number;
+    sc.thread_count = gc_heap::n_heaps;
 #else
     UNREFERENCED_PARAMETER(hp);
+    sc.thread_count = 1;
 #endif //MULTIPLE_HEAPS
 
     unsigned int Seg = gen_segment (gen);
