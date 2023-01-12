@@ -12,6 +12,7 @@ import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
 import { generate_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./logging";
+import { wrap_as_cancelable_promise } from "./cancelable-promise";
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const function_name_root = mono_wasm_new_external_root<MonoString>(function_name),
@@ -174,7 +175,7 @@ export function get_global_this(): any {
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
-export async function dynamic_import(module_name: string, module_url: string): Promise<any> {
+export function dynamic_import(module_name: string, module_url: string): Promise<any> {
     mono_assert(module_name, "Invalid module_name");
     mono_assert(module_url, "Invalid module_name");
     let promise = importedModulesPromises.get(module_name);
@@ -185,13 +186,16 @@ export async function dynamic_import(module_name: string, module_url: string): P
         promise = import(/* webpackIgnore: true */module_url);
         importedModulesPromises.set(module_name, promise);
     }
-    const module = await promise;
-    if (newPromise) {
-        importedModules.set(module_name, module);
-        if (runtimeHelpers.diagnosticTracing)
-            console.debug(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
-    }
-    return module;
+
+    return wrap_as_cancelable_promise(async () => {
+        const module = await promise;
+        if (newPromise) {
+            importedModules.set(module_name, module);
+            if (runtimeHelpers.diagnosticTracing)
+                console.debug(`MONO_WASM: imported ES6 module '${module_name}' from '${module_url}'`);
+        }
+        return module;
+    });
 }
 
 
