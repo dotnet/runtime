@@ -853,14 +853,15 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvokeCtorWithIsLoadedImageAndPrefetchMetadataOptions()
         {
             using (Process currentProc = Process.GetCurrentProcess())
             {
                 string libName = "System.Reflection.Metadata.Tests.dll";
-                ProcessModule assemblyModule = currentProc.Modules.OfType<ProcessModule>().FirstOrDefault(m => string.Equals(m.ModuleName, libName, StringComparison.OrdinalIgnoreCase));
+                ProcessModule assemblyModule = currentProc.Modules.OfType<ProcessModule>().First(m => string.Equals(m.ModuleName, libName, StringComparison.Ordinal));
 
-                UInt64 baseAddress = (UInt64)assemblyModule.BaseAddress.ToInt64();
+                ulong baseAddress = (ulong)assemblyModule.BaseAddress.ToInt64();
                 int length = assemblyModule.ModuleMemorySize;
 
                 // Read assembly contents out of memory, skipping unmapped pages
@@ -875,7 +876,6 @@ namespace System.Reflection.PortableExecutable.Tests
 
                 using (MemoryStream assemblyStream = new MemoryStream(assemblyBytes))
                 {
-                    assemblyStream.Seek(0, SeekOrigin.Begin);
                     PEReader prefetchMetadataReader = new PEReader(assemblyStream, PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen);
                     prefetchMetadataReader.Dispose();
                 }
@@ -887,7 +887,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [DllImport("kernel32.dll")]
         public static extern bool ReadProcessMemory(
             IntPtr hProcess,
-            UInt64 lpBaseAddress,
+            ulong lpBaseAddress,
             byte[] lpBuffer,
             int nSize,
             ref int lpNumberOfBytesRead);
