@@ -556,6 +556,17 @@ namespace System.Net.Sockets.Tests
                 Assert.True(socket.Connected);
             }
         }
+
+        [Fact]
+        public void _DnsPlz()
+        {
+            using Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using SocketServer server = new SocketServer(_log, IPAddress.IPv6Loopback, false, out int port);
+            server.Start();
+
+            IPAddress[] addresses = Dns.GetHostAddresses("localhost");
+            socket.Connect(addresses, port);
+        }
     }
 
     [Trait("IPv4", "true")]
