@@ -18,6 +18,7 @@ public:
 
 private:
     void UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree);
+    void UpdateBit(VARSET_TP& set, LclVarDsc* dsc, bool isBorn, bool isDying);
 
 private:
     Compiler* compiler;
@@ -26,7 +27,8 @@ private:
     VARSET_TP varDeltaSet;      // a set of variables that changed their liveness.
     VARSET_TP gcTrkStkDeltaSet; // // a set of gc tracked stack variables that changed their liveness..
 #ifdef DEBUG
-    VARSET_TP gcVarPtrSetNew; // a set to print changes to live part of tracked stack ptr lcls (gcVarPtrSetCur).
-    unsigned  epoch;          // VarSets epoch when the class was created, must stay the same during its using.
-#endif                        // DEBUG
+    unsigned  epoch; // VarSets epoch when the class was created, must stay the same during its using.
+    VARSET_TP oldLife;
+    VARSET_TP oldStackPtrsLife;
+#endif // DEBUG
 };
