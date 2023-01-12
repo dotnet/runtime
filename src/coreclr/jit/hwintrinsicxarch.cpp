@@ -1095,23 +1095,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsFloating(simdBaseType))
+            if (!varTypeIsFloating(simdBaseType))
             {
-                CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-                CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-                var_types               argType  = TYP_UNKNOWN;
-                CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-                op2     = getArgForHWIntrinsic(argType, argClass);
-
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-                op1     = getArgForHWIntrinsic(argType, argClass);
-
-                retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                // We can't trivially handle division for integral types using SIMD
                 break;
             }
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
+                                         /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -1893,7 +1895,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
             {
                 // byte, sbyte, long, and ulong would require more work to support
                 break;

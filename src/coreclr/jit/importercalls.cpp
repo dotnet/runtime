@@ -1273,6 +1273,7 @@ DONE:
             fgMarkBackwardJump(loopHead, compCurBB);
 
             compMayConvertTailCallToLoop = true;
+            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
         }
 
         // We only do these OSR checks in the root method because:

@@ -32,7 +32,7 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
+if /i [%1] == [browser] ( set __TargetOS=browser&&shift&goto Arg_Loop)
 if /i [%1] == [wasi] ( set __TargetOS=wasi&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
@@ -95,7 +95,7 @@ popd
 set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
-) else if [%__TargetOS%] == [Browser] (
+) else if [%__TargetOS%] == [browser] (
     set __generatorArgs=
 ) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=
