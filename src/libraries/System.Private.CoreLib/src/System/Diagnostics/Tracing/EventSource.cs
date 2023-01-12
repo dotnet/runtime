@@ -5879,7 +5879,14 @@ namespace System.Diagnostics.Tracing
             if (type.IsEnum)
             {
                 string typeName = GetTypeName(type.GetEnumUnderlyingType());
-                return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
+                return typeName switch // ETW requires enums to be unsigned.
+                {
+                    "win:Int8" => "win:UInt8",
+                    "win:Int16" => "win:UInt16",
+                    "win:Int32" => "win:UInt32",
+                    "win:Int64" => "win:UInt64",
+                    _ => typeName,
+                };
             }
 
             switch (Type.GetTypeCode(type))
