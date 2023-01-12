@@ -14,6 +14,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
             <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/ExposedLocalsNumbering/**">
+            <Issue>https://github.com/dotnet/runtime/issues/80184</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -2210,9 +2213,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2602,9 +2602,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635/**">
             <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/ExposedLocalsNumbering/ExposedLocalsNumbering/**">
-            <Issue>https://github.com/dotnet/runtime/issues/80184</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
@@ -3712,7 +3709,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android'" >
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
@@ -3910,13 +3907,13 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-5/**">
             <Issue>https://github.com/dotnet/runtime/issues/52781</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator'">
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -4175,7 +4172,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator')">
+    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>

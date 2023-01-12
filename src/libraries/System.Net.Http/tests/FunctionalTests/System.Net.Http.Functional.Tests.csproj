@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
+  <Import Condition="'$(TargetOS)' == 'browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
@@ -10,7 +10,7 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
-    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'android'">true</IncludeNetworkSecurityConfig>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
 
@@ -21,7 +21,7 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGETS_BROWSER</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because it lacks websocket support -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
@@ -37,7 +37,7 @@
     <NodeNpmModule Include="node-fetch" />
     <NodeNpmModule Include="node-abort-controller" />
 
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'Browser'" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <ItemGroup>

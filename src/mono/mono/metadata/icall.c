@@ -2988,6 +2988,12 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	
+	MonoClass *elem;
+	while (!m_class_is_enumtype (klass) && 
+		!mono_class_is_nullable (klass) &&
+		(klass != (elem = m_class_get_element_class (klass))))
+		klass = elem;
 
 	MonoClass *klass_nested_in;
 	while ((klass_nested_in = m_class_get_nested_in (klass)))
