@@ -395,11 +395,6 @@
       <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <XUnitLogCheckerExe>XUnitLogChecker</XUnitLogCheckerExe>
-      <XUnitLogCheckerExe Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerExe).exe</XUnitLogCheckerExe>
-    </PropertyGroup>
-
     <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
@@ -408,10 +403,10 @@
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative)" />
-      <!-- HERE --><!-- <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="" /> -->
+      <HelixCommandLines Include="dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll (Path to Test = JIT/Methodical/Methodical_d1) (Name of Test = Methodical_d1)" />
     </ItemGroup>
 
-    <!-- <ItemGroup>
+    <ItemGroup>
       <LoggyCommandLines Include="MergedPayloads Root Directory: $(MergedPayloadsRootDirectory)" />
       <LoggyCommandLines Include="Test Bin Dir: $(TestBinDir)" />
       <LoggyCommandLines Include="Merged Wrapper Run Script: %(_MergedWrapperRunScript.Identity)" />
@@ -423,11 +418,11 @@
       <LoggyCommandLines Include="Merged Wrapper Name: $(_MergedWrapperName)" />
       <LoggyCommandLines Include="List of MergedPayload Files:" />
       <LoggyCommandLines Include="@(ReducedMergedPayloadFilesFinal, ',%0a')" />
-    </ItemGroup> -->
+    </ItemGroup>
 
     <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
-    <!-- <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\Loggy-$(_MergedWrapperName).txt" Lines="@(LoggyCommandLines)" /> -->
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\Loggy-$(_MergedWrapperName).txt" Lines="@(LoggyCommandLines)" />
   </Target>
 
   <Target Name="GetTestExclusionList" Returns="@(FilteredTestExclusionList)" Condition="'$(TargetsMobile)' == 'true'">
