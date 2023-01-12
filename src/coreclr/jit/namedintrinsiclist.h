@@ -114,6 +114,7 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
     NI_Throw_PlatformNotSupportedException,
 
     NI_System_Threading_Interlocked_And,

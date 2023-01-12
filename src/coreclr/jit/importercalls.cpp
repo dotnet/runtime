@@ -2357,6 +2357,36 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             return gtNewIconNode(false);
         }
 
+        if (ni == NI_IsSupported_Type)
+        {
+            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+
+            switch (simdBaseJitType)
+            {
+                case CORINFO_TYPE_BYTE:
+                case CORINFO_TYPE_UBYTE:
+                case CORINFO_TYPE_SHORT:
+                case CORINFO_TYPE_USHORT:
+                case CORINFO_TYPE_INT:
+                case CORINFO_TYPE_UINT:
+                case CORINFO_TYPE_LONG:
+                case CORINFO_TYPE_ULONG:
+                case CORINFO_TYPE_FLOAT:
+                case CORINFO_TYPE_DOUBLE:
+                case CORINFO_TYPE_NATIVEINT:
+                case CORINFO_TYPE_NATIVEUINT:
+                {
+                    return gtNewIconNode(true);
+                }
+
+                default:
+                {
+                    return gtNewIconNode(false);
+                }
+            }
+        }
+
         if (ni == NI_Throw_PlatformNotSupportedException)
         {
             return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
@@ -7326,12 +7356,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Collections_Generic_Comparer_get_Default;
         }
     }
-    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
+    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(methodName, "PopCount") == 0))
     {
-        if (strcmp(methodName, "PopCount") == 0)
-        {
-            result = NI_System_Numerics_BitOperations_PopCount;
-        }
+        result = NI_System_Numerics_BitOperations_PopCount;
     }
     else if (strcmp(namespaceName, "System.Numerics") == 0)
     {
@@ -7346,11 +7373,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
-            {
-                // This allows the relevant code paths to be dropped as dead code even
-                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+            // This allows the relevant code paths to be dropped as dead code even
+            // on platforms where FEATURE_HW_INTRINSICS is not supported.
 
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                assert(strcmp(className, "Vector`1") == 0);
+                result = NI_IsSupported_Type;
+            }
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
                 result = NI_IsSupported_False;
             }
             else if (gtIsRecursiveCall(method))
@@ -7539,11 +7571,27 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
-            {
-                // This allows the relevant code paths to be dropped as dead code even
-                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+            // This allows the relevant code paths to be dropped as dead code even
+            // on platforms where FEATURE_HW_INTRINSICS is not supported.
 
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                if (strncmp(className, "Vector", 6) == 0)
+                {
+                    assert((strcmp(className, "Vector64`1") == 0) ||
+                           (strcmp(className, "Vector128`1") == 0) ||
+                           (strcmp(className, "Vector256`1") == 0) ||
+                           (strcmp(className, "Vector512`1") == 0));
+
+                    result = NI_IsSupported_Type;
+                }
+                else
+                {
+                    result = NI_IsSupported_False;
+                }
+            }
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
                 result = NI_IsSupported_False;
             }
             else if (gtIsRecursiveCall(method))
