@@ -259,10 +259,21 @@ namespace
                 const pal::char_t prefix_before_7_0[] = _X("The framework '");
                 const pal::char_t suffix_before_7_0[] = _X(" was not found.");
                 const pal::char_t custom_prefix[] = _X("  _ ");
-                if (utils::starts_with(line, prefix, true)
+                bool has_prefix = utils::starts_with(line, prefix, true);
+                if (has_prefix
                     || (utils::starts_with(line, prefix_before_7_0, true) && utils::ends_with(line, suffix_before_7_0, true)))
                 {
-                    details.append(line);
+                    details.append(_X("Required: "));
+                    if (has_prefix)
+                    {
+                        details.append(line.substr(utils::strlen(prefix) - 1));
+                    }
+                    else
+                    {
+                        size_t prefix_len = utils::strlen(prefix_before_7_0) - 1;
+                        details.append(line.substr(prefix_len, line.length() - prefix_len - utils::strlen(suffix_before_7_0)));
+                    }
+
                     details.append(_X("\n\n"));
                     foundCustomMessage = true;
                 }
