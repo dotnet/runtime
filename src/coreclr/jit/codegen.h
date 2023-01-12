@@ -696,10 +696,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                          siVarLoc*      varLoc);
 
     void genSetScopeInfo();
-#ifdef USING_VARIABLE_LIVE_RANGE
     // Send VariableLiveRanges as debug info to the debugger
     void genSetScopeInfoUsingVariableRanges();
-#endif // USING_VARIABLE_LIVE_RANGE
 
 public:
     void siInit();

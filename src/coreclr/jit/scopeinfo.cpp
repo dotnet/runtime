@@ -781,9 +781,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
                 JITDUMP("Scope info: opening scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,
                         varScope->vsdLifeEnd);
 
-#ifdef USING_VARIABLE_LIVE_RANGE
                 varLiveKeeper->siStartVariableLiveRange(lclVarDsc, varScope->vsdVarNum);
-#endif // USING_VARIABLE_LIVE_RANGE
 
                 INDEBUG(assert(!lclVarDsc->lvTracked ||
                                VarSetOps::IsMember(compiler, block->bbLiveIn, lclVarDsc->lvVarIndex)));
@@ -883,9 +881,7 @@ void CodeGen::psiBegProlog()
         {
             continue;
         }
-#ifdef USING_VARIABLE_LIVE_RANGE
         siVarLoc varLocation;
-#endif // USING_VARIABLE_LIVE_RANGE
 
         if (lclVarDsc->lvIsRegArg)
         {
@@ -925,16 +921,12 @@ void CodeGen::psiBegProlog()
 #endif // DEBUG
                     }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
                     varLocation.storeVariableInRegisters(regNum, otherRegNum);
-#endif // USING_VARIABLE_LIVE_RANGE
                 }
                 else
                 {
-// Stack passed argument. Get the offset from the  caller's frame.
-#ifdef USING_VARIABLE_LIVE_RANGE
+                    // Stack passed argument. Get the offset from the  caller's frame.
                     varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
-#endif // USING_VARIABLE_LIVE_RANGE
                 }
 
                 isStructHandled = true;
@@ -977,22 +969,16 @@ void CodeGen::psiBegProlog()
 #endif
                 assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
-#ifdef USING_VARIABLE_LIVE_RANGE
                 varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);
-#endif // USING_VARIABLE_LIVE_RANGE
             }
         }
         else
         {
-#ifdef USING_VARIABLE_LIVE_RANGE
             varLocation.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(lclVarDsc));
-#endif // USING_VARIABLE_LIVE_RANGE
         }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         // Start a VariableLiveRange for this LclVarDsc on the built location
         varLiveKeeper->psiStartVariableLiveRange(varLocation, varScope->vsdVarNum);
-#endif // USING_VARIABLE_LIVE_RANGE
     }
 }
 
@@ -1006,7 +992,5 @@ void CodeGen::psiBegProlog()
 void CodeGen::psiEndProlog()
 {
     assert(compiler->compGeneratingProlog);
-#ifdef USING_VARIABLE_LIVE_RANGE
     varLiveKeeper->psiClosePrologVariableRanges();
-#endif // USING_VARIABLE_LIVE_RANGE
 }

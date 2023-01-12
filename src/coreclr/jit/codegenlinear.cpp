@@ -86,9 +86,7 @@ void CodeGen::genInitialize()
         siInit();
     }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     initializeVariableLiveKeeper();
-#endif //  USING_VARIABLE_LIVE_RANGE
 
     genPendingCallLabel = nullptr;
 
@@ -555,12 +553,10 @@ void CodeGen::genCodeForBBlist()
             isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
         }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
         {
             varLiveKeeper->siEndAllVariableLiveRange(compiler->compCurLife);
         }
-#endif // USING_VARIABLE_LIVE_RANGE
 
         if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
         {
@@ -831,12 +827,10 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
-#if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
         if (compiler->verbose)
         {
             varLiveKeeper->dumpBlockVariableLiveRanges(block);
         }
-#endif // defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
 
         INDEBUG(compiler->compCurBB = nullptr);
 
@@ -955,14 +949,12 @@ void CodeGen::genSpillVar(GenTree* tree)
         assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     if (needsSpill)
     {
         // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
         // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
         varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
     }
-#endif // USING_VARIABLE_LIVE_RANGE
 }
 
 //------------------------------------------------------------------------
@@ -1077,7 +1069,6 @@ void CodeGen::genUnspillLocal(
     {
         varDsc->SetRegNum(regNum);
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         // We want "VariableLiveRange" inclusive on the beginning and exclusive on the ending.
         // For that we shouldn't report an update of the variable location if is becoming dead
         // on the same native offset.
@@ -1086,7 +1077,6 @@ void CodeGen::genUnspillLocal(
             // Report the home change for this variable
             varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
         }
-#endif // USING_VARIABLE_LIVE_RANGE
 
         if (!varDsc->IsAlwaysAliveInMemory())
         {

@@ -727,9 +727,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming dead\n", varNum);
         }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         codeGen->getVariableLiveKeeper()->siEndVariableLiveRange(varNum);
-#endif // USING_VARIABLE_LIVE_RANGE
     }
 
     VarSetOps::Iter bornIter(this, bornSet);
@@ -773,9 +771,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming live\n", varNum);
         }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         codeGen->getVariableLiveKeeper()->siStartVariableLiveRange(varDsc, varNum);
-#endif // USING_VARIABLE_LIVE_RANGE
     }
 }
 
@@ -6752,9 +6748,7 @@ void CodeGen::genSetScopeInfo()
 
     unsigned varsLocationsCount = 0;
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
-#endif // USING_VARIABLE_LIVE_RANGE
 
     if (varsLocationsCount == 0)
     {
@@ -6777,19 +6771,15 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     // We can have one of both flags defined, both, or none. Specially if we need to compare both
     // both results. But we cannot report both to the debugger, since there would be overlapping
     // intervals, and may not indicate the same variable location.
 
     genSetScopeInfoUsingVariableRanges();
 
-#endif // USING_VARIABLE_LIVE_RANGE
-
     compiler->eeSetLVdone();
 }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
 //------------------------------------------------------------------------
 // genSetScopeInfoUsingVariableRanges: Call "genSetScopeInfo" with the
 //  "VariableLiveRanges" created for the arguments, special arguments and
@@ -6882,7 +6872,6 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
 
     compiler->eeVarsCount = liveRangeIndex;
 }
-#endif // USING_VARIABLE_LIVE_RANGE
 
 //------------------------------------------------------------------------
 // genSetScopeInfo: Record scope information for debug info
@@ -8268,10 +8257,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
                 genUpdateVarReg(varDsc, treeNode);
 
-#ifdef USING_VARIABLE_LIVE_RANGE
                 // Report the home change for this variable
                 varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->GetLclNum());
-#endif // USING_VARIABLE_LIVE_RANGE
 
                 // The new location is going live
                 genUpdateRegLife(varDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
@@ -8336,10 +8323,8 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
                 gcInfo.gcMarkRegSetNpt(genRegMask(sourceReg));
                 genUpdateVarReg(fieldVarDsc, treeNode);
 
-#ifdef USING_VARIABLE_LIVE_RANGE
                 // Report the home change for this variable
                 varLiveKeeper->siUpdateVariableLiveRange(fieldVarDsc, fieldVarNum);
-#endif // USING_VARIABLE_LIVE_RANGE
 
                 // The new location is going live
                 genUpdateRegLife(fieldVarDsc, /*isBorn*/ true, /*isDying*/ false DEBUGARG(treeNode));
@@ -8414,7 +8399,6 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
     return genStackLevel;
 }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
 #ifdef DEBUG
 //------------------------------------------------------------------------
 //                      VariableLiveRanges dumpers
@@ -9222,7 +9206,6 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
     }
 }
 #endif // DEBUG
-#endif // USING_VARIABLE_LIVE_RANGE
 
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
