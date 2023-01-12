@@ -235,9 +235,9 @@ namespace ILCompiler
                 ProcessType(type, nav);
         }
 
-        protected virtual bool ProcessTypePattern(string fullName, ModuleDesc assembly, XPathNavigator nav)
+        protected virtual bool ProcessTypePattern(string fullname, ModuleDesc assembly, XPathNavigator nav)
         {
-            Regex regex = new Regex(fullName.Replace(".", @"\.").Replace("*", "(.*)"));
+            Regex regex = new Regex(fullname.Replace(".", @"\.").Replace("*", "(.*)"));
 
             foreach (TypeDesc type in assembly.GetAllTypes())
                 MatchType(type, regex, nav);
