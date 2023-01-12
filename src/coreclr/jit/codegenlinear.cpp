@@ -827,13 +827,13 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
-#if defined(DEBUG)
+#ifdef DEBUG
         if (compiler->verbose)
         {
             varLiveKeeper->dumpBlockVariableLiveRanges(block);
         }
         compiler->compCurBB = nullptr;
-#endif // defined(DEBUG)
+#endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
