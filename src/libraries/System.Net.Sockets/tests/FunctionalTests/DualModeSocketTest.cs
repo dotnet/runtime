@@ -17,63 +17,6 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConstructorAndProperty : DualModeBase
     {
-        //[Theory]
-        //[InlineData(SocketType.Stream, ProtocolType.Tcp)]
-        //[InlineData(SocketType.Dgram, ProtocolType.Udp)]
-        //public void _BindToExistingLol(SocketType socketType, ProtocolType protocolType)
-        //{
-        //    Socket s1 = new Socket(AddressFamily.InterNetwork, socketType, protocolType);
-        //    int port = BindWithoutReuseAddress(s1, new IPEndPoint(IPAddress.Loopback, 0));
-
-        //    Socket s2 = new Socket(AddressFamily.InterNetwork, socketType, protocolType);
-        //    BindWithoutReuseAddress(s2, new IPEndPoint(IPAddress.Loopback, port));
-        //}
-
-        private static unsafe int BindWithoutReuseAddress(Socket socket, IPEndPoint endPoint)
-        {
-            if (PlatformDetection.IsWindows)
-            {
-                socket.Bind(endPoint);
-                return ((IPEndPoint)socket.LocalEndPoint).Port;
-            }
-            SocketAddress addr = endPoint.Serialize();
-            byte[] data = new byte[addr.Size];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = addr[i];
-            }
-            fixed (byte* dataPtr = data)
-            {
-                int result = bind(socket.SafeHandle, (nint)dataPtr, (uint)data.Length);
-                if (result != 0)
-                {
-                    throw new SocketException((int)SocketError.SocketError, Marshal.GetLastPInvokeErrorMessage());
-                }
-                uint sockLen = (uint)data.Length;
-                result = getsockname(socket.SafeHandle, (nint)dataPtr, (IntPtr)(&sockLen));
-                if (result != 0)
-                {
-                    throw new SocketException((int)SocketError.SocketError, Marshal.GetLastPInvokeErrorMessage());
-                }
-                addr = new SocketAddress(endPoint.AddressFamily, (int)sockLen);
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                addr[i] = data[i];
-            }
-
-            return ((IPEndPoint)endPoint.Create(addr)).Port;
-
-            [DllImport("libc", SetLastError = true)]
-            static extern int bind(SafeSocketHandle socket, IntPtr socketAddress, uint addrLen);
-
-            [DllImport("libc", SetLastError = true)]
-            static extern int getsockname(SafeSocketHandle socket, IntPtr socketAddress, IntPtr addrLenPtr);
-        }
-
-        // bind(fd, (struct sockaddr*)socketAddress, (socklen_t) socketAddressLen);
-
         [Fact]
         public void DualModeConstructor_InterNetworkV6Default()
         {
