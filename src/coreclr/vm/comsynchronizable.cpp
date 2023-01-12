@@ -475,17 +475,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    ClrSleepEx(0, false);
-
-    END_QCALL;
-}
-
 FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
     FCALL_CONTRACT;
 
