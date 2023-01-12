@@ -165,7 +165,7 @@ namespace System.Text.Json
                 Options = options;
                 HashCode = hashCode;
 #if !NETCOREAPP
-                _jsonTypeInfoFactory = options.GetTypeInfoNoCaching;
+                _jsonTypeInfoFactory = Options.GetTypeInfoNoCaching;
 #endif
             }
 
