@@ -153,7 +153,6 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : uint64_t
 {
     RBM_NONE    = 0,
-    RBM_LOWSIMD = UI64(1) << 63,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
