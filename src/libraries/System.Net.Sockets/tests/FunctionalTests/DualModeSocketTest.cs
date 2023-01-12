@@ -780,332 +780,115 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [Trait("IPv4", "true")]
-    [Trait("IPv6", "true")]
-    public class DualModeAccept : DualModeBase
+    public abstract class DualModeAcceptBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private readonly ITestOutputHelper _output;
-
-        public DualModeAccept(ITestOutputHelper output) => _output = output;
-
-        [Fact]
-        public void AcceptV4BoundToSpecificV4_Success()
+        public DualModeAcceptBase(ITestOutputHelper output) : base(output)
         {
-            Accept_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        public void AcceptV4BoundToAnyV4_Success()
-        {
-            Accept_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
+        public Task AcceptV4BoundToSpecificV4_Success() => Accept_Helper(IPAddress.Loopback, IPAddress.Loopback);
 
         [Fact]
-        public void AcceptV6BoundToSpecificV6_Success()
-        {
-            Accept_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
+        public Task AcceptV4BoundToAnyV4_Success() => Accept_Helper(IPAddress.Any, IPAddress.Loopback);
 
         [Fact]
-        public void AcceptV6BoundToAnyV6_Success()
-        {
-            Accept_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
+        public Task AcceptV6BoundToSpecificV6_Success() => Accept_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
 
         [Fact]
-        public void AcceptV6BoundToSpecificV4_CantConnect()
-        {
-            Accept_Helper_Failing(IPAddress.Loopback, IPAddress.IPv6Loopback);
-        }
+        public Task AcceptV6BoundToAnyV6_Success() => Accept_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
 
         [Fact]
-        public void AcceptV4BoundToSpecificV6_CantConnect()
-        {
-            Accept_Helper_Failing(IPAddress.IPv6Loopback, IPAddress.Loopback);
-        }
+        public Task AcceptV4BoundToAnyV6_Success() => Accept_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
 
         [Fact]
-        public void AcceptV6BoundToAnyV4_CantConnect()
-        {
-            Accept_Helper_Failing(IPAddress.Any, IPAddress.IPv6Loopback);
-        }
+        public Task AcceptV6BoundToSpecificV4_CantConnect() => Accept_Helper_Failing(IPAddress.Loopback, IPAddress.IPv6Loopback);
 
         [Fact]
-        public void AcceptV4BoundToAnyV6_Success()
-        {
-            Accept_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
+        public Task AcceptV4BoundToSpecificV6_CantConnect() => Accept_Helper_Failing(IPAddress.IPv6Loopback, IPAddress.Loopback);
 
-        private void Accept_Helper(IPAddress listenOn, IPAddress connectTo)
+        [Fact]
+        public Task AcceptV6BoundToAnyV4_CantConnect() => Accept_Helper_Failing(IPAddress.Any, IPAddress.IPv6Loopback);
+
+        private async Task Accept_Helper(IPAddress listenOn, IPAddress connectTo)
         {
             using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            
+
             int port = serverSocket.BindToAnonymousPort(listenOn);
             serverSocket.Listen(1);
 
             using Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            _ = client.ConnectAsync(connectTo, port);
-            Socket clientSocket = serverSocket.Accept();
+            Task connectTask = client.ConnectAsync(connectTo, port);
+            Socket clientSocket = await AcceptAsync(serverSocket);
+            await connectTask;
             Assert.True(clientSocket.Connected);
             AssertDualModeEnabled(clientSocket, listenOn);
             Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
+            if (connectTo == IPAddress.Loopback)
+            {
+                Assert.Contains(((IPEndPoint)clientSocket.LocalEndPoint).Address, DualModeBase.ValidIPv6Loopbacks);
+            }
+            else
+            {
+                Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
+            }
         }
 
-        private void Accept_Helper_Failing(IPAddress listenOn, IPAddress connectTo)
+        private async Task Accept_Helper_Failing(IPAddress listenOn, IPAddress connectTo)
         {
             using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             int port = serverSocket.BindToAnonymousPort(listenOn);
             serverSocket.Listen(1);
-            _ = Task.Run(serverSocket.Accept);
+            _ = AcceptAsync(serverSocket);
 
             using Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync(connectTo, port));
-        }
-    }
-
-    [Trait("IPv4", "true")]
-    [Trait("IPv6", "true")]
-    public class DualModeBeginAccept : DualModeBase
-    {
-        [Fact]
-        public void BeginAcceptV4BoundToSpecificV4_Success()
-        {
-            DualModeConnect_BeginAccept_Helper(IPAddress.Loopback, IPAddress.Loopback);
+            await Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync(connectTo, port));
         }
 
-        [Fact]
-        public void BeginAcceptV4BoundToAnyV4_Success()
+        protected static void AssertDualModeEnabled(Socket socket, IPAddress listenOn)
         {
-            DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void BeginAcceptV6BoundToSpecificV6_Success()
-        {
-            DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        public void BeginAcceptV6BoundToAnyV6_Success()
-        {
-            DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void BeginAcceptV6BoundToSpecificV4_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
+            if (OperatingSystem.IsWindows())
             {
-                DualModeConnect_BeginAccept_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void BeginAcceptV4BoundToSpecificV6_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
+                Assert.True(socket.DualMode);
+            }
+            else if (OperatingSystem.IsFreeBSD())
             {
-                DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void BeginAcceptV6BoundToAnyV4_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
+                // This is not valid check on FreeBSD.
+                // Accepted socket is never DualMode and cannot be changed.
+            }
+            else
             {
-                DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        public void BeginAcceptV4BoundToAnyV6_Success()
-        {
-            DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
-
-        private void DualModeConnect_BeginAccept_Helper(IPAddress listenOn, IPAddress connectTo)
-        {
-            using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
-                serverSocket.Listen(1);
-                IAsyncResult async = serverSocket.BeginAccept(null, null);
-                SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
-                
-                Assert.True(
-                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
-                    "Timed out while waiting for connection");
-                Assert.True(
-                    async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
-                    "Timed out while waiting to accept the client");
-
-                // Due to the nondeterministic nature of calling dispose on a Socket that is doing
-                // an EndAccept operation, we expect two types of exceptions to happen.
-                Socket clientSocket;
-                try
-                {
-                    clientSocket = serverSocket.EndAccept(async);
-                    Assert.True(clientSocket.Connected);
-                    AssertDualModeEnabled(clientSocket, listenOn);
-                    Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-                    if (connectTo == IPAddress.Loopback)
-                    {
-                        Assert.Contains(((IPEndPoint)clientSocket.LocalEndPoint).Address, ValidIPv6Loopbacks);
-                    }
-                    else
-                    {
-                        Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
-                    }
-                }
-                catch (ObjectDisposedException) { }
-                catch (SocketException) { }
-
-                if (client.Error != SocketError.Success)
-                {
-                    throw new SocketException((int)client.Error);
-                }
+                Assert.True((listenOn != IPAddress.IPv6Any && !listenOn.IsIPv4MappedToIPv6) || socket.DualMode);
             }
         }
     }
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeAcceptAsync : DualModeBase
+    public class DualModeAcceptSync : DualModeAcceptBase<SocketHelperArraySync>
     {
-        [Fact]
-        public void AcceptAsyncV4BoundToSpecificV4_Success()
-        {
-            DualModeConnect_AcceptAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
-        }
+        public DualModeAcceptSync(ITestOutputHelper output) : base(output) { }
+    }
 
-        [Fact]
-        public void AcceptAsyncV4BoundToAnyV4_Success()
-        {
-            DualModeConnect_AcceptAsync_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
+    [Trait("IPv4", "true")]
+    [Trait("IPv6", "true")]
+    public class DualModeAcceptApm : DualModeAcceptBase<SocketHelperApm>
+    {
+        public DualModeAcceptApm(ITestOutputHelper output) : base(output) { }
+    }
 
-        [Fact]
-        public void AcceptAsyncV6BoundToSpecificV6_Success()
-        {
-            DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
+    [Trait("IPv4", "true")]
+    [Trait("IPv6", "true")]
+    public class DualModeAcceptEap : DualModeAcceptBase<SocketHelperEap>
+    {
+        public DualModeAcceptEap(ITestOutputHelper output) : base(output) { }
+    }
 
-        [Fact]
-        public void AcceptAsyncV6BoundToAnyV6_Success()
-        {
-            DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void AcceptAsyncV6BoundToSpecificV4_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_AcceptAsync_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void AcceptAsyncV4BoundToSpecificV6_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void AcceptAsyncV6BoundToAnyV4_CantConnect()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                DualModeConnect_AcceptAsync_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        public void AcceptAsyncV4BoundToAnyV6_Success()
-        {
-            DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
-
-        private void DualModeConnect_AcceptAsync_Helper(IPAddress listenOn, IPAddress connectTo)
-        {
-            using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
-                serverSocket.Listen(1);
-
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.Completed += AsyncCompleted;
-                ManualResetEvent waitHandle = new ManualResetEvent(false);
-                args.UserToken = waitHandle;
-                args.SocketError = SocketError.SocketError;
-
-                _log.WriteLine(args.GetHashCode() + " SocketAsyncEventArgs with manual event " + waitHandle.GetHashCode());
-                if (!serverSocket.AcceptAsync(args))
-                {
-                    throw new SocketException((int)args.SocketError);
-                }
-
-                SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
-
-                var waitHandles = new WaitHandle[2];
-                waitHandles[0] = waitHandle;
-                waitHandles[1] = client.WaitHandle;
-
-                int completedHandle = WaitHandle.WaitAny(waitHandles, TestSettings.PassingTestTimeout);
-
-                if (completedHandle == WaitHandle.WaitTimeout)
-                {
-                    throw new TimeoutException("Timed out while waiting for either of client and server connections...");
-                }
-
-                if (completedHandle == 1)   // Client finished
-                {
-                    if (client.Error != SocketError.Success)
-                    {
-                        // Client SocketException
-                        throw new SocketException((int)client.Error);
-                    }
-
-                    if (!waitHandle.WaitOne(5000))  // Now wait for the server.
-                    {
-                        throw new TimeoutException("Timed out while waiting for the server accept...");
-                    }
-                }
-
-                _log.WriteLine(args.SocketError.ToString());
-
-
-                if (args.SocketError != SocketError.Success)
-                {
-                    throw new SocketException((int)args.SocketError);
-                }
-
-                Socket clientSocket = args.AcceptSocket;
-                Assert.NotNull(clientSocket);
-                Assert.True(clientSocket.Connected);
-                AssertDualModeEnabled(clientSocket, listenOn);
-                Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-                if (connectTo == IPAddress.Loopback)
-                {
-                    Assert.Contains(((IPEndPoint)clientSocket.LocalEndPoint).Address, ValidIPv6Loopbacks);
-                }
-                else
-                {
-                    Assert.Equal(connectTo.MapToIPv6(), ((IPEndPoint)clientSocket.LocalEndPoint).Address);
-                }
-                clientSocket.Dispose();
-            }
-        }
+    [Trait("IPv4", "true")]
+    [Trait("IPv6", "true")]
+    public class DualModeAcceptTask : DualModeAcceptBase<SocketHelperTask>
+    {
+        public DualModeAcceptTask(ITestOutputHelper output) : base(output) { }
     }
 
     [OuterLoop]
@@ -2453,7 +2236,7 @@ namespace System.Net.Sockets.Tests
 
         protected readonly ITestOutputHelper _log;
 
-        protected static IPAddress[] ValidIPv6Loopbacks = new IPAddress[] {
+        internal static IPAddress[] ValidIPv6Loopbacks = new IPAddress[] {
             new IPAddress(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 0, 0, 1 }, 0),  // ::127.0.0.1
             IPAddress.Loopback.MapToIPv6(),                                                     // ::ffff:127.0.0.1
             IPAddress.IPv6Loopback                                                              // ::1
