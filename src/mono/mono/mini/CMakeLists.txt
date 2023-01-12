@@ -14,7 +14,7 @@ include_directories(
 if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
-  if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
+  if(CMAKE_SYSTEM_VARIANT STREQUAL "maccatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)

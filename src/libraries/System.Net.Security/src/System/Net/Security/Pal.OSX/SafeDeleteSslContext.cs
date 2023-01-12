@@ -169,7 +169,9 @@ namespace System.Net
                     SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (sslAuthenticationOptions.CertificateContext != null)
+                // SslBreakOnCertRequested does not seem to do anything when we already provide the cert here.
+                // So we set it only for server in order to reliably detect whether the peer asked for it on client.
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.IsServer)
                 {
                     SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
