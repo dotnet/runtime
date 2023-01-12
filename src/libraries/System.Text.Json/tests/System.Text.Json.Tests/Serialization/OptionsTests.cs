@@ -906,7 +906,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
                 {
-                    break; // readonly-ness is not a structural property of JsonSerializerOptions.
+                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
