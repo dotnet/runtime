@@ -441,7 +441,15 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
         case INS_fence:
             code |= ((imm & 0xff) << 20);
             break;
+        case INS_j:
+            assert(imm >= -1048576 && imm < 1048576);
+            code |= ((imm >> 12) & 0xff)  << 12;
+            code |= ((imm >> 11)  & 0x1)  << 20;
+            code |= ((imm >> 1)  & 0x3ff) << 21;
+            code |= ((imm >> 20) & 0x1)  << 31;
+            break;
         default:
+            fprintf(stderr, "[CLAMP] emitIns_I %llx %llx\n", ins, code);
             unreached();
     }
 
@@ -478,7 +486,18 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= reg << 7;
             code |= (imm & 0xfffff) << 12;
             break;
+        case INS_jal:
+            assert(isGeneralRegisterOrR0(reg));
+            assert(imm >= -1048576 && imm < 1048576);
+
+            code != reg << 7;
+            code |= ((imm >> 12) & 0xff)  << 12;
+            code |= ((imm >> 11)  & 0x1)  << 20;
+            code |= ((imm >> 1)  & 0x3ff) << 21;
+            code |= ((imm >> 20) & 0x1)  << 31;
+            break;
         default:
+            fprintf(stderr, "[CLAMP] emitIns_R_I %llx %llx\n", ins, code);
             unreached();
             break;
     } // end switch (ins)

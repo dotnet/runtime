@@ -1321,7 +1321,315 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
  */
 void CodeGen::genLclHeap(GenTree* tree)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(tree->OperGet() == GT_LCLHEAP);
+    assert(compiler->compLocallocUsed);
+
+    emitter* emit = GetEmitter();
+    GenTree* size = tree->AsOp()->gtOp1;
+    noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
+
+    regNumber            targetReg                = tree->GetRegNum();
+    regNumber            regCnt                   = REG_NA;
+    regNumber            pspSymReg                = REG_NA;
+    var_types            type                     = genActualType(size->gtType);
+    emitAttr             easz                     = emitTypeSize(type);
+    BasicBlock*          endLabel                 = nullptr; // can optimize for loongarch.
+    unsigned             stackAdjustment          = 0;
+    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
+    target_ssize_t       lastTouchDelta =
+        ILLEGAL_LAST_TOUCH_DELTA; // The number of bytes from SP to the last stack address probed.
+
+    noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
+    noway_assert(genStackLevel == 0);   // Can't have anything on the stack
+
+    // compute the amount of memory to allocate to properly STACK_ALIGN.
+    size_t amount = 0;
+    if (size->IsCnsIntOrI())
+    {
+        // If size is a constant, then it must be contained.
+        assert(size->isContained());
+
+        // If amount is zero then return null in targetReg
+        amount = size->AsIntCon()->gtIconVal;
+        if (amount == 0)
+        {
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
+            goto BAILOUT;
+        }
+
+        // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
+        amount = AlignUp(amount, STACK_ALIGN);
+    }
+    else
+    {
+        // If 0 bail out by returning null in targetReg
+        genConsumeRegAndCopy(size, targetReg);
+        endLabel = genCreateTempLabel();
+        emit->emitIns_J_cond_la(INS_beq, endLabel, targetReg, REG_R0);
+
+        // Compute the size of the block to allocate and perform alignment.
+        // If compInitMem=true, we can reuse targetReg as regcnt,
+        // since we don't need any internal registers.
+        if (compiler->info.compInitMem)
+        {
+            assert(tree->AvailableTempRegCount() == 0);
+            regCnt = targetReg;
+        }
+        else
+        {
+            regCnt = tree->ExtractTempReg();
+            if (regCnt != targetReg)
+            {
+                emit->emitIns_R_R_I(INS_ori, easz, regCnt, targetReg, 0);
+            }
+        }
+
+        // Align to STACK_ALIGN
+        // regCnt will be the total number of bytes to localloc
+        inst_RV_IV(INS_addi, regCnt, (STACK_ALIGN - 1), emitActualTypeSize(type));
+
+        assert(regCnt != REG_RA); // TODO CHECK REG_R21 => RA
+        ssize_t imm2 = ~(STACK_ALIGN - 1);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, imm2); // TODO CHECK REG_R21 => RA
+        emit->emitIns_R_R_R(INS_and, emitActualTypeSize(type), regCnt, regCnt, REG_RA); // TODO CHECK REG_R21 => RA
+    }
+
+    // If we have an outgoing arg area then we must adjust the SP by popping off the
+    // outgoing arg area. We will restore it right before we return from this method.
+    //
+    // Localloc returns stack space that aligned to STACK_ALIGN bytes. The following
+    // are the cases that need to be handled:
+    //   i) Method has out-going arg area.
+    //      It is guaranteed that size of out-going arg area is STACK_ALIGN'ed (see fgMorphArgs).
+    //      Therefore, we will pop off the out-going arg area from the stack pointer before allocating the localloc
+    //      space.
+    //  ii) Method has no out-going arg area.
+    //      Nothing to pop off from the stack.
+    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    {
+        unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
+        // assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
+        //                                                                // aligned
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, outgoingArgSpaceAligned, rsGetRsvdReg());
+        stackAdjustment += outgoingArgSpaceAligned;
+    }
+
+    if (size->IsCnsIntOrI())
+    {
+        // We should reach here only for non-zero, constant size allocations.
+        assert(amount > 0);
+        ssize_t imm = -16;
+
+        // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
+        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
+        size_t stpCount = amount / (REGSIZE_BYTES * 2);
+        if (compiler->info.compInitMem)
+        {
+            if (stpCount <= 4)
+            {
+                imm = -16 * stpCount;
+                emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
+
+                imm = -imm;
+                while (stpCount != 0)
+                {
+                    imm -= 8;
+                    emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, imm);
+                    imm -= 8;
+                    emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, imm);
+                    stpCount -= 1;
+                }
+
+                lastTouchDelta = 0;
+
+                goto ALLOC_DONE;
+            }
+        }
+        else if (amount < compiler->eeGetPageSize()) // must be < not <=
+        {
+            // Since the size is less than a page, simply adjust the SP value.
+            // The SP might already be in the guard page, so we must touch it BEFORE
+            // the alloc, not after.
+
+            // ld_w r0, 0(SP)
+            emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SP, 0);
+
+            lastTouchDelta = amount;
+            imm            = -(ssize_t)amount;
+            if (emitter::isValidSimm12(imm))
+            {
+                emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
+            }
+            else
+            {
+                emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), amount);
+                emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, rsGetRsvdReg());
+            }
+
+            goto ALLOC_DONE;
+        }
+
+        // else, "mov regCnt, amount"
+        // If compInitMem=true, we can reuse targetReg as regcnt.
+        // Since size is a constant, regCnt is not yet initialized.
+        assert(regCnt == REG_NA);
+        if (compiler->info.compInitMem)
+        {
+            assert(tree->AvailableTempRegCount() == 0);
+            regCnt = targetReg;
+        }
+        else
+        {
+            regCnt = tree->ExtractTempReg();
+        }
+        instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
+    }
+
+    if (compiler->info.compInitMem)
+    {
+        // At this point 'regCnt' is set to the total number of bytes to locAlloc.
+        // Since we have to zero out the allocated memory AND ensure that the stack pointer is always valid
+        // by tickling the pages, we will just push 0's on the stack.
+        //
+        // Note: regCnt is guaranteed to be even on Amd64 since STACK_ALIGN/TARGET_POINTER_SIZE = 2
+        // and localloc size is a multiple of STACK_ALIGN.
+
+        // Loop:
+        ssize_t imm = -16;
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, imm);
+
+        emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
+        emit->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 0);
+
+        // If not done, loop
+        // Note that regCnt is the number of bytes to stack allocate.
+        // Therefore we need to subtract 16 from regcnt here.
+        assert(genIsValidIntReg(regCnt));
+
+        emit->emitIns_R_R_I(INS_addi, emitActualTypeSize(type), regCnt, regCnt, -16);
+
+        assert(imm == (-4 << 2)); // goto loop.
+        emit->emitIns_R_R_I(INS_bne, EA_PTRSIZE, regCnt, REG_R0, (-4 << 2));
+
+        lastTouchDelta = 0;
+    }
+    else
+    {
+        // At this point 'regCnt' is set to the total number of bytes to localloc.
+        //
+        // We don't need to zero out the allocated memory. However, we do have
+        // to tickle the pages to ensure that SP is always valid and is
+        // in sync with the "stack guard page".  Note that in the worst
+        // case SP is on the last byte of the guard page.  Thus you must
+        // touch SP-0 first not SP-0x1000.
+        //
+        // This is similar to the prolog code in CodeGen::genAllocLclFrame().
+        //
+        // Note that we go through a few hoops so that SP never points to
+        // illegal pages at any time during the tickling process.
+        //
+        //       sltu     RA, SP, regCnt
+        //       sub      regCnt, SP, regCnt      // regCnt now holds ultimate SP
+        //       beq      RA, REG_R0, Skip
+        //       addi     regCnt, REG_R0, 0
+        //
+        //  Skip:
+        //       sub      regCnt, SP, regCnt
+        //
+        //       lui      regTmp, eeGetPageSize()>>12
+        //  Loop:
+        //       lw       r0, 0(SP)               // tickle the page - read from the page
+        //       sub      RA, SP, regTmp          // decrement SP by eeGetPageSize()
+        //       bltu     RA, regCnt, Done
+        //       sub      SP, SP,regTmp
+        //       j        Loop
+        //
+        //  Done:
+        //       mov      SP, regCnt
+        //
+
+        // Setup the regTmp
+        regNumber regTmp = tree->GetSingleTempReg();
+
+        assert(regCnt != REG_RA);
+        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, REG_RA, REG_SPBASE, regCnt); // TODO CHECK REG_R21 => RA
+
+        //// subu  regCnt, SP, regCnt      // regCnt now holds ultimate SP
+        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+
+        // Overflow, set regCnt to lowest possible value
+        emit->emitIns_R_R_I(INS_beq, EA_PTRSIZE, REG_RA, REG_R0, 2 << 2);
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regCnt, REG_R0, 0);
+
+        assert(compiler->eeGetPageSize() == ((compiler->eeGetPageSize() >> 12) << 12));
+        emit->emitIns_R_I(INS_lui, EA_PTRSIZE, regTmp, compiler->eeGetPageSize() >> 12);
+
+        // genDefineTempLabel(loop);
+
+        // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
+        emit->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SPBASE, 0);
+
+        // decrement SP by eeGetPageSize()
+        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_RA, REG_SPBASE, regTmp); // TODO CHECK REG_R21 => RA
+
+        assert(regTmp != REG_RA); // TODO CHECK REG_R21 => RA
+
+        ssize_t imm = 3 << 2; // goto done.
+        emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, REG_RA, regCnt, imm); // TODO CHECK REG_R21 => RA
+
+        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
+
+        imm = -4 << 2;
+        // Jump to loop and tickle new stack address
+        emit->emitIns_I(INS_j, EA_PTRSIZE, imm);
+
+        // Done with stack tickle loop
+        // genDefineTempLabel(done);
+
+        // Now just move the final value to SP
+        emit->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_SPBASE, regCnt, 0);
+
+        // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
+        // we're going to assume the worst and probe.
+    }
+
+ALLOC_DONE:
+    // Re-adjust SP to allocate outgoing arg area. We must probe this adjustment.
+    if (stackAdjustment != 0)
+    {
+        assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
+        assert((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) || (lastTouchDelta >= 0));
+
+        const regNumber tmpReg = rsGetRsvdReg();
+
+        if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
+            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
+             compiler->eeGetPageSize()))
+        {
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, tmpReg);
+        }
+        else
+        {
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment, tmpReg);
+        }
+
+        // Return the stackalloc'ed address in result register.
+        // TargetReg = SP + stackAdjustment.
+        //
+        genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, tmpReg);
+    }
+    else // stackAdjustment == 0
+    {
+        // Move the final value of SP to targetReg
+        GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, targetReg, REG_SPBASE, 0);
+    }
+
+BAILOUT:
+    if (endLabel != nullptr)
+        genDefineTempLabel(endLabel);
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

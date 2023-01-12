@@ -362,7 +362,7 @@ void CodeGen::inst_Mov(var_types dstType,
                        emitAttr  size,
                        insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (isFloatRegType(dstType) != genIsValidFloatReg(dstReg))
     {
         if (dstType == TYP_FLOAT)
@@ -384,6 +384,7 @@ void CodeGen::inst_Mov(var_types dstType,
         else
         {
             NYI_LOONGARCH64("CodeGen::inst_Mov dstType");
+            NYI_RISCV64("CodeGen::inst_Mov dstType");
         }
     }
 #endif
@@ -476,7 +477,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 {
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
@@ -552,7 +553,7 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_tst);
     assert(ins != INS_mov);
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !TARGET_ARM
 #ifdef TARGET_AMD64
@@ -1252,6 +1253,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
     NYI_LOONGARCH64("ins_Move_Extend");
+    NYI_RISCV64("ins_Move_Extend");
 
     instruction ins = INS_invalid;
 
@@ -1461,6 +1463,19 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         else if (srcType == TYP_FLOAT)
         {
             return INS_fld_s;
+        }
+        else
+        {
+            assert(!"unhandled floating type");
+        }
+#elif defined(TARGET_RISCV64)
+        if (srcType == TYP_DOUBLE)
+        {
+            return INS_fld;
+        }
+        else if (srcType == TYP_FLOAT)
+        {
+            return INS_flw;
         }
         else
         {
@@ -2120,7 +2135,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #elif defined(TARGET_LOONGARCH64)
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
-    NYI_RISCV64("TODO RISCV64");
+    GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
 #else
 #error "Unknown TARGET"
 #endif
