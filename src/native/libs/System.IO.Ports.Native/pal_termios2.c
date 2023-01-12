@@ -4,6 +4,7 @@
 #include "pal_types.h"
 #include "pal_utilities.h"
 #include <asm/termbits.h>
+#include <asm/ioctls.h>
 #include <sys/ioctl.h>
 
 int SystemIoPortsNative_Termios2SetSpeed(int fd, int speed)
