@@ -47,34 +47,34 @@ const skipInstantiateByAssetTypes: {
     "dotnetwasm": true,
 };
 
-export function get_skipped_icu_assets() : { [name: string]: boolean; }
-{
+export function get_preferred_icu_asset(): string | null {
+    if (!runtimeHelpers.config.assets)
+        return null;
+
+    // By setting <IcuFileName> user can define what ICU source file they want to load.
+    // There is no need to check application's culture when <IcuFileName> is set.
+    // If it was not set, then we have 3 "icu" assets in config and we should choose
+    // only one for loading, this one that matches the application's locale.
+    const icuAssets = runtimeHelpers.config.assets.filter(a => a["behavior"] == "icu");
+    if (icuAssets.length === 1)
+        return icuAssets[0].name;
+
     const preferredCulture = Intl.DateTimeFormat().resolvedOptions().locale;
     const prefix = preferredCulture.split("-")[0];
-    if (["en", "fr-FR", "it-IT", "de-DE", "es-ES"].includes(prefix))
-    {
-        return {
-            "icudt_EFIGS.dat": false,
-            "icudt_CJK.dat": true,
-            "icudt_no_CJK.dat": true
-        };
-    }
-    if (["zh", "ko", "ja"].includes(prefix)) {
-        return {
-            "icudt_EFIGS.dat": true,
-            "icudt_CJK.dat": false,
-            "icudt_no_CJK.dat": true
-        };
-    }
-    return {
-        "icudt_EFIGS.dat": true,
-        "icudt_CJK.dat": true,
-        "icudt_no_CJK.dat": false
-    };
+    const CJK = "icudt_CJK.dat";
+    const EFIGS = "icudt_EFIGS.dat";
+    const OTHERS = "icudt_no_CJK.dat";
+
+    // not all "fr", "it", "de", "es" are in EFIGS, only the one that is mostly used
+    if (prefix == "en" || ["fr-FR", "it-IT", "de-DE", "es-ES"].includes(preferredCulture))
+        return EFIGS;
+    if (["zh", "ko", "ja"].includes(prefix))
+        return CJK;
+    return OTHERS;
 }
 
-export function shouldLoadIcuAsset(asset : AssetEntryInternal, isIcuAssetPredefined: boolean) : boolean{
-    return !(asset.behavior == "icu" && !isIcuAssetPredefined && skipIcuByAssetNames[asset.name]);
+export function shouldLoadIcuAsset(asset : AssetEntryInternal) : boolean{
+    return !(asset.behavior == "icu" && asset.name === preferredIcuAsset);
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours) {
@@ -90,17 +90,12 @@ type AssetWithBuffer = {
     buffer?: ArrayBuffer
 }
 
-const skipIcuByAssetNames = get_skipped_icu_assets();
+const preferredIcuAsset = get_preferred_icu_asset();
 
 export async function mono_download_assets(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
-        // By setting <IcuFileName> user can define what ICU source file they want to load.
-        // There is no need to check application's culture when <IcuFileName> is set.
-        // If it was not set, then we have 3 "icu" assets in config and we should choose
-        // only one for loading, this one that matches the application's locale.
-        const isIcuAssetPredefined : boolean = runtimeHelpers.config.assets?.filter(a => a["behavior"] == "icu").length === 1;
         const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
@@ -111,10 +106,10 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, isIcuAssetPredefined)) {
+            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, isIcuAssetPredefined)) {
+            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_downloaded_assets_count++;
                 promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
@@ -144,10 +139,10 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, isIcuAssetPredefined)) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, isIcuAssetPredefined)) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                             expected_instantiated_assets_count--;
                         }
                     }
