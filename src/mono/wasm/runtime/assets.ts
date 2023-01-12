@@ -101,7 +101,6 @@ export async function mono_download_assets(): Promise<void> {
         // If it was not set, then we have 3 "icu" assets in config and we should choose
         // only one for loading, this one that matches the application's locale.
         const isIcuAssetPredefined : boolean = runtimeHelpers.config.assets?.filter(a => a["behavior"] == "icu").length === 1;
-        console.log(`ILONA, isIcuAssetPredefined ${isIcuAssetPredefined}; ${runtimeHelpers.config.assets?.filter(a => a["behavior"] == "icu").length}`);
         const promises_of_assets_with_buffer: Promise<AssetWithBuffer>[] = [];
         // start fetching and instantiating all assets in parallel
         for (const a of runtimeHelpers.config.assets!) {
@@ -116,7 +115,6 @@ export async function mono_download_assets(): Promise<void> {
                 expected_instantiated_assets_count++;
             }
             if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, isIcuAssetPredefined)) {
-                console.log(`ILONA, loading ${asset["behavior"]}, ${asset["name"]}`);
                 expected_downloaded_assets_count++;
                 promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
