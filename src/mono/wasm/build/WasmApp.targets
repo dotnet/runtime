@@ -308,7 +308,6 @@
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <PropertyGroup>
-      <IsIcuFilePredefined Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' != ''">true</IsIcuFilePredefined>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
@@ -316,8 +315,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IsIcuFilePredefined)' != 'true'" Include="icudt.dat;icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
-      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IsIcuFilePredefined)' == 'true'" Include="$(IcuFileName)"/>
+      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' == ''" Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
+      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' != ''" Include="$(IcuFileName)"/>
 
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
@@ -363,7 +362,6 @@
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileNames="@(WasmIcuDataFileNames)"
-      IsIcuFilePredefined="$(IsIcuFilePredefined)"
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
