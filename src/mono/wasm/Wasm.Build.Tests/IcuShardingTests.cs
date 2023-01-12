@@ -28,12 +28,12 @@ public class IcuShardingTests : BuildTestBase
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
-    private static string GetProgramText(string expectedLocalesTxt, string missingLocalesTxt) => $@"
+    private static string GetProgramText(string[] expectedLocales, string[] missingLocales) => $@"
         using System;
         using System.Globalization;
 
-        string[] expectedLocales = new string[] {{ "" {expectedLocalesTxt} "" }};
-        string[] missingLocales =  new string[] {{ "" {missingLocalesTxt} "" }};
+        string[] expectedLocales = new string[] {{ "" {string.Join("\", \"", expectedLocales)} "" }};
+        string[] missingLocales =  new string[] {{ "" {string.Join("\", \"", missingLocales)} "" }};
         foreach (var loc in expectedLocales)
         {{
             var culture = new CultureInfo(loc);
@@ -66,10 +66,7 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<IcuFileName>{shardName}</IcuFileName>");
 
-        string expectedLocalesTxt = $"{string.Join("\", \"", expectedLocales)}";
-        string missingLocalesTxt = $"{string.Join("\", \"", missingLocales)}";
-
-        string programText = GetProgramText(expectedLocalesTxt, missingLocalesTxt);
+        string programText = GetProgramText(expectedLocales, missingLocales);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(

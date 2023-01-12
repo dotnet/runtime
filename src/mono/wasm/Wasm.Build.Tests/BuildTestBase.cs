@@ -347,6 +347,9 @@ namespace Wasm.Build.Tests
                                   string id,
                                   BuildProjectOptions options)
         {
+            if (string.IsNullOrEmpty(options.PredefinedIcudt))
+                buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
+
             string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
             if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -1102,7 +1105,7 @@ namespace Wasm.Build.Tests
         string? Label                     = null,
         string? TargetFramework           = null,
         string? MainJS                    = null,
-        string? PredefinedIcudt               = null,
+        string? PredefinedIcudt           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

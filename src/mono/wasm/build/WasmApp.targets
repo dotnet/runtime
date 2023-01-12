@@ -314,10 +314,13 @@
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
     </PropertyGroup>
 
-    <ItemGroup>
-      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' == ''" Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
-      <WasmIcuDataFileNames Condition="'$(InvariantGlobalization)' != 'true' and '$(IcuFileName)' != ''" Include="$(IcuFileName)"/>
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(IcuFileName)' == ''" Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(IcuFileName)' != ''" Include="$(IcuFileName)"/>
+    </ItemGroup>
 
+    <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
