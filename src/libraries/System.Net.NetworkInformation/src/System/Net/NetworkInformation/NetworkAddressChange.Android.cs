@@ -1,0 +1,248 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace System.Net.NetworkInformation
+{
+    public partial class NetworkChange
+    {
+        private static readonly TimeSpan s_timerInterval = TimeSpan.FromSeconds(2);
+        private static readonly object s_lockObj = new();
+
+        private static Task? s_loopTask;
+        private static CancellationTokenSource? s_cancellationTokenSource;
+
+        private static IPAddress[]? s_lastIpAddresses;
+
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
+        public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
+        {
+            add
+            {
+                if (value != null)
+                {
+                    lock (s_lockObj)
+                    {
+                        if (s_addressChangedSubscribers.Count == 0 &&
+                            s_availabilityChangedSubscribers.Count == 0)
+                        {
+                            CreateAndStartLoop();
+                        }
+                        else
+                        {
+                            Debug.Assert(s_loopTask is not null);
+                        }
+
+                        s_addressChangedSubscribers.TryAdd(value, ExecutionContext.Capture());
+                    }
+                }
+            }
+            remove
+            {
+                if (value != null)
+                {
+                    lock (s_lockObj)
+                    {
+                        bool hadAddressChangedSubscribers = s_addressChangedSubscribers.Count != 0;
+                        s_addressChangedSubscribers.Remove(value);
+
+                        if (hadAddressChangedSubscribers && s_addressChangedSubscribers.Count == 0 &&
+                            s_availabilityChangedSubscribers.Count == 0)
+                        {
+                            StopLoop();
+                        }
+                    }
+                }
+            }
+        }
+
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
+        public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
+        {
+            add
+            {
+                if (value != null)
+                {
+                    lock (s_lockObj)
+                    {
+                        if (s_addressChangedSubscribers.Count == 0 &&
+                            s_availabilityChangedSubscribers.Count == 0)
+                        {
+                            CreateAndStartLoop();
+                        }
+                        else
+                        {
+                            Debug.Assert(s_loopTask is not null);
+                        }
+
+                        s_availabilityChangedSubscribers.TryAdd(value, ExecutionContext.Capture());
+                    }
+                }
+            }
+            remove
+            {
+                if (value != null)
+                {
+                    lock (s_lockObj)
+                    {
+                        bool hadSubscribers = s_addressChangedSubscribers.Count != 0 ||
+                                              s_availabilityChangedSubscribers.Count != 0;
+                        s_availabilityChangedSubscribers.Remove(value);
+
+                        if (hadSubscribers && s_addressChangedSubscribers.Count == 0 &&
+                            s_availabilityChangedSubscribers.Count == 0)
+                        {
+                            StopLoop();
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void CreateAndStartLoop()
+        {
+            Debug.Assert(s_cancellationTokenSource is null);
+            Debug.Assert(s_loopTask is null);
+
+            s_cancellationTokenSource = new CancellationTokenSource();
+            s_loopTask = Task.Run(Loop);
+        }
+
+        private static void StopLoop()
+        {
+            s_cancellationTokenSource?.Cancel();
+
+            s_loopTask = null;
+            s_cancellationTokenSource = null;
+        }
+
+        private static async Task Loop()
+        {
+            using var timer = new PeriodicTimer(s_timerInterval);
+            var token = s_cancellationTokenSource?.Token ?? throw new InvalidOperationException();
+
+            try
+            {
+                while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+                {
+                    CheckIfAddressChanged();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        private static void CheckIfAddressChanged()
+        {
+            var newAddresses = GetIPAddresses();
+            if (s_lastIpAddresses is IPAddress[] oldAddresses && AddressesChanged(oldAddresses, newAddresses))
+            {
+                OnAddressChanged();
+            }
+
+            s_lastIpAddresses = newAddresses;
+        }
+
+        private static IPAddress[] GetIPAddresses()
+        {
+            var addresses = new List<IPAddress>();
+
+            var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (var networkInterface in networkInterfaces)
+            {
+                var properties = networkInterface.GetIPProperties();
+                foreach (var addressInformation in properties.UnicastAddresses)
+                {
+                    addresses.Add(addressInformation.Address);
+                }
+            }
+
+            return addresses.ToArray();
+        }
+
+        private static bool AddressesChanged(IPAddress[] oldAddresses, IPAddress[] newAddresses)
+        {
+            if (oldAddresses.Length != newAddresses.Length)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < newAddresses.Length; i++)
+            {
+                if (Array.IndexOf(oldAddresses, newAddresses[i]) == -1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void OnAddressChanged()
+        {
+            Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;
+            Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>? availabilityChangedSubscribers = null;
+
+            lock (s_lockObj)
+            {
+                if (s_addressChangedSubscribers.Count > 0)
+                {
+                    addressChangedSubscribers = new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>(s_addressChangedSubscribers);
+                }
+                if (s_availabilityChangedSubscribers.Count > 0)
+                {
+                    availabilityChangedSubscribers = new Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>(s_availabilityChangedSubscribers);
+                }
+            }
+
+            if (addressChangedSubscribers != null)
+            {
+                foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
+                    subscriber in addressChangedSubscribers)
+                {
+                    NetworkAddressChangedEventHandler handler = subscriber.Key;
+                    ExecutionContext? ec = subscriber.Value;
+
+                    if (ec == null) // Flow suppressed
+                    {
+                        handler(null, EventArgs.Empty);
+                    }
+                    else
+                    {
+                        ExecutionContext.Run(ec, s_runAddressChangedHandler, handler);
+                    }
+                }
+            }
+
+            if (availabilityChangedSubscribers != null)
+            {
+                bool isAvailable = NetworkInterface.GetIsNetworkAvailable();
+                NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
+                ContextCallback callbackContext = isAvailable ? s_runHandlerAvailable : s_runHandlerNotAvailable;
+                foreach (KeyValuePair<NetworkAvailabilityChangedEventHandler, ExecutionContext?>
+                    subscriber in availabilityChangedSubscribers)
+                {
+                    NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
+                    ExecutionContext? ec = subscriber.Value;
+
+                    if (ec == null) // Flow suppressed
+                    {
+                        handler(null, args);
+                    }
+                    else
+                    {
+                        ExecutionContext.Run(ec, callbackContext, handler);
+                    }
+                }
+            }
+        }
+    }
+}
