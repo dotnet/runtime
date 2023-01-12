@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -853,43 +852,23 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public void InvokeCtorWithIsLoadedImageAndPrefetchMetadataOptions()
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes only suported on windows
+        public unsafe void InvokeCtorWithIsLoadedImageAndPrefetchMetadataOptions2()
         {
-            using (Process currentProc = Process.GetCurrentProcess())
+            using (var tempFile = new TempFile(Path.GetTempFileName()))
             {
-                string libName = "System.Reflection.Metadata.Tests.dll";
-                ProcessModule assemblyModule = currentProc.Modules.OfType<ProcessModule>().First(m => string.Equals(m.ModuleName, libName, StringComparison.Ordinal));
+                File.WriteAllBytes(tempFile.Path, Misc.Members);
 
-                ulong baseAddress = (ulong)assemblyModule.BaseAddress.ToInt64();
-                int length = assemblyModule.ModuleMemorySize;
-
-                // Read assembly contents out of memory, skipping unmapped pages
-                byte[] assemblyBytes = new byte[length];
-                byte[] page = new byte[PageSize];
-                int bytesRead = 0;
-                for (uint i = 0; i < length; i += PageSize)
+                using (SafeLibraryHandle libHandle = global::Interop.Kernel32.LoadLibraryExW(tempFile.Path, IntPtr.Zero, 0))
                 {
-                    ReadProcessMemory(currentProc.Handle, baseAddress + i, page, PageSize, ref bytesRead);
-                    Array.Copy(page, 0, assemblyBytes, i, bytesRead);
-                }
+                    byte* peImagePtr = (byte*)global::Interop.Kernel32.GetModuleHandle(Path.GetFileName(tempFile.Path));
 
-                using (MemoryStream assemblyStream = new MemoryStream(assemblyBytes))
-                {
-                    PEReader prefetchMetadataReader = new PEReader(assemblyStream, PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen);
-                    prefetchMetadataReader.Dispose();
+                    Assert.True(peImagePtr != null);
+
+                    var peReader = new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
+                    peReader.Dispose();
                 }
             }
         }
-
-        private const int PageSize = 4096;
-
-        [DllImport("kernel32.dll")]
-        public static extern bool ReadProcessMemory(
-            IntPtr hProcess,
-            ulong lpBaseAddress,
-            byte[] lpBuffer,
-            int nSize,
-            ref int lpNumberOfBytesRead);
     }
 }
