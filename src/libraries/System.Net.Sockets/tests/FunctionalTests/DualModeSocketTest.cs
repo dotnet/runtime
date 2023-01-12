@@ -784,6 +784,10 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeAccept : DualModeBase
     {
+        private readonly ITestOutputHelper _output;
+
+        public DualModeAccept(ITestOutputHelper output) => _output = output;
+
         [Fact]
         public void AcceptV4BoundToSpecificV4_Success()
         {
@@ -811,28 +815,19 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void AcceptV6BoundToSpecificV4_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
-            {
-                Accept_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
-            });
+            Accept_Helper_Failing(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
         public void AcceptV4BoundToSpecificV6_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
-            {
-                Accept_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
-            });
+            Accept_Helper_Failing(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
         public void AcceptV6BoundToAnyV4_CantConnect()
         {
-            Assert.Throws<SocketException>(() =>
-            {
-                Accept_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
-            });
+            Accept_Helper_Failing(IPAddress.Any, IPAddress.IPv6Loopback);
         }
 
         [Fact]
@@ -843,18 +838,28 @@ namespace System.Net.Sockets.Tests
 
         private void Accept_Helper(IPAddress listenOn, IPAddress connectTo)
         {
-            using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
-            {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
-                serverSocket.Listen(1);
+            using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            
+            int port = serverSocket.BindToAnonymousPort(listenOn);
+            serverSocket.Listen(1);
 
-                Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                _ = client.ConnectAsync(connectTo, port);
-                Socket clientSocket = serverSocket.Accept();
-                Assert.True(clientSocket.Connected);
-                AssertDualModeEnabled(clientSocket, listenOn);
-                Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
-            }
+            using Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _ = client.ConnectAsync(connectTo, port);
+            Socket clientSocket = serverSocket.Accept();
+            Assert.True(clientSocket.Connected);
+            AssertDualModeEnabled(clientSocket, listenOn);
+            Assert.Equal(AddressFamily.InterNetworkV6, clientSocket.AddressFamily);
+        }
+
+        private void Accept_Helper_Failing(IPAddress listenOn, IPAddress connectTo)
+        {
+            using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            int port = serverSocket.BindToAnonymousPort(listenOn);
+            serverSocket.Listen(1);
+            _ = Task.Run(serverSocket.Accept);
+
+            using Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync(connectTo, port));
         }
     }
 
@@ -2808,6 +2813,11 @@ namespace System.Net.Sockets.Tests
             for (int i = 0; i < MaxAttempts; i++)
             {
                 PrimarySocket = primarySocketFactory();
+                if (PrimarySocket.LocalEndPoint is not IPEndPoint)
+                {
+                    PrimarySocket.Dispose();
+                    throw new Exception($"{nameof(primarySocketFactory)} should create and bind the socket.");
+                }
 
                 IPAddress secondaryAddress = PrimarySocket.AddressFamily == AddressFamily.InterNetwork ?
                         IPAddress.IPv6Loopback :
