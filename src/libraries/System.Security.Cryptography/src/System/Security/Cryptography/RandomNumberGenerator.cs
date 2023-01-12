@@ -165,7 +165,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Fills the elements of a specified span with items chosen at random from choices.
+        ///   Fills the elements of a specified span with items chosen at random from the provided set of choices.
         /// </summary>
         /// <param name="choices">The items to use to fill the buffer.</param>
         /// <param name="destination">The buffer to receive the items.</param>
