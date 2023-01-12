@@ -836,15 +836,8 @@ namespace System.Net.Sockets.Tests
 
         private async Task Accept_Helper_Failing(IPAddress listenOn, IPAddress connectTo)
         {
-            Socket serverSocket = null;
-            int port = -1;
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                port = serverSocket.BindToAnonymousPort(listenOn);
-                return serverSocket;
-            });
-
+            using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            int port = serverSocket.BindToAnonymousPort(listenOn);
             serverSocket.Listen(1);
             _ = AcceptAsync(serverSocket);
 
@@ -1093,14 +1086,8 @@ namespace System.Net.Sockets.Tests
 
         protected async Task ReceiveFrom_Failure_Helper(IPAddress listenOn, IPAddress connectTo)
         {
-            Socket serverSocket = null;
-            int port = -1;
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-                port = serverSocket.BindToAnonymousPort(listenOn);
-                return serverSocket;
-            });
+            using Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            int port = serverSocket.BindToAnonymousPort(listenOn);
 
             Socket client = new Socket(connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
             _ = client.SendToAsync(new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
