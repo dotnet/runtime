@@ -1101,6 +1101,19 @@ check_symbol_exists(
     grp.h
     HAVE_GETGRGID_R)
 
+check_c_source_compiles(
+    "
+    #include <asm/termbits.h>
+    #include <sys/ioctl.h>
+
+    int main(void)
+    {
+        struct termios2 t;
+        return 0;
+    }
+    "
+    HAVE_TERMIOS2)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)
