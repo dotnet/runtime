@@ -97,7 +97,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcDynamicBuildPropertyDependencies Condition="'$(IlcCalledViaPackage)' == 'true'">SetupProperties</IlcDynamicBuildPropertyDependencies>
 
     <AotEventPipeName>Aot.Disabled.EventPipe</AotEventPipeName>
-    <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true'">Aot.EventPipe</AotEventPipeName>
+    <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true' or '$(EventSourceSupport)' == 'true' or '$(IlcMultiModule)' == 'true'">Aot.EventPipe</AotEventPipeName>
 
   </PropertyGroup>
 
