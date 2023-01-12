@@ -71,11 +71,13 @@
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
-    <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
+    <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
+         in src/mono/wasm/build/WasmApp.LocalBuild.props in sync -->
+    <NetCoreAppToolCurrentVersion>8.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>8.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
