@@ -179,14 +179,8 @@ namespace System.Security.Cryptography.X509Certificates
                 new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresRootOnly));
         }
 
-        private static ILoaderPal SingleCertToLoaderPal(ICertificatePal singleCert)
-        {
-            return new OpenSslSingleCertLoader(singleCert);
-        }
+        private static OpenSslSingleCertLoader SingleCertToLoaderPal(ICertificatePal singleCert) => new OpenSslSingleCertLoader(singleCert);
 
-        private static ILoaderPal ListToLoaderPal(List<ICertificatePal> certPals)
-        {
-            return new CertCollectionLoader(certPals);
-        }
+        private static CertCollectionLoader ListToLoaderPal(List<ICertificatePal> certPals) => new CertCollectionLoader(certPals);
     }
 }

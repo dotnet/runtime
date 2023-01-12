@@ -14,7 +14,7 @@ namespace System.Net
         private string _method = WebRequestMethods.File.DownloadFile;
         private FileAccess _fileAccess = FileAccess.Read;
         private ManualResetEventSlim? _blockReaderUntilRequestStreamDisposed;
-        private WebResponse? _response;
+        private FileWebResponse? _response;
         private WebFileStream? _stream;
         private readonly Uri _uri;
         private long _contentLength;
@@ -110,7 +110,7 @@ namespace System.Net
 
         public override Uri RequestUri => _uri;
 
-        private static Exception CreateRequestAbortedException() =>
+        private static WebException CreateRequestAbortedException() =>
             new WebException(SR.Format(SR.net_requestaborted, WebExceptionStatus.RequestCanceled), WebExceptionStatus.RequestCanceled);
 
         private void CheckAndMarkAsyncGetRequestStreamPending()
@@ -141,7 +141,7 @@ namespace System.Net
             }
         }
 
-        private Stream CreateWriteStream()
+        private WebFileStream CreateWriteStream()
         {
             try
             {
@@ -159,7 +159,7 @@ namespace System.Net
         public override IAsyncResult BeginGetRequestStream(AsyncCallback? callback, object? state)
         {
             CheckAndMarkAsyncGetRequestStreamPending();
-            Task<Stream> t = Task.Factory.StartNew(s => ((FileWebRequest)s!).CreateWriteStream(),
+            Task<Stream> t = Task.Factory.StartNew<Stream>(s => ((FileWebRequest)s!).CreateWriteStream(),
                 this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             return TaskToApm.Begin(t, callback, state);
         }
@@ -167,7 +167,7 @@ namespace System.Net
         public override Task<Stream> GetRequestStreamAsync()
         {
             CheckAndMarkAsyncGetRequestStreamPending();
-            return Task.Factory.StartNew(s =>
+            return Task.Factory.StartNew<Stream>(s =>
             {
                 FileWebRequest thisRef = (FileWebRequest)s!;
                 Stream writeStream = thisRef.CreateWriteStream();
