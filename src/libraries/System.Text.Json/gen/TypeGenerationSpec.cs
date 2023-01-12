@@ -62,6 +62,7 @@ namespace System.Text.Json.SourceGeneration
         public bool CanBeNull { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
@@ -129,6 +130,7 @@ namespace System.Text.Json.SourceGeneration
             JsonSourceGenerationMode generationMode,
             ClassType classType,
             JsonNumberHandling? numberHandling,
+            JsonUnmappedMemberHandling? unmappedMemberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
             List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
@@ -153,6 +155,7 @@ namespace System.Text.Json.SourceGeneration
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
+            UnmappedMemberHandling = unmappedMemberHandling;
             PropertyGenSpecList = propertyGenSpecList;
             PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
