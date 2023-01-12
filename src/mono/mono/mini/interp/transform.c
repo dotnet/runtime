@@ -8374,34 +8374,18 @@ interp_mark_reachable_bblocks (TransformData *td)
 }
 
 /**
- * Returns TRUE if in_bb defines a variable that is used in
- * the block containing @cond_ins, FALSE otherwise.
+ * Returns TRUE if instruction or previous instructions defines at least one of the variables, FALSE otherwise.
  */
 
 static gboolean
-interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
+interp_prev_block_defines_var (InterpInst *ins, int var1, int var2)
 {
-	InterpInst *prev_ins = interp_prev_ins(cond_ins);
-	int var1 = -1, var2 = -1;
-	if (MINT_IS_BINOP_CONDITIONAL_BRANCH(cond_ins->opcode)) {
-		var1 = cond_ins->sregs [0];
-		var2 = cond_ins->sregs [1];
-	} else {
-		if (prev_ins && MINT_IS_COMPARE(prev_ins->opcode)) {
-			var1 = prev_ins->sregs [0];
-			var2 = prev_ins->sregs [1];
-		} else {
-			var1 = cond_ins->sregs [0];
-		}
-	}
-
 	// Check max of 5 instructions
-	prev_ins = in_bb_ins;
 	for (int i = 0; i < 5; i++) {
-		prev_ins = interp_prev_ins (prev_ins);
-		if (!prev_ins)
+		ins = interp_prev_ins (ins);
+		if (!ins)
 			return FALSE;
-		if (mono_interp_op_dregs [prev_ins->opcode] && (prev_ins->dreg == var1 || prev_ins->dreg == var2))
+		if (mono_interp_op_dregs [ins->opcode] && (ins->dreg == var1 || ins->dreg == var2))
 			return TRUE;
 	}
 	return FALSE;
@@ -8416,27 +8400,37 @@ interp_prev_block_defines_var (InterpInst *in_bb_ins, InterpInst *cond_ins)
  * - `ldc; compare; branch`: a load instruction followed by a compare instruction and a unary conditional branch.
  */
 static InterpInst*
-interp_inline_into_callers(InterpInst *first) {
+interp_inline_into_callers (InterpInst *first, int *lookup_var1, int *lookup_var2) {
 	// pattern `branch`
-	if (MINT_IS_CONDITIONAL_BRANCH(first->opcode))
+	if (MINT_IS_CONDITIONAL_BRANCH (first->opcode)) {
+		*lookup_var1 = first->sregs [0];
+		*lookup_var2 = (mono_interp_op_dregs [first->opcode] > 1) ? first->sregs [1] : -1;
 		return first;
+	}
 
-	InterpInst *second = interp_next_ins (first);
-	if (!second) 
-		return NULL;
-	// pattern `ldc; binop conditional branch`
-	if (MINT_IS_LDC(first->opcode)
-		&& MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1]))
-		return second;
+	if (MINT_IS_LDC (first->opcode)) {
+		InterpInst *second = interp_next_ins (first);
+		if (!second)
+			return NULL;
+		*lookup_var2 = -1;
+		gboolean first_var_defined = first->dreg == second->sregs [0];
+		gboolean second_var_defined = first->dreg == second->sregs [1];
+		// pattern `ldc; binop conditional branch`
+		if (MINT_IS_BINOP_CONDITIONAL_BRANCH (second->opcode) && (first_var_defined || second_var_defined)) {
+			*lookup_var1 = first_var_defined ? second->sregs [1] : second->sregs [0];
+			return second;
+		}
 
-	InterpInst *third = interp_next_ins (second);
-	if (!third) 
-		return NULL;
-	// pattern `ldc; compare; conditional branch`
-	if (MINT_IS_LDC(first->opcode)
-		&& MINT_IS_COMPARE(second->opcode) && (first->dreg == second->sregs [0] || first->dreg == second->sregs [1])
-		&& MINT_IS_UNOP_CONDITIONAL_BRANCH(third->opcode) && second->dreg == third->sregs [0])
-		return third;
+		InterpInst *third = interp_next_ins (second);
+		if (!third)
+			return NULL;
+		// pattern `ldc; compare; conditional branch`
+		if (MINT_IS_COMPARE (second->opcode) && (first_var_defined || second_var_defined)
+			&& MINT_IS_UNOP_CONDITIONAL_BRANCH (third->opcode) && second->dreg == third->sregs [0]) {
+			*lookup_var1 = first_var_defined ? second->sregs [1] : second->sregs [0];
+			return third;
+		}
+	}
 
 	return NULL;
 }
@@ -8449,15 +8443,15 @@ interp_reorder_bblocks (TransformData *td)
 		InterpInst *first = interp_first_ins (bb);
 		if (!first)
 			continue;
-
-		InterpInst *cond_ins = interp_inline_into_callers (first);
+		int lookup_var1, lookup_var2;
+		InterpInst *cond_ins = interp_inline_into_callers (first, &lookup_var1, &lookup_var2);
 		if (cond_ins) {
 			// This means this bblock match a pattern for inlining into callers, with a conditional branch
 			int i = 0;
 			while (i < bb->in_count) {
 				InterpBasicBlock *in_bb = bb->in_bb [i];
 				InterpInst *last_ins = interp_last_ins (in_bb);
-				if (last_ins && last_ins->opcode == MINT_BR && interp_prev_block_defines_var (last_ins, cond_ins)) {
+				if (last_ins && last_ins->opcode == MINT_BR && interp_prev_block_defines_var (last_ins, lookup_var1, lookup_var2)) {
 					// This bblock is reached unconditionally from one of its parents
 					// Move the conditional branch inside the parent to facilitate propagation
 					// of condition value.
