@@ -25,11 +25,6 @@
 #include "treelifeupdater.h"
 #include "emit.h"
 
-#if 1
-// Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
-#define USING_VARIABLE_LIVE_RANGE
-#endif
-
 // Forward reference types
 
 class CodeGenInterface;
@@ -555,7 +550,6 @@ protected:
     unsigned genStackLevel;
 
 public:
-#ifdef USING_VARIABLE_LIVE_RANGE
     //--------------------------------------------
     //
     // VariableLiveKeeper: Holds an array of "VariableLiveDescriptor", one for each variable
@@ -749,7 +743,6 @@ public:
 
 protected:
     VariableLiveKeeper* varLiveKeeper; // Used to manage VariableLiveRanges of variables
-#endif                                 // USING_VARIABLE_LIVE_RANGE
 
 #ifdef LATE_DISASM
 public:
