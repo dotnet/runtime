@@ -9648,6 +9648,7 @@ interp_super_instructions (TransformData *td)
 					interp_clear_ins (def);
 					interp_clear_ins (ins);
 					local_ref_count [sreg]--;
+
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
