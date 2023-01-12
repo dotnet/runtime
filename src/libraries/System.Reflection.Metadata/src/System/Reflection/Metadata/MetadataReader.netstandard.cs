@@ -85,6 +85,13 @@ namespace System.Reflection.Metadata
                     peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
                     MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                     AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+
+                    GetPEKind(peReader, out PortableExecutableKinds peKind, out ImageFileMachine machine);
+                    AssemblyFlags aFlags = mdReader.AssemblyTable.GetFlags();
+#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
+                    assemblyName.ProcessorArchitecture = CalculateProcArchIndex(peKind, machine, aFlags);
+#pragma warning restore SYSLIB0037
+
                     return assemblyName;
                 }
                 finally
@@ -99,6 +106,67 @@ namespace System.Reflection.Metadata
             {
                 throw new BadImageFormatException(ex.Message, assemblyFile, ex);
             }
+        }
+
+        private static void GetPEKind(PEReader peReader, out PortableExecutableKinds peKind, out ImageFileMachine machine)
+        {
+            PEHeaders peHeaders = peReader.PEHeaders;
+            PEMagic peMagic = peHeaders.PEHeader!.Magic;
+            Machine coffMachine = peHeaders.CoffHeader.Machine;
+            CorFlags corFlags = peHeaders.CorHeader!.Flags;
+
+            peKind = default;
+            if ((corFlags & CorFlags.ILOnly) != 0)
+                peKind |= PortableExecutableKinds.ILOnly;
+
+            if ((corFlags & CorFlags.Prefers32Bit) != 0)
+                peKind |= PortableExecutableKinds.Preferred32Bit;
+            else if ((corFlags & CorFlags.Requires32Bit) != 0)
+                peKind |= PortableExecutableKinds.Required32Bit;
+
+            if (peMagic == PEMagic.PE32Plus)
+                peKind |= PortableExecutableKinds.PE32Plus;
+
+            machine = (ImageFileMachine)coffMachine;
+        }
+
+        private static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyFlags flags)
+        {
+            if (((uint)flags & 0xF0) == 0x70)
+                return ProcessorArchitecture.None;
+
+            if ((pek & PortableExecutableKinds.PE32Plus) == PortableExecutableKinds.PE32Plus)
+            {
+                switch (ifm)
+                {
+                    case ImageFileMachine.IA64:
+                        return ProcessorArchitecture.IA64;
+                    case ImageFileMachine.AMD64:
+                        return ProcessorArchitecture.Amd64;
+                    case ImageFileMachine.I386:
+                        if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
+                            return ProcessorArchitecture.MSIL;
+                        break;
+                }
+            }
+            else
+            {
+                if (ifm == ImageFileMachine.I386)
+                {
+                    if ((pek & PortableExecutableKinds.Required32Bit) == PortableExecutableKinds.Required32Bit)
+                        return ProcessorArchitecture.X86;
+
+                    if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
+                        return ProcessorArchitecture.MSIL;
+
+                    return ProcessorArchitecture.X86;
+                }
+                if (ifm == ImageFileMachine.ARM)
+                {
+                    return ProcessorArchitecture.Arm;
+                }
+            }
+            return ProcessorArchitecture.None;
         }
 
         private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
