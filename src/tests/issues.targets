@@ -1369,13 +1369,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
-            <Issue>https://github.com/dotnet/runtime/pull/66551#issuecomment-1066120794</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base.X64/X86Base.X64*/**">
-            <Issue>https://github.com/dotnet/runtime/pull/66551#issuecomment-1066120794</Issue>
-        </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
         </ExcludeList>
@@ -2748,6 +2741,13 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/**">
             <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base.X64/X86Base.X64*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
