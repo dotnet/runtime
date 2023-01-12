@@ -118,6 +118,8 @@
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
+    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
+
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
@@ -138,6 +140,7 @@
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"
         OutputDirectory="$(AppleAppBundleDir)"
+        NativeMainSource="$(NativeMainSource)"
         AppDir="$(AppleAppDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
