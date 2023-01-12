@@ -284,7 +284,7 @@ namespace System.Collections.Immutable
 
                 if (!items.TryCopyTo(_elements, index))
                 {
-                    foreach (var item in items)
+                    foreach (T item in items)
                     {
                         _elements[index++] = item;
                     }
@@ -351,7 +351,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     this.Add(item);
                 }
@@ -365,7 +365,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, nameof(items));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
                 Array.Copy(items, 0, _elements, offset, items.Length);
@@ -380,7 +380,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, nameof(items));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += items.Length;
 
                 Array.Copy(items, 0, _elements, offset, items.Length);
@@ -396,7 +396,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(length >= 0 && length <= items.Length, nameof(length));
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += length;
 
                 Array.Copy(items, 0, _elements, offset, length);
@@ -623,7 +623,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(items, nameof(items));
 
                 var indicesToRemove = new SortedSet<int>();
-                foreach (var item in items)
+                foreach (T item in items)
                 {
                     int index = this.IndexOf(item, 0, _count, equalityComparer);
                     while (index >= 0 && !indicesToRemove.Add(index) && index + 1 < _count)
@@ -1056,10 +1056,10 @@ namespace System.Collections.Immutable
             {
                 this.EnsureCapacity(this.Count + length);
 
-                var offset = this.Count;
+                int offset = this.Count;
                 this.Count += length;
 
-                var nodes = _elements;
+                T[] nodes = _elements;
                 for (int i = 0; i < length; i++)
                 {
                     nodes[offset + i] = items[i];
@@ -1078,7 +1078,7 @@ namespace System.Collections.Immutable
                 int copied = 0;
                 int removed = 0;
                 int lastIndexRemoved = -1;
-                foreach (var indexToRemove in indicesToRemove)
+                foreach (int indexToRemove in indicesToRemove)
                 {
                     Debug.Assert(lastIndexRemoved < indexToRemove);
                     int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
