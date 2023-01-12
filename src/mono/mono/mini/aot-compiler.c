@@ -13798,6 +13798,33 @@ got_info_free (GotInfo *info)
 }
 
 static void
+aot_opts_free (MonoAotOptions *aot_opts)
+{
+	g_free (aot_opts->outfile);
+	g_free (aot_opts->llvm_outfile);
+	g_free (aot_opts->data_outfile);
+	g_list_free (aot_opts->profile_files);
+	g_list_free (aot_opts->mibc_profile_files);
+	g_free (aot_opts->gen_msym_dir_path);
+	g_list_free (aot_opts->direct_pinvokes);
+	g_list_free (aot_opts->direct_pinvoke_lists);
+	g_free (aot_opts->dedup_include);
+	g_free (aot_opts->tool_prefix);
+	g_free (aot_opts->ld_flags);
+	g_free (aot_opts->ld_name);
+	g_free (aot_opts->mtriple);
+	g_free (aot_opts->llvm_path);
+	g_free (aot_opts->temp_path);
+	g_free (aot_opts->instances_logfile_path);
+	g_free (aot_opts->logfile);
+	g_free (aot_opts->llvm_opts);
+	g_free (aot_opts->llvm_llc);
+	g_free (aot_opts->llvm_cpu_attr);
+	g_free (aot_opts->clangxx);
+	g_free (aot_opts->depfile);
+}
+
+static void
 acfg_free (MonoAotCompile *acfg)
 {
 	mono_img_writer_destroy (acfg->w);
@@ -13839,6 +13866,7 @@ acfg_free (MonoAotCompile *acfg)
 	got_info_free (&acfg->llvm_got_info);
 	arch_free_unwind_info_section_cache (acfg);
 	mono_mempool_destroy (acfg->mempool);
+	aot_opts_free (&acfg->aot_opts);
 
 	method_to_external_icall_symbol_name = NULL;
 	g_free (acfg);
