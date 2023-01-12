@@ -234,7 +234,7 @@ void EventPipeWritingProfiler::ProviderCallback(
         || level != 5)
     {
         _failures++;
-        printf("Saw incorrect data in ProviderCallback any=%llx, all=%llx, level=%d\n",
+        printf("Saw incorrect data in ProviderCallback any=%lx, all=%lx, level=%d\n",
             match_any_keywords, match_all_keywords, level);
     }
 }
