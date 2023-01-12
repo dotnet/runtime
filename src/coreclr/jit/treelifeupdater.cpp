@@ -194,42 +194,36 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
         return;
     }
 
-    // if it's a partial definition then variable "x" must have had a previous, original, site to be born.
-    bool isBorn;
-    bool isDying;
     // GTF_SPILL will be set on a MultiRegLclVar if any registers need to be spilled.
-    bool spill           = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
-    bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
-    if (isMultiRegLocal)
+    bool spill = ForCodeGen && ((lclVarTree->gtFlags & GTF_SPILL) != 0);
+#ifdef DEBUG
+    if (lclVarTree->IsMultiRegLclVar())
     {
         // We should never have an indirect reference for a multi-reg.
         assert(lclVarTree == tree);
         assert((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
-        isBorn = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
-        // Note that for multireg locals we can have definitions for which some of those are last uses.
-        // We don't want to add those to the varDeltaSet because otherwise they will be added as newly
-        // live.
-        isDying = !isBorn && lclVarTree->HasLastUse();
+        assert(varDsc->lvPromoted && !varDsc->lvTracked);
     }
-    else if (!varDsc->lvTracked)
-    {
-        isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
-        isDying = lclVarTree->HasLastUse();
-    }
-    else
-    {
-        isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
-        isDying = ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
-    }
+#endif
 
-    // Since all tracked vars are register candidates, but not all are in registers at all times,
-    // we maintain two separate sets of variables - the total set of variables that are either
-    // born or dying here, and the subset of those that are on the stack
-    VarSetOps::ClearD(compiler, stackVarDeltaSet);
+    bool isBorn = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0) && ((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
+    // Note that for promoted locals we can have definitions for which some of
+    // those are last uses (partially dead store). We don't want to add those
+    // to the varDeltaSet because otherwise they will be added as newly live.
+    bool isDying =
+        varDsc->lvPromoted ? (!isBorn && lclVarTree->HasLastUse()) : ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
 
     if (isBorn || isDying)
     {
         VarSetOps::ClearD(compiler, varDeltaSet);
+
+        if (ForCodeGen)
+        {
+            // Since all tracked vars are register candidates, but not all are in registers at all times,
+            // we maintain two separate sets of variables - the total set of variables that are either
+            // born or dying here, and the subset of those that are on the stack
+            VarSetOps::ClearD(compiler, stackVarDeltaSet);
+        }
 
         if (varDsc->lvTracked)
         {
@@ -252,72 +246,61 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                 }
             }
         }
-        else if (ForCodeGen && lclVarTree->IsMultiRegLclVar())
+        else
         {
-            assert(varDsc->lvPromoted && compiler->lvaEnregMultiRegVars);
-            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
-            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
-            {
-                bool       fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                LclVarDsc* fldVarDsc      = compiler->lvaGetDesc(firstFieldVarNum + i);
-                noway_assert(fldVarDsc->lvIsStructField);
-                assert(fldVarDsc->lvTracked);
-                unsigned  fldVarIndex  = fldVarDsc->lvVarIndex;
-                regNumber reg          = lclVarTree->AsLclVar()->GetRegNumByIdx(i);
-                bool      isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-                bool      isInMemory   = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
-                bool      isFieldDying = lclVarTree->AsLclVar()->IsLastUse(i);
-                if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
-                {
-                    VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
-                    if (isInMemory)
-                    {
-                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                    }
-                }
-                if (isInReg)
-                {
-                    if (isBorn)
-                    {
-                        compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
-                    }
-                    compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
-                    // If this was marked for spill, genProduceReg should already have spilled it.
-                    assert(!fieldIsSpilled);
-                }
-            }
-            spill = false;
-        }
-        else if (varDsc->lvPromoted)
-        {
+            // Promoted case, process fields.
             unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
             for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
             {
                 LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
-                noway_assert(fldVarDsc->lvIsStructField);
-                if (fldVarDsc->lvTracked)
+                assert(fldVarDsc->lvIsStructField);
+                if (!fldVarDsc->lvTracked)
                 {
-                    unsigned fldVarIndex = fldVarDsc->lvVarIndex;
-                    // We should never see enregistered fields in a struct local unless
-                    // IsMultiRegLclVar() returns true, in which case we've handled this above.
-                    assert(!fldVarDsc->lvIsInReg());
-                    noway_assert(fldVarIndex < compiler->lvaTrackedCount);
-                    bool isFieldDying = lclVarTree->IsLastUse(i);
-                    if (!isFieldDying)
+                    // multi-reg locals are expected to have all fields tracked so that they are register candidates.
+                    assert(!lclVarTree->IsMultiRegLclVar());
+                    continue;
+                }
+
+                unsigned fldVarIndex = fldVarDsc->lvVarIndex;
+                assert(fldVarIndex < compiler->lvaTrackedCount);
+
+                bool isFieldDying = lclVarTree->IsLastUse(i);
+                bool add          = (isBorn && !isFieldDying) || (!isBorn && isFieldDying);
+                if (add)
+                {
+                    VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
+                }
+
+                if (ForCodeGen)
+                {
+                    // Only multireg locals can have enregistered fields.
+                    assert(lclVarTree->IsMultiRegLclVar() || !fldVarDsc->lvIsInReg());
+
+                    bool isInReg    = fldVarDsc->lvIsInReg() && (lclVarTree->AsLclVar()->GetRegNumByIdx(i) != REG_NA);
+                    bool isInMemory = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
+
+                    if (isInMemory && add)
                     {
-                        VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
-                        if (ForCodeGen)
+                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
+                    }
+
+                    if (isInReg)
+                    {
+                        if (isBorn)
                         {
-                            // We repeat this call here and below to avoid the VarSetOps::IsMember
-                            // test in this, the common case, where we have no deadTrackedFieldVars.
-                            VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
+                            compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
                         }
+                        compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
+                        // If this was marked for spill, genProduceReg should already have spilled it.
+                        bool fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
+                        assert(!fieldIsSpilled);
                     }
                 }
             }
+
+            spill = false;
         }
 
-        // First, update the live set
         if (isDying)
         {
             // We'd like to be able to assert the following, however if we are walking
@@ -402,7 +385,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
         }
     }
 
-    if (ForCodeGen && spill)
+    if (spill)
     {
         assert(!varDsc->lvPromoted);
         compiler->codeGen->genSpillVar(tree);
