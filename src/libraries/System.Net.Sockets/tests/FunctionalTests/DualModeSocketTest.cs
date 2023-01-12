@@ -975,239 +975,31 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeConnectionlessBeginSendTo : DualModeBase
+    public class DualModeConnectionlessSendToApm : DualModeConnectionlessSendToBase<SocketHelperApm>
     {
-        #region SendTo Begin/End
-
-        [Fact]
-        public void Socket_BeginSendToV4IPEndPointToV4Host_Throws()
+        public DualModeConnectionlessSendToApm(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                socket.DualMode = false;
-
-                Assert.Throws<SocketException>(() =>
-                {
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/47905")]
-                    // TODO: When fixing the issue above, revert this test to check that the exception is being thrown in BeginSendTo
-                    // without the need to call EndSendTo.
-                    IAsyncResult result = socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, UnusedPort), null, null);
-                    socket.EndSendTo(result);
-                });
-            }
         }
-
-        [Fact] // Base case
-        // "The parameter remoteEP must not be of type DnsEndPoint."
-        public void Socket_BeginSendToDnsEndPoint_Throws()
-        {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    socket.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new DnsEndPoint("localhost", UnusedPort), null, null);
-                });
-            }
-        }
-
-        [Fact]
-        public void BeginSendToV4IPEndPointToV4Host_Success()
-        {
-            DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void BeginSendToV6IPEndPointToV6Host_Success()
-        {
-            DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        public void BeginSendToV4IPEndPointToV6Host_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void BeginSendToV6IPEndPointToV4Host_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void BeginSendToV4IPEndPointToDualHost_Success()
-        {
-            DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
-        }
-
-        [Fact]
-        public void BeginSendToV6IPEndPointToDualHost_Success()
-        {
-            DualModeBeginSendTo_EndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeBeginSendTo_EndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
-        {
-            using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out int port))
-            {
-                IAsyncResult async = client.BeginSendTo(new byte[1], 0, 1, SocketFlags.None, new IPEndPoint(connectTo, port), null, null);
-
-                int sent = client.EndSendTo(async);
-                Assert.Equal(1, sent);
-
-                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
-                if (!success)
-                {
-                    throw new TimeoutException();
-                }
-            }
-        }
-
-        #endregion SendTo Begin/End
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeConnectionlessSendToAsync : DualModeBase
+    public class DualModeConnectionlessSendToEap : DualModeConnectionlessSendToBase<SocketHelperEap>
     {
-        #region SendTo Async/Event
-
-        [Fact]
-        public void Socket_SendToAsyncV4IPEndPointToV4Host_Throws()
+        public DualModeConnectionlessSendToEap(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
-            {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-                args.SetBuffer(new byte[1], 0, 1);
-                bool async = socket.SendToAsync(args);
-                Assert.False(async);
-
-                if (OperatingSystem.IsWindows())
-                {
-                    Assert.Equal(SocketError.Fault, args.SocketError);
-                }
-                else if (OperatingSystem.IsLinux())
-                {
-                    // NOTE: on Linux, this API returns ENETUNREACH instead of EFAULT: this platform
-                    //       checks the family of the provided socket address before checking its size
-                    //       (as long as the socket address is large enough to store an address family).
-                    Assert.Equal(SocketError.NetworkUnreachable, args.SocketError);
-                }
-                else
-                {
-                    // NOTE: on other Unix platforms, this API returns EINVAL instead of EFAULT.
-                    Assert.Equal(SocketError.InvalidArgument, args.SocketError);
-                }
-            }
         }
+    }
 
-        [Fact] // Base case
-        // "The parameter remoteEP must not be of type DnsEndPoint."
-        public void Socket_SendToAsyncDnsEndPoint_Throws()
+    [Trait("IPv4", "true")]
+    [Trait("IPv6", "true")]
+    public class DualModeConnectionlessSendToTask : DualModeConnectionlessSendToBase<SocketHelperTask>
+    {
+        public DualModeConnectionlessSendToTask(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new DnsEndPoint("localhost", UnusedPort);
-                args.SetBuffer(new byte[1], 0, 1);
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    socket.SendToAsync(args);
-                });
-            }
         }
-
-        [Fact]
-        public void SendToAsyncV4IPEndPointToV4Host_Success()
-        {
-            DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
-        }
-
-        [Fact]
-        public void SendToAsyncV6IPEndPointToV6Host_Success()
-        {
-            DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void SendToAsyncV4IPEndPointToV6Host_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        public void SendToAsyncV6IPEndPointToV4Host_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void SendToAsyncV4IPEndPointToDualHost_Success()
-        {
-            DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
-        }
-
-        [Fact]
-        public void SendToAsyncV6IPEndPointToDualHost_Success()
-        {
-            DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
-        }
-
-        private void DualModeSendToAsync_IPEndPointToHost_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer, bool expectedToTimeout = false)
-        {
-            using (Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            using (SocketUdpServer server = new SocketUdpServer(_log, listenOn, dualModeServer, out int port))
-            {
-                using (ManualResetEvent waitHandle = new ManualResetEvent(false))
-                {
-                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                    args.RemoteEndPoint = new IPEndPoint(connectTo, port);
-                    args.SetBuffer(new byte[1], 0, 1);
-                    args.UserToken = waitHandle;
-                    args.Completed += AsyncCompleted;
-
-                    bool async = client.SendToAsync(args);
-                    if (async)
-                    {
-                        Assert.True(waitHandle.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
-                    }
-
-                    Assert.Equal(1, args.BytesTransferred);
-                    if (args.SocketError != SocketError.Success)
-                    {
-                        throw new SocketException((int)args.SocketError);
-                    }
-                }
-
-                bool success = server.WaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout); // Make sure the bytes were received
-                if (!success)
-                {
-                    throw new TimeoutException();
-                }
-            }
-        }
-
-        #endregion SendTo Async/Event
     }
 
     [OuterLoop]
