@@ -25,14 +25,8 @@
 #include "treelifeupdater.h"
 #include "emit.h"
 
-#if 0
-// Enable USING_SCOPE_INFO flag to use psiScope/siScope info to report variables' locations.
-#define USING_SCOPE_INFO
-#endif
 #if 1
 // Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
-// Note: if both USING_SCOPE_INFO and USING_VARIABLE_LIVE_RANGE are defined, then USING_SCOPE_INFO
-// information is reported to the debugger.
 #define USING_VARIABLE_LIVE_RANGE
 #endif
 
@@ -396,10 +390,6 @@ private:
     bool m_cgFullPtrRegMap;
 
 public:
-#ifdef USING_SCOPE_INFO
-    virtual void siUpdate() = 0;
-#endif // USING_SCOPE_INFO
-
     /* These are the different addressing modes used to access a local var.
      * The JIT has to report the location of the locals back to the EE
      * for debugging purposes.

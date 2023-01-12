@@ -777,10 +777,6 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         codeGen->getVariableLiveKeeper()->siStartVariableLiveRange(varDsc, varNum);
 #endif // USING_VARIABLE_LIVE_RANGE
     }
-
-#ifdef USING_SCOPE_INFO
-    codeGen->siUpdate();
-#endif // USING_SCOPE_INFO
 }
 
 // Need an explicit instantiation.
@@ -3547,12 +3543,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 assert(varDsc->lvSize() >= baseOffset + (unsigned)size);
             }
 #endif // !UNIX_AMD64_ABI
-#ifdef USING_SCOPE_INFO
-            if (regArgTab[argNum].slot == 1)
-            {
-                psiMoveToStack(varNum);
-            }
-#endif // USING_SCOPE_INFO
         }
 
         // Mark the argument as processed, and set it as no longer live in srcRegNum,
@@ -3695,10 +3685,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 regArgMaskLive &= ~genRegMask(varDscSrc->GetArgReg());
                 regArgMaskLive &= ~genRegMask(varDscDest->GetArgReg());
-#ifdef USING_SCOPE_INFO
-                psiMoveToReg(varNumSrc);
-                psiMoveToReg(varNumDest);
-#endif // USING_SCOPE_INFO
             }
             else
 #endif // TARGET_XARCH
@@ -3760,9 +3746,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regSet.verifyRegUsed(xtraReg);
 
                 *pXtraRegClobbered = true;
-#ifdef USING_SCOPE_INFO
-                psiMoveToReg(varNumDest, xtraReg);
-#endif // USING_SCOPE_INFO
                 /* start moving everything to its right place */
 
                 while (srcReg != begReg)
@@ -3826,9 +3809,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
 
                 regSet.verifyRegUsed(destRegNum);
-#ifdef USING_SCOPE_INFO
-                psiMoveToReg(varNumSrc);
-#endif // USING_SCOPE_INFO
                 /* mark the beginning register as processed */
 
                 regArgTab[srcReg].processed = true;
@@ -4005,9 +3985,6 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
 #endif
                 inst_Mov(destMemType, destRegNum, regNum, /* canSkip */ false, size);
-#ifdef USING_SCOPE_INFO
-                psiMoveToReg(varNum);
-#endif // USING_SCOPE_INFO
             }
 
             /* mark the argument as processed */
@@ -4214,9 +4191,6 @@ void CodeGen::genEnregisterIncomingStackArgs()
 #endif // !TARGET_LOONGARCH64
 
         regSet.verifyRegUsed(regNum);
-#ifdef USING_SCOPE_INFO
-        psiMoveToReg(varNum);
-#endif // USING_SCOPE_INFO
     }
 }
 
@@ -5883,9 +5857,6 @@ void CodeGen::genFnProlog()
             inst_RV(INS_push, REG_FPBASE, TYP_REF);
             compiler->unwindPush(REG_FPBASE);
         }
-#ifdef USING_SCOPE_INFO
-        psiAdjustStackLevel(REGSIZE_BYTES);
-#endif               // USING_SCOPE_INFO
 #ifndef TARGET_AMD64 // On AMD64, establish the frame pointer after the "sub rsp"
         genEstablishFramePointer(0, /*reportUnwindData*/ true);
 #endif // !TARGET_AMD64
@@ -6781,18 +6752,9 @@ void CodeGen::genSetScopeInfo()
 
     unsigned varsLocationsCount = 0;
 
-#ifdef USING_SCOPE_INFO
-    if (compiler->info.compVarScopesCount > 0)
-    {
-        varsLocationsCount = siScopeCnt + psiScopeCnt;
-    }
-#else // USING_SCOPE_INFO
-
 #ifdef USING_VARIABLE_LIVE_RANGE
     varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
 #endif // USING_VARIABLE_LIVE_RANGE
-
-#endif // USING_SCOPE_INFO
 
     if (varsLocationsCount == 0)
     {
@@ -6815,9 +6777,6 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-#ifdef USING_SCOPE_INFO
-    genSetScopeInfoUsingsiScope();
-#else // USING_SCOPE_INFO
 #ifdef USING_VARIABLE_LIVE_RANGE
     // We can have one of both flags defined, both, or none. Specially if we need to compare both
     // both results. But we cannot report both to the debugger, since there would be overlapping
@@ -6826,81 +6785,9 @@ void CodeGen::genSetScopeInfo()
     genSetScopeInfoUsingVariableRanges();
 
 #endif // USING_VARIABLE_LIVE_RANGE
-#endif // USING_SCOPE_INFO
 
     compiler->eeSetLVdone();
 }
-
-#ifdef USING_SCOPE_INFO
-void CodeGen::genSetScopeInfoUsingsiScope()
-{
-    noway_assert(psiOpenScopeList.scNext == nullptr);
-
-    // Record the scopes found for the parameters over the prolog.
-    // The prolog needs to be treated differently as a variable may not
-    // have the same info in the prolog block as is given by compiler->lvaTable.
-    // eg. A register parameter is actually on the stack, before it is loaded to reg.
-
-    CodeGen::psiScope* scopeP;
-    unsigned           i;
-
-    for (i = 0, scopeP = psiScopeList.scNext; i < psiScopeCnt; i++, scopeP = scopeP->scNext)
-    {
-        noway_assert(scopeP != nullptr);
-        noway_assert(scopeP->scStartLoc.Valid());
-        noway_assert(scopeP->scEndLoc.Valid());
-
-        UNATIVE_OFFSET startOffs = scopeP->scStartLoc.CodeOffset(GetEmitter());
-        UNATIVE_OFFSET endOffs   = scopeP->scEndLoc.CodeOffset(GetEmitter());
-
-        unsigned varNum = scopeP->scSlotNum;
-        noway_assert(startOffs <= endOffs);
-
-        // The range may be 0 if the prolog is empty. For such a case,
-        // report the liveness of arguments to span at least the first
-        // instruction in the method. This will be incorrect (except on
-        // entry to the method) if the very first instruction of the method
-        // is part of a loop. However, this should happen
-        // very rarely, and the incorrectness is worth being able to look
-        // at the argument on entry to the method.
-        if (startOffs == endOffs)
-        {
-            noway_assert(startOffs == 0);
-            endOffs++;
-        }
-
-        siVarLoc varLoc = scopeP->getSiVarLoc();
-
-        genSetScopeInfo(i, startOffs, endOffs - startOffs, varNum, scopeP->scLVnum, true, &varLoc);
-    }
-
-    // Record the scopes for the rest of the method.
-    // Check that the LocalVarInfo scopes look OK
-    noway_assert(siOpenScopeList.scNext == nullptr);
-
-    CodeGen::siScope* scopeL;
-
-    for (i = 0, scopeL = siScopeList.scNext; i < siScopeCnt; i++, scopeL = scopeL->scNext)
-    {
-        noway_assert(scopeL != nullptr);
-        noway_assert(scopeL->scStartLoc.Valid());
-        noway_assert(scopeL->scEndLoc.Valid());
-
-        // Find the start and end IP
-
-        UNATIVE_OFFSET startOffs = scopeL->scStartLoc.CodeOffset(GetEmitter());
-        UNATIVE_OFFSET endOffs   = scopeL->scEndLoc.CodeOffset(GetEmitter());
-
-        noway_assert(scopeL->scStartLoc != scopeL->scEndLoc);
-
-        LclVarDsc* varDsc = compiler->lvaGetDesc(scopeL->scVarNum);
-        siVarLoc   varLoc = getSiVarLoc(varDsc, scopeL);
-
-        genSetScopeInfo(psiScopeCnt + i, startOffs, endOffs - startOffs, scopeL->scVarNum, scopeL->scLVnum, false,
-                        &varLoc);
-    }
-}
-#endif // USING_SCOPE_INFO
 
 #ifdef USING_VARIABLE_LIVE_RANGE
 //------------------------------------------------------------------------
