@@ -2495,12 +2495,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
-      <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and ('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Unix.cs" />
