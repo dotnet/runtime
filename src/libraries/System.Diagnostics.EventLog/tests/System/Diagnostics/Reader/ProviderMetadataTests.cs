@@ -90,6 +90,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80475")]
         public void GetProviderNames_AssertProperties()
         {
             const string Prefix = "win:";
