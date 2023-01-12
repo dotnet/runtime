@@ -96,14 +96,6 @@ export type MonoConfig = {
      */
     globalizationMode?: GlobalizationMode,
     /**
-     * User can choose the option to load only partial globalization data:
-     * "icudt_EFIGS.dat" for "en-*" "fr-FR" "es-ES" "it-IT" "de-DE"
-     * "icudt_CJK.dat" for "ja" "ko" "zh" "en"
-     * "icudt_no_CJK.dat" for all cultures, excluding "ja" "ko" "zh"
-     *  "customName"
-     */
-    isIcuFilePredefined?: boolean,
-    /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
      * debugLevel < 0 enabled debugging and disables debug logging.
