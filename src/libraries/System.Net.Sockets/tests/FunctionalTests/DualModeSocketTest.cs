@@ -1005,6 +1005,97 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    public abstract class DualModeConnectionlessReceiveFromBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected DualModeConnectionlessReceiveFromBase(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Fact] // Base case
+        public async Task Socket_ReceiveFromV4IPEndPointFromV4Client_Throws()
+        {
+            // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
+            using Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket.DualMode = false;
+
+            EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, DualModeBase.UnusedPort);
+            await AssertExtensions.ThrowsAsync<ArgumentException>("remoteEP", () => ReceiveFromAsync(socket, new byte[1], receivedFrom));
+        }
+
+        [Fact] // Base case
+        public async Task Socket_ReceiveFromDnsEndPoint_Throws()
+        {
+            // "The parameter remoteEP must not be of type DnsEndPoint."
+            using Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            
+            int port = socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
+            EndPoint receivedFrom = new DnsEndPoint("localhost", port, AddressFamily.InterNetworkV6);
+            await AssertExtensions.ThrowsAsync<ArgumentException>("remoteEP", () => ReceiveFromAsync(socket, new byte[1], receivedFrom));
+        }
+
+        [Fact]
+        public Task ReceiveFromV4BoundToSpecificV4_Success() => ReceiveFrom_Success_Helper(IPAddress.Loopback, IPAddress.Loopback);
+
+        [Fact]
+        public Task ReceiveFromV4BoundToAnyV4_Success() => ReceiveFrom_Success_Helper(IPAddress.Any, IPAddress.Loopback);
+
+        [Fact]
+        public Task ReceiveFromV6BoundToSpecificV6_Success() => ReceiveFrom_Success_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
+
+        [Fact]
+        public Task ReceiveFromV6BoundToAnyV6_Success() => ReceiveFrom_Success_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
+
+        [Fact]
+        public Task ReceiveFromV4BoundToAnyV6_Success() => ReceiveFrom_Success_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
+
+        [Fact]
+        // Binds to a specific port on 'connectTo' which on Unix may already be in use
+        // Also ReceiveFrom not supported on OSX
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public Task ReceiveFromV6BoundToSpecificV4_NotReceived() => ReceiveFrom_Failure_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
+
+        [Fact]
+        // Binds to a specific port on 'connectTo' which on Unix may already be in use
+        // Also expected behavior is different on OSX and Linux (ArgumentException instead of SocketException)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public Task ReceiveFromV4BoundToSpecificV6_NotReceived() => ReceiveFrom_Failure_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
+
+        [Fact]
+        // Binds to a specific port on 'connectTo' which on Unix may already be in use
+        // Also ReceiveFrom not supported on OSX
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public Task ReceiveFromV6BoundToAnyV4_NotReceived() => ReceiveFrom_Failure_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
+
+        protected async Task ReceiveFrom_Success_Helper(IPAddress listenOn, IPAddress connectTo)
+        {
+            using Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            int port = serverSocket.BindToAnonymousPort(listenOn);
+
+            Socket client = new Socket(connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            Task<int> sendTask = client.SendToAsync(new byte[1], new IPEndPoint(connectTo, port))
+                .WaitAsync(TestSettings.PassingTestTimeout);
+
+            var result = await ReceiveFromAsync(serverSocket, new byte[1], new IPEndPoint(connectTo, port))
+                .WaitAsync(TestSettings.PassingTestTimeout);
+
+            Assert.Equal(1, result.ReceivedBytes);
+            IPEndPoint remoteEndPoint = Assert.IsType<IPEndPoint>(result.RemoteEndPoint);
+            Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
+            Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
+        }
+
+        protected async Task ReceiveFrom_Failure_Helper(IPAddress listenOn, IPAddress connectTo)
+        {
+            using Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            int port = serverSocket.BindToAnonymousPort(listenOn);
+
+            Socket client = new Socket(connectTo.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            _ = client.SendToAsync(new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
+            await Assert.ThrowsAsync<TimeoutException>(() => ReceiveFromAsync(serverSocket, new byte[1], new IPEndPoint(connectTo, port))
+                .WaitAsync(TestSettings.FailingTestTimeout));
+        }
+    }
+
     [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
