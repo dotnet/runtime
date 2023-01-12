@@ -1019,7 +1019,7 @@ namespace System.Net.Sockets.Tests
             socket.DualMode = false;
 
             EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, DualModeBase.UnusedPort);
-            await AssertExtensions.ThrowsAsync<ArgumentException>("remoteEP", () => ReceiveFromAsync(socket, new byte[1], receivedFrom));
+            await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], receivedFrom));
         }
 
         [Fact] // Base case
@@ -1096,391 +1096,40 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeConnectionlessReceiveFrom : DualModeBase
+    public class DualModeConnectionlessReceiveFromSync : DualModeConnectionlessReceiveFromBase<SocketHelperArraySync>
     {
-        #region ReceiveFrom Sync
-
-        [Fact] // Base case
-        public void Socket_ReceiveFromV4IPEndPointFromV4Client_Throws()
+        public DualModeConnectionlessReceiveFromSync(ITestOutputHelper output) : base(output)
         {
-            // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                socket.DualMode = false;
-
-                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    int received = socket.ReceiveFrom(new byte[1], ref receivedFrom);
-                });
-            }
         }
-
-        [Fact] // Base case
-        public void Socket_ReceiveFromDnsEndPoint_Throws()
-        {
-            // "The parameter remoteEP must not be of type DnsEndPoint."
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                int port = socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                EndPoint receivedFrom = new DnsEndPoint("localhost", port, AddressFamily.InterNetworkV6);
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    int received = socket.ReceiveFrom(new byte[1], ref receivedFrom);
-                });
-            }
-        }
-
-        [Fact]
-        public void ReceiveFromV4BoundToSpecificV4_Success()
-        {
-            ReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromV4BoundToAnyV4_Success()
-        {
-            ReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromV6BoundToSpecificV6_Success()
-        {
-            ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromV6BoundToAnyV6_Success()
-        {
-            ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also ReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void ReceiveFromV6BoundToSpecificV4_NotReceived()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                ReceiveFrom_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also expected behavior is different on OSX and Linux (ArgumentException instead of SocketException)
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void ReceiveFromV4BoundToSpecificV6_NotReceived()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                ReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
-            });
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also ReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void ReceiveFromV6BoundToAnyV4_NotReceived()
-        {
-            Assert.Throws<SocketException>(() =>
-            {
-                ReceiveFrom_Helper(IPAddress.Any, IPAddress.IPv6Loopback);
-            });
-        }
-
-        [Fact]
-        public void ReceiveFromV4BoundToAnyV6_Success()
-        {
-            ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
-
-        #endregion ReceiveFrom Sync
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeConnectionlessBeginReceiveFrom : DualModeBase
+    public class DualModeConnectionlessReceiveFromApm : DualModeConnectionlessReceiveFromBase<SocketHelperApm>
     {
-        #region ReceiveFrom Begin/End
-
-        [Fact] // Base case
-        // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
-        public void Socket_BeginReceiveFromV4IPEndPointFromV4Client_Throws()
+        public DualModeConnectionlessReceiveFromApm(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                socket.DualMode = false;
-
-                EndPoint receivedFrom = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    socket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
-                });
-            }
         }
-
-        [Fact] // Base case
-        // "The parameter remoteEP must not be of type DnsEndPoint."
-        public void Socket_BeginReceiveFromDnsEndPoint_Throws()
-        {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                int port = socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                EndPoint receivedFrom = new DnsEndPoint("localhost", port, AddressFamily.InterNetworkV6);
-
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    socket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
-                });
-            }
-        }
-
-        [Fact]
-        public void BeginReceiveFromV4BoundToSpecificV4_Success()
-        {
-            BeginReceiveFrom_Helper(IPAddress.Loopback, IPAddress.Loopback);
-        }
-
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS, "BeginReceiveFrom not supported on Apple platforms")]
-        public void BeginReceiveFromV4BoundToAnyV4_Success()
-        {
-            BeginReceiveFrom_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void BeginReceiveFromV6BoundToSpecificV6_Success()
-        {
-            BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        public void BeginReceiveFromV6BoundToAnyV6_Success()
-        {
-            BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also BeginReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void BeginReceiveFromV6BoundToSpecificV4_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                BeginReceiveFrom_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also expected behavior is different on OSX and Linux (ArgumentException instead of TimeoutException)
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void BeginReceiveFromV4BoundToSpecificV6_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                BeginReceiveFrom_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also BeginReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void BeginReceiveFromV6BoundToAnyV4_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                BeginReceiveFrom_Helper(IPAddress.Any, IPAddress.IPv6Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void BeginReceiveFromV4BoundToAnyV6_Success()
-        {
-            BeginReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
-
-        private void BeginReceiveFrom_Helper(IPAddress listenOn, IPAddress connectTo, bool expectedToTimeout = false)
-        {
-            using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                serverSocket.ReceiveTimeout = 500;
-                int port = serverSocket.BindToAnonymousPort(listenOn);
-
-                EndPoint receivedFrom = new IPEndPoint(connectTo, port);
-                IAsyncResult async = serverSocket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
-
-                // Behavior difference from Desktop: receivedFrom will _not_ change during the synchronous phase.
-
-                // IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
-                // Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
-                // Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
-
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
-                bool success = async.AsyncWaitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout);
-                if (!success)
-                {
-                    throw new TimeoutException();
-                }
-
-                receivedFrom = new IPEndPoint(connectTo, port);
-                int received = serverSocket.EndReceiveFrom(async, ref receivedFrom);
-
-                Assert.Equal(1, received);
-                Assert.Equal<Type>(typeof(IPEndPoint), receivedFrom.GetType());
-
-                IPEndPoint remoteEndPoint = receivedFrom as IPEndPoint;
-                Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
-            }
-        }
-
-        #endregion ReceiveFrom Begin/End
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
-    public class DualModeConnectionlessReceiveFromAsync : DualModeBase
+    public class DualModeConnectionlessReceiveFromEap : DualModeConnectionlessReceiveFromBase<SocketHelperEap>
     {
-        #region ReceiveFrom Async/Event
-
-        [Fact] // Base case
-        // "The supplied EndPoint of AddressFamily InterNetwork is not valid for this Socket, use InterNetworkV6 instead."
-        public void Socket_ReceiveFromAsyncV4IPEndPointFromV4Client_Throws()
+        public DualModeConnectionlessReceiveFromEap(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
-            {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, UnusedPort);
-                args.SetBuffer(new byte[1], 0, 1);
-
-                AssertExtensions.Throws<ArgumentException>("e", () =>
-                {
-                    socket.ReceiveFromAsync(args);
-                });
-            }
         }
+    }
 
-        [Fact] // Base case
-        // "The parameter remoteEP must not be of type DnsEndPoint."
-        public void Socket_ReceiveFromAsyncDnsEndPoint_Throws()
+    [Trait("IPv4", "true")]
+    [Trait("IPv6", "true")]
+    public class DualModeConnectionlessReceiveFromTask : DualModeConnectionlessReceiveFromBase<SocketHelperTask>
+    {
+        public DualModeConnectionlessReceiveFromTask(ITestOutputHelper output) : base(output)
         {
-            using (Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                int port = socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new DnsEndPoint("localhost", port, AddressFamily.InterNetworkV6);
-                args.SetBuffer(new byte[1], 0, 1);
-
-                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
-                {
-                    socket.ReceiveFromAsync(args);
-                });
-            }
         }
-
-        [Fact]
-        public void ReceiveFromAsyncV4BoundToSpecificV4_Success()
-        {
-            ReceiveFromAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV4BoundToAnyV4_Success()
-        {
-            ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV6BoundToSpecificV6_Success()
-        {
-            ReceiveFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV6BoundToAnyV6_Success()
-        {
-            ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV6BoundToSpecificV4_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                ReceiveFromAsync_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV4BoundToSpecificV6_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                ReceiveFromAsync_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV6BoundToAnyV4_NotReceived()
-        {
-            Assert.Throws<TimeoutException>(() =>
-            {
-                ReceiveFromAsync_Helper(IPAddress.Any, IPAddress.IPv6Loopback, expectedToTimeout: true);
-            });
-        }
-
-        [Fact]
-        public void ReceiveFromAsyncV4BoundToAnyV6_Success()
-        {
-            ReceiveFromAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
-        }
-
-        private void ReceiveFromAsync_Helper(IPAddress listenOn, IPAddress connectTo, bool expectedToTimeout = false)
-        {
-            using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
-            {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
-
-                ManualResetEvent waitHandle = new ManualResetEvent(false);
-
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(listenOn, port);
-                args.SetBuffer(new byte[1], 0, 1);
-                args.UserToken = waitHandle;
-                args.Completed += AsyncCompleted;
-
-                bool async = serverSocket.ReceiveFromAsync(args);
-                SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port);
-                if (async && !waitHandle.WaitOne(expectedToTimeout ? TestSettings.FailingTestTimeout : TestSettings.PassingTestTimeout))
-                {
-                    throw new TimeoutException();
-                }
-
-                if (args.SocketError != SocketError.Success)
-                {
-                    throw new SocketException((int)args.SocketError);
-                }
-
-                Assert.Equal(1, args.BytesTransferred);
-                Assert.Equal<Type>(typeof(IPEndPoint), args.RemoteEndPoint.GetType());
-                IPEndPoint remoteEndPoint = args.RemoteEndPoint as IPEndPoint;
-                Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
-                Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
-            }
-        }
-
-        #endregion ReceiveFrom Async/Event
     }
 
     [OuterLoop]
