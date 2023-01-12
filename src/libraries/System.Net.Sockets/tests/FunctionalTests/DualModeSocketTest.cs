@@ -891,7 +891,83 @@ namespace System.Net.Sockets.Tests
         public DualModeAcceptTask(ITestOutputHelper output) : base(output) { }
     }
 
-    [OuterLoop]
+    public abstract class DualModeConnectionlessSendToBase<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    {
+        protected DualModeConnectionlessSendToBase(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Fact]
+        public async Task Socket_SendToV4IPEndPointToV4Host_Throws()
+        {
+            using Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket.DualMode = false;
+            await Assert.ThrowsAsync<SocketException>(
+                () => SendToAsync(socket, new byte[1], new IPEndPoint(IPAddress.Loopback, DualModeBase.UnusedPort)));
+        }
+
+        [Fact] // Base case
+        // "The parameter remoteEP must not be of type DnsEndPoint."
+        public async Task Socket_SendToDnsEndPoint_Throws()
+        {
+            using Socket socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+
+            await AssertExtensions.ThrowsAsync<ArgumentException>("remoteEP",
+                () => SendToAsync(socket, new byte[1], new DnsEndPoint("localhost", DualModeBase.UnusedPort)));
+        }
+
+        [Fact]
+        public Task SendToV4IPEndPointToV4Host_Success() => DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
+
+        [Fact]
+        public Task SendToV6IPEndPointToV6Host_Success() => DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
+
+        [Fact]
+        public Task SendToV4IPEndPointToDualHost_Success() => DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
+
+        [Fact]
+        public Task SendToV6IPEndPointToDualHost_Success() => DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
+        public Task SendToV4IPEndPointToV6Host_NotReceived() => DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
+        public Task SendToV6IPEndPointToV4Host_NotReceived() => DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
+
+        private async Task DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
+        {
+            using Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using Socket server = dualModeServer ?
+                new Socket(SocketType.Dgram, ProtocolType.Udp) :
+                new Socket(listenOn.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            int port = server.BindToAnonymousPort(listenOn);
+
+            Task<SocketReceiveFromResult> receiveTask = server.ReceiveFromAsync(new byte[1], client.LocalEndPoint);
+            int sent = await SendToAsync(client, new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(1, sent);
+
+            SocketReceiveFromResult receiveResult = await receiveTask.WaitAsync(TestSettings.PassingTestTimeout);
+            Assert.Equal(1, receiveResult.ReceivedBytes);
+        }
+
+        private async Task DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
+        {
+            using Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using Socket server = dualModeServer ?
+                new Socket(SocketType.Dgram, ProtocolType.Udp) :
+                new Socket(listenOn.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            int port = server.BindToAnonymousPort(listenOn);
+
+            Task<SocketReceiveFromResult> receiveTask = server.ReceiveFromAsync(new byte[1], client.LocalEndPoint);
+            _ = SendToAsync(client, new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
+
+            await Assert.ThrowsAsync<TimeoutException>(() => server.ReceiveFromAsync(new byte[1], client.LocalEndPoint).WaitAsync(TestSettings.FailingTestTimeout));
+        }
+    }
+
+    //[OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessSendTo : DualModeBase
@@ -2231,7 +2307,7 @@ namespace System.Net.Sockets.Tests
     public class DualModeBase
     {
         // Ports 8 and 8887 are unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
-        protected const int UnusedPort = 8;
+        internal const int UnusedPort = 8;
         protected const int UnusedBindablePort = 8887;
 
         protected readonly ITestOutputHelper _log;
