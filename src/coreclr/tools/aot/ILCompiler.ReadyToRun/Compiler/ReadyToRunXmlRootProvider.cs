@@ -37,7 +37,7 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            CompilationRootProvider root = new CompilationRootProvider(null, rootProvider, _context, _documentStream, _resource, _owningModule, _xmlDocumentLocation);
+            CompilationRootProvider root = new CompilationRootProvider(rootProvider, _context, _documentStream, _resource, _owningModule, _xmlDocumentLocation);
             root.ProcessXml();
         }
 
@@ -81,8 +81,8 @@ namespace ILCompiler
             private const string _preserve = "preserve";
             private readonly IRootingServiceProvider _rootingServiceProvider;
 
-            public CompilationRootProvider(Logger logger, IRootingServiceProvider provider, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)
-                : base(logger, context, documentStream, resource, owningModule, xmlDocumentLocation, ImmutableDictionary<string, bool>.Empty)
+            public CompilationRootProvider(IRootingServiceProvider provider, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)
+                : base(null , context, documentStream, resource, owningModule, xmlDocumentLocation, ImmutableDictionary<string, bool>.Empty)
             {
                 _rootingServiceProvider = provider;
             }

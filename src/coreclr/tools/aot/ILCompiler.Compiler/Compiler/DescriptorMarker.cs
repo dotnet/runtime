@@ -219,10 +219,6 @@ namespace ILCompiler
 
         protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
         {
-#if false
-            _context.Annotations.MarkIndirectlyCalledMethod(method);
-            _context.Annotations.SetAction(method, MethodAction.Parse);
-#endif
             if (customData is bool required && !required)
             {
                 //TODO: Add a conditional dependency if the type is used also mark the method
@@ -275,7 +271,7 @@ namespace ILCompiler
             else if (property.GetMethod == null)
             {
 #if !READYTORUN
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccessorOfPropertyOnType, property.Name, type.ToString());
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.GetDisplayName());
 #endif
             }
 
@@ -284,7 +280,7 @@ namespace ILCompiler
             else if (property.SetMethod == null)
             {
 #if !READYTORUN
-                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccessorOfPropertyOnType, property.Name, type.ToString());
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.GetDisplayName());
 #endif
             }
         }

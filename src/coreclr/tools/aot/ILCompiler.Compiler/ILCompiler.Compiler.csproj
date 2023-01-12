@@ -699,9 +699,5 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="tools\aot\ilcompiler.compiler\compiler\logging\" />
-  </ItemGroup>
-
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>

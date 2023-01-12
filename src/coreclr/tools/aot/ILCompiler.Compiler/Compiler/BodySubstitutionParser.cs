@@ -34,7 +34,7 @@ namespace ILCompiler
 
         // protected override TypeDesc? ProcessExportedType(ExportedType exported, ModuleDesc assembly, XPathNavigator nav) => null;
 
-        protected override bool ProcessTypePattern(string fullName, ModuleDesc assembly, XPathNavigator nav) => false;
+        protected override bool ProcessTypePattern(string fullname, ModuleDesc assembly, XPathNavigator nav) => false;
 
         protected override void ProcessType(TypeDesc type, XPathNavigator nav)
         {
@@ -83,7 +83,7 @@ namespace ILCompiler
                     break;
                 default:
 #if !READYTORUN
-                    LogWarning(methodNav, DiagnosticId.XmlUnknownBodyModification, action, method.GetDisplayName());
+                    LogWarning(methodNav, DiagnosticId.XmlUnkownBodyModification, action, method.GetDisplayName());
 #endif
                     break;
             }
@@ -159,15 +159,15 @@ namespace ILCompiler
                 case TypeFlags.Int32:
                     if (string.IsNullOrEmpty(value))
                         return 0;
-                    else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iResult))
-                        return iResult;
+                    else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
+                        return iresult;
                     break;
 
                 case TypeFlags.Boolean:
                     if (string.IsNullOrEmpty(value))
                         return 0;
-                    else if (bool.TryParse(value, out bool bValue))
-                        return bValue ? 1 : 0;
+                    else if (bool.TryParse(value, out bool bvalue))
+                        return bvalue ? 1 : 0;
                     else
                         goto case TypeFlags.Int32;
 

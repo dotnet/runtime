@@ -53,7 +53,7 @@ namespace ILCompiler
 
         protected readonly string _xmlDocumentLocation;
         private readonly XPathNavigator _document;
-        private Logger _logger;
+        private readonly Logger _logger;
         protected readonly ModuleDesc? _owningModule;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
@@ -139,7 +139,7 @@ namespace ILCompiler
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
                     // NativeAOT doesn't have a way to eliminate all the occurrences of an attribute yet
-                    // https://github.com/dotnet/runtime/issues/80466
+                    // https://github.com/dotnet/runtime/issues/77753
                     //LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
                     continue;
                 }
@@ -198,27 +198,27 @@ namespace ILCompiler
                 if (!ShouldProcessElement(typeNav))
                     continue;
 
-                string fullName = GetFullName(typeNav);
+                string fullname = GetFullName(typeNav);
 
-                if (fullName.IndexOf("*") != -1)
+                if (fullname.IndexOf("*") != -1)
                 {
-                    if (ProcessTypePattern(fullName, assembly, typeNav))
+                    if (ProcessTypePattern(fullname, assembly, typeNav))
                         continue;
                 }
 
                 // TODO: Process exported types
 
-                // TODO: Semantics differ and xml format is Cecil specific, therefore they are discrepancies on things like nested types
+                // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
                 // for now just hack replacing / for + to support basic resolving of nested types
                 // https://github.com/dotnet/runtime/issues/73083
-                fullName = fullName.Replace("/", "+");
-                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullName, throwIfNotFound: false);
+                fullname = fullname.Replace("/", "+");
+                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
 
                 if (type == null)
                 {
 #if !READYTORUN
                     if (warnOnUnresolvedTypes)
-                        LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullName);
+                        LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
 #endif
                     continue;
                 }

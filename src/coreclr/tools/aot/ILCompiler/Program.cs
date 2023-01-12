@@ -281,6 +281,15 @@ namespace ILCompiler
 
             ILProvider ilProvider = new NativeAotILProvider();
 
+            var suppressedWarningCategories = new List<string>();
+            if (Get(_command.NoTrimWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (Get(_command.NoAotWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in Get(_command.FeatureSwitches))
             {
@@ -290,14 +299,6 @@ namespace ILCompiler
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
                 featureSwitches.Add(new KeyValuePair<string, bool>(switchAndValue[0], switchValue));
             }
-            var suppressedWarningCategories = new List<string>();
-            if (Get(_command.NoTrimWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
-            if (Get(_command.NoAotWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
-
-            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
 
             ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches);
 

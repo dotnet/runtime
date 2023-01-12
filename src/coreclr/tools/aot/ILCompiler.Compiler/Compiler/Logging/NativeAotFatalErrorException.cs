@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 using ILCompiler.Logging;
 
@@ -19,12 +20,8 @@ namespace ILCompiler
         public NativeAotFatalErrorException(MessageContainer message)
             : base(message.ToString())
         {
-            if (message.Category != MessageCategory.Error)
-                throw new ArgumentException($"'{nameof(NativeAotFatalErrorException)}' ought to be used for errors only");
-
-            if (message.Code == null || message.Code.Value == 0)
-                throw new ArgumentException($"'{nameof(NativeAotFatalErrorException)}' must have a code that indicates a failure");
-
+            Debug.Assert(message.Category == MessageCategory.Error, $"'{nameof(NativeAotFatalErrorException)}' ought to be used for errors only");
+            Debug.Assert(message.Code != null && message.Code.Value != 0, $"'{nameof(NativeAotFatalErrorException)}' must have a code that indicates a failure");
             MessageContainer = message;
         }
 
@@ -33,12 +30,8 @@ namespace ILCompiler
         public NativeAotFatalErrorException(MessageContainer message, Exception innerException)
             : base(message.ToString(), innerException)
         {
-            if (message.Category != MessageCategory.Error)
-                throw new ArgumentException($"'{nameof(NativeAotFatalErrorException)}' ought to be used for errors only");
-
-            if (message.Code == null || message.Code.Value == 0)
-                throw new ArgumentException($"'{nameof(NativeAotFatalErrorException)}' must have a code that indicates failure");
-
+            Debug.Assert(message.Category == MessageCategory.Error, $"'{nameof(NativeAotFatalErrorException)}' ought to be used for errors only");
+            Debug.Assert(message.Code != null && message.Code.Value != 0, $"'{nameof(NativeAotFatalErrorException)}' must have a code that indicates failure");
             MessageContainer = message;
         }
     }
