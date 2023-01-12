@@ -1942,6 +1942,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleHandle.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumberEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumberEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Sleep.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Sleep.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeTokenHandle.cs</Link>
     </Compile>
@@ -1998,6 +2004,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
@@ -2218,6 +2225,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RmDir.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.RmDir.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Stat.cs</Link>
     </Compile>
@@ -2306,6 +2316,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.Unix.Android.cs" Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'" />
@@ -2500,15 +2511,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Sleep.cs">
-      <Link>Interop\Windows\Kernel32\Interop.Sleep.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
