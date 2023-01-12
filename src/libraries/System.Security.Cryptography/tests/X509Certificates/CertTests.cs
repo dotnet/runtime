@@ -573,7 +573,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
-        public static void MicrosoftPlatformCryptoProvider_EcdsaKey()
+        public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
              CngKey key = null;
 
@@ -587,7 +587,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 key = CngKey.Create(
                     CngAlgorithm.ECDsaP384,
-                    nameof(MicrosoftPlatformCryptoProvider_EcdsaKey),
+                    nameof(CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey),
                     cngCreationParameters);
 
                 using (ECDsaCng ecdsa = new ECDsaCng(key))
@@ -613,7 +613,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
-        public static void MicrosoftPlatformCryptoProvider_RsaKey()
+        public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
              CngKey key = null;
 
@@ -627,7 +627,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 key = CngKey.Create(
                     CngAlgorithm.Rsa,
-                    nameof(MicrosoftPlatformCryptoProvider_RsaKey),
+                    nameof(CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey),
                     cngCreationParameters);
 
                 using (RSACng rsa = new RSACng(key))
