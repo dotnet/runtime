@@ -12,30 +12,9 @@ namespace System
             Debug.Assert(left != null, "Expected non-null string");
             DebugAssertArrayInputs(right, rightStartIndex, rightLength);
 
-            if (left.Length != rightLength)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < left.Length; i++)
-            {
-                uint charA = left[i];
-                uint charB = right[rightStartIndex + i];
-
-                unchecked
-                {
-                    // We're only interested in ASCII characters here.
-                    if ((charA - 'a') <= ('z' - 'a')) charA -= ('a' - 'A');
-                    if ((charB - 'a') <= ('z' - 'a')) charB -= ('a' - 'A');
-                }
-
-                if (charA != charB)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return
+                left.Length == rightLength &&
+                left.AsSpan().Equals(right.AsSpan(rightStartIndex, rightLength), StringComparison.OrdinalIgnoreCase);
         }
 
         internal static void Trim(char[] array, ref int startIndex, ref int length)
