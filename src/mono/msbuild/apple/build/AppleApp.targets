@@ -11,7 +11,7 @@
 
   <Target Name="_InitializeCommonProperties">
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
-    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
+    <Error Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'maccatalyst') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'adhoc' to sign with an adhoc key, or '-' to skip signing all together.." />
 
     <PropertyGroup>
@@ -47,11 +47,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=arm64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=arm64-ios" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=x86_64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
@@ -89,7 +89,7 @@
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"

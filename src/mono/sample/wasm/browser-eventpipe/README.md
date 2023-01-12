@@ -27,7 +27,7 @@ c:\Dev\diagnostics\artifacts\bin\dotnet-dsrouter\Debug\net6.0\dotnet-dsrouter.ex
 
 In console #2 start the sample
 ```
-dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug /t:RunSample src/mono/sample/wasm/browser-eventpipe /p:MonoDiagnosticsMock=false
+dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Debug /t:RunSample src/mono/sample/wasm/browser-eventpipe /p:MonoDiagnosticsMock=false
 ```
 
 In console #3 start the dotnet trace

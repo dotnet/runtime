@@ -96,7 +96,7 @@
 
   <ItemGroup>
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())"
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
                               Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <NativePath>$(LibrariesAllBinArtifactsPath)</NativePath>
       <RefPath>$(LibrariesAllRefArtifactsPath)</RefPath>
@@ -109,13 +109,13 @@
                             '$(TargetFramework)' == 'netstandard2.0'" />
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <NativePath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</NativePath>
       <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(NetCoreAppCurrentTestHostSharedFrameworkPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
     <!-- Microsoft.NetCore.App.Ref and Microsoft.NetCore.App.Runtime targeting packs -->
-    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS.ToLowerInvariant())">
+    <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
       <NativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</NativePath>
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
       <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>

@@ -19,7 +19,7 @@ parameters:
 
 steps:
 # Build Android sample app
-  - ${{ if eq(parameters.osGroup, 'Android') }}:
+  - ${{ if eq(parameters.osGroup, 'android') }}:
     - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
       displayName: Build HelloAndroid sample app
@@ -36,7 +36,7 @@ steps:
       workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
       displayName: clean bindir
     
-  - ${{ if eq(parameters.osGroup, 'iOS') }}:
+  - ${{ if eq(parameters.osGroup, 'ios') }}:
     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'

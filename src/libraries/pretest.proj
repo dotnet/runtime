@@ -20,17 +20,17 @@
     <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>
-    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
-    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
-    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'android'" />
+    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'browser'" />
+    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser'" />
 
     <!-- needed to test workloads for wasm -->
-    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
-          Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
+          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
 
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">

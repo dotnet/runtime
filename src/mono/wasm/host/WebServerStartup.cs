@@ -13,6 +13,7 @@ using System.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -91,8 +92,8 @@ internal sealed class WebServerStartup
         {
             app.Use((context, next) =>
             {
-                context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
-                context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+                context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
                 return next();
             });
         }
