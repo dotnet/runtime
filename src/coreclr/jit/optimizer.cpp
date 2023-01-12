@@ -4035,16 +4035,10 @@ PhaseStatus Compiler::optUnrollLoops()
     }
 #endif
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optUnrollLoops()\n");
-    }
-#endif
-
     /* Look for loop unrolling candidates */
 
     bool change                 = false;
+    bool anyIRchange            = false;
     bool anyNestedLoopsUnrolled = false;
     INDEBUG(int unrollCount = 0);    // count of loops unrolled
     INDEBUG(int unrollFailures = 0); // count of loops attempted to be unrolled, but failed
@@ -4272,6 +4266,11 @@ PhaseStatus Compiler::optUnrollLoops()
             continue;
         }
         // clang-format on
+
+        // After this point, assume we've changed the IR. In particular, we call gtSetStmtInfo() which
+        // can modify the IR. We may still fail to unroll if the EH region conditions don't hold, if
+        // the size heuristics don't succeed, or if cloning any individual block fails.
+        anyIRchange = true;
 
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
@@ -4544,6 +4543,8 @@ PhaseStatus Compiler::optUnrollLoops()
 
     if (change)
     {
+        assert(anyIRchange);
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -4588,7 +4589,7 @@ PhaseStatus Compiler::optUnrollLoops()
     fgDebugCheckBBlist(true);
 #endif // DEBUG
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -6454,7 +6455,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     }
 #endif
 
-    if (fgStmtListThreaded)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(hoistStmt);
         fgSetStmtSeq(hoistStmt);
@@ -6603,11 +6604,10 @@ PhaseStatus Compiler::optHoistLoopCode()
     if (m_nodeTestData == nullptr)
     {
         NodeToTestDataMap* testData = GetNodeTestData();
-        for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+        for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
         {
             TestLabelAndNum tlAndN;
-            GenTree*        node = ki.Get();
-            bool            b    = testData->Lookup(node, &tlAndN);
+            bool            b = testData->Lookup(node, &tlAndN);
             assert(b);
             if (tlAndN.m_tl != TL_LoopHoist)
             {
@@ -7718,7 +7718,8 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         weight_t    blockWeight = block->getBBWeight(this);
 
         JITDUMP("\n    optHoistLoopBlocks " FMT_BB " (weight=%6s) of loop " FMT_LP " <" FMT_BB ".." FMT_BB ">\n",
-                block->bbNum, refCntWtd2str(blockWeight), loopNum, loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
+                block->bbNum, refCntWtd2str(blockWeight, /* padForDecimalPlaces */ true), loopNum,
+                loopDsc->lpTop->bbNum, loopDsc->lpBottom->bbNum);
 
         if (blockWeight < (BB_UNITY_WEIGHT / 10))
         {
@@ -8601,13 +8602,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                 }
                 // Otherwise, must be local lhs form.  I should assert that.
-                else if (lhs->OperGet() == GT_LCL_VAR)
+                else if (lhs->OperIsLocal())
                 {
-                    GenTreeLclVar* lhsLcl = lhs->AsLclVar();
-                    GenTree*       rhs    = tree->AsOp()->gtOp2;
-                    ValueNum       rhsVN  = rhs->gtVNPair.GetLiberal();
+                    GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
+                    ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();
                     // If we gave the RHS a value number, propagate it.
-                    if (rhsVN != ValueNumStore::NoVN)
+                    if (lhsLcl->OperIs(GT_LCL_VAR) && (rhsVN != ValueNumStore::NoVN))
                     {
                         rhsVN = vnStore->VNNormalValue(rhsVN);
                         if (lhsLcl->HasSsaName())
@@ -9445,7 +9445,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgStmtListThreaded)
+    if (m_comp->fgNodeThreading != NodeThreading::None)
     {
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
@@ -9769,7 +9769,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgStmtListThreaded)
+    if (m_comp->fgNodeThreading != NodeThreading::None)
     {
         m_comp->gtSetStmtInfo(test.testStmt);
         m_comp->fgSetStmtSeq(test.testStmt);
@@ -10102,7 +10102,7 @@ void Compiler::optRemoveRedundantZeroInits()
     bool            hasGCSafePoint = false;
     bool            canThrow       = false;
 
-    assert(fgStmtListThreaded);
+    assert(fgNodeThreading == NodeThreading::AllTrees);
 
     for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
          block             = block->GetUniqueSucc())
@@ -10293,6 +10293,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
+                                lclVar->gtFlags |= GTF_VAR_EXPLICIT_INIT;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
                             }
                         }
@@ -10307,11 +10308,8 @@ void Compiler::optRemoveRedundantZeroInits()
 
         if (removedTrackedDefs)
         {
-            LclVarRefCounts::KeyIterator iter(defsInBlock.Begin());
-            LclVarRefCounts::KeyIterator end(defsInBlock.End());
-            for (; !iter.Equal(end); iter++)
+            for (const unsigned int lclNum : LclVarRefCounts::KeyIteration(&defsInBlock))
             {
-                unsigned int lclNum = iter.Get();
                 if (defsInBlock[lclNum] == 0)
                 {
                     VarSetOps::RemoveElemD(this, block->bbVarDef, lvaGetDesc(lclNum)->lvVarIndex);
@@ -10360,7 +10358,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 
         LclVarDsc* varDsc   = lvaGetDesc(lclNum);
         unsigned   defCount = varDsc->lvPerSsaData.GetCount();
-        if (defCount <= 2)
+        if (defCount <= 1)
         {
             continue;
         }
@@ -10377,22 +10375,53 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
 
                 GenTree* lhs = store->gtGetOp1();
-                if (!lhs->OperIs(GT_LCL_FLD) || ((lhs->gtFlags & GTF_VAR_USEASG) == 0) ||
-                    (lhs->AsLclFld()->GetLclNum() != lclNum))
+                if (lhs->AsLclVarCommon()->GetLclNum() != lclNum)
                 {
+                    JITDUMP(" -- no; composite definition\n");
                     continue;
                 }
 
-                ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
-                ValueNum oldStoreValue =
-                    vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
-                                       lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                ValueNum oldStoreValue;
+                if ((lhs->gtFlags & GTF_VAR_USEASG) == 0)
+                {
+                    LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
+                    if (lastDefDsc->GetBlock() != defDsc->GetBlock())
+                    {
+                        JITDUMP(" -- no; last def not in the same block\n");
+                        continue;
+                    }
+
+                    if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                    {
+                        // Removing explicit inits is not profitable for primitives and not safe for structs.
+                        JITDUMP(" -- no; 'explicit init'\n");
+                        continue;
+                    }
+
+                    // CQ heuristic: avoid removing defs of enregisterable locals where this is likely to
+                    // make them "must-init", extending live ranges. Here we assume the first SSA def was
+                    // the implicit "live-in" one, which is not guaranteed, but very likely.
+                    if ((defIndex == 1) && (varDsc->TypeGet() != TYP_STRUCT))
+                    {
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        continue;
+                    }
+
+                    oldStoreValue = lastDefDsc->m_vnPair.GetConservative();
+                }
+                else
+                {
+                    ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
+                    oldStoreValue =
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
+                                           lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                }
 
                 GenTree* rhs = store->gtGetOp2();
                 ValueNum storeValue;
                 if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
                 {
-                    storeValue = vnStore->VNForZeroObj(lhs->AsLclFld()->GetLayout());
+                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
                 }
                 else
                 {
@@ -10417,6 +10446,10 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     gtUpdateTreeAncestorsSideEffects(store);
 
                     madeChanges = true;
+                }
+                else
+                {
+                    JITDUMP(" -- no; not redundant\n");
                 }
             }
         }

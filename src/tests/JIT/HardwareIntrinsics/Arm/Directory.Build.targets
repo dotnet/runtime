@@ -12,7 +12,7 @@
           Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.cs"
           Outputs="$(GeneratedHWIntrinsicTestListFile)"
           Condition="'$(Language)' == 'C#'">
-    <Exec Command="$(DotNetCli) build $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.csproj -c $(Configuration) /p:IntermediateOutputPath=$(IntermediateOutputPath)/GenerateHWIntrinsicTests/ /p:OutputPath=$(OutputPath)/GenerateHWIntrinsicTests/" />
+    <Exec Command="$(DotNetCli) build $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.csproj -c $(Configuration) --no-restore /p:IntermediateOutputPath=$(IntermediateOutputPath)/GenerateHWIntrinsicTests/ /p:OutputPath=$(OutputPath)/GenerateHWIntrinsicTests/" />
     <Exec Command="$(DotNetCli) exec $(OutputPath)/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_Arm.dll $(MSBuildProjectName) $(MSBuildThisFileDirectory)Shared $(GeneratedHWIntrinsicTestDirectory) $(GeneratedHWIntrinsicTestListFile)" />
   </Target>
 

@@ -646,7 +646,17 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(weight_t refCntWtd)
+//------------------------------------------------------------------------
+// refCntWtd2str: Return a string representation of a weighted ref count
+//
+// Arguments:
+//    refCntWtd - weight to format
+//    padForDecimalPlaces - (default: false) If true, pad any integral or non-numeric
+//                          output on the right with three spaces, representing space
+//                          for ".00". This makes "1" line up with "2.34" at the "2" column.
+//                          This is used for formatting the BasicBlock list.
+//
+const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -655,11 +665,17 @@ const char* refCntWtd2str(weight_t refCntWtd)
 
     char* temp = nump;
 
+    const char* strDecimalPaddingString = "";
+    if (padForDecimalPlaces)
+    {
+        strDecimalPaddingString = "   ";
+    }
+
     nump = (nump == num1) ? num2 : num1;
 
     if (refCntWtd >= BB_MAX_WEIGHT)
     {
-        sprintf_s(temp, bufSize, "MAX   ");
+        sprintf_s(temp, bufSize, "MAX%s", strDecimalPaddingString);
     }
     else
     {
@@ -678,7 +694,7 @@ const char* refCntWtd2str(weight_t refCntWtd)
         {
             if (intPart == scaledWeight)
             {
-                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+                sprintf_s(temp, bufSize, "%lld%s", (long long)intPart, strDecimalPaddingString);
             }
             else
             {
@@ -1368,10 +1384,17 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_GETREFANY:
             case CORINFO_HELP_LDELEMA_REF:
 
                 isPure = true;
+                break;
+
+            // GETREFANY is pure up to the value of the struct argument. We
+            // only support that when it is not an implicit byref.
+            case CORINFO_HELP_GETREFANY:
+#ifndef WINDOWS_AMD64_ABI
+                isPure = true;
+#endif
                 break;
 
             // helpers that return internal handle

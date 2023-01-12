@@ -180,7 +180,7 @@
 
      <!-- There are currently no native project binaries on wasm or Android -->
      <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetOS)' != 'iOS' And '$(TargetOS)' != 'iOSSimulator'"/>
+             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetOS)' != 'ios' And '$(TargetOS)' != 'iossimulator'"/>
 
      <Copy
         SourceFiles="@(NativeProjectBinaries)"
@@ -636,8 +636,8 @@
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
          rpath so that the test can load its native library dependencies if there's any -->
-    <IlcRPath Condition="'$(TargetOS)' != 'OSX'">$ORIGIN/..</IlcRPath>
-    <IlcRPath Condition="'$(TargetOS)' == 'OSX'">@executable_path/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' != 'osx'">$ORIGIN/..</IlcRPath>
+    <IlcRPath Condition="'$(TargetOS)' == 'osx'">@executable_path/..</IlcRPath>
 
     <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only"
       Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->

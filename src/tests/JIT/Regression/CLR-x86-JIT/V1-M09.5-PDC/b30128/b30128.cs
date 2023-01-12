@@ -5,7 +5,7 @@
 namespace Test
 {
     using System;
-    class AA
+    public class AA
     {
         public int[] m_anField1 = new int[7];
         public static void Method1()
@@ -16,7 +16,7 @@ namespace Test
                 local2[2].m_anField1 = new AA().m_anField1;	//this will blow up
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

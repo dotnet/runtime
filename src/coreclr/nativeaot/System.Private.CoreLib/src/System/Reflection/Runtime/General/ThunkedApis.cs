@@ -36,8 +36,7 @@ namespace System.Reflection.Runtime.Assemblies
             StringBuilder sb = new StringBuilder();
             if (type == null)
             {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(type));
+                ArgumentNullException.ThrowIfNull(name, nameof(type));
             }
             else
             {
@@ -178,8 +177,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Justification = "The returned interface is one of the interfaces implemented by this type and does have DynamicallyAccessedMemberTypes.Interfaces")]
         public sealed override Type? GetInterface(string name, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException("fullname" /* Yep, CoreCLR names this different than the ref assembly */);
+            ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);
 
             string simpleName;
             string ns;

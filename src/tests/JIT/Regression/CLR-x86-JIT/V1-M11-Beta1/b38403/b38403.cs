@@ -16,7 +16,7 @@ namespace Test
         public static AA[] m_axStatic4 = new AA[7];
     }
 
-    class JJ
+    public class JJ
     {
         static CC m_xStatic2 = new CC();
 
@@ -25,7 +25,7 @@ namespace Test
             while (AA.m_bStatic1) ;
         }
 
-        static int Main()
+        public static int Main()
         {
             CC local5 = new CC();
             do

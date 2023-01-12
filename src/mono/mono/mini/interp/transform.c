@@ -2368,6 +2368,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "InternalGetHashCode")) {
+			*op = MINT_INTRINS_GET_HASHCODE;
+		} else if (!strcmp (tm, "InternalTryGetHashCode")) {
+			*op = MINT_INTRINS_TRY_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetRawData")) {
 			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
 			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
@@ -2426,9 +2430,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
 		*op = MINT_CNE_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
-		if (!strcmp (tm, "InternalGetHashCode")) {
-			*op = MINT_INTRINS_GET_HASHCODE;
-		} else if (!strcmp (tm, "GetType")) {
+		if (!strcmp (tm, "GetType")) {
 			if (constrained_class && m_class_is_valuetype (constrained_class) && !mono_class_is_nullable (constrained_class)) {
 				// If constrained_class is valuetype we already know its type.
 				// Resolve GetType to a constant so we can fold type comparisons
@@ -2606,14 +2608,15 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
-		if (!strcmp (tm, "get_IsDynamicCodeSupported"))
-			*op = MINT_LDC_I4_1;
-		else if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
+		// NOTE: on the interpreter, use the C# code in System.Private.CoreLib for IsDynamicCodeSupported
+		// and always return false for IsDynamicCodeCompiled
+		if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
 			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
-			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29)) &&
+			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29) ||
+			!strncmp ("System.Runtime.Intrinsics.Wasm", klass_name_space, 30)) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
@@ -3722,8 +3725,8 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
  *
  *   Compute the set of IL level basic blocks.
  */
-static void
-get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list)
+static gboolean
+get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_list, MonoBitSet *il_targets)
 {
 	guint8 *start = (guint8*)td->il_code;
 	guint8 *end = (guint8*)td->il_code + td->code_size;
@@ -3737,12 +3740,23 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = header->clauses + i;
+		if (start + c->try_offset > end || start + c->try_offset + c->try_len > end)
+			return FALSE;
 		get_bb (td, start + c->try_offset, make_list);
+		mono_bitset_set (il_targets, c->try_offset);
+		mono_bitset_set (il_targets, c->try_offset + c->try_len);
+		if (start + c->handler_offset > end || start + c->handler_offset + c->handler_len > end)
+			return FALSE;
 		get_bb (td, start + c->handler_offset, make_list);
-		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER)
+		mono_bitset_set (il_targets, c->handler_offset);
+		mono_bitset_set (il_targets, c->handler_offset + c->handler_len);
+		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
+			if (start + c->data.filter_offset > end)
+				return FALSE;
 			get_bb (td, start + c->data.filter_offset, make_list);
+			mono_bitset_set (il_targets, c->data.filter_offset);
+		}
 	}
-
 	while (ip < end) {
 		cli_addr = ip - start;
 		int i = mono_opcode_value ((const guint8 **)&ip, end);
@@ -3770,15 +3784,21 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			break;
 		case MonoShortInlineBrTarget:
 			target = start + cli_addr + 2 + (signed char)ip [1];
+			if (target > end)
+				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 2;
 			get_bb (td, ip, make_list);
+			mono_bitset_set (il_targets, target - start);
 			break;
 		case MonoInlineBrTarget:
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
+			if (target > end)
+				return FALSE;
 			get_bb (td, target, make_list);
 			ip += 5;
 			get_bb (td, ip, make_list);
+			mono_bitset_set (il_targets, target - start);
 			break;
 		case MonoInlineSwitch: {
 			guint32 n = read32 (ip + 1);
@@ -3786,12 +3806,17 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			ip += 5;
 			cli_addr += 5 + 4 * n;
 			target = start + cli_addr;
+			if (target > end)
+				return FALSE;
 			get_bb (td, target, make_list);
-
+			mono_bitset_set (il_targets, target - start);
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
+				if (target > end)
+					return FALSE;
 				get_bb (td, target, make_list);
 				ip += 4;
+				mono_bitset_set (il_targets, target - start);
 			}
 			get_bb (td, ip, make_list);
 			break;
@@ -3808,9 +3833,11 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			get_bb (td, ip, make_list);
 	}
 
-        /* get_bb added blocks in reverse order, unreverse now */
-        if (make_list)
-                td->basic_blocks = g_list_reverse (td->basic_blocks);
+	/* get_bb added blocks in reverse order, unreverse now */
+	if (make_list)
+		td->basic_blocks = g_list_reverse (td->basic_blocks);
+
+	return TRUE;
 }
 
 static void
@@ -4509,6 +4536,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
 	gboolean sym_seq_points = FALSE;
 	MonoBitSet *seq_point_locs = NULL;
+	MonoBitSet *il_targets = NULL;
 	gboolean readonly = FALSE;
 	gboolean volatile_ = FALSE;
 	gboolean tailcall = FALSE;
@@ -4554,7 +4582,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		exit_bb->stack_height = -1;
 	}
 
-	get_basic_blocks (td, header, td->gen_sdb_seq_points);
+	il_targets = mono_bitset_mem_new (
+		mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)),
+		header->code_size, 0);
+	if (!get_basic_blocks (td, header, td->gen_sdb_seq_points, il_targets)) {
+		td->has_invalid_code = TRUE;
+		goto exit;
+	}
 
 	if (!inlining)
 		initialize_clause_bblocks (td);
@@ -4752,8 +4786,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (in_offset == bb->end)
 			bb = bb->next;
 
+		/* Checks that a jump target isn't in the middle of opcode offset */
+		int op_size = mono_opcode_size (td->ip, end);
+		for (int i = 1; i < op_size; i++) {
+			if (mono_bitset_test(il_targets, in_offset + i)) {
+				td->has_invalid_code = TRUE;
+				goto exit;
+			}
+		}
 		if (bb->dead || td->cbb->dead) {
-			int op_size = mono_opcode_size (td->ip, end);
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
 
 			if (td->verbose_level > 1)
@@ -7869,6 +7910,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
+	mono_bitset_free (il_targets);
 	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
 
@@ -9056,9 +9098,12 @@ retry:
 			if (num_dregs) {
 				// Check if the previous definition of this var was used at all.
 				// If it wasn't we can just clear the instruction
+				//
+				// MINT_MOV_DST_OFF doesn't fully write to the var, so we special case it here
 				if (local_defs [dreg].ins != NULL &&
 						local_defs [dreg].ref_count == 0 &&
-						!td->locals [dreg].indirects) {
+						!td->locals [dreg].indirects &&
+						opcode != MINT_MOV_DST_OFF) {
 					InterpInst *prev_def = local_defs [dreg].ins;
 					if (MINT_NO_SIDE_EFFECTS (prev_def->opcode)) {
 						for (int i = 0; i < mono_interp_op_sregs [prev_def->opcode]; i++)
@@ -9822,11 +9867,30 @@ interp_super_instructions (TransformData *td)
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
 					InterpInst *def = td->locals [cond_sreg].def;
-					if (def != NULL) {
+					if (def != NULL && local_ref_count [cond_sreg] == 1) {
 						int replace_opcode = -1;
 						switch (def->opcode) {
 							case MINT_CEQ_I4: replace_opcode = negate ? MINT_BNE_UN_I4 : MINT_BEQ_I4; break;
 							case MINT_CEQ_I8: replace_opcode = negate ? MINT_BNE_UN_I8 : MINT_BEQ_I8; break;
+							case MINT_CGT_I4: replace_opcode = negate ? MINT_BLE_I4 : MINT_BGT_I4; break;
+							case MINT_CGT_I8: replace_opcode = negate ? MINT_BLE_I8 : MINT_BGT_I8; break;
+							case MINT_CLT_I4: replace_opcode = negate ? MINT_BGE_I4 : MINT_BLT_I4; break;
+							case MINT_CLT_I8: replace_opcode = negate ? MINT_BGE_I8 : MINT_BLT_I8; break;
+							case MINT_CGT_UN_I4: replace_opcode = negate ? MINT_BLE_UN_I4 : MINT_BGT_UN_I4; break;
+							case MINT_CGT_UN_I8: replace_opcode = negate ? MINT_BLE_UN_I8 : MINT_BGT_UN_I8; break;
+							case MINT_CLT_UN_I4: replace_opcode = negate ? MINT_BGE_UN_I4 : MINT_BLT_UN_I4; break;
+							case MINT_CLT_UN_I8: replace_opcode = negate ? MINT_BGE_UN_I8 : MINT_BLT_UN_I8; break;
+							case MINT_CEQ_R4: replace_opcode = negate ? MINT_BNE_UN_R4 : MINT_BEQ_R4; break;
+							case MINT_CEQ_R8: replace_opcode = negate ? MINT_BNE_UN_R8 : MINT_BEQ_R8; break;
+							case MINT_CGT_R4: replace_opcode = negate ? MINT_BLE_UN_R4 : MINT_BGT_R4; break;
+							case MINT_CGT_R8: replace_opcode = negate ? MINT_BLE_UN_R8 : MINT_BGT_R8; break;
+							case MINT_CLT_R4: replace_opcode = negate ? MINT_BGE_UN_R4 : MINT_BLT_R4; break;
+							case MINT_CLT_R8: replace_opcode = negate ? MINT_BGE_UN_R8 : MINT_BLT_R8; break;
+							case MINT_CGT_UN_R4: replace_opcode = negate ? MINT_BLE_R4 : MINT_BGT_UN_R4; break;
+							case MINT_CGT_UN_R8: replace_opcode = negate ? MINT_BLE_R8 : MINT_BGT_UN_R8; break;
+							case MINT_CLT_UN_R4: replace_opcode = negate ? MINT_BGE_R4 : MINT_BLT_UN_R4; break;
+							case MINT_CLT_UN_R8: replace_opcode = negate ? MINT_BGE_R8 : MINT_BLT_UN_R8; break;
+							case MINT_CEQ0_I4: replace_opcode = negate ? MINT_BRTRUE_I4 : MINT_BRFALSE_I4; break; // If def->opcode is MINT_CEQ0_I4 ins->opcode is inverted
 							// Add more opcodes
 							default:
 								break;
@@ -9834,8 +9898,11 @@ interp_super_instructions (TransformData *td)
 						if (replace_opcode != -1) {
 							ins->opcode = replace_opcode;
 							ins->sregs [0] = def->sregs [0];
-							ins->sregs [1] = def->sregs [1];
+							if (def->opcode != MINT_CEQ0_I4)
+								ins->sregs [1] = def->sregs [1];
 							interp_clear_ins (def);
+							local_ref_count [cond_sreg]--;
+							mono_interp_stats.super_instructions++;
 							if (td->verbose_level) {
 								g_print ("superins: ");
 								dump_interp_inst (ins);

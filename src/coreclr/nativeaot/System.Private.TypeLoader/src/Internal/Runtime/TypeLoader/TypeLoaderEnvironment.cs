@@ -61,9 +61,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
-        public override bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
+        public override IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod)
         {
-            return TypeLoaderEnvironment.Instance.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementation, out methodPointer, out dictionaryPointer, out slotUpdated);
+            return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
         }
 
         public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
@@ -483,12 +483,26 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryGetGenericMethodDictionaryForComponents(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature nameAndSignature, out IntPtr methodDictionary)
         {
-            if (TryLookupGenericMethodDictionaryForComponents(declaringTypeHandle, nameAndSignature, genericMethodArgHandles, out methodDictionary))
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+
+            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
+
+            if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
+            {
+                TypeSystemContextFactory.Recycle(context);
                 return true;
+            }
 
             using (LockHolder.Hold(_typeLoaderLock))
             {
-                return TypeBuilder.TryBuildGenericMethod(declaringTypeHandle, genericMethodArgHandles, nameAndSignature, out methodDictionary);
+                bool success = TypeBuilder.TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
+
+                // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
+                if (success)
+                    TypeSystemContextFactory.Recycle(context);
+
+                return success;
             }
         }
 

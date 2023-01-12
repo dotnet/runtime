@@ -10,7 +10,8 @@ import {
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions, recordFailure
+    _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
+    recordFailure, shortNameBase
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -166,6 +167,7 @@ function getIsWasmEhSupported () : boolean {
         for (let i = 0; i < doJitCall16.length; i += 2)
             bytes[i / 2] = parseInt(doJitCall16.substring(i, i + 2), 16);
 
+        counters.bytesGenerated += bytes.length;
         doJitCallModule = new WebAssembly.Module(bytes);
         wasmEhSupported = true;
     } catch (exc) {
@@ -243,9 +245,14 @@ export function mono_interp_flush_jitcall_queue () : void {
 
     let builder = trampBuilder;
     if (!builder)
-        trampBuilder = builder = new WasmBuilder();
+        trampBuilder = builder = new WasmBuilder(0);
     else
-        builder.clear();
+        builder.clear(0);
+
+    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+        jitQueue.length = 0;
+        return;
+    }
 
     if (builder.options.enableWasmEh) {
         if (!getIsWasmEhSupported()) {
@@ -302,7 +309,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         const compress = true;
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(16) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
         builder.generateImportSection();
@@ -349,19 +356,21 @@ export function mono_interp_flush_jitcall_queue () : void {
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
-            h: (<any>Module).asm.memory
         };
         // Place our function imports into the import dictionary
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(16) : trampImports[i][0];
+            const wasmName = compress ? i.toString(shortNameBase) : trampImports[i][0];
             imports[wasmName] = trampImports[i][2];
         }
 
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports
+            i: imports,
+            c: <any>builder.getConstants(),
+            m: { h: (<any>Module).asm.memory },
         });
 
         for (let i = 0; i < jitQueue.length; i++) {

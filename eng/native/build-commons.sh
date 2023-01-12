@@ -7,7 +7,7 @@ initTargetDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "Darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
@@ -28,7 +28,7 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    if [[ "$__HostOS" == "OSX" ]]; then
+    if [[ "$__HostOS" == "osx" ]]; then
         # Check presence of pkg-config on the path
         command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
@@ -63,7 +63,7 @@ build_native()
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
+    if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
         if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$hostArch" == arm64 ]]; then
@@ -74,11 +74,11 @@ build_native()
         fi
     fi
 
-    if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    if [[ "$targetOS" == maccatalyst ]]; then
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
-    if [[ ( "$targetOS" == Android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
+    if [[ ( "$targetOS" == android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -163,7 +163,7 @@ build_native()
         popd
     else
         cmake_command=cmake
-        if [[ "$build_arch" == "wasm" && "$__TargetOS" == "Browser" ]]; then
+        if [[ "$build_arch" == "wasm" && "$__TargetOS" == "browser" ]]; then
             cmake_command="emcmake cmake"
             echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
             $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
@@ -236,12 +236,12 @@ __BuildOS=$os
 __OutputRid=''
 
 # Get the number of processors available to the scheduler
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
-elif [[ "$platform" == "Darwin" ]]; then
+elif [[ "$platform" == "darwin" ]]; then
   __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"
@@ -410,7 +410,7 @@ while :; do
 
         os|-os)
             if [[ -n "$2" ]]; then
-                __TargetOS="$2"
+                __TargetOS=$(echo "$2" | tr '[:upper:]' '[:lower:]')
                 shift
             else
                 echo "ERROR: 'os' requires a non-empty option argument"
@@ -460,13 +460,13 @@ fi
 if [[ "$__TargetArch" == wasm ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android ]]; then
+elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 else
@@ -478,7 +478,7 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
         ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi

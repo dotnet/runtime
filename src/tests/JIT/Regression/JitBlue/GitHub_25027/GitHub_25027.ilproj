@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- Needed for CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>

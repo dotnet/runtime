@@ -254,7 +254,7 @@ namespace ILCompiler
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
                 compilationRoots.Add(
                     new GenericRootProvider<ModuleDesc>(module,
-                    (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(module.GetGlobalModuleType(), "Command line root")));
+                    (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
             //
@@ -371,7 +371,10 @@ namespace ILCompiler
                 (_command.OptimizationMode != OptimizationMode.None && !multiFile);
             preinitStatics &= !Get(_command.NoPreinitStatics);
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics);
+            TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
+                new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
+
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy);
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -443,6 +446,14 @@ namespace ILCompiler
                 // compilation, but before RyuJIT gets there, it might ask questions that we don't
                 // have answers for because we didn't scan the entire method.
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
+
+                // If we're doing preinitialization, use a new preinitialization manager that
+                // has the whole program view.
+                if (preinitStatics)
+                {
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
+                    builder.UsePreinitializationManager(preinitManager);
+                }
             }
 
             string ilDump = Get(_command.IlDump);

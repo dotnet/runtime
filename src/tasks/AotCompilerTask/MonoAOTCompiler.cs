@@ -574,7 +574,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");

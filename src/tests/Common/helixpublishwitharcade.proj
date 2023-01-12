@@ -104,7 +104,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetsAndroid)' == 'true'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -150,12 +150,12 @@
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
     <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iOSSimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'android'">android-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iossimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>

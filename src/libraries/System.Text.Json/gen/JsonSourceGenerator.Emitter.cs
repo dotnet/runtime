@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
@@ -699,7 +700,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
                         { CanUseSetter: true, IsInitOnlySetter: true }
-                            => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{ExceptionMessages.InitOnlyPropertyDeserializationNotSupported}"")",
+                            => @$"static (obj, value) => throw new {InvalidOperationExceptionTypeRef}(""{ExceptionMessages.InitOnlyPropertySetterNotSupported}"")",
                         { CanUseSetter: true } when typeGenerationSpec.IsValueType
                             => $@"static (obj, value) => {UnsafeTypeRef}.Unbox<{declaringTypeCompilableName}>(obj).{nameSpecifiedInSourceCode} = value!",
                         { CanUseSetter: true }
@@ -743,7 +744,8 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
 
     {JsonPropertyInfoTypeRef} {propertyInfoVarName} = {JsonMetadataServicesTypeRef}.CreatePropertyInfo<{memberTypeCompilableName}>({OptionsLocalVariableName}, {infoVarName});");
 
-                    if (memberMetadata.IsRequired)
+                    if (memberMetadata.HasJsonRequiredAttribute ||
+                        (memberMetadata.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters))
                     {
                         sb.Append($@"
     {propertyInfoVarName}.IsRequired = true;");
@@ -772,7 +774,8 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                 Debug.Assert(typeGenerationSpec.CtorParamGenSpecArray != null);
 
                 ParameterGenerationSpec[] parameters = typeGenerationSpec.CtorParamGenSpecArray;
-                int paramCount = parameters.Length;
+                List<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecList;
+                int paramCount = parameters.Length + (propertyInitializers?.Count(propInit => !propInit.MatchesConstructorParameter) ?? 0);
                 Debug.Assert(paramCount > 0);
 
                 StringBuilder sb = new($@"
@@ -782,10 +785,9 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
     {JsonParameterInfoValuesTypeRef}[] {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];
     {JsonParameterInfoValuesTypeRef} info;
 ");
-
-                for (int i = 0; i < paramCount; i++)
+                foreach (ParameterGenerationSpec spec in parameters)
                 {
-                    ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
+                    ParameterInfo reflectionInfo = spec.ParameterInfo;
                     Type parameterType = reflectionInfo.ParameterType;
                     string parameterTypeRef = parameterType.GetCompilableName();
 
@@ -801,8 +803,31 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
         HasDefaultValue = {FormatBool(reflectionInfo.HasDefaultValue)},
         DefaultValue = {defaultValueAsStr}
     }};
-    {parametersVarName}[{i}] = {InfoVarName};
+    {parametersVarName}[{spec.ParameterIndex}] = {InfoVarName};
 ");
+                }
+
+                if (propertyInitializers != null)
+                {
+                    Debug.Assert(propertyInitializers.Count > 0);
+
+                    foreach (PropertyInitializerGenerationSpec spec in propertyInitializers)
+                    {
+                        if (spec.MatchesConstructorParameter)
+                            continue;
+
+                        sb.Append(@$"
+    {InfoVarName} = new()
+    {{
+        Name = ""{spec.Property.JsonPropertyName ?? spec.Property.ClrName}"",
+        ParameterType = typeof({spec.Property.TypeGenerationSpec.TypeRef}),
+        Position = {spec.ParameterIndex},
+        HasDefaultValue = false,
+        DefaultValue = default({spec.Property.TypeGenerationSpec.TypeRef}),
+    }};
+    {parametersVarName}[{spec.ParameterIndex}] = {InfoVarName};
+");
+                    }
                 }
 
                 sb.Append(@$"
@@ -959,27 +984,43 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
             private static string GetParameterizedCtorInvocationFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 Debug.Assert(typeGenerationSpec.CtorParamGenSpecArray != null);
-
                 ParameterGenerationSpec[] parameters = typeGenerationSpec.CtorParamGenSpecArray;
-                int paramCount = parameters.Length;
-                Debug.Assert(paramCount != 0);
+                List<PropertyInitializerGenerationSpec>? propertyInitializers = typeGenerationSpec.PropertyInitializerSpecList;
 
                 const string ArgsVarName = "args";
-                int lastIndex = paramCount - 1;
 
                 StringBuilder sb = new($"static ({ArgsVarName}) => new {typeGenerationSpec.TypeRef}(");
 
-                for (int i = 0; i < lastIndex; i++)
+                if (parameters.Length > 0)
                 {
-                    sb.Append($"{GetParamUnboxing(parameters[i], i)}, ");
+                    foreach (ParameterGenerationSpec param in parameters)
+                    {
+                        int index = param.ParameterIndex;
+                        sb.Append($"{GetParamUnboxing(param.ParameterInfo.ParameterType, index)}, ");
+                    }
+
+                    sb.Length -= 2; // delete the last ", " token
                 }
 
-                sb.Append($"{GetParamUnboxing(parameters[lastIndex], lastIndex)})");
+                sb.Append(')');
+
+                if (propertyInitializers != null)
+                {
+                    Debug.Assert(propertyInitializers.Count > 0);
+                    sb.Append("{ ");
+                    foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
+                    {
+                        sb.Append($"{property.Property.ClrName} = {GetParamUnboxing(property.Property.TypeGenerationSpec.Type, property.ParameterIndex)}, ");
+                    }
+
+                    sb.Length -= 2; // delete the last ", " token
+                    sb.Append(" }");
+                }
 
                 return sb.ToString();
 
-                static string GetParamUnboxing(ParameterGenerationSpec spec, int index)
-                    => $"({spec.ParameterInfo.ParameterType.GetCompilableName()}){ArgsVarName}[{index}]";
+                static string GetParamUnboxing(Type type, int index)
+                    => $"({type.GetCompilableName()}){ArgsVarName}[{index}]";
             }
 
             private string? GetWriterMethod(Type type)
