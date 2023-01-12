@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 interface DotnetHostBuilder {
     withConfig(config: MonoConfig): DotnetHostBuilder;
@@ -108,14 +108,6 @@ type MonoConfig = {
      * Configures the runtime's globalization mode
      */
     globalizationMode?: GlobalizationMode;
-    /**
-     * User can choose the option to load only partial globalization data:
-     * "icudt_EFIGS.dat" for "en-*" "fr-FR" "es-ES" "it-IT" "de-DE"
-     * "icudt_CJK.dat" for "ja" "ko" "zh" "en"
-     * "icudt_no_CJK.dat" for all cultures, excluding "ja" "ko" "zh"
-     *  "customName"
-     */
-    isIcuFilePredefined?: boolean;
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
