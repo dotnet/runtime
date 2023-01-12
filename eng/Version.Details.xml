@@ -12,37 +12,37 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22605.4">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.23061.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>4936089d4d5704465f1ab4ce3bd3920ea42cf204</Sha>
+      <Sha>602a8ec539e0f9febb85bd4117ee5ff69265acd6</Sha>
     </Dependency>
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22355.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
