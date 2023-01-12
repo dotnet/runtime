@@ -8410,7 +8410,7 @@ interp_inline_into_callers (InterpInst *first, int *lookup_var1, int *lookup_var
 		return first;
 	}
 
-	if (MINT_IS_LDC (first->opcode)) {
+	if (MINT_IS_LDC_I4 (first->opcode)) {
 		InterpInst *second = interp_next_ins (first);
 		if (!second)
 			return NULL;
