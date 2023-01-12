@@ -1169,6 +1169,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TplEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ValueTask.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadAbortException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadExceptionEventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
@@ -2483,8 +2484,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCMarshal.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ObjectiveC\ObjectiveCTrackedTypeAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and ('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
+      <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and ('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true')">
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Unix.cs" />
@@ -2495,8 +2501,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Sleep.cs">
+      <Link>Interop\Windows\Kernel32\Interop.Sleep.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>

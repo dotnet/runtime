@@ -1127,17 +1127,3 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
         pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
     }
 }
-
-FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
-{
-    FCALL_CONTRACT;
-
-#ifndef TARGET_UNIX
-    PROCESSOR_NUMBER proc_no_cpu_group;
-    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
-    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
-#else
-    return ::GetCurrentProcessorNumber();
-#endif //!TARGET_UNIX
-}
-FCIMPLEND;

@@ -80,8 +80,6 @@ public:
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,          ThreadBaseObject* thread);
     static FCDECL1(void,    SetIsThreadpoolThread,          ThreadBaseObject* thread);
 
-    static FCDECL0(INT32,   GetCurrentProcessorNumber);
-
     static void Start(Thread* pNewThread, int threadStackSize, int priority, PCWSTR pThreadName);
     static void InformThreadNameChange(Thread* pThread, LPCWSTR name, INT32 len);
 private:

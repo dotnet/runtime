@@ -6,10 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal unsafe partial class Sys
+    internal static partial class Kernel32
     {
-        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_SchedGetCpu")]
-        [SuppressGCTransition]
-        internal static partial int SchedGetCpu();
+        [LibraryImport(Libraries.Kernel32)]
+        internal static partial void Sleep(uint milliseconds);
     }
 }
