@@ -482,7 +482,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Unmapped member handling only supported for <see cref="JsonTypeInfoKind.Object"/>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Specified an invalid <see cref="JsonNumberHandling"/> value.
+        /// Specified an invalid <see cref="JsonUnmappedMemberHandling"/> value.
         /// </exception>
         /// <remarks>
         /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
