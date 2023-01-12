@@ -401,6 +401,8 @@ namespace ILCompiler
                             }
                         }
 
+                        _constructedTypes.Add(type);
+
                         if (type.IsInterface)
                         {
                             if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
@@ -426,9 +428,6 @@ namespace ILCompiler
                             // 3. What types implement interfaces for which use we can assume whole
                             //    program view.
                             //
-
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                _constructedTypes.Add(type);
 
                             if (type is not MetadataType { IsAbstract: true })
                             {
