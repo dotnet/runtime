@@ -83,6 +83,7 @@ private:
     friend struct DispatchHolder;
 
     DWORD _entryPoint[9];
+    DWORD _pad;
     size_t  _expectedMT;
     PCODE _implTarget;
     PCODE _failTarget;
@@ -117,7 +118,7 @@ struct DispatchHolder
         // _failTarget
 
         _stub._entryPoint[0] = DISPATCH_STUB_FIRST_DWORD; // auipc  t4,0 // 0x00000e97
-        _stub._entryPoint[1] = 0x024e8e93; // addi  t4, t4, 36
+        _stub._entryPoint[1] = 0x028e8e93; // addi  t4, t4, 40
         _stub._entryPoint[2] = 0x00053283; // ld  t0, 0(a0)    //; methodTable from object in $a0
         _stub._entryPoint[3] = 0x000ebf83; // ld  r6, 0(t4)    // t6 _expectedMT
         _stub._entryPoint[4] = 0x005f9663; // bne  t6, t0, failLabel
