@@ -121,13 +121,13 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and ('$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
-    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != true or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
+    <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'">true</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
+    <FeaturePerfTracing Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 
@@ -258,7 +258,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.Mono.cs" />
@@ -275,16 +274,16 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' == 'true'">
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(FeatureWasmThreads)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Threads.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
+  <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmThreads)' != 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
@@ -301,6 +300,9 @@
   <!-- Enable unsupported browser warnings -->
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
     <SupportedPlatform Include="browser"/>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true' or '$(TargetsAnyOS)' == 'true'">
+    <SupportedPlatform Include="wasi"/>
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />

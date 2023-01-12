@@ -317,6 +317,15 @@ namespace ILCompiler.DependencyAnalysis
                 return result;
             }
 
+            TypeDesc canonOwningType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            if (_type.IsDefType && _type != canonOwningType)
+            {
+                result.Add(new CombinedDependencyListEntry(
+                    factory.GenericStaticBaseInfo((MetadataType)_type),
+                    factory.NativeLayout.TemplateTypeLayout(canonOwningType),
+                    "Information about static bases for type with template"));
+            }
+
             if (!EmitVirtualSlotsAndInterfaces)
                 return result;
 
@@ -492,9 +501,6 @@ namespace ILCompiler.DependencyAnalysis
             // generate any relocs to it, and the optional fields node will instruct the object writer to skip
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
-
-            // TODO-SIZE: We probably don't need to add these for all EETypes
-            StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
@@ -1179,28 +1185,6 @@ namespace ILCompiler.DependencyAnalysis
             if (!context.IsCppCodegenTemporaryWorkaround)
             {
                 Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> MethodTable");
-            }
-        }
-
-        public static void AddDependenciesForStaticsNode(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
-        {
-            // To ensure that the behvior of FieldInfo.GetValue/SetValue remains correct,
-            // if a type may be reflectable, and it is generic, if a canonical instantiation of reflection
-            // can exist which can refer to the associated type of this static base, ensure that type
-            // has an MethodTable. (Which will allow the static field lookup logic to find the right type)
-            if (type.HasInstantiation && !factory.MetadataManager.IsReflectionBlocked(type))
-            {
-                // TODO-SIZE: This current implementation is slightly generous, as it does not attempt to restrict
-                // the created types to the maximum extent by investigating reflection data and such. Here we just
-                // check if we support use of a canonically equivalent type to perform reflection.
-                // We don't check to see if reflection is enabled on the type.
-                if (factory.TypeSystemContext.SupportsUniversalCanon
-                    || (factory.TypeSystemContext.SupportsCanon && (type != type.ConvertToCanonForm(CanonicalFormKind.Specific))))
-                {
-                    dependencies ??= new DependencyList();
-
-                    dependencies.Add(factory.NecessaryTypeSymbol(type), "Static block owning type is necessary for canonically equivalent reflection");
-                }
             }
         }
 

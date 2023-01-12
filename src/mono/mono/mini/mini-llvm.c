@@ -4411,6 +4411,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		return;
 	}
 
+#ifdef TARGET_WASM
+	if (sig->param_count >= 1000 - 10) {
+		set_failure (ctx, "param count");
+		return;
+	}
+#endif
+
 	cinfo = call->cinfo;
 	g_assert (cinfo);
 	if (call->rgctx_arg_reg)
@@ -11305,7 +11312,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
 			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
@@ -11318,6 +11325,8 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		case OP_NEGATION:
 		case OP_NEGATION_SCALAR: {
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
@@ -11580,6 +11589,12 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 #ifdef TARGET_WASM
 	if (mono_method_signature_internal (cfg->method)->call_convention == MONO_CALL_VARARG) {
 		cfg->exception_message = g_strdup ("vararg callconv");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
+	if (mono_method_signature_internal (cfg->method)->param_count >= 1000 - 10) {
+		cfg->exception_message = g_strdup ("param count");
 		cfg->disable_llvm = TRUE;
 		return;
 	}

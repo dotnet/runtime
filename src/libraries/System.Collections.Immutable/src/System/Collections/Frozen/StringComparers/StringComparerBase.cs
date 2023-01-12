@@ -41,7 +41,7 @@ namespace System.Collections.Frozen
             }
         }
 
-        // useful if the string only contains ASCII characterss
+        // useful if the string only contains ASCII characters
         protected static unsafe int GetHashCodeOrdinalIgnoreCaseAscii(ReadOnlySpan<char> s)
         {
             int length = s.Length;

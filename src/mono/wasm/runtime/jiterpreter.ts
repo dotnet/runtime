@@ -251,6 +251,7 @@ function getTraceImports () {
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
+        ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -504,6 +505,12 @@ function generate_wasm (
                 "opcode": WasmValtype.i32,
             }, WasmValtype.i32
         );
+        builder.defineType(
+            "safepoint", {
+                "frame": WasmValtype.i32,
+                "ip": WasmValtype.i32,
+            }, WasmValtype.void
+        );
 
         builder.generateTypeSection();
 
@@ -585,6 +592,7 @@ function generate_wasm (
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`${traceName} generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
@@ -886,6 +894,10 @@ function generate_wasm_body (
                 is_dead_opcode = true;
                 break;
 
+            case MintOpcode.MINT_SAFEPOINT:
+                append_safepoint(builder, ip);
+                break;
+
             case MintOpcode.MINT_LDLOCA_S:
                 // Pre-load locals for the store op
                 builder.local("pLocals");
@@ -916,6 +928,13 @@ function generate_wasm_body (
                 builder.callImport("value_copy");
                 break;
             }
+            case MintOpcode.MINT_CPOBJ_VT_NOREF: {
+                const sizeBytes = getArgU16(ip, 3);
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                append_memmove_dest_src(builder, sizeBytes);
+                break;
+            }
             case MintOpcode.MINT_LDOBJ_VT: {
                 const size = getArgU16(ip, 3);
                 append_ldloca(builder, getArgU16(ip, 1));
@@ -929,6 +948,13 @@ function generate_wasm_body (
                 append_ldloca(builder, getArgU16(ip, 2));
                 builder.ptr_const(klass);
                 builder.callImport("value_copy");
+                break;
+            }
+            case MintOpcode.MINT_STOBJ_VT_NOREF: {
+                const sizeBytes = getArgU16(ip, 3);
+                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+                append_ldloca(builder, getArgU16(ip, 2));
+                append_memmove_dest_src(builder, sizeBytes);
                 break;
             }
 
@@ -1174,6 +1200,9 @@ function generate_wasm_body (
                 }
                 break;
 
+            // Unlike regular rethrow which will only appear in catch blocks,
+            //  MONO_RETHROW appears to show up in other places, so it's worth conditional bailout
+            case MintOpcode.MINT_MONO_RETHROW:
             case MintOpcode.MINT_THROW:
                 // As above, only abort if this throw happens unconditionally.
                 // Otherwise, it may be in a branch that is unlikely to execute
@@ -2364,16 +2393,15 @@ function emit_branch (
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
 
-    if (isSafepoint) {
-        // We set the high bit on our relative displacement so that the interpreter knows
-        //  it needs to perform a safepoint after the trace exits
-        append_bailout(builder, destination, BailoutReason.SafepointBranchTaken, true);
-    } else if (displacement < 0) {
+    if (displacement < 0) {
         // This is a backwards branch, and right now we always bail out for those -
         //  so just return.
         // FIXME: Why is this not a safepoint?
         append_bailout(builder, destination, BailoutReason.BackwardBranch, true);
     } else {
+        // Do a safepoint *before* changing our IP, if necessary
+        if (isSafepoint)
+            append_safepoint(builder, ip);
         // Branching is enabled, so set eip and exit the current branch block
         builder.branchTargets.add(destination);
         builder.ip_const(destination);
@@ -2921,6 +2949,13 @@ function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: Bailou
     builder.appendU8(WasmOpcode.return_);
 }
 
+function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
+}
+
 const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 let mostRecentOptions : JiterpreterOptions | undefined = undefined;
@@ -2935,6 +2970,8 @@ export function mono_interp_tier_prepare_jiterpreter (
 
     // FIXME: We shouldn't need this check
     if (!mostRecentOptions.enableTraces)
+        return JITERPRETER_NOT_JITTED;
+    else if (mostRecentOptions.wasmBytesLimit <= counters.bytesGenerated)
         return JITERPRETER_NOT_JITTED;
 
     let info = traceInfo[<any>ip];
@@ -2983,7 +3020,7 @@ export function jiterpreter_dump_stats (b?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// jiterpreter produced ${counters.tracesCompiled} traces from ${counters.traceCandidates} candidates (${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%), ${counters.jitCallsCompiled} jit_call trampolines, and ${counters.entryWrappersCompiled} interp_entry wrappers`);
+    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
     console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
     if (mostRecentOptions.countBailouts) {
         for (let i = 0; i < BailoutReasonNames.length; i++) {

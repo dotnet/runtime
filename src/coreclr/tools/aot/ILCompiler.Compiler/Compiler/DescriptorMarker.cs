@@ -213,7 +213,7 @@ namespace ILCompiler
                 // LogWarning(nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
             }*/
 
-            _dependencies.Add(_factory.ReflectableField(field), "field kept due to descriptor");
+            _dependencies.Add(_factory.ReflectedField(field), "field kept due to descriptor");
         }
 
         protected override void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData)
@@ -228,11 +228,11 @@ namespace ILCompiler
             if (customData is bool required && !required)
             {
                 //TODO: Add a conditional dependency if the type is used also mark the method
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
+                _dependencies.Add(_factory.ReflectedMethod(method), "method kept due to descriptor");
             }
             else
             {
-                _dependencies.Add(_factory.ReflectableMethod(method), "method kept due to descriptor");
+                _dependencies.Add(_factory.ReflectedMethod(method), "method kept due to descriptor");
             }
         }
 

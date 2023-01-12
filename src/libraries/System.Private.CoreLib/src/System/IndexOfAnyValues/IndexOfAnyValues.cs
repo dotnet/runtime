@@ -80,7 +80,7 @@ namespace System.Buffers
             if (values.Length == 1)
             {
                 char value = values[0];
-                return PackedSpanHelpers.CanUsePackedIndexOf(value)
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value)
                     ? new IndexOfAny1CharValue<TrueConst>(value)
                     : new IndexOfAny1CharValue<FalseConst>(value);
             }
@@ -95,7 +95,7 @@ namespace System.Buffers
             {
                 char value0 = values[0];
                 char value1 = values[1];
-                return PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
                     ? new IndexOfAny2CharValue<TrueConst>(value0, value1)
                     : new IndexOfAny2CharValue<FalseConst>(value0, value1);
             }
@@ -105,7 +105,7 @@ namespace System.Buffers
                 char value0 = values[0];
                 char value1 = values[1];
                 char value2 = values[2];
-                return PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
                     ? new IndexOfAny3CharValue<TrueConst>(value0, value1, value2)
                     : new IndexOfAny3CharValue<FalseConst>(value0, value1, value2);
             }
@@ -185,7 +185,7 @@ namespace System.Buffers
             }
 
             Debug.Assert(typeof(T) == typeof(char));
-            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
+            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
                 ? new IndexOfAnyCharValuesInRange<TrueConst>(*(char*)&min, *(char*)&max)
                 : new IndexOfAnyCharValuesInRange<FalseConst>(*(char*)&min, *(char*)&max));
         }

@@ -46,8 +46,7 @@ namespace System.Reflection.Runtime.TypeInfos
         // Left unsealed as RuntimeCLSIDTypeInfo has special behavior and needs to override.
         public override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
             if (other is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)

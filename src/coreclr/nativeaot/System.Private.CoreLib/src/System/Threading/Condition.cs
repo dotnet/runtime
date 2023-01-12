@@ -90,8 +90,7 @@ namespace System.Threading
 
         public Condition(Lock @lock)
         {
-            if (@lock == null)
-                throw new ArgumentNullException(nameof(@lock));
+            ArgumentNullException.ThrowIfNull(@lock);
             _lock = @lock;
         }
 
