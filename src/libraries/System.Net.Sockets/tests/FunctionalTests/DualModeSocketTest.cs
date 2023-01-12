@@ -929,11 +929,9 @@ namespace System.Net.Sockets.Tests
         public Task SendToV6IPEndPointToDualHost_Success() => DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public Task SendToV4IPEndPointToV6Host_NotReceived() => DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback, false);
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public Task SendToV6IPEndPointToV4Host_NotReceived() => DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback, false);
 
         private async Task DualModeSendTo_IPEndPointToHost_Success_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
@@ -955,13 +953,18 @@ namespace System.Net.Sockets.Tests
         private async Task DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             using Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            using Socket server = dualModeServer ?
-                new Socket(SocketType.Dgram, ProtocolType.Udp) :
-                new Socket(listenOn.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            int port = server.BindToAnonymousPort(listenOn);
+            Socket server = null;
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                server = dualModeServer ?
+                    new Socket(SocketType.Dgram, ProtocolType.Udp) :
+                    new Socket(listenOn.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                port = server.BindToAnonymousPort(listenOn);
+                return server;
+            });
 
             _ = SendToAsync(client, new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
-
             await Assert.ThrowsAsync<TimeoutException>(() => server.ReceiveAsync(new byte[1]).WaitAsync(TestSettings.FailingTestTimeout));
         }
     }
