@@ -15,6 +15,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (this->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (this->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (this->cntCalleeTrashFloat)
+#endif
+
+
 /*****************************************************************************/
 
 void Compiler::optInit()
@@ -10699,3 +10706,8 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
 }
+
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT 

@@ -64,6 +64,12 @@ inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
     return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
 }
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+
 //------------------------------------------------------------------------
 // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
 //
@@ -75,10 +81,14 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 //------------------------------------------------------------------------
 // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
 //
-inline regMaskTP callerSaveRegs(RegisterType rt)
+inline regMaskTP callerSaveRegs(RegisterType rt, Compiler *compiler)
 {
     return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
 }
+
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT_USE
 
 //------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"

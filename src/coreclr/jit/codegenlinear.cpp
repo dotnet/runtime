@@ -17,6 +17,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+
+
 //------------------------------------------------------------------------
 // genInitializeRegisterState: Initialize the register state contained in 'regSet'.
 //
@@ -2708,3 +2715,8 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64
+
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE

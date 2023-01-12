@@ -20,6 +20,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (emitComp->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (emitComp->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
+#endif
+
+
 /*****************************************************************************
  *
  *  Represent an emitter location.
@@ -9860,3 +9867,8 @@ void emitter::emitEnableGC()
     }
 }
 #endif // !defined(JIT32_GCENCODER)
+
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE

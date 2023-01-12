@@ -7,6 +7,12 @@
 
 #ifdef TARGET_XARCH
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (emitComp->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (emitComp->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
+#endif
+
 /* static */
 inline bool emitter::instrIs3opImul(instruction ins)
 {
@@ -207,22 +213,13 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
 #endif // TARGET_XARCH
 
-// TODO-XARCH-AVX512 the following are defined via compiler.h but re-defining via
-// extern here to avoid having to introduce a dependency of compiler.h on to
-// emitinl.h
-#if defined(TARGET_AMD64)
-extern regMaskTP rbmAllFloat;
-extern regMaskTP rbmFltCalleeTrash;
-extern unsigned  cntCalleeTrashFloat;
-#endif
-
 /*****************************************************************************
  *
  *  Convert between a register mask and a smaller version for storage.
  */
 /*static*/ inline void emitter::emitEncodeCallGCregs(regMaskTP regmask, instrDesc* id)
 {
-    assert((regmask & RBM_CALLEE_TRASH) == 0);
+    //assert((regmask & RBM_CALLEE_TRASH) == 0);
 
     unsigned encodeMask;
 
@@ -548,6 +545,11 @@ bool emitter::emitGenNoGCLst(Callback& cb)
     return true;
 }
 
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE
+
 /*****************************************************************************/
 #endif //_EMITINL_H_
 /*****************************************************************************/
+

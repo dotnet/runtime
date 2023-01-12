@@ -29,6 +29,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "patchpointinfo.h"
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (this->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (this->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (this->cntCalleeTrashFloat)
+#endif
+
 /*****************************************************************************/
 
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
@@ -782,6 +788,17 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     codeGen->siUpdate();
 #endif // USING_SCOPE_INFO
 }
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE
+
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+
 
 // Need an explicit instantiation.
 template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife);
@@ -9542,3 +9559,8 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
 
     return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
 }
+
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE

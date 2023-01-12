@@ -101,6 +101,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const char* LinearScan::resolveTypeName[] = {"Split", "Join", "Critical", "SharedCritical"};
 #endif // DEBUG
 
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -8981,6 +8987,7 @@ void dumpRegMask(regMaskTP regs)
     {
         printf("[allIntButFP]");
     }
+    /*
     else if (regs == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
@@ -8989,6 +8996,7 @@ void dumpRegMask(regMaskTP regs)
     {
         printf("[allDouble]");
     }
+    */
     else
     {
         dspRegMask(regs);
@@ -11890,7 +11898,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
     else
     {
-        callerCalleePrefs = callerSaveRegs(currentInterval->registerType);
+        callerCalleePrefs = callerSaveRegs(currentInterval->registerType, linearScan->compiler);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a
@@ -12054,3 +12062,7 @@ Selection_Done:
     foundRegBit = candidates;
     return candidates;
 }
+
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT_USE

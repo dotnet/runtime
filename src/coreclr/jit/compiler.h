@@ -10633,6 +10633,20 @@ public:
     GenTree* fgMorphMultiregStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
+
+#if defined(TARGET_AMD64)
+public:
+    // The following are for initializing register allocator "constants" defined in targetamd64.h
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+    // the number of simd (xmm,ymm, and zmm) registers from 16 to 32.
+    // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+    // to TARGET_AMD64 only.
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
+#endif // TARGET_AMD64
+
+
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -11550,17 +11564,6 @@ extern const BYTE genActualTypes[];
 /*****************************************************************************/
 
 /*****************************************************************************/
-
-#if defined(TARGET_AMD64)
-// The following are for initializing register allocator "constants" defined in targetamd64.h
-// that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
-// the number of simd (xmm,ymm, and zmm) registers from 16 to 32.
-// As only 64-bit xarch has the capability to have the additional registers, we limit the changes
-// to TARGET_AMD64 only.
-extern regMaskTP rbmAllFloat;
-extern regMaskTP rbmFltCalleeTrash;
-extern unsigned  cntCalleeTrashFloat;
-#endif // TARGET_AMD64
 
 /*****************************************************************************/
 
