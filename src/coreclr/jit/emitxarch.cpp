@@ -217,10 +217,10 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         case INS_phminposuw:
         case INS_mpsadbw:
         case INS_pclmulqdq:
-        case INS_aesdec:
-        case INS_aesdeclast:
         case INS_aesenc:
         case INS_aesenclast:
+        case INS_aesdec:
+        case INS_aesdeclast:
         case INS_aesimc:
         case INS_aeskeygenassist:
         case INS_vzeroupper:
@@ -260,18 +260,24 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         case INS_prefetcht2:
         case INS_sfence:
         // Might need new INS_<INS_NAME>*suffix* instructions for these.
-        case INS_por:            // INS_pord, INS_porq.
-        case INS_pxor:           // INS_pxord, INS_pxorq
-        case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
-        case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
-        case INS_pand:           // INS_pandd, INS_pandq.
-        case INS_pandn:          // INS_pandnd, INS_pandnq.
-        case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
-        case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
-        case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
-        case INS_vinserti128:    // INS_vinserti32x4, INS_vinserti64x2.
         case INS_vbroadcastf128: // INS_vbroadcastf32x4, INS_vbroadcastf64x2.
         case INS_vbroadcasti128: // INS_vbroadcasti32x4, INS_vbroadcasti64x2.
+
+        // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8, movdqu16 etc)
+        // For implementation speed, I have set it up so the standing instruction will default to the 32-bit operand type
+        // i.e., movdqu => movdqu32 etc
+        // Since we are not using k registers yet, this will have no impact on correctness but will affect things once
+        // k registers are used (as that is the point of the "break out operand type" of these instructions)
+        //case INS_movdqa:         // INS_movdqa32, INS_movdqa64.
+        //case INS_movdqu:         // INS_movdqu8, INS_movdqu16, INS_movdqu32, INS_movdqu64.
+        //case INS_pand:           // INS_pandd, INS_pandq.
+        //case INS_pandn:          // INS_pandnd, INS_pandnq.
+        //case INS_por:            // INS_pord, INS_porq.
+        //case INS_pxor:           // INS_pxord, INS_pxorq
+        //case INS_vextractf128:   // INS_vextractf32x4, INS_vextractf64x2.
+        //case INS_vextracti128:   // INS_vextracti32x4, INS_vextracti64x2.
+        //case INS_vinsertf128:    // INS_vinsertf32x4, INS_vinsertf64x2.
+        //case INS_vinserti128:    // INS_vinserti32x4, INS_vinserti64x2.
         {
             return false;
         }
@@ -794,12 +800,15 @@ bool emitter::TakesEvexPrefix(const instrDesc *id) const
         return false;
     }
 
+    instruction ins = id->idIns();
+
     if (HasHighSIMDReg(id))
     {
+        assert(IsEvexEncodedInstruction(ins));
+        // TODO-XARCH-AVX512 remove this check once k registers have been implemented
+        assert(!HasKMaskRegisterDest(ins));
         return true;
     }
-
-    instruction ins = id->idIns();
 
     // TODO-XArch-AVX512: Revisit 'HasKMaskRegisterDest()' check once KMask support is added.
     return IsEvexEncodedInstruction(ins) && !HasKMaskRegisterDest(ins);
@@ -4013,10 +4022,14 @@ void emitter::emitIns(instruction ins, emitAttr attr)
 
     insFormat fmt = IF_NONE;
 
+<<<<<<< HEAD
     id->idIns(ins);
     id->idInsFmt(fmt);
 
     sz += emitGetAdjustedSize(id, code);
+=======
+    sz += emitGetAdjustedSizeEvexAware(id, attr, code);
+>>>>>>> 12a8cc387e0 (Limit high SIMD reg to compatible intrinsics lsra build.)
     if (TakesRexWPrefix(ins, attr))
     {
         sz += emitGetRexPrefixSize(ins);
@@ -5300,6 +5313,7 @@ void emitter::emitIns_R_I(instruction ins,
     id->idInsFmt(fmt);
     id->idReg1(reg);
 
+<<<<<<< HEAD
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
@@ -5320,6 +5334,9 @@ void emitter::emitIns_R_I(instruction ins,
     }
 
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
+=======
+    sz += emitGetAdjustedSizeEvexAware(id, attr, insCodeMI(ins));
+>>>>>>> 12a8cc387e0 (Limit high SIMD reg to compatible intrinsics lsra build.)
 
     // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
     // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
