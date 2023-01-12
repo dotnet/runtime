@@ -565,20 +565,6 @@ void CodeGen::genCodeForBBlist()
         if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
         {
             siEndBlock(block);
-
-#ifdef USING_SCOPE_INFO
-            if (isLastBlockProcessed && siOpenScopeList.scNext)
-            {
-                /* This assert no longer holds, because we may insert a throw
-                   block to demarcate the end of a try or finally region when they
-                   are at the end of the method.  It would be nice if we could fix
-                   our code so that this throw block will no longer be necessary. */
-
-                // noway_assert(block->bbCodeOffsEnd != compiler->info.compILCodeSize);
-
-                siCloseAllOpenScopes();
-            }
-#endif // USING_SCOPE_INFO
         }
 
         SubtractStackLevel(savedStkLvl);
