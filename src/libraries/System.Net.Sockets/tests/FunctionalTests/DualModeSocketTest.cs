@@ -3,6 +3,7 @@
 
 using System.Linq;
 using System.Net.Test.Common;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,64 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConstructorAndProperty : DualModeBase
     {
+        [Theory]
+        [InlineData(SocketType.Stream, ProtocolType.Tcp)]
+        [InlineData(SocketType.Dgram, ProtocolType.Udp)]
+        public void _BindToExistingLol(SocketType socketType, ProtocolType protocolType)
+        {
+            Socket s1 = new Socket(AddressFamily.InterNetwork, socketType, protocolType);
+            int port = BindWithoutReuseAddress(s1, new IPEndPoint(IPAddress.Loopback, 0));
+
+            Socket s2 = new Socket(AddressFamily.InterNetwork, socketType, protocolType);
+            BindWithoutReuseAddress(s2, new IPEndPoint(IPAddress.Loopback, port));
+            
+        }
+
+        private static unsafe int BindWithoutReuseAddress(Socket socket, IPEndPoint endPoint)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                socket.Bind(endPoint);
+                return ((IPEndPoint)socket.LocalEndPoint).Port;
+            }
+            SocketAddress addr = endPoint.Serialize();
+            byte[] data = new byte[addr.Size];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = addr[i];
+            }
+            fixed (byte* dataPtr = data)
+            {
+                int result = bind(socket.SafeHandle, (nint)dataPtr, (uint)data.Length);
+                if (result != 0)
+                {
+                    throw new SocketException((int)SocketError.SocketError, Marshal.GetLastPInvokeErrorMessage());
+                }
+                uint sockLen = (uint)data.Length;
+                result = getsockname(socket.SafeHandle, (nint)dataPtr, (IntPtr)(&sockLen));
+                if (result != 0)
+                {
+                    throw new SocketException((int)SocketError.SocketError, Marshal.GetLastPInvokeErrorMessage());
+                }
+                addr = new SocketAddress(endPoint.AddressFamily, (int)sockLen);
+            }
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                addr[i] = data[i];
+            }
+
+            return ((IPEndPoint)endPoint.Create(addr)).Port;
+
+            [DllImport("libc", SetLastError = true)]
+            static extern int bind(SafeSocketHandle socket, IntPtr socketAddress, uint addrLen);
+
+            [DllImport("libc", SetLastError = true)]
+            static extern int getsockname(SafeSocketHandle socket, IntPtr socketAddress, IntPtr addrLenPtr);
+        }
+
+        // bind(fd, (struct sockaddr*)socketAddress, (socklen_t) socketAddressLen);
+
         [Fact]
         public void DualModeConstructor_InterNetworkV6Default()
         {
@@ -144,6 +203,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 socket.Connect(connectTo, port);
                 Assert.True(socket.Connected);
             }
@@ -235,6 +295,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 socket.Connect(new IPEndPoint(connectTo, port));
                 Assert.True(socket.Connected);
             }
@@ -269,6 +330,7 @@ namespace System.Net.Sockets.Tests
 
                 using (SocketServer server = new SocketServer(_log, IPAddress.Loopback, false, out int port))
                 {
+                    server.Start();
                     AssertExtensions.Throws<ArgumentException>("addresses", () =>
                     {
                         socket.Connect(new IPAddress[] { IPAddress.Loopback }, port);
@@ -282,7 +344,25 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
-            Assert.ThrowsAny<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
+            using Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            SocketServer server = null;
+            int port = 0;
+            using PortBlocker blocker = new PortBlocker(() =>
+            {
+                server = new SocketServer(_log, listenOn, dualModeServer, out port);
+                return server.Socket;
+            });
+
+            using (server)
+            {
+                server.Start();
+                socket.Connect(connectTo, port);
+            }
+
+            Assert.ThrowsAny<SocketException>(() =>
+            {
+
+            });
         }
 
         [Theory]
@@ -292,6 +372,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 socket.Connect(connectTo, port);
                 Assert.True(socket.Connected);
             }
@@ -309,6 +390,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 socket.Connect("localhost", port);
                 Assert.True(socket.Connected);
             }
@@ -326,6 +408,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 socket.Connect(new DnsEndPoint("localhost", port, AddressFamily.Unspecified));
                 Assert.True(socket.Connected);
             }
@@ -374,6 +457,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, connectTo, port, null);
                 Assert.True(socket.Connected);
             }
@@ -426,6 +510,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, new IPEndPoint(connectTo, port), null);
                 Assert.True(socket.Connected);
             }
@@ -444,6 +529,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, connectTo, port, null);
                 Assert.True(socket.Connected);
             }
@@ -457,6 +543,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, "localhost", port, null);
                 Assert.True(socket.Connected);
             }
@@ -470,6 +557,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, new DnsEndPoint("localhost", port), null);
                 Assert.True(socket.Connected);
             }
@@ -535,6 +623,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncCompleted);
@@ -575,6 +664,7 @@ namespace System.Net.Sockets.Tests
             using (Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncCompleted);
@@ -601,6 +691,7 @@ namespace System.Net.Sockets.Tests
         {
             using (SocketServer server = new SocketServer(_log, listenOn, dualModeServer, out int port))
             {
+                server.Start();
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncCompleted);
@@ -2442,9 +2533,10 @@ namespace System.Net.Sockets.Tests
         protected class SocketServer : IDisposable
         {
             private readonly ITestOutputHelper _output;
-            private Socket _server;
             private Socket _acceptedSocket;
             private EventWaitHandle _waitHandle = new AutoResetEvent(false);
+
+            public Socket Socket { get; }
 
             public EventWaitHandle WaitHandle
             {
@@ -2457,24 +2549,27 @@ namespace System.Net.Sockets.Tests
 
                 if (dualMode)
                 {
-                    _server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    Socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 }
                 else
                 {
-                    _server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                    Socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 }
 
-                port = _server.BindToAnonymousPort(address);
-                _server.Listen(1);
+                port = Socket.BindToAnonymousPort(address);
+                Socket.Listen(1);   
+            }
 
-                IPAddress remoteAddress = address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
+            public void Start()
+            {
+                IPAddress remoteAddress = Socket.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
                 EndPoint remote = new IPEndPoint(remoteAddress, 0);
                 SocketAsyncEventArgs e = new SocketAsyncEventArgs();
                 e.RemoteEndPoint = remote;
                 e.Completed += new EventHandler<SocketAsyncEventArgs>(Accepted);
                 e.UserToken = _waitHandle;
 
-                _server.AcceptAsync(e);
+                Socket.AcceptAsync(e);
             }
 
             private void Accepted(object sender, SocketAsyncEventArgs e)
@@ -2493,7 +2588,7 @@ namespace System.Net.Sockets.Tests
             {
                 try
                 {
-                    _server.Dispose();
+                    Socket.Dispose();
                     if (_acceptedSocket != null)
                         _acceptedSocket.Dispose();
                 }
@@ -2701,6 +2796,57 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
             }
+        }
+    }
+
+    internal class PortBlocker : IDisposable
+    {
+        private const int MaxAttempts = 16;
+
+        private Socket _secondarySocket;
+        public Socket PrimarySocket { get; }
+
+        public PortBlocker(Func<Socket> primarySocketFactory)
+        {
+            bool success = false;
+            for (int i = 0; i < MaxAttempts; i++)
+            {
+                PrimarySocket = primarySocketFactory();
+
+                IPAddress secondaryAddress = PrimarySocket.AddressFamily == AddressFamily.InterNetwork ?
+                        IPAddress.IPv6Loopback :
+                        IPAddress.Loopback;
+                int port = ((IPEndPoint)PrimarySocket.LocalEndPoint).Port;
+                IPEndPoint secondaryEndPoint = new IPEndPoint(secondaryAddress, port);
+
+                try
+                {
+                    _secondarySocket = new Socket(secondaryAddress.AddressFamily, PrimarySocket.SocketType, PrimarySocket.ProtocolType);
+                    _secondarySocket.Bind(secondaryEndPoint);
+                    if (_secondarySocket.ProtocolType == ProtocolType.Tcp)
+                    {
+                        _secondarySocket.Listen();
+                    }
+                    success = true;
+                    break;
+                }
+                catch (SocketException)
+                {
+                    PrimarySocket.Dispose();
+                    _secondarySocket?.Dispose();
+                }
+            }
+
+            if (!success)
+            {
+                throw new Exception($"Failed to create secondary (port blocker) socket in {MaxAttempts} attempts.");
+            }
+        }
+
+        public void Dispose()
+        {
+            PrimarySocket.Dispose();
+            _secondarySocket.Dispose();
         }
     }
 }
