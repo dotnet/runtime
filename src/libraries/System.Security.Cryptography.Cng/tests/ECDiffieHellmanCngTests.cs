@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
-        public static void PlatformCryptoProvider_DeriveKeyMaterial()
+        public static void PlatformCryptoProvider_DeriveKeyMaterial_CngKey()
         {
             CngKey key1 = null;
             CngKey key2 = null;
@@ -206,12 +206,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
                 key1 = CngKey.Create(
                     CngAlgorithm.ECDiffieHellmanP256,
-                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial)}{nameof(key1)}",
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial_CngKey)}{nameof(key1)}",
                     cngCreationParameters);
 
                 key2 = CngKey.Create(
                     CngAlgorithm.ECDiffieHellmanP256,
-                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial)}{nameof(key2)}",
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial_CngKey)}{nameof(key2)}",
                     cngCreationParameters);
 
                 using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(key1))
@@ -219,6 +219,86 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 {
                     byte[] derivedKey1 = ecdhCng1.DeriveKeyMaterial(key2);
                     byte[] derivedKey2 = ecdhCng2.DeriveKeyMaterial(key1);
+                    Assert.Equal(derivedKey1, derivedKey2);
+                }
+            }
+            finally
+            {
+                key1?.Delete();
+                key2?.Delete();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void PlatformCryptoProvider_DeriveKeyFromHash()
+        {
+            CngKey key1 = null;
+            CngKey key2 = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key1 = CngKey.Create(
+                    CngAlgorithm.ECDiffieHellmanP256,
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyFromHash)}{nameof(key1)}",
+                    cngCreationParameters);
+
+                key2 = CngKey.Create(
+                    CngAlgorithm.ECDiffieHellmanP256,
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyFromHash)}{nameof(key2)}",
+                    cngCreationParameters);
+
+                using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(key1))
+                using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(key2))
+                {
+                    byte[] derivedKey1 = ecdhCng1.DeriveKeyFromHash(ecdhCng2.PublicKey, HashAlgorithmName.SHA256, new byte[] { 0x00 }, new byte[] { 0xFF });
+                    byte[] derivedKey2 = ecdhCng2.DeriveKeyFromHash(ecdhCng1.PublicKey, HashAlgorithmName.SHA256, new byte[] { 0x00 }, new byte[] { 0xFF });
+                    Assert.Equal(derivedKey1, derivedKey2);
+                }
+            }
+            finally
+            {
+                key1?.Delete();
+                key2?.Delete();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void PlatformCryptoProvider_DeriveKeyMaterial_ECDiffieHellmanPublicKey()
+        {
+            CngKey key1 = null;
+            CngKey key2 = null;
+
+            try
+            {
+                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                {
+                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
+                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
+                };
+
+                key1 = CngKey.Create(
+                    CngAlgorithm.ECDiffieHellmanP256,
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyFromHash)}{nameof(key1)}",
+                    cngCreationParameters);
+
+                key2 = CngKey.Create(
+                    CngAlgorithm.ECDiffieHellmanP256,
+                    $"{nameof(PlatformCryptoProvider_DeriveKeyFromHash)}{nameof(key2)}",
+                    cngCreationParameters);
+
+                using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(key1))
+                using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(key2))
+                {
+                    byte[] derivedKey1 = ecdhCng1.DeriveKeyMaterial(ecdhCng2.PublicKey);
+                    byte[] derivedKey2 = ecdhCng2.DeriveKeyMaterial(ecdhCng1.PublicKey);
                     Assert.Equal(derivedKey1, derivedKey2);
                 }
             }

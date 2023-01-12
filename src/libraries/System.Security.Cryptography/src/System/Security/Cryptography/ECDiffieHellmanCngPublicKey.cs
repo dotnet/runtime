@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -13,6 +14,7 @@ namespace System.Security.Cryptography
         private readonly CngKeyBlobFormat _format;
         private readonly string? _curveName;
         private bool _disposed;
+        private SafeNCryptKeyHandle? _cngKeyHandle;
 
         /// <summary>
         /// Wrap a CNG key
@@ -26,10 +28,28 @@ namespace System.Security.Cryptography
             _curveName = curveName;
         }
 
+        /// <summary>
+        /// Wrap a CNG key
+        /// </summary>
+#pragma warning disable SYSLIB0043 // byte[] constructor on ECDiffieHellmanPublicKey is obsolete
+        internal ECDiffieHellmanCngPublicKey(
+            byte[] keyBlob,
+            string? curveName,
+            CngKeyBlobFormat format,
+            CngKey cngKey) : base(keyBlob)
+#pragma warning restore SYSLIB0043
+        {
+            _format = format;
+            // Can be null for P256, P384, P521, or an explicit blob
+            _curveName = curveName;
+            _cngKeyHandle = cngKey.Handle; // The handle property duplicates the handle.
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                _cngKeyHandle?.Dispose();
                 _disposed = true;
             }
 
@@ -85,7 +105,7 @@ namespace System.Security.Cryptography
             CngKeyBlobFormat format;
             string? curveName;
             byte[] blob = ECCng.ExportKeyBlob(key, false, out format, out curveName);
-            return new ECDiffieHellmanCngPublicKey(blob, curveName, format);
+            return new ECDiffieHellmanCngPublicKey(blob, curveName, format, key);
         }
 
         /// <summary>
@@ -152,6 +172,29 @@ namespace System.Security.Cryptography
 
                 return ecparams;
             }
+        }
+
+        internal CngKey? NativeCngKey()
+        {
+            if (_cngKeyHandle is null)
+            {
+                return null;
+            }
+
+            CngKeyHandleOpenOptions options = CngKeyHandleOpenOptions.None;
+            byte clrIsEphemeral = 0;
+            Interop.NCrypt.ErrorCode errorCode = Interop.NCrypt.NCryptGetByteProperty(
+                _cngKeyHandle,
+                KeyPropertyName.ClrIsEphemeral,
+                ref clrIsEphemeral,
+                CngPropertyOptions.CustomProperty);
+
+            if (errorCode == Interop.NCrypt.ErrorCode.ERROR_SUCCESS && clrIsEphemeral == 1)
+            {
+                options |= CngKeyHandleOpenOptions.EphemeralKey;
+            }
+
+            return CngKey.Open(_cngKeyHandle, options);
         }
     }
 }

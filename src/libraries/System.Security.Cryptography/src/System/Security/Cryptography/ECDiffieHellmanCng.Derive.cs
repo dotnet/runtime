@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
-                using (CngKey import = otherKey.Import())
+                using (CngKey import = otherKey.NativeCngKey() ?? otherKey.Import())
                 {
                     return DeriveKeyMaterial(import);
                 }
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
-                using (CngKey importedKey = otherKey.Import())
+                using (CngKey importedKey = otherKey.NativeCngKey() ?? otherKey.Import())
                 {
                     return DeriveSecretAgreementHandle(importedKey);
                 }
