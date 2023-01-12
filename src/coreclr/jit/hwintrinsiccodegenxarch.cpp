@@ -23,6 +23,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
+// Please see the comment for these instance variables in `compiler.h`
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+
+
 //------------------------------------------------------------------------
 // assertIsContainableHWIntrinsicOp: Asserts that op is containable by node
 //
@@ -1997,4 +2005,9 @@ void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+#undef RBM_ALLFLOAT_USE 
+#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef CNT_CALLEE_TRASH_FLOAT 
+
 #endif // FEATURE_HW_INTRINSICS
+
