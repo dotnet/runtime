@@ -45,9 +45,7 @@ namespace Wasm.Build.Tests
             string extraProperties = (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
                                         // make ASSERTIONS=1 so that we test with it
                                         + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
-                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>"
-                                        // to access simultaneously locales: es-ES and ja-JP:
-                                        + $"<IcuFileName>icudt.dat</IcuFileName>";
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
@@ -88,9 +86,7 @@ namespace Wasm.Build.Tests
             string extraProperties = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>"
                                         // make ASSERTIONS=1 so that we test with it
                                         + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
-                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>"
-                                        // to access simultaneously locales: es-ES and ja-JP:
-                                        + $"<IcuFileName>icudt.dat</IcuFileName>";
+                                        + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
