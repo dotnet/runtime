@@ -182,9 +182,9 @@ namespace System.Linq.Expressions
         /// <summary>
         /// InvalidOperationException with message like "No or Invalid rule produced"
         /// </summary>
-        internal static ArgumentException NoOrInvalidRuleProduced()
+        internal static InvalidOperationException NoOrInvalidRuleProduced()
         {
-            return new ArgumentException(Strings.NoOrInvalidRuleProduced);
+            return new InvalidOperationException(Strings.NoOrInvalidRuleProduced);
         }
         /// <summary>
         /// ArgumentException with message like "Bounds count cannot be less than 1"
