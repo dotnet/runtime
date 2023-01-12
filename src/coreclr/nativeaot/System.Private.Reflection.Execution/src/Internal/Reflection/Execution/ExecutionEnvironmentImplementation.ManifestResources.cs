@@ -47,9 +47,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
+            ArgumentNullException.ThrowIfNull(name);
 
             // This was most likely an embedded resource which the toolchain should have embedded
             // into an assembly.

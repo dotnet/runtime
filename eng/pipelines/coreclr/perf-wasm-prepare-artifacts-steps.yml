@@ -3,7 +3,7 @@ parameters:
 
 steps:
   - script: >-
-      ./dotnet.sh build -p:TargetOS=Browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
+      ./dotnet.sh build -p:TargetOS=browser -p:TargetArchitecture=wasm /nr:false /p:TreatWarningsAsErrors=true
       /p:Configuration=${{ parameters.configForBuild }}
       /p:ContinuousIntegrationBuild=true
       /t:InstallWorkloadUsingArtifacts

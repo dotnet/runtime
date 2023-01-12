@@ -3,7 +3,7 @@ MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT?=false
-TARGET?=iOSSimulator
+TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 
@@ -29,7 +29,7 @@ runtimepack:
 run: clean appbuilder
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOS \
+	/p:TargetOS=ios \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
@@ -40,7 +40,7 @@ run: clean appbuilder
 run-sim: clean appbuilder
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOSSimulator \
+	/p:TargetOS=iossimulator \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
@@ -56,7 +56,7 @@ build-appbundle: clean appbuilder
 run-catalyst:
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
-	/p:TargetOS=MacCatalyst \
+	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	/p:UseLLVM=False \
@@ -66,7 +66,7 @@ run-catalyst:
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
-	/p:TargetOS=iOSSimulator \
+	/p:TargetOS=iossimulator \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
@@ -78,7 +78,7 @@ run-sim-interp: clean appbuilder
 run-catalyst-interp:
 	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
-	/p:TargetOS=MacCatalyst \
+	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=False \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \

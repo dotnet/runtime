@@ -117,6 +117,9 @@ typedef struct {
 } JiterpEntryData;
 
 void
+mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
+
+void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__

@@ -22,8 +22,8 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isLinuxBionicOnlyBuild: ${{ parameters.isLinuxBionicOnlyBuild }}
     platforms:
-      - Linux_bionic_arm64
-      - Linux_bionic_x64
+      - linux_bionic_arm64
+      - linux_bionic_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -37,7 +37,7 @@ jobs:
         value: 180
     jobParameters:
       testGroup: innerloop
-      targetRid: Linux-bionic-x64
+      targetRid: linux-bionic-x64
       nameSuffix: AllSubsets_Mono
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 240

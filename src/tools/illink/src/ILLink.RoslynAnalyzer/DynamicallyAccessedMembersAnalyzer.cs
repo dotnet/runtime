@@ -164,7 +164,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
-		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
+		static List<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
 		{
 			// The target should always be an annotated value, but the visitor design currently prevents
 			// declaring this in the type system.

@@ -1154,7 +1154,7 @@ namespace System.Threading
             }
         }
 
-        private static ApplicationException GetTimeoutException()
+        private static ReaderWriterLockApplicationException GetTimeoutException()
         {
             return new ReaderWriterLockApplicationException(HResults.ERROR_TIMEOUT, SR.ReaderWriterLock_Timeout);
         }
@@ -1164,7 +1164,7 @@ namespace System.Threading
         /// <see cref="Exception.HResult"/> value was set to ERROR_NOT_OWNER without first converting that error code into an
         /// HRESULT. The same value is used here for compatibility.
         /// </summary>
-        private static ApplicationException GetNotOwnerException()
+        private static ReaderWriterLockApplicationException GetNotOwnerException()
         {
             return
                 new ReaderWriterLockApplicationException(
@@ -1172,7 +1172,7 @@ namespace System.Threading
                     SR.ReaderWriterLock_NotOwner);
         }
 
-        private static ApplicationException GetInvalidLockCookieException()
+        private static ReaderWriterLockApplicationException GetInvalidLockCookieException()
         {
             return new ReaderWriterLockApplicationException(HResults.E_INVALIDARG, SR.ReaderWriterLock_InvalidLockCookie);
         }
