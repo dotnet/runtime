@@ -1035,7 +1035,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 #endif
 
-        if (emitAdd)
+        if (emitAdd && !emitForceNewIG)
         {
             // The next IG is extended, so fix the last instructions that were recorded from the current IG.
             for (unsigned i = 0; i < min(emitCurIGinsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
