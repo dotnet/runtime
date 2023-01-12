@@ -146,8 +146,7 @@ namespace System.Text.Json
             public CachingContext(JsonSerializerOptions options)
             {
                 Options = options;
-
-                _jsonTypeInfoFactory = options.GetTypeInfoNoCaching;
+                _jsonTypeInfoFactory = Options.GetTypeInfoNoCaching;
             }
 
             public JsonSerializerOptions Options { get; }
