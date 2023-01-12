@@ -48,6 +48,7 @@ namespace ILCompiler
                 (DiagnosticUtilities.RequiresAssemblyFilesAttribute, DiagnosticId.RequiresAssemblyFilesAttributeMismatch)
             };
 
+        private readonly List<TypeDesc> _typesWithForcedEEType = new List<TypeDesc>();
         private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
@@ -132,10 +133,10 @@ namespace ILCompiler
                 _customAttributesWithMetadata.Add(customAttributeMetadataNode.CustomAttribute);
             }
 
-            var reflectableFieldNode = obj as ReflectableFieldNode;
-            if (reflectableFieldNode != null)
+            var reflectedFieldNode = obj as ReflectedFieldNode;
+            if (reflectedFieldNode != null)
             {
-                FieldDesc field = reflectableFieldNode.Field;
+                FieldDesc field = reflectedFieldNode.Field;
                 TypeDesc fieldOwningType = field.OwningType;
 
                 // Filter out to those that make sense to have in the mapping tables
@@ -146,6 +147,11 @@ namespace ILCompiler
                     Debug.Assert((GetMetadataCategory(field) & MetadataCategory.RuntimeMapping) != 0);
                     _fieldsWithRuntimeMapping.Add(field);
                 }
+            }
+
+            if (obj is ReflectedTypeNode reflectableType)
+            {
+                _typesWithForcedEEType.Add(reflectableType.Type);
             }
         }
 
@@ -266,7 +272,7 @@ namespace ILCompiler
                 if (!IsReflectionBlocked(invokeMethod))
                 {
                     dependencies ??= new DependencyList();
-                    dependencies.Add(factory.ReflectableMethod(invokeMethod), "Delegate invoke method is always reflectable");
+                    dependencies.Add(factory.ReflectedMethod(invokeMethod), "Delegate invoke method is always reflectable");
                 }
             }
 
@@ -480,8 +486,8 @@ namespace ILCompiler
 
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ReflectableField(field),
-                        factory.ReflectableField(field.GetTypicalFieldDefinition()),
+                        factory.ReflectedField(field),
+                        factory.ReflectedField(field.GetTypicalFieldDefinition()),
                         "Fields have same reflectability"));
                 }
 
@@ -497,8 +503,8 @@ namespace ILCompiler
 
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ReflectableMethod(method),
-                        factory.ReflectableMethod(method.GetTypicalMethodDefinition()),
+                        factory.ReflectedMethod(method),
+                        factory.ReflectedMethod(method.GetTypicalMethodDefinition()),
                         "Methods have same reflectability"));
                 }
             }
@@ -509,7 +515,7 @@ namespace ILCompiler
             if (!IsReflectionBlocked(field))
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableField(field), "LDTOKEN field");
+                dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");
             }
         }
 
@@ -518,7 +524,7 @@ namespace ILCompiler
             dependencies ??= new DependencyList();
 
             if (!IsReflectionBlocked(method))
-                dependencies.Add(factory.ReflectableMethod(method), "LDTOKEN method");
+                dependencies.Add(factory.ReflectedMethod(method), "LDTOKEN method");
         }
 
         public override void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
@@ -526,7 +532,7 @@ namespace ILCompiler
             if (!IsReflectionBlocked(target))
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableMethod(target), "Target of a delegate");
+                dependencies.Add(factory.ReflectedMethod(target), "Target of a delegate");
             }
         }
 
@@ -549,14 +555,14 @@ namespace ILCompiler
             // typeof(Derived2).GetMethods(...)
             //
             // In the above case, we don't really need Derived1.Boo to become reflection visible
-            // but the below code will do that because ReflectableMethodNode tracks all reflectable methods,
+            // but the below code will do that because ReflectedMethodNode tracks all reflectable methods,
             // without keeping information about subtleities like "reflectable delegate".
             if (!IsReflectionBlocked(decl) && !IsReflectionBlocked(impl))
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectableMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectableMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.ReflectedMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Virtual method declaration is reflectable"));
             }
         }
@@ -620,7 +626,7 @@ namespace ILCompiler
 
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectableMethod(method), factory.ReflectableMethod(typicalMethod), "Reflectability of methods is same across genericness"));
+                    factory.ReflectedMethod(method), factory.ReflectedMethod(typicalMethod), "Reflectability of methods is same across genericness"));
             }
         }
 
@@ -634,7 +640,7 @@ namespace ILCompiler
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectableMethod(method), factory.ReflectableMethod(typicalMethod), "Reflectability of methods is same across genericness"));
+                    factory.ReflectedMethod(method), factory.ReflectedMethod(typicalMethod), "Reflectability of methods is same across genericness"));
             }
         }
 
@@ -648,7 +654,7 @@ namespace ILCompiler
                 if (method.IsAbstract && GetMetadataCategory(method) != 0)
                 {
                     dependencies ??= new DependencyList();
-                    dependencies.Add(factory.ReflectableMethod(method), "Abstract reflectable method");
+                    dependencies.Add(factory.ReflectedMethod(method), "Abstract reflectable method");
                 }
             }
         }
@@ -741,7 +747,7 @@ namespace ILCompiler
                 }
 
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableField(fieldToReport), reason);
+                dependencies.Add(factory.ReflectedField(fieldToReport), reason);
             }
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
@@ -971,7 +977,7 @@ namespace ILCompiler
 
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
-                _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
+                _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts, _options);
         }
 

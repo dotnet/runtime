@@ -13,9 +13,9 @@
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
-    <_TargetsAppleOS Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst' or
-      '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
-      '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
+    <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
+      '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
+      '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
   <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
@@ -89,11 +89,11 @@
   </Target>
 
   <Target Name="GetAppleBuildArgumentsForDNNE" Condition="'$(_TargetsAppleOS)' == 'true'">
-    <PropertyGroup Condition=" '$(TargetOS)' == 'MacCatalyst'">
+    <PropertyGroup Condition=" '$(TargetOS)' == 'maccatalyst'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'osx'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.14</TargetTriple>
       <XCodeSdkName>macosx</XCodeSdkName>

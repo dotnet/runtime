@@ -68,7 +68,7 @@ namespace ILLink.Tasks
 			public string FeatureValue { get; }
 			public string FeatureDefault { get; }
 			// Unique value to track the key
-			private readonly String _key;
+			private readonly string _key;
 
 			public FeatureSwitchMembers (string feature, string featureValue, string featureDefault)
 			{
@@ -302,7 +302,7 @@ namespace ILLink.Tasks
 		{
 			XmlDocument doc = new XmlDocument ();
 			doc.Load (iLLinkTrimXmlFilePath);
-			XmlNode linkerNode = doc["linker"];
+			XmlElement linkerNode = doc["linker"];
 
 			if (featureSwitchMembers.Count > 0) {
 				foreach ((var fs, var members) in featureSwitchMembers.Select (kv => (kv.Key, kv.Value))) {
@@ -344,7 +344,7 @@ namespace ILLink.Tasks
 
 		static void AddXmlTypeNode (XmlDocument doc, XmlNode assemblyNode, string typeName, ClassMembers members)
 		{
-			XmlNode typeNode = doc.CreateElement ("type");
+			XmlElement typeNode = doc.CreateElement ("type");
 			XmlAttribute typeFullName = doc.CreateAttribute ("fullname");
 			typeFullName.Value = typeName;
 			typeNode.Attributes.Append (typeFullName);

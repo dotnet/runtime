@@ -3171,7 +3171,7 @@ namespace System
                 if (buildIriStringFromPath)
                 {
                     DebugAssertInCtor();
-                    _string += _originalUnicodeString.Substring(origIdx);
+                    _string = string.Concat(_string, _originalUnicodeString.AsSpan(origIdx));
                 }
 
                 string str = _string;
@@ -3905,7 +3905,6 @@ namespace System
                 return idx;
             }
 
-            string? userInfoString = null;
             // Attempt to parse user info first
 
             if ((syntaxFlags & UriSyntaxFlags.MayHaveUserInfo) != 0)
@@ -3923,23 +3922,15 @@ namespace System
                         flags |= Flags.HasUserInfo;
 
                         // Iri'ze userinfo
-                        if (iriParsing)
+                        if (iriParsing && hostNotUnicodeNormalized)
                         {
-                            if (hostNotUnicodeNormalized)
-                            {
-                                // Normalize user info
-                                userInfoString = IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
-                                newHost += userInfoString;
+                            // Normalize user info
+                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
 
-                                if (newHost.Length > ushort.MaxValue)
-                                {
-                                    err = ParsingError.SizeLimit;
-                                    return idx;
-                                }
-                            }
-                            else
+                            if (newHost.Length > ushort.MaxValue)
                             {
-                                userInfoString = new string(pString, startInput, start - startInput + 1);
+                                err = ParsingError.SizeLimit;
+                                return idx;
                             }
                         }
                         ++start;
@@ -3956,7 +3947,7 @@ namespace System
 
                 if (hostNotUnicodeNormalized)
                 {
-                    newHost += new string(pString, start, end - start);
+                    newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                     flags |= Flags.HostUnicodeNormalized;
                     justNormalized = true;
                 }
@@ -3968,7 +3959,7 @@ namespace System
 
                 if (hostNotUnicodeNormalized)
                 {
-                    newHost += new string(pString, start, end - start);
+                    newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                     flags |= Flags.HostUnicodeNormalized;
                     justNormalized = true;
                 }
@@ -4008,7 +3999,7 @@ namespace System
                         flags |= Flags.UncHostType;
                         if (hostNotUnicodeNormalized)
                         {
-                            newHost += new string(pString, start, end - start);
+                            newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + start, end - start));
                             flags |= Flags.HostUnicodeNormalized;
                             justNormalized = true;
                         }
@@ -4082,7 +4073,7 @@ namespace System
 
                     if (hasUnicode && justNormalized)
                     {
-                        newHost += new string(pString, startPort, idx - startPort);
+                        newHost = string.Concat(newHost, new ReadOnlySpan<char>(pString + startPort, idx - startPort));
                     }
                 }
                 else

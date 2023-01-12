@@ -5,7 +5,7 @@
       To run a custom project specific target for adding/editing @(HelixWorkItem):
 
       - In the project add:
-        <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+        <HelixTargetsFile Condition="'$(TargetOS)' == 'browser'">wasm.helix.targets</HelixTargetsFile>
         - This files gets copied next to the test archive as $(MSBuildProjectName).helix.targets
 
       - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target

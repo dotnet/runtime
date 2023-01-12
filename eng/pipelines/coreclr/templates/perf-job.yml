@@ -74,19 +74,19 @@ jobs:
       - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if eq(parameters.runtimeType, 'wasm')}}:
-        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'browser', '', 'wasm', 'linux', parameters.buildConfig, parameters.runtimeType) }}
       - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
-        - ${{ 'build_Android_arm64_release_AndroidMono' }}
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+        - ${{ 'build_android_arm64_release_AndroidMono' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet7' }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMobileNet6')}}:
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet6' }}
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
-        - ${{ 'build_iOS_arm64_release_iOSMono' }}
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+        - ${{ 'build_ios_arm64_release_iOSMono' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet7' }}
       - ${{ if eq(parameters.runtimeType, 'iOSMobileNet6')}}:
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet6' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6',  'iOSMobileNet6'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
