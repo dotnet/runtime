@@ -2307,7 +2307,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
             retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ true);
+                                               /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
