@@ -12,7 +12,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/dotnet_library.cmake)
 set_target_properties(lib-%ProjectName% PROPERTIES
     FRAMEWORK TRUE
     FRAMEWORK_VERSION C
-    MACOSX_FRAMEWORK_IDENTIFIER lib-%LIBRARY_NAME%
+    MACOSX_FRAMEWORK_IDENTIFIER lib-%ProjectName%
     XCODE_ATTRIBUTE_INSTALL_PATH "@executable_path/Frameworks"
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
 )
@@ -39,6 +39,7 @@ set_target_properties(%ProjectName% PROPERTIES
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
     XCODE_EMIT_EFFECTIVE_PLATFORM_NAME "YES"
+    XCODE_EMBED_FRAMEWORKS lib-%ProjectName%
     RESOURCE "${APP_RESOURCES}"
 )
 
@@ -65,6 +66,7 @@ endif()
 
 target_link_libraries(
     %ProjectName%
+    lib-%ProjectName%
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"

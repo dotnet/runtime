@@ -4,6 +4,7 @@
   <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <Import Project="..\..\common\LibraryBuilder.targets" />
   <Import Project="$(MSBuildThisFileDirectory)AndroidApp.targets" />
 
   <!-- Use local runtime pack -->

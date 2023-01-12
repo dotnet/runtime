@@ -12,6 +12,96 @@
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
+
+    <ItemGroup>
+      <!-- static vs dylibs -->
+      <!-- add all non stub libs first -->
+      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
+      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+      <!-- libmonosgen needs to be statically linked always -->
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries 
+        Condition="'$(_TargetsDevice)' == 'true'"
+        Include="$(AndroidAppDir)\*.a"
+        Exclude="$(AndroidAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries 
+        Condition="'$(_TargetsDevice)' == ''"
+        Include="$(AndroidAppDir)\*.dylib;$(AndroidAppDir)\libmonosgen*.a;$(AndroidAppDir)\*-static.a"
+        Exclude="$(AndroidAppDir)\libmonosgen*.dylib;$(AndroidAppDir)\*-stub-static.a" />
+
+      <!-- and not contains %(_UsedComponents)-static*.a -->
+      <!-- if count > 0, remove all *-static components except in _UsedComponents -->
+      <!-- if count > 0, include all stubs except the ones in _UsedComponents -->
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' &gt; 0"
+        Remove="$(AndroidAppDir)\libmono-component-*-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' &gt; 0"
+        Include="$(AndroidAppDir)\*-stub-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' == 0"
+        Remove="$(AndroidAppDir)\*-static.a" />
+      <_RuntimeLibraries
+        Condition="'@(_UsedComponents->Count())' == 0"
+        Include="$(AndroidAppDir)\*-stub-static.a" />
+    </ItemGroup>
+
+    <!-- common linker arguments for app and library builds -->
+    <ItemGroup>
+      <_CommonLinkerArgs Include="libz.so" />
+      <_CommonLinkerArgs Include="log" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
+      <_CommonLinkerArgs Include="-Wl,-exported_symbols_list symbols.txt" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <_RuntimeSymbolsToKeep>
+_register_aot_modules
+_mono_jit_init_version
+_mono_jit_exec
+_mono_assembly_get_name
+_mono_assembly_name_get_culture
+_mono_assembly_name_get_name
+_mono_assembly_open
+_mono_class_get_method_from_name
+_mono_class_get_name
+_mono_class_get_namespace
+_mono_debug_init
+_mono_dllmap_insert
+_mono_domain_get
+_mono_gc_init_finalizer_thread
+_mono_get_exception_class
+_mono_install_assembly_preload_hook
+_mono_install_load_aot_data_hook
+_mono_install_unhandled_exception_hook
+_mono_jit_cleanup
+_mono_jit_parse_options
+_mono_jit_set_aot_mode
+_mono_object_get_class
+_mono_object_get_virtual_method
+_mono_runtime_invoke
+_mono_set_crash_chaining
+_mono_set_signal_chaining
+_mono_string_to_utf8
+_mono_trace_set_log_handler
+_monovm_initialize
+_monovm_runtimeconfig_initialize
+
+      </_RuntimeSymbolsToKeep>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_BeforeAndroidBuildApp">
@@ -120,7 +210,9 @@
   </Target>
 
 
-  <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
+  <Target Name="_AndroidGenerateAppBundle" 
+          Condition="'$(GenerateAppBundle)' == 'true'"
+          DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
     <PropertyGroup>
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>

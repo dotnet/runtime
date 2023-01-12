@@ -5206,9 +5206,9 @@ add_wrappers (MonoAotCompile *acfg)
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
 					g_assert (*named != (char)0xFF);
 MONO_RESTORE_WARNING
-					slen = mono_metadata_decode_value (named, &named);
+					slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
 					export_name = (char *)g_malloc (slen + 1);
-					memcpy (export_name, named, slen);
+					sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
 					export_name [slen] = 0;
 					named += slen;
 				}
@@ -5242,13 +5242,10 @@ MONO_RESTORE_WARNING
 				for (j = 0; j < decoded_args->named_args_num; ++j) {
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
-						slen = mono_metadata_decode_value (named, &named);
-						slen = slen + strlen(acfg->user_symbol_prefix);
+						slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
 						export_name = (char *)g_malloc (slen + 1);
-						memcpy (export_name, named, slen);
+						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
 						export_name [slen] = 0;
-
-						strcat(export_name, )
 					}
 				}
 				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);

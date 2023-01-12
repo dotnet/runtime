@@ -3,6 +3,7 @@
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAndroidApp</BundleTestAppTargets>
   </PropertyGroup>
 
+  <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" /> 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.InTree.targets" />
 

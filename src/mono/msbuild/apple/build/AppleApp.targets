@@ -1,8 +1,6 @@
 <Project>
   <UsingTask TaskName="AppleAppBuilderTask" 
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="LibraryBuilderTask" 
-             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
@@ -75,7 +73,7 @@
       <_CommonLinkerArgs Include="-liconv" />
       <_CommonLinkerArgs Include="-Wl,-exported_symbols_list symbols.txt" />
     </ItemGroup>
-    
+
     <PropertyGroup>
       <_RuntimeSymbolsToKeep>
 _register_aot_modules
@@ -209,7 +207,9 @@ _monovm_runtimeconfig_initialize
   </Target>
 
 
-  <Target Name="_AppleGenerateAppBundle" DependsOnTargets="_AppleGenerateRuntimeConfig">
+  <Target Name="_AppleGenerateAppBundle" 
+          Condition="'$(GenerateAppBundle)' == 'true'"
+          DependsOnTargets="_AppleGenerateRuntimeConfig">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
 
