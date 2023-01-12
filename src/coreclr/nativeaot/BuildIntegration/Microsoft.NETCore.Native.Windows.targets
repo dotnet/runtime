@@ -25,6 +25,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
     <LinkerSubsystem Condition="'$(OutputType)' == 'WinExe' and '$(LinkerSubsystem)' == ''">WINDOWS</LinkerSubsystem>
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>
+    <AotEventPipeName>Aot.Disabled.EventPipe</AotEventPipeName>
+    <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true' or '$(EventSourceSupport)' == 'true' or '$(IlcMultiModule)' == 'true'">Aot.EventPipe</AotEventPipeName>
   </PropertyGroup>
 
   <!-- Ensure that runtime-specific paths have already been set -->

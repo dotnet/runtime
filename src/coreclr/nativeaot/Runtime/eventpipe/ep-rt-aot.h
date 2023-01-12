@@ -43,7 +43,20 @@
 #define EP_NEVER_INLINE NOINLINE
 
 #undef EP_ALIGN_UP
-#define EP_ALIGN_UP(val,align) ALIGN_UP(val,align)
+#define EP_ALIGN_UP(val,align) _rt_aot_align_up(val,align)
+
+// TODO: The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
+// it is used here; instead, define a version tailored to the existing usage in the shared
+// EventPipe code.
+static inline uint8_t* _rt_aot_align_up(uint8_t* val, uintptr_t alignment)
+{
+    // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
+    EP_ASSERT( 0 == (alignment & (alignment - 1)) );
+    uintptr_t rawVal = reinterpret_cast<uintptr_t>(val);
+    uintptr_t result = (rawVal + (alignment - 1)) & ~(alignment - 1);
+    EP_ASSERT( result >= rawVal );      // check for overflow
+    return reinterpret_cast<uint8_t*>(result);
+}
 
 #ifndef EP_RT_BUILD_TYPE_FUNC_NAME
 #define EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, type_name, func_name) \
