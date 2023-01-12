@@ -119,9 +119,12 @@ namespace ILCompiler
             // Both the instance methods and the owning type are homed in a single compilation group
             // so if we're able to generate the body, we would also generate the owning type here
             // and nowhere else.
-            Debug.Assert(ContainsMethodBody(method, unboxingStub: false));
-            TypeDesc owningType = method.OwningType;
-            return owningType.IsDefType && !owningType.HasInstantiation && !method.HasInstantiation;
+            if (ContainsMethodBody(method, unboxingStub: false))
+            {
+                TypeDesc owningType = method.OwningType;
+                return owningType.IsDefType && !owningType.HasInstantiation && !method.HasInstantiation;
+            }
+            return false;
         }
     }
 }

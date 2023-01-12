@@ -65,48 +65,48 @@ jobs:
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: officialBuildIdArg
-        value: '/p:officialBuildId=$(Build.BuildNumber)'
-    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
+    - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'linux')) }}:
       # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
       - name: _PortableBuild
         value: true
-    - ${{ if eq(parameters.osGroup, 'tvOS') }}:
+    - ${{ if eq(parameters.osGroup, 'tvos') }}:
       - name: osOverride
-        value: -os tvOS
+        value: -os tvos
       - name: darwinFrameworks
         value: /p:BuildDarwinFrameworks=true
-    - ${{ if eq(parameters.osGroup, 'tvOSSimulator') }}:
+    - ${{ if eq(parameters.osGroup, 'tvossimulator') }}:
       - name: osOverride
-        value: -os tvOSSimulator
+        value: -os tvossimulator
       - name: darwinFrameworks
         value: /p:BuildDarwinFrameworks=true
-    - ${{ if eq(parameters.osGroup, 'iOS') }}:
+    - ${{ if eq(parameters.osGroup, 'ios') }}:
       - name: osOverride
-        value: -os iOS
+        value: -os ios
       - name: darwinFrameworks
         value: /p:BuildDarwinFrameworks=true
-    - ${{ if eq(parameters.osGroup, 'iOSSimulator') }}:
+    - ${{ if eq(parameters.osGroup, 'iossimulator') }}:
       - name: osOverride
-        value: -os iOSSimulator
+        value: -os iossimulator
       - name: darwinFrameworks
         value: /p:BuildDarwinFrameworks=true
-    - ${{ if eq(parameters.osGroup, 'Android') }}:
+    - ${{ if eq(parameters.osGroup, 'android') }}:
       - name: osOverride
-        value: -os Android
-    - ${{ if eq(parameters.osGroup, 'Browser') }}:
+        value: -os android
+    - ${{ if eq(parameters.osGroup, 'browser') }}:
       - name: archType
         value: wasm
       - name: osOverride
-        value: '-os Browser'
+        value: '-os browser'
     - ${{ if eq(parameters.osGroup, 'wasi') }}:
       - name: archType
         value: wasm
       - name: osOverride
         value: '-os wasi'
-    - ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'x64'))) }}:
+    - ${{ if and(eq(parameters.osGroup, 'linux'), not(eq(parameters.archType, 'x64'))) }}:
         name: llvmCxxAbi
         value: /p:MonoLLVMUseCxx11Abi=true
     - ${{ if eq(parameters.runtimeVariant, 'llvmjit') }}:
@@ -126,7 +126,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
@@ -137,7 +137,7 @@ jobs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -151,7 +151,7 @@ jobs:
       - script: build$(scriptExt) -subset mono$(msCorDbi)+clr.hosts -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
         displayName: Build product
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -184,7 +184,7 @@ jobs:
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
             NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages
-            ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+            ${{ if eq(parameters.osGroup, 'freebsd') }}:
               # Arcade uses this SDK instead of trying to restore one.
               DotNetCoreSdkDir: /usr/local/dotnet
       - ${{ if eq(parameters.osGroup, 'windows') }}:

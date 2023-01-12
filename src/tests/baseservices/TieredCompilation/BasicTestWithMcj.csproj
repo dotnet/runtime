@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <!-- Generated shell script and corresponding assembly have different names -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'Android'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'android'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTestWithMcj.cs" />

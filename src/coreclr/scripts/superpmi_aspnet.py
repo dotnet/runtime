@@ -73,9 +73,9 @@ def determine_native_name(coreclr_args, base_lib_name, target_os):
         (str) : name of the native lib for this OS
     """
 
-    if target_os == "OSX":
+    if target_os == "osx":
         return "lib" + base_lib_name + ".dylib"
-    elif target_os == "Linux":
+    elif target_os == "linux":
         return "lib" + base_lib_name + ".so"
     elif target_os == "windows":
         return base_lib_name + ".dll"
@@ -99,12 +99,12 @@ def determine_benchmark_machine(coreclr_args):
         if coreclr_args.host_os == "windows":
 #            return "aspnet-perf-win"
             return "aspnet-citrine-win"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             return "aspnet-perf-lin"
         else:
             raise RuntimeError("Invalid OS for x64.")
     elif coreclr_args.arch == "arm64":
-        if coreclr_args.host_os == "Linux":
+        if coreclr_args.host_os == "linux":
             return "aspnet-citrine-arm"
         else:
             raise RuntimeError("Invalid OS for arm64.")
