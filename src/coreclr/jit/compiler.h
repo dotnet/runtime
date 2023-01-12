@@ -6474,7 +6474,16 @@ protected:
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds = false);
+    enum class RedirectBlockOption
+    {
+        DoNotChangePredLists, // do not modify pred lists
+        UpdatePredLists,      // add/remove to pred lists
+        AddToPredLists,       // only add to pred lists
+    };
+
+    void optRedirectBlock(BasicBlock*      blk,
+                          BlockToBlockMap* redirectMap,
+                          const RedirectBlockOption = RedirectBlockOption::DoNotChangePredLists);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
