@@ -22,7 +22,6 @@ namespace System.Diagnostics.Tracing
         }
 
         private static RuntimeEventSource? s_RuntimeEventSource;
-        private static object? s_RuntimeEventSourceCreateLock;
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;
@@ -51,8 +50,7 @@ namespace System.Diagnostics.Tracing
 
         public static void Initialize()
         {
-                // Calling the RuntimeEventSource constructor multiple times is problematic and may lead to missing events
-                LazyInitializer.EnsureInitialized (ref s_RuntimeEventSource, ref s_RuntimeEventSourceCreateLock, () => new RuntimeEventSource());
+            s_RuntimeEventSource = new RuntimeEventSource();
         }
 
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
