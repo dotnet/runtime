@@ -4020,6 +4020,7 @@
         </ExcludeList>
     </ItemGroup>
 
+
     <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' or (TargetOS) == 'iOS' " >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
