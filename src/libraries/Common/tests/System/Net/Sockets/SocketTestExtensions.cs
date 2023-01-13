@@ -42,7 +42,12 @@ namespace System.Net.Sockets.Tests
         {
             IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
-            using PortBlocker portBlocker = new PortBlocker(serverAddress);
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket l = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                l.BindToAnonymousPort(serverAddress);
+                return l;
+            });
             Socket listener = portBlocker.PrimarySocket; // PortBlocker shall dispose this
             listener.Listen(1);
 

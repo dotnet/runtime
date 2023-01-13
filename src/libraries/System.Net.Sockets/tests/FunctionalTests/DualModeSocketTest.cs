@@ -2056,16 +2056,6 @@ namespace System.Net.Sockets.Tests
         private Socket _secondarySocket;
         public Socket PrimarySocket { get; }
 
-        public PortBlocker(IPAddress address, SocketType socketType = SocketType.Stream, ProtocolType protocolType = ProtocolType.Tcp)
-            : this(() =>
-            {
-                Socket socket = new Socket(address.AddressFamily, socketType, protocolType);
-                socket.BindToAnonymousPort(address);
-                return socket;
-            })
-        {
-        }
-
         public PortBlocker(Func<Socket> primarySocketFactory)
         {
             bool success = false;

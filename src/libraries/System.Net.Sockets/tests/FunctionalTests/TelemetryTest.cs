@@ -127,11 +127,11 @@ namespace System.Net.Sockets.Tests
                 },
                 async () =>
                 {
-                    using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    using var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                     server.Listen();
 
-                    using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
                     Task connectTask = GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
                     await WaitForEventAsync(events, "ConnectStart");
@@ -245,7 +245,7 @@ namespace System.Net.Sockets.Tests
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
-                    using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    using var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                     server.Listen();
 
