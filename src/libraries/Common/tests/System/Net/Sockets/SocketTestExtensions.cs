@@ -42,8 +42,8 @@ namespace System.Net.Sockets.Tests
         {
             IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
-            using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(serverAddress, 0));
+            using PortBlocker portBlocker = new PortBlocker(serverAddress);
+            Socket listener = portBlocker.PrimarySocket; // PortBlocker shall dispose this
             listener.Listen(1);
 
             IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
