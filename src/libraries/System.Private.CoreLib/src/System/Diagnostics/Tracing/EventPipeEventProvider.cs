@@ -7,7 +7,7 @@ namespace System.Diagnostics.Tracing
 {
     internal sealed class EventPipeEventProvider : EventProviderImpl
     {
-        private WeakReference<EventProvider> _eventProvider;
+        private readonly WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
         private GCHandle _gcHandle;
 

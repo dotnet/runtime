@@ -1124,7 +1124,7 @@ namespace System.Diagnostics.Tracing
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : EventProviderImpl
     {
-        private WeakReference<EventProvider> _eventProvider;
+        private readonly WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
         private GCHandle _gcHandle;
 
