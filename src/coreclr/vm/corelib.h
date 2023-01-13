@@ -331,8 +331,6 @@ DEFINE_FIELD_U(_ipForWatsonBuckets,ExceptionObject,    _ipForWatsonBuckets)
 DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
-
-
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
 // Following Exception members are only used when FEATURE_COMINTEROP

@@ -10,7 +10,7 @@ using System.Runtime.Loader;
 
 namespace System
 {
-    internal partial static class StartupHookProvider
+    internal static partial class StartupHookProvider
     {
         private static void ManagedStartup()
         {
