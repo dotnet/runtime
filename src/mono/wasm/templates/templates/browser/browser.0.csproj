@@ -5,6 +5,7 @@
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TrimMode>full</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
