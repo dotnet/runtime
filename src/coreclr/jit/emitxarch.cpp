@@ -3819,17 +3819,17 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
  *  Add a NOP instruction of the given size.
  */
 
-void emitter::emitIns_Nop(unsigned size)
+void emitter::emitIns_Nop(unsigned sz)
 {
-    assert(size <= MAX_ENCODED_SIZE);
+    assert(sz <= MAX_ENCODED_SIZE);
 
     instrDesc* id = emitNewInstr();
     id->idIns(INS_nop);
     id->idInsFmt(IF_NONE);
-    id->idCodeSize(size);
+    id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += size;
+    emitCurIGsize += sz;
 }
 
 /*****************************************************************************
@@ -3838,7 +3838,7 @@ void emitter::emitIns_Nop(unsigned size)
  */
 void emitter::emitIns(instruction ins)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr();
     code_t         code = insCodeMR(ins);
 
@@ -3860,62 +3860,63 @@ void emitter::emitIns(instruction ins)
 
     assert(!hasRexPrefix(code)); // Can't have a REX bit with no operands, right?
 
-    if (code & 0xFF000000)
-    {
-        sz = 2; // TODO-XArch-Bug?: Shouldn't this be 4? Or maybe we should assert that we don't see this case.
-    }
-    else if (code & 0x00FF0000)
-    {
-        sz = 3;
-    }
-    else if (code & 0x0000FF00)
-    {
-        sz = 2;
-    }
-    else
-    {
-        sz = 1;
-    }
+    //if (code & 0xFF000000)
+    //{
+    //    sz = 2; // TODO-XArch-Bug?: Shouldn't this be 4? Or maybe we should assert that we don't see this case.
+    //}
+    //else if (code & 0x00FF0000)
+    //{
+    //    sz = 3;
+    //}
+    //else if (code & 0x0000FF00)
+    //{
+    //    sz = 2;
+    //}
+    //else
+    //{
+    //    sz = 1;
+    //}
 
     // vzeroupper includes its 2-byte VEX prefix in its MR code.
-    assert((ins != INS_vzeroupper) || (sz == 3));
+    //assert((ins != INS_vzeroupper) || (sz == 3));
 
     insFormat fmt = IF_NONE;
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idCodeSize(sz);
-
+    //id->idCodeSize(sz);
+    
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
+    assert((ins != INS_vzeroupper) || (id->idCodeSize() == 3));
 }
 
 // Add an instruction with no operands, but whose encoding depends on the size
 // (Only CDQ/CQO/CWDE/CDQE currently)
 void emitter::emitIns(instruction ins, emitAttr attr)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr(attr);
     code_t         code = insCodeMR(ins);
     assert((ins == INS_cdq) || (ins == INS_cwde));
     assert((code & 0xFFFFFF00) == 0);
-    sz = 1;
+    //sz = 1;
 
     insFormat fmt = IF_NONE;
 
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    sz += emitGetAdjustedSize(id, code);
-    if (TakesRexWPrefix(ins, attr))
-    {
-        sz += emitGetRexPrefixSize(ins);
-    }
+    //sz += emitGetAdjustedSize(id, code);
+    //if (TakesRexWPrefix(ins, attr))
+    //{
+    //    sz += emitGetRexPrefixSize(ins);
+    //}
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -4158,7 +4159,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 {
     unsigned       argNum;
     instrDesc*     id;
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
 
     assert(emitComp->compGeneratingProlog);
 
@@ -4182,9 +4183,9 @@ void emitter::spillIntArgRegsToShadowSlots()
         assert(emitGetInsAmdAny(id) == ssize_t(offset));
 
         id->idReg1(argReg);
-        sz = emitInsSizeAM(id, insCodeMR(INS_mov));
-        id->idCodeSize(sz);
-        emitCurIGsize += sz;
+        //sz = emitInsSizeAM(id, insCodeMR(INS_mov));
+        //id->idCodeSize(sz);
+        emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
     }
 }
 
@@ -4232,10 +4233,10 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     id->idIns(ins);
     id->idReg1(dstReg);
     emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -4337,7 +4338,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     }
 
     ssize_t        offset = mem->Offset();
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id;
 
     if (data->isContainedIntOrIImmed())
@@ -4346,8 +4347,8 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         id       = emitNewInstrAmdCns(attr, offset, icon);
         id->idIns(ins);
         emitHandleMemOp(mem, id, IF_AWR_CNS, ins);
-        sz = emitInsSizeAM(id, insCodeMI(ins), icon);
-        id->idCodeSize(sz);
+        //sz = emitInsSizeAM(id, insCodeMI(ins), icon);
+        //id->idCodeSize(sz);
     }
 #if defined(FEATURE_HW_INTRINSICS)
     else if (data->OperIsHWIntrinsic() && data->isContained())
@@ -4363,8 +4364,8 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id->idIns(ins);
             emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
             id->idReg1(op1->GetRegNum());
-            sz = emitInsSizeAM(id, insCodeMR(ins));
-            id->idCodeSize(sz);
+            //sz = emitInsSizeAM(id, insCodeMR(ins));
+            //id->idCodeSize(sz);
         }
         else
         {
@@ -4375,8 +4376,8 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id->idIns(ins);
             id->idReg1(op1->GetRegNum());
             emitHandleMemOp(mem, id, IF_AWR_RRD_CNS, ins);
-            sz = emitInsSizeAM(id, insCodeMR(ins), icon);
-            id->idCodeSize(sz);
+            //sz = emitInsSizeAM(id, insCodeMR(ins), icon);
+            //id->idCodeSize(sz);
         }
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -4387,12 +4388,12 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         id->idIns(ins);
         emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
         id->idReg1(data->GetRegNum());
-        sz = emitInsSizeAM(id, insCodeMR(ins));
-        id->idCodeSize(sz);
+        //sz = emitInsSizeAM(id, insCodeMR(ins));
+        //id->idCodeSize(sz);
     }
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -4666,21 +4667,21 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     emitHandleMemOp(memIndir, id, fmt, ins);
 
                     // Determine the instruction size
-                    UNATIVE_OFFSET sz = 0;
+                    //UNATIVE_OFFSET sz = 0;
 
                     if (memOp == src)
                     {
                         assert(otherOp == dst);
                         assert(cnsOp == nullptr);
 
-                        if (instrHasImplicitRegPairDest(ins))
-                        {
-                            sz = emitInsSizeAM(id, insCode(ins));
-                        }
-                        else
-                        {
-                            sz = emitInsSizeAM(id, insCodeRM(ins));
-                        }
+                        //if (instrHasImplicitRegPairDest(ins))
+                        //{
+                        //    sz = emitInsSizeAM(id, insCode(ins));
+                        //}
+                        //else
+                        //{
+                        //    sz = emitInsSizeAM(id, insCodeRM(ins));
+                        //}
                     }
                     else
                     {
@@ -4692,20 +4693,20 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                             assert(cnsOp == src);
                             assert(otherOp == nullptr);
 
-                            sz = emitInsSizeAM(id, insCodeMI(ins), (int)src->AsIntConCommon()->IconValue());
+                            //sz = emitInsSizeAM(id, insCodeMI(ins), (int)src->AsIntConCommon()->IconValue());
                         }
                         else
                         {
                             assert(otherOp == src);
-                            sz = emitInsSizeAM(id, insCodeMR(ins));
+                            //sz = emitInsSizeAM(id, insCodeMR(ins));
                         }
                     }
-                    assert(sz != 0);
+                    //assert(sz != 0);
 
-                    id->idCodeSize(sz);
+                    //id->idCodeSize(sz);
 
                     dispIns(id);
-                    emitCurIGsize += sz;
+                    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
                     return (memOp == src) ? dst->GetRegNum() : REG_NA;
                 }
@@ -4854,7 +4855,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT));
 
     instrDesc*     id = nullptr;
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
 
     ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
@@ -4892,7 +4893,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
             id = emitNewInstrAmdCns(attr, offset, iconVal);
             emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
             id->idIns(ins);
-            sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
+            //sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
         }
     }
     else
@@ -4904,13 +4905,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
         emitHandleMemOp(storeInd, id, IF_ARW_RRD, ins);
         id->idReg1(src->GetRegNum());
         id->idIns(ins);
-        sz = emitInsSizeAM(id, insCodeMR(ins));
+        //sz = emitInsSizeAM(id, insCodeMR(ins));
     }
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -4957,11 +4958,11 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     instrDesc* id = emitNewInstrAmd(attr, offset);
     emitHandleMemOp(storeInd, id, IF_ARW, ins);
     id->idIns(ins);
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -4976,7 +4977,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     assert(size <= EA_PTRSIZE);
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrSmall(attr);
 
     switch (ins)
@@ -4985,7 +4986,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_dec:
 #ifdef TARGET_AMD64
 
-            sz = 2; // x64 has no 1-byte opcode (it is the same encoding as the REX prefix)
+            //sz = 2; // x64 has no 1-byte opcode (it is the same encoding as the REX prefix)
 
 #else // !TARGET_AMD64
 
@@ -5007,7 +5008,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 
             assert(size == EA_PTRSIZE);
 
-            sz = 1;
+            //sz = 1;
             break;
 
         default:
@@ -5030,12 +5031,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 
                 size = attr;
 
-                sz = 3;
+                //sz = 3;
                 break;
             }
             else
             {
-                sz = 2;
+                //sz = 2;
                 break;
             }
     }
@@ -5045,19 +5046,19 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     id->idInsFmt(fmt);
     id->idReg1(reg);
 
-    // Vex bytes
-    sz += emitGetAdjustedSize(id, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
+    //// Vex bytes
+    //sz += emitGetAdjustedSize(id, insEncodeMRreg(ins, reg, attr, insCodeMR(ins)));
 
-    // REX byte
-    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, attr))
-    {
-        sz += emitGetRexPrefixSize(ins);
-    }
+    //// REX byte
+    //if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, attr))
+    //{
+    //    sz += emitGetRexPrefixSize(ins);
+    //}
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -5085,7 +5086,7 @@ void emitter::emitIns_R_I(instruction ins,
     noway_assert(size < EA_8BYTE || ins == INS_mov || ((int)val == val && !EA_IS_CNS_RELOC(attr)));
 #endif
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id;
     insFormat      fmt       = emitInsModeFormat(ins, IF_RRD_CNS);
     bool           valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
@@ -5113,11 +5114,11 @@ void emitter::emitIns_R_I(instruction ins,
 
             if (size > EA_4BYTE)
             {
-                sz = 9; // Really it is 10, but we'll add one more later
+                //sz = 9; // Really it is 10, but we'll add one more later
                 break;
             }
 #endif // TARGET_AMD64
-            sz = 5;
+            //sz = 5;
             break;
 
         case INS_rcl_N:
@@ -5129,7 +5130,7 @@ void emitter::emitIns_R_I(instruction ins,
         case INS_sar_N:
             assert(val != 1);
             fmt = IF_RRW_SHF;
-            sz  = 3;
+            //sz  = 3;
             val &= 0x7F;
             valInByte = true; // shift amount always placed in a byte
             break;
@@ -5145,16 +5146,16 @@ void emitter::emitIns_R_I(instruction ins,
             {
                 if (IsAvx512OrPriorInstruction(ins))
                 {
-                    sz                    = 1;
+                    //sz                    = 1;
                     isSimdInsAndValInByte = true;
                 }
                 else if (size == EA_1BYTE && reg == REG_EAX && !instrIs3opImul(ins))
                 {
-                    sz = 2;
+                    //sz = 2;
                 }
                 else
                 {
-                    sz = 3;
+                    //sz = 3;
                 }
             }
             else
@@ -5163,23 +5164,23 @@ void emitter::emitIns_R_I(instruction ins,
 
                 if (reg == REG_EAX && !instrIs3opImul(ins))
                 {
-                    sz = 1;
+                    //sz = 1;
                 }
                 else
                 {
-                    sz = 2;
+                    //sz = 2;
                 }
 
 #ifdef TARGET_AMD64
                 if (size > EA_4BYTE)
                 {
                     // We special-case anything that takes a full 8-byte constant.
-                    sz += 4;
+                    //sz += 4;
                 }
                 else
 #endif // TARGET_AMD64
                 {
-                    sz += EA_SIZE_IN_BYTES(attr);
+                    //sz += EA_SIZE_IN_BYTES(attr);
                 }
             }
             break;
@@ -5206,23 +5207,23 @@ void emitter::emitIns_R_I(instruction ins,
             includeRexPrefixSize = false;
         }
 
-        sz += emitInsSize(id, insCodeMI(ins), includeRexPrefixSize);
+        //sz += emitInsSize(id, insCodeMI(ins), includeRexPrefixSize);
     }
 
-    sz += emitGetAdjustedSize(id, insCodeMI(ins));
+    //sz += emitGetAdjustedSize(id, insCodeMI(ins));
 
-    // Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
-    // 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
-    // register. So we also need to check if that built-in register is an extended register.
-    if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
-    {
-        sz += emitGetRexPrefixSize(ins);
-    }
+    //// Do we need a REX prefix for AMD64? We need one if we are using any extended register (REX.R), or if we have a
+    //// 64-bit sized operand (REX.W). Note that IMUL in our encoding is special, with a "built-in", implicit, target
+    //// register. So we also need to check if that built-in register is an extended register.
+    //if (IsExtendedReg(reg, attr) || TakesRexWPrefix(ins, size) || instrIsExtendedReg3opImul(ins))
+    //{
+    //    sz += emitGetRexPrefixSize(ins);
+    //}
 
-    id->idCodeSize(sz);
-
+    //id->idCodeSize(sz);
+    
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     if (reg == REG_ESP)
     {
@@ -5237,7 +5238,7 @@ void emitter::emitIns_R_I(instruction ins,
 
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id;
     bool           valInByte = ((signed char)val == (target_ssize_t)val);
 
@@ -5256,16 +5257,16 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
     {
         case INS_loop:
         case INS_jge:
-            sz = 2;
+            //sz = 2;
             break;
 
         case INS_ret:
-            sz = 3;
+            //sz = 3;
             break;
 
         case INS_push_hide:
         case INS_push:
-            sz = valInByte ? 2 : 5;
+            //sz = valInByte ? 2 : 5;
             break;
 
         default:
@@ -5275,10 +5276,10 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
     id = emitNewInstrSC(attr, val);
     id->idIns(ins);
     id->idInsFmt(IF_CNS);
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -5292,13 +5293,13 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
 {
     assert(EA_SIZE(attr) == EA_4BYTE);
 
-    UNATIVE_OFFSET    sz  = 3 + 4;
+    //UNATIVE_OFFSET    sz  = 3 + 4;
     const instruction ins = INS_i_jmp;
 
-    if (IsExtendedReg(reg, attr))
-    {
-        sz += emitGetRexPrefixSize(ins);
-    }
+    //if (IsExtendedReg(reg, attr))
+    //{
+    //    sz += emitGetRexPrefixSize(ins);
+    //}
 
     instrDesc* id = emitNewInstrAmd(attr, base);
 
@@ -5313,10 +5314,10 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
         id->idDebugOnlyInfo()->idMemCookie = base;
     }
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -5334,7 +5335,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id;
 
     /* Are we pushing the offset of the class variable? */
@@ -5342,7 +5343,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     if (EA_IS_OFFSET(attr))
     {
         assert(ins == INS_push);
-        sz = 1 + TARGET_POINTER_SIZE;
+        //sz = 1 + TARGET_POINTER_SIZE;
 
         id = emitNewInstrDsp(EA_1BYTE, offs);
         id->idIns(ins);
@@ -5355,21 +5356,21 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
         id = emitNewInstrDsp(attr, offs);
         id->idIns(ins);
         id->idInsFmt(fmt);
-        sz = emitInsSizeCV(id, insCodeMR(ins));
+        //sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
-    if (TakesRexWPrefix(ins, attr))
-    {
-        // REX.W prefix
-        sz += emitGetRexPrefixSize(ins);
-    }
+    //if (TakesRexWPrefix(ins, attr))
+    //{
+    //    // REX.W prefix
+    //    sz += emitGetRexPrefixSize(ins);
+    //}
 
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -5391,11 +5392,11 @@ void emitter::emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir)
     id->idIns(ins);
     emitHandleMemOp(indir, id, fmt, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -5798,11 +5799,11 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     id->idReg1(dstReg);
     id->idReg2(srcReg);
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -5832,11 +5833,11 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -5891,11 +5892,11 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         }
     }
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
@@ -5910,11 +5911,11 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -5946,11 +5947,11 @@ void emitter::emitIns_AR_R_R(
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir)
@@ -5963,11 +5964,11 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
 
     emitHandleMemOp(indir, id, IF_RRW_ARD, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival)
@@ -5983,11 +5984,11 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
 
     emitHandleMemOp(indir, id, IF_RRW_ARD_CNS, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, regNumber base, int offs, int ival)
@@ -6004,11 +6005,11 @@ void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_C_I(
@@ -6030,11 +6031,11 @@ void emitter::emitIns_R_C_I(
     id->idReg1(reg1);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival)
@@ -6053,11 +6054,11 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir)
@@ -6074,11 +6075,11 @@ void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regN
 
     emitHandleMemOp(indir, id, IF_RWR_RRD_ARD, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs)
@@ -6096,11 +6097,11 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -6164,11 +6165,11 @@ void emitter::emitIns_R_AR_R(instruction ins,
     id->idAddr()->iiaAddrMode.amIndxReg = index;
     id->idAddr()->iiaAddrMode.amScale   = emitEncodeSize((emitAttr)scale);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_C(
@@ -6191,11 +6192,11 @@ void emitter::emitIns_R_R_C(
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6215,11 +6216,11 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg2(reg1);
     id->idReg3(reg2);
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs)
@@ -6239,11 +6240,11 @@ void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_A_I(
@@ -6261,11 +6262,11 @@ void emitter::emitIns_R_R_A_I(
 
     emitHandleMemOp(indir, id, fmt, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_AR_I(
@@ -6284,11 +6285,11 @@ void emitter::emitIns_R_R_AR_I(
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_C_I(
@@ -6311,11 +6312,11 @@ void emitter::emitIns_R_R_C_I(
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /**********************************************************************************
@@ -6373,11 +6374,11 @@ void emitter::emitIns_R_R_R_I(
         }
     }
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_S_I(
@@ -6398,11 +6399,11 @@ void emitter::emitIns_R_R_S_I(
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -6455,11 +6456,11 @@ void emitter::emitIns_R_R_A_R(
 
     emitHandleMemOp(indir, id, IF_RWR_RRD_ARD_RRD, ins);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -6495,11 +6496,11 @@ void emitter::emitIns_R_R_AR_R(
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -6545,11 +6546,11 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
     id->idInsFmt(IF_RWR_RRD_MRD_RRD);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -6584,11 +6585,11 @@ void emitter::emitIns_R_R_S_R(
     id->idInsFmt(IF_RWR_RRD_SRD_RRD);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_R_R_R(
@@ -6607,11 +6608,11 @@ void emitter::emitIns_R_R_R_R(
     id->idReg3(reg2);
     id->idReg4(reg3);
 
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6631,7 +6632,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id;
 
     // Are we MOV'ing the offset of the class variable into EAX?
@@ -6645,7 +6646,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         assert(ins == INS_mov && reg == REG_EAX);
 
         // Special case: "mov eax, [addr]" is smaller
-        sz = 1 + TARGET_POINTER_SIZE;
+        //sz = 1 + TARGET_POINTER_SIZE;
     }
     else
     {
@@ -6663,29 +6664,28 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         // instruction.
         if (ins == INS_mov && reg == REG_EAX)
         {
-            sz = 1 + TARGET_POINTER_SIZE;
-            if (size == EA_2BYTE)
-                sz += 1;
+            //sz = 1 + TARGET_POINTER_SIZE;
+            //if (size == EA_2BYTE)
+            //    sz += 1;
         }
         else
 #endif // TARGET_X86
         {
-            sz = emitInsSizeCV(id, insCodeRM(ins));
+            //sz = emitInsSizeCV(id, insCodeRM(ins));
         }
 
         // Special case: mov reg, fs:[ddd]
         if (fldHnd == FLD_GLOBAL_FS)
         {
-            sz += 1;
+            //sz += 1;
         }
     }
 
-    id->idCodeSize(sz);
-
     id->idAddr()->iiaFieldHnd = fldHnd;
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6719,7 +6719,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     id->idInsFmt(fmt);
     id->idReg1(reg);
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
 
 #ifdef TARGET_X86
     // Special case: "mov [addr], EAX" is smaller.
@@ -6728,35 +6728,34 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     // the instruction.
     if (ins == INS_mov && reg == REG_EAX)
     {
-        sz = 1 + TARGET_POINTER_SIZE;
+        //sz = 1 + TARGET_POINTER_SIZE;
 
-        if (size == EA_2BYTE)
-            sz += 1;
+        //if (size == EA_2BYTE)
+        //    sz += 1;
 
         // REX prefix
         if (TakesRexWPrefix(ins, attr) || IsExtendedReg(reg, attr))
         {
-            sz += emitGetRexPrefixSize(ins);
+            //sz += emitGetRexPrefixSize(ins);
         }
     }
     else
 #endif // TARGET_X86
     {
-        sz = emitInsSizeCV(id, insCodeMR(ins));
+        //sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
     // Special case: mov reg, fs:[ddd]
     if (fldHnd == FLD_GLOBAL_FS)
     {
-        sz += 1;
+        //sz += 1;
     }
 
-    id->idCodeSize(sz);
-
     id->idAddr()->iiaFieldHnd = fldHnd;
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6798,13 +6797,13 @@ void emitter::emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     id->idInsFmt(fmt);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    code_t         code = insCodeMI(ins);
-    UNATIVE_OFFSET sz   = emitInsSizeCV(id, code, val);
+    //code_t         code = insCodeMI(ins);
+    //UNATIVE_OFFSET sz   = emitInsSizeCV(id, code, val);
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs)
@@ -6833,7 +6832,7 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
     id->idjNext      = emitCurIGjmpList;
     emitCurIGjmpList = id;
 
-    UNATIVE_OFFSET sz = sizeof(INT32) + emitInsSizeSV(id, insCodeMI(ins), varx, offs);
+    //UNATIVE_OFFSET sz = sizeof(INT32) + emitInsSizeSV(id, insCodeMI(ins), varx, offs);
     id->dstLclVar.initLclVarAddr(varx, offs);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -6856,10 +6855,10 @@ void emitter::emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int v
         id->idSetIsDspReloc();
     }
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6912,11 +6911,11 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     // Note the relocation flags influence the size estimate.
     id->idSetRelocFlags(attr);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -6963,7 +6962,7 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
     }
     */
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -6973,11 +6972,11 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMI(ins), val);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp)
@@ -7019,7 +7018,7 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
     }
     */
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -7029,11 +7028,11 @@ void emitter::emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMI(ins), val);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber base, int disp)
@@ -7046,7 +7045,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id  = emitNewInstrAmd(attr, disp);
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_ARD);
 
@@ -7059,11 +7058,11 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
@@ -7102,11 +7101,11 @@ void emitter::emitIns_C_R_I(
     id->idReg1(reg);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeMR(ins), ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeMR(ins), ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -7136,11 +7135,11 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMR(ins), varNum, offs, ival);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMR(ins), varNum, offs, ival);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 //------------------------------------------------------------------------
@@ -7163,15 +7162,15 @@ void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir,
     id->idIns(ins);
     id->idReg1(reg);
     emitHandleMemOp(indir, id, IF_AWR_RRD_CNS, ins);
-    UNATIVE_OFFSET size = emitInsSizeAM(id, insCodeMR(ins), imm);
-    id->idCodeSize(size);
+    //UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins), imm);
+    //id->idCodeSize(sz);
     dispIns(id);
-    emitCurIGsize += size;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
     insFormat      fmt;
 
@@ -7197,11 +7196,11 @@ void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -7237,7 +7236,7 @@ void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber r
             break;
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -7248,11 +7247,11 @@ void emitter::emitIns_I_ARR(instruction ins, emitAttr attr, int val, regNumber r
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMI(ins), val);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_ARR(instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, int disp)
@@ -7297,7 +7296,7 @@ void emitter::emitIns_I_ARX(
             break;
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
 
     id->idIns(ins);
@@ -7309,11 +7308,11 @@ void emitter::emitIns_I_ARX(
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMI(ins), val);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_ARX(
@@ -7330,7 +7329,7 @@ void emitter::emitIns_R_ARX(
         return;
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id  = emitNewInstrAmd(attr, disp);
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_ARD);
 
@@ -7344,17 +7343,17 @@ void emitter::emitIns_R_ARX(
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_ARX_R(
     instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
     insFormat      fmt;
 
@@ -7381,11 +7380,11 @@ void emitter::emitIns_ARX_R(
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -7421,7 +7420,7 @@ void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber re
             break;
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmdCns(attr, disp, val);
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -7432,11 +7431,11 @@ void emitter::emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber re
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMI(ins), val);
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMI(ins), val);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp)
@@ -7444,7 +7443,7 @@ void emitter::emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNu
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id  = emitNewInstrAmd(attr, disp);
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_ARD);
 
@@ -7458,16 +7457,16 @@ void emitter::emitIns_R_AX(instruction ins, emitAttr attr, regNumber ireg, regNu
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeRM(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, unsigned mul, int disp)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
     insFormat      fmt;
 
@@ -7493,11 +7492,11 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    sz = emitInsSizeAM(id, insCodeMR(ins));
-    id->idCodeSize(sz);
+    //sz = emitInsSizeAM(id, insCodeMR(ins));
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -8266,7 +8265,7 @@ void emitter::emitIns_SIMD_R_R_S_R(
 
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 {
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id  = emitNewInstr(attr);
     insFormat      fmt = emitInsModeFormat(ins, IF_SRD);
 
@@ -8274,14 +8273,15 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     id->idInsFmt(fmt);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-    sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
-    id->idCodeSize(sz);
-
+    //sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
+    
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
+
+    //id->idCodeSize(sz);
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
     emitAdjustStackDepthPushPop(ins);
 }
@@ -8380,14 +8380,17 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
         return;
     }
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
 
-    sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
+    //sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
 #ifdef TARGET_X86
     if (attr == EA_1BYTE)
@@ -8396,12 +8399,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     }
 #endif
 
-    id->idCodeSize(sz);
-#ifdef DEBUG
-    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
-#endif
+    //id->idCodeSize(sz);
+
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
@@ -8416,19 +8417,20 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     }
 
     instrDesc*     id = emitNewInstr(attr);
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
-
-    sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
-    id->idCodeSize(sz);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
+
+    //sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    //id->idCodeSize(sz);
+
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
@@ -8465,13 +8467,14 @@ void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, in
     id->idInsFmt(fmt);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMI(ins), varx, offs, val);
-    id->idCodeSize(sz);
+    //UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMI(ins), varx, offs, val);
+    
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
+    //id->idCodeSize(sz);
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 }
 
 /*****************************************************************************
@@ -8877,7 +8880,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     id->idSetIsNoGC(emitNoGChelper(methHnd));
 
-    UNATIVE_OFFSET sz;
+    //UNATIVE_OFFSET sz;
 
     // Record the address: method, indirection, or funcptr
     if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
@@ -8906,7 +8909,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             code = AddRexWPrefix(ins, code);
         }
 
-        sz = emitInsSizeAM(id, code);
+        //sz = emitInsSizeAM(id, code);
 
         if (ireg == REG_NA && xreg == REG_NA)
         {
@@ -8921,7 +8924,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 // to be encoded as offset relative to zero.  This addr mode requires an extra
                 // SIB byte
                 noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
-                sz++;
+                //sz++;
             }
 #endif // TARGET_AMD64
         }
@@ -8934,7 +8937,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         id->idInsFmt(IF_METHPTR);
         id->idAddr()->iiaAddr = (BYTE*)addr;
-        sz                    = 6;
+        //sz                    = 6;
 
         // Since this is an indirect call through a pointer and we don't
         // currently pass in emitAttr into this function, we query codegen
@@ -8950,7 +8953,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
             noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
-            sz++;
+            //sz++;
         }
 #endif // TARGET_AMD64
     }
@@ -8963,7 +8966,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(addr != nullptr);
 
         id->idInsFmt(IF_METHOD);
-        sz = 5;
+        //sz = 5;
 
         id->idAddr()->iiaAddr = (BYTE*)addr;
 
@@ -8987,10 +8990,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 #endif // LATE_DISASM
 
-    id->idCodeSize(sz);
+    //id->idCodeSize(sz);
 
     dispIns(id);
-    emitCurIGsize += sz;
+    emitCurIGsize += emitSetAcurateCodeSize(emitCurIG, id);
 
 #if !FEATURE_FIXED_OUT_ARGS
 
@@ -14784,6 +14787,27 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
     }
 }
 
+unsigned emitter::emitSetAcurateCodeSize(insGroup* ig, instrDesc* id)
+{
+    writeableOffset = 0;
+    emitIssuing = true;
+
+    BYTE* curInsAdr = tempOutputMemory;
+    emitOutputInstr(ig, id, &tempOutputMemory);
+    unsigned actualSize = (unsigned)(tempOutputMemory - curInsAdr);
+    id->idCodeSize(actualSize);
+
+
+    emitPrintLabel(ig);
+    printf(": ");
+    const char* sstr = codeGen->genInsDisplayName(id);
+    printf("%s  = %u\n", sstr, actualSize);
+
+    // reset
+    tempOutputMemory = curInsAdr;
+    return actualSize;
+}
+
 /*****************************************************************************
  *
  *  Append the machine code corresponding to the given instruction descriptor
@@ -14802,6 +14826,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(emitIssuing);
 
     BYTE*         dst           = *dp;
+    BYTE*         startDst      = dst;
     size_t        sz            = sizeof(instrDesc);
     instruction   ins           = id->idIns();
     unsigned char callInstrSize = 0;
@@ -15965,6 +15990,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
     }
 #endif
+
+    //int diff1 = id->idCodeSize() - ((UNATIVE_OFFSET)(dst - *dp));
+    //if (diff1 != 0)
+    //{
+    //    //assert(ins != INS_movsxd);
+    //    aggregatedMismatch += diff1;
+    //    const char* sstr = codeGen->genInsDisplayName(id);
+    //    printf("%s | %d\n", sstr, diff1);
+    //}
 
 #if FEATURE_LOOP_ALIGN
     // Only compensate over-estimated instructions if emitCurIG is before

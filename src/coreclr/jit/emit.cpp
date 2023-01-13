@@ -1084,6 +1084,10 @@ void emitter::emitBegFN(bool hasFramePtr
     emitChkAlign = chkAlign;
 #endif
 
+#ifdef TARGET_XARCH
+    tempOutputMemory = (BYTE*)emitGetMem(20);
+#endif
+
     /* We have no epilogs yet */
 
     emitEpilogSize = 0;
@@ -1152,6 +1156,8 @@ void emitter::emitBegFN(bool hasFramePtr
     emitCurCodeOffset = 0;
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
+    aggregatedMismatch = 0;
+
 
 #ifdef TARGET_LOONGARCH64
     emitCounts_INS_OPTS_J = 0;
@@ -7184,6 +7190,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // If you add this padding during the emitIGlist loop, then it will
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
+    //printf("unusedSize: %u\n", unusedSize);
+    //assert(unusedSize == aggregatedMismatch);
 
     JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);

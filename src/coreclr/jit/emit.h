@@ -1932,6 +1932,11 @@ public:
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
 
+#ifdef TARGET_XARCH
+    BYTE* tempOutputMemory;
+    unsigned emitSetAcurateCodeSize(insGroup* ig, instrDesc* id);
+#endif
+
     bool emitHasFramePtr;
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
@@ -2073,6 +2078,7 @@ private:
     unsigned       emitCurIGsize;     // estimated code size of current group in bytes
     UNATIVE_OFFSET emitCurCodeOffset; // current code offset within group
     UNATIVE_OFFSET emitTotalCodeSize; // bytes of code in entire method
+    unsigned aggregatedMismatch;
 
     insGroup* emitFirstColdIG; // first cold instruction group
 
