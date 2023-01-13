@@ -50,8 +50,8 @@
 
   #define REG_FP_FIRST             REG_F0
   #define REG_FP_LAST              REG_F31
-  #define FIRST_FP_ARGREG          REG_F0
-  #define LAST_FP_ARGREG           REG_F15
+  #define FIRST_FP_ARGREG          REG_F10
+  #define LAST_FP_ARGREG           REG_F17
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
