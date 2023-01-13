@@ -1623,48 +1623,49 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 //
 void emitter::emitCheckIGList()
 {
+    assert(emitPrologIG != nullptr);
+
     size_t currentOffset = 0;
 
-    for (insGroup *tempIG = emitIGlist, *prevIG = nullptr; tempIG != nullptr; prevIG = tempIG, tempIG = tempIG->igNext)
+    for (insGroup *currIG = emitIGlist, *prevIG = nullptr; currIG != nullptr; prevIG = currIG, currIG = currIG->igNext)
     {
-        if (tempIG->igOffs != currentOffset)
+        if (currIG->igOffs != currentOffset)
         {
-            printf("IG%02u has offset %08X, expected %08X\n", tempIG->igNum, tempIG->igOffs, currentOffset);
+            printf("IG%02u has offset %08X, expected %08X\n", currIG->igNum, currIG->igOffs, currentOffset);
             assert(!"bad block offset");
         }
 
-        currentOffset += tempIG->igSize;
+        currentOffset += currIG->igSize;
 
         if (prevIG == nullptr)
         {
             // First IG can't be an extension group.
-            assert((tempIG->igFlags & IGF_EXTEND) == 0);
+            assert((currIG->igFlags & IGF_EXTEND) == 0);
 
             // First IG must be the function prolog.
-            assert(tempIG == emitPrologIG);
+            assert(currIG == emitPrologIG);
         }
 
-        assert(emitPrologIG != nullptr);
-        if (tempIG == emitPrologIG)
+        if (currIG == emitPrologIG)
         {
             // If we're in the function prolog, we can't be in any other prolog or epilog.
-            assert((tempIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) == 0);
+            assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) == 0);
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits(tempIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits(currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
-        assert(genCountBits(tempIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
+        assert(genCountBits(currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
 
-        if (tempIG->igFlags & IGF_EXTEND)
+        if (currIG->igFlags & IGF_EXTEND)
         {
             // Extension groups don't store GC info.
-            assert((tempIG->igFlags & (IGF_GC_VARS | IGF_BYREF_REGS)) == 0);
+            assert((currIG->igFlags & (IGF_GC_VARS | IGF_BYREF_REGS)) == 0);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             // Extension groups can't be branch targets.
-            assert((tempIG->igFlags & IGF_FINALLY_TARGET) == 0);
+            assert((currIG->igFlags & IGF_FINALLY_TARGET) == 0);
 #endif
 
             // TODO: It would be nice if we could assert that a funclet prolog, funclet epilog, or
@@ -1678,20 +1679,20 @@ void emitter::emitCheckIGList()
             // unique prolog IG).
             //
             // Thus, we can't have this assert:
-            // assert((tempIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) ==
-            //       (prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)));
+            // assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) ==
+            //        (prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)));
 
             // If this is a funclet prolog IG, then it can only extend another funclet prolog IG.
-            assert((tempIG->igFlags & IGF_FUNCLET_PROLOG) == (prevIG->igFlags & IGF_FUNCLET_PROLOG));
+            assert((currIG->igFlags & IGF_FUNCLET_PROLOG) == (prevIG->igFlags & IGF_FUNCLET_PROLOG));
 
             // If this is a function epilog IG, it can't extend a funclet prolog or funclet epilog IG.
-            if (tempIG->igFlags & IGF_EPILOG)
+            if (currIG->igFlags & IGF_EPILOG)
             {
                 assert((prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)) == 0);
             }
 
             // If this is a funclet epilog IG, it can't extend a funclet prolog or function epilog IG.
-            if (tempIG->igFlags & IGF_FUNCLET_EPILOG)
+            if (currIG->igFlags & IGF_FUNCLET_EPILOG)
             {
                 assert((prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_EPILOG)) == 0);
             }
@@ -1703,7 +1704,7 @@ void emitter::emitCheckIGList()
             // // non-EXTEND group) must also be NOGC. We don't want a GC region to solely consist
             // // of an EXTEND group, as EXTEND groups should only be used for "overflow", and not
             // // change any semantics of the included instructions.
-            // assert((tempIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
+            // assert((currIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
         }
     }
 
