@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial uint GetCurrentProcessorNumber();
+        internal static partial void Sleep(uint milliseconds);
     }
 }
