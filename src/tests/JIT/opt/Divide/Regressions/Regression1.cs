@@ -190,7 +190,7 @@ public class Program
         var result17 = Test17();
         var result18 = Test18(0x10000);
         var result19 = Test19(0x10000, 2);
-        var result20 = Test20(unchecked((short)0x10000), 2);
+        var result20 = Test20(0, 2);
 
         if (result1 != 0)
             return 0;
