@@ -541,7 +541,7 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
-CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 1)
 // Patchpoint strategy:
 // 0 - backedge sources
 // 1 - backedge targets
