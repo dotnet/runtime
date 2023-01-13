@@ -10002,14 +10002,15 @@ initialize_global_vars (TransformData *td)
 // Data structure used for offset allocation of call args
 typedef struct {
 	InterpInst *call;
-	int param_size;
+	// Array of call dependencies that need to be resolved before
+	GPtrArray *deps;
 } ActiveCall;
 
 typedef struct {
-	ActiveCall *active_calls;
+	InterpInst **active_calls;
 	int active_calls_count;
 	int active_calls_capacity;
-	int param_size;
+	GQueue *deferred_calls;
 } ActiveCalls;
 
 static void
@@ -10017,33 +10018,16 @@ init_active_calls (TransformData *td, ActiveCalls *ac)
 {
 	ac->active_calls_count = 0;
 	ac->active_calls_capacity = 5;
-	ac->active_calls = (ActiveCall*)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (ActiveCall));
-	ac->param_size = 0;
+	ac->active_calls = (InterpInst**)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (InterpInst*));
+	ac->deferred_calls = g_queue_new ();
 }
 
 static void
 reinit_active_calls (TransformData *td, ActiveCalls *ac)
 {
 	ac->active_calls_count = 0;
-	ac->param_size = 0;
-}
-
-static int
-get_call_param_size (TransformData *td, InterpInst *call)
-{
-	int *call_args = call->info.call_args;
-	if (!call_args)
-		return 0;
-
-	int param_size = 0;
-
-	int var = *call_args;
-	while (var != -1) {
-		param_size = ALIGN_TO (param_size + td->locals [var].size, MINT_STACK_SLOT_SIZE);
-		call_args++;
-		var = *call_args;
-	}
-	return param_size;
+	g_queue_free (ac->deferred_calls);
+	ac->deferred_calls = g_queue_new ();
 }
 
 static void
@@ -10054,61 +10038,97 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 		return;
 
 	if (ac->active_calls_count == ac->active_calls_capacity) {
-		ActiveCall *old = ac->active_calls;
+		InterpInst **old = ac->active_calls;
 		ac->active_calls_capacity *= 2;
-		ac->active_calls = (ActiveCall*)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (ActiveCall));
-		memcpy (ac->active_calls, old, ac->active_calls_count * sizeof (ActiveCall));
+		ac->active_calls = (InterpInst**)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (InterpInst*));
+		memcpy (ac->active_calls, old, ac->active_calls_count * sizeof (InterpInst*));
 	}
-
-	ac->active_calls [ac->active_calls_count].call = call;
-	ac->active_calls [ac->active_calls_count].param_size = get_call_param_size (td, call);
-	ac->param_size += ac->active_calls [ac->active_calls_count].param_size;
+	ac->active_calls [ac->active_calls_count] = (InterpInst*)mono_mempool_alloc (td->mempool, sizeof (InterpInst));
+	ac->active_calls [ac->active_calls_count] = call;
 	ac->active_calls_count++;
 
 	// Mark a flag on it so we don't have to lookup the array with every argument store.
 	call->flags |= INTERP_INST_FLAG_ACTIVE_CALL;
 }
 
+/**
+ * Function allocates offsets of resolved calls following a constraint
+ * where the base offset of a call must be greater than the offset of any argument of other active call args.
+ *
+ * Function first removes the call from an array of active calls. If a match is found,
+ * the call is removed from the array by moving the last entry into its place. Otherwise, it is a call without arguments.
+ *
+ * Call is push onto the stack with an array of other active calls that need to be resolved first.
+ *
+ * If there are no other active calls, function retrieves calls from the stack and resolves them, including the current call and all deferred calls.
+ *
+ * For each call, function computes the call offset of each call argument starting from a base offset, and stores the computed call offset into a hash table.
+ * The base offset is computed as max offset of all call offsets on which the call depends.
+ * Stack ensures that all call offsets on which the call depends are caclulated before the call resolution.
+ */
 static void
 end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 {
 	// Remove call from array
 	for (int i = 0; i < ac->active_calls_count; i++) {
-		if (ac->active_calls [i].call == call) {
+		if (ac->active_calls [i] == call) {
 			ac->active_calls_count--;
-			ac->param_size -= ac->active_calls [i].param_size;
 			// Since this entry is removed, move the last entry into it
 			if (ac->active_calls_count > 0 && i < ac->active_calls_count)
 				ac->active_calls [i] = ac->active_calls [ac->active_calls_count];
+			break;
 		}
 	}
-	// This is the relative offset (to the start of the call args stack) where the args
-	// for this call reside.
-	int start_offset = ac->param_size;
 
-	// Compute to offset of each call argument
-	int *call_args = call->info.call_args;
-	if (call_args && (*call_args != -1)) {
-		int var = *call_args;
-		while (var != -1) {
-			alloc_var_offset (td, var, &start_offset);
-			call_args++;
-			var = *call_args;
+	// Push active call that should be resolved onto the stack
+	ActiveCall *deferred_call = (ActiveCall*)mono_mempool_alloc (td->mempool, sizeof (ActiveCall));
+	deferred_call->call = call;
+	deferred_call->deps = g_ptr_array_new ();
+	for (int i = 0; i < ac->active_calls_count; i++) {
+		g_ptr_array_add (deferred_call->deps, ac->active_calls [i]);
+	}
+	g_queue_push_head (ac->deferred_calls, (gpointer)deferred_call);
+	if (!ac->active_calls_count) {
+		// If no other active calls, current active call and all deferred calls can be resolved from the stack
+		GHashTable *call_offsets = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+		while (!g_queue_is_empty (ac->deferred_calls)) {
+			deferred_call = (ActiveCall*)g_queue_pop_head (ac->deferred_calls);
+			// `base_offset` is a relative offset (to the start of the call args stack) where the args for this call reside.
+			int *base_offset = g_malloc0 (sizeof (int));
+			for (int i = 0; i < deferred_call->deps->len; i++) {
+				int call_offset = *(int*)g_hash_table_lookup (call_offsets, deferred_call->deps->pdata [i]);
+				g_assert (call_offset);
+				if (call_offset > *base_offset)
+					*base_offset = call_offset;
+			}
+			// Compute to offset of each call argument
+			int *call_args = deferred_call->call->info.call_args;
+			if (call_args && (*call_args != -1)) {
+				int var = *call_args;
+				while (var != -1) {
+					alloc_var_offset (td, var, base_offset);
+					call_args++;
+					var = *call_args;
+				}
+			} else {
+				// This call has no argument. Allocate a dummy one so when we resolve the
+				// offset for MINT_CALL_ARGS_SREG during compacted instruction emit, we can
+				// always use the offset of the first var in the call_args array
+				int new_var = create_interp_local (td, mono_get_int_type ());
+				td->locals [new_var].call = deferred_call->call;
+				td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
+				alloc_var_offset (td, new_var, base_offset);
+
+				call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
+				call_args [0] = new_var;
+				call_args [1] = -1;
+
+				deferred_call->call->info.call_args = call_args;
+			}
+			g_ptr_array_free (deferred_call->deps, FALSE);
+			g_hash_table_insert (call_offsets, deferred_call->call, base_offset);
 		}
-	} else {
-		// This call has no argument. Allocate a dummy one so when we resolve the
-		// offset for MINT_CALL_ARGS_SREG during compacted instruction emit, we can
-		// always use the offset of the first var in the call_args array
-		int new_var = create_interp_local (td, mono_get_int_type ());
-		td->locals [new_var].call = call;
-		td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
-		alloc_var_offset (td, new_var, &start_offset);
-
-		call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
-		call_args [0] = new_var;
-		call_args [1] = -1;
-
-		call->info.call_args = call_args;
+		g_hash_table_destroy (call_offsets);
 	}
 }
 
@@ -10364,6 +10384,7 @@ interp_alloc_offsets (TransformData *td)
 			ins_index++;
 		}
 	}
+	g_queue_free (ac.deferred_calls);
 
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
