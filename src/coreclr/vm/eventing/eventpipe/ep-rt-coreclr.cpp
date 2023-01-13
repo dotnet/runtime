@@ -162,23 +162,4 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	return;
 }
 
-void
-ep_rt_coreclr_init_finish (void)
-{
-        CONTRACTL
-        {
-                THROWS;
-                GC_TRIGGERS;
-                MODE_ANY;
-                INJECT_FAULT(COMPlusThrowOM(););
-        }
-        CONTRACTL_END;
-
-        GCX_COOP();
-
-        // FIXME: how do I check if the method was trimmed away and avoid calling it?
-        MethodDescCallSite runtimeEventSourceInitialize(METHOD__RUNTIME_EVENT_SOURCE__INITIALIZE);
-        runtimeEventSourceInitialize.Call(NULL);
-}
-
 #endif /* ENABLE_PERFTRACING */

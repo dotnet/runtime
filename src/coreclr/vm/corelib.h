@@ -331,6 +331,13 @@ DEFINE_FIELD_U(_ipForWatsonBuckets,ExceptionObject,    _ipForWatsonBuckets)
 DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
+
+BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Tracing.EventSource.IsSupported, true, true)
+DEFINE_CLASS(EVENT_SOURCE,         DiagnosticsTracing,      EventSource)
+DEFINE_STATIC_PROPERTY(EVENT_SOURCE, IS_SUPPORTED, IsSupported, Bool)
+END_ILLINK_FEATURE_SWITCH()
+
+
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
 // Following Exception members are only used when FEATURE_COMINTEROP
