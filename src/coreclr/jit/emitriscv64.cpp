@@ -809,7 +809,46 @@ void emitter::emitIns_R_R_R_R(
 void emitter::emitIns_R_C(
     instruction ins, emitAttr attr, regNumber reg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(offs >= 0);
+    assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    assert(reg != REG_R0); // for special. reg Must not be R0.
+    id->idReg1(reg);       // destination register that will get the constant value.
+
+    id->idSmallCns(offs); // usually is 0.
+    id->idInsOpt(INS_OPTS_RC);
+    if (emitComp->opts.compReloc)
+    {
+        id->idSetIsDspReloc();
+        id->idCodeSize(8);
+    }
+    else
+        id->idCodeSize(20);
+
+    if (EA_IS_GCREF(attr))
+    {
+        /* A special value indicates a GCref pointer value */
+        id->idGCref(GCT_GCREF);
+        id->idOpSize(EA_PTRSIZE);
+    }
+    else if (EA_IS_BYREF(attr))
+    {
+        /* A special value indicates a Byref pointer value */
+        id->idGCref(GCT_BYREF);
+        id->idOpSize(EA_PTRSIZE);
+    }
+
+    // TODO-RISCV64: this maybe deleted.
+    id->idSetIsBound(); // We won't patch address since we will know the exact distance
+                        // once JIT code and data are allocated together.
+
+    assert(addrReg == REG_NA); // NOTE: for LOONGARCH64, not support addrReg != REG_NA.
+
+    id->idAddr()->iiaFieldHnd = fldHnd;
+
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
@@ -2158,7 +2197,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 *(code_t*)dstRW = code | (((code_t)imm & 0xfffff000));
                 dstRW += 4;
 
-                if (ins == INS_jalr)
+                if (ins == INS_jal)
                 {
                     assert(isGeneralRegister(reg1));
                     ins = INS_addi;
@@ -2185,28 +2224,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 imm = (ssize_t)emitConsBlock + dataOffs;
 
                 code = emitInsCode(INS_lui);
-                if (ins == INS_jalr)
+                if (ins == INS_jal)
                 {
-                    assert((imm >> 32) == 0xff);
+                    assert((imm >> 40) == 0);
 
-                    doff = (int)imm >> 12;
+                    doff = (int)(imm + 0x800) >> 12;
                     code |= (code_t)REG_RA << 7; // TODO R21 => RA
-                    code |= ((code_t)doff & 0xfffff) << 12;
+                    code |= (code_t)(doff & 0xfffff) << 12;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
-
-                    code = emitInsCode(INS_ori);
+                    code = emitInsCode(INS_addi);
                     code |= (code_t)REG_RA << 7;
                     code |= (code_t)REG_RA << 15;
                     code |= (code_t)(imm & 0xfff) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
-                    code = emitInsCode(INS_lui);
+                    code = emitInsCode(INS_addi);
                     code |= (code_t)reg1 << 7;
-                    code |= 0xff << 12;
+                    code |= (((imm + 0x80000000) >> 32) & 0xff) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2227,11 +2265,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    doff = (int)(imm & 0x800);
-                    imm += doff;
-                    doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+                    // doff = (int)(imm & 0x800);
+                    // imm += doff;
+                    // doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+                    imm += 0x800;
+                    doff = imm & 0xfff;
 
-                    assert((imm >> 32) == 0xff);
+                    assert((imm >> 40) == 0);
 
                     dataOffs = (unsigned)(imm >> 12); // addr-hi-20bits.
                     code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
@@ -2241,7 +2281,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     code = emitInsCode(INS_lui);
                     code |= (code_t)reg1 << 7;
-                    code |= 0xff << 12;
+                    code |= ((imm >> 32) & 0xff) << 12;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2317,16 +2357,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
-                code = emitInsCode(INS_ori);
+                code = emitInsCode(INS_addi);
                 code |= (code_t)REG_RA << 7;
                 code |= (code_t)REG_RA << 15;
                 code |= (code_t)(imm & 0xfff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
-                code = emitInsCode(INS_lui);
+                code = emitInsCode(INS_addi);
                 code |= (code_t)reg1 << 7;
-                code |= ((imm >> 32) & 0xfffff) << 12;
+                code |= (((imm + 0x80000000) >> 32) & 0xfffff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
@@ -2474,7 +2514,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 ins  = id->idIns();
                 code = emitInsCode(ins);
-                if (ins == INS_jal || ins == INS_j)
+                if (ins == INS_jal)
+                {
+                    code |= ((imm >> 12) & 0xff)  << 12;
+                    code |= ((imm >> 11)  & 0x1)  << 20;
+                    code |= ((imm >> 1)  & 0x3ff) << 21;
+                    code |= ((imm >> 20) & 0x1)  << 31;
+                    code |= REG_RA << 7;
+                }
+                else if (ins == INS_j)
                 {
                     code |= ((imm >> 12) & 0xff)  << 12;
                     code |= ((imm >> 11)  & 0x1)  << 20;

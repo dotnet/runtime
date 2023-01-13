@@ -6273,8 +6273,8 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {
-#ifdef TARGET_LOONGARCH64
-    // TODO-LoongArch64: support idDebugOnlyInfo.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // TODO LoongArch64 / RISCV64: support idDebugOnlyInfo.
     return;
 #else
 

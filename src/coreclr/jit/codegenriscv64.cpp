@@ -1142,13 +1142,73 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    NYI("unimplemented on RISCV64 yet");
-    return NULL;
+    // Generate a call to the finally, like this:
+    //      mov  a0,qword ptr [fp + 10H] / sp    // Load a0 with PSPSym, or sp if PSPSym is not used
+    //      jal  finally-funclet
+    //      j    finally-return                  // Only for non-retless finally calls
+    // The 'b' can be a NOP if we're going to the next block.
+
+    if (compiler->lvaPSPSym != BAD_VAR_NUM)
+    {
+        GetEmitter()->emitIns_R_S(INS_ld, EA_PTRSIZE, REG_A0, compiler->lvaPSPSym, 0);
+    }
+    else
+    {
+        GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
+    }
+    GetEmitter()->emitIns_J(INS_jal, block->bbJumpDest);
+
+    if (block->bbFlags & BBF_RETLESS_CALL)
+    {
+        // We have a retless call, and the last instruction generated was a call.
+        // If the next block is in a different EH region (or is the end of the code
+        // block), then we need to generate a breakpoint here (since it will never
+        // get executed) to get proper unwind behavior.
+
+        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        {
+            instGen(INS_ebreak); // This should never get executed
+        }
+    }
+    else
+    {
+        // Because of the way the flowgraph is connected, the liveness info for this one instruction
+        // after the call is not (can not be) correct in cases where a variable has a last use in the
+        // handler.  So turn off GC reporting for this single instruction.
+        GetEmitter()->emitDisableGC();
+
+        // Now go to where the finally funclet needs to return to.
+        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        {
+            // Fall-through.
+            // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
+            // to the next instruction? This would depend on stack walking from within the finally
+            // handler working without this instruction being in this special EH region.
+            instGen(INS_nop);
+        }
+        else
+        {
+            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+        }
+
+        GetEmitter()->emitEnableGC();
+    }
+
+    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
+    // jump target using bbJumpDest - that is already used to point
+    // to the finally block. So just skip past the BBJ_ALWAYS unless the
+    // block is RETLESS.
+    if (!(block->bbFlags & BBF_RETLESS_CALL))
+    {
+        assert(block->isBBCallAlwaysPair());
+        block = block->bbNext;
+    }
+    return block;
 }
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    NYI("unimplemented on RISCV64 yet");
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -2260,13 +2320,60 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 // generate code do a switch statement based on a table of ip-relative offsets
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    genConsumeOperands(treeNode->AsOp());
+    regNumber idxReg  = treeNode->AsOp()->gtOp1->GetRegNum();
+    regNumber baseReg = treeNode->AsOp()->gtOp2->GetRegNum();
+
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+
+    // load the ip-relative offset (which is relative to start of fgFirstBB)
+    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, idxReg, 2); // TODO CHECK REG_R21 => RA
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, REG_RA); // TODO CHECK REG_R21 => RA
+    GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, baseReg, baseReg, 0);
+
+    // add it to the absolute address of fgFirstBB
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, compiler->fgFirstBB, tmpReg);
+    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, tmpReg);
+
+    // jr baseReg
+    GetEmitter()->emitIns_R_R_I(INS_jalr, emitActualTypeSize(TYP_I_IMPL), REG_R0, baseReg, 0);
 }
 
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    assert(treeNode->OperGet() == GT_JMPTABLE);
+
+    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jmpTabOffs;
+    unsigned     jmpTabBase;
+
+    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
+
+    jmpTabOffs = 0;
+
+    JITDUMP("\n      J_M%03u_DS%02u LABEL   DWORD\n", compiler->compMethodID, jmpTabBase);
+
+    for (unsigned i = 0; i < jumpCount; i++)
+    {
+        BasicBlock* target = *jumpTable++;
+        noway_assert(target->bbFlags & BBF_HAS_LABEL);
+
+        JITDUMP("            DD      L_M%03u_" FMT_BB "\n", compiler->compMethodID, target->bbNum);
+
+        GetEmitter()->emitDataGenData(i, target);
+    };
+
+    GetEmitter()->emitDataGenEnd();
+
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    GetEmitter()->emitIns_R_C(INS_jal, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
