@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="ValidateTargetOSLowercase">
   <PropertyGroup>
     <!--
     For non-SDK projects that import this file and then import Microsoft.Common.targets,
@@ -77,6 +77,11 @@
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
   </PropertyGroup>
+
+  <Target Name="ValidateTargetOSLowercase"
+          Condition="!$(TargetOS.Equals($(TargetOS.ToLower()), StringComparison.InvariantCulture))">
+    <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />
+  </Target>
 
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>

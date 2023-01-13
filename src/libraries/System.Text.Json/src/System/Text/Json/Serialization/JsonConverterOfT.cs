@@ -638,7 +638,7 @@ namespace System.Text.Json.Serialization
 
             // For consistency do not return any default converters for options instances linked to a
             // JsonSerializerContext, even if the default converters might have been rooted.
-            if (!IsInternalConverter && options.SerializerContext is null)
+            if (!IsInternalConverter && options.TypeInfoResolver is not JsonSerializerContext)
             {
                 result = _fallbackConverterForPropertyNameSerialization;
 

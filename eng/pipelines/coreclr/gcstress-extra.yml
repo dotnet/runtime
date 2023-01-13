@@ -21,10 +21,10 @@ extends:
           buildConfig: checked
           platformGroup: gcstress
           platforms:
-          # It is too early to include OSX_arm64 in platform group gcstress
+          # It is too early to include osx_arm64 in platform group gcstress
           # Adding it here will enable it also
-          - OSX_arm64
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - osx_arm64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: gcstress-extra
 
@@ -33,7 +33,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: gcstress-extra
 
@@ -43,9 +43,9 @@ extends:
           buildConfig: checked
           platformGroup: gcstress
           platforms:
-          # It is too early to include OSX_arm64 in platform group gcstress
+          # It is too early to include osx_arm64 in platform group gcstress
           # Adding it here will enable it also
-          - OSX_arm64
+          - osx_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
