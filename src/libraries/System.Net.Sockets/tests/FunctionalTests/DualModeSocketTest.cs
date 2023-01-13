@@ -288,6 +288,10 @@ namespace System.Net.Sockets.Tests
             using Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             SocketServer server = null;
             int port = 0;
+
+            // We need to minimize the chances of an unrelated DualMode socket connecting to "server" from an unrelated parallel test.
+            // PortBlocker will create a temporary socket on the opposite AddressFamily, so parallel tests won't attempt
+            // to create their listener sockets on the same port.
             using PortBlocker blocker = new PortBlocker(() =>
             {
                 server = new SocketServer(_log, listenOn, dualModeServer, out port);
@@ -896,16 +900,10 @@ namespace System.Net.Sockets.Tests
         private async Task DualModeSendTo_IPEndPointToHost_Failing_Helper(IPAddress connectTo, IPAddress listenOn, bool dualModeServer)
         {
             using Socket client = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            Socket server = null;
-            int port = -1;
-            using PortBlocker portBlocker = new PortBlocker(() =>
-            {
-                server = dualModeServer ?
+            using Socket server = dualModeServer ?
                     new Socket(SocketType.Dgram, ProtocolType.Udp) :
                     new Socket(listenOn.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-                port = server.BindToAnonymousPort(listenOn);
-                return server;
-            });
+            int port = server.BindToAnonymousPort(listenOn);
 
             _ = SendToAsync(client, new byte[1], new IPEndPoint(connectTo, port)).WaitAsync(TestSettings.PassingTestTimeout);
             await Assert.ThrowsAsync<TimeoutException>(() => server.ReceiveAsync(new byte[1]).WaitAsync(TestSettings.FailingTestTimeout));
@@ -914,6 +912,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessSendToSync : DualModeConnectionlessSendToBase<SocketHelperArraySync>
     {
         public DualModeConnectionlessSendToSync(ITestOutputHelper output) : base(output)
@@ -923,6 +922,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessSendToApm : DualModeConnectionlessSendToBase<SocketHelperApm>
     {
         public DualModeConnectionlessSendToApm(ITestOutputHelper output) : base(output)
@@ -932,6 +932,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessSendToEap : DualModeConnectionlessSendToBase<SocketHelperEap>
     {
         public DualModeConnectionlessSendToEap(ITestOutputHelper output) : base(output)
@@ -941,6 +942,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessSendToTask : DualModeConnectionlessSendToBase<SocketHelperTask>
     {
         public DualModeConnectionlessSendToTask(ITestOutputHelper output) : base(output)
@@ -1041,6 +1043,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessReceiveFromSync : DualModeConnectionlessReceiveFromBase<SocketHelperArraySync>
     {
         public DualModeConnectionlessReceiveFromSync(ITestOutputHelper output) : base(output)
@@ -1050,6 +1053,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessReceiveFromApm : DualModeConnectionlessReceiveFromBase<SocketHelperApm>
     {
         public DualModeConnectionlessReceiveFromApm(ITestOutputHelper output) : base(output)
@@ -1059,6 +1063,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessReceiveFromEap : DualModeConnectionlessReceiveFromBase<SocketHelperEap>
     {
         public DualModeConnectionlessReceiveFromEap(ITestOutputHelper output) : base(output)
@@ -1068,6 +1073,7 @@ namespace System.Net.Sockets.Tests
 
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessReceiveFromTask : DualModeConnectionlessReceiveFromBase<SocketHelperTask>
     {
         public DualModeConnectionlessReceiveFromTask(ITestOutputHelper output) : base(output)
@@ -1075,9 +1081,9 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
+    [Collection(nameof(DisableParallelization))]
     public class DualModeConnectionlessReceiveMessageFrom : DualModeBase
     {
         [Fact]
@@ -1846,77 +1852,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        protected class SocketClient
-        {
-            private IPAddress _connectTo;
-            private Socket _serverSocket;
-            private int _port;
-            private readonly ITestOutputHelper _output;
-
-            private EventWaitHandle _waitHandle = new AutoResetEvent(false);
-            public EventWaitHandle WaitHandle
-            {
-                get { return _waitHandle; }
-            }
-
-            public SocketError Error
-            {
-                get;
-                private set;
-            }
-
-            public SocketClient(ITestOutputHelper output, Socket serverSocket, IPAddress connectTo, int port)
-            {
-                _output = output;
-                _connectTo = connectTo;
-                _serverSocket = serverSocket;
-                _port = port;
-                Error = SocketError.Success;
-
-                Task.Run(() => ConnectClient(null));
-            }
-
-            private void ConnectClient(object state)
-            {
-                try
-                {
-                    Socket socket = new Socket(_connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-                    SocketAsyncEventArgs e = new SocketAsyncEventArgs();
-                    e.Completed += new EventHandler<SocketAsyncEventArgs>(Connected);
-                    e.RemoteEndPoint = new IPEndPoint(_connectTo, _port);
-                    e.UserToken = _waitHandle;
-
-                    if (!socket.ConnectAsync(e))
-                    {
-                        Connected(socket, e);
-                    }
-                }
-                catch (SocketException ex)
-                {
-                    Error = ex.SocketErrorCode;
-                    Thread.Sleep(TestSettings.FailingTestTimeout); // Give the other end a chance to call Accept().
-                    _serverSocket.Dispose(); // Cancels the test
-                    _waitHandle.Set();
-                }
-            }
-            private void Connected(object sender, SocketAsyncEventArgs e)
-            {
-                EventWaitHandle handle = (EventWaitHandle)e.UserToken;
-                _output.WriteLine(
-                    "Connected: " + e.GetHashCode() + " SocketAsyncEventArgs with manual event " +
-                    handle.GetHashCode() + " error: " + e.SocketError);
-
-                Error = e.SocketError;
-                if (Error != SocketError.Success)
-                {
-                    Thread.Sleep(TestSettings.FailingTestTimeout); // Give the other end a chance to call Accept().
-                    _serverSocket.Dispose(); // Cancels the test
-                }
-                handle.Set();
-            }
-        }
-
         protected class SocketUdpServer : IDisposable
         {
             private readonly ITestOutputHelper _output;
@@ -2046,117 +1981,6 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(AddressFamily.InterNetworkV6, remoteEndPoint.AddressFamily);
                 Assert.Equal(connectTo.MapToIPv6(), remoteEndPoint.Address);
             }
-        }
-    }
-
-    internal class PortBlocker : IDisposable
-    {
-        private const int MaxAttempts = 16;
-
-        private Socket _secondarySocket;
-        public Socket PrimarySocket { get; }
-
-        public PortBlocker(Func<Socket> primarySocketFactory)
-        {
-            bool success = false;
-            for (int i = 0; i < MaxAttempts; i++)
-            {
-                PrimarySocket = primarySocketFactory();
-                if (PrimarySocket.LocalEndPoint is not IPEndPoint)
-                {
-                    PrimarySocket.Dispose();
-                    throw new Exception($"{nameof(primarySocketFactory)} should create and bind the socket.");
-                }
-
-                IPAddress secondaryAddress = PrimarySocket.AddressFamily == AddressFamily.InterNetwork ?
-                        IPAddress.IPv6Loopback :
-                        IPAddress.Loopback;
-                int port = ((IPEndPoint)PrimarySocket.LocalEndPoint).Port;
-                IPEndPoint secondaryEndPoint = new IPEndPoint(secondaryAddress, port);
-
-                try
-                {
-                    _secondarySocket = new Socket(secondaryAddress.AddressFamily, PrimarySocket.SocketType, PrimarySocket.ProtocolType);
-                    success = TryBindWithoutReuseAddress(_secondarySocket, secondaryEndPoint, out _);
-
-                    if (success) break;
-                }
-                catch (SocketException)
-                {
-                    PrimarySocket.Dispose();
-                    _secondarySocket?.Dispose();
-                }
-            }
-
-            if (!success)
-            {
-                throw new Exception($"Failed to create secondary (port blocker) socket in {MaxAttempts} attempts.");
-            }
-        }
-
-        public void Dispose()
-        {
-            PrimarySocket.Dispose();
-            _secondarySocket.Dispose();
-        }
-
-        private static unsafe bool TryBindWithoutReuseAddress(Socket socket, IPEndPoint endPoint, out int port)
-        {
-            if (PlatformDetection.IsWindows)
-            {
-                try
-                {
-                    socket.Bind(endPoint);
-                }
-                catch (SocketException)
-                {
-                    port = default;
-                    return false;
-                }
-                
-                port = ((IPEndPoint)socket.LocalEndPoint).Port;
-                return true;
-            }
-
-            SocketAddress addr = endPoint.Serialize();
-            byte[] data = new byte[addr.Size];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = addr[i];
-            }
-
-            fixed (byte* dataPtr = data)
-            {
-                int result = bind(socket.SafeHandle, (nint)dataPtr, (uint)data.Length);
-                if (result != 0)
-                {
-                    port = default;
-                    return false;
-                }
-                uint sockLen = (uint)data.Length;
-                result = getsockname(socket.SafeHandle, (nint)dataPtr, (IntPtr)(&sockLen));
-                if (result != 0)
-                {
-                    port = default;
-                    return false;
-                }
-
-                addr = new SocketAddress(endPoint.AddressFamily, (int)sockLen);
-            }
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                addr[i] = data[i];
-            }
-
-            port = ((IPEndPoint)endPoint.Create(addr)).Port;
-            return true;
-
-            [DllImport("libc", SetLastError = true)]
-            static extern int bind(SafeSocketHandle socket, IntPtr socketAddress, uint addrLen);
-
-            [DllImport("libc", SetLastError = true)]
-            static extern int getsockname(SafeSocketHandle socket, IntPtr socketAddress, IntPtr addrLenPtr);
         }
     }
 }
