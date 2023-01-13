@@ -3621,6 +3621,11 @@ void Compiler::fgFixEntryFlowForOSR()
     fgFirstBB->bbJumpDest = osrEntry;
     fgAddRefPred(osrEntry, fgFirstBB);
 
+    // Give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    fgFirstBB->inheritWeight(fgOSREntryBB);
+
     JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, osrEntry->bbNum);
 }
