@@ -1037,7 +1037,7 @@ namespace System.DirectoryServices.Protocols
             }
 
             // Throw if user wants to do anonymous bind but specifies credentials.
-            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || string.IsNullOrEmpty(newCredential.UserName))))
+            if (AuthType == AuthType.Anonymous && (newCredential != null && (!string.IsNullOrEmpty(newCredential.Password) || !string.IsNullOrEmpty(newCredential.UserName))))
             {
                 throw new InvalidOperationException(SR.InvalidAuthCredential);
             }
