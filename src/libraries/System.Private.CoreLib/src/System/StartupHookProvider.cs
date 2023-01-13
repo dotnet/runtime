@@ -11,7 +11,7 @@ using System.Runtime.Loader;
 
 namespace System
 {
-    internal static class StartupHookProvider
+    internal partial static class StartupHookProvider
     {
         private const string StartupHookTypeName = "StartupHook";
         private const string InitializeMethodName = "Initialize";

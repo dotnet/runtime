@@ -1421,47 +1421,19 @@ static void RunMainPost()
     }
 }
 
-static void RuntimeEventSourceInitialize()
-{
-#ifdef FEATURE_PERFTRACING
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite eventSourceIsSupported(METHOD__EVENT_SOURCE__GET_IS_SUPPORTED);
-
-    if (eventSourceIsSupported.Call_RetBool(NULL))
-    {
-        MethodDescCallSite runtimeEventSourceInitialize(METHOD__RUNTIME_EVENT_SOURCE__INITIALIZE);
-        runtimeEventSourceInitialize.Call(NULL);
-    }
-#endif
-}
-
-static void RunStartupHooks()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite processStartupHooks(METHOD__STARTUP_HOOK_PROVIDER__PROCESS_STARTUP_HOOKS);
-    processStartupHooks.Call(NULL);
-}
-
 static void RunManagedStartup()
 {
-    RuntimeEventSourceInitialize();
-    RunStartupHooks();
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
+    managedStartup.Call(NULL);
 }
 
 INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)

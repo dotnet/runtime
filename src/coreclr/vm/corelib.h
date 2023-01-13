@@ -332,11 +332,6 @@ DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
 DEFINE_FIELD_U(_xcode,             ExceptionObject,    _xcode)
 DEFINE_FIELD_U(_HResult,           ExceptionObject,    _HResult)
 
-BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Tracing.EventSource.IsSupported, true, true)
-DEFINE_CLASS(EVENT_SOURCE,         DiagnosticsTracing,      EventSource)
-DEFINE_STATIC_PROPERTY(EVENT_SOURCE, IS_SUPPORTED, IsSupported, Bool)
-END_ILLINK_FEATURE_SWITCH()
-
 
 DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
@@ -696,11 +691,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgB
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 
-BEGIN_ILLINK_FEATURE_SWITCH(System.Diagnostics.Tracing.EventSource.IsSupported, true, true)
-DEFINE_CLASS(RUNTIME_EVENT_SOURCE,  DiagnosticsTracing,     RuntimeEventSource)
-DEFINE_METHOD(RUNTIME_EVENT_SOURCE, INITIALIZE,             Initialize, SM_RetVoid)
-END_ILLINK_FEATURE_SWITCH()
-
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
@@ -826,7 +816,7 @@ DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrame
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, PROCESS_STARTUP_HOOKS, ProcessStartupHooks, SM_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
