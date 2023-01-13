@@ -575,39 +575,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
-             CngKey key = null;
-
-            try
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP384))
+            using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
             {
-                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
+                using (ECDsa certKey = cert.GetECDsaPrivateKey())
                 {
-                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                };
-
-                key = CngKey.Create(
-                    CngAlgorithm.ECDsaP384,
-                    nameof(CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey),
-                    cngCreationParameters);
-
-                using (ECDsaCng ecdsa = new ECDsaCng(key))
-                {
-                    CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
-
-                    using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
-                    using (ECDsa certKey = cert.GetECDsaPrivateKey())
-                    {
-                        Assert.NotNull(certKey);
-                        byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
-                        byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256);
-                        bool valid = ecdsa.VerifyData(data, signature, HashAlgorithmName.SHA256);
-                        Assert.True(valid, "valid signature");
-                    }
+                    Assert.NotNull(certKey);
+                    byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
+                    byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256);
+                    bool valid = ecdsa.VerifyData(data, signature, HashAlgorithmName.SHA256);
+                    Assert.True(valid, "valid signature");
                 }
-            }
-            finally
-            {
-                key?.Delete();
             }
         }
 
@@ -615,39 +596,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
-             CngKey key = null;
-
-            try
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.Rsa))
+            using (RSACng rsa = new RSACng(platformKey.Key))
             {
-                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
+                CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
+                using (RSA certKey = cert.GetRSAPrivateKey())
                 {
-                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                };
-
-                key = CngKey.Create(
-                    CngAlgorithm.Rsa,
-                    nameof(CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey),
-                    cngCreationParameters);
-
-                using (RSACng rsa = new RSACng(key))
-                {
-                    CertificateRequest req = new CertificateRequest("CN=potato", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-                    using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow))
-                    using (RSA certKey = cert.GetRSAPrivateKey())
-                    {
-                        Assert.NotNull(certKey);
-                        byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
-                        byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                        bool valid = rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                        Assert.True(valid, "valid signature");
-                    }
+                    Assert.NotNull(certKey);
+                    byte[] data = new byte[] { 12, 11, 02, 08, 25, 14, 11, 18, 16 };
+                    byte[] signature = certKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    bool valid = rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.True(valid, "valid signature");
                 }
-            }
-            finally
-            {
-                key?.Delete();
             }
         }
 
