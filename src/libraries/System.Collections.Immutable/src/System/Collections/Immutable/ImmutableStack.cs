@@ -42,8 +42,8 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var stack = ImmutableStack<T>.Empty;
-            foreach (var item in items)
+            ImmutableStack<T> stack = ImmutableStack<T>.Empty;
+            foreach (T item in items)
             {
                 stack = stack.Push(item);
             }
@@ -61,8 +61,8 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var stack = ImmutableStack<T>.Empty;
-            foreach (var item in items)
+            ImmutableStack<T> stack = ImmutableStack<T>.Empty;
+            foreach (T item in items)
             {
                 stack = stack.Push(item);
             }
