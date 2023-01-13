@@ -2,6 +2,7 @@
 
 #include "pal.hpp"
 #include "impl.hpp"
+#include "span.hpp"
 
 #define MD_MODULE_TOKEN TokenFromRid(1, mdtModule)
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
@@ -1022,13 +1023,46 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     ULONG       cbSigBlob,
     mdMethodDef* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    HRESULT hr;
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+    
+    if (td == mdTypeDefNil || td == mdTokenNil)
+        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
 
-    return E_NOTIMPL;
+    mdcursor_t typedefCursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), td, &typedefCursor))
+        return false;
+
+    mdcursor_t methodCursor;
+    uint32_t count;
+    if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_MethodList, &methodCursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+
+    uint8_t* methodDefSig;
+    size_t methodDefSigLength;
+    if (!md_get_methoddefsig_from_methodrefsig(pvSigBlob, cbSigBlob, &methodDefSig, &methodDefSigLength))
+    {
+        return E_INVALIDARG;
+    }
+    malloc_span<uint8_t> methodDefSigSpan{ methodDefSig, methodDefSigLength };
+
+    for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
+    {
+        const char* methodName;
+        if (!md_get_column_value_as_utf8(methodCursor, mdtMethodDef_Name, 1, &methodName))
+            return CLDB_E_FILE_CORRUPT;
+        if (strncmp(methodName, cvt, cvt.Length()) != 0)
+            continue;
+        if (memcmp(methodDefSig, methodDefSigSpan, methodDefSigSpan.size()) != 0)
+            continue;
+        if (!md_cursor_to_token(methodCursor, pmb))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(

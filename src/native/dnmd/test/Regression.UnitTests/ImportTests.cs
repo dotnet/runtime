@@ -264,7 +264,7 @@ namespace Regression.UnitTests
         public void LongRunningAPIs(string filename, PEReader managedLibrary)
         {
             Debug.WriteLine($"{nameof(LongRunningAPIs)} - {filename}");
-            using var _ = managedLibrary;
+            using var _lib = managedLibrary;
             PEMemoryBlock block = managedLibrary.GetMetadata();
 
             // Load metadata
@@ -292,7 +292,7 @@ namespace Regression.UnitTests
                     var memberrefs = AssertAndReturn(EnumMemberRefs(baselineImport, methoddef), EnumMemberRefs(currentImport, methoddef));
                     foreach (var memberref in memberrefs)
                     {
-                        Assert.Equal(GetMemberRefProps(baselineImport, memberref), GetMemberRefProps(currentImport, memberref));
+                        Assert.Equal(GetMemberRefProps(baselineImport, memberref, out _, out _), GetMemberRefProps(currentImport, memberref, out _, out _));
                     }
                     Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
                 }
@@ -325,6 +325,26 @@ namespace Regression.UnitTests
             var tkB2Base = AssertAndReturn(GetTypeDefBaseToken(baselineImport, tkB2), GetTypeDefBaseToken(currentImport, tkB2));
             Assert.Equal(FindTypeDefByName(baselineImport, tgt, tkB2Base), FindTypeDefByName(currentImport, tgt, tkB2Base));
 
+            var methodDefName = "MethodDef";
+            var tkMethodDefBase = AssertAndReturn(FindMethodDef(baselineImport, tkB1Base, methodDefName), FindMethodDef(currentImport, tkB1Base, methodDefName));
+
+            Assert.Equal(GetMethodProps(baselineImport, tkMethodDefBase, out _, out _), GetMethodProps(currentImport, tkMethodDefBase, out nint defSigBlob, out uint defSigBlobLength));
+            Assert.Equal(FindMethod(baselineImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength), FindMethod(currentImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength));
+
+            var methodRef1Name = "MethodRef1";
+            var tkMemberRefNoVarArgsBase = AssertAndReturn(FindMemberRef(baselineImport, tkB1Base, methodRef1Name), FindMemberRef(currentImport, tkB1Base, methodRef1Name));
+
+            // TODO: Baseline doesn't like the signature we're using. Let's mess with the signature in IL to figure out exactly what it will like
+            // If baseline doesn't work, it doesn't matter if we work.
+            Assert.Equal(GetMemberRefProps(baselineImport, tkMemberRefNoVarArgsBase, out _, out _), GetMemberRefProps(currentImport, tkMemberRefNoVarArgsBase, out nint ref1Blob, out uint ref1BlobLength));
+            Assert.Equal(FindMethod(baselineImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength), FindMethod(currentImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength));
+
+            var methodRef2Name = "MethodRef2";
+            var tkMemberRefVarArgsBase = AssertAndReturn(FindMemberRef(baselineImport, tkB1Base, methodRef2Name), FindMemberRef(currentImport, tkB1Base, methodRef2Name));
+
+            Assert.Equal(GetMemberRefProps(baselineImport, tkMemberRefVarArgsBase, out _, out _), GetMemberRefProps(currentImport, tkMemberRefVarArgsBase, out nint ref2Blob, out uint ref2BlobLength));
+            Assert.Equal(FindMethod(baselineImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength), FindMethod(currentImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength));
+
             static uint FindTokenByName(IMetaDataImport import, string name)
             {
                 int hr = import.FindTypeDefByName(name, 0, out uint ptd);
@@ -343,6 +363,25 @@ namespace Regression.UnitTests
                     out uint ptkExtends);
                 Assert.Equal(0, hr);
                 return ptkExtends;
+            }
+
+            static uint FindMethodDef(IMetaDataImport import, uint type, string methodName)
+            {
+                return EnumMembersWithName(import, type, methodName)[0];
+            }
+
+            static uint FindMemberRef(IMetaDataImport import, uint type, string methodName)
+            {
+                var methodDef = FindMethodDef(import, type, methodName);
+                return EnumMemberRefs(import, methodDef)[0];
+            }
+
+            static unsafe uint FindMethod(IMetaDataImport import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
+            {
+                byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
+                int hr = import.FindMethod(td, name, sig, (uint)sig.Length, out uint methodToken);
+                Assert.Equal(0, hr);
+                return methodToken;
             }
         }
 
@@ -1039,7 +1078,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetMemberRefProps(IMetaDataImport import, uint tk)
+        private static List<nuint> GetMemberRefProps(IMetaDataImport import, uint tk, out nint ppvSigBlob, out uint pcbSigBlob)
         {
             List<nuint> values = new();
 
@@ -1049,8 +1088,8 @@ namespace Regression.UnitTests
                 name,
                 name.Length,
                 out int pchMethod,
-                out nint ppvSigBlob,
-                out uint pcbSigBlob);
+                out ppvSigBlob,
+                out pcbSigBlob);
 
             values.Add((uint)hr);
             if (hr >= 0)
@@ -1422,14 +1461,14 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMembersWithName(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumMembersWithName(IMetaDataImport import, uint typedef, string memberName = ".ctor")
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
             nint hcorenum = 0;
             try
             {
-                while (0 == import.EnumMembersWithName(ref hcorenum, typedef, ".ctor", tokensBuffer, tokensBuffer.Length, out uint returned)
+                while (0 == import.EnumMembersWithName(ref hcorenum, typedef, memberName, tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)
