@@ -822,16 +822,32 @@ namespace
         bool uniqueInstance = !!(flags & CreateObjectFlags::CreateObjectFlags_UniqueInstance);
         if (!uniqueInstance)
         {
-            // Query the external object cache
-            ExtObjCxtCache::LockHolder lock(cache);
-            extObjCxt = cache->Find(cacheKey);
+            bool objectFound = false;
+            {
+                // Query the external object cache
+                ExtObjCxtCache::LockHolder lock(cache);
+                extObjCxt = cache->Find(cacheKey);
+
+                objectFound = extObjCxt != NULL;
+                if (objectFound && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
+                {
+                    // If an EOC has been found but is marked detached, then we will remove it from the
+                    // cache here instead of letting the GC do it later and pretend like it wasn't found.
+                    STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
+                    cache->Remove(extObjCxt);
+                    extObjCxt->MarkNotInCache();
+                    extObjCxt = NULL;
+                }
+            }
 
             // If is no object found in the cache, check if the object COM instance is actually the CCW
             // representing a managed object. If the user passed the Unwrap flag, COM instances that are
             // actually CCWs should be unwrapped to the original managed object to allow for round
             // tripping object -> COM instance -> object.
-            if (extObjCxt == NULL && (flags & CreateObjectFlags::CreateObjectFlags_Unwrap))
+            if (!objectFound && (flags & CreateObjectFlags::CreateObjectFlags_Unwrap))
             {
+                GCX_PREEMP();
+
                 // If the COM instance is a CCW that is not COM-activated, use the object of that wrapper object.
                 InteropLib::OBJECTHANDLE handleLocal;
                 if (InteropLib::Com::GetObjectForWrapper(identity, &handleLocal) ==  S_OK
@@ -839,15 +855,6 @@ namespace
                 {
                     handle = handleLocal;
                 }
-            }
-            else if (extObjCxt != NULL && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
-            {
-                // If an EOC has been found but is marked detached, then we will remove it from the
-                // cache here instead of letting the GC do it later and pretend like it wasn't found.
-                STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
-                cache->Remove(extObjCxt);
-                extObjCxt->MarkNotInCache();
-                extObjCxt = NULL;
             }
         }
 
@@ -1670,15 +1677,19 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 {
     CONTRACTL
     {
-        NOTHROW;
-        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(wrapperMaybe != NULL);
     }
     CONTRACTL_END;
 
-    // The IUnknown may or may not represent a wrapper, so E_INVALIDARG is okay here.
-    HRESULT hr = InteropLib::Com::MarkComActivated(wrapperMaybe);
-    _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
+    {
+        GCX_PREEMP();
+        // The IUnknown may or may not represent a wrapper, so E_INVALIDARG is okay here.
+        HRESULT hr = InteropLib::Com::MarkComActivated(wrapperMaybe);
+        _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
+    }
 }
 
 extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForMarshalling(INT64 id)
