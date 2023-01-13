@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -16,14 +20,9 @@ namespace System.Linq
 
             public int[] ToArray()
             {
-                int[] array = new int[_end - _start];
-                int cur = _start;
-                for (int i = 0; i < array.Length; ++i)
-                {
-                    array[i] = cur;
-                    ++cur;
-                }
+                int[] array = GC.AllocateUninitializedArray<int>(_end - _start);
 
+                InitializeSpan(array);
                 return array;
             }
 
@@ -83,6 +82,64 @@ namespace System.Linq
             {
                 found = true;
                 return _end - 1;
+            }
+
+            // Destination *must* be non-empty and exactly match the range length
+            private void InitializeSpan(Span<int> destination)
+            {
+                Debug.Assert((_end - _start) == destination.Length);
+
+                if (destination.Length < Vector<int>.Count * 2)
+                {
+                    int end = _start + _end;
+                    ref int pos = ref MemoryMarshal.GetReference(destination);
+                    for (int num = _start; num < end; num++)
+                    {
+                        pos = num;
+                        pos = ref Unsafe.Add(ref pos, 1);
+                    }
+                }
+                else
+                {
+                    InitializeSpanCore(destination);
+                }
+            }
+
+            private void InitializeSpanCore(Span<int> destination)
+            {
+                int width = Vector<int>.Count;
+                int stride = Vector<int>.Count * 2;
+                int remainder = destination.Length % stride;
+
+                // Up to 16 elements which corresponds to AVX512
+                Vector<int> initMask = Unsafe.ReadUnaligned<Vector<int>>(
+                    ref Unsafe.As<int, byte>(ref MemoryMarshal.GetReference(
+                        (ReadOnlySpan<int>)new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 })));
+
+                Vector<int> mask = new Vector<int>(stride);
+                Vector<int> value = new Vector<int>(_start) + initMask;
+                Vector<int> value2 = value + new Vector<int>(width);
+
+                ref int pos = ref MemoryMarshal.GetReference(destination);
+                ref int limit = ref Unsafe.Add(ref pos, destination.Length - remainder);
+                while (!Unsafe.AreSame(ref pos, ref limit))
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref pos), value);
+                    Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref Unsafe.Add(ref pos, width)), value2);
+
+                    value += mask;
+                    value2 += mask;
+                    pos = ref Unsafe.Add(ref pos, stride);
+                }
+
+                int cur = _start + (destination.Length - remainder);
+                int end = _end;
+                while (cur < end)
+                {
+                    pos = cur;
+                    pos = ref Unsafe.Add(ref pos, 1);
+                    cur++;
+                }
             }
         }
     }
