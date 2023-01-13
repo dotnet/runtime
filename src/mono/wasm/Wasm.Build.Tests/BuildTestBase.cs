@@ -347,7 +347,7 @@ namespace Wasm.Build.Tests
                                   string id,
                                   BuildProjectOptions options)
         {
-            if (string.IsNullOrEmpty(options.PredefinedIcudt))
+            if (options.HasIcudt && string.IsNullOrEmpty(options.PredefinedIcudt))
                 buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
 
             string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
