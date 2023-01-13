@@ -360,6 +360,9 @@
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>
+  <data name="ExtensionDataConflictsWithUnmappedMemberHandling" xml:space="preserve">
+    <value>The type '{0}' is marked 'JsonUnmappedMemberHandling.Disallow' which conflicts with extension data property '{1}'.</value>
+  </data>
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
   </data>
@@ -478,6 +481,9 @@
   </data>
   <data name="MetadataUnexpectedProperty" xml:space="preserve">
     <value>The metadata property is either not supported by the type or is not the first property in the deserialized JSON object.</value>
+  </data>
+  <data name="UnmappedJsonProperty" xml:space="preserve">
+    <value>The JSON property '{0}' could not be mapped to any .NET member contained in type '{1}'.</value>
   </data>
   <data name="MetadataDuplicateTypeProperty" xml:space="preserve">
     <value>Deserialized object contains a duplicate type discriminator metadata property.</value>

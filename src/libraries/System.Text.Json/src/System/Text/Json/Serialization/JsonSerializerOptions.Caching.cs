@@ -291,6 +291,7 @@ namespace System.Text.Json
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
+                    left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
@@ -336,6 +337,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
+                AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
                 AddHashCode(ref hc, options._allowTrailingCommas);

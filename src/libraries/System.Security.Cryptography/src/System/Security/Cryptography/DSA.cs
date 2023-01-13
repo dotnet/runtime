@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)
         {
-            DSA dsa = CreateCore();
+            var dsa = CreateCore();
 
             try
             {
@@ -905,7 +905,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception DerivedClassMustOverride() =>
+        private static NotImplementedException DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);
 
         public override bool TryExportEncryptedPkcs8PrivateKey(

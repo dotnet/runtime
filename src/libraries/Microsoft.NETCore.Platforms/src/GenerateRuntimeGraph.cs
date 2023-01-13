@@ -292,7 +292,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return RuntimeGraph.Merge(existingGraph, runtimeGraph);
         }
 
-        private void ValidateImports(RuntimeGraph runtimeGraph, IDictionary<string, string> externalRIDs)
+        private void ValidateImports(RuntimeGraph runtimeGraph, Dictionary<string, string> externalRIDs)
         {
             foreach (var runtimeDescription in runtimeGraph.Runtimes.Values)
             {
@@ -328,7 +328,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static IDictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
+        private static Dictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
         {
             Dictionary<string, IEnumerable<string>> compatibilityMap = new Dictionary<string, IEnumerable<string>>();
 
@@ -350,7 +350,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static void WriteCompatibilityMap(IDictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
+        private static void WriteCompatibilityMap(Dictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
         {
             var serializer = new JsonSerializer()
             {

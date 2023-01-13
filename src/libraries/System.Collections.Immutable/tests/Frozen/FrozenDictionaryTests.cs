@@ -485,18 +485,18 @@ namespace System.Collections.Frozen.Tests
             {
                 foreach (int skip in new[] { 2, 3, 5 })
                 {
-                    var sequence = Enumerable
+                    IEnumerable<KeyValuePair<int, string>> sequence = Enumerable
                         .Range(-3, size)
                         .Where(i => i % skip == 0)
                         .Select(i => new KeyValuePair<int, string>(i, i.ToString()));
 
                     var original = new Dictionary<int, string>();
-                    foreach (var kvp in sequence)
+                    foreach (KeyValuePair<int, string> kvp in sequence)
                     {
                         original[kvp.Key] = kvp.Value;
                     }
 
-                    var frozen = original.ToFrozenDictionary();
+                    FrozenDictionary<int, string> frozen = original.ToFrozenDictionary();
 
                     for (int i = -10; i <= size + 66; i++)
                     {
@@ -532,9 +532,9 @@ namespace System.Collections.Frozen.Tests
         private void RunIntegerDictionaryTests<T>(T[] keys)
             where T : struct, IBinaryInteger<T>
         {
-            var values = keys.Select(x => x.ToString()).ToArray();
+            string[] values = keys.Select(x => x.ToString()).ToArray();
             var dict = new Dictionary<T, string>();
-            foreach (var key in keys)
+            foreach (T key in keys)
             {
                 dict[key] = key.ToString();
             }
@@ -542,7 +542,7 @@ namespace System.Collections.Frozen.Tests
             FrozenDictionary<T, string> d = new SmallIntegerFrozenDictionary<T, string>(keys, values);
 
             Dictionary<T, string> hd = new();
-            foreach (var pairs in d)
+            foreach (KeyValuePair<T, string> pairs in d)
             {
                 hd[pairs.Key] = pairs.Value;
             }
@@ -550,7 +550,7 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(values.Length, hd.Count);
             Assert.Equal(values.Length, d.Count);
 
-            foreach (var k in hd.Keys)
+            foreach (T k in hd.Keys)
             {
                 Assert.Equal(hd.ContainsKey(k), d.ContainsKey(k));
 
@@ -577,9 +577,9 @@ namespace System.Collections.Frozen.Tests
         {
             for (int i = 0; i < 2; i++)
             {
-                var values = keys.Select(x => x.ToString()).ToArray();
+                string[] values = keys.Select(x => x.ToString()).ToArray();
                 var dict = new Dictionary<int, string>();
-                foreach (var key in keys)
+                foreach (int key in keys)
                 {
                     dict[key] = key.ToString();
                 }
@@ -591,7 +591,7 @@ namespace System.Collections.Frozen.Tests
                 };
 
                 Dictionary<int, string> hd = new();
-                foreach (var pairs in d)
+                foreach (KeyValuePair<int, string> pairs in d)
                 {
                     hd[pairs.Key] = pairs.Value;
                 }
