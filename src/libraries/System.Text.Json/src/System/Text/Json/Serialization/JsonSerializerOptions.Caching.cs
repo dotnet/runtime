@@ -156,11 +156,14 @@ namespace System.Text.Json
         internal sealed class CachingContext
         {
             private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
+            private readonly Func<Type, JsonTypeInfo?> _jsonTypeInfoFactory;
 
             public CachingContext(JsonSerializerOptions options, int hashCode)
             {
                 Options = options;
                 HashCode = hashCode;
+
+                _jsonTypeInfoFactory = options.GetTypeInfoNoCaching;
             }
 
             public JsonSerializerOptions Options { get; }
@@ -169,7 +172,8 @@ namespace System.Text.Json
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
 
-            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetTypeInfoNoCaching);
+            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, _jsonTypeInfoFactory);
+
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
 
             public void Clear()
@@ -287,6 +291,7 @@ namespace System.Text.Json
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
+                    left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
@@ -332,6 +337,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
+                AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);
                 AddHashCode(ref hc, options._maxDepth);
                 AddHashCode(ref hc, options._allowTrailingCommas);

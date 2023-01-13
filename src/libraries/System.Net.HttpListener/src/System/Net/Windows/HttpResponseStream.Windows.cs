@@ -136,7 +136,7 @@ namespace System.Net
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
             {
-                Exception exception = new HttpListenerException((int)statusCode);
+                var exception = new HttpListenerException((int)statusCode);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                 _closed = true;
                 _httpContext.Abort();
@@ -146,7 +146,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, (int)dataToWrite);
         }
 
-        private IAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
+        private HttpResponseStreamAsyncResult BeginWriteCore(byte[] buffer, int offset, int size, AsyncCallback? callback, object? state)
         {
             Interop.HttpApi.HTTP_FLAGS flags = ComputeLeftToWrite();
             if (_closed || (size == 0 && _leftToWrite != 0))
@@ -213,7 +213,7 @@ namespace System.Net
                 }
                 else
                 {
-                    Exception exception = new HttpListenerException((int)statusCode);
+                    var exception = new HttpListenerException((int)statusCode);
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                     _closed = true;
                     _httpContext.Abort();
@@ -356,9 +356,8 @@ namespace System.Net
             }
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
             {
-                Exception exception = new HttpListenerException((int)statusCode);
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Error(this, exception.ToString());
+                var exception = new HttpListenerException((int)statusCode);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                 _httpContext.Abort();
                 throw exception;
             }

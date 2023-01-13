@@ -1931,7 +1931,7 @@ namespace System
         double IConvertible.ToDouble(IFormatProvider? provider) => throw InvalidCast(nameof(Double));
         decimal IConvertible.ToDecimal(IFormatProvider? provider) => throw InvalidCast(nameof(Decimal));
 
-        private static Exception InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
+        private static InvalidCastException InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider) => this;
 

@@ -1186,7 +1186,7 @@ namespace System.Xml
         }
 
         // Writes the attribute into the provided XmlWriter.
-        private void WriteAttributeValue(XmlWriter xtw)
+        private void WriteAttributeValue(XmlTextWriter xtw)
         {
             string attrName = Name;
             while (ReadAttributeValue())
