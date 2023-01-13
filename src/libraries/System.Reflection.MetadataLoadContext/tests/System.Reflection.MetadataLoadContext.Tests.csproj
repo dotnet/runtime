@@ -5,6 +5,8 @@
     <!-- SYSLIB0005: The GAC is obsolete, but there are unit tests still referencing it.
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);SYSLIB0005;SYSLIB0037</NoWarn>
+    <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
