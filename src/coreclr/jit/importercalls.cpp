@@ -7396,9 +7396,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Collections_Generic_Comparer_get_Default;
         }
     }
-    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(methodName, "PopCount") == 0))
+    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "BitOperations") == 0))
     {
-        result = NI_System_Numerics_BitOperations_PopCount;
+        if (strcmp(methodName, "PopCount") == 0)
+        {
+            result = NI_System_Numerics_BitOperations_PopCount;
+        }
     }
     else if (strcmp(namespaceName, "System.Numerics") == 0)
     {
