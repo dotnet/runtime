@@ -1284,7 +1284,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 }
                                 else
                                 {
-                                    // Unlike the normal binary operation handling, this is an intrinsic call that will get replaced
+                                    // Unlike the normal binary operation handling, this is an intrinsic call that will
+                                    // get replaced
                                     // with simple IR, so we care about `const op const` as well.
 
                                     FgStack::FgSlot arg0;
@@ -1406,7 +1407,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                                 break;
                             }
-
 
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
