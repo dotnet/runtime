@@ -361,8 +361,8 @@ namespace System.Net.Sockets
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
 
-            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue);
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return (int)totalMilliseconds;
         }
