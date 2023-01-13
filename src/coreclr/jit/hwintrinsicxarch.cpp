@@ -2357,7 +2357,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-               case NI_SSE_CompareScalarGreaterThan:
+        case NI_SSE_CompareScalarGreaterThan:
         case NI_SSE_CompareScalarGreaterThanOrEqual:
         case NI_SSE_CompareScalarNotGreaterThan:
         case NI_SSE_CompareScalarNotGreaterThanOrEqual:
@@ -2391,7 +2391,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, simdBaseJitType,
@@ -2451,7 +2451,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+                                   nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, simdBaseJitType,
@@ -2602,8 +2602,6 @@ GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
     switch (intrinsic)
     {
 
-
-
         case NI_X86Base_DivRem:
         case NI_X86Base_X64_DivRem:
         {
@@ -2625,8 +2623,6 @@ GenTree* Compiler::impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
-
- 
     }
 
     return retNode;
