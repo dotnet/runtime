@@ -18,7 +18,7 @@ public:
 
 private:
     void UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree);
-    void UpdateBit(VARSET_TP& set, LclVarDsc* dsc, bool isBorn, bool isDying);
+    void UpdateLifeBit(VARSET_TP& set, LclVarDsc* dsc, bool isBorn, bool isDying);
 
 private:
     Compiler* compiler;
