@@ -5,7 +5,6 @@
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
-#include "common.h"
 #include "threadsuspend.h"
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
