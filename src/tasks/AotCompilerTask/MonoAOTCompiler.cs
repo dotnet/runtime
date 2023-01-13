@@ -112,7 +112,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// File with list of PInvokes to call directly.
+    /// List of files with list of PInvokes to call directly.
     /// </summary>
     public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
 
@@ -641,7 +641,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (DirectPInvokes.Length > 0)
         {
             var directPInvokesSB = new StringBuilder("direct-pinvokes=");
-            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.GetMetadata("Identity")};"));
+            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.ItemSpec};"));
             aotArgs.Add(directPInvokesSB.ToString());
         }
 

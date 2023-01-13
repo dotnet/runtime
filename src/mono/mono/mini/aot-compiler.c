@@ -13803,10 +13803,18 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_free (aot_opts->outfile);
 	g_free (aot_opts->llvm_outfile);
 	g_free (aot_opts->data_outfile);
+	for (GList *elem = aot_opts->profile_files; elem; elem = elem->next)
+		g_free (elem->data);
 	g_list_free (aot_opts->profile_files);
+	for (GList *elem = aot_opts->mibc_profile_files; elem; elem = elem->next)
+		g_free (elem->data);
 	g_list_free (aot_opts->mibc_profile_files);
 	g_free (aot_opts->gen_msym_dir_path);
+	for (GList *elem = aot_opts->direct_pinvokes; elem; elem = elem->next)
+		g_free (elem->data);
 	g_list_free (aot_opts->direct_pinvokes);
+	for (GList *elem = aot_opts->direct_pinvoke_lists; elem; elem = elem->next)
+		g_free (elem->data);
 	g_list_free (aot_opts->direct_pinvoke_lists);
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
