@@ -7623,10 +7623,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strncmp(className, "Vector", 6) == 0)
                 {
-                    assert((strcmp(className, "Vector64`1") == 0) ||
-                           (strcmp(className, "Vector128`1") == 0) ||
-                           (strcmp(className, "Vector256`1") == 0) ||
-                           (strcmp(className, "Vector512`1") == 0));
+                    assert((strcmp(className, "Vector64`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
+                           (strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector512`1") == 0));
 
                     result = NI_IsSupported_Type;
                 }
@@ -7641,10 +7639,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
             else if (strcmp(methodName, "get_Count") == 0)
             {
-                assert((strcmp(className, "Vector64`1") == 0) ||
-                       (strcmp(className, "Vector128`1") == 0) ||
-                       (strcmp(className, "Vector256`1") == 0) ||
-                       (strcmp(className, "Vector512`1") == 0));
+                assert((strcmp(className, "Vector64`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
+                       (strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector512`1") == 0));
 
                 result = NI_Vector_GetCount;
             }
