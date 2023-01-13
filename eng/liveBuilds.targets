@@ -179,7 +179,7 @@
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Android'"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'android'"
                              Include="
         $(LibrariesNativeArtifactsPath)*.dex;
         $(LibrariesNativeArtifactsPath)*.jar;"
