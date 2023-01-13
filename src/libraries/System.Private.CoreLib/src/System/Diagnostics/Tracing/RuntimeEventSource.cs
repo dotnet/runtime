@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
         public static void Initialize()
         {
             // initializing more than once may lead to missing events
-            Debug.Assert (s_RuntimeEventSource == null);
+            Debug.Assert(s_RuntimeEventSource == null);
             if (EventSource.IsSupported)
                 s_RuntimeEventSource = new RuntimeEventSource();
         }
