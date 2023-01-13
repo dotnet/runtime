@@ -115,9 +115,12 @@ namespace Microsoft.Extensions.Http
         {
             ThrowHelper.ThrowIfNull(name);
 
+            // Refactor the StartHandlerEntryTimer to be based on the name instead of the ActiveHandlerTrackingEntry
+            // And start the timer just before the handler is created.
+            // This will ensure that any exception that might be thrown during the initialzation of the Lazy object
+            // will not persist throughout the lifetime of the application
+            StartHandlerEntryTimer(name);
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
-
-            StartHandlerEntryTimer(entry);
 
             return entry.Handler;
         }
