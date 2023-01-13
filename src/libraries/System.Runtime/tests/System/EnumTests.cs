@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -83,10 +82,6 @@ namespace System.Tests
                 yield return new object[] { "Value1", false, Enum.ToObject(s_charEnumType, (char)1) };
                 yield return new object[] { "vaLue2", true, Enum.ToObject(s_charEnumType, (char)2) };
                 yield return new object[] { "1", false, Enum.ToObject(s_charEnumType, '1') };
-
-                // Bool
-                yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
-                yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
 
                 // Single
                 yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
@@ -209,10 +204,6 @@ namespace System.Tests
                 // Char
                 yield return new object[] { s_charEnumType, ((char)1).ToString(), false, typeof(ArgumentException) };
                 yield return new object[] { s_charEnumType, ((char)5).ToString(), false, typeof(ArgumentException) };
-
-                // Bool
-                yield return new object[] { s_boolEnumType, bool.TrueString, false, typeof(ArgumentException) };
-                yield return new object[] { s_boolEnumType, bool.FalseString, false, typeof(ArgumentException) };
 
                 // IntPtr
                 yield return new object[] { s_intPtrEnumType, "1", false, typeof(InvalidCastException) };
@@ -463,21 +454,6 @@ namespace System.Tests
             TestGetName(s_charEnumType, value, expected);
         }
 
-        public static IEnumerable<object[]> GetName_BoolEnum_TestData()
-        {
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
-            yield return new object[] { true, "Value1" };
-            yield return new object[] { false, "Value2" };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        [MemberData(nameof(GetName_BoolEnum_TestData))]
-        public void GetName_InvokeBoolEnum_ReturnsExpected(object value, string expected)
-        {
-            TestGetName(s_boolEnumType, value, expected);
-        }
-
         private void TestGetName(Type enumType, object value, string expected)
         {
             Assert.Equal(expected, Enum.GetName(enumType, value));
@@ -540,7 +516,6 @@ namespace System.Tests
         [InlineData(typeof(SByteEnum), 0xffffffffffffff80LU, "Min")]
         [InlineData(typeof(SByteEnum), 0xffffff80u, null)]
         [InlineData(typeof(SByteEnum), unchecked((int)(0xffffff80u)), "Min")]
-        [InlineData(typeof(SByteEnum), true, "One")]
         [InlineData(typeof(SByteEnum), (char)1, "One")]
         [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
         public static void GetName_NonIntegralTypes_ReturnsExpected(Type enumType, object value, string expected)
@@ -719,23 +694,6 @@ namespace System.Tests
             Assert.Equal(expected, Enum.IsDefined(s_charEnumType, value));
         }
 
-        public static IEnumerable<object[]> IsDefined_BoolEnum_TestData()
-        {
-            yield return new object[] { "Value1", true };
-            yield return new object[] { "None", false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true };
-            yield return new object[] { "Value1", true };
-            yield return new object[] { true, true };
-            yield return new object[] { false, true };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        [MemberData(nameof(IsDefined_BoolEnum_TestData))]
-        public void IsDefined_InvokeBoolEnum_ReturnsExpected(object value, bool expected)
-        {
-            Assert.Equal(expected, Enum.IsDefined(s_boolEnumType, value));
-        }
-
         [Fact]
         public void IsDefined_NullEnumType_ThrowsArgumentNullException()
         {
@@ -750,7 +708,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(Int32Enum.One)]
-        [InlineData(true)]
         [InlineData('a')]
         public void IsDefined_InvalidValue_ThrowsArgumentException(object value)
         {
@@ -856,12 +813,6 @@ namespace System.Tests
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0010"), false };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16"), false };
 
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value2"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), false };
-
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0f06), true };
@@ -944,7 +895,6 @@ namespace System.Tests
             yield return new object[] { typeof(Int32Enum), 66, (Int32Enum)66 };
             yield return new object[] { typeof(Int32Enum), 'a', (Int32Enum)97 };
             yield return new object[] { typeof(Int32Enum), 'b', (Int32Enum)98 };
-            yield return new object[] { typeof(Int32Enum), true, (Int32Enum)1 };
 
             // UInt32
             yield return new object[] { typeof(UInt32Enum), uint.MaxValue, UInt32Enum.Max };
@@ -967,10 +917,6 @@ namespace System.Tests
                 // Char
                 yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
                 yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
-
-                // Bool
-                yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
-                yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
 
                 // Float
                 yield return new object[] { s_floatEnumType, 1.0f, Enum.Parse(s_floatEnumType, "Value1") };
@@ -1012,7 +958,6 @@ namespace System.Tests
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, (ushort)5));
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, (ulong)5));
             Assert.Throws(exceptionType, () => Enum.ToObject(enumType, 'a'));
-            Assert.Throws(exceptionType, () => Enum.ToObject(enumType, true));
         }
 
         public static IEnumerable<object[]> ToObject_InvalidValue_TestData()
@@ -1115,14 +1060,6 @@ namespace System.Tests
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), new object(), false };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), null, false };
 
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), UInt16Enum.One, false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true, false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), new object(), false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, false };
-
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), true };
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 2), false };
@@ -1223,12 +1160,6 @@ namespace System.Tests
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value1"), 1 };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), -1 };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), null, 1 };
-
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), 0 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), 1 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), -1 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, 1 };
 
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), 0 };
@@ -1396,14 +1327,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        public void GetNames_InvokeBoolEnum_ReturnsExpected()
-        {
-            var expected = new string[] { "Value2", "Value1" };
-            Assert.Equal(expected, Enum.GetNames(s_boolEnumType));
-            Assert.NotSame(Enum.GetNames(s_boolEnumType), Enum.GetNames(s_boolEnumType));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeSingleEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
@@ -1538,14 +1461,6 @@ namespace System.Tests
             var expected = new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") };
             Assert.Equal(expected, Enum.GetValues(s_charEnumType));
             Assert.NotSame(Enum.GetValues(s_charEnumType), Enum.GetValues(s_charEnumType));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
-        public void GetValues_InvokeBoolEnum_ReturnsExpected()
-        {
-            var expected = new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") };
-            Assert.Equal(expected, Enum.GetValues(s_boolEnumType));
-            Assert.NotSame(Enum.GetValues(s_boolEnumType), Enum.GetValues(s_boolEnumType));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
@@ -1759,11 +1674,6 @@ namespace System.Tests
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "D", ((char)2).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString() };
 
-                // "D:" Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "D", bool.TrueString };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "D", bool.FalseString };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "D", bool.TrueString };
-
                 // "D": Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 0), "D", "0" };
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), "D", float.Epsilon.ToString() };
@@ -1841,12 +1751,6 @@ namespace System.Tests
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "X", "0001" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "X", "0002" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF" };
-
-
-                // "X": Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "X", "00" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "X", "01" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "X", "01" };
             }
 
             // "X": SimpleEnum
@@ -1907,10 +1811,6 @@ namespace System.Tests
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)(1 | 2)), "F", "Value1, Value2" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)5), "F", ((char)5).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString() };
-
-                // "F": Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "F", "Value1" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "F", "Value2" };
 
                 // "F": IntPtr
                 yield return new object[] { Enum.ToObject(s_intPtrEnumType, 5), "F", "5" };

@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            JsonSerializerContext? context = Options.SerializerContext;
+            JsonSerializerContext? context = Options.TypeInfoResolver as JsonSerializerContext;
             JsonPropertyInfo[] array;
             if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
             {

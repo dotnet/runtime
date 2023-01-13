@@ -61,6 +61,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(options.PropertyNameCaseInsensitive);
             Assert.Null(options.PropertyNamingPolicy);
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
+            Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
@@ -76,6 +77,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
+            Assert.Throws<InvalidOperationException>(() => options.UnmappedMemberHandling = options.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
 
@@ -883,6 +885,7 @@ namespace System.Text.Json.Serialization.Tests
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                     options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
+                    options.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
                 }
                 else
                 {
@@ -901,18 +904,9 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Type propertyType = property.PropertyType;
 
-                if (propertyType == typeof(bool))
+                if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
                 {
-                    if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
-                    {
-                        break; // readonly-ness is not a structural property of JsonSerializerOptions.
-                    }
-
-                    Assert.Equal((bool)property.GetValue(options), (bool)property.GetValue(newOptions));
-                }
-                else if (propertyType == typeof(int))
-                {
-                    Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
+                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
@@ -927,26 +921,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (propertyType.IsValueType)
                 {
-                    if (property.Name == nameof(JsonSerializerOptions.ReadCommentHandling))
-                    {
-                        Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.DefaultIgnoreCondition))
-                    {
-                        Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.NumberHandling))
-                    {
-                        Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.UnknownTypeHandling))
-                    {
-                        Assert.Equal(options.UnknownTypeHandling, newOptions.UnknownTypeHandling);
-                    }
-                    else
-                    {
-                        Assert.True(false, $"Public option was added to JsonSerializerOptions but not copied in the copy ctor: {property.Name}");
-                    }
+                    Assert.Equal(property.GetValue(options), property.GetValue(newOptions));
                 }
                 else
                 {

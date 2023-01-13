@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">引数 '{0}' はサポートされていない out パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">引数はサポートされていない out パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">

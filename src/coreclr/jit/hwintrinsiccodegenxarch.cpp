@@ -175,30 +175,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (category == HW_Category_MemoryStore)
                 {
                     genConsumeAddress(op1);
+                    genConsumeReg(op2);
 
-                    if (((intrinsicId == NI_SSE_Store) || (intrinsicId == NI_SSE2_Store)) && op2->isContained())
-                    {
-                        GenTreeHWIntrinsic* extract = op2->AsHWIntrinsic();
+                    // Until we improve the handling of addressing modes in the emitter, we'll create a
+                    // temporary GT_STORE_IND to generate code with.
 
-                        assert((extract->GetHWIntrinsicId() == NI_AVX_ExtractVector128) ||
-                               (extract->GetHWIntrinsicId() == NI_AVX2_ExtractVector128));
-
-                        regNumber regData = genConsumeReg(extract->Op(1));
-
-                        ins  = HWIntrinsicInfo::lookupIns(extract->GetHWIntrinsicId(), extract->GetSimdBaseType());
-                        ival = static_cast<int>(extract->Op(2)->AsIntCon()->IconValue());
-
-                        GenTreeIndir indir = indirForm(TYP_SIMD16, op1);
-                        emit->emitIns_A_R_I(ins, EA_32BYTE, &indir, regData, ival);
-                    }
-                    else
-                    {
-                        genConsumeReg(op2);
-                        // Until we improve the handling of addressing modes in the emitter, we'll create a
-                        // temporary GT_STORE_IND to generate code with.
-                        GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op2);
-                        emit->emitInsStoreInd(ins, simdSize, &store);
-                    }
+                    GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op2);
+                    emit->emitInsStoreInd(ins, simdSize, &store);
                     break;
                 }
                 genConsumeRegs(op1);

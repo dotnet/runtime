@@ -10,9 +10,9 @@ namespace System.Collections.Frozen.Tests
     {
         private static StringComparerBase NewPicker(string[] values, bool ignoreCase)
         {
-            var c = ComparerPicker.Pick(values, ignoreCase, out int minLen, out int maxLenDiff);
+            StringComparerBase c = ComparerPicker.Pick(values, ignoreCase, out int minLen, out int maxLenDiff);
 
-            foreach (var s in values)
+            foreach (string s in values)
             {
                 Assert.True(s.Length >= minLen);
                 Assert.True(s.Length <= minLen + maxLenDiff);
@@ -24,7 +24,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void LeftHand()
         {
-            var c = NewPicker(new[] { "K0", "K20", "K300" }, false);
+            StringComparerBase c = NewPicker(new[] { "K0", "K20", "K300" }, false);
             Assert.IsType<LeftJustifiedSingleCharComparer>(c);
             Assert.Equal(1, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -48,7 +48,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void LeftHandCaseInsensitive()
         {
-            var c = NewPicker(new[] { "É1" }, true);
+            StringComparerBase c = NewPicker(new[] { "É1" }, true);
             Assert.IsType<LeftJustifiedCaseInsensitiveSubstringComparer>(c);
             Assert.Equal(0, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -82,7 +82,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void LeftHandCaseInsensitiveAscii()
         {
-            var c = NewPicker(new[] { "S1" }, true);
+            StringComparerBase c = NewPicker(new[] { "S1" }, true);
             Assert.IsType<LeftJustifiedCaseInsensitiveAsciiSubstringComparer>(c);
             Assert.Equal(0, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -101,7 +101,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void RightHand()
         {
-            var c = NewPicker(new[] { "1S", "1T" }, false);
+            StringComparerBase c = NewPicker(new[] { "1S", "1T" }, false);
             Assert.IsType<RightJustifiedSingleCharComparer>(c);
             Assert.Equal(-1, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -115,7 +115,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void RightHandCaseInsensitive()
         {
-            var c = NewPicker(new[] { "1É", "1T" }, true);
+            StringComparerBase c = NewPicker(new[] { "1É", "1T" }, true);
             Assert.IsType<RightJustifiedCaseInsensitiveSubstringComparer>(c);
             Assert.Equal(-1, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -129,7 +129,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void RightHandCaseInsensitiveAscii()
         {
-            var c = NewPicker(new[] { "1S", "1T" }, true);
+            StringComparerBase c = NewPicker(new[] { "1S", "1T" }, true);
             Assert.IsType<RightJustifiedCaseInsensitiveAsciiSubstringComparer>(c);
             Assert.Equal(-1, ((SubstringComparerBase)c).Index);
             Assert.Equal(1, ((SubstringComparerBase)c).Count);
@@ -143,21 +143,21 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public static void Full()
         {
-            var c = NewPicker(new[] { "ABC", "DBC", "ADC", "ABD", "ABDABD" }, false);
+            StringComparerBase c = NewPicker(new[] { "ABC", "DBC", "ADC", "ABD", "ABDABD" }, false);
             Assert.IsType<FullStringComparer>(c);
         }
 
         [Fact]
         public static void FullCaseInsensitive()
         {
-            var c = NewPicker(new[] { "æbc", "DBC", "æDC", "æbd", "æbdæbd" }, true);
+            StringComparerBase c = NewPicker(new[] { "æbc", "DBC", "æDC", "æbd", "æbdæbd" }, true);
             Assert.IsType<FullCaseInsensitiveStringComparer>(c);
         }
 
         [Fact]
         public static void FullCaseInsensitiveAscii()
         {
-            var c = NewPicker(new[] { "abc", "DBC", "aDC", "abd", "abdabd" }, true);
+            StringComparerBase c = NewPicker(new[] { "abc", "DBC", "aDC", "abd", "abdabd" }, true);
             Assert.IsType<FullCaseInsensitiveAsciiStringComparer>(c);
         }
 
