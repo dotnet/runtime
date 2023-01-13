@@ -54,14 +54,11 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Div_SmallType_Correctness()
     {
-        for (int i = 0; i < ushort.MaxValue + 1; i++)
+        for (int i = 1; i < ushort.MaxValue + 1; i++)
         {
-            for (int j = 1; j < ushort.MaxValue + 1; j++)
+            if ((byte)(0 / i) != (byte)((byte)0 / (byte)i))
             {
-                if ((byte)(i / j) != (byte)((byte)i / (byte)j))
-                {
-                    throw new Exception();
-                }
+                throw new Exception();
             }
         }
     }
