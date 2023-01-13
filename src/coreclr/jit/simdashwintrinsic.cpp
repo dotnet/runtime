@@ -737,16 +737,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewAllBitsSetConNode(retType);
                 }
 
-                case NI_VectorT128_get_Count:
-#if defined(TARGET_XARCH)
-                case NI_VectorT256_get_Count:
-#endif // TARGET_XARCH
-                {
-                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
-                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-                    return countNode;
-                }
-
                 case NI_Vector2_get_One:
                 case NI_Vector3_get_One:
                 case NI_Vector4_get_One:

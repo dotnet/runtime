@@ -2387,6 +2387,46 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             }
         }
 
+        if (ni == NI_Vector_GetCount)
+        {
+            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+            unsigned             simdSize        = info.compCompHnd->getClassSize(clsHnd);
+
+            switch (simdBaseJitType)
+            {
+                case CORINFO_TYPE_BYTE:
+                case CORINFO_TYPE_UBYTE:
+                case CORINFO_TYPE_SHORT:
+                case CORINFO_TYPE_USHORT:
+                case CORINFO_TYPE_INT:
+                case CORINFO_TYPE_UINT:
+                case CORINFO_TYPE_LONG:
+                case CORINFO_TYPE_ULONG:
+                case CORINFO_TYPE_FLOAT:
+                case CORINFO_TYPE_DOUBLE:
+                case CORINFO_TYPE_NATIVEINT:
+                case CORINFO_TYPE_NATIVEUINT:
+                {
+                    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+                    unsigned       elementSize  = genTypeSize(simdBaseType);
+                    GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
+
+#if defined(FEATURE_SIMD)
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+#endif // FEATURE_SIMD
+
+                    return countNode;
+                }
+
+                default:
+                {
+                    ni = NI_Throw_PlatformNotSupportedException;
+                    break;
+                }
+            }
+        }
+
         if (ni == NI_Throw_PlatformNotSupportedException)
         {
             return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
@@ -7385,6 +7425,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 result = NI_IsSupported_False;
             }
+            else if (strcmp(methodName, "get_Count") == 0)
+            {
+                assert(strcmp(className, "Vector`1") == 0);
+                result = NI_Vector_GetCount;
+            }
             else if (gtIsRecursiveCall(method))
             {
                 // For the framework itself, any recursive intrinsics will either be
@@ -7593,6 +7638,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
             {
                 result = NI_IsSupported_False;
+            }
+            else if (strcmp(methodName, "get_Count") == 0)
+            {
+                assert((strcmp(className, "Vector64`1") == 0) ||
+                       (strcmp(className, "Vector128`1") == 0) ||
+                       (strcmp(className, "Vector256`1") == 0) ||
+                       (strcmp(className, "Vector512`1") == 0));
+
+                result = NI_Vector_GetCount;
             }
             else if (gtIsRecursiveCall(method))
             {

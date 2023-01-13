@@ -849,18 +849,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_get_Count:
-        case NI_Vector128_get_Count:
-        {
-            assert(!sig->hasThis());
-            assert(numArgs == 0);
-
-            GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
-            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-            retNode = countNode;
-            break;
-        }
-
         case NI_Vector64_Divide:
         case NI_Vector128_Divide:
         case NI_Vector64_op_Division:
