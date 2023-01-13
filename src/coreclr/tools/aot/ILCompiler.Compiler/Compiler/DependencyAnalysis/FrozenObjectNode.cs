@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a frozen object that is statically preallocated within the data section
     /// of the executable instead of on the GC heap.
     /// </summary>
-    public class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public sealed class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private readonly MetadataType _owningType;
         private readonly TypePreinit.ISerializableReference _data;
@@ -35,6 +35,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        public TypeDesc ObjectType => _data.Type;
+
+        public bool IsKnownImmutable => _data.IsKnownImmutable;
+
+        public int GetArrayLength()
+        {
+            Debug.Assert(ObjectType.IsArray);
+            return _data.ArrayLength;
+        }
+
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset
@@ -48,20 +58,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            int initialOffset = dataBuilder.CountBytes;
-
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
             // byte contents
             _data.WriteContent(ref dataBuilder, this, factory);
-
-            int objectSize = dataBuilder.CountBytes - initialOffset;
-            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
-            if (objectSize < minimumObjectSize)
-            {
-                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
-            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -85,11 +86,6 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.FrozenSegmentRegion.AddEmbeddedObject(this);
-        }
-
         public override int ClassCode => 1789429316;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
@@ -101,5 +97,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return _allocationSiteId.CompareTo(otherFrozenObjectNode._allocationSiteId);
         }
+
+        public override string ToString() => $"Frozen {_data.Type.GetDisplayNameWithoutNamespace()} object";
     }
 }

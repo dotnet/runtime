@@ -49,7 +49,7 @@ namespace App {
             icFinal++;
         }
 
-        public static int Main( String [] str )
+        public static int Main()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             CreateObj temp = new CreateObj();

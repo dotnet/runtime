@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class Program
+public class Program
 {
     [StructLayout(LayoutKind.Sequential)]
     struct S
@@ -28,7 +28,7 @@ class Program
         public uint i3;
     }
 
-    static int Main()
+    public static int Main()
     {
         S s = new S();
         s.i0 = 0x12345678;

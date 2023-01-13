@@ -466,7 +466,7 @@ ULONG MDInternalRW::Release()
     cRef = InterlockedDecrement(&m_cRefs);
     if (cRef == 0)
     {
-        LOG((LOGMD, "MDInternalRW(0x%08x)::destruction\n", this));
+        LOG((LOGMD, "MDInternalRW(0x%p)::destruction\n", this));
         delete this;
     }
     return cRef;
@@ -2128,7 +2128,7 @@ HRESULT MDInternalRW::GetItemGuid(      // return hresult
         wzBlob[0] = '{';
         wzBlob[37] = '}';
         wzBlob[38] = 0;
-        hr = IIDFromString(wzBlob, pGuid);
+        hr = LPCWSTRToGuid(wzBlob, pGuid) ? S_OK : E_FAIL;
     }
     else
         *pGuid = GUID_NULL;

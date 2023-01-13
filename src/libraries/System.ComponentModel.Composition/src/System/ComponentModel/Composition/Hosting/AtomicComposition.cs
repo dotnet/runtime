@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition.Hosting
     /// queryable state along with a sequence of actions necessary to complete the state when
     /// the atomicComposition is no longer in danger of being rolled back.  State is completed or
     /// rolled back when the atomicComposition is disposed, depending on the state of the
-    /// CompleteOnDipose property which defaults to false.  The using(...) pattern in C# is a
+    /// CompleteOnDispose property which defaults to false.  The using(...) pattern in C# is a
     /// convenient mechanism for defining atomicComposition scopes.
     ///
     /// The least obvious aspects of AtomicComposition deal with nesting.

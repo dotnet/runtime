@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
                         ? Interop.AppleCrypto.PAL_SymmetricOperation.Encrypt
                         : Interop.AppleCrypto.PAL_SymmetricOperation.Decrypt,
                     algorithm,
-                    GetPalChainMode(algorithm, cipherMode, feedbackSizeInBytes),
+                    GetPalChainMode(cipherMode, feedbackSizeInBytes),
                     Interop.AppleCrypto.PAL_PaddingMode.None,
                     pbKey,
                     key.Length,
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
             return bytesWritten;
         }
 
-        private static PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
+        private static PAL_ChainingMode GetPalChainMode(CipherMode cipherMode, int feedbackSizeInBytes)
         {
             return cipherMode switch
             {

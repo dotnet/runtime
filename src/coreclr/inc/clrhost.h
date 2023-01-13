@@ -72,7 +72,7 @@ extern int RFS_HashStack();
 // Critical section support for CLR DLLs other than the EE.
 // Include the header defining each Crst type and its corresponding level (relative rank). This is
 // auto-generated from a tool that takes a high-level description of each Crst type and its dependencies.
-#include "crsttypes.h"
+#include "crsttypes_generated.h"
 
 // critical section api
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType type, CrstFlags flags);

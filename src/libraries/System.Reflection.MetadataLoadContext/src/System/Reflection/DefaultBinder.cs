@@ -269,7 +269,7 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         // Binder and is used by RuntimeType.)
-        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
             if (match is null)
             {
@@ -314,7 +314,7 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
             if (match is null)
             {

@@ -1048,7 +1048,7 @@ of X509* to OpenSSL.
 Return values:
 A STACK_OF(X509*) with no comparator.
 */
-STACK_OF(X509) * CryptoNative_NewX509Stack()
+STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
     return sk_X509_new_null();
@@ -1173,7 +1173,7 @@ Gets the version of openssl library.
 Return values:
 Version number as MNNFFRBB (major minor fix final beta/patch)
 */
-int64_t CryptoNative_OpenSslVersionNumber()
+int64_t CryptoNative_OpenSslVersionNumber(void)
 {
     // No error queue impact.
     return (int64_t)OpenSSL_version_num();
@@ -1243,7 +1243,7 @@ static int ExDataDup(
     return 1;
 }
 
-void CryptoNative_RegisterLegacyAlgorithms()
+void CryptoNative_RegisterLegacyAlgorithms(void)
 {
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(OSSL_PROVIDER_try_load))
@@ -1308,7 +1308,7 @@ Return values:
 0 on success
 non-zero on failure
 */
-static int32_t EnsureOpenSsl10Initialized()
+static int32_t EnsureOpenSsl10Initialized(void)
 {
     int ret = 0;
     int numLocks = 0;
@@ -1408,7 +1408,7 @@ done:
 pthread_mutex_t g_err_mutex = PTHREAD_MUTEX_INITIALIZER;
 int volatile g_err_unloaded = 0;
 
-static void HandleShutdown()
+static void HandleShutdown(void)
 {
     // Generally, a mutex to set a boolean is overkill, but this lock
     // ensures that there are no callers already inside the string table
@@ -1422,7 +1422,7 @@ static void HandleShutdown()
     assert(!result && "Releasing the error string table mutex failed.");
 }
 
-static int32_t EnsureOpenSsl11Initialized()
+static int32_t EnsureOpenSsl11Initialized(void)
 {
     // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
     // so do the same for 1.1
@@ -1450,7 +1450,7 @@ static int32_t EnsureOpenSsl11Initialized()
 
 #endif
 
-int32_t CryptoNative_OpenSslAvailable()
+int32_t CryptoNative_OpenSslAvailable(void)
 {
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     // OpenLibrary will attempt to open libssl. DlOpen will handle
@@ -1464,7 +1464,7 @@ int32_t CryptoNative_OpenSslAvailable()
 static int32_t g_initStatus = 1;
 int g_x509_ocsp_index = -1;
 
-static int32_t EnsureOpenSslInitializedCore()
+static int32_t EnsureOpenSslInitializedCore(void)
 {
     int ret = 0;
 
@@ -1498,14 +1498,14 @@ static int32_t EnsureOpenSslInitializedCore()
     return ret;
 }
 
-static void EnsureOpenSslInitializedOnce()
+static void EnsureOpenSslInitializedOnce(void)
 {
     g_initStatus = EnsureOpenSslInitializedCore();
 }
 
 static pthread_once_t g_initializeShim = PTHREAD_ONCE_INIT;
 
-int32_t CryptoNative_EnsureOpenSslInitialized()
+int32_t CryptoNative_EnsureOpenSslInitialized(void)
 {
     pthread_once(&g_initializeShim, EnsureOpenSslInitializedOnce);
     return g_initStatus;

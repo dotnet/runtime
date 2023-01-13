@@ -251,9 +251,7 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
 
         // Retrieve the string literal from the global string literal map.
 
-        // Don't use FOH for collectible modules to avoid potential memory leaks
-        const bool preferFrozenObjectHeap = !bIsCollectible;
-        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
+        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
 
         _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -402,7 +400,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     return pEntry;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
+StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound)
 {
     CONTRACTL
     {
@@ -430,7 +428,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddInternedString(pString, bPreferFrozenObjectHeap);
+            pEntry = AddInternedString(pString);
     }
 
     return pEntry;
@@ -443,12 +441,18 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
 
-    int length = pStringData->GetCharCount();
-    length = min(length, 100);
+    ULONG length = pStringData->GetCharCount();
+    length = min(length, 128);
     WCHAR *szString = (WCHAR *)_alloca((length + 1) * sizeof(WCHAR));
     memcpyNoGCRefs((void*)szString, (void*)pStringData->GetStringBuffer(), length * sizeof(WCHAR));
     szString[length] = '\0';
-    LOG((LF_APPDOMAIN, LL_INFO10000, "String literal \"%S\" %s to Global map, size %d bytes\n", szString, action, pStringData->GetCharCount()));
+
+    LPCUTF8 strUtf8 = "<Failed to convert to UTF8>";
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(cvtStr, szString);
+    if (cvtStr != NULL)
+        strUtf8 = cvtStr;
+
+    LOG((LF_APPDOMAIN, LL_INFO10000, "String literal \"%s\" %s to Global map, %u characters\n", strUtf8, action, length));
 }
 #endif
 
@@ -534,7 +538,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     return pRet;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap)
+StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString)
 {
 
     CONTRACTL
@@ -547,8 +551,29 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     }
     CONTRACTL_END;
 
-    EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-    return AddStringLiteral(&StringData, preferFrozenObjHeap);
+    StringLiteralEntry* pRet;
+
+    {
+        // All frozen strings are expected to be registered in m_StringToEntryHashTable, we might relax this assert
+        // in future if we start allocating frozen strings for non-literals
+        _ASSERT(!GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(STRINGREFToObject(*pString)));
+
+        PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable, 1);
+        SetObjectReference(pStrObj[0], (OBJECTREF)*pString);
+
+        // Since the allocation might have caused a GC we need to get the string data after it
+        EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
+
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
+        pStrObj.SuppressRelease();
+
+        // Insert the handle to the string into the hash table.
+        m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+    }
+
+    return pRet;
 }
 
 void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry)

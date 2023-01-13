@@ -320,13 +320,11 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
+                ArgumentNullException.ThrowIfNull(key);
+                if (default(TValue) != null)
                 {
-                    throw new ArgumentNullException(nameof(key));
+                    ArgumentNullException.ThrowIfNull(value);
                 }
-
-                if (value == null && default(TValue) != null)
-                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {
@@ -562,10 +560,7 @@ namespace System.Collections.Generic
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -589,10 +584,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -612,7 +604,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }
@@ -637,7 +629,7 @@ namespace System.Collections.Generic
                 throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
             }
 
-            bool ICollection<TKey>.Contains(TKey item)
+            public bool Contains(TKey item)
             {
                 return _dictionary.ContainsKey(item);
             }
@@ -736,10 +728,7 @@ namespace System.Collections.Generic
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < Count)
                 {
@@ -763,10 +752,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _dictionary.Count)
                 {
@@ -786,7 +772,7 @@ namespace System.Collections.Generic
                     }
                     catch (ArrayTypeMismatchException)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     }
                 }
             }

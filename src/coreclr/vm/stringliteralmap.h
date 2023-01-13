@@ -74,7 +74,7 @@ public:
     StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
 
     // Method to explicitly intern a string object. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
+    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound);
 
     // Method to calculate the hash
     DWORD GetHash(EEStringData* pData)
@@ -95,7 +95,7 @@ private:
     StringLiteralEntry *AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap);
 
     // Helper method to add an interned string.
-    StringLiteralEntry *AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap);
+    StringLiteralEntry *AddInternedString(STRINGREF *pString);
 
     // Called by StringLiteralEntry when its RefCount falls to 0.
     void RemoveStringLiteralEntry(StringLiteralEntry *pEntry);

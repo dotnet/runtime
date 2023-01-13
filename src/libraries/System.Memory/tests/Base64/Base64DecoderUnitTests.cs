@@ -58,6 +58,19 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
+        public void BasicDecodingInvalidInputWithSlicedSource()
+        {
+            ReadOnlySpan<byte> source = stackalloc byte[] { (byte)'A', (byte)'B', (byte)'C', (byte)'D' };
+            Span<byte> decodedBytes = stackalloc byte[128];
+
+            source = source[..3];   // now it's invalid as only 3 bytes are present
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(0, consumed);
+            Assert.Equal(0, decodedByteCount);
+        }
+
+        [Fact]
         public void BasicDecodingWithFinalBlockFalse()
         {
             var rnd = new Random(42);
@@ -270,6 +283,23 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount); // expectedWritten == decodedBytes.Length
             Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, decodedBytes.Length, source, decodedBytes));
+        }
+
+        [Theory]
+        [InlineData("\u00ecz/T", 0, 0)]                                              // scalar code-path
+        [InlineData("z/Ta123\u00ec", 4, 3)]
+        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw==", 0, 0)]                          // Vector128 code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw\u00ec==", 20, 15)]
+        [InlineData("\u00ecz/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo==", 0, 0)]  // Vector256 / AVX code-path
+        [InlineData("z/TpH7sqEkerqMweH1uSw1a5ebaAF9xa8B0ze1wet4epo\u00ec==", 44, 33)]
+        public void BasicDecodingNonAsciiInputInvalid(string inputString, int expectedConsumed, int expectedWritten)
+        {
+            Span<byte> source = Encoding.UTF8.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
+
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, decodedByteCount);
         }
 
         [Theory]

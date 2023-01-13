@@ -191,7 +191,7 @@ namespace System.Diagnostics
         {
             ReadOnlySpan<char> baseName = machineName.AsSpan(machineName.StartsWith('\\') ? 2 : 0);
             return
-                !baseName.Equals(".", StringComparison.Ordinal) &&
+                baseName is not "." &&
                 !baseName.Equals(Interop.Kernel32.GetComputerName(), StringComparison.OrdinalIgnoreCase);
         }
 
@@ -499,7 +499,7 @@ namespace System.Diagnostics
 
                     ReadOnlySpan<char> instanceName = PERF_INSTANCE_DEFINITION.GetName(in instance, data.Slice(instancePos));
 
-                    if (instanceName.Equals("_Total", StringComparison.Ordinal))
+                    if (instanceName is "_Total")
                     {
                         // continue
                     }
@@ -576,7 +576,7 @@ namespace System.Diagnostics
             return temp;
         }
 
-        private static ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static unsafe ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
@@ -598,7 +598,7 @@ namespace System.Diagnostics
                         threadInfo._currentPriority = (int)value;
                         break;
                     case ValueId.StartAddress:
-                        threadInfo._startAddress = (IntPtr)value;
+                        threadInfo._startAddress = (void*)value;
                         break;
                     case ValueId.ThreadState:
                         threadInfo._threadState = (ThreadState)value;

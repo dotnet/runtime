@@ -43,14 +43,6 @@
 #include "appdomain.inl"
 #include "typestring.h"
 
-// The enum that describes the value of the IDispatchImplAttribute custom attribute.
-enum IDispatchImplType
-{
-    SystemDefinedImpl   = 0,
-    InternalImpl        = 1,
-    CompatibleImpl      = 2
-};
-
 // The enum that describe the value of System.Runtime.InteropServices.CustomQueryInterfaceResult
 // It is the return value of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 enum CustomQueryInterfaceResult
@@ -319,68 +311,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 }
 
 //--------------------------------------------------------------------------
-// Determines if the Compatible IDispatch implementation is required for
-// the specified class.
-//--------------------------------------------------------------------------
-bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    HRESULT             hr;
-    const BYTE *        pVal;
-    ULONG               cbVal;
-    Assembly *          pAssembly = pClass->GetAssembly();
-    IDispatchImplType   DispImplType = SystemDefinedImpl;
-
-    // First check for the IDispatchImplType custom attribute first.
-    hr = pClass->GetCustomAttribute(WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Check to see if the assembly has the IDispatchImplType attribute set.
-    hr = pAssembly->GetCustomAttribute(pAssembly->GetManifestToken(), WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Removed registry key check per reg cleanup bug 45978
-    // Effect: Will return false so code cleanup
-    return false;
-}
-
-//--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
 //
@@ -408,8 +338,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 
     HRESULT hr = S_OK;
     PCODE retAddr = NULL;
-
-    BEGIN_ENTRYPOINT_VOIDRET;
 
     PCODE pStub = NULL;
     BOOL fNonTransientExceptionThrown = FALSE;
@@ -600,9 +528,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     retAddr = NULL;
 
 Exit:
-
-    END_ENTRYPOINT_VOIDRET;
-
     RETURN retAddr;
 }
 
@@ -3722,9 +3647,9 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-        GuidToLPWSTR(m_IID, rIID, ARRAY_SIZE(rIID));
-        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%ls, vTbl:%#08x\n",
+        CHAR rIID[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(m_IID, rIID);
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%#x, IID:{%08x-...}, vTbl:%#08x\n",
@@ -4733,12 +4658,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             pTemplate->m_flags |= enum_SupportsIClassX;
         }
 
-        if (IsOleAutDispImplRequiredForClass(pMT))
-        {
-            // Determine what IDispatch implementation this class should use
-            pTemplate->m_flags |= enum_UseOleAutDispatchImpl;
-        }
-
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
@@ -4779,12 +4698,12 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-            GuidToLPWSTR(IClassXIID, rIID, ARRAY_SIZE(rIID));
+            CHAR rIID[GUID_STR_BUFFER_LEN];
+            GuidToLPSTR(IClassXIID, rIID);
             SString ssName;
             thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%ls, IID:%ls, vTbl:%#08x\n",
-                 ssName.GetUnicode(), rIID, pComVtable));
+            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+                 ssName.GetUTF8(), rIID, pComVtable));
 #else
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
                  thClass.AsPtr(), IClassXIID.Data1, pComVtable));

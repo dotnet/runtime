@@ -310,8 +310,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public static Guid GetGuid(Type eventSourceType)
         {
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute));
             string name = eventSourceType.Name;
@@ -393,8 +392,7 @@ namespace System.Diagnostics.Tracing
                 return null;
             }
 
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             byte[]? manifestBytes = EventSource.CreateManifestAndDescriptors(eventSourceType, assemblyPathToIncludeInManifest, null, flags);
             return (manifestBytes == null) ? null : Encoding.UTF8.GetString(manifestBytes, 0, manifestBytes.Length);
@@ -442,10 +440,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             // User-defined EventCommands should not conflict with the reserved commands.
             if ((int)command <= (int)EventCommand.Update && (int)command != (int)EventCommand.SendManifest)
@@ -1327,12 +1322,12 @@ namespace System.Diagnostics.Tracing
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if MONO && !TARGET_BROWSER
+#if MONO && !TARGET_BROWSER && !TARGET_WASI
                         // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
                         // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
-#endif // MONO && !TARGET_BROWSER
+#endif // MONO && !TARGET_BROWSER && !TARGET_WASI
                         {
                             var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
                             WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
@@ -1623,8 +1618,7 @@ namespace System.Diagnostics.Tracing
 
         private static string GetName(Type eventSourceType, EventManifestOptions flags)
         {
-            if (eventSourceType == null)
-                throw new ArgumentNullException(nameof(eventSourceType));
+            ArgumentNullException.ThrowIfNull(eventSourceType);
 
             EventSourceAttribute? attrib = (EventSourceAttribute?)GetCustomAttributeHelper(eventSourceType, typeof(EventSourceAttribute), flags);
             if (attrib != null && attrib.Name != null)
@@ -2807,8 +2801,13 @@ namespace System.Diagnostics.Tracing
         // Today, we only send the manifest to ETW, custom listeners don't get it.
         private unsafe void SendManifest(byte[]? rawManifest)
         {
-            if (rawManifest == null)
+            if (rawManifest == null
+                // Don't send the manifest for NativeRuntimeEventSource, it is conceptually
+                // an extension of the native coreclr provider
+                || m_name.Equals("Microsoft-Windows-DotNETRuntime"))
+            {
                 return;
+            }
 
             Debug.Assert(!SelfDescribingEvents);
 
@@ -3923,7 +3922,7 @@ namespace System.Diagnostics.Tracing
     /// created.
     /// </para>
     /// </summary>
-    public class EventListener : IDisposable
+    public abstract class EventListener : IDisposable
     {
         private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
 
@@ -3963,7 +3962,7 @@ namespace System.Diagnostics.Tracing
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
         /// </summary>
-        public EventListener()
+        protected EventListener()
         {
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
@@ -4057,10 +4056,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
@@ -4078,10 +4074,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void DisableEvents(EventSource eventSource)
         {
-            if (eventSource is null)
-            {
-                throw new ArgumentNullException(nameof(eventSource));
-            }
+            ArgumentNullException.ThrowIfNull(eventSource);
 
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 
@@ -4100,7 +4093,7 @@ namespace System.Diagnostics.Tracing
         /// and EventSourceIndex allows this extra information to be efficiently stored in a
         /// (growable) array (eg List(T)).
         /// </summary>
-        public static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
+        protected internal static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
 
         /// <summary>
         /// This method is called whenever a new eventSource is 'attached' to the dispatcher.
@@ -5214,20 +5207,20 @@ namespace System.Diagnostics.Tracing
 
         public void AddKeyword(string name, ulong value)
         {
-            if ((value & (value - 1)) != 0)   // Is it a power of 2?
+            if ((value & (value - 1)) != 0) // Must be zero or a power of 2
             {
-                ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, "0x" + value.ToString("x", CultureInfo.CurrentCulture), name), true);
+                ManifestError(SR.Format(SR.EventSource_KeywordNeedPowerOfTwo, $"0x{value:x}", name), true);
             }
             if ((flags & EventManifestOptions.Strict) != 0)
             {
                 if (value >= 0x0000100000000000UL && !name.StartsWith("Session", StringComparison.Ordinal))
                 {
-                    ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
+                    ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, $"0x{value:x}"));
                 }
 
                 if (keywordTab != null && keywordTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
                 {
-                    ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
+                    ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, $"0x{value:x}"));
                 }
             }
 
@@ -5590,7 +5583,7 @@ namespace System.Diagnostics.Tracing
 
                             // ETW requires all bitmap values to be powers of 2.  Skip the ones that are not.
                             // TODO: Warn people about the dropping of values.
-                            if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
+                            if (isbitmap && !BitOperations.IsPow2(hexValue))
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
@@ -5886,7 +5879,14 @@ namespace System.Diagnostics.Tracing
             if (type.IsEnum)
             {
                 string typeName = GetTypeName(type.GetEnumUnderlyingType());
-                return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
+                return typeName switch // ETW requires enums to be unsigned.
+                {
+                    "win:Int8" => "win:UInt8",
+                    "win:Int16" => "win:UInt16",
+                    "win:Int32" => "win:UInt32",
+                    "win:Int64" => "win:UInt64",
+                    _ => typeName,
+                };
             }
 
             switch (Type.GetTypeCode(type))
@@ -6068,7 +6068,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private readonly ResourceManager? resources;      // Look up localized strings here.
         private readonly EventManifestOptions flags;
-        private readonly IList<string> errors;           // list of currently encountered errors
+        private readonly List<string> errors;           // list of currently encountered errors
         private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 
         // State we track between StartEvent and EndEvent.

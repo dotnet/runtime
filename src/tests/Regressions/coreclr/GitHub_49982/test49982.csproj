@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <Nullable>enable</Nullable>
-    <LangVersion>9.0</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- This is an explicit crossgen test -->

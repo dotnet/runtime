@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes the state for polymorphic cases and returns the appropriate derived converter.
         /// </summary>
-        internal JsonConverter? ResolvePolymorphicConverter(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref ReadStack state)
+        internal JsonConverter? ResolvePolymorphicConverter(JsonTypeInfo jsonTypeInfo, ref ReadStack state)
         {
             Debug.Assert(!IsValueType);
             Debug.Assert(CanHaveMetadata);

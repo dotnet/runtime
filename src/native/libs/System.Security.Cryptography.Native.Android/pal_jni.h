@@ -71,6 +71,9 @@ extern jmethodID g_cipherInitMethod;
 extern jmethodID g_cipherInit2Method;
 extern jmethodID g_getBlockSizeMethod;
 
+// javax/crypto/spec/AEADBadTagException
+extern jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/IvParameterSpec
 extern jclass    g_ivPsClass;
 extern jmethodID g_ivPsCtor;
@@ -91,6 +94,14 @@ extern jclass    g_SSLParametersClass;
 extern jmethodID g_SSLParametersGetProtocols;
 extern jmethodID g_SSLParametersSetApplicationProtocols;
 extern jmethodID g_SSLParametersSetServerNames;
+
+// com/android/org/conscrypt/OpenSSLEngineImpl
+extern jclass    g_ConscryptOpenSSLEngineImplClass;
+extern jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
+
+// com/android/org/conscrypt/SSLParametersImpl
+extern jclass    g_ConscryptSSLParametersImplClass;
+extern jmethodID g_ConscryptSSLParametersImplSetUseSni;
 
 // javax/net/ssl/SSLContext
 extern jclass    g_sslCtxClass;
@@ -430,6 +441,7 @@ extern jmethodID g_SSLEngineBeginHandshake;
 extern jmethodID g_SSLEngineCloseOutbound;
 extern jmethodID g_SSLEngineGetApplicationProtocol;
 extern jmethodID g_SSLEngineGetHandshakeStatus;
+extern jmethodID g_SSLEngineGetHandshakeSession;
 extern jmethodID g_SSLEngineGetSession;
 extern jmethodID g_SSLEngineGetSSLParameters;
 extern jmethodID g_SSLEngineGetSupportedProtocols;
@@ -459,12 +471,13 @@ extern jmethodID g_SSLContextGetDefault;
 extern jmethodID g_SSLContextGetInstanceMethod;
 extern jmethodID g_SSLContextInitMethod;
 extern jmethodID g_SSLContextCreateSSLEngineMethod;
-extern jmethodID g_SSLContextCreateSSLEngineWithPeer;
+extern jmethodID g_SSLContextCreateSSLEngineMethodWithHostAndPort;
 
 // javax/net/ssl/SSLSession
 extern jclass    g_SSLSession;
 extern jmethodID g_SSLSessionGetApplicationBufferSize;
 extern jmethodID g_SSLSessionGetCipherSuite;
+extern jmethodID g_SSLSessionGetLocalCertificates;
 extern jmethodID g_SSLSessionGetPacketBufferSize;
 extern jmethodID g_SSLSessionGetPeerCertificates;
 extern jmethodID g_SSLSessionGetProtocol;
@@ -473,6 +486,7 @@ extern jmethodID g_SSLSessionGetProtocol;
 extern jclass    g_SSLEngineResult;
 extern jmethodID g_SSLEngineResultGetStatus;
 extern jmethodID g_SSLEngineResultGetHandshakeStatus;
+extern bool      g_SSLEngineResultStatusLegacyOrder;
 
 // javax/crypto/KeyAgreement
 extern jclass    g_KeyAgreementClass;

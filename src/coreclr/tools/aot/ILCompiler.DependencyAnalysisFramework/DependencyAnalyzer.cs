@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysisFramework
     public sealed class DependencyAnalyzer<MarkStrategy, DependencyContextType> : DependencyAnalyzerBase<DependencyContextType> where MarkStrategy : struct, IDependencyAnalysisMarkStrategy<DependencyContextType>
     {
 #pragma warning disable SA1129 // Do not use default value type constructor
-        private readonly MarkStrategy _marker = new MarkStrategy();
+        private MarkStrategy _marker = new MarkStrategy();
 #pragma warning restore SA1129 // Do not use default value type constructor
         private DependencyContextType _dependencyContext;
         private IComparer<DependencyNodeCore<DependencyContextType>> _resultSorter;

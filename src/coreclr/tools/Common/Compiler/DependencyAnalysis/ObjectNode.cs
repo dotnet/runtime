@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
-        public abstract ObjectNodeSection Section { get; }
+        public abstract ObjectNodeSection GetSection(NodeFactory factory);
 
         /// <summary>
         /// Should identical symbols emitted into separate object files be Comdat folded when linked together?

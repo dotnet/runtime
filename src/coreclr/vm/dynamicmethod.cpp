@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -1275,8 +1275,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // lock the global string literal interning map
     CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-    StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash,
-        /* bAddIfNotFound */ TRUE, /* bPreferFrozenObjectHeap */ FALSE));
+    StringLiteralEntryHolder pEntry(pStringLiteralMap->GetInternedString(pProtectedStringRef, dwHash, /* bAddIfNotFound */ TRUE));
 
     DynamicStringLiteral* pStringLiteral = (DynamicStringLiteral*)m_jitTempData.New(sizeof(DynamicStringLiteral));
     pStringLiteral->m_pEntry = pEntry.Extract();

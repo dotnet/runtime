@@ -46,38 +46,36 @@ internal static partial class Interop
         internal struct HttpHeader
         {
             internal string Name;
-            internal uint NameLength;
             internal string Value;
-            internal uint ValueLength;
 
             [CustomMarshaller(typeof(HttpHeader), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
             [CustomMarshaller(typeof(HttpHeader), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
-                public static Native ConvertToUnmanaged(HttpHeader managed)
+                public static WEB_SOCKET_HTTP_HEADER ConvertToUnmanaged(HttpHeader managed)
                 {
-                    Native n;
+                    WEB_SOCKET_HTTP_HEADER n;
                     n.Name = Marshal.StringToCoTaskMemAnsi(managed.Name);
-                    n.NameLength = managed.NameLength;
+                    n.NameLength = (uint)managed.Name.Length;
                     n.Value = Marshal.StringToCoTaskMemAnsi(managed.Value);
-                    n.ValueLength = managed.ValueLength;
+                    n.ValueLength = (uint)managed.Value.Length;
                     return n;
                 }
 
-                public static void Free(Native n)
+                public static void Free(WEB_SOCKET_HTTP_HEADER n)
                 {
                     Marshal.FreeCoTaskMem(n.Name);
                     Marshal.FreeCoTaskMem(n.Value);
                 }
-
-                internal struct Native
-                {
-                    public IntPtr Name;
-                    public uint NameLength;
-                    public IntPtr Value;
-                    public uint ValueLength;
-                }
             }
+        }
+
+        internal struct WEB_SOCKET_HTTP_HEADER
+        {
+            public IntPtr Name;
+            public uint NameLength;
+            public IntPtr Value;
+            public uint ValueLength;
         }
     }
 }

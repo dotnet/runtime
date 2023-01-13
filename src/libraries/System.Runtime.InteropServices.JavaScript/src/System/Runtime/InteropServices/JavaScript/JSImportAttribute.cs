@@ -7,12 +7,11 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
     /// Indicates that the JSImport source generator should create a managed wrapper to invoke a specific imported JavaScript function and marshal its arguments, return values, and exceptions.
-    /// To configure the marshaling behavior for specific values, <seealso cref="JSMarshalAsAttribute{T}"/>.
+    /// To configure the marshalling behavior for specific values, <see cref="JSMarshalAsAttribute{T}" />.
     /// </summary>
     /// <remarks>
     /// This attribute is meaningless if the source generator associated with it is not enabled.
-    /// The current built-in source generator only supports C# and only supplies an implementation when
-    /// applied to static, partial, non-generic methods.
+    /// The current built-in source generator only supports C# and only supplies an implementation when applied to static, partial, non-generic methods.
     /// </remarks>
     /// <example>
     /// <code>
@@ -29,34 +28,34 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSImportAttribute : Attribute
     {
         /// <summary>
-        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the module.
-        /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
+        /// Gets the name of the target JavaScript function. This name will be used as a key to locate the function in the module.
         /// </summary>
+        /// <remarks>Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.</remarks>
         public string FunctionName { get; }
 
         /// <summary>
-        /// Globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before any attempt to invoke the function.
+        /// Gets the globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)" /> before any attempt to invoke the function.
         /// </summary>
         public string? ModuleName { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JSImportAttribute"/>.
+        /// Initializes a new instance of the <see cref="JSImportAttribute" /> class.
         /// </summary>
-        /// <param name="functionName">Name of the function to be bound in the module. It allows dots for nested objects.</param>
+        /// <param name="functionName">The name of the function to be bound in the module. Use dots for nested objects.</param>
         public JSImportAttribute(string functionName)
         {
             FunctionName = functionName;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JSImportAttribute"/>.
+        /// Initializes a new instance of the <see cref="JSImportAttribute" /> class.
         /// </summary>
         /// <param name="functionName">
         /// The name of the target JavaScript function. This name will be used as a key to locate the function in the module.
         /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
         /// </param>
         /// <param name="moduleName">
-        /// Globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)"/> before any attempt to invoke the function.
+        /// Globally unique identifier of the ES6 module, if any, that contains the function. The module must be loaded via <see cref="JSHost.ImportAsync(string, string, Threading.CancellationToken)" /> before any attempt to invoke the function.
         /// </param>
         public JSImportAttribute(string functionName, string moduleName)
         {

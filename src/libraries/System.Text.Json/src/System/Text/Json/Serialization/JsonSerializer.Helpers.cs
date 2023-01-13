@@ -54,6 +54,23 @@ namespace System.Text.Json
             return info;
         }
 
+        private static void ValidateInputType(object? value, Type inputType)
+        {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
+            if (value is not null)
+            {
+                Type runtimeType = value.GetType();
+                if (!inputType.IsAssignableFrom(runtimeType))
+                {
+                    ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+                }
+            }
+        }
+
         internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
             JsonHelpers.IsInRangeInclusive((int)handling, 0,
                 (int)(
@@ -61,5 +78,8 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
+            handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;
     }
 }

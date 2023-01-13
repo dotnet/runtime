@@ -26,7 +26,7 @@
 #include "corhdr.h"
 #include "shash.h"
 #include "sarray.h"
-#include "crsttypes.h"
+#include "crst.h"
 #include "daccess.h"
 #include "crossloaderallocatorhash.h"
 

@@ -270,6 +270,12 @@ namespace System.Security.Cryptography
         public abstract void SetHashAlgorithm(string strName);
         public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
     }
+    public sealed partial class AuthenticationTagMismatchException : System.Security.Cryptography.CryptographicException
+    {
+        public AuthenticationTagMismatchException() { }
+        public AuthenticationTagMismatchException(string? message) { }
+        public AuthenticationTagMismatchException(string? message, System.Exception? inner) { }
+    }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
@@ -1718,10 +1724,16 @@ namespace System.Security.Cryptography
         public virtual void GetBytes(byte[] data, int offset, int count) { }
         public static byte[] GetBytes(int count) { throw null; }
         public virtual void GetBytes(System.Span<byte> data) { }
+        public static string GetHexString(int stringLength, bool lowercase = false) { throw null; }
+        public static void GetHexString(System.Span<char> destination, bool lowercase = false) { }
         public static int GetInt32(int toExclusive) { throw null; }
         public static int GetInt32(int fromInclusive, int toExclusive) { throw null; }
+        public static T[] GetItems<T>(System.ReadOnlySpan<T> choices, int length) { throw null; }
+        public static void GetItems<T>(System.ReadOnlySpan<T> choices, System.Span<T> destination) { }
         public virtual void GetNonZeroBytes(byte[] data) { }
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
+        public static string GetString(System.ReadOnlySpan<char> choices, int length) { throw null; }
+        public static void Shuffle<T>(System.Span<T> values) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RC2 : System.Security.Cryptography.SymmetricAlgorithm
@@ -1846,10 +1858,14 @@ namespace System.Security.Cryptography
         public virtual byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public byte[] Decrypt(System.ReadOnlySpan<byte> data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public int Decrypt(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.", DiagnosticId="SYSLIB0048", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual byte[] DecryptValue(byte[] rgb) { throw null; }
         public virtual byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public byte[] Encrypt(System.ReadOnlySpan<byte> data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         public int Encrypt(System.ReadOnlySpan<byte> data, System.Span<byte> destination, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.", DiagnosticId="SYSLIB0048", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual byte[] EncryptValue(byte[] rgb) { throw null; }
         public abstract System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters);
         public virtual byte[] ExportRSAPrivateKey() { throw null; }
@@ -1949,10 +1965,14 @@ namespace System.Security.Cryptography
         public static bool UseMachineKeyStore { get { throw null; } set { } }
         public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.", DiagnosticId="SYSLIB0048", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override byte[] DecryptValue(byte[] rgb) { throw null; }
         protected override void Dispose(bool disposing) { }
         public byte[] Encrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.", DiagnosticId="SYSLIB0048", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override byte[] EncryptValue(byte[] rgb) { throw null; }
         public byte[] ExportCspBlob(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.RSAParameters ExportParameters(bool includePrivateParameters) { throw null; }

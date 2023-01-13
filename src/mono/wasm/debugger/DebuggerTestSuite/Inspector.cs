@@ -224,6 +224,8 @@ namespace DebuggerTests
                         case "trace": _logger.LogTrace(line); break;
                         default: _logger.LogInformation(line); break;
                     }
+                    if (line == "console.debug: #debugger-app-ready#")
+                        await Client.SendCommand("DotnetDebugger.runTests", JObject.FromObject(new { type = "DotnetDebugger.runTests", to = "root" }), token);
 
                     if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
                     {
@@ -273,7 +275,8 @@ namespace DebuggerTests
 
         public async Task LaunchBrowser(DateTime start, TimeSpan span)
         {
-            _cancellationTokenSource.CancelAfter(span);
+            if (!System.Diagnostics.Debugger.IsAttached)
+                _cancellationTokenSource.CancelAfter(span);
             string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-host-and-connect/?test_id={Id}";
             if (!DebuggerTestBase.RunningOnChrome)
             {

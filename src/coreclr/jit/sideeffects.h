@@ -128,8 +128,12 @@ public:
 
             if ((m_flags & ALIAS_WRITES_LCL_VAR) != 0)
             {
+                // Stores to 'lvLiveInOutOfHndlr' locals cannot be reordered with
+                // exception-throwing nodes so we conservatively consider them
+                // globally visible.
+
                 LclVarDsc* const varDsc = m_compiler->lvaGetDesc(LclNum());
-                return varDsc->IsAlwaysAliveInMemory();
+                return varDsc->lvLiveInOutOfHndlr != 0;
             }
 
             return false;

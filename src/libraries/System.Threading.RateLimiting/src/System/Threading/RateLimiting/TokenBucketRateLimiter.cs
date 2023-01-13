@@ -53,17 +53,21 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
+            if (options.TokenLimit <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokenLimit)), nameof(options));
+            }
+            if (options.TokensPerPeriod <= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokensPerPeriod)), nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanOrEqual0, nameof(options.QueueLimit)), nameof(options));
             }
-            if (options.ReplenishmentPeriod < TimeSpan.Zero)
+            if (options.ReplenishmentPeriod <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanTimeSpan0, nameof(options.ReplenishmentPeriod)), nameof(options));
             }
 
             _options = new TokenBucketRateLimiterOptions
@@ -180,6 +184,7 @@ namespace System.Threading.RateLimiting
                             {
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
@@ -210,7 +215,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private RateLimitLease CreateFailedTokenLease(int tokenCount)
+        private TokenBucketLease CreateFailedTokenLease(int tokenCount)
         {
             int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
@@ -323,7 +328,17 @@ namespace System.Threading.RateLimiting
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
-                    if (_tokenCount >= nextPendingRequest.Count)
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? queue.DequeueHead()
+                            : queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
+                    else if (_tokenCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =

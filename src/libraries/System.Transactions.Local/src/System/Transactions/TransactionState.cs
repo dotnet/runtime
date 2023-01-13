@@ -1493,7 +1493,7 @@ namespace System.Transactions
             throw CreateTransactionAbortedException(tx);
         }
 
-        private static TransactionException CreateTransactionAbortedException(InternalTransaction tx)
+        private static TransactionAbortedException CreateTransactionAbortedException(InternalTransaction tx)
         {
             return TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }
@@ -1867,7 +1867,6 @@ namespace System.Transactions
             return false;
         }
 
-
         internal override void CompleteBlockingClone(InternalTransaction tx)
         {
             // First try to complete one of the internal blocking clones
@@ -1900,16 +1899,22 @@ namespace System.Transactions
                     Monitor.Exit(tx);
                     try
                     {
-                        dtx.Complete();
+                        try
+                        {
+                            dtx.Complete();
+                        }
+                        finally
+                        {
+                            dtx.Dispose();
+                        }
                     }
                     finally
                     {
-                        dtx.Dispose();
+                        Monitor.Enter(tx);
                     }
                 }
             }
         }
-
 
         internal override void CompleteAbortingClone(InternalTransaction tx)
         {
@@ -1937,11 +1942,18 @@ namespace System.Transactions
                     Monitor.Exit(tx);
                     try
                     {
-                        dtx.Complete();
+                        try
+                        {
+                            dtx.Complete();
+                        }
+                        finally
+                        {
+                            dtx.Dispose();
+                        }
                     }
                     finally
                     {
-                        dtx.Dispose();
+                        Monitor.Enter(tx);
                     }
                 }
             }

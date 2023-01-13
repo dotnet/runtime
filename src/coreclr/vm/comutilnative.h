@@ -243,4 +243,6 @@ public:
     static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndWrite, Object *stream);
 };
 
+BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+
 #endif // _COMUTILNATIVE_H_

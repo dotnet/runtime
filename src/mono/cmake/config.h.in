@@ -171,6 +171,9 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H 1
 
+/* Define to 1 if you have the <grp.h> header file. */
+#cmakedefine HAVE_GRP_H 1
+
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H 1
 
@@ -259,9 +262,6 @@
 
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
-
-/* Some VES is available at runtime */
-#cmakedefine ENABLE_ILGEN 1
 
 /* Disable non-blittable marshalling */
 #cmakedefine DISABLE_NONBLITTABLE
@@ -376,9 +376,6 @@
 
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
-
-/* Define to 1 if you have the `sched_getcpu' function. */
-#cmakedefine HAVE_SCHED_GETCPU 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -611,6 +608,9 @@
 
 /* Define to 1 if `st_atimespec' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
+
+/* Define to 1 if `super_class' is a member of `struct objc_super'. */
+#cmakedefine HAVE_OBJC_SUPER_SUPER_CLASS 1
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1

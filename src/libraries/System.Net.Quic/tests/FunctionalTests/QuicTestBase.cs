@@ -60,6 +60,7 @@ namespace System.Net.Quic.Tests
         public async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
+            _output.WriteLine(ex.ToString());
             Assert.Equal(expectedError, ex.QuicError);
             return ex;
         }

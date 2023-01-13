@@ -313,6 +313,7 @@ namespace Microsoft.NET.HostModel.Tests
                     windowsGraphicalUserInterface: false,
                     enableMacOSCodeSign: true));
                 Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
+                Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
             }
         }
 

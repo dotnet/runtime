@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Internal.IL.Stubs;
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -33,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -73,7 +76,25 @@ namespace ILCompiler.DependencyAnalysis
             // Module fixup cell
             builder.EmitPointerReloc(factory.PInvokeModuleFixup(_pInvokeMethodData.ModuleData));
 
-            builder.EmitInt((int)_pInvokeMethodData.CharSetMangling);
+            int flags = 0;
+
+            int charsetFlags = (int)_pInvokeMethodData.CharSetMangling;
+            Debug.Assert((charsetFlags & MethodFixupCellFlagsConstants.CharSetMask) == charsetFlags);
+            charsetFlags &= MethodFixupCellFlagsConstants.CharSetMask;
+            flags |= charsetFlags;
+
+            int? objcFunction = MarshalHelpers.GetObjectiveCMessageSendFunction(factory.Target, _pInvokeMethodData.ModuleData.ModuleName, _pInvokeMethodData.EntryPointName);
+            if (objcFunction.HasValue)
+            {
+                flags |= MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask;
+
+                int objcFunctionFlags = objcFunction.Value << MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
+                Debug.Assert((objcFunctionFlags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) == objcFunctionFlags);
+                objcFunctionFlags &= MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask;
+                flags |= objcFunctionFlags;
+            }
+
+            builder.EmitInt(flags);
 
             return builder.ToObjectData();
         }

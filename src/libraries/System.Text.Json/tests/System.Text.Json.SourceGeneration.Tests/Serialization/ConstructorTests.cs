@@ -11,7 +11,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ConstructorTests_Metadata_String : ConstructorTests_Metadata
     {
         public ConstructorTests_Metadata_String()
-            : base(new StringSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(ConstructorTestsContext_Metadata.Default))
         {
         }
     }
@@ -19,7 +19,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ConstructorTests_Metadata_AsyncStream : ConstructorTests_Metadata
     {
         public ConstructorTests_Metadata_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Metadata.Default, (options) => new ConstructorTestsContext_Metadata(options)))
+            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Metadata.Default))
         {
         }
     }
@@ -140,6 +140,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
+        [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -148,7 +149,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ConstructorTests_Default_String : ConstructorTests_Default
     {
         public ConstructorTests_Default_String()
-            : base(new StringSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(ConstructorTestsContext_Default.Default))
         {
         }
     }
@@ -156,7 +157,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ConstructorTests_Default_AsyncStream : ConstructorTests_Default
     {
         public ConstructorTests_Default_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Default.Default, (options) => new ConstructorTestsContext_Default(options)))
+            : base(new AsyncStreamSerializerWrapper(ConstructorTestsContext_Default.Default))
         {
         }
     }
@@ -275,6 +276,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
+        [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

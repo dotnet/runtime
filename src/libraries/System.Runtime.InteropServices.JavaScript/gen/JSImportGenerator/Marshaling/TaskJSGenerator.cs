@@ -45,14 +45,14 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == MarshalDirection.ManagedToUnmanaged && info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)
                     : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == MarshalDirection.UnmanagedToManaged && info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
@@ -64,14 +64,14 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
                     : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsManagedReturnPosition)
             {
                 yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)
@@ -79,21 +79,21 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private StatementSyntax ToManagedMethodVoid(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToManagedMethodVoid(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
         }
 
-        private StatementSyntax ToJSMethodVoid(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToJSMethodVoid(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(source))));
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
@@ -116,7 +116,7 @@ namespace Microsoft.Interop.JavaScript
                         }))))))))}))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))

@@ -25,7 +25,7 @@ namespace Microsoft.Interop.JavaScript
         public JSImportCodeContext(JSImportData attributeData, StubCodeContext inner)
         {
             _inner = inner;
-            Direction = CustomTypeMarshallingDirection.In;
+            Direction = MarshalDirection.ManagedToUnmanaged;
             AttributeData = attributeData;
         }
 
@@ -37,7 +37,7 @@ namespace Microsoft.Interop.JavaScript
         public JSExportCodeContext(JSExportData attributeData, StubCodeContext inner)
         {
             _inner = inner;
-            Direction = CustomTypeMarshallingDirection.Out;
+            Direction = MarshalDirection.UnmanagedToManaged;
             AttributeData = attributeData;
         }
 

@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDiffieHellmanSecurityTransforms : ECDiffieHellman
         {
-            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(nameof(ECDiffieHellman));
+            private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(typeof(ECDiffieHellman));
 
             public ECDiffieHellmanSecurityTransforms()
             {
@@ -27,18 +27,8 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
 
-            public override KeySizes[] LegalKeySizes
-            {
-                get
-                {
-                    // Return the three sizes that can be explicitly set (for backwards compatibility)
-                    return new[]
-                    {
-                        new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                        new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                    };
-                }
-            }
+            // Return the three sizes that can be explicitly set (for backwards compatibility)
+            public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
             public override int KeySize
             {
@@ -253,7 +243,7 @@ namespace System.Security.Cryptography
                 public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
                 {
                     Debug.Assert(ecParameters.D == null);
-                    _ecc = new EccSecurityTransforms(nameof(ECDiffieHellmanPublicKey));
+                    _ecc = new EccSecurityTransforms(typeof(ECDiffieHellmanPublicKey));
                     _ecc.ImportParameters(ecParameters);
                 }
 

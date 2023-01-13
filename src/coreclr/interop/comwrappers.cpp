@@ -135,12 +135,12 @@ namespace ABI
                 // Insert the 'this' pointer at the appropriate locations
                 // e.g.:
                 //       32-bit         |      64-bit
-                //   (0 * 4) % 16 =  0  |  (0 * 8) % 16 = 0
-                //   (1 * 4) % 16 =  4  |  (1 * 8) % 16 = 8
-                //   (2 * 4) % 16 =  8  |  (2 * 8) % 16 = 0
-                //   (3 * 4) % 16 = 12  |  (3 * 8) % 16 = 8
-                //   (4 * 4) % 16 =  0  |  (4 * 8) % 16 = 0
-                //   (5 * 4) % 16 =  4  |  (5 * 8) % 16 = 8
+                //   (0 * 4) % 16 =  0  |  (0 * 8) % 64 =  0
+                //   (1 * 4) % 16 =  4  |  (1 * 8) % 64 =  8
+                //   (2 * 4) % 16 =  8  |  (2 * 8) % 64 = 16
+                //   (3 * 4) % 16 = 12  |  ...
+                //   (4 * 4) % 16 =  0  |  (7 * 8) % 64 = 56
+                //   (5 * 4) % 16 =  4  |  (8 * 8) % 64 =  0
                 //
                 if (((dispCount * sizeof(void*)) % ABI::DispatchAlignmentThisPtr) == 0)
                 {
@@ -381,7 +381,7 @@ HRESULT ManagedObjectWrapper::Create(
     _ASSERTE((flags & CreateComInterfaceFlagsEx::InternalMask) == CreateComInterfaceFlagsEx::None);
 
     // Maximum number of runtime supplied vtables.
-    ABI::ComInterfaceEntry runtimeDefinedLocal[4];
+    ABI::ComInterfaceEntry runtimeDefinedLocal[2];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table.
@@ -400,7 +400,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
 
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
+    _ASSERTE(runtimeDefinedCount <= static_cast<int32_t>(ARRAY_SIZE(runtimeDefinedLocal)));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);

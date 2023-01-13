@@ -636,7 +636,7 @@ namespace System.Xml
                 {
                     foreach (SchemaEntity scEnt in schInfo.GeneralEntities.Values)
                     {
-                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Text, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
+                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
                         ent.SetBaseURI(scEnt.DeclaredURI);
                         dtNode.Entities.SetNamedItem(ent);
                     }
@@ -646,7 +646,7 @@ namespace System.Xml
                 {
                     foreach (SchemaEntity scEnt in schInfo.ParameterEntities.Values)
                     {
-                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Text, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
+                        XmlEntity ent = new XmlEntity(scEnt.Name.Name, scEnt.Pubid, scEnt.Url, scEnt.NData.IsEmpty ? null : scEnt.NData.Name, _doc);
                         ent.SetBaseURI(scEnt.DeclaredURI);
                         dtNode.Entities.SetNamedItem(ent);
                     }
@@ -925,7 +925,7 @@ namespace System.Xml
 
 #pragma warning disable 618
         // Creates a XmlValidatingReader suitable for parsing InnerXml strings
-        private static XmlReader CreateInnerXmlReader(string xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
+        private static XmlTextReaderImpl CreateInnerXmlReader(string xmlFragment, XmlNodeType nt, XmlParserContext context, XmlDocument doc)
         {
             XmlNodeType contentNT = nt;
             if (contentNT == XmlNodeType.Entity || contentNT == XmlNodeType.EntityReference)

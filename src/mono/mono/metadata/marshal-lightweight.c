@@ -8,14 +8,13 @@
 #include <alloca.h>
 #endif
 
-#include "metadata/method-builder-ilgen.h"
-#include "metadata/method-builder-ilgen-internals.h"
+#include "mono/metadata/method-builder-ilgen.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/tabledefs.h"
@@ -24,6 +23,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
@@ -289,7 +289,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 				  gboolean virtual_, gboolean need_direct_wrapper)
 {
 	int i;
-	int *tmp_nullable_locals;
 	gboolean void_ret = FALSE;
 	gboolean string_ctor = method && method->string_ctor;
 
@@ -308,8 +307,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 		}
 	}
 
-	tmp_nullable_locals = g_new0 (int, sig->param_count);
-
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		int type;
@@ -322,16 +319,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 		if (m_type_is_byref (t)) {
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			/* A Nullable<T> type don't have a boxed form, it's either null or a boxed T.
-			 * So to make this work we unbox it to a local variablee and push a reference to that.
-			 */
-			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-				tmp_nullable_locals [i] = mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
-
-				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type_internal (t));
-				mono_mb_emit_stloc (mb, tmp_nullable_locals [i]);
-				mono_mb_emit_ldloc_addr (mb, tmp_nullable_locals [i]);
-			}
 			continue;
 		}
 
@@ -384,13 +371,7 @@ handle_enum:
 			}
 			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			if (mono_class_is_nullable (mono_class_from_mono_type_internal (sig->params [i]))) {
-				/* Need to convert a boxed vtype to an mp to a Nullable struct */
-				mono_mb_emit_op (mb, CEE_UNBOX, mono_class_from_mono_type_internal (sig->params [i]));
-				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
-			} else {
-				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
-			}
+			mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
 			break;
 		default:
 			g_assert_not_reached ();
@@ -408,16 +389,9 @@ handle_enum:
 
 	if (m_type_is_byref (sig->ret)) {
 		/* perform indirect load and return by value */
-		int pos;
-		mono_mb_emit_byte (mb, CEE_DUP);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
-		mono_mb_patch_branch (mb, pos);
-
 		guint8 ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		g_assert (!m_type_is_byref (ret_byval));
-		// TODO: Handle null references
 		ldind_op = mono_type_to_ldind (ret_byval);
 		/* taken from similar code in mini-generic-sharing.c
 		 * we need to use mono_mb_emit_op to add method data when loading
@@ -470,28 +444,6 @@ handle_enum:
 
 	if (!void_ret)
 		mono_mb_emit_stloc (mb, loc_res);
-
-	/* Convert back nullable-byref arguments */
-	for (i = 0; i < sig->param_count; i++) {
-		MonoType *t = sig->params [i];
-
-		/*
-		 * Box the result and put it back into the array, the caller will have
-		 * to obtain it from there.
-		 */
-		if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-			mono_mb_emit_ldarg (mb, 1);
-			mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * i);
-			mono_mb_emit_byte (mb, CEE_ADD);
-
-			mono_mb_emit_ldloc (mb, tmp_nullable_locals [i]);
-			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (t));
-
-			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		}
-	}
-
-	g_free (tmp_nullable_locals);
 }
 
 static void
@@ -997,6 +949,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -2596,6 +2549,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by get_marshal_cb ()->emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -2675,6 +2629,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_PTR:
 				mono_emit_marshal (m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			default:
@@ -3136,8 +3091,5 @@ mono_marshal_lightweight_init (void)
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
 	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
-#ifdef DISABLE_NONBLITTABLE
-	mono_marshal_noilgen_init_blittable (&cb);
-#endif
 	mono_install_marshal_callbacks (&cb);
 }

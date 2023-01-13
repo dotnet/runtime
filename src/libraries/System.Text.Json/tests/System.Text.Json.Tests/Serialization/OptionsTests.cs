@@ -61,6 +61,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(options.PropertyNameCaseInsensitive);
             Assert.Null(options.PropertyNamingPolicy);
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
+            Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
@@ -76,6 +77,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
+            Assert.Throws<InvalidOperationException>(() => options.UnmappedMemberHandling = options.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
 
@@ -883,6 +885,7 @@ namespace System.Text.Json.Serialization.Tests
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
                     options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                     options.UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode;
+                    options.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
                 }
                 else
                 {
@@ -901,18 +904,9 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Type propertyType = property.PropertyType;
 
-                if (propertyType == typeof(bool))
+                if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
                 {
-                    if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
-                    {
-                        break; // readonly-ness is not a structural property of JsonSerializerOptions.
-                    }
-
-                    Assert.Equal((bool)property.GetValue(options), (bool)property.GetValue(newOptions));
-                }
-                else if (propertyType == typeof(int))
-                {
-                    Assert.Equal((int)property.GetValue(options), (int)property.GetValue(newOptions));
+                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
                 }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
@@ -927,26 +921,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else if (propertyType.IsValueType)
                 {
-                    if (property.Name == nameof(JsonSerializerOptions.ReadCommentHandling))
-                    {
-                        Assert.Equal(options.ReadCommentHandling, newOptions.ReadCommentHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.DefaultIgnoreCondition))
-                    {
-                        Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.NumberHandling))
-                    {
-                        Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
-                    }
-                    else if (property.Name == nameof(JsonSerializerOptions.UnknownTypeHandling))
-                    {
-                        Assert.Equal(options.UnknownTypeHandling, newOptions.UnknownTypeHandling);
-                    }
-                    else
-                    {
-                        Assert.True(false, $"Public option was added to JsonSerializerOptions but not copied in the copy ctor: {property.Name}");
-                    }
+                    Assert.Equal(property.GetValue(options), property.GetValue(newOptions));
                 }
                 else
                 {
@@ -1045,9 +1020,11 @@ namespace System.Text.Json.Serialization.Tests
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
+            Assert.False(typeInfo.IsReadOnly);
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo2.Type);
+            Assert.False(typeInfo2.IsReadOnly);
 
             Assert.NotSame(typeInfo, typeInfo2);
 
@@ -1066,6 +1043,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
+            Assert.True(typeInfo.IsReadOnly);
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Same(typeInfo, typeInfo2);
@@ -1077,6 +1055,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
             JsonTypeInfo<TestClassForEncoding> jti = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
 
+            Assert.False(jti.IsReadOnly);
             Assert.Equal(1, jti.Properties.Count);
             jti.Properties.Clear();
 
@@ -1088,11 +1067,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Using JsonTypeInfo will lock JsonSerializerOptions
             Assert.True(options.IsReadOnly);
+            Assert.True(jti.IsReadOnly);
             Assert.Throws<InvalidOperationException>(() => options.IncludeFields = false);
 
             // Getting JsonTypeInfo now should return a fresh immutable instance
             JsonTypeInfo<TestClassForEncoding> jti2 = (JsonTypeInfo<TestClassForEncoding>)options.GetTypeInfo(typeof(TestClassForEncoding));
             Assert.NotSame(jti, jti2);
+            Assert.True(jti2.IsReadOnly);
             Assert.Equal(1, jti2.Properties.Count);
             Assert.Throws<InvalidOperationException>(() => jti2.Properties.Clear());
 

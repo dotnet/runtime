@@ -86,7 +86,6 @@ void CLiteWeightStgdb<MiniMd>::Uninit()
 
 class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
 {
-    friend class CImportTlb;
     friend class RegMeta;
     friend class VerifyLayoutsMD;
     friend HRESULT TranslateSigHelper(
@@ -162,13 +161,6 @@ public:
         PVOID pImage,                       // Pointer to head of a file
         DWORD dwFileLength,                 // length of a flat file
         BOOL  bMappedImage,                 // Is the file mapped
-        PVOID *ppMetaData,                  // [out] pointer to the metadata
-        ULONG *pcbMetaData);                // [out] size of the metadata
-
-    __checkReturn
-    HRESULT FindObjMetaData(
-        PVOID pImage,                       // Pointer to an OBJ file
-        DWORD dwFileLength,                 // Length of the file
         PVOID *ppMetaData,                  // [out] pointer to the metadata
         ULONG *pcbMetaData);                // [out] size of the metadata
 

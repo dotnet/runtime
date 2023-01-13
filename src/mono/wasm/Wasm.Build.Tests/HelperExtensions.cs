@@ -5,9 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Diagnostics;
 using System.Text;
-using System.Collections;
-using Xunit.Abstractions;
 
 #nullable enable
 
@@ -58,6 +57,9 @@ namespace Wasm.Build.Tests
         public static IEnumerable<IEnumerable<object?>> Multiply(this IEnumerable<IEnumerable<object?>> data, params object?[][] rowsWithColumnArrays)
             => data.SelectMany(row =>
                         rowsWithColumnArrays.Select(new_cols => row.Concat(new_cols)));
+
+        public static IEnumerable<IEnumerable<object?>> MultiplyWithSingleArgs(this IEnumerable<IEnumerable<object?>> data, params object?[] arrayOfArgs)
+            => data.SelectMany(row => arrayOfArgs.Select(argCol => row.Concat(new[] { argCol })));
 
         public static object?[] Enumerate(this RunHost host)
         {
@@ -120,6 +122,19 @@ namespace Wasm.Build.Tests
 
                 dict[filename] = (oldValue.fullPath, unchanged);
             }
+        }
+
+        public static ProcessStartInfo RemoveEnvironmentVariables(this ProcessStartInfo psi, params string[] names)
+        {
+            var env = psi.Environment;
+            foreach (string name in names)
+            {
+                string? key = env.Keys.FirstOrDefault(k => string.Compare(k, name, StringComparison.OrdinalIgnoreCase) == 0);
+                if (key is not null)
+                    env.Remove("MSBuildSDKsPath");
+            }
+
+            return psi;
         }
     }
 }

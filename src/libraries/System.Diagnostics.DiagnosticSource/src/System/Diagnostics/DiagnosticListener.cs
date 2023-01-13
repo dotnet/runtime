@@ -34,8 +34,6 @@ namespace System.Diagnostics
         /// </summary>
         public static IObservable<DiagnosticListener> AllListeners
         {
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-               Justification = "ENABLE_HTTP_HANDLER is not enabled in the .NET current version")]
             get
             {
 #if ENABLE_HTTP_HANDLER
@@ -255,7 +253,6 @@ namespace System.Diagnostics
         /// Override abstract method
         /// </summary>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public override void Write(string name, object? value)
         {
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
@@ -429,7 +426,7 @@ namespace System.Diagnostics
         }
         #endregion
 
-        private IDisposable SubscribeInternal(IObserver<KeyValuePair<string, object?>> observer,
+        private DiagnosticSubscription SubscribeInternal(IObserver<KeyValuePair<string, object?>> observer,
             Predicate<string>? isEnabled1Arg, Func<string, object?, object?, bool>? isEnabled3Arg,
             Action<Activity, object?>? onActivityImport, Action<Activity, object?>? onActivityExport)
         {

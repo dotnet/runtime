@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests
                 additionalData[0] ^= 1;
 
                 byte[] decrypted = new byte[dataLength];
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(nonce, ciphertext, tag, decrypted, additionalData));
             }
         }
@@ -271,7 +271,7 @@ namespace System.Security.Cryptography.Tests
 
                 tag[0] ^= 1;
 
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(nonce, data, tag, data));
                 Assert.Equal(new byte[data.Length], data);
             }
@@ -310,10 +310,26 @@ namespace System.Security.Cryptography.Tests
                 tag[0] ^= 1;
 
                 byte[] plaintext = RandomNumberGenerator.GetBytes(testCase.Plaintext.Length);
-                Assert.Throws<CryptographicException>(
+                Assert.Throws<AuthenticationTagMismatchException>(
                     () => chaChaPoly.Decrypt(testCase.Nonce, ciphertext, tag, plaintext, testCase.AssociatedData));
                 Assert.Equal(new byte[plaintext.Length], plaintext);
             }
+        }
+
+        [Fact]
+        public static void UseAfterDispose()
+        {
+            byte[] key = new byte[32];
+            byte[] nonce = new byte[12];
+            byte[] plaintext = Array.Empty<byte>();
+            byte[] ciphertext = Array.Empty<byte>();
+            byte[] tag = "4eb972c9a8fb3a1b382bb4d36f5ffad1".HexToByteArray();
+
+            ChaCha20Poly1305 chaChaPoly = new ChaCha20Poly1305(key);
+            chaChaPoly.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => chaChaPoly.Encrypt(nonce, plaintext, ciphertext, new byte[tag.Length]));
+            Assert.Throws<ObjectDisposedException>(() => chaChaPoly.Decrypt(nonce, ciphertext, tag, plaintext));
         }
 
         public static IEnumerable<object[]> GetInvalidNonceSizes()
@@ -457,8 +473,12 @@ namespace System.Security.Cryptography.Tests
                 // OpenSSL is present, and a high enough version,
                 // but the distro build options turned off ChaCha/Poly.
             }
-            else if (PlatformDetection.OpenSslPresentOnSystem &&
-                (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported))
+            else if (PlatformDetection.IsOSX)
+            {
+                // CryptoKit is supported on macOS 10.15+, which is our minimum target.
+                expectedIsSupported = true;
+            }
+            else if (PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.IsOpenSslSupported)
             {
                 const int OpenSslChaChaMinimumVersion = 0x1_01_00_00_F; //major_minor_fix_patch_status
                 expectedIsSupported = SafeEvpPKeyHandle.OpenSslVersion >= OpenSslChaChaMinimumVersion;

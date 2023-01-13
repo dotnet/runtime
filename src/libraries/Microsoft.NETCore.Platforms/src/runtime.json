@@ -1022,6 +1022,16 @@
         "browser"
       ]
     },
+    "wasi": {
+      "#import": [
+        "any"
+      ]
+    },
+    "wasi-wasm": {
+      "#import": [
+        "wasi"
+      ]
+    },
     "centos": {
       "#import": [
         "rhel"
@@ -1578,6 +1588,12 @@
         "unix-x64"
       ]
     },
+    "freebsd-arm64": {
+      "#import": [
+        "freebsd",
+        "unix-arm64"
+      ]
+    },
     "freebsd.12": {
       "#import": [
         "freebsd"
@@ -1589,6 +1605,12 @@
         "freebsd-x64"
       ]
     },
+    "freebsd.12-arm64": {
+      "#import": [
+        "freebsd.12",
+        "freebsd-arm64"
+      ]
+    },
     "freebsd.13": {
       "#import": [
         "freebsd.12"
@@ -1598,6 +1620,12 @@
       "#import": [
         "freebsd.13",
         "freebsd.12-x64"
+      ]
+    },
+    "freebsd.13-arm64": {
+      "#import": [
+        "freebsd.13",
+        "freebsd.12-arm64"
       ]
     },
     "gentoo": {
@@ -3238,6 +3266,29 @@
       "#import": [
         "tizen.6.5.0",
         "tizen.6.0.0-x86"
+      ]
+    },
+    "tizen.7.0.0": {
+      "#import": [
+        "tizen.6.5.0"
+      ]
+    },
+    "tizen.7.0.0-arm64": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-arm64"
+      ]
+    },
+    "tizen.7.0.0-armel": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-armel"
+      ]
+    },
+    "tizen.7.0.0-x86": {
+      "#import": [
+        "tizen.7.0.0",
+        "tizen.6.5.0-x86"
       ]
     },
     "tvos": {

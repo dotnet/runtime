@@ -22,8 +22,7 @@ namespace System.Threading
 
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             _overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
         }

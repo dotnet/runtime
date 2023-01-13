@@ -41,12 +41,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_ConstructorMaxOf64Parameters(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, type));
-        }
-
-        [DoesNotReturn]
         public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType, JsonConverter converter)
         {
             throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType, converter.GetType()));
@@ -470,6 +464,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type classType, JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataConflictsWithUnmappedMemberHandling, classType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonPropertyInfo.PropertyType, jsonPropertyInfo.MemberName));
@@ -594,6 +594,12 @@ namespace System.Text.Json
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
             ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
+        {
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, type, unmappedPropertyName));
         }
 
         [DoesNotReturn]
@@ -809,6 +815,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(Type enumType, string enumName)
+        {
+            throw new InvalidOperationException(SR.Format(SR.InvalidEnumTypeWithSpecialChar, enumType.Name, enumName));
         }
 
         [DoesNotReturn]

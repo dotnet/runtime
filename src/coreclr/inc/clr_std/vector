@@ -215,6 +215,33 @@ namespace std
                 }
             }
 
+            vector(const vector<T>&) = delete;
+            vector<T>& operator=(const vector<T>&) = delete;
+
+            vector(vector<T>&& v) noexcept
+                : m_size(v.m_size)
+                , m_capacity(v.m_capacity)
+                , m_pelements(v.m_pelements)
+                , m_isBufferOwner(v.m_isBufferOwner)
+            {
+                v.m_isBufferOwner = false;
+            }
+
+            vector<T>& operator=(vector<T>&& v) noexcept
+            {
+                if (m_isBufferOwner)
+                {
+                    erase(m_pelements, 0, m_size);
+                    delete [] (BYTE*)m_pelements;
+                }
+
+                m_size = v.m_size;
+                m_capacity = v.m_capacity;
+                m_pelements = v.m_pelements;
+                m_isBufferOwner = v.m_isBufferOwner;
+                v.m_isBufferOwner = false;
+                return *this;
+            }
 
             size_t size() const
             {

@@ -1,15 +1,17 @@
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace GitHub_22815
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
             bool result = true;
             if (Avx2.IsSupported)
@@ -21,7 +23,7 @@ namespace GitHub_22815
                          test256((ushort)1) && test256((int)1) && test256((uint)1) && 
                          test256((long)1) && test256((ulong)1);
             }
-            return result ? Pass : Fail;
+            Assert.True(result);
         }
 
         static unsafe bool test128(byte v)

@@ -735,9 +735,9 @@ namespace System.Xml.XPath
             return s;
         }
 
-        private static XmlNameTable CreateNameTable()
+        private static NameTable CreateNameTable()
         {
-            XmlNameTable nameTable = new NameTable();
+            var nameTable = new NameTable();
             nameTable.Add(string.Empty);
             nameTable.Add(xmlnsPrefixNamespace);
             nameTable.Add(xmlPrefixNamespace);

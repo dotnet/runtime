@@ -20,6 +20,9 @@
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "cgroupcpu.h"
+#include "threadstore.h"
+#include "thread.h"
+#include "threadstore.inl"
 
 #define _T(s) s
 #include "RhConfig.h"
@@ -46,26 +49,6 @@
 #if HAVE_LWP_SELF
 #include <lwp.h>
 #endif
-
-#if HAVE_SYS_VMPARAM_H
-#include <sys/vmparam.h>
-#endif  // HAVE_SYS_VMPARAM_H
-
-#if HAVE_MACH_VM_TYPES_H
-#include <mach/vm_types.h>
-#endif // HAVE_MACH_VM_TYPES_H
-
-#if HAVE_MACH_VM_PARAM_H
-#include <mach/vm_param.h>
-#endif  // HAVE_MACH_VM_PARAM_H
-
-#ifdef __APPLE__
-#include <mach/vm_statistics.h>
-#include <mach/mach_types.h>
-#include <mach/mach_init.h>
-#include <mach/mach_host.h>
-#include <mach/mach_port.h>
-#endif // __APPLE__
 
 #if HAVE_CLOCK_GETTIME_NSEC_NP
 #include <time.h>
@@ -275,8 +258,6 @@ public:
 #else // HAVE_CLOCK_GETTIME_NSEC_NP
                 st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
 #endif // HAVE_CLOCK_GETTIME_NSEC_NP
-                // Verify that if the wait timed out, the event was not set
-                ASSERT((st != ETIMEDOUT) || !m_state);
             }
 
             if (st != 0)
@@ -346,11 +327,6 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
-#if !HAVE_THREAD_LOCAL
-extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
-extern "C" void *__dso_handle;
-#endif
-
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
 void ConfigureSignals()
@@ -406,6 +382,10 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+static pthread_key_t key;
+#endif
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -430,11 +410,17 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 
     InitializeCurrentProcessCpuCount();
 
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
+    {
+        return false;
+    }
+#endif
+
     return true;
 }
 
-#if HAVE_THREAD_LOCAL
-
+#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -456,8 +442,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-
-#endif // HAVE_THREAD_LOCAL
+#endif
 
 // This thread local variable is used for delegate marshalling
 DECLSPEC_THREAD intptr_t tls_thunkData;
@@ -474,22 +459,24 @@ EXTERN_C intptr_t RhGetCurrentThunkContext()
 }
 #endif //FEATURE_EMULATED_TLS
 
-// Attach thread to PAL.
-// It can be called multiple times for the same thread.
+// Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
 // Parameters:
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-#if HAVE_THREAD_LOCAL
-    tls_destructionMonitor.SetThread(thread);
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    if (pthread_setspecific(key, thread) != 0)
+    {
+        _ASSERTE(!"pthread_setspecific failed");
+        RhFailFast();
+    }
 #else
-    __cxa_thread_atexit(RuntimeThreadShutdown, thread, &__dso_handle);
+    tls_destructionMonitor.SetThread(thread);
 #endif
 }
 
-// Detach thread from PAL.
-// It fails fast if some other thread value was attached to PAL.
+// Detach thread from OS notifications.
 // Parameters:
 //  thread        - thread to detach
 // Return:
@@ -497,10 +484,6 @@ extern "C" void PalAttachThread(void* thread)
 extern "C" bool PalDetachThread(void* thread)
 {
     UNREFERENCED_PARAMETER(thread);
-    if (g_threadExitCallback != nullptr)
-    {
-        g_threadExitCallback();
-    }
     return true;
 }
 
@@ -754,7 +737,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
 
         void * pRetVal = mmap(pAddress, alignedSize, unixProtect, flags, -1, 0);
 
-        if (pRetVal != NULL)
+        if (pRetVal != MAP_FAILED)
         {
             void * pAlignedRetVal = (void *)(((size_t)pRetVal + (Alignment - 1)) & ~(Alignment - 1));
             size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
@@ -943,16 +926,13 @@ extern "C" UInt32_BOOL ResetEvent(HANDLE event)
 
 extern "C" uint32_t GetEnvironmentVariableA(const char * name, char * buffer, uint32_t size)
 {
-    // Using std::getenv instead of getenv since it is guaranteed to be thread safe w.r.t. other
-    // std::getenv calls in C++11
-    const char* value = std::getenv(name);
+    const char* value = getenv(name);
     if (value == NULL)
     {
         return 0;
     }
 
     size_t valueLen = strlen(value);
-
     if (valueLen < size)
     {
         strcpy(buffer, value);
@@ -988,22 +968,26 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
         g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
         errno = savedErrNo;
     }
+
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    if (pThread)
+    {
+        pThread->SetActivationPending(false);
+    }
+
+    // Call the original handler when it is not ignored or default (terminate).
+    if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+    {
+        _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+        g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+    }
     else
     {
-        // Call the original handler when it is not ignored or default (terminate).
-        if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+        if (g_previousActivationHandler.sa_handler != SIG_IGN &&
+            g_previousActivationHandler.sa_handler != SIG_DFL)
         {
-            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
-            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previousActivationHandler.sa_handler != SIG_IGN &&
-                g_previousActivationHandler.sa_handler != SIG_DFL)
-            {
-                _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
-                g_previousActivationHandler.sa_handler(code);
-            }
+            _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
+            g_previousActivationHandler.sa_handler(code);
         }
     }
 }
@@ -1019,20 +1003,29 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
     ThreadUnixHandle* threadHandle = (ThreadUnixHandle*)hThread;
+    Thread* pThread = (Thread*)pThreadToHijack;
+    pThread->SetActivationPending(true);
+
     int status = pthread_kill(*threadHandle->GetObject(), INJECT_ACTIVATION_SIGNAL);
+
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
-
+    // ESRCH may happen on some OSes when the thread is exiting.
+    // The thread should leave cooperative mode, but we could have seen it in its earlier state.
+    if ((status == EAGAIN)
+     || (status == ESRCH)
 #ifdef __APPLE__
-    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
-    if (status == ENOTSUP)
+        // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+     || (status == ENOTSUP)
+#endif
+       )
     {
+        pThread->SetActivationPending(false);
         return;
     }
-#endif
 
-    if ((status != 0) && (status != EAGAIN) && (status != ESRCH))
+    if (status != 0)
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,

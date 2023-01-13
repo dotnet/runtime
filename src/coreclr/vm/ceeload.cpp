@@ -506,7 +506,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 #endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
 
-    LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
+    LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
 
 #endif // DACCESS_COMPILE
@@ -1772,7 +1772,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 
         SIZE_T size = GetDomainLocalModuleSize();
 
-        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocating %i bytes for precomputed statics in module %S in LoaderAllocator %p\n",
+        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocating %zi bytes for precomputed statics in module %s in LoaderAllocator %p\n",
             size, this->GetDebugName(), pLoaderAllocator));
 
         // We guarantee alignment for 64-bit regular statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
@@ -2389,12 +2389,12 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         if (SUCCEEDED(hr))
         {
             m_pISymUnmanagedReader = pReader.Extract();
-            LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %S\n", GetDebugName()));
+            LOG((LF_CORDB, LL_INFO10, "M::GISUR: Loaded symbols for module %s\n", GetDebugName()));
         }
         else
         {
             // We failed to create the reader, don't try again next time
-            LOG((LF_CORDB, LL_INFO10, "M::GISUR: Failed to load symbols for module %S\n", GetDebugName()));
+            LOG((LF_CORDB, LL_INFO10, "M::GISUR: Failed to load symbols for module %s\n", GetDebugName()));
             _ASSERTE( m_pISymUnmanagedReader == k_pInvalidSymReader );
         }
 
@@ -2464,7 +2464,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     _ASSERTE( m_pISymUnmanagedReader == NULL );
 
 #ifdef LOGGING
-    LPCWSTR pName = NULL;
+    LPCUTF8 pName = NULL;
     pName = GetDebugName();
 #endif // LOGGING
 
@@ -2491,17 +2491,11 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     // the assembly was loaded in.</REVISIT_TODO>
     if (CORDebuggerAttached())
     {
-        AppDomainIterator i(FALSE);
-
-        while (i.Next())
+        AppDomain *pDomain = AppDomain::GetCurrentDomain();
+        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
+                                                pDomain->ContainsAssembly(m_pAssembly)))
         {
-            AppDomain *pDomain = i.GetDomain();
-
-            if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                  pDomain->ContainsAssembly(m_pAssembly)))
-            {
-                g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
-            }
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }
     }
 }
@@ -2912,23 +2906,6 @@ BYTE *Module::GetProfilerBase()
     }
 }
 
-void Module::AddActiveDependency(Module *pModule, BOOL unconditional)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pModule));
-        PRECONDITION(pModule != this);
-        PRECONDITION(!IsSystem());
-        // Postcondition about activation
-    }
-    CONTRACT_END;
-
-    pModule->EnsureActive();
-    RETURN;
-}
-
 #endif //!DACCESS_COMPILE
 
 Assembly *
@@ -3180,12 +3157,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
             RETURN NULL;
         }
 
-        // This is required only because of some lower casing on the name
-        kFile = GetAssembly()->GetManifestFileToken(moduleName);
-        if (kFile == mdTokenNil)
-            RETURN NULL;
-
-        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(kFile);
+        RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
     }
 
     if (kFile == mdFileNil)
@@ -3257,12 +3229,8 @@ PTR_Module Module::LookupModule(mdToken kFile)
     {
         LPCSTR moduleName;
         IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &moduleName));
-        mdFile kFileLocal = GetAssembly()->GetManifestFileToken(moduleName);
 
-        if (kFileLocal == mdTokenNil)
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-
-        RETURN GetAssembly()->GetModule()->LookupModule(kFileLocal);
+        RETURN GetAssembly()->GetModule()->LookupModule(mdFileNil);
     }
 
     PTR_Module pModule = LookupFile(kFile);

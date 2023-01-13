@@ -16,7 +16,7 @@
     <AndroidTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</AndroidTestRunnerDir>
     <WasmTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</WasmTestRunnerDir>
 
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
-    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
   </ItemGroup>
 
   <!--

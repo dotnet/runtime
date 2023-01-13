@@ -515,10 +515,9 @@ namespace System.DirectoryServices.Protocols
             return byteArray;
         }
 
-        private static int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
+        private static unsafe int EncodingMultiByteArrayHelper(SafeBerHandle berElement, byte[][] tempValue, char fmt, nuint tag)
         {
             IntPtr berValArray = IntPtr.Zero;
-            IntPtr tempPtr;
             BerVal[] managedBervalArray = null;
             int error = 0;
 
@@ -530,6 +529,7 @@ namespace System.DirectoryServices.Protocols
                     berValArray = Utility.AllocHGlobalIntPtrArray(tempValue.Length + 1);
                     int structSize = Marshal.SizeOf(typeof(BerVal));
                     managedBervalArray = new BerVal[tempValue.Length];
+                    void** pBerValArray = (void**)berValArray;
 
                     for (i = 0; i < tempValue.Length; i++)
                     {
@@ -549,12 +549,10 @@ namespace System.DirectoryServices.Protocols
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
-                        tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, valPtr);
+                        pBerValArray[i] = (void*)valPtr;
                     }
 
-                    tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+                    pBerValArray[i] = null;
                 }
 
                 error = BerPal.PrintBerArray(berElement, new string(fmt, 1), berValArray, tag);

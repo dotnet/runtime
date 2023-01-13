@@ -672,35 +672,6 @@ CopyFileW(
 #define CopyFile CopyFileA
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-DeleteFileW(
-        IN LPCWSTR lpFileName);
-
-#ifdef UNICODE
-#define DeleteFile DeleteFileW
-#else
-#define DeleteFile DeleteFileA
-#endif
-
-#define MOVEFILE_REPLACE_EXISTING      0x00000001
-#define MOVEFILE_COPY_ALLOWED          0x00000002
-
-PALIMPORT
-BOOL
-PALAPI
-MoveFileExW(
-        IN LPCWSTR lpExistingFileName,
-        IN LPCWSTR lpNewFileName,
-        IN DWORD dwFlags);
-
-#ifdef UNICODE
-#define MoveFileEx MoveFileExW
-#else
-#define MoveFileEx MoveFileExA
-#endif
-
 typedef struct _WIN32_FIND_DATAA {
     DWORD dwFileAttributes;
     FILETIME ftCreationTime;
@@ -858,12 +829,6 @@ GetStdHandle(
          IN DWORD nStdHandle);
 
 PALIMPORT
-BOOL
-PALAPI
-SetEndOfFile(
-         IN HANDLE hFile);
-
-PALIMPORT
 DWORD
 PALAPI
 SetFilePointer(
@@ -989,19 +954,6 @@ GetTempPathA(
 #endif
 
 PALIMPORT
-DWORD
-PALAPI
-GetCurrentDirectoryW(
-             IN DWORD nBufferLength,
-             OUT LPWSTR lpBuffer);
-
-#ifdef UNICODE
-#define GetCurrentDirectory GetCurrentDirectoryW
-#else
-#define GetCurrentDirectory GetCurrentDirectoryA
-#endif
-
-PALIMPORT
 HANDLE
 PALAPI
 CreateSemaphoreExW(
@@ -1122,11 +1074,6 @@ PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessId();
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentSessionId();
 
 PALIMPORT
 HANDLE
@@ -2602,16 +2549,6 @@ SetThreadPriority(
           IN int nPriority);
 
 PALIMPORT
-BOOL
-PALAPI
-GetThreadTimes(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpExitTime,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime);
-
-PALIMPORT
 HRESULT
 PALAPI
 SetThreadDescription(
@@ -2682,6 +2619,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
+#elif defined(__FreeBSD__) && defined(HOST_ARM64)
+#define PAL_CS_NATIVE_DATA_SIZE 24
 #elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(HOST_ARM64)
@@ -2733,9 +2672,7 @@ typedef struct _CRITICAL_SECTION {
 PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT BOOL PALAPI InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCriticalSection, DWORD dwSpinCount, DWORD Flags);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT BOOL PALAPI TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
 #define SEM_FAILCRITICALERRORS          0x0001
 #define SEM_NOOPENFILEERRORBOX          0x8000
@@ -2789,16 +2726,6 @@ CreateFileMappingW(
 #define FILE_MAP_READ       SECTION_MAP_READ
 #define FILE_MAP_ALL_ACCESS SECTION_ALL_ACCESS
 #define FILE_MAP_COPY       SECTION_QUERY
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenFileMappingW(
-         IN DWORD dwDesiredAccess,
-         IN BOOL bInheritHandle,
-         IN LPCWSTR lpName);
-
-#define OpenFileMapping OpenFileMappingW
 
 typedef INT_PTR (PALAPI_NOEXPORT *FARPROC)();
 
@@ -2942,14 +2869,6 @@ BOOL
 PALAPI
 FreeLibrary(
     IN OUT HMODULE hLibModule);
-
-PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode);
 
 PALIMPORT
 BOOL
@@ -3712,7 +3631,7 @@ to the variable that 'Addend' points to.
 Parameters
 
 lpAddend
-[in/out] Pointer to the variable to to added.
+[in/out] Pointer to the variable to added.
 
 Return Values
 
@@ -3799,23 +3718,6 @@ YieldProcessor()
     return;
 #endif
 }
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber();
-
-/*++
-Function:
-PAL_HasGetCurrentProcessorNumber
-
-Checks if GetCurrentProcessorNumber is available in the current environment
-
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber();
 
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
@@ -3992,44 +3894,6 @@ GetSystemInfo(
 PALIMPORT
 BOOL
 PALAPI
-CreatePipe(
-    OUT PHANDLE hReadPipe,
-    OUT PHANDLE hWritePipe,
-    IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
-    IN DWORD nSize
-    );
-
-//
-// NUMA related APIs
-//
-
-PALIMPORT
-BOOL
-PALAPI
-GetNumaHighestNodeNumber(
-  OUT PULONG HighestNodeNumber
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetNumaProcessorNode(WORD procNo, WORD* node);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAllocExNuma(
-  IN HANDLE hProcess,
-  IN OPTIONAL LPVOID lpAddress,
-  IN SIZE_T dwSize,
-  IN DWORD flAllocationType,
-  IN DWORD flProtect,
-  IN DWORD nndPreferred
-);
-
-PALIMPORT
-BOOL
-PALAPI
 PAL_SetCurrentThreadAffinity(WORD procNo);
 
 PALIMPORT
@@ -4059,7 +3923,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define exit          PAL_exit
 #define printf        PAL_printf
 #define vprintf       PAL_vprintf
-#define wprintf       PAL_wprintf
 #define wcstod        PAL_wcstod
 #define wcstoul       PAL_wcstoul
 #define wcscat        PAL_wcscat
@@ -4069,7 +3932,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcschr        PAL_wcschr
 #define wcsrchr       PAL_wcsrchr
 #define wcsstr        PAL_wcsstr
-#define swscanf       PAL_swscanf
 #define wcspbrk       PAL_wcspbrk
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy
@@ -4079,9 +3941,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define strtoul       PAL_strtoul
 #define strtoull      PAL_strtoull
 #define fprintf       PAL_fprintf
-#define fwprintf      PAL_fwprintf
 #define vfprintf      PAL_vfprintf
-#define vfwprintf     PAL_vfwprintf
 #define rand          PAL_rand
 #define time          PAL_time
 #define getenv        PAL_getenv
@@ -4158,30 +4018,7 @@ typedef unsigned int wint_t;
 #endif
 
 #ifndef PAL_STDCPP_COMPAT
-
-#if defined(_DEBUG)
-
-/*++
-Function:
-PAL_memcpy
-
-Overlapping buffer-safe version of memcpy.
-See MSDN doc for memcpy
---*/
-EXTERN_C
-PALIMPORT
-DLLEXPORT
-void *PAL_memcpy (void *dest, const void * src, size_t count);
-
-PALIMPORT void * __cdecl memcpy(void *, const void *, size_t) THROW_DECL;
-
-#define memcpy PAL_memcpy
-#define IS_PAL_memcpy 1
-#define TEST_PAL_DEFERRED(def) IS_##def
-#define IS_REDEFINED_IN_PAL(def) TEST_PAL_DEFERRED(def)
-#else //defined(_DEBUG)
 PALIMPORT void * __cdecl memcpy(void *, const void *, size_t);
-#endif //defined(_DEBUG)
 PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
@@ -4221,6 +4058,7 @@ PALIMPORT int __cdecl iswspace(wint_t);
 PALIMPORT int __cdecl iswxdigit(wint_t);
 PALIMPORT wint_t __cdecl towupper(wint_t);
 PALIMPORT wint_t __cdecl towlower(wint_t);
+PALIMPORT int remove(const char*);
 #endif // PAL_STDCPP_COMPAT
 
 /* _TRUNCATE */
@@ -4238,13 +4076,8 @@ PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _vsnwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl swprintf_s(WCHAR *, size_t, const WCHAR *, ... );
-PALIMPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
-PALIMPORT int __cdecl vswprintf_s( WCHAR *, size_t, const WCHAR *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
 
@@ -4258,9 +4091,6 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
-PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
-PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
@@ -4414,6 +4244,12 @@ inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
 
+#ifdef __APPLE__
+inline __int64 abs(SSIZE_T _X) {
+    return llabs((__int64)_X);
+}
+#endif
+
 }
 #endif
 
@@ -4494,13 +4330,7 @@ PALIMPORT LONG __cdecl PAL_ftell(PAL_FILE *);
 PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
 PALIMPORT PAL_FILE * __cdecl PAL_fopen(const char *, const char *);
 PALIMPORT int __cdecl PAL_setvbuf(PAL_FILE *stream, char *, int, size_t);
-PALIMPORT DLLEXPORT int __cdecl PAL_fwprintf(PAL_FILE *, const WCHAR *, ...);
-PALIMPORT int __cdecl PAL_vfwprintf(PAL_FILE *, const WCHAR *, va_list);
-PALIMPORT int __cdecl PAL_wprintf(const WCHAR*, ...);
 
-PALIMPORT int __cdecl _getw(PAL_FILE *);
-PALIMPORT int __cdecl _putw(int, PAL_FILE *);
-PALIMPORT PAL_FILE * __cdecl _fdopen(int, const char *);
 PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 /* Maximum value that can be returned by the rand function. */

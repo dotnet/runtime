@@ -98,7 +98,11 @@ PROBE_FRAME_SIZE = 0xD0  // 4 * 8  for fixed part of PInvokeTransitionFrame (fp,
 .macro FixupHijackedCallstack
 
     // x2 <- GetThread()
+#ifdef FEATURE_EMULATED_TLS
+    GETTHREAD_ETLS_2
+#else
     INLINE_GETTHREAD x2
+#endif
 
     //
     // Fix the stack by restoring the original return address

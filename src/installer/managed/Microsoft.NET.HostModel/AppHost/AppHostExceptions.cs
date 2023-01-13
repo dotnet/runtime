@@ -49,7 +49,8 @@ namespace Microsoft.NET.HostModel.AppHost
     /// </summary>
     public sealed class AppHostNotCUIException : AppHostUpdateException
     {
-        internal AppHostNotCUIException()
+        internal AppHostNotCUIException(ushort subsystem)
+            : base($"Selected apphost is not a CUI Windows application. Subsystem: {subsystem}")
         {
         }
     }
@@ -60,8 +61,12 @@ namespace Microsoft.NET.HostModel.AppHost
     /// </summary>
     public sealed class AppHostNotPEFileException : AppHostUpdateException
     {
-        internal AppHostNotPEFileException()
+        public readonly string Reason;
+
+        internal AppHostNotPEFileException(string reason)
+            : base($"Selected apphost is not a valid PE file. {reason}")
         {
+            Reason = reason;
         }
     }
 
@@ -73,8 +78,9 @@ namespace Microsoft.NET.HostModel.AppHost
         public readonly int ExitCode;
 
         internal AppHostSigningException(int exitCode, string signingErrorMessage)
-            : base(signingErrorMessage)
+            : base($"{signingErrorMessage}; Exit code: {exitCode}")
         {
+            ExitCode = exitCode;
         }
     }
 
@@ -86,6 +92,7 @@ namespace Microsoft.NET.HostModel.AppHost
         public string LongName { get; }
 
         internal AppNameTooLongException(string name)
+            : base($"The name of the app is too long (must be less than 1024 bytes). Name: {name}")
         {
             LongName = name;
         }

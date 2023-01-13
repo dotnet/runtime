@@ -14,11 +14,13 @@
 
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
-// Keep these in sync with src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
-#define READYTORUN_MAJOR_VERSION 0x0008
+// Keep these in sync with
+//  src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
+//  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
+#define READYTORUN_MAJOR_VERSION 0x0009
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x008
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -27,6 +29,7 @@
 // R2R Version 6.0 changes managed layout for sequential types with any unmanaged non-blittable fields.
 //     R2R 6.0 is not backward compatible with 5.x or earlier.
 // R2R Version 8.0 Changes the alignment of the Int128 type
+// R2R Version 9.0 adds support for the Vector512 type
 
 struct READYTORUN_CORE_HEADER
 {
@@ -87,6 +90,7 @@ enum class ReadyToRunSectionType : uint32_t
     PgoInstrumentationData      = 117, // Added in V5.2
     ManifestAssemblyMvids       = 118, // Added in V5.3
     CrossModuleInlineInfo       = 119, // Added in V6.2
+    HotColdMap                  = 120, // Added in V8.0
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

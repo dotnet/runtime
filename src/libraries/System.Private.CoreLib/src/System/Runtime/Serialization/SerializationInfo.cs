@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization
         /// <param name="name"> The name of the data to be updated.</param>
         /// <param name="value"> The new value.</param>
         /// <param name="type"> The type of the data being added.</param>
-        public void UpdateValue(string name, object value, Type type)
+        internal void UpdateValue(string name, object value, Type type)
         {
             Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
             Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");

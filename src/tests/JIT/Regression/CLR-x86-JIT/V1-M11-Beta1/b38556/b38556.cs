@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class JJ
+    public class JJ
     {
         uint[] m_au = null;
         static uint[] s_au = new uint[7];
@@ -30,7 +30,7 @@ namespace Test
                     ref s_au[0],
                     ref s_au)[0]);
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

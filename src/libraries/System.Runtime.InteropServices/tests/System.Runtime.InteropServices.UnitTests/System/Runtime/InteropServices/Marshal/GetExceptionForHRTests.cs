@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public class GetExceptionForHRTests
     {
         [Theory]

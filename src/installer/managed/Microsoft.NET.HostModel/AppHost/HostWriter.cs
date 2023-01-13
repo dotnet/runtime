@@ -59,7 +59,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     if (!appHostIsPEImage)
                     {
-                        throw new AppHostNotPEFileException();
+                        throw new AppHostNotPEFileException("PE file signature not found.");
                     }
 
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);

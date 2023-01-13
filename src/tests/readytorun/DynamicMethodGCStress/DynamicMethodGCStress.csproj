@@ -11,15 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="3" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_GCStress=3
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_GCStress=3
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

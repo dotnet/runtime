@@ -17,8 +17,10 @@ namespace System.IO
         private void SetAccessOrWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
             SetAccessOrWriteTimeCore(handle, path, time, isAccessTime, checkCreationTime: false, asDirectory);
 
+#pragma warning disable IDE0060
         // This is not used on these platforms, but is needed for source compat
         private static Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string? path, long seconds, long nanoseconds) =>
             throw new InvalidOperationException();
+#pragma warning restore IDE0060
     }
 }

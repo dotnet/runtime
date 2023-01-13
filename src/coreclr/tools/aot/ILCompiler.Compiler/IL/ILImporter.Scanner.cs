@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     // Implements an IL scanner that scans method bodies to be compiled by the code generation
@@ -245,7 +247,7 @@ namespace Internal.IL
                 _compilation.DetectGenericCycles(_canonMethod, method);
             }
 
-            return _factory.MethodEntrypoint(method);
+            return _factory.MethodEntrypointOrTentativeMethod(method);
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -419,6 +421,8 @@ namespace Internal.IL
                     resolvedConstraint = true;
 
                     exactType = directMethod.OwningType;
+
+                    _factory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {

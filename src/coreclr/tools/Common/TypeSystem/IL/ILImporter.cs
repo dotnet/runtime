@@ -576,7 +576,7 @@ namespace Internal.IL
                         ImportConvert(WellKnownType.Double, false, false);
                         break;
                     case ILOpcode.conv_u4:
-                        ImportConvert(WellKnownType.UInt32, false, false);
+                        ImportConvert(WellKnownType.UInt32, false, true);
                         break;
                     case ILOpcode.conv_u8:
                         ImportConvert(WellKnownType.UInt64, false, true);
@@ -820,7 +820,7 @@ namespace Internal.IL
                         ImportStoreIndirect(WellKnownType.IntPtr);
                         break;
                     case ILOpcode.conv_u:
-                        ImportConvert(WellKnownType.UIntPtr, false, false);
+                        ImportConvert(WellKnownType.UIntPtr, false, true);
                         break;
                     case ILOpcode.prefix1:
                         opCode = (ILOpcode)(0x100 + ReadILByte());

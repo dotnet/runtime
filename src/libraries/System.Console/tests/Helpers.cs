@@ -6,11 +6,8 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-static class Helpers
+class Helpers
 {
-    public static bool IsConsoleInSupported =>
-        !PlatformDetection.IsAndroid && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS && !PlatformDetection.IsBrowser;
-
     public static void SetAndReadHelper(Action<TextWriter> setHelper, Func<TextWriter> getHelper, Func<StreamReader, string> readHelper)
     {
         const string TestString = "Test";

@@ -144,14 +144,20 @@ update_gc_info (mword used_slots_size)
 
 	sgen_gc_info.heap_size_bytes = major_size + sgen_los_memory_usage_total;
 	sgen_gc_info.fragmented_bytes = sgen_gc_info.heap_size_bytes - sgen_los_memory_usage - major_size_in_use;
-	guint64 physical_ram_size = mono_determine_physical_ram_size ();
-	sgen_gc_info.memory_load_bytes = physical_ram_size ? sgen_gc_info.total_available_memory_bytes - (guint64)(((double)sgen_gc_info.total_available_memory_bytes*mono_determine_physical_ram_available_size ())/physical_ram_size) : 0;
 	sgen_gc_info.total_committed_bytes = major_size_in_use + sgen_los_memory_usage;
 	sgen_gc_info.total_promoted_bytes = sgen_total_promoted_size - total_promoted_size_start;
 	sgen_gc_info.total_major_size_bytes = major_size;
 	sgen_gc_info.total_major_size_in_use_bytes = major_size_in_use;
 	sgen_gc_info.total_los_size_bytes = sgen_los_memory_usage_total;
 	sgen_gc_info.total_los_size_in_use_bytes = sgen_los_memory_usage;
+}
+
+static void
+update_gc_info_memory_load (void)
+{
+	// We update this separately because it is not safe to do it during GC stw
+	guint64 physical_ram_size = mono_determine_physical_ram_size ();
+	sgen_gc_info.memory_load_bytes = physical_ram_size ? sgen_gc_info.total_available_memory_bytes - (guint64)(((double)sgen_gc_info.total_available_memory_bytes*mono_determine_physical_ram_available_size ())/physical_ram_size) : 0;
 }
 
 gboolean
@@ -387,6 +393,8 @@ sgen_memgov_collection_end (int generation, gint64 stw_time)
 		sgen_pointer_queue_clear (&log_entries);
 		mono_os_mutex_unlock (&log_entries_mutex);
 	}
+
+	update_gc_info_memory_load ();
 }
 
 /*

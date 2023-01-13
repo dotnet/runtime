@@ -1009,9 +1009,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned   varNum = tree->GetLclNum();
     LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-    // Ensure that lclVar nodes are typed correctly.
-    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
     GenTree*  data    = tree->gtOp1;
     regNumber dataReg = REG_NA;
     genConsumeRegs(data);
@@ -1901,12 +1898,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
 
     compiler->unwindAllocStack(frameSize);
-#ifdef USING_SCOPE_INFO
-    if (!doubleAlignOrFramePointerUsed())
-    {
-        psiAdjustStackLevel(frameSize);
-    }
-#endif // USING_SCOPE_INFO
 }
 
 void CodeGen::genPushFltRegs(regMaskTP regMask)

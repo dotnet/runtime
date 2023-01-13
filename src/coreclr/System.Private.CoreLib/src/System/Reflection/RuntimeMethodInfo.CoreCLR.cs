@@ -316,7 +316,9 @@ namespace System.Reflection
                 Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
+#pragma warning disable 8500
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+#pragma warning restore 8500
 
                 CheckArguments(
                     copyOfParameters,

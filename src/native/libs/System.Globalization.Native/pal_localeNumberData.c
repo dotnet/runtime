@@ -88,12 +88,20 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
     {
         int length = (iEnd - iStart) + 2;
         destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
         destPattern[index++] = '-';
     }
     else
     {
         int length = (iEnd - iStart) + 1;
         destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
     }
 
     for (int i = iStart; i <= iEnd; i++)
@@ -177,6 +185,11 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
     char* normalizedPattern = NormalizeNumericPattern(icuPattern, isNegative);
 
     free(icuPattern);
+
+    if (!normalizedPattern)
+    {
+        return U_MEMORY_ALLOCATION_ERROR;
+    }
 
     size_t normalizedPatternLength = strlen(normalizedPattern);
 

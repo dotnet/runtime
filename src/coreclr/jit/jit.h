@@ -219,6 +219,8 @@
 #error Unsupported or unset target architecture
 #endif
 
+typedef ptrdiff_t ssize_t;
+
 // Include the AMD64 unwind codes when appropriate.
 #if defined(TARGET_AMD64)
 #include "win64unwind.h"
@@ -328,6 +330,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
+const CORINFO_OBJECT_HANDLE NO_OBJECT_HANDLE = nullptr;
 const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
 const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
@@ -348,8 +351,6 @@ typedef int NATIVE_OFFSET;
 // This is the same as the above, but it's used in absolute contexts (i.e. offset from the start).  Also,
 // this is used for native code sizes.
 typedef unsigned UNATIVE_OFFSET;
-
-typedef ptrdiff_t ssize_t;
 
 // Type used for weights (e.g. block and edge weights)
 typedef double weight_t;
@@ -631,8 +632,15 @@ inline unsigned int unsigned_abs(int x)
 #ifdef TARGET_64BIT
 inline size_t unsigned_abs(ssize_t x)
 {
+    return ((size_t)abs((__int64)x));
+}
+
+#ifdef __APPLE__
+inline size_t unsigned_abs(__int64 x)
+{
     return ((size_t)abs(x));
 }
+#endif // __APPLE__
 #endif // TARGET_64BIT
 
 /*****************************************************************************/

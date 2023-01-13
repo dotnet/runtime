@@ -53,12 +53,12 @@ namespace Microsoft.Interop.JavaScript
                 .Select(a => a.Syntax)
                 .ToArray();
 
-            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == MarshalDirection.ManagedToUnmanaged && info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == MarshalDirection.UnmanagedToManaged && info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
@@ -68,18 +68,18 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)));
@@ -101,7 +101,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source);

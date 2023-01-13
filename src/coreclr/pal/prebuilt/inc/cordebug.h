@@ -15644,10 +15644,10 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 dims[  ]) = 0;
 
-        virtual HRESULT STDMETHODCALLTYPE HasBaseIndices(
-            /* [out] */ BOOL *pbHasBaseIndices) = 0;
+        virtual HRESULT STDMETHODCALLTYPE HasBaseIndicies(
+            /* [out] */ BOOL *pbHasBaseIndicies) = 0;
 
-        virtual HRESULT STDMETHODCALLTYPE GetBaseIndices(
+        virtual HRESULT STDMETHODCALLTYPE GetBaseIndicies(
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 indices[  ]) = 0;
 
@@ -15722,11 +15722,11 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 dims[  ]);
 
-        HRESULT ( STDMETHODCALLTYPE *HasBaseIndices )(
+        HRESULT ( STDMETHODCALLTYPE *HasBaseIndicies )(
             ICorDebugArrayValue * This,
-            /* [out] */ BOOL *pbHasBaseIndices);
+            /* [out] */ BOOL *pbHasBaseIndicies);
 
-        HRESULT ( STDMETHODCALLTYPE *GetBaseIndices )(
+        HRESULT ( STDMETHODCALLTYPE *GetBaseIndicies )(
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 indices[  ]);
@@ -15797,11 +15797,11 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
 #define ICorDebugArrayValue_GetDimensions(This,cdim,dims)	\
     ( (This)->lpVtbl -> GetDimensions(This,cdim,dims) )
 
-#define ICorDebugArrayValue_HasBaseIndices(This,pbHasBaseIndices)	\
-    ( (This)->lpVtbl -> HasBaseIndices(This,pbHasBaseIndices) )
+#define ICorDebugArrayValue_HasBaseIndicies(This,pbHasBaseIndicies)	\
+    ( (This)->lpVtbl -> HasBaseIndicies(This,pbHasBaseIndicies) )
 
-#define ICorDebugArrayValue_GetBaseIndices(This,cdim,indices)	\
-    ( (This)->lpVtbl -> GetBaseIndices(This,cdim,indices) )
+#define ICorDebugArrayValue_GetBaseIndicies(This,cdim,indices)	\
+    ( (This)->lpVtbl -> GetBaseIndicies(This,cdim,indices) )
 
 #define ICorDebugArrayValue_GetElement(This,cdim,indices,ppValue)	\
     ( (This)->lpVtbl -> GetElement(This,cdim,indices,ppValue) )

@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
                     // Read method would have thrown if otherwise.
                     Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                         obj,
                         unescapedPropertyName,
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
                 if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
-                    ResolvePolymorphicConverter(jsonTypeInfo, options, ref state) is JsonConverter polymorphicConverter)
+                    ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
                     bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (state.Current.CanContainMetadata)
                     {
-                        JsonSerializer.ValidateMetadataForObjectConverter(this, ref reader, ref state);
+                        JsonSerializer.ValidateMetadataForObjectConverter(ref state);
                     }
 
                     if (state.Current.MetadataPropertyNames == MetadataPropertyName.Ref)
@@ -185,7 +185,7 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options);
+                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj,
                             unescapedPropertyName,

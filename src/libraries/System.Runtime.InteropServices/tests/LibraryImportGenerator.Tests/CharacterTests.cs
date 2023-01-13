@@ -46,9 +46,9 @@ namespace LibraryImportGenerator.IntegrationTests
             yield return new object[] { 'A', 0x41 };
             yield return new object[] { 'E', 0x45 };
             yield return new object[] { 'J', 0x4a };
-            yield return new object[] { 'ß', 0xdf };
-            yield return new object[] { '✅', 0x2705 };
-            yield return new object[] { '鸟', 0x9e1f };
+            yield return new object[] { '\u00DF', 0xdf };
+            yield return new object[] { '\u2705', 0x2705 };
+            yield return new object[] { '\u9E1F', 0x9e1f };
         }
 
         [Theory]

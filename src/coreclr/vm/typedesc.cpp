@@ -221,14 +221,20 @@ void TypeDesc::ConstructName(CorElementType kind,
 
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
+    {
         if (kind == ELEMENT_TYPE_VAR)
         {
-            ssBuff.Printf(W("!%d"), rank);
+            ssBuff.Append(W('!'));
         }
         else
         {
-            ssBuff.Printf(W("!!%d"), rank);
+            ssBuff.Append(W("!!"));
         }
+
+        WCHAR buffer[MaxSigned32BitDecString + 1];
+        FormatInteger(buffer, ARRAY_SIZE(buffer), "%d", rank);
+        ssBuff.Append(buffer);
+    }
         break;
 
     case ELEMENT_TYPE_FNPTR:

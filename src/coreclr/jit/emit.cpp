@@ -687,6 +687,28 @@ void emitter::emitGenIG(insGroup* ig)
 
 /*****************************************************************************
  *
+ *  Add a new IG to the current list, and get it ready to receive code.
+ */
+
+void emitter::emitNewIG()
+{
+    insGroup* ig = emitAllocAndLinkIG();
+
+    /* It's linked in. Now, set it up to accept code */
+
+    emitGenIG(ig);
+
+#ifdef DEBUG
+    if (emitComp->verbose)
+    {
+        printf("Created:\n      ");
+        emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
+    }
+#endif // DEBUG
+}
+
+/*****************************************************************************
+ *
  *  Finish and save the current IG.
  */
 
@@ -850,20 +872,17 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #ifdef DEBUG
     if (emitComp->opts.dspCode)
     {
-        printf("\n      %s:", emitLabelString(ig));
         if (emitComp->verbose)
         {
-            printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
-                   refCntWtd2str(ig->igWeight));
-            emitDispIGflags(ig->igFlags);
+            printf("Saved:\n      ");
+            emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
         }
         else
         {
-            printf("        ; funclet=%02u", ig->igFuncIdx);
+            printf("      %s:        ; funclet=%02u\n", emitLabelString(ig), ig->igFuncIdx);
         }
-        printf("\n");
     }
-#endif
+#endif // DEBUG
 
 #if FEATURE_LOOP_ALIGN
     // Did we have any align instructions in this group?
@@ -1037,8 +1056,7 @@ void emitter::emitBegFN(bool hasFramePtr
                         ,
                         bool chkAlign
 #endif
-                        ,
-                        unsigned maxTmpSize)
+                        )
 {
     insGroup* ig;
 
@@ -1056,8 +1074,6 @@ void emitter::emitBegFN(bool hasFramePtr
     /* Record stack frame info (the temp size is just an estimate) */
 
     emitHasFramePtr = hasFramePtr;
-
-    emitMaxTmpSize = maxTmpSize;
 
 #ifdef DEBUG
     emitChkAlign = chkAlign;
@@ -1583,6 +1599,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         emitCurIG->igBlocks.push_back(emitComp->compCurBB);
         emitCurIG->lastGeneratedBlock = emitComp->compCurBB;
+
+        JITDUMP("Mapped " FMT_BB " to %s\n", emitComp->compCurBB->bbNum, emitLabelString(emitCurIG));
     }
 #endif // DEBUG
 
@@ -1905,7 +1923,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     if (emitComp->verbose)
     {
         printf("*************** After placeholder IG creation\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 }
@@ -2607,11 +2625,9 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
-    JITDUMP("Mapped " FMT_BB " to %s\n", block->bbNum, emitLabelString(emitCurIG));
-
     if (EMIT_GC_VERBOSE)
     {
-        printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
+        printf("Label: %s, GCvars=%s ", emitLabelString(emitCurIG), VarSetOps::ToString(emitComp, GCvars));
         dumpConvertedVarSet(emitComp, GCvars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
@@ -3355,48 +3371,6 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     }
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************
- *
- *  Return a string with the name of the given class field (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFldName(CORINFO_FIELD_HANDLE fieldVal)
-{
-    if (emitComp->opts.varNames)
-    {
-        const char* memberName;
-        const char* className;
-
-        const int   TEMP_BUFFER_LEN = 1024;
-        static char buff[TEMP_BUFFER_LEN];
-
-        memberName = emitComp->eeGetFieldName(fieldVal, &className);
-
-        sprintf_s(buff, TEMP_BUFFER_LEN, "'<%s>.%s'", className, memberName);
-        return buff;
-    }
-    else
-    {
-        return "";
-    }
-}
-
-/*****************************************************************************
- *
- *  Return a string with the name of the given function (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFncName(CORINFO_METHOD_HANDLE methHnd)
-{
-    return emitComp->eeGetMethodFullName(methHnd);
-}
-
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Be very careful, some instruction descriptors are allocated as "tiny" and
@@ -3634,7 +3608,7 @@ void emitter::emitDispIGflags(unsigned flags)
     }
 }
 
-void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
+void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstructions, bool displayLocation)
 {
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
@@ -3694,18 +3668,22 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         emitDispIGflags(igPh->igFlags);
 
-        if (ig == emitCurIG)
+        if (displayLocation)
         {
-            printf(" <-- Current IG");
+            if (ig == emitCurIG)
+            {
+                printf(" <-- Current IG");
+            }
+            if (igPh == emitPlaceholderList)
+            {
+                printf(" <-- First placeholder");
+            }
+            if (igPh == emitPlaceholderLast)
+            {
+                printf(" <-- Last placeholder");
+            }
         }
-        if (igPh == emitPlaceholderList)
-        {
-            printf(" <-- First placeholder");
-        }
-        if (igPh == emitPlaceholderLast)
-        {
-            printf(" <-- Last placeholder");
-        }
+
         printf("\n");
 
         printf("%*s;   PrevGCVars=%s ", strlen(buff), "",
@@ -3743,9 +3721,12 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
             separator = ", ";
         }
 
+        printf("%sbbWeight=%s", separator, refCntWtd2str(ig->igWeight));
+        separator = ", ";
+
         if (emitComp->compCodeGenDone)
         {
-            printf("%sbbWeight=%s PerfScore %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("%sPerfScore %.2f", separator, ig->igPerfScore);
             separator = ", ";
         }
 
@@ -3791,17 +3772,21 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         emitDispIGflags(ig->igFlags);
 
-        if (ig == emitCurIG)
+        if (displayLocation)
         {
-            printf(" <-- Current IG");
+            if (ig == emitCurIG)
+            {
+                printf(" <-- Current IG");
+            }
+            if (ig == emitPrologIG)
+            {
+                printf(" <-- Prolog IG");
+            }
         }
-        if (ig == emitPrologIG)
-        {
-            printf(" <-- Prolog IG");
-        }
+
         printf("\n");
 
-        if (verbose)
+        if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
             UNATIVE_OFFSET ofs = ig->igOffs;
@@ -3836,14 +3821,14 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
 }
 
-void emitter::emitDispIGlist(bool verbose)
+void emitter::emitDispIGlist(bool displayInstructions)
 {
     insGroup* ig;
     insGroup* igPrev;
 
     for (igPrev = nullptr, ig = emitIGlist; ig; igPrev = ig, ig = ig->igNext)
     {
-        emitDispIG(ig, igPrev, verbose);
+        emitDispIG(ig, igPrev, displayInstructions);
     }
 }
 
@@ -4100,24 +4085,23 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
 
     flag &= GTF_ICON_HDL_MASK;
 
+    char buffer[256];
+
     if (cookie != 0)
     {
         if (flag == GTF_ICON_FTN_ADDR)
         {
-            const char* className = nullptr;
-            const char* methName =
-                emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
-            printf("%s code for %s:%s", commentPrefix, className, methName);
+            const char* methName = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), true,
+                                                                 true, buffer, sizeof(buffer));
+            printf("%s code for %s", commentPrefix, methName);
             return;
         }
 
         if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
         {
-            const char* className = nullptr;
             const char* fieldName =
-                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), &className);
-            printf("%s %s for %s%s%s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", className,
-                   className != nullptr ? ":" : "", fieldName);
+                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true, buffer, sizeof(buffer));
+            printf("%s %s for %s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", fieldName);
             return;
         }
     }
@@ -4135,7 +4119,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     else if (flag == GTF_ICON_OBJ_HDL)
     {
 #ifdef DEBUG
-        emitComp->eePrintFrozenObjectDescription(commentPrefix, handle);
+        emitComp->eePrintObjectDescription(commentPrefix, (CORINFO_OBJECT_HANDLE)handle);
 #else
         str                   = "frozen object handle";
 #endif
@@ -4154,7 +4138,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
+        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle), true, buffer, sizeof(buffer));
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {
@@ -4162,7 +4146,8 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_METHOD_HDL)
     {
-        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
+        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle), true, true, buffer,
+                                            sizeof(buffer));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {
@@ -4201,7 +4186,7 @@ void emitter::emitRemoveJumpToNextInst()
     if (EMIT_INSTLIST_VERBOSE)
     {
         JITDUMP("\nInstruction group list before unconditional jump to next instruction removal:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
     if (EMITVERBOSE)
     {
@@ -4261,9 +4246,9 @@ void emitter::emitRemoveJumpToNextInst()
                     printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
-                    emitDispIG(jmpGroup, nullptr, true);
+                    emitDispIG(jmpGroup, nullptr, /* displayInstructions */ true);
                     printf("target group:\n");
-                    emitDispIG(targetGroup, nullptr, false);
+                    emitDispIG(targetGroup, nullptr, /* displayInstructions */ false);
                     assert(jmp == id);
                 }
 
@@ -4356,7 +4341,7 @@ void emitter::emitRemoveJumpToNextInst()
         if (EMIT_INSTLIST_VERBOSE)
         {
             printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
-            emitDispIGlist(false);
+            emitDispIGlist(/* displayInstructions */ false);
         }
         if (EMITVERBOSE)
         {
@@ -4395,7 +4380,7 @@ void emitter::emitJumpDistBind()
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nInstruction list before jump distance binding:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
     if (EMITVERBOSE)
     {
@@ -5142,7 +5127,7 @@ AGAIN:
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nLabels list after the jump dist binding:\n\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 
     emitCheckIGoffsets();
@@ -6253,7 +6238,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nInstruction list before instruction issue:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
 
     emitCheckIGoffsets();
@@ -7144,7 +7129,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nLabels list after the end of codegen:\n\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 
     emitCheckIGoffsets();
@@ -9049,7 +9034,7 @@ void emitter::emitInitIG(insGroup* ig)
 #ifdef DEBUG
     ig->lastGeneratedBlock = nullptr;
     // Explicitly call init, since IGs don't actually have a constructor.
-    ig->igBlocks.jitstd::list<BasicBlock*>::init(emitComp->getAllocator(CMK_LoopOpt));
+    ig->igBlocks.jitstd::list<BasicBlock*>::init(emitComp->getAllocator(CMK_DebugOnly));
 #endif
 }
 

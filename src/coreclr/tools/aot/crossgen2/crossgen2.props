@@ -7,6 +7,7 @@
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
@@ -14,6 +15,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
@@ -21,11 +23,10 @@
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
+  </ItemGroup>
 
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,21 +36,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLine\Argument.cs" />
-    <Compile Include="..\..\Common\CommandLine\Argument_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\..\Common\CommandLine\Enumerable.cs" />
-    <Compile Include="..\..\Common\CommandLine\HelpTextGenerator.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
   </ItemGroup>
 
   <PropertyGroup>

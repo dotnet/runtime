@@ -30,9 +30,10 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
+  echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
+  echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos or solaris."
   echo "                                  [Default: Your machine's OS.]"
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -138,7 +139,7 @@ initDistroRid()
     local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
-    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
@@ -260,32 +261,34 @@ while [[ $# > 0 ]]; do
         windows)
           os="windows" ;;
         linux)
-          os="Linux" ;;
+          os="linux" ;;
         freebsd)
-          os="FreeBSD" ;;
+          os="freebsd" ;;
         osx)
-          os="OSX" ;;
+          os="osx" ;;
         maccatalyst)
-          os="MacCatalyst" ;;
+          os="maccatalyst" ;;
         tvos)
-          os="tvOS" ;;
+          os="tvos" ;;
         tvossimulator)
-          os="tvOSSimulator" ;;
+          os="tvossimulator" ;;
         ios)
-          os="iOS" ;;
+          os="ios" ;;
         iossimulator)
-          os="iOSSimulator" ;;
+          os="iossimulator" ;;
         android)
-          os="Android" ;;
+          os="android" ;;
         browser)
-          os="Browser" ;;
+          os="browser" ;;
+        wasi)
+          os="wasi" ;;
         illumos)
           os="illumos" ;;
         solaris)
-          os="Solaris" ;;
+          os="solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos and solaris."
           exit 1
           ;;
       esac
@@ -430,6 +433,15 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     -outputrid)
+      if [ -z ${2+x} ]; then
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      shift 2
+      ;;
+
      -portablebuild)
       if [ -z ${2+x} ]; then
         echo "No value for portablebuild is supplied. See help (--help) for supported values." 1>&2
@@ -491,8 +503,12 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [[ "$os" == "Browser" && "$arch" != "wasm" ]]; then
+if [[ "$os" == "browser" ]]; then
     # override default arch for Browser, we only support wasm
+    arch=wasm
+fi
+if [[ "$os" == "wasi" ]]; then
+    # override default arch for wasi, we only support wasm
     arch=wasm
 fi
 

@@ -19,7 +19,7 @@ namespace ComWrappersTests.GlobalInstance
             Assert.NotEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {

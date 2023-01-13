@@ -11,13 +11,13 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            AssertExtensions.Throws<ArgumentException>("options", () => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
             {
                 PermitLimit = -1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                 QueueLimit = 1
             }));
-            Assert.Throws<ArgumentException>(() => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            AssertExtensions.Throws<ArgumentException>("options", () => new ConcurrencyLimiter(new ConcurrencyLimiterOptions
             {
                 PermitLimit = 1,
                 QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
@@ -537,6 +537,39 @@ namespace System.Threading.RateLimiting.Test
             lease.Dispose();
 
             Assert.Equal(1, limiter.GetStatistics()?.CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public override async Task CanFillQueueWithOldestFirstAfterCancelingFirstQueuedRequestManually()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 3,
+            });
+
+            var lease = limiter.AttemptAcquire(2);
+            Assert.True(lease.IsAcquired);
+
+            var lease1 = limiter.AttemptAcquire(1);
+            Assert.True(lease1.IsAcquired);
+
+            var cts = new CancellationTokenSource();
+            var wait = limiter.AcquireAsync(3, cts.Token);
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAsync<TaskCanceledException>(() => wait.AsTask());
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            var wait2 = limiter.AcquireAsync(2);
+
+            lease.Dispose();
+            lease = await wait2;
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(0, limiter.GetStatistics().CurrentAvailablePermits);
+            Assert.Equal(0, limiter.GetStatistics().CurrentQueuedCount);
         }
 
         [Fact]

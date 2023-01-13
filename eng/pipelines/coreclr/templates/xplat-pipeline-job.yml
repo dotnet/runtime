@@ -8,9 +8,7 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -37,8 +35,6 @@ jobs:
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     pgoType: ${{ parameters.pgoType }}
@@ -146,8 +142,8 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
       - name: osArg
-        value: -os FreeBSD
+        value: -os freebsd
 
     steps: ${{ parameters.steps }}

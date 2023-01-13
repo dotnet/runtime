@@ -104,24 +104,48 @@ export function mock(script: MockScript, options?: MockOptions): Mock {
                     this.eventTarget.dispatchEvent(new MessageEvent("message", { data: sendData }));
                 }
 
+                processSend(onMessage: (data: ArrayBuffer) => any): Promise<void> {
+                    const trace = this.trace;
+                    if (trace) {
+                        console.debug(`mock ${this.ident} processSend`);
+                    }
+                    return new Promise<void>((resolve, reject) => {
+                        this.mockReplyEventTarget.addEventListener("close", () => {
+                            resolve();
+                        });
+                        this.mockReplyEventTarget.addEventListener("message", (event: any) => {
+                            const data = event.data;
+                            if (typeof data === "string") {
+                                console.warn(`mock ${this.ident} waitForSend got string:`, data);
+                                reject(new Error("mock script connection received string data"));
+                            }
+
+                            if (trace) {
+                                console.debug(`mock ${this.ident} processSend got:`, data.byteLength);
+                            }
+                            onMessage(data);
+                        });
+                    });
+                }
+
                 async waitForSend<T = void>(filter: (data: ArrayBuffer) => boolean, extract?: (data: ArrayBuffer) => T): Promise<T> {
                     const trace = this.trace;
                     if (trace) {
                         console.debug(`mock ${this.ident} waitForSend`);
                     }
-                    const event = await new Promise<MessageEvent<string | ArrayBuffer>>((resolve) => {
-                        this.mockReplyEventTarget.addEventListener("message", (event) => {
-                            if (trace) {
-                                console.debug(`mock ${this.ident} waitForSend got:`, event);
+                    const data = await new Promise<ArrayBuffer>((resolve) => {
+                        this.mockReplyEventTarget.addEventListener("message", (event: any) => {
+                            const data = event.data;
+                            if (typeof data === "string") {
+                                console.warn(`mock ${this.ident} waitForSend got string:`, data);
+                                throw new Error("mock script connection received string data");
                             }
-                            resolve(event as MessageEvent<string | ArrayBuffer>);
+                            if (trace) {
+                                console.debug(`mock ${this.ident} waitForSend got:`, data.byteLength);
+                            }
+                            resolve(data);
                         }, { once: true });
                     });
-                    const data = event.data;
-                    if (typeof data === "string") {
-                        console.warn(`mock ${this.ident} waitForSend got string:`, data);
-                        throw new Error("mock script connection received string data");
-                    }
                     if (!filter(data)) {
                         throw new Error("Unexpected data");
                     }

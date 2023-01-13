@@ -65,7 +65,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateTypeMember(CodeTypeMember e)
         {
-            ValidateCommentStatements(e.Comments);
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
 
@@ -132,7 +131,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateNamespace(CodeNamespace e)
         {
-            ValidateCommentStatements(e.Comments);
             ValidateNamespaceStart(e);
             ValidateNamespaceImports(e);
             ValidateTypes(e);
@@ -317,8 +315,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateMemberMethod(CodeMemberMethod e)
         {
-            ValidateCommentStatements(e.Comments);
-
             ValidateTypeParameters(e.TypeParameters);
             ValidateTypeReferences(e.ImplementationTypes);
 
@@ -374,7 +370,6 @@ namespace System.CodeDom.Compiler
 
         private void ValidateTypeStart(CodeTypeDeclaration e)
         {
-            ValidateCommentStatements(e.Comments);
             if (e.CustomAttributes.Count > 0)
             {
                 ValidateAttributes(e.CustomAttributes);
@@ -395,18 +390,6 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        private static void ValidateCommentStatements(CodeCommentStatementCollection e)
-        {
-            foreach (CodeCommentStatement comment in e)
-            {
-                ValidateCommentStatement(comment);
-            }
-        }
-
-        private static void ValidateCommentStatement(CodeCommentStatement e)
-        {
-        }
-
         private void ValidateStatement(CodeStatement e)
         {
             if (e is null)
@@ -419,7 +402,7 @@ namespace System.CodeDom.Compiler
 
             if (e is CodeCommentStatement)
             {
-                ValidateCommentStatement((CodeCommentStatement)e);
+                // nothing
             }
             else if (e is CodeMethodReturnStatement)
             {

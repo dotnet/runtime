@@ -15,19 +15,19 @@ namespace Microsoft.Interop
     {
         internal const string MarshallerIdentifier = "marshaller";
         private readonly ManagedTypeInfo _marshallerType;
-        private readonly TypeSyntax _nativeTypeSyntax;
+        private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
 
-        public StatefulValueMarshalling(ManagedTypeInfo marshallerType, TypeSyntax nativeTypeSyntax, MarshallerShape shape)
+        public StatefulValueMarshalling(ManagedTypeInfo marshallerType, ManagedTypeInfo unmanagedType, MarshallerShape shape)
         {
             _marshallerType = marshallerType;
-            _nativeTypeSyntax = nativeTypeSyntax;
+            _unmanagedType = unmanagedType;
             _shape = shape;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return _nativeTypeSyntax;
+            return _unmanagedType;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
@@ -210,7 +210,7 @@ namespace Microsoft.Interop
             _bufferElementType = bufferElementType;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return _innerMarshaller.AsNativeType(info);
         }
@@ -306,7 +306,7 @@ namespace Microsoft.Interop
             _numElementsExpression = numElementsExpression;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
 
@@ -446,8 +446,28 @@ namespace Microsoft.Interop
             _numElementsExpression = numElementsExpression;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            StatementSyntax elementCleanup = GenerateElementCleanupStatement(info, context);
+
+            if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
+            {
+                yield return elementCleanup;
+            }
+
+            if (!_shape.HasFlag(MarshallerShape.Free))
+                yield break;
+
+            string marshaller = StatefulValueMarshalling.GetMarshallerIdentifier(info, context);
+            // <marshaller>.Free();
+            yield return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(marshaller),
+                        IdentifierName(ShapeMemberNames.Free)),
+                    ArgumentList()));
+        }
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)

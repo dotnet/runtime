@@ -109,7 +109,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ArgumentNullException.ThrowIfNull(obj);
 
             IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
+#if NATIVEAOT
+                obj,
+#else
                 ObjectHandleOnStack.Create(ref obj),
+#endif
                 out int memInSizeT,
                 out IntPtr mem);
 

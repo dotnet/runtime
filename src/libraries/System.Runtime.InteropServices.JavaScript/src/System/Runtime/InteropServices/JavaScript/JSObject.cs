@@ -21,6 +21,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Checks whether the target object or one of its prototypes has a property with the specified name.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns><see langword="true" /> when the object has the property with the specified name.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasProperty(string propertyName)
         {
@@ -31,6 +33,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns <code>typeof()</code> of the property.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>One of "undefined", "object", "boolean", "number", "bigint", "string", "symbol" or "function".</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetTypeOfProperty(string propertyName)
         {
@@ -39,8 +43,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Returns value of the property as <see cref="bool"/> if the property exists, otherwise false.
+        /// Returns the value of the specified property as <see cref="T:System.Boolean" /> if the property exists, otherwise <see langword="false" />.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not a bool.</remarks>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
@@ -54,6 +60,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns value of the property as <see cref="int"/> if the property exists, otherwise 0.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not an integer.</remarks>
@@ -67,6 +75,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns value of the property as <see cref="double"/> if the property exists, otherwise 0.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not a number.</remarks>
@@ -80,6 +90,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns value of the property as <see cref="string"/> if the property exists, otherwise null.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not a string.</remarks>
@@ -93,6 +105,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns value of the property as <see cref="JSObject"/> proxy if the property exists, otherwise null.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not an object.</remarks>
@@ -106,6 +120,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Returns value of the property as <see cref="byte"/> array if the property exists, otherwise null.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value of the property with the specified name.</returns>
         /// <seealso cref="GetTypeOfProperty(string)"/>
         /// <seealso cref="HasProperty(string)"/>
         /// <remarks>Will throw <see cref="JSException"/> when the property value is not an array.</remarks>
@@ -120,6 +136,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, bool value)
         {
@@ -130,6 +148,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, int value)
         {
@@ -140,6 +160,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, double value)
         {
@@ -150,6 +172,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, string? value)
         {
@@ -160,6 +184,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, JSObject? value)
         {
@@ -170,6 +196,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Defines a new property on the target object, or modifies an existing property to have the specified value.
         /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">Value of property to set.</param>
         /// <remarks>The method will copy the bytes.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetProperty(string propertyName, byte[]? value)

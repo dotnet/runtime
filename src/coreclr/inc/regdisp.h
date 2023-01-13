@@ -561,7 +561,7 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
     return (PTR_size_t)(PTR_BYTE(regs) + OFFSET_OF_REGISTERS[regNum]);
 #elif defined(TARGET_AMD64)
     _ASSERTE(regNum < 16);
-    return &regs->Rax + regNum;
+    return (size_t *)&regs->Rax + regNum;
 #elif defined(TARGET_ARM)
         _ASSERTE(regNum < 16);
         return (size_t *)&regs->R0 + regNum;

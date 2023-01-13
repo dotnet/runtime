@@ -15,10 +15,10 @@ struct T
     public S s;
 }
 
-class Program
+public class Program
 {
-    public T t;
-    public T t1;
+    T t;
+    T t1;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     int Test()
@@ -41,7 +41,7 @@ class Program
         return s.i;
     }
 
-    static int Main()
+    public static int Main()
     {
         Program p = new Program();
         p.t.s.i = 100;

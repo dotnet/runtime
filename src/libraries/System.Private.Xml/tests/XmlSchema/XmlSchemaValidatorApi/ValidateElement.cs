@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Xml.Schema;
+using System.Xml.Tests;
 using Xunit;
 using Xunit.Abstractions;
 

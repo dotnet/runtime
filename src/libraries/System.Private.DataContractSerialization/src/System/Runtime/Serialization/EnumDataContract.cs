@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization.DataContracts
             set => _helper.Members = value;
         }
 
-        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? DataContract.s_emptyDataMemberList : Members.AsReadOnly();
+        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? ReadOnlyCollection<DataMember>.Empty : Members.AsReadOnly();
 
         internal List<long>? Values
         {

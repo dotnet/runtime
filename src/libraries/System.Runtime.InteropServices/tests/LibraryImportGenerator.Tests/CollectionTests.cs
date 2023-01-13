@@ -25,6 +25,9 @@ namespace LibraryImportGenerator.IntegrationTests
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
                 public static partial int SumWithBuffer([MarshalUsing(typeof(ListMarshallerWithBuffer<,>))] List<int> values, int numValues);
 
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_ptr_array")]
+                public static unsafe partial int SumWithFreeTracking([MarshalUsing(typeof(ListMarshaller<,>)), MarshalUsing(typeof(IntWrapperMarshallerWithFreeCounts), ElementIndirectionDepth = 1)] List<IntWrapper> values, int numValues);
+
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
                 public static partial int DoubleValues([MarshalUsing(typeof(ListMarshallerWithPinning<,>))] List<BlittableIntWrapper> values, int length);
 
@@ -98,6 +101,9 @@ namespace LibraryImportGenerator.IntegrationTests
             {
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array")]
                 public static partial int Sum([MarshalUsing(typeof(ListMarshallerStateful<,>))] List<int> values, int numValues);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_ptr_array")]
+                public static unsafe partial int SumWithFreeTracking([MarshalUsing(typeof(ListMarshallerStateful<,>)), MarshalUsing(typeof(IntWrapperMarshallerWithFreeCounts), ElementIndirectionDepth = 1)] List<IntWrapper> values, int numValues);
 
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_array_ref")]
                 public static partial int SumInArray([MarshalUsing(typeof(ListMarshallerStateful<,>))] in List<int> values, int numValues);
@@ -367,6 +373,30 @@ namespace LibraryImportGenerator.IntegrationTests
             NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.Marshaller.ToManagedFinallyCalled = false;
             Assert.Throws<Exception>(() => NativeExportsNE.Collections.Stateful.GuaranteedUnmarshal(out List<BoolStruct> _));
             Assert.True(NativeExportsNE.Collections.Stateful.ListGuaranteedUnmarshal<BoolStruct, BoolStructMarshaller.BoolStructNative>.Marshaller.ToManagedFinallyCalled);
+        }
+
+        [Fact]
+        public void ElementsFreed()
+        {
+            List<IntWrapper> list = new List<IntWrapper>
+            {
+                new IntWrapper { i = 1 },
+                new IntWrapper { i = 10 },
+                new IntWrapper { i = 24 },
+                new IntWrapper { i = 30 },
+            };
+
+            int startingCount = IntWrapperMarshallerWithFreeCounts.NumCallsToFree;
+
+            NativeExportsNE.Collections.Stateless.SumWithFreeTracking(list, list.Count);
+
+            Assert.Equal(startingCount + list.Count, IntWrapperMarshallerWithFreeCounts.NumCallsToFree);
+
+            startingCount = IntWrapperMarshallerWithFreeCounts.NumCallsToFree;
+
+            NativeExportsNE.Collections.Stateful.SumWithFreeTracking(list, list.Count);
+
+            Assert.Equal(startingCount + list.Count, IntWrapperMarshallerWithFreeCounts.NumCallsToFree);
         }
 
         private static List<BoolStruct> GetBoolStructsToAnd(bool result) => new List<BoolStruct>

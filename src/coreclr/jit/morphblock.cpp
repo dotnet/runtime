@@ -32,6 +32,7 @@ protected:
 
 private:
     void TryInitFieldByField();
+    void TryPrimitiveInit();
 
 protected:
     Compiler* m_comp;
@@ -56,8 +57,8 @@ protected:
         FieldByField,
         OneAsgBlock,
         StructBlock,
-        SkipCallSrc,
-        SkipMultiRegIntrinsicSrc,
+        SkipMultiRegSrc,
+        SkipSingleRegCallSrc,
         Nop
     };
 
@@ -133,22 +134,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        GenTree* oneAsgTree = nullptr;
-        if (m_dst != m_dstLclNode)
-        {
-            oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
-        }
-        if (oneAsgTree != nullptr)
-        {
-            assert((m_asg == oneAsgTree) && "fgMorphOneAsgBlock must return the incoming tree.");
-
-            m_transformationDecision = BlockTransformation::OneAsgBlock;
-            m_result                 = oneAsgTree;
-        }
-        else
-        {
-            MorphStructCases();
-        }
+        MorphStructCases();
     }
 
     PropagateExpansionAssertions();
@@ -175,10 +161,6 @@ GenTree* MorphInitBlockHelper::Morph()
 // PrepareDst: Transform the asg destination to an appropriate form and initialize member fields
 //    with information about it.
 //
-// Notes:
-//    When assertion propagation is enabled this method kills assertions about the dst local,
-//    so the correctness depends on `IsLocalAddrExpr` recognizing all patterns.
-//
 void MorphInitBlockHelper::PrepareDst()
 {
     GenTree* origDst = m_asg->gtGetOp1();
@@ -201,58 +183,8 @@ void MorphInitBlockHelper::PrepareDst()
     {
         m_dstLclNode   = m_dst->AsLclVarCommon();
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
-
-        if (m_dst->TypeIs(TYP_STRUCT))
-        {
-            m_blockLayout = m_dstLclNode->GetLayout(m_comp);
-        }
-    }
-    else
-    {
-        assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
-
-        GenTree* dstAddr = m_dst->AsIndir()->Addr();
-        noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-        ssize_t dstLclOffset = 0;
-        if (dstAddr->DefinesLocalAddr(&m_dstLclNode, &dstLclOffset))
-        {
-            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
-            unsigned dstLclSize = m_comp->lvaLclExactSize(m_dstLclNode->GetLclNum());
-
-            if (!FitsIn<unsigned>(dstLclOffset) ||
-                ((static_cast<uint64_t>(dstLclOffset) + m_dst->AsIndir()->Size()) > dstLclSize))
-            {
-                assert(m_comp->lvaGetDesc(m_dstLclNode)->IsAddressExposed());
-                m_dstLclNode = nullptr;
-            }
-            else
-            {
-                m_dstLclOffset = static_cast<unsigned>(dstLclOffset);
-            }
-        }
-
-        if (m_dst->TypeIs(TYP_STRUCT))
-        {
-            m_blockLayout = m_dst->AsBlk()->GetLayout();
-        }
-    }
-
-    if (m_dst->TypeIs(TYP_STRUCT))
-    {
-        m_blockSize = m_blockLayout->GetSize();
-    }
-    else
-    {
-        assert(m_blockLayout == nullptr);
-        m_blockSize = genTypeSize(m_dst);
-    }
-
-    if (m_dstLclNode != nullptr)
-    {
-        m_dstLclNum = m_dstLclNode->GetLclNum();
-        m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNum);
+        m_dstLclNum    = m_dstLclNode->GetLclNum();
+        m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNum);
 
         assert((m_dstVarDsc->TypeGet() != TYP_STRUCT) ||
                (m_dstVarDsc->GetLayout()->GetSize() == m_dstVarDsc->lvExactSize));
@@ -262,6 +194,21 @@ void MorphInitBlockHelper::PrepareDst()
         {
             m_comp->fgKillDependentAssertions(m_dstLclNum DEBUGARG(m_asg));
         }
+    }
+    else
+    {
+        assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
+        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+    }
+
+    if (m_dst->TypeIs(TYP_STRUCT))
+    {
+        m_blockLayout = m_dst->GetLayout(m_comp);
+        m_blockSize   = m_blockLayout->GetSize();
+    }
+    else
+    {
+        m_blockSize = genTypeSize(m_dst);
     }
 
 #if defined(DEBUG)
@@ -338,7 +285,7 @@ void MorphInitBlockHelper::TrySpecialCases()
 //    but sets appropriate flags for the involved lclVars.
 //
 // Assumptions:
-//    we have already checked that it is not a special case and can't be transformed as OneAsgBlock.
+//    we have already checked that it is not a special case.
 //
 void MorphInitBlockHelper::MorphStructCases()
 {
@@ -351,32 +298,19 @@ void MorphInitBlockHelper::MorphStructCases()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        // For an InitBlock we always require a block operand.
-        m_dst = m_comp->fgMorphBlockOperand(m_dst, m_dst->TypeGet(), m_blockLayout, true /*isBlkReqd*/);
-        m_transformationDecision = BlockTransformation::StructBlock;
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_result                = m_asg;
-        m_result->AsOp()->gtOp1 = m_dst;
-        m_result->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
+        TryPrimitiveInit();
+    }
 
-#if FEATURE_SIMD
-        if (varTypeIsSIMD(m_asg) && (m_dst == m_dstLclNode) && m_src->IsIntegralConst(0))
-        {
-            assert(m_dstVarDsc != nullptr);
-            m_src                   = m_comp->gtNewZeroConNode(m_asg->TypeGet(), CORINFO_TYPE_FLOAT);
-            m_result->AsOp()->gtOp2 = m_src;
-        }
-#endif // FEATURE_SIMD
+    if (m_transformationDecision == BlockTransformation::Undefined)
+    {
+        m_result                 = m_asg;
+        m_transformationDecision = BlockTransformation::StructBlock;
 
         if (m_dstVarDsc != nullptr)
         {
-            if (m_dst != m_dstLclNode)
+            if (m_dst->OperIs(GT_LCL_FLD))
             {
-                // If we access the dst as a whole but not directly, for example, with OBJ(ADDR(LCL_VAR))
-                // then set doNotEnreg.
-                // TODO-1stClassStructs: remove it when we can represent narowing struct cast
-                // without taking address of the lcl.
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
             }
             else if (m_dstVarDsc->lvPromoted)
             {
@@ -404,29 +338,20 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
     JITDUMP("MorphBlock for %s tree, before:\n", (isDest ? "dst" : "src"));
     DISPTREE(tree);
 
-    // Src can be a primitive type.
-    assert(!isDest || varTypeIsStruct(tree));
-
-    GenTree* handleTree = nullptr;
-    GenTree* addr       = nullptr;
+    assert(varTypeIsStruct(tree));
 
     if (tree->OperIs(GT_COMMA))
     {
         // TODO-Cleanup: this block is not needed for not struct nodes, but
-        // fgMorphOneAsgBlockOp works wrong without this transformation.
+        // TryPrimitiveCopy works wrong without this transformation.
         tree = MorphCommaBlock(comp, tree->AsOp());
+        if (isDest)
+        {
+            tree->SetDoNotCSE();
+        }
     }
 
-    if (!tree->OperIsBlk())
-    {
-        JITDUMP("MorphBlock after:\n");
-        DISPTREE(tree);
-        return tree;
-    }
-
-    GenTree* blkAddr = tree->AsBlk()->Addr();
-    assert(blkAddr != nullptr);
-    assert(blkAddr->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    assert(!tree->OperIsIndir() || varTypeIsI(genActualType(tree->AsIndir()->Addr())));
 
     JITDUMP("MorphBlock after:\n");
     DISPTREE(tree);
@@ -655,18 +580,15 @@ void MorphInitBlockHelper::TryInitFieldByField()
                 break;
             case TYP_REF:
             case TYP_BYREF:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
 #ifdef FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType, CORINFO_TYPE_FLOAT);
-                break;
 #endif // FEATURE_SIMD
+                assert(initPattern == 0);
+                src = m_comp->gtNewZeroConNode(fieldType);
+                break;
             default:
                 unreached();
         }
@@ -692,6 +614,46 @@ void MorphInitBlockHelper::TryInitFieldByField()
     m_transformationDecision = BlockTransformation::FieldByField;
 }
 
+//------------------------------------------------------------------------
+// TryPrimitiveInit: Replace block zero-initialization with a primitive store.
+//
+// Transforms patterns like "ASG(BLK(ADDR(LCL_VAR int)), 0)" into simple
+// assignments: "ASG(LCL_VAR int, 0)".
+//
+// If successful, will set "m_transformationDecision" to "OneAsgBlock".
+//
+void MorphInitBlockHelper::TryPrimitiveInit()
+{
+    if (m_blockSize == 0)
+    {
+        return;
+    }
+
+    if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
+    {
+        var_types lclVarType = m_dstVarDsc->TypeGet();
+        if (varTypeIsSIMD(lclVarType))
+        {
+            m_src = m_comp->gtNewZeroConNode(lclVarType);
+        }
+        else
+        {
+            m_src->BashToZeroConst(lclVarType);
+        }
+
+        m_dst->ChangeType(m_dstVarDsc->lvNormalizeOnLoad() ? lclVarType : genActualType(lclVarType));
+        m_dst->ChangeOper(GT_LCL_VAR);
+        m_dst->AsLclVar()->SetLclNum(m_dstLclNum);
+        m_dst->gtFlags |= GTF_VAR_DEF;
+
+        m_asg->ChangeType(m_dst->TypeGet());
+        m_asg->gtOp1             = m_dst;
+        m_asg->gtOp2             = m_src;
+        m_result                 = m_asg;
+        m_transformationDecision = BlockTransformation::OneAsgBlock;
+    }
+}
+
 class MorphCopyBlockHelper : public MorphInitBlockHelper
 {
 public:
@@ -705,6 +667,7 @@ protected:
     void TrySpecialCases() override;
 
     void     MorphStructCases() override;
+    void     TryPrimitiveCopy();
     GenTree* CopyFieldByField();
 
     const char* GetHelperName() const override
@@ -772,75 +735,43 @@ void MorphCopyBlockHelper::PrepareSrc()
     {
         m_srcLclNode   = m_src->AsLclVarCommon();
         m_srcLclOffset = m_srcLclNode->GetLclOffs();
-    }
-    else if (m_src->OperIsIndir())
-    {
-        ssize_t srcLclOffset = 0;
-        if (m_src->AsIndir()->Addr()->DefinesLocalAddr(&m_srcLclNode, &srcLclOffset))
-        {
-            // Treat out-of-bounds access to locals opaquely to simplify downstream logic.
-            unsigned srcLclSize = m_comp->lvaLclExactSize(m_srcLclNode->GetLclNum());
-
-            if (!FitsIn<unsigned>(srcLclOffset) || ((static_cast<uint64_t>(srcLclOffset) + m_blockSize) > srcLclSize))
-            {
-                assert(m_comp->lvaGetDesc(m_srcLclNode)->IsAddressExposed());
-                m_srcLclNode = nullptr;
-            }
-            else
-            {
-                m_srcLclOffset = static_cast<unsigned>(srcLclOffset);
-            }
-        }
+        m_srcLclNum    = m_srcLclNode->GetLclNum();
+        m_srcVarDsc    = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
-    if (m_srcLclNode != nullptr)
+    // Verify that the types on the LHS and RHS match.
+    assert(m_dst->TypeGet() == m_src->TypeGet());
+    if (m_dst->TypeIs(TYP_STRUCT))
     {
-        m_srcLclNum = m_srcLclNode->GetLclNum();
-        m_srcVarDsc = m_comp->lvaGetDesc(m_srcLclNum);
+        assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
+    }
+    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
+    else if (m_src->OperIsBlk())
+    {
+        m_src->SetOper(GT_IND);
     }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
 //    The current special cases include assignments with calls in RHS.
 //
-// Notes:
-//    It could change multiReg flags or change m_dst node.
-//
 void MorphCopyBlockHelper::TrySpecialCases()
 {
-#ifdef FEATURE_HW_INTRINSICS
-    if (m_src->OperIsHWIntrinsic() && HWIntrinsicInfo::IsMultiReg(m_src->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (m_src->IsMultiRegNode())
     {
-        assert(m_src->IsMultiRegNode());
-        JITDUMP("Not morphing a multireg intrinsic\n");
-        m_transformationDecision = BlockTransformation::SkipMultiRegIntrinsicSrc;
+        assert(m_dst->OperIs(GT_LCL_VAR));
+
+        m_dstVarDsc->lvIsMultiRegRet = true;
+
+        JITDUMP("Not morphing a multireg node return\n");
+        m_transformationDecision = BlockTransformation::SkipMultiRegSrc;
         m_result                 = m_asg;
     }
-#endif // FEATURE_HW_INTRINSICS
-
-#if FEATURE_MULTIREG_RET
-    // If this is a multi-reg return, we will not do any morphing of this node.
-    if (m_src->IsMultiRegCall())
+    else if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
     {
-        assert(m_dst->OperGet() == GT_LCL_VAR);
-        JITDUMP("Not morphing a multireg call return\n");
-        m_transformationDecision = BlockTransformation::SkipCallSrc;
+        JITDUMP("Not morphing a single reg call return\n");
+        m_transformationDecision = BlockTransformation::SkipSingleRegCallSrc;
         m_result                 = m_asg;
-    }
-    else if (m_dst->IsMultiRegLclVar() && !m_src->IsMultiRegNode())
-    {
-        m_dst->AsLclVar()->ClearMultiReg();
-    }
-#endif // FEATURE_MULTIREG_RET
-
-    if (m_transformationDecision == BlockTransformation::Undefined)
-    {
-        if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
-        {
-            JITDUMP("Not morphing a single reg call return\n");
-            m_transformationDecision = BlockTransformation::SkipCallSrc;
-            m_result                 = m_asg;
-        }
     }
 }
 
@@ -849,7 +780,7 @@ void MorphCopyBlockHelper::TrySpecialCases()
 //    but sets appropriate flags for the involved lclVars.
 //
 // Assumptions:
-//    we have already checked that it is not a special case and can't be transformed as OneAsgBlock.
+//    We have already checked that it is not a special case.
 //
 void MorphCopyBlockHelper::MorphStructCases()
 {
@@ -912,8 +843,10 @@ void MorphCopyBlockHelper::MorphStructCases()
     //
     bool requiresCopyBlock = false;
 
-    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock.
-    if ((m_dstVarDsc != nullptr && m_dstVarDsc->lvRegStruct) || (m_srcVarDsc != nullptr && m_srcVarDsc->lvRegStruct))
+    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock;
+    // this will avoid having to DNER the enregisterable local when creating LCL_FLD nodes.
+    if ((m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->lvRegStruct) ||
+        (m_src->OperIs(GT_LCL_VAR) && m_srcVarDsc->lvRegStruct))
     {
         requiresCopyBlock = true;
     }
@@ -955,7 +888,7 @@ void MorphCopyBlockHelper::MorphStructCases()
     // promotion.
     if ((m_srcVarDsc == nullptr) && !m_src->OperIsIndir())
     {
-        JITDUMP(" src is a not an L-value");
+        JITDUMP(" src is not an L-value");
         requiresCopyBlock = true;
     }
 
@@ -1096,20 +1029,13 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (requiresCopyBlock)
     {
-        const var_types asgType   = m_dst->TypeGet();
-        bool            isBlkReqd = (asgType == TYP_STRUCT);
-        m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockLayout, isBlkReqd);
-        m_dst->gtFlags |= GTF_DONT_CSE;
-        m_asg->gtOp1 = m_dst;
+        TryPrimitiveCopy();
 
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockLayout, isBlkReqd);
-        m_asg->gtOp2 = m_src;
-
-        m_asg->SetAllEffectsFlags(m_dst, m_src);
-        m_asg->gtFlags |= GTF_ASG;
-
-        m_result                 = m_asg;
-        m_transformationDecision = BlockTransformation::StructBlock;
+        if (m_transformationDecision == BlockTransformation::Undefined)
+        {
+            m_result                 = m_asg;
+            m_transformationDecision = BlockTransformation::StructBlock;
+        }
     }
     else
     {
@@ -1121,35 +1047,108 @@ void MorphCopyBlockHelper::MorphStructCases()
     //
     if (!m_dstDoFldAsg && (m_dstVarDsc != nullptr) && !m_dstSingleLclVarAsg)
     {
-        if (m_dst != m_dstLclNode)
+        if (m_dst->OperIs(GT_LCL_FLD))
         {
-            // Mark it as DoNotEnregister.
-            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else if (m_dstVarDsc->lvPromoted)
         {
             // Mark it as DoNotEnregister.
             m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
-        else if (m_dst->IsMultiRegLclVar())
-        {
-            // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
-            // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
-            m_dstVarDsc->lvIsMultiRegRet = true;
-        }
     }
 
     if (!m_srcDoFldAsg && (m_srcVarDsc != nullptr) && !m_srcSingleLclVarAsg)
     {
-        if (m_src != m_srcLclNode)
+        if (m_src->OperIs(GT_LCL_FLD))
         {
-            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else if (m_srcVarDsc->lvPromoted)
         {
             m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
     }
+}
+
+//------------------------------------------------------------------------
+// TryPrimitiveCopy: Attempt to replace a block assignment with a scalar assignment.
+//
+// If successful, will set "m_transformationDecision" to "OneAsgBlock".
+//
+void MorphCopyBlockHelper::TryPrimitiveCopy()
+{
+    if (!m_dst->TypeIs(TYP_STRUCT) || (m_blockSize == 0))
+    {
+        return;
+    }
+
+    if (m_comp->opts.OptimizationDisabled() && (m_blockSize >= genTypeSize(TYP_INT)))
+    {
+        return;
+    }
+
+    var_types asgType = TYP_UNDEF;
+    assert((m_src == m_src->gtEffectiveVal()) && (m_dst == m_dst->gtEffectiveVal()));
+
+    // Can we use the LHS local directly?
+    if (m_dst->OperIs(GT_LCL_FLD))
+    {
+        if (m_blockSize == genTypeSize(m_dstVarDsc))
+        {
+            asgType = m_dstVarDsc->TypeGet();
+        }
+    }
+    else if (!m_dst->OperIsIndir())
+    {
+        return;
+    }
+
+    if (m_srcVarDsc != nullptr)
+    {
+        if ((asgType == TYP_UNDEF) && (m_blockSize == genTypeSize(m_srcVarDsc)))
+        {
+            asgType = m_srcVarDsc->TypeGet();
+        }
+    }
+    else if (!m_src->OperIsIndir())
+    {
+        return;
+    }
+
+    if (asgType == TYP_UNDEF)
+    {
+        return;
+    }
+
+    auto doRetypeNode = [asgType](GenTree* op, LclVarDsc* varDsc) {
+        if (op->OperIsIndir())
+        {
+            op->SetOper(GT_IND);
+            op->ChangeType(asgType);
+        }
+        else if (varDsc->TypeGet() == asgType)
+        {
+            op->SetOper(GT_LCL_VAR);
+            op->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+            op->gtFlags &= ~GTF_VAR_USEASG;
+        }
+        else
+        {
+            if (op->OperIs(GT_LCL_VAR))
+            {
+                op->SetOper(GT_LCL_FLD);
+            }
+            op->ChangeType(asgType);
+        }
+    };
+
+    doRetypeNode(m_dst, m_dstVarDsc);
+    doRetypeNode(m_src, m_srcVarDsc);
+    m_asg->ChangeType(asgType);
+
+    m_result                 = m_asg;
+    m_transformationDecision = BlockTransformation::OneAsgBlock;
 }
 
 //------------------------------------------------------------------------
@@ -1501,7 +1500,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //
 // Return Value:
 //    We can return the original block copy unmodified (least desirable, but always correct)
-//    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable).
+//    We can return a single assignment, when TryPrimitiveCopy transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
 //
@@ -1528,7 +1527,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 //    tree - A GT_ASG tree that performs block initialization.
 //
 // Return Value:
-//    A single assignment, when fgMorphOneAsgBlockOp transforms it.
 //    If the destination is a promoted struct local variable then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
 //    This is not always possible (e.g. if the struct is address exposed).
@@ -1567,29 +1565,44 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
     if (tree->gtDynamicSize->IsIntegralConst())
     {
         int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
-        assert(FitsIn<int32_t>(size));
 
-        if (size != 0)
+        if ((size != 0) && FitsIn<int32_t>(size))
         {
-            GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            GenTree* asg = gtNewAssignNode(lhs, tree->Data());
+            ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
+            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            dst->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* src = tree->Data();
+            if (src->OperIs(GT_IND))
+            {
+                assert(src->TypeIs(TYP_STRUCT));
+                src->SetOper(GT_BLK);
+                src->AsBlk()->Initialize(layout);
+            }
+
+            GenTree* asg = gtNewAssignNode(dst, src);
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+            fgAssignSetVarDef(asg);
 
-            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
-            if (lclVarTree != nullptr)
-            {
-                lclVarTree->gtFlags |= GTF_VAR_DEF;
-            }
+            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }
     }
 
     tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
-    tree->SetIndirExceptionFlags(this);
+
+    if (tree->OperMayThrow(this))
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
     tree->gtFlags |= GTF_ASG;
 
     return tree;

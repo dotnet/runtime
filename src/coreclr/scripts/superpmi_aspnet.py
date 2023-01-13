@@ -73,9 +73,9 @@ def determine_native_name(coreclr_args, base_lib_name, target_os):
         (str) : name of the native lib for this OS
     """
 
-    if target_os == "OSX":
+    if target_os == "osx":
         return "lib" + base_lib_name + ".dylib"
-    elif target_os == "Linux":
+    elif target_os == "linux":
         return "lib" + base_lib_name + ".so"
     elif target_os == "windows":
         return base_lib_name + ".dll"
@@ -99,12 +99,12 @@ def determine_benchmark_machine(coreclr_args):
         if coreclr_args.host_os == "windows":
 #            return "aspnet-perf-win"
             return "aspnet-citrine-win"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             return "aspnet-perf-lin"
         else:
             raise RuntimeError("Invalid OS for x64.")
     elif coreclr_args.arch == "arm64":
-        if coreclr_args.host_os == "Linux":
+        if coreclr_args.host_os == "linux":
             return "aspnet-citrine-arm"
         else:
             raise RuntimeError("Invalid OS for arm64.")
@@ -232,10 +232,10 @@ def build_and_run(coreclr_args):
                                "--application.framework", "net7.0",
                                "--application.channel", "edge",
                                "--application.sdkVersion", "latest",
-                               "--application.environmentVariables", "COMPlus_JitName=" + spminame,
+                               "--application.environmentVariables", "DOTNET_JitName=" + spminame,
                                "--application.environmentVariables", "SuperPMIShimLogPath=.",
                                "--application.environmentVariables", "SuperPMIShimPath=" + jitpath,
-                               "--application.environmentVariables", "COMPlus_EnableExtraSuperPmiQueries=1",
+                               "--application.environmentVariables", "DOTNET_EnableExtraSuperPmiQueries=1",
                                "--application.options.downloadFiles", "*.mc",
                                "--application.options.displayOutput", "true",
 #                               "--application.options.dumpType", "full",
@@ -249,7 +249,7 @@ def build_and_run(coreclr_args):
                 runtime_arguments = []
                 for runtime_option in runtime_options:
                     runtime_arguments.append("--application.environmentVariables")
-                    runtime_arguments.append("COMPlus_" + runtime_option)
+                    runtime_arguments.append("DOTNET_" + runtime_option)
 
                 print("")
                 print("================================")

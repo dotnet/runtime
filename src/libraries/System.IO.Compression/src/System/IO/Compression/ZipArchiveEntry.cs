@@ -117,10 +117,9 @@ namespace System.IO.Compression
 
             _compressedSize = 0; // we don't know these yet
             _uncompressedSize = 0;
-            UnixFileMode defaultEntryPermissions = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
-                                        ? DefaultDirectoryEntryPermissions
-                                        : DefaultFileEntryPermissions;
-            _externalFileAttr = (uint)(defaultEntryPermissions) << 16;
+            _externalFileAttr = entryName.EndsWith(Path.DirectorySeparatorChar) || entryName.EndsWith(Path.AltDirectorySeparatorChar)
+                                        ? DefaultDirectoryExternalAttributes
+                                        : DefaultFileExternalAttributes;
 
             _offsetOfLocalHeader = 0;
             _storedOffsetOfCompressedData = null;
@@ -688,7 +687,7 @@ namespace System.IO.Compression
             return GetDataDecompressor(compressedStream);
         }
 
-        private Stream OpenInWriteMode()
+        private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
@@ -709,7 +708,7 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private Stream OpenInUpdateMode()
+        private WrappedStream OpenInUpdateMode()
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);

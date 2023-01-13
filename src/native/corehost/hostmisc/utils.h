@@ -8,7 +8,6 @@
 #include "trace.h"
 #include <type_traits>
 
-#define _STRINGIFY(s) _X(s)
 #if defined(_WIN32)
 #define DOTNET_CORE_INSTALL_PREREQUISITES_URL _X("https://go.microsoft.com/fwlink/?linkid=798306")
 #elif defined(TARGET_OSX)
@@ -28,8 +27,6 @@
 
 #define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
 #define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
-
-#define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
 
@@ -77,8 +74,6 @@ const pal::char_t* get_arch_name(pal::architecture arch);
 const pal::char_t* get_current_arch_name();
 
 pal::string_t get_current_runtime_id(bool use_fallback);
-bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
-bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool multilevel_lookup_enabled();
 void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations);
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);

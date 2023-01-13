@@ -13,6 +13,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "XsltSettings-Retail", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in retail mode", Param = "Retail")]
     //[TestCase(Name = "XsltSettings-Debug", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in debug mode", Param = "Debug")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CXsltSettings : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

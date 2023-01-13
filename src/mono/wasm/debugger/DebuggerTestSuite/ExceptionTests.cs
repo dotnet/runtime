@@ -238,7 +238,7 @@ namespace DebuggerTests
                                     {
                                         ignoreCache = true
                                     }));
-            Thread.Sleep(1000);
+            await insp.WaitFor(Inspector.APP_READY);
 
             var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
                 $"'{entry_method_name}'" +
@@ -278,10 +278,9 @@ namespace DebuggerTests
             var pause_location = await SendCommandAndCheck(JObject.FromObject(new
                                     {
                                         ignoreCache = true
-                                    }), "Page.reload",null, 0, 0, null);
-            Thread.Sleep(1000);
+                                    }), "Page.reload", null, 0, 0, null);
 
-            // Hit resume to skip 
+            // Hit resume to skip
             int count = 0;
             while(true)
             {

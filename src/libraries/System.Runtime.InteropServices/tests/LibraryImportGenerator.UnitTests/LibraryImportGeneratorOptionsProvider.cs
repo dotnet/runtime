@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
 
 namespace LibraryImportGenerator.UnitTests
 {

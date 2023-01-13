@@ -12,6 +12,8 @@ namespace System
         private const string OSPlatformName =
 #if TARGET_BROWSER
         "BROWSER"
+#elif TARGET_WASI
+        "WASI"
 #elif TARGET_WINDOWS
         "WINDOWS"
 #elif TARGET_OSX
@@ -147,6 +149,19 @@ namespace System
 #else
             false;
 #endif
+
+/* TODO https://github.com/dotnet/runtime/issues/78389
+        /// <summary>
+        /// Indicates whether the current application is running as WASI.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsWasi() =>
+#if TARGET_WASI
+            true;
+#else
+            false;
+#endif
+*/
 
         /// <summary>
         /// Indicates whether the current application is running on Linux.

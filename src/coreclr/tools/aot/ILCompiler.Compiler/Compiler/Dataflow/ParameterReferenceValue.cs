@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILLink.Shared.DataFlow;
-
-using Internal.TypeSystem;
+using ILLink.Shared.TypeSystemProxy;
 
 #nullable enable
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    public partial record ParameterReferenceValue(MethodDesc MethodDefinition, int ParameterIndex)
-        : ReferenceValue
+    internal sealed record ParameterReferenceValue(ParameterProxy Parameter)
+        : ReferenceValue(Parameter.ParameterType)
     {
         public override SingleValue DeepCopy()
         {
