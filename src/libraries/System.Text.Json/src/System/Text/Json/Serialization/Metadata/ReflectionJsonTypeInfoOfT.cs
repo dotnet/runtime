@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization.Metadata
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
+            if (Kind == JsonTypeInfoKind.Object)
+            {
+                UnmappedMemberHandling = GetUnmappedMemberHandling(Type);
+            }
+
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
@@ -230,6 +235,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonNumberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.Handling;
+        }
+
+        private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
+        {
+            JsonUnmappedMemberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
+            return numberHandlingAttribute?.UnmappedMemberHandling;
         }
 
         private static bool PropertyIsOverriddenAndIgnored(

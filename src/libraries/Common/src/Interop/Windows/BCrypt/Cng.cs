@@ -5,11 +5,13 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
+
 using static Interop;
 using static Interop.BCrypt;
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.NativeCrypto
 {
@@ -112,7 +114,7 @@ namespace Internal.NativeCrypto
             }
         }
 
-        private static Exception CreateCryptographicException(NTSTATUS ntStatus)
+        private static CryptographicException CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
             return hr.ToCryptographicException();

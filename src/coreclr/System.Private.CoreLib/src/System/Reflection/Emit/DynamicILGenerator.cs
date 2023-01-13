@@ -403,7 +403,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.InvalidOperation_NotAllowedInDynamicMethod);
         }
 
-        private int GetMemberRefToken(MethodBase methodInfo, Type[]? optionalParameterTypes)
+        private int GetMemberRefToken(MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             Type[]? parameterTypes;
             Type[][]? requiredCustomModifiers;
