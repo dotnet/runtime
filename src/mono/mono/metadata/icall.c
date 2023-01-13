@@ -3575,7 +3575,6 @@ static guint64
 read_enum_value (const char *mem, int type)
 {
 	switch (type) {
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
 		return *(guint8*)mem;
 	case MONO_TYPE_I1:
@@ -3612,8 +3611,7 @@ write_enum_value (void *mem, int type, guint64 value)
 {
 	switch (type) {
 	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN: {
+	case MONO_TYPE_I1: {
 		guint8 *p = (guint8*)mem;
 		*p = GUINT64_TO_UINT8 (value);
 		break;
