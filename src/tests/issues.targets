@@ -4020,7 +4020,11 @@
         </ExcludeList>
     </ItemGroup>
 
+<<<<<<< HEAD
     <ItemGroup Condition="'$(TargetOS)' == 'iossimulator'">
+=======
+    <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' or (TargetOS) == 'iOS' " >
+>>>>>>> 4b360f4d24e (Exclude tests.)
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -4258,7 +4262,13 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator')">
+    <ItemGroup Condition="( $(TargetOS) == 'iOSSimulator' or (TargetOS) == 'iOS' ) and '$(TargetArchitecture)' == 'arm64'" >
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>
