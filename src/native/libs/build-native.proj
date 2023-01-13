@@ -59,7 +59,7 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
   <Target Name="BuildNativeAndroid"
           BeforeTargets="BuildNativeUnix"
-          Condition="'$(TargetOS)' == 'Android'">
+          Condition="'$(TargetOS)' == 'android'">
     <AndroidLibBuilderTask
       JavaSourceDirectory="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android"
       DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
