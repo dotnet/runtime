@@ -146,6 +146,19 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond_Microsecond_Now()
+        {
+            var time = TimeOnly.FromDateTime(DateTime.Now);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond, int obtainedMicrosecond) = time;
+
+            Assert.Equal(time.Hour, obtainedHour);
+            Assert.Equal(time.Minute, obtainedMinute);
+            Assert.Equal(time.Second, obtainedSecond);
+            Assert.Equal(time.Millisecond, obtainedMillisecond);
+            Assert.Equal(time.Microsecond, obtainedMicrosecond);
+        }
+
+        [Fact]
         public static void AddTest()
         {
             TimeOnly to = new TimeOnly(1, 10, 20, 900);

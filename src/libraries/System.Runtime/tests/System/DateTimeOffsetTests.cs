@@ -85,6 +85,10 @@ namespace System.Tests
 
             dateTimeOffset = new DateTimeOffset(new DateOnly(2012, 12, 31), new TimeOnly(13, 50, 10), TimeSpan.Zero);
             VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, 0, TimeSpan.Zero);
+
+            DateTimeOffset now = DateTimeOffset.Now;
+            DateTimeOffset constructed = new DateTimeOffset(DateOnly.FromDateTime(now.DateTime), TimeOnly.FromDateTime(now.DateTime), now.Offset);
+            Assert.Equal(now, constructed);
         }
 
         [Fact]
@@ -307,16 +311,12 @@ namespace System.Tests
             var date = new DateOnly(year, month, day);
             var time = new TimeOnly(hour, minute, second);
 
-            var offset = new TimeSpan(10, 0, 1);
-            var dateTimeOffset = new DateTimeOffset(date, time, offset);
+            var offset = TimeSpan.FromHours(10);
+            var dateTimeOffset = new DateTimeOffset(date, time, offset) + offset;
             var (obtainedDate, obtainedTime, obtainedOffset) = dateTimeOffset;
             
-            Assert.Equal(date.Year, obtainedDate.Year);
-            Assert.Equal(date.Month, obtainedDate.Month);
-            Assert.Equal(date.Day, obtainedDate.Day);
-            Assert.Equal(time.Hour, obtainedTime.Hour);
-            Assert.Equal(time.Minute, obtainedTime.Minute);
-            Assert.Equal(time.Second, obtainedTime.Second);
+            Assert.Equal(date, obtainedDate);
+            Assert.Equal(time, obtainedTime);
             Assert.Equal(offset, obtainedOffset);
         }
 
