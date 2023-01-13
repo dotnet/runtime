@@ -169,16 +169,14 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             Debug.Assert(method.IsVirtual);
 
-                            // Static interface methods don't participate in GVM analysis
-                            if (method.Signature.IsStatic)
-                                continue;
-
                             if (method.HasInstantiation)
                             {
                                 // We found a GVM on one of the implemented interfaces. Find if the type implements this method.
                                 // (Note, do this comparison against the generic definition of the method, not the specific method instantiation
                                 MethodDesc genericDefinition = method.GetMethodDefinition();
-                                MethodDesc slotDecl = _type.ResolveInterfaceMethodTarget(genericDefinition);
+                                MethodDesc slotDecl = genericDefinition.Signature.IsStatic ?
+                                    _type.ResolveInterfaceMethodToStaticVirtualMethodOnType(genericDefinition)
+                                    : _type.ResolveInterfaceMethodTarget(genericDefinition);
                                 if (slotDecl != null)
                                 {
                                     // If the type doesn't introduce this interface method implementation (i.e. the same implementation

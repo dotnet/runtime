@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
             return "?";
         }
 
-        private static InstantiatedMethod GVMLookupForSlotWorker(DefType targetType, InstantiatedMethod slotMethod)
+        internal static InstantiatedMethod GVMLookupForSlotWorker(DefType targetType, InstantiatedMethod slotMethod)
         {
             InstantiatedMethod resolution = null;
 
@@ -63,11 +63,22 @@ namespace Internal.Runtime.TypeLoader
                     resolution = ResolveInterfaceGenericVirtualMethodSlot(currentType, slotMethod, lookForDefaultImplementations);
                     if (resolution != null)
                     {
-                        if (!resolution.OwningType.IsInterface)
-                            return GVMLookupForSlotWorker(currentType, resolution);
+                        // If this is a static virtual, we're done, nobody can override this.
+                        if (IsStaticMethodSignature(resolution.NameAndSignature))
+                        {
+                            Debug.Assert(IsStaticMethodSignature(slotMethod.NameAndSignature));
+                            break;
+                        }
 
-                        Debug.Assert(lookForDefaultImplementations);
-                        break;
+                        // If this is a default implementation, we're also done.
+                        if (resolution.OwningType.IsInterface)
+                        {
+                            Debug.Assert(lookForDefaultImplementations);
+                            break;
+                        }
+
+                        // Otherwise resolve to whatever implements the virtual method on the type.
+                        return GVMLookupForSlotWorker(currentType, resolution);
                     }
                 }
                 else
