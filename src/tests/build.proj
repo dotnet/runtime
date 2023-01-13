@@ -576,8 +576,7 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 
   <Target Name="BuildNativeAotFrameworkObjects"
-          Condition="'$(BuildNativeAotFrameworkObjects)' == 'true' and '$(TestBuildMode)' == 'nativeaot'"
-          DependsOnTargets="SetupProperties">
+          Condition="'$(BuildNativeAotFrameworkObjects)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
     <ItemGroup>
       <CreateLibProperty Include="IlcToolsPath=$(IlcToolsPath)" />
       <CreateLibProperty Include="IlcBuildTasksPath=$(IlcBuildTasksPath)" />

@@ -353,9 +353,11 @@ The .NET Foundation licenses this file to you under the MIT license.
         strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
   </Target>
 
+  <!--To ensure the dependencies are run before evaluating the inputs and outputs, we have the dummy Target
+    run the dependencies as a DependsOnTargets, then the real target (CreateLibCore) lists the 
+    dummy target as a BeforeTarget -->
   <Target Name="CreateLib"
-    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps"
-     />
+    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps" />
 
   <Target Name="CreateLibCore"
     BeforeTargets="CreateLib"
