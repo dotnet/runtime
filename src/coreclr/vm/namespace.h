@@ -19,6 +19,7 @@
 #define g_CollectionsNS     g_SystemNS ".Collections"
 #define g_ResourcesNS       g_SystemNS ".Resources"
 #define g_DiagnosticsNS     g_SystemNS ".Diagnostics"
+#define g_DiagnosticsTracingNS g_DiagnosticsNS ".Tracing"
 #define g_CodeContractsNS   g_DiagnosticsNS ".Contracts"
 #define g_AssembliesNS      g_SystemNS ".Configuration.Assemblies"
 #define g_GlobalizationNS   g_SystemNS ".Globalization"

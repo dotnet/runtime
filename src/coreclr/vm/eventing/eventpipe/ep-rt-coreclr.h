@@ -1334,7 +1334,16 @@ inline
 void
 ep_rt_init_finish (void)
 {
-	STATIC_CONTRACT_NOTHROW;
+        CONTRACTL
+        {
+                THROWS;
+                GC_TRIGGERS;
+                MODE_ANY;
+        }
+        CONTRACTL_END;
+        
+        extern void ep_rt_coreclr_init_finish (void);
+        ep_rt_coreclr_init_finish ();
 }
 
 static

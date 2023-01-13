@@ -166,7 +166,9 @@ public:
 	{
 		CONTRACTL
 		{
-			NOTHROW;
+			THROWS;
+                        GC_TRIGGERS;
+                        MODE_ANY;
 		}
 		CONTRACTL_END;
 
