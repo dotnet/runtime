@@ -256,15 +256,6 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
 
-            // TODO: this should not be needed - we no longer need to materialize RuntimeTypeHandles as part
-            // of the dispatch. Investigate getting rid of this.
-            // Variant generic virtual method calls at runtime might need to build the concrete version of the
-            // type we could be dispatching on to find the appropriate GVM entry.
-            if (_method.OwningType.HasVariance)
-            {
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific));
-            }
-
             foreach (TypeDesc instArg in canonMethod.Instantiation)
             {
                 dependencies.Add(factory.MaximallyConstructableType(instArg), "Type we need to look up for GVM dispatch");

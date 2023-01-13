@@ -110,21 +110,10 @@ namespace Internal.Runtime.TypeLoader
 
         internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
         {
-            RuntimeTypeHandle declaringTypeHandle;
-            MethodNameAndSignature nameAndSignature;
-            RuntimeTypeHandle[] genericMethodArgs;
-            if (!TryGetRuntimeMethodHandleComponents(slot, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs))
-            {
-                Debug.Assert(false);
-                return IntPtr.Zero;
-            }
-
             TypeSystemContext context = TypeSystemContextFactory.Create();
-
             DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(type);
-            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            Instantiation methodInstantiation = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-            InstantiatedMethod slotMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, methodInstantiation, IntPtr.Zero, false);
+
+            InstantiatedMethod slotMethod = (InstantiatedMethod)GetMethodDescForRuntimeMethodHandle(context, slot);
 
             InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
 
