@@ -410,9 +410,4 @@
     <CustomAfterNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.AfterTargets.targets</CustomAfterNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
-
-  <PropertyGroup>
-      <!-- XXX Temporary hack: use webcil in browser apps -->
-      <WasmEnableWebcil Condition="'$(TargetOS)' == 'browser'">true</WasmEnableWebcil>
-  </PropertyGroup>
 </Project>
