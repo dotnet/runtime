@@ -1886,8 +1886,8 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     }
     assert(tree->gtGetOp2IfPresent() == nullptr);
 
-// TODO-XARCH-AVX512 this is overly constraining register available as NI_System_Math_Abs
-// can be lowered to EVEX compatible instruction (the rest cannot)
+    // TODO-XARCH-AVX512 this is overly constraining register available as NI_System_Math_Abs
+    // can be lowered to EVEX compatible instruction (the rest cannot)
     int srcCount;
     if (op1->isContained())
     {
@@ -2114,8 +2114,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
-                    srcCount +=
-                        op2->isContained() ? BuildOperandUses(op2, BuildEvexIncompatibleMask(op2)) : BuildDelayFreeUses(op2, op1, BuildEvexIncompatibleMask(op2));
+                    srcCount += op2->isContained() ? BuildOperandUses(op2, BuildEvexIncompatibleMask(op2))
+                                                   : BuildDelayFreeUses(op2, op1, BuildEvexIncompatibleMask(op2));
                     srcCount += BuildDelayFreeUses(op3, op1, RBM_XMM0);
 
                     buildUses = false;
@@ -2430,10 +2430,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     regMaskTP op3RegCandidates = RBM_NONE;
 #if defined(TARGET_AMD64)
-                if (!isEvexCompatible)
-                {
-                    op3RegCandidates = BuildEvexIncompatibleMask(op3);
-                }
+                    if (!isEvexCompatible)
+                    {
+                        op3RegCandidates = BuildEvexIncompatibleMask(op3);
+                    }
 #endif
                     srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
                                       : BuildOperandUses(op3, op3RegCandidates);
@@ -2447,7 +2447,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() && (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
+        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() &&
+            (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
         {
             dstCandidates = lowSIMDRegs();
         }
@@ -2739,14 +2740,18 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
-    if ((varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)) && !(tree->isContained() && tree->OperIsIndir()))
-    {
-        return lowSIMDRegs();
-    }
-    else
+    if (!(varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)))
     {
         return RBM_NONE;
     }
+
+    if (tree->isContained() && tree->OperIsIndir() ||
+        (tree->OperIs(GT_HWINTRINSIC) && tree->AsHWIntrinsic()->OperIsMemoryLoad()) || tree->OperIs(GT_LEA))
+    {
+        return RBM_NONE;
+    }
+
+    return lowSIMDRegs();
 #else
     return RBM_NONE;
 #endif

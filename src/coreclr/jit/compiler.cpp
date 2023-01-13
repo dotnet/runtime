@@ -3327,9 +3327,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
 
 #if defined(TARGET_AMD64)
-    rbmAllFloat            = RBM_ALLFLOAT_INIT;
-    rbmFltCalleeTrash      = RBM_FLT_CALLEE_TRASH_INIT;
-    cntCalleeTrashFloat    = CNT_CALLEE_TRASH_FLOAT_INIT;
+    rbmAllFloat         = RBM_ALLFLOAT_INIT;
+    rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
+    cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
     if (DoJitStressEvexEncoding())
     {

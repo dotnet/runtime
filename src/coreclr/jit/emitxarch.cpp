@@ -2814,8 +2814,8 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
         {
             assert(hasEvexPrefix(code) && TakesEvexPrefix(id));
 
-            // TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
-            // Rather see these paths cleaned up.
+// TODO-XARCH-AVX512 I don't like that we redefine regBits on the EVEX case.
+// Rather see these paths cleaned up.
 #if defined(TARGET_AMD64)
             regBits = HighAwareRegEncoding(reg);
 
