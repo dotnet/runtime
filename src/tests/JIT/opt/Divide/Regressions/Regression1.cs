@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 public class Program
 {
-[MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static ushort GetUShortValue()
     {
         return 24648;
