@@ -1626,15 +1626,11 @@ instruction CodeGen::ins_Copy(var_types dstType)
         return INS_mov;
     }
 #elif defined(TARGET_RISCV64)
-    assert(!varTypeIsFloating(dstType));
-    /*
     if (varTypeIsFloating(dstType))
     {
-        assert(false);
-        // return dstType == TYP_FLOAT ? INS_fadd_s : INS_fadd_d;
+        return dstType == TYP_FLOAT ? INS_fsgnj_s : INS_fsgnj_d;
     }
     else
-    */
     {
         return INS_mov;
     }

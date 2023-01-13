@@ -2891,7 +2891,91 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 //
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    // int type --> float/double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->GetRegNum();
+    assert(genIsValidFloatReg(targetReg));
+
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    assert(!op1->isContained());                // Cannot be contained
+    assert(genIsValidIntReg(op1->GetRegNum())); // Must be a valid int reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = genActualType(op1->TypeGet());
+    assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+    // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
+    emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
+    noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
+
+    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    instruction ins        = INS_invalid;
+
+    if (IsUnsigned)
+    {
+        if (dstType == TYP_DOUBLE)
+        {
+            if (srcSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_d_wu;
+            }
+            else
+            {
+                assert(srcSize == EA_8BYTE);
+                ins = INS_fcvt_d_lu;
+            }
+        }
+        else
+        {
+            assert(dstType == TYP_FLOAT);
+            if (srcSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_s_wu;
+            }
+            else
+            {
+                assert(srcSize == EA_8BYTE);
+                ins = INS_fcvt_s_lu;
+            }
+        }
+
+    }
+    else
+    {
+        if (dstType == TYP_DOUBLE)
+        {
+            if (srcSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_d_w;
+            }
+            else
+            {
+                assert(srcSize == EA_8BYTE);
+                ins = INS_fcvt_d_l;
+            }
+        }
+        else
+        {
+            assert(dstType == TYP_FLOAT);
+            if (srcSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_s_w;
+            }
+            else
+            {
+                assert(srcSize == EA_8BYTE);
+                ins = INS_fcvt_s_l;
+            }
+        }
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+
+    GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(dstType), treeNode->GetRegNum(), op1->GetRegNum());
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -2910,7 +2994,91 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 //
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    // int type --> float/double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->GetRegNum();
+    assert(genIsValidIntReg(targetReg));
+
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    assert(!op1->isContained());                // Cannot be contained
+    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid int reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = genActualType(op1->TypeGet());
+    assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
+
+    // We should never see a srcType whose size is neither EA_4BYTE or EA_8BYTE
+    emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
+    noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
+
+    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    instruction ins        = INS_invalid;
+
+    if (IsUnsigned)
+    {
+        if (srcType == TYP_DOUBLE)
+        {
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_d;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_fcvt_lu_d;
+            }
+        }
+        else
+        {
+            assert(srcType == TYP_FLOAT);
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_wu_s;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_fcvt_lu_s;
+            }
+        }
+
+    }
+    else
+    {
+        if (srcType == TYP_DOUBLE)
+        {
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_d;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_fcvt_l_d;
+            }
+        }
+        else
+        {
+            assert(srcType == TYP_FLOAT);
+            if (dstSize == EA_4BYTE)
+            {
+                ins = INS_fcvt_w_s;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins = INS_fcvt_l_s;
+            }
+        }
+    }
+
+    genConsumeOperands(treeNode->AsOp());
+
+    GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(dstType), treeNode->GetRegNum(), op1->GetRegNum());
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------

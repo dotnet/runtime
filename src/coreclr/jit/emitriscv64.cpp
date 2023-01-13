@@ -563,6 +563,7 @@ void emitter::emitIns_R_R(
              (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
              (INS_fmv_x_d == ins))
     {
+        // TODO CHECK ROUNDING MODE
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
         code |= reg1 << 7;
@@ -574,6 +575,7 @@ void emitter::emitIns_R_R(
              (INS_fmv_d_x == ins))
 
     {
+        // TODO CHECK ROUNDING MODE
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         code |= reg1 << 7;
@@ -2244,7 +2246,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     code = emitInsCode(INS_addi);
                     code |= (code_t)reg1 << 7;
-                    code |= (((imm + 0x80000000) >> 32) & 0xff) << 20;
+                    code |= (((imm + 0x80000800) >> 32) & 0xff) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2366,7 +2368,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 code = emitInsCode(INS_addi);
                 code |= (code_t)reg1 << 7;
-                code |= (((imm + 0x80000000) >> 32) & 0xfffff) << 20;
+                code |= (((imm + 0x80000800) >> 32) & 0xfffff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
