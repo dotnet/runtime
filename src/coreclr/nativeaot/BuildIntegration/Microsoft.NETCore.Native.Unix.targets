@@ -88,6 +88,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Globalization.Native/local_build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' == 'true'"/>
 
     <ItemGroup>
+      <LinkerArg Include="-fuse-ld=lld" Condition="'$(UseLLVMLinker)' == 'true'" />
       <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true'" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
@@ -183,5 +184,12 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup Condition="'$(TargetOS)' == 'osx' and '$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
+
+    <Exec Command="echo &quot;int main(void){}&quot; | &quot;$(CppCompilerAndLinker)&quot; -fuse-ld=lld -xc -o /dev/null -" IgnoreExitCode="true" StandardOutputImportance="Low" StandardErrorImportance="low" Condition="'$(UseLLVMLinker)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_LLDAvailable" />
+    </Exec>
+
+    <Error Condition="'$(UseLLVMLinker)' == 'true' and '$(_LLDAvailable)' != '0'"
+      Text="LLVM linker (lld) was requested, but it wasn't found by the compiler driver '$(CppCompilerAndLinker)'" />
   </Target>
 </Project>
