@@ -135,7 +135,7 @@ namespace System.Xml
                 _manageNamespaces = true;
             }
 
-            _thisNSResolver = this as IXmlNamespaceResolver;
+            _thisNSResolver = this;
             _xmlResolver = xmlResolver;
             _processInlineSchema = (readerSettings.ValidationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0;
 

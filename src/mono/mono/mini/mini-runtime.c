@@ -4349,7 +4349,7 @@ init_class (MonoClass *klass)
 #endif
 
 	if (m_class_is_ginst (klass)) {
-		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {
+		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1") || !strcmp (name, "Vector512`1")) {
 			MonoGenericClass *gclass = mono_class_try_get_generic_class (klass);
 			g_assert (gclass);
 			MonoType *etype = gclass->context.class_inst->type_argv [0];

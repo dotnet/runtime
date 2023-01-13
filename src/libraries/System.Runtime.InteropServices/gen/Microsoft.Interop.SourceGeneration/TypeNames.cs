@@ -53,6 +53,9 @@ namespace Microsoft.Interop
 
         public const string System_Type = "System.Type";
 
+        public const string System_Int16 = "System.Int16";
+        public const string @short = "short";
+
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
@@ -98,6 +101,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
+        public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+        public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
+        public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
     }
 }

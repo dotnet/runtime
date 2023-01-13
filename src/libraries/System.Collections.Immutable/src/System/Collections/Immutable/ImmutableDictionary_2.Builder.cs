@@ -92,9 +92,9 @@ namespace System.Collections.Immutable
                     Requires.NotNull(value, nameof(value));
                     if (value != this.KeyComparer)
                     {
-                        var comparers = Comparers.Get(value, this.ValueComparer);
+                        Comparers comparers = Comparers.Get(value, this.ValueComparer);
                         var input = new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, comparers);
-                        var result = ImmutableDictionary<TKey, TValue>.AddRange(this, input);
+                        ImmutableDictionary<TKey, TValue>.MutationResult result = ImmutableDictionary<TKey, TValue>.AddRange(this, input);
 
                         _immutable = null;
                         _comparers = comparers;
@@ -346,7 +346,7 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
                 Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
-                foreach (var item in this)
+                foreach (KeyValuePair<TKey, TValue> item in this)
                 {
                     array.SetValue(new DictionaryEntry(item.Key, item.Value), arrayIndex++);
                 }
@@ -419,7 +419,7 @@ namespace System.Collections.Immutable
 
                 set
                 {
-                    var result = ImmutableDictionary<TKey, TValue>.Add(key, value, KeyCollisionBehavior.SetValue, this.Origin);
+                    ImmutableDictionary<TKey, TValue>.MutationResult result = ImmutableDictionary<TKey, TValue>.Add(key, value, KeyCollisionBehavior.SetValue, this.Origin);
                     this.Apply(result);
                 }
             }
@@ -432,7 +432,7 @@ namespace System.Collections.Immutable
             /// <param name="items">The items.</param>
             public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
             {
-                var result = ImmutableDictionary<TKey, TValue>.AddRange(items, this.Origin);
+                ImmutableDictionary<TKey, TValue>.MutationResult result = ImmutableDictionary<TKey, TValue>.AddRange(items, this.Origin);
                 this.Apply(result);
             }
 
@@ -444,7 +444,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(keys, nameof(keys));
 
-                foreach (var key in keys)
+                foreach (TKey key in keys)
                 {
                     this.Remove(key);
                 }
@@ -522,7 +522,7 @@ namespace System.Collections.Immutable
             /// <exception cref="NotSupportedException">The <see cref="IDictionary{TKey, TValue}"/> is read-only.</exception>
             public void Add(TKey key, TValue value)
             {
-                var result = ImmutableDictionary<TKey, TValue>.Add(key, value, KeyCollisionBehavior.ThrowIfValueDifferent, this.Origin);
+                ImmutableDictionary<TKey, TValue>.MutationResult result = ImmutableDictionary<TKey, TValue>.Add(key, value, KeyCollisionBehavior.ThrowIfValueDifferent, this.Origin);
                 this.Apply(result);
             }
 
@@ -575,7 +575,7 @@ namespace System.Collections.Immutable
             /// <exception cref="NotSupportedException">The <see cref="IDictionary{TKey, TValue}"/> is read-only.</exception>
             public bool Remove(TKey key)
             {
-                var result = ImmutableDictionary<TKey, TValue>.Remove(key, this.Origin);
+                ImmutableDictionary<TKey, TValue>.MutationResult result = ImmutableDictionary<TKey, TValue>.Remove(key, this.Origin);
                 return this.Apply(result);
             }
 
@@ -640,7 +640,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(array, nameof(array));
 
-                foreach (var item in this)
+                foreach (KeyValuePair<TKey, TValue> item in this)
                 {
                     array[arrayIndex++] = item;
                 }

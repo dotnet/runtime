@@ -209,7 +209,7 @@ namespace System
                 //       SunOS 5.11 illumos-63878f749f
                 //   on SmartOS:
                 //       SunOS 5.11 joyent_20200408T231825Z
-                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                string versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
                 switch (versionDescription)
                 {
                     case string version when version.StartsWith("omnios"):

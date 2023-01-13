@@ -864,7 +864,7 @@ namespace System.Xml
             return DataSetMapper.GetRowFromElement(e);
         }
 
-        private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
+        private XmlElement? GetRowInsertBeforeLocation(DataRow row, XmlNode parentElement)
         {
             DataRow refRow = row;
             int i;
@@ -1569,7 +1569,7 @@ namespace System.Xml
                 // create new element if we didn't find one.
                 if (!fFound && !Convert.IsDBNull(value))
                 {
-                    XmlElement newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
+                    var newElem = new XmlBoundElement(string.Empty, col.EncodedColumnName, col.Namespace, this);
                     newElem.AppendChild(CreateTextNode(col.ConvertObjectToXml(value)));
 
                     XmlNode? elemBefore = GetColumnInsertAfterLocation(col, rowElement);
