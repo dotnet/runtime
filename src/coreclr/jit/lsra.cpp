@@ -256,6 +256,15 @@ regMaskTP LinearScan::allSIMDRegs()
     return availableFloatRegs;
 }
 
+regMaskTP LinearScan::lowSIMDRegs()
+{
+#if defined(TARGET_AMD64)
+    return (availableFloatRegs & RBM_LOWFLOAT);
+#else
+    return availableFloatRegs;
+#endif
+}
+
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition)
 {
     LsraLocation nextLocation;
@@ -679,6 +688,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independetly
+    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
+    // we cannot use EVEX at all)
+    if (!compiler->DoJitStressEvexEncoding())
+    {
+        availableFloatRegs &= ~RBM_HIGHFLOAT;
+        availableDoubleRegs &= ~RBM_HIGHFLOAT;
+    }
+#endif
 
     for (unsigned int i = 0; i < TYP_COUNT; i++)
     {
