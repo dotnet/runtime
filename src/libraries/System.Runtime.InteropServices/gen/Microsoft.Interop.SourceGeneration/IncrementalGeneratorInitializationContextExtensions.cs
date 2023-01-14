@@ -59,6 +59,9 @@ namespace Microsoft.Interop
                     // the downlevel support only matters for the repo where this project is built.
                     // In all other cases, we will only be used from the TFM with the matching version as our assembly.
                     null => TargetFramework.Net,
+                    // Assume that all unknown target framework identifiers are .NET Framework.
+                    // This matches the behavior in CompilationExtensions.CreateStubEnvironment
+                    // as all legacy target framework identifiers also use mscorlib.dll as the core library.
                     _ => TargetFramework.Framework
                 }, Version: tfm.Version ?? ThisAssemblyVersion));
 
