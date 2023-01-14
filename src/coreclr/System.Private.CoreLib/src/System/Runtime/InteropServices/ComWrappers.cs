@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
-    public abstract unsafe partial class ComWrappers
+    public abstract partial class ComWrappers
     {
         /// <summary>
         /// Given a managed object, determine if it is a ComWrappers created

@@ -398,15 +398,30 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
     if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface
         && *vtable != ManagedObjectWrapper_IReferenceTrackerTargetImpl.QueryInterface)
     {
-        // It is possible the user has defined their own IUnknown impl so
-        // we fallback to the tagged interface approach to be sure. This logic isn't
-        // handled by the DAC logic and that is by-design.
-        ComHolder<ITaggedImpl> implMaybe;
-        if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe)
-            || S_OK != implMaybe->IsCurrentVersion((void*)&ITaggedImpl_IsCurrentVersion))
-        {
-            return nullptr;
-        }
+        return nullptr;
+    }
+
+    ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);
+    return ABI::ToManagedObjectWrapper(disp);
+}
+
+ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(_In_ IUnknown* pUnk)
+{
+    ManagedObjectWrapper* wrapper = MapFromIUnknown(pUnk);
+    if (wrapper != nullptr)
+        return wrapper;
+
+    // It is possible the user has defined their own IUnknown impl so
+    // we fallback to the tagged interface approach to be sure. This logic isn't
+    // handled by the DAC logic and that is by-design. Care must be taken when
+    // performing this QueryInterface() since users are free to implement a wrapper
+    // using managed code and therefore performing this operation may not be
+    // possible during a GC.
+    ComHolder<ITaggedImpl> implMaybe;
+    if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe)
+        || S_OK != implMaybe->IsCurrentVersion((void*)&ITaggedImpl_IsCurrentVersion))
+    {
+        return nullptr;
     }
 
     ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);
