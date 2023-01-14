@@ -399,7 +399,7 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
-      set(strip_command ${STRIP} -no_code_signature_warning -x ${strip_source_file})
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
 
       # codesign release build
       string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
