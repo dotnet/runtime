@@ -762,22 +762,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsFloating(simdBaseType))
+            if (!varTypeIsFloating(simdBaseType))
             {
-                CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-                CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-                var_types               argType  = TYP_UNKNOWN;
-                CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-                op2     = getArgForHWIntrinsic(argType, argClass);
-
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-                op1     = getArgForHWIntrinsic(argType, argClass);
-
-                retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
-                                             /* isSimdAsHWIntrinsic */ false);
+                // We can't trivially handle division for integral types using SIMD
+                break;
             }
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize,
+                                         /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -1252,118 +1255,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_LoadVector64:
+        case NI_AdvSimd_LoadVector128:
         case NI_Vector64_Load:
         case NI_Vector128_Load:
-        {
-            assert(sig->numArgs == 1);
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_LoadAligned:
-        case NI_Vector128_LoadAligned:
-        {
-            assert(sig->numArgs == 1);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_LoadAlignedNonTemporal:
-        case NI_Vector128_LoadAlignedNonTemporal:
-        {
-            assert(sig->numArgs == 1);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST))
-            {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
-            }
-
-            // ARM64 has non-temporal loads (LDNP) but we don't currently support them
-
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-            if (simdSize == 16)
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
-            }
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_LoadUnsafe:
         case NI_Vector128_LoadUnsafe:
         {
@@ -1378,14 +1273,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impPopStack().val;
 
-            if (op1->OperIs(GT_CAST))
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
             {
-                // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                {
-                    op1 = op1->gtGetOp1();
-                }
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
             }
 
             if (sig->numArgs == 2)
@@ -1395,18 +1286,59 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
-            NamedIntrinsic loadIntrinsic = NI_Illegal;
+            retNode = gtNewSimdLoadNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
 
-            if (simdSize == 16)
+        case NI_Vector64_LoadAligned:
+        case NI_Vector128_LoadAligned:
+        {
+            assert(sig->numArgs == 1);
+
+            if (opts.OptimizationDisabled())
             {
-                loadIntrinsic = NI_AdvSimd_LoadVector128;
-            }
-            else
-            {
-                loadIntrinsic = NI_AdvSimd_LoadVector64;
+                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // aligned when optimizations are disable, so only skip the intrinsic handling
+                // if optimizations are enabled
+                break;
             }
 
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            retNode = gtNewSimdLoadAlignedNode(retType, op1, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_LoadAlignedNonTemporal:
+        case NI_Vector128_LoadAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 1);
+
+            if (opts.OptimizationDisabled())
+            {
+                // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
+                // aligned when optimizations are disable, so only skip the intrinsic handling
+                // if optimizations are enabled
+                break;
+            }
+
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            retNode = gtNewSimdLoadNonTemporalNode(retType, op1, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -1615,82 +1547,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_Store:
+        {
+            assert(retType == TYP_VOID);
+            assert(sig->numArgs == 2);
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case NI_Vector64_Store:
-        case NI_Vector128_Store:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_StoreAligned:
-        case NI_Vector128_StoreAligned:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_StoreAlignedNonTemporal:
-        case NI_Vector128_StoreAlignedNonTemporal:
-        {
-            assert(sig->numArgs == 2);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            if (!opts.MinOpts())
-            {
-                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-                // aligned during minopts, so only skip the intrinsic handling if we're minopts
-                break;
-            }
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
-
-            // ARM64 has non-temporal stores (STNP) but we don't currently support them
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_StoreUnsafe:
+        case NI_Vector128_Store:
         case NI_Vector128_StoreUnsafe:
         {
+            assert(retType == TYP_VOID);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
             if (sig->numArgs == 3)
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
 
                 op3 = impPopStack().val;
             }
@@ -1703,7 +1591,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             op2 = impPopStack().val;
-            op1 = impSIMDPopStack(simdType);
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
+            }
 
             if (sig->numArgs == 3)
             {
@@ -1712,7 +1605,76 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            retNode = gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_StoreAligned:
+        case NI_Vector128_StoreAligned:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            if (opts.OptimizationDisabled())
+            {
+                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // aligned when optimizations are disable, so only skip the intrinsic handling
+                // if optimizations are enabled
+                break;
+            }
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+            op2 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
+            }
+
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_StoreAlignedNonTemporal:
+        case NI_Vector128_StoreAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            if (opts.OptimizationDisabled())
+            {
+                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // aligned when optimizations are disable, so only skip the intrinsic handling
+                // if optimizations are enabled
+                break;
+            }
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+            op2 = impPopStack().val;
+
+            if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op2 = op2->gtGetOp1();
+            }
+
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
+                                                    /* isSimdAsHWIntrinsic */ false);
             break;
         }
 

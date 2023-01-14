@@ -33,23 +33,23 @@ jobs:
     helixQueues:
 
     # iOS/tvOS simulator x64/x86
-    - ${{ if in(parameters.platform, 'iOSSimulator_x64', 'tvOSSimulator_x64') }}:
+    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64') }}:
       - OSX.1015.Amd64.Open
 
     # Android arm64
-    - ${{ if in(parameters.platform, 'Android_arm64') }}:
+    - ${{ if in(parameters.platform, 'android_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
     # Android x64
-    - ${{ if in(parameters.platform, 'Android_x64') }}:
+    - ${{ if in(parameters.platform, 'android_x64') }}:
       - Ubuntu.1804.Amd64.Android.29.Open
 
     # Browser wasm
-    - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
+    - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
     # Linux arm
-    - ${{ if eq(parameters.platform, 'Linux_arm') }}:
+    - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm32.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7
       - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
@@ -60,7 +60,7 @@ jobs:
         - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7
 
     # Linux arm64
-    - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
+    - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
@@ -74,28 +74,28 @@ jobs:
         - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
 
     # Linux musl x64
-    - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Alpine.314.Amd64)ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64
 
     # Linux musl arm32
-    - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.314.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Alpine.314.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7
 
     # Linux musl arm64
-    - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.314.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Alpine.314.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8
 
     # Linux x64
-    - ${{ if eq(parameters.platform, 'Linux_x64') }}:
+    - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Ubuntu.1804.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
@@ -115,14 +115,14 @@ jobs:
         - RedHat.7.Amd64
 
     # OSX arm64
-    - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
+    - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - OSX.1200.ARM64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.ARM64
 
     # OSX x64
-    - ${{ if eq(parameters.platform, 'OSX_x64') }}:
+    - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - OSX.1200.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:

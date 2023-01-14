@@ -120,9 +120,9 @@ namespace System
         private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
-        private static readonly uint[] s_daysToMonth365 = {
+        internal static ReadOnlySpan<uint> DaysToMonth365 => new uint[] {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly uint[] s_daysToMonth366 = {
+        internal static ReadOnlySpan<uint> DaysToMonth366 => new uint[] {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
 
         private static ReadOnlySpan<byte> DaysInMonth365 => new byte[] { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -953,7 +953,7 @@ namespace System
             y += q;
             m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
-            uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> daysTo = IsLeapYear(y) ? DaysToMonth366 : DaysToMonth365;
             uint daysToMonth = daysTo[m - 1];
             int days = (int)(daysTo[m] - daysToMonth);
             if (d > days) d = days;
@@ -1016,12 +1016,12 @@ namespace System
             int m = month - 1, d = day - 1;
             if (IsLeapYear(y))
             {
-                n += s_daysToMonth366[m];
+                n += DaysToMonth366[m];
             }
             else
             {
                 if (d == 28 && m == 1) d--;
-                n += s_daysToMonth365[m];
+                n += DaysToMonth365[m];
             }
             n += (uint)d;
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
@@ -1071,7 +1071,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
@@ -1931,7 +1931,7 @@ namespace System
         double IConvertible.ToDouble(IFormatProvider? provider) => throw InvalidCast(nameof(Double));
         decimal IConvertible.ToDecimal(IFormatProvider? provider) => throw InvalidCast(nameof(Decimal));
 
-        private static Exception InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
+        private static InvalidCastException InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider) => this;
 
@@ -1952,7 +1952,7 @@ namespace System
                 return false;
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 return false;

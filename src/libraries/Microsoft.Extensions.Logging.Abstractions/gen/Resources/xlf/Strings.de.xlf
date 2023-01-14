@@ -32,6 +32,16 @@
         <target state="translated">Parameternamen für die Protokollierungsmethode dürfen nicht mit "_" beginnen.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Protokollierungsmethoden dürfen keinen Text enthalten.</target>
@@ -145,6 +155,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Dieselbe Ereignis-ID kann nicht von mehreren Protokollierungsmethoden innerhalb einer Klasse verwendet werden</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Der Ereignisname „{0}“ wird in der Klasse „{1}“ von mehreren Protokollierungsmethoden verwendet.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Derselbe Ereignisname kann innerhalb einer Klasse nicht von mehreren Protokollierungsmethoden verwendet werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

@@ -606,7 +606,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
+        private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
             // are functionally immutable (unlike Windows ones) an UpRef is sufficient.

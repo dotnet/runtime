@@ -198,15 +198,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator /(Vector128<T> left, T right)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector128.Create(
+                left._lower / right,
+                left._upper / right
+            );
         }
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
@@ -258,15 +253,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator <<(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower << shiftCount,
+                value._upper << shiftCount
+            );
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -330,15 +320,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower >> shiftCount,
+                value._upper >> shiftCount
+            );
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -390,15 +375,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>>(Vector128<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector128<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T element = Scalar<T>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
-            }
-
-            return result;
+            return Vector128.Create(
+                value._lower >>> shiftCount,
+                value._upper >>> shiftCount
+            );
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>

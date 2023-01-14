@@ -53,7 +53,7 @@ namespace System.ComponentModel.Composition
             return constraint;
         }
 
-        private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
+        private static BinaryExpression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
         {
             ArgumentNullException.ThrowIfNull(parameter);
 
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition
             return body;
         }
 
-        private static Expression CreateCreationPolicyConstraint(CreationPolicy policy, ParameterExpression parameter)
+        private static BinaryExpression CreateCreationPolicyConstraint(CreationPolicy policy, ParameterExpression parameter)
         {
             ArgumentNullException.ThrowIfNull(parameter);
 
@@ -101,7 +101,7 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, policy, CompositionConstants.PartCreationPolicyMetadataName));
         }
 
-        private static Expression CreateTypeIdentityConstraint(string requiredTypeIdentity, ParameterExpression parameter)
+        private static BinaryExpression CreateTypeIdentityConstraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
             ArgumentNullException.ThrowIfNull(requiredTypeIdentity);
             ArgumentNullException.ThrowIfNull(parameter);
@@ -114,7 +114,7 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, requiredTypeIdentity, CompositionConstants.ExportTypeIdentityMetadataName));
         }
 
-        private static Expression CreateMetadataContainsKeyExpression(ParameterExpression parameter, string constantKey)
+        private static MethodCallExpression CreateMetadataContainsKeyExpression(ParameterExpression parameter, string constantKey)
         {
             if (parameter == null)
             {
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition
                         Expression.Constant(constantKey));
         }
 
-        private static Expression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
+        private static MethodCallExpression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
         {
             if (parameter == null)
             {
@@ -161,7 +161,7 @@ namespace System.ComponentModel.Composition
                             );
         }
 
-        private static Expression CreateMetadataValueEqualsExpression(ParameterExpression parameter, object constantValue, string metadataName)
+        private static MethodCallExpression CreateMetadataValueEqualsExpression(ParameterExpression parameter, object constantValue, string metadataName)
         {
             if (parameter == null)
             {

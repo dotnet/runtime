@@ -84,6 +84,8 @@ class FirefoxInspectorClient : InspectorClient
         res = await SendCommand("watchResources", JObject.FromObject(new { type = "watchResources", resourceTypes = new JArray("console-message"), to = watcherId}), token);
         res = await SendCommand("watchTargets", JObject.FromObject(new { type = "watchTargets", targetType = "frame", to = watcherId}), token);
         UpdateTarget(res.Value?["result"]?["value"]?["target"] as JObject);
+        if (ThreadActorId == null)
+            return false;
         res = await SendCommand("attach", JObject.FromObject(new
             {
                 type = "attach",
