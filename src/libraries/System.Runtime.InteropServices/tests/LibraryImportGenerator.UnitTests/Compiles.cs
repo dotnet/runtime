@@ -12,6 +12,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+using SourceGenerators.Tests;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -501,6 +503,7 @@ namespace LibraryImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(targetFramework)),
                 out var generatorDiags,
                 new Microsoft.Interop.LibraryImportGenerator());
 
@@ -611,7 +614,7 @@ namespace LibraryImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
-                new LibraryImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
+                new LibraryImportGeneratorOptionsProvider(TestTargetFramework.Net, useMarshalType: true, generateForwarders: false),
                 out var generatorDiags,
                 new Microsoft.Interop.LibraryImportGenerator());
 
@@ -660,7 +663,7 @@ public class Basic { }
             Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(framework)), out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
             // Assert we didn't generate any syntax trees, even empty ones

@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.DotNet.XUnitExtensions;
+using SourceGenerators.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -262,7 +263,7 @@ namespace Microsoft.Interop.UnitTests
             => CSharpGeneratorDriver.Create(
                 ImmutableArray.Create(generators.Select(gen => gen.AsSourceGenerator()).ToArray()),
                 parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
-                optionsProvider: options,
+                optionsProvider: options ?? new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Net)),
                 driverOptions: driverOptions);
 
         private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)

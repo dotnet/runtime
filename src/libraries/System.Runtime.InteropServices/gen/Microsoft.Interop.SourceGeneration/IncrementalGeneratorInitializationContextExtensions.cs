@@ -7,14 +7,63 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
     public static class IncrementalGeneratorInitializationContextExtensions
     {
+        // This type is a record to get the generated equality and hashing operators
+        // which will be faster than the reflection-based ones.
+        private record struct TargetFrameworkSettings
+        {
+            public TargetFrameworkSettings(AnalyzerConfigOptions options)
+            {
+                options.TryGetValue("build_property.TargetFrameworkIdentifier", out string? frameworkIdentifier);
+                Identifier = frameworkIdentifier;
+                options.TryGetValue("build_property.TargetFrameworkVersion", out string? version);
+                // TargetFrameworkVersion starts with a 'v'.
+                Version = version is not null ? Version.Parse(version.Substring(1)) : null;
+            }
+
+            public string? Identifier { get; init; }
+
+            public Version? Version { get; init; }
+        }
+
+        private static readonly Version FirstNonCoreVersion = new(5, 0);
+
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
-            return context.CompilationProvider.Select(static (comp, ct) => comp.CreateStubEnvironment());
+            // PERF: With the .NET SDK, this path is equivalent to calling CompilationExtensions.CreateStubEnvironment.
+            // However, using the compilation here has been known to cause perf issues, so instead we'll use MSBuild properties
+            // and directly inferring from syntax the information we need to calculate for the StubEnvironment object
+            // and only include the compilation after all of that is already done.
+            var tfmVersion = context.AnalyzerConfigOptionsProvider
+                .Select((options, ct) => new TargetFrameworkSettings(options.GlobalOptions))
+                .Select((tfm, ct) => (TargetFramework: tfm.Identifier switch
+                {
+                    ".NETStandard" => TargetFramework.Standard,
+                    ".NETCoreApp" when tfm.Version is not null && tfm.Version < FirstNonCoreVersion => TargetFramework.Core,
+                    ".NETCoreApp" => TargetFramework.Net,
+                    _ => TargetFramework.Framework
+                }, tfm.Version));
+
+            var isModuleSkipLocalsInit = context.SyntaxProvider.ForAttributeWithMetadataName(
+                TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute,
+                (node, ct) => node is ICompilationUnitSyntax,
+                // If SkipLocalsInit is applied at the top level, it is either applied to the module
+                // or is invalid syntax. As a result, we just need to know if there's any top-level
+                // SkipLocalsInit attributes. So the result we return here is meaningless.
+                (context, ct) => true)
+                .Collect()
+                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty);
+
+            return tfmVersion
+                .Combine(isModuleSkipLocalsInit)
+                .Combine(context.CompilationProvider)
+                .Select((data, ct) =>
+                    new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
