@@ -2197,7 +2197,7 @@ private:
 #endif
 
 #ifdef DEBUG
-    void emitCheckIGoffsets();
+    void emitCheckIGList();
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
