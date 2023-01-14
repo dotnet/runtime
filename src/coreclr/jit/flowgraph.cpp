@@ -258,7 +258,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             }
         }
 
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(newStmt);
             fgSetStmtSeq(newStmt);
@@ -333,7 +333,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(pollStmt);
             fgSetStmtSeq(pollStmt);
@@ -393,7 +393,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
         gtSetEvalOrder(trapCheck);
         Statement* trapCheckStmt = fgNewStmtAtEnd(top, trapCheck);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(trapCheckStmt);
             fgSetStmtSeq(trapCheckStmt);
@@ -734,65 +734,6 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-//------------------------------------------------------------------------
-// fgIsIndirOfAddrOfLocal: Determine whether "tree" is an indirection of a local.
-//
-// Arguments:
-//    tree - The tree node under consideration
-//
-// Return Value:
-//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
-//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
-//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
-//    - else nullptr.
-//
-// static
-GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
-{
-    GenTreeLclVar* res = nullptr;
-    if (tree->OperIsIndir())
-    {
-        GenTree* addr = tree->AsIndir()->Addr();
-
-        // Post rationalization, we can have Indir(Lea(..) trees. Therefore to recognize
-        // Indir of addr of a local, skip over Lea in Indir(Lea(base, index, scale, offset))
-        // to get to base variable.
-        if (addr->OperGet() == GT_LEA)
-        {
-            // We use this method in backward dataflow after liveness computation - fgInterBlockLocalVarLiveness().
-            // Therefore it is critical that we don't miss 'uses' of any local.  It may seem this method overlooks
-            // if the index part of the LEA has indir( someAddrOperator ( lclVar ) ) to search for a use but it's
-            // covered by the fact we're traversing the expression in execution order and we also visit the index.
-            GenTreeAddrMode* lea  = addr->AsAddrMode();
-            GenTree*         base = lea->Base();
-
-            if (base != nullptr)
-            {
-                if (base->OperGet() == GT_IND)
-                {
-                    return fgIsIndirOfAddrOfLocal(base);
-                }
-                // else use base as addr
-                addr = base;
-            }
-        }
-
-        if (addr->OperGet() == GT_ADDR)
-        {
-            GenTree* lclvar = addr->AsOp()->gtOp1;
-            if (lclvar->OperGet() == GT_LCL_VAR)
-            {
-                res = lclvar->AsLclVar();
-            }
-        }
-        else if (addr->OperGet() == GT_LCL_VAR_ADDR)
-        {
-            res = addr->AsLclVar();
-        }
-    }
-    return res;
-}
-
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
     bool         bNeedClassID = true;
@@ -908,6 +849,19 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     return result;
 }
 
+//------------------------------------------------------------------------------
+// fgSetPreferredInitCctor: Set CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE as the
+// preferred call constructure if it is undefined.
+//
+void Compiler::fgSetPreferredInitCctor()
+{
+    if (m_preferredInitCctor == CORINFO_HELP_UNDEF)
+    {
+        // This is the cheapest helper that triggers the constructor.
+        m_preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+    }
+}
+
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
@@ -916,8 +870,8 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
         resolvedToken.hClass = cls;
-
-        return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+        fgSetPreferredInitCctor();
+        return impReadyToRunHelperToTree(&resolvedToken, m_preferredInitCctor, TYP_BYREF);
     }
 #endif
 
@@ -942,12 +896,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsIconHandle();
 
         case GT_CNS_STR:
-        case GT_ADDR:
         case GT_FIELD_ADDR:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
         case GT_CLS_VAR_ADDR:
-            // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
-            // taken is either a local or static variable, whose address is necessarily non-null, or else it is
-            // a field dereference, which will do its own bounds checking if necessary.
             return false;
 
         case GT_IND:
@@ -1850,8 +1802,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
-    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
     GenTree* tree;
 
     if (info.compIsStatic)
@@ -1986,7 +1937,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     // Add enter pinvoke exit callout at the start of prolog
 
-    GenTree* pInvokeFrameVar = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+    GenTree* pInvokeFrameVar = gtNewLclVarAddrNode(lvaReversePInvokeFrameVar);
 
     GenTree* tree;
 
@@ -2029,7 +1980,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     // Add reverse pinvoke exit callout at the end of epilog
 
-    tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+    tree = gtNewLclVarAddrNode(lvaReversePInvokeFrameVar);
 
     CorInfoHelpFunc reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS)
                                                    ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
@@ -4057,6 +4008,16 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
         }
     };
 
+#ifdef DEBUG
+    if (isLIR)
+    {
+        assert((fgNodeThreading == NodeThreading::LIR) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+    }
+    else
+    {
+        assert((fgNodeThreading == NodeThreading::AllTrees) || (mostRecentlyActivePhase == PHASE_SET_BLOCK_ORDER));
+    }
+#endif
     return SetTreeSeqVisitor(this, tree, isLIR).Sequence();
 }
 
@@ -4161,10 +4122,6 @@ PhaseStatus Compiler::fgSetBlockOrder()
         fgSetBlockOrder(block);
     }
 
-    /* Remember that now the tree list is threaded */
-
-    fgStmtListThreaded = true;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4254,30 +4211,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 
     return firstNode;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    if (tree->gtOper == GT_LCLHEAP)
-    {
-        return Compiler::WALK_ABORT;
-    }
-
-    return Compiler::WALK_CONTINUE;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    if (tree->gtOper == GT_QMARK)
-    {
-        return Compiler::WALK_ABORT;
-    }
-
-    return Compiler::WALK_CONTINUE;
 }
 
 void Compiler::fgLclFldAssign(unsigned lclNum)

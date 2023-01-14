@@ -1355,10 +1355,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = (LPCUTF8)name;
     }
 
-    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%S\" from module \"%ws\" in domain 0x%p %s\n",
+    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%s\" in domain 0x%p %s\n",
         *pszDebugNamespace ? pszDebugNamespace : "",
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
-        debugName.GetUnicode(),
+        debugName.GetUTF8(),
         pModule->GetDebugName(),
         pModule->GetDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
@@ -4178,18 +4178,18 @@ IS_VALUETYPE:
 
         if (!fIsStatic)
         {
-            pFD = &pFieldDescList[dwCurrentDeclaredField];
+            pFD = &pFieldDescList[dwCurrentDeclaredField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             *totalDeclaredSize += (1 << dwLog2FieldSize);
         }
         else /* (dwMemberAttrs & mdStatic) */
         {
             if (fIsThreadStatic)
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + dwCurrentThreadStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
             else
             {
-                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField];
+                pFD = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + dwCurrentStaticField]; // lgtm [cpp/upcast-array-pointer-arithmetic] - The call of concern in FixupFieldDescForEnC, initializes this loop invariant to 1, so will never be > 1.
             }
         }
 
@@ -9884,6 +9884,22 @@ void MethodTableBuilder::CheckForSystemTypes()
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
+    #endif // TARGET_ARM elif TARGET_ARM64
+                }
+                else if (strcmp(name, g_Vector512Name) == 0)
+                {
+    #ifdef TARGET_ARM
+                    // No such type exists for the Procedure Call Standard for ARM. We will default
+                    // to the same alignment as __m128, which is supported by the ABI.
+
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+    #elif defined(TARGET_ARM64)
+                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
+                    // 16-byte alignment for __m256.
+
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #else
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 64; // sizeof(__m512)
     #endif // TARGET_ARM elif TARGET_ARM64
                 }
                 else

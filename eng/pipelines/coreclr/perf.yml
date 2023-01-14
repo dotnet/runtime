@@ -36,16 +36,18 @@ variables:
   #always: true
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-      parameters:
-        collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-        ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-          runProfile: 'non-v8'
-        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
-          runProfile: 'v8'
+      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+        parameters:
+          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+          ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+            runProfile: 'non-v8'
+          ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+            runProfile: 'v8'
 
-    - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+      - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml

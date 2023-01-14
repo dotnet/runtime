@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_77640
+public unsafe class Runtime_77640
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int result = 101;
         try

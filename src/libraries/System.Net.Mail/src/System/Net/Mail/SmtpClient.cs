@@ -81,10 +81,7 @@ namespace System.Net.Mail
         {
             try
             {
-                if (port < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(port));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(port);
 
                 _host = host;
                 _port = port;
@@ -143,7 +140,7 @@ namespace System.Net.Mail
                 for (int i = 0; i < clientDomainRaw.Length; i++)
                 {
                     ch = clientDomainRaw[i];
-                    if ((ushort)ch <= 0x7F)
+                    if (Ascii.IsValid(ch))
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)
@@ -192,10 +189,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 if (value != _port)
                 {
@@ -259,10 +253,7 @@ namespace System.Net.Mail
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
 
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _timeout = value;
             }

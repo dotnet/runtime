@@ -1279,7 +1279,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     UINT64 add = m_addPressure[0] + m_addPressure[1] + m_addPressure[2] + m_addPressure[3] - m_addPressure[p];
     UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
 
-    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %I64u => added=%I64u total_added=%I64u total_removed=%I64u",
+    STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
         bytesAllocated, newMemValue, add, rem);
 
     SendEtwAddMemoryPressureEvent(bytesAllocated);
@@ -1321,7 +1321,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
                 // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
                 if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
-                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%I64u ? budget=%I64u (total_added=%I64u, total_removed=%I64u, mng_heap=%I64u) pos=%d",
+                    STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
                         newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);
 
                     GarbageCollectModeAny(2);
@@ -1360,7 +1360,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
 
     InterlockedAdd(&m_remPressure[p], bytesAllocated);
 
-    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %I64u => removed=%I64u",
+    STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
         bytesAllocated, m_remPressure[p]);
 }
 

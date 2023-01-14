@@ -230,4 +230,118 @@ namespace DebuggerTests.AsyncTests
         }
     }
 
+    public class VariablesWithSameNameDifferentScopes
+    {
+        public static async Task Run()
+        {
+            await RunCSharpScope(10);
+            await RunCSharpScope(1000);
+        }
+
+        public static async Task<string> RunCSharpScope(int number)
+        {
+            await Task.Delay(1);
+            if (number < 999)
+            {
+                string testCSharpScope = "hello"; string onlyInFirstScope = "only-in-first-scope";
+                System.Diagnostics.Debugger.Break();
+                return testCSharpScope;
+            }
+            else
+            {
+                string testCSharpScope = "hi"; string onlyInSecondScope = "only-in-second-scope";
+                System.Diagnostics.Debugger.Break();
+                return testCSharpScope;
+            }
+        }
+
+        public static async Task RunContinueWith()
+        {
+            await RunContinueWithSameVariableName(10);
+            await RunContinueWithSameVariableName(1000);
+        }
+
+        public static async Task RunNestedContinueWith()
+        {
+            await RunNestedContinueWithSameVariableName(10);
+            await RunNestedContinueWithSameVariableName(1000);
+        }
+
+        public static async Task RunContinueWithSameVariableName(int number)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                await Task.Delay(1);
+                if (number < 999)
+                {
+                    var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
+                    System.Diagnostics.Debugger.Break();
+                    return testCSharpScope;
+                }
+                else
+                {
+                    var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
+                    System.Diagnostics.Debugger.Break();
+                    return testCSharpScope;
+                }
+            });
+            Console.WriteLine ($"done with this method");
+        }
+
+        public static async Task RunNestedContinueWithSameVariableName(int number)
+        {
+            await Task.Delay(500).ContinueWith(async t =>
+            {
+                if (number < 999)
+                {
+                    var testCSharpScope = new String("hello_out"); string onlyInFirstScope = "only-in-first-scope_out";
+                    Console.WriteLine(testCSharpScope);
+                }
+                else
+                {
+                    var testCSharpScope = new String("hi_out"); string onlyInSecondScope = "only-in-second-scope_out";
+                    Console.WriteLine(testCSharpScope);
+                }
+                await Task.Delay(300).ContinueWith(t2 =>
+                {
+                    if (number < 999)
+                    {
+                        var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
+                        System.Diagnostics.Debugger.Break();
+                        return testCSharpScope;
+                    }
+                    else
+                    {
+                        var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
+                        System.Diagnostics.Debugger.Break();
+                        return testCSharpScope;
+                    }
+                });
+            });
+            Console.WriteLine ($"done with this method");
+        }
+
+        public static void RunNonAsyncMethod()
+        {
+            RunNonAsyncMethodSameVariableName(10);
+            RunNonAsyncMethodSameVariableName(1000);
+        }
+
+        public static string RunNonAsyncMethodSameVariableName(int number)
+        {
+            if (number < 999)
+            {
+                var testCSharpScope = new String("hello"); string onlyInFirstScope = "only-in-first-scope";
+                System.Diagnostics.Debugger.Break();
+                return testCSharpScope;
+            }
+            else
+            {
+                var testCSharpScope = new String("hi"); string onlyInSecondScope = "only-in-second-scope";
+                System.Diagnostics.Debugger.Break();
+                return testCSharpScope;
+            }
+        }
+    }
+
 }

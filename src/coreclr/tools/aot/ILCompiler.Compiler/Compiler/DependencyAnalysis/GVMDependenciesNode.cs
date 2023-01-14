@@ -159,6 +159,8 @@ namespace ILCompiler.DependencyAnalysis
                                     openInstantiation[instArg] = context.GetSignatureVariable(instArg, method: true);
                                 MethodDesc implementingMethodInstantiation = slotDecl.MakeInstantiatedMethod(openInstantiation).InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
                                 dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
+
+                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation);
                             }
                         }
                     }
@@ -206,8 +208,12 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc instantiatedTargetMethod = potentialOverrideType.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve)
                         .GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (instantiatedTargetMethod != _method)
+                    {
                         dynamicDependencies.Add(new CombinedDependencyListEntry(
                             factory.GVMDependencies(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
+
+                        factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+                    }
                 }
             }
 

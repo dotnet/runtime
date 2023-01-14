@@ -254,7 +254,7 @@ virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
                               EECodeInfo*     pCodeInfo) = 0;
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
@@ -503,7 +503,7 @@ OBJECTREF GetInstance(
                 EECodeInfo *    pCodeInfo);
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual

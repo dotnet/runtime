@@ -19,7 +19,7 @@ public class Runtime_57061_2
     static uint[] s_13;
     static sbyte[][] s_110;
     static int[] s_111;
-    private static int Main()
+    public static int Main()
     {
         s_2 = s_2;
         return Foo();

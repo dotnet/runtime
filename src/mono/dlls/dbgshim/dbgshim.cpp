@@ -191,21 +191,6 @@ HRESULT CreateCoreDbg(HMODULE hDBIModule, DWORD processId, int iDebuggerVersion,
     return hr;
 }
 
-char* convertC(const WCHAR * wString)
-{
-    int size;
-    char * MultiBuffer = NULL;
-
-    size = WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,0,NULL,NULL);
-    MultiBuffer = (char*) malloc(size);
-    if (MultiBuffer == NULL)
-    {
-        return NULL;
-    }
-    WideCharToMultiByte(CP_ACP,0,wString,-1,MultiBuffer,size,NULL,NULL);
-    return MultiBuffer;
-}
-
 static IUnknown* pCordb = NULL;
 
 MONO_API HRESULT

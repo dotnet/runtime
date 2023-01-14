@@ -469,7 +469,7 @@ INST3(pextrb,           "pextrb",           IUM_WR, SSE3A(0x14),  BAD_CODE,     
 INST3(pextrd,           "pextrd",           IUM_WR, SSE3A(0x16),  BAD_CODE,     BAD_CODE,                                INS_TT_TUPLE1_SCALAR,    Input_32Bit | INS_FLAGS_None)    // Extract Dword
 INST3(pextrq,           "pextrq",           IUM_WR, SSE3A(0x16),  BAD_CODE,     BAD_CODE,                                INS_TT_TUPLE1_SCALAR,    Input_64Bit | INS_FLAGS_None)    // Extract Qword
 INST3(pextrw_sse41,     "pextrw",           IUM_WR, SSE3A(0x15),  BAD_CODE,     BAD_CODE,                                INS_TT_TUPLE1_SCALAR,    Input_16Bit | INS_FLAGS_None)    // Extract Word
-INST3(extractps,        "extractps",        IUM_WR, SSE3A(0x17),  BAD_CODE,     BAD_CODE,                                INS_TT_TUPLE1_SCALAR,    Input_16Bit | INS_FLAGS_None)    // Extract Packed Floating-Point Values
+INST3(extractps,        "extractps",        IUM_WR, SSE3A(0x17),  BAD_CODE,     BAD_CODE,                                INS_TT_TUPLE1_SCALAR,    Input_32Bit | INS_FLAGS_None)    // Extract Packed Floating-Point Values
 
 //PCLMULQDQ instructions
 INST3(pclmulqdq,        "pclmulqdq" ,       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x44),                             INS_TT_FULL_MEM,    Input_64Bit | INS_Flags_IsDstDstSrcAVXInstruction)   // Perform a carry-less multiplication of two quadwords

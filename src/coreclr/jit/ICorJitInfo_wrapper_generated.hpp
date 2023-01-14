@@ -396,15 +396,6 @@ CorInfoType WrapICorJitInfo::asCorInfoType(
     return temp;
 }
 
-const char* WrapICorJitInfo::getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(getClassName);
-    const char* temp = wrapHnd->getClassName(cls);
-    API_LEAVE(getClassName);
-    return temp;
-}
-
 const char* WrapICorJitInfo::getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName)
@@ -425,17 +416,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeInstantiationArgument(
     return temp;
 }
 
-int WrapICorJitInfo::appendClassName(
-          char16_t** ppBuf,
-          int* pnBufLen,
+size_t WrapICorJitInfo::printClassName(
           CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    API_ENTER(appendClassName);
-    int temp = wrapHnd->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
-    API_LEAVE(appendClassName);
+    API_ENTER(printClassName);
+    size_t temp = wrapHnd->printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
+    API_LEAVE(printClassName);
     return temp;
 }
 
@@ -683,6 +672,17 @@ bool WrapICorJitInfo::isObjectImmutable(
     return temp;
 }
 
+bool WrapICorJitInfo::getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value)
+{
+    API_ENTER(getStringChar);
+    bool temp = wrapHnd->getStringChar(strObj, index, value);
+    API_LEAVE(getStringChar);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {
@@ -713,15 +713,6 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
     API_ENTER(getReadyToRunDelegateCtorHelper);
     wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
-}
-
-const char* WrapICorJitInfo::getHelperName(
-          CorInfoHelpFunc helpFunc)
-{
-    API_ENTER(getHelperName);
-    const char* temp = wrapHnd->getHelperName(helpFunc);
-    API_LEAVE(getHelperName);
-    return temp;
 }
 
 CorInfoInitClassResult WrapICorJitInfo::initClass(
@@ -916,13 +907,15 @@ CorInfoIsAccessAllowedResult WrapICorJitInfo::canAccessClass(
     return temp;
 }
 
-const char* WrapICorJitInfo::getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName)
+size_t WrapICorJitInfo::printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    API_ENTER(getFieldName);
-    const char* temp = wrapHnd->getFieldName(ftn, moduleName);
-    API_LEAVE(getFieldName);
+    API_ENTER(printFieldName);
+    size_t temp = wrapHnd->printFieldName(field, buffer, bufferSize, pRequiredBufferSize);
+    API_LEAVE(printFieldName);
     return temp;
 }
 
@@ -1193,13 +1186,15 @@ mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
     return temp;
 }
 
-const char* WrapICorJitInfo::getMethodName(
+size_t WrapICorJitInfo::printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    API_ENTER(getMethodName);
-    const char* temp = wrapHnd->getMethodName(ftn, moduleName);
-    API_LEAVE(getMethodName);
+    API_ENTER(printMethodName);
+    size_t temp = wrapHnd->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
+    API_LEAVE(printMethodName);
     return temp;
 }
 
@@ -1483,10 +1478,11 @@ bool WrapICorJitInfo::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
+          int valueOffset,
           bool ignoreMovableObjects)
 {
     API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
     API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }
@@ -1548,15 +1544,6 @@ uint32_t WrapICorJitInfo::getFieldThreadLocalStoreID(
     uint32_t temp = wrapHnd->getFieldThreadLocalStoreID(field, ppIndirection);
     API_LEAVE(getFieldThreadLocalStoreID);
     return temp;
-}
-
-void WrapICorJitInfo::addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    API_ENTER(addActiveDependency);
-    wrapHnd->addActiveDependency(moduleFrom, moduleTo);
-    API_LEAVE(addActiveDependency);
 }
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::GetDelegateCtor(

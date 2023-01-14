@@ -709,6 +709,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 "tvos" => Xunit.TestPlatforms.tvOS,
                 "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
                 "browser" => Xunit.TestPlatforms.Browser,
+                "wasi" => Xunit.TestPlatforms.Wasi,
                 "freebsd" => Xunit.TestPlatforms.FreeBSD,
                 "netbsd" => Xunit.TestPlatforms.NetBSD,
                 null or "" or "anyos" => Xunit.TestPlatforms.Any,

@@ -556,10 +556,10 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmBool(false)", TString("FALSE")),
                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
                     ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
-                    ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
-                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
-                    ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
-                    ("this.CallMethodWithParmString_λ(\"🚀\")", TString("λ_🚀")),
+                    ("this.CallMethodWithParmString(\"\uD83D\uDEF6\")", TString("str_const_\uD83D\uDEF6")),
+                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_\uD83D\uDEF6")),
+                    ("this.CallMethodWithParmString(\"\uD83D\uDE80\")", TString("str_const_\uD83D\uDE80")),
+                    ("this.CallMethodWithParmString_\u03BB(\"\uD83D\uDE80\")", TString("\u03BB_\uD83D\uDE80")),
                     ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
                     ("this.CallMethodWithObj(null)", TNumber(-1)),
                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
@@ -1315,10 +1315,10 @@ namespace DebuggerTests
 
                    ("test.GetChar()", TChar('T')),
                    ("test.GetCharNullable()", TChar('T')),
-                   ("test.GetUnicodeChar()", TChar('ą')),
+                   ("test.GetUnicodeChar()", TChar('\u0105')),
 
                    ("test.GetString()", TString("1.23")),
-                   ("test.GetUnicodeString()", TString("żółć")),
+                   ("test.GetUnicodeString()", TString("\u017C\u00F3\u0142\u0107")),
                    ("test.GetString(null)", TString(null)),
                    ("test.GetStringNullable()", TString("1.23")),
 

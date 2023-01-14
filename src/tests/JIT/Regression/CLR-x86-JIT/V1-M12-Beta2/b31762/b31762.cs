@@ -6,12 +6,12 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public static uint[] m_auForward5;
         public static uint[] Method2() { return null; }
 
-        static int Main()
+        public static int Main()
         {
             bool local3 = true;
             if (local3)

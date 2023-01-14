@@ -36,7 +36,7 @@ namespace System.IO.Pipes.Tests
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientPipeDirection)
         {
-            bool isRoot = AdminHelpers.IsProcessElevated();
+            bool isRoot = Environment.IsPrivilegedProcess;
             if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
             {
                 throw new SkipTestException("Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");

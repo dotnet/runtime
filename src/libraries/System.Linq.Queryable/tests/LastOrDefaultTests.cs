@@ -86,14 +86,14 @@ namespace System.Linq.Tests.LegacyTests
         [Fact]
         public void LastOrDefault1()
         {
-            var val = (new int[] { 0, 1, 2 }).AsQueryable().LastOrDefault();
+            var val = new[] { 0, 1, 2 }.AsQueryable().LastOrDefault();
             Assert.Equal(2, val);
         }
 
         [Fact]
         public void LastOrDefault2()
         {
-            var val = (new int[] { 0, 1, 2 }).AsQueryable().LastOrDefault(n => n > 1);
+            var val = new[] { 0, 1, 2 }.AsQueryable().LastOrDefault(n => n > 1);
             Assert.Equal(2, val);
         }
 

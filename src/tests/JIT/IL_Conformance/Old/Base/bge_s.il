@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .locals         (class [mscorlib]System.String)
 .entrypoint
         ldc.i4          0x55555555

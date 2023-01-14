@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public object m_xField2 = null;
         public static float Method1(bool[] param1)
@@ -29,7 +29,7 @@ namespace Test
             }
             return 0.0f;
         }
-        static int Main()
+        public static int Main()
         {
             Method1(new bool[3]);
             return 100;

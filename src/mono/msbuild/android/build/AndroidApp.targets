@@ -101,7 +101,7 @@
     </ItemGroup>
 
     <MonoAOTCompiler
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"
@@ -119,7 +119,12 @@
     </ItemGroup>
   </Target>
 
+
   <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
+
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"

@@ -40,7 +40,7 @@ public class TestClass_65988
             return;
         }
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         new TestClass_65988().Method0();
         return 100;

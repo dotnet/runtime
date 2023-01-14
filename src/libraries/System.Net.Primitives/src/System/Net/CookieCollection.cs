@@ -36,10 +36,9 @@ namespace System.Net
         {
             get
             {
-                if (index < 0 || index >= m_list.Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, m_list.Count);
+
                 return (m_list[index] as Cookie)!;
             }
         }

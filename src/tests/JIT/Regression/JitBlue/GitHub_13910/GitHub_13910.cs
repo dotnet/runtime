@@ -48,7 +48,7 @@ internal class QQ
     }
 }
 
-internal class TestApp
+public class TestApp
 {
 
     private static int test_2_2(int num)
@@ -98,7 +98,7 @@ internal class TestApp
         return result;
     }
 
-    private static int Main()
+    public static int Main()
     {
         AA.reset();
         int result;

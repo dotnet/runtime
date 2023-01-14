@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Diagnostics.Tracing.Session;
 
@@ -56,10 +47,7 @@ namespace DependencyLogViewer
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
-            if (ETWGraphProcessing.Singleton is not null)
-            {
-                ETWGraphProcessing.Singleton.Stop();
-            }
+            ETWGraphProcessing.Singleton?.Stop();
             Application.Exit();
         }
 
@@ -120,8 +108,6 @@ namespace DependencyLogViewer
 #nullable enable
         private void OpenFile(string? argPath = null)
         {
-            GraphCollection collection = GraphCollection.Singleton;
-
             if (DGMLGraphProcessing.StartProcess(_fileCount, argPath))
             {
                 _fileCount -= 1;
@@ -142,7 +128,7 @@ namespace DependencyLogViewer
                 MessageBox.Show("ETW Events have been enabled");
             }
         }
-       public static void showError(string msg)
+        public static void showError(string msg)
         {
             MessageBox.Show($"Invalid file upload: {msg}");
         }

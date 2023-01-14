@@ -2238,8 +2238,8 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
+        if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
+            (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
 
@@ -2488,8 +2488,8 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
+        if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
+            (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
 
@@ -3484,6 +3484,7 @@ void MethodTable::AllocateRegularStaticBoxes()
     PTR_BYTE pStaticBase = GetGCStaticsBasePointer();
 
     GCPROTECT_BEGININTERIOR(pStaticBase);
+
     {
         FieldDesc *pField = HasGenericsStaticsInfo() ?
             GetGenericsStaticFieldDescs() : (GetApproxFieldDescListRaw() + GetNumIntroducedInstanceFields());
@@ -3491,17 +3492,20 @@ void MethodTable::AllocateRegularStaticBoxes()
 
         while (pField < pFieldEnd)
         {
+            _ASSERTE(pField->IsStatic());
+
             if (!pField->IsSpecialStatic() && pField->IsByValue())
             {
-                AllocateRegularStaticBox(pField, pStaticBase + pField->GetOffset());
+                AllocateRegularStaticBox(pField, (Object**)(pStaticBase + pField->GetOffset()));
             }
+
             pField++;
         }
     }
     GCPROTECT_END();
 }
 
-void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress)
+void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle)
 {
     CONTRACTL
     {
@@ -3512,39 +3516,26 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, BYTE* fieldAddress
     }
     _ASSERT(pField->IsStatic() && !pField->IsSpecialStatic() && pField->IsByValue());
 
-    Object** boxedStaticHandle = reinterpret_cast<Object**>(fieldAddress);
-
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
+    // Static fields are not pinned in collectible types so we need to protect the address
+    GCPROTECT_BEGININTERIOR(boxedStaticHandle);
+    if (VolatileLoad(boxedStaticHandle) == nullptr)
     {
-        // Boxed static is already initialized
-        return;
+        // Grab field's type handle before we enter lock
+        MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
+        bool hasFixedAddr = HasFixedAddressVTStatics();
+
+        // Taking a lock since we might come here from multiple threads/places
+        CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
+
+        // double-checked locking
+        if (VolatileLoad(boxedStaticHandle) == nullptr)
+        {
+            LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
+        }
     }
-
-    // Grab field's type handle before we enter lock
-    TypeHandle th = pField->GetFieldTypeHandleThrowing();
-
-    // Taking a lock since we might come here from multiple threads/places
-    CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
-
-    // double-checked locking
-    if (VolatileLoad(boxedStaticHandle) != nullptr)
-    {
-        // Boxed static is already initialized
-        return;
-    }
-
-    MethodTable* pFieldMT = th.GetMethodTable();
-    LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-    bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pFieldMT->RequiresAlign8())
-    {
-        // 64bit alignment is not yet supported in FOH for 32bit targets
-        canBeFrozen = false;
-    }
-#endif
-    OBJECTREF obj = AllocateStaticBox(pFieldMT, HasFixedAddressVTStatics(), NULL, canBeFrozen);
-    SetObjectReference((OBJECTREF*)boxedStaticHandle, obj);
+    GCPROTECT_END();
 }
 
 //==========================================================================================
@@ -3568,6 +3559,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
         _ASSERT(!pFieldMT->ContainsPointers());
+        _ASSERT(pHandle == nullptr);
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
@@ -4822,7 +4814,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     {
         SString name;
         TypeString::AppendTypeDebug(name, this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %S\n", name.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %s\n", name.GetUTF8()));
     }
 #endif
 

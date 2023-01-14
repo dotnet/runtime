@@ -8,9 +8,9 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class X
+    public class X
     {
-        public static int Main(String[] argv)
+        public static int Main()
         {
             Object[,] obj = new Object[1, 1];
             //			IL_0000:  ldc.i4.1

@@ -2633,7 +2633,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
         {
             test->SetRootNode(sideEffList);
 
-            if (fgStmtListThreaded)
+            if (fgNodeThreading != NodeThreading::None)
             {
                 gtSetStmtInfo(test);
                 fgSetStmtSeq(test);
@@ -2950,7 +2950,10 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                         else
                         {
                             Statement* nopStmt = fgNewStmtAtEnd(block, nop);
-                            fgSetStmtSeq(nopStmt);
+                            if (fgNodeThreading == NodeThreading::AllTrees)
+                            {
+                                fgSetStmtSeq(nopStmt);
+                            }
                             gtSetStmtInfo(nopStmt);
                         }
 
@@ -3216,7 +3219,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
                 switchStmt->SetRootNode(sideEffList);
 
-                if (fgStmtListThreaded)
+                if (fgNodeThreading != NodeThreading::None)
                 {
                     compCurBB = block;
 
@@ -3297,7 +3300,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             LIR::ReadOnlyRange range(zeroConstNode, switchTree);
             m_pLowering->LowerRange(block, range);
         }
-        else if (fgStmtListThreaded)
+        else if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(switchStmt);
             fgSetStmtSeq(switchStmt);
@@ -3722,7 +3725,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         noway_assert(clone);
         Statement* cloneStmt = gtNewStmt(clone);
 
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(cloneStmt);
         }
@@ -3880,7 +3883,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
                     condStmt->SetRootNode(sideEffList);
 
-                    if (fgStmtListThreaded)
+                    if (fgNodeThreading == NodeThreading::AllTrees)
                     {
                         compCurBB = block;
 
@@ -3995,7 +3998,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         // links. We don't know if it does or doesn't reorder nodes, so we end up always re-threading the links.
 
         gtSetStmtInfo(stmt);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             fgSetStmtSeq(stmt);
         }
@@ -4109,7 +4112,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             return false;
         }
 
-        if (fgStmtListThreaded)
+        if (fgNodeThreading == NodeThreading::AllTrees)
         {
             gtSetStmtInfo(stmt);
             fgSetStmtSeq(stmt);
@@ -4321,9 +4324,9 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update flags
         //
-        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags;
-        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags;
-        jmpTree->gtFlags |= dominantCaseCompare->gtFlags;
+        switchTree->gtFlags = switchTree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
+        dominantCaseCompare->gtFlags |= dominantCaseCompare->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT;
+        jmpTree->gtFlags |= dominantCaseCompare->gtFlags & GTF_ALL_EFFECT;
         dominantCaseCompare->gtFlags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE;
 
         // Wire up the new control flow.
@@ -4388,6 +4391,20 @@ bool Compiler::fgOptimizeSwitchJumps()
         // But it no longer has a dominant case.
         //
         newBlock->bbJumpSwt->bbsHasDominantCase = false;
+
+        if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            // The switch tree has been modified.
+            JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
+            gtSetStmtInfo(switchStmt);
+            fgSetStmtSeq(switchStmt);
+
+            // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
+            // added new nodes if a COMMA was introduced.
+            JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
+            gtSetStmtInfo(jmpStmt);
+            fgSetStmtSeq(jmpStmt);
+        }
 
         modified = true;
     }
@@ -4776,9 +4793,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     //
     if (fgIsUsingProfileWeights())
     {
-        //
-        // Note that this is currently not yet implemented
-        //
         optimizedSwitches = fgOptimizeSwitchJumps();
         if (optimizedSwitches)
         {
@@ -5789,7 +5803,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
             // may need to rethread
             //
-            if (fgStmtListThreaded)
+            if (fgNodeThreading == NodeThreading::AllTrees)
             {
                 JITDUMP("Rethreading " FMT_STMT "\n", condTestStmt->GetID());
                 gtSetStmtInfo(condTestStmt);

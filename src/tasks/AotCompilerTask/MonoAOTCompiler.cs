@@ -164,6 +164,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string LibraryFilePrefix { get; set; } = "";
 
     /// <summary>
+    /// Enables exporting symbols of methods decorated with UnmanagedCallersOnly Attribute containing a specified EntryPoint
+    /// </summary>
+    public bool EnableUnmanagedCallersOnlyMethodsExport { get; set; }
+
+    /// <summary>
     /// Path to the directory where LLVM binaries (opt and llc) are found.
     /// It's required if UseLLVM is set
     /// </summary>
@@ -478,6 +483,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        CheckExportSymbolsFile(_assembliesToCompile);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -495,7 +501,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
+    private List<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
@@ -568,7 +574,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -727,6 +733,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
                 aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
             }
+        }
+
+        if (EnableUnmanagedCallersOnlyMethodsExport)
+        {
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            ProxyFile proxyFile = _cache.NewFile(exportSymbolsFile);
+            proxyFiles.Add(proxyFile);
+
+            aotArgs.Add($"export-symbols-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("ExportSymbolsFile", proxyFile.TargetFile);
         }
 
         // pass msym-dir if specified
@@ -1040,7 +1056,22 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    {
+        if (!EnableUnmanagedCallersOnlyMethodsExport)
+            return;
+
+        foreach (var assemblyItem in assemblies)
+        {
+            string assembly = assemblyItem.GetMetadata("FullPath");
+            string assemblyFilename = Path.GetFileName(assembly);
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            if (!File.Exists(exportSymbolsFile))
+                Log.LogWarning($"EnableUnmanagedCallersOnlyMethodsExport is true, but no .exportsymbols file generated for assembly '{assemblyFilename}'. Check that the AOT compilation mode is full.");
+        }
+    }
+
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)

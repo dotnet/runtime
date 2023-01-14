@@ -13,7 +13,7 @@ namespace System.Text.Json
         /// Writes the pre-encoded property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
-        /// <param name="value">The value to to write.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
@@ -35,7 +35,7 @@ namespace System.Text.Json
         /// Writes the property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The name of the property to write.</param>
-        /// <param name="value">The value to to write.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -62,7 +62,7 @@ namespace System.Text.Json
         /// Writes the property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The name of the property to write.</param>
-        /// <param name="value">The value to to write.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -87,7 +87,7 @@ namespace System.Text.Json
         /// Writes the property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="value">The value to to write.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>

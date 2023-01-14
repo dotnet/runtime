@@ -1493,7 +1493,7 @@ namespace System.Transactions
             throw CreateTransactionAbortedException(tx);
         }
 
-        private static TransactionException CreateTransactionAbortedException(InternalTransaction tx)
+        private static TransactionAbortedException CreateTransactionAbortedException(InternalTransaction tx)
         {
             return TransactionAbortedException.Create(SR.TransactionAborted, tx._innerException, tx.DistributedTxId);
         }

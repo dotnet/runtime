@@ -29,17 +29,17 @@ namespace System.Net.Http.Headers
             {
                 throw new ArgumentException(SR.net_http_headers_invalid_range);
             }
-            if (from.HasValue && (from.Value < 0))
+            if (from.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(from));
+                ArgumentOutOfRangeException.ThrowIfNegative(from.GetValueOrDefault(), nameof(from));
             }
-            if (to.HasValue && (to.Value < 0))
+            if (to.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(to));
+                ArgumentOutOfRangeException.ThrowIfNegative(to.GetValueOrDefault(), nameof(to));
             }
-            if (from.HasValue && to.HasValue && (from.Value > to.Value))
+            if (from.HasValue && to.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(from));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(from.GetValueOrDefault(), to.GetValueOrDefault(), nameof(from));
             }
 
             _from = from;

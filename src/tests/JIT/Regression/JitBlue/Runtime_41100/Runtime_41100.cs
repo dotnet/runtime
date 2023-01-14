@@ -8,7 +8,7 @@ using System;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void E(ImmutableArray<string> a) {}

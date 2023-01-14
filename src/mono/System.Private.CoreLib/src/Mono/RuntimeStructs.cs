@@ -149,11 +149,4 @@ namespace Mono
     internal enum UI64Enum : ulong
     {
     }
-
-    internal sealed class NullByRefReturnException : Exception
-    {
-        public NullByRefReturnException()
-        {
-        }
-    }
 }

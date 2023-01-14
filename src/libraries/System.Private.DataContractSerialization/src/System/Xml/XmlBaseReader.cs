@@ -1514,20 +1514,14 @@ namespace System.Xml
                 catch (FormatException exception)
                 {
                     // Something was wrong with the format, see if we can strip the spaces
-                    int i = 0;
-                    int j = 0;
-                    while (true)
+                    int newCount = XmlConverter.StripWhitespace(chars.AsSpan(0, charCount));
+                    if (newCount == charCount)
                     {
-                        while (j < charCount && XmlConverter.IsWhitespace(chars[j]))
-                            j++;
-                        if (j == charCount)
-                            break;
-                        chars[i++] = chars[j++];
-                    }
-                    // No spaces, so don't try again
-                    if (i == charCount)
+                        // No spaces, so don't try again
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(exception.Message, exception.InnerException));
-                    charCount = i;
+                    }
+
+                    charCount = newCount;
                 }
             }
         }

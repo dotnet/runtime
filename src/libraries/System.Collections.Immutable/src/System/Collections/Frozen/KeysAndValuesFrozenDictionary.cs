@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a base class for frozen dictionaries that store their keys and values in dedicated arrays.</summary>
-    internal abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
+    public abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
         where TKey : notnull
     {
         private protected readonly FrozenHashTable _hashTable;
@@ -36,10 +36,10 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected sealed override ImmutableArray<TKey> KeysCore => new ImmutableArray<TKey>(_keys);
+        private protected sealed override TKey[] KeysCore => _keys;
 
         /// <inheritdoc />
-        private protected sealed override ImmutableArray<TValue> ValuesCore => new ImmutableArray<TValue>(_values);
+        private protected sealed override TValue[] ValuesCore => _values;
 
         /// <inheritdoc />
         private protected sealed override Enumerator GetEnumeratorCore() => new Enumerator(_keys, _values);

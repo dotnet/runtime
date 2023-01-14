@@ -63,14 +63,14 @@ namespace System.Linq.Tests.LegacyTests
         [Fact]
         public void ThenBy1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderBy(n => n).ThenBy(n => n).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderBy(n => n).ThenBy(n => n).Count();
             Assert.Equal(3, count);
         }
 
         [Fact]
         public void ThenBy2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderBy(n => n).ThenBy(n => n, Comparer<int>.Default).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderBy(n => n).ThenBy(n => n, Comparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
     }

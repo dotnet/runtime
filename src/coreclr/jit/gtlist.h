@@ -87,7 +87,7 @@ GTNODE(OBJ              , GenTreeObj         ,0,GTK_UNOP|GTK_EXOP)              
 GTNODE(STORE_OBJ        , GenTreeObj         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
 GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
 GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store
+GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
@@ -147,6 +147,7 @@ GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
+// Conditional select with 3 operands: condition, true value, false value
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
 
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
@@ -183,11 +184,10 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // RSH_LO represents the lo operation of a 64-bit right shift by a constant int.
 GTNODE(LSH_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
-#endif // !defined(TARGET_64BIT)
 
-#ifdef FEATURE_SIMD
-GTNODE(SIMD             , GenTreeSIMD        ,0,GTK_SPECIAL)     // SIMD functions/operators/intrinsics
-#endif // FEATURE_SIMD
+// Variant of SELECT that reuses flags computed by a previous SELECT.
+GTNODE(SELECT_HI        , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+#endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_HW_INTRINSICS
 GTNODE(HWINTRINSIC      , GenTreeHWIntrinsic ,0,GTK_SPECIAL)               // hardware intrinsics

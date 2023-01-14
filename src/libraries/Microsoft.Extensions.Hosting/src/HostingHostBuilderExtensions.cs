@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
 
@@ -79,7 +78,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<HostBuilderContext, ServiceProviderOptions> configure)
         {
             return hostBuilder.UseServiceProviderFactory(context =>
@@ -192,7 +190,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
             return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
@@ -201,7 +198,13 @@ namespace Microsoft.Extensions.Hosting
                           .UseServiceProviderFactory(context => new DefaultServiceProviderFactory(CreateDefaultServiceProviderOptions(context)));
         }
 
-        internal static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
+            SetDefaultContentRoot(hostConfigBuilder);
+            AddDefaultHostConfigurationSources(hostConfigBuilder, args);
+        }
+
+        internal static void SetDefaultContentRoot(IConfigurationBuilder hostConfigBuilder)
         {
             // If we're running anywhere other than C:\Windows\system32, we default to using the CWD for the ContentRoot.
             // However, since many things like Windows services and MSIX installers have C:\Windows\system32 as there CWD which is not likely
@@ -219,7 +222,10 @@ namespace Microsoft.Extensions.Hosting
                     new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
                 });
             }
+        }
 
+        internal static void AddDefaultHostConfigurationSources(IConfigurationBuilder hostConfigBuilder, string[]? args)
+        {
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
             if (args is { Length: > 0 })
             {

@@ -12,10 +12,7 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access,
             long requestedOffset, long requestedSize)
         {
-            if (requestedOffset > memMappedFileHandle._capacity)
-            {
-                throw new ArgumentOutOfRangeException("offset");
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(requestedOffset, memMappedFileHandle._capacity, "offset");
             if (requestedSize > MaxProcessAddressSpace)
             {
                 throw new IOException(SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
@@ -24,10 +21,7 @@ namespace System.IO.MemoryMappedFiles
             {
                 throw new UnauthorizedAccessException();
             }
-            if (memMappedFileHandle.IsClosed)
-            {
-                throw new ObjectDisposedException(nameof(MemoryMappedFile));
-            }
+            ObjectDisposedException.ThrowIf(memMappedFileHandle.IsClosed, memMappedFileHandle);
 
             if (requestedSize == MemoryMappedFile.DefaultSize)
             {
@@ -83,7 +77,7 @@ namespace System.IO.MemoryMappedFiles
             Interop.Sys.MemoryMappedProtections viewProtForCreation = GetProtections(access, forVerification: false);
 
             // Create the map
-            IntPtr addr = IntPtr.Zero;
+            IntPtr addr;
             if (nativeSize > 0)
             {
                 addr = Interop.Sys.MMap(

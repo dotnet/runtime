@@ -11,6 +11,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public Dictionary<string, string> ReferenceFilePaths = new Dictionary<string, string> ();
 		public List<string> InitAssemblies = new List<string> ();
 		public List<string> TrimAssemblies = new List<string> ();
+		public List<string> AdditionalRootAssemblies = new List<string> ();
 		public Dictionary<string, bool> FeatureSwitches = new Dictionary<string, bool> ();
+		public bool FrameworkCompilation;
 	}
 }

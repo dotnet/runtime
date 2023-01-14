@@ -12,7 +12,7 @@ public partial class Program
 {
     private static int _errors = 0;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         IsTrue (typeof(byte).IsValueType);
         IsTrue (typeof(int).IsValueType);

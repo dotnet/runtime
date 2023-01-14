@@ -9,7 +9,7 @@ public class TestCase
     private const int ARRAY_UNITSIZE = 10;
     private const int ARRAY_SIZE = ARRAY_UNITSIZE * ARRAY_MULTIPLIER;
 
-    public static int Main(String[] real_args)
+    public static int Main()
     {
         int rc = 0;
         int[] array = new int[ARRAY_SIZE];
