@@ -2696,7 +2696,7 @@ void emitter::emitJumpDistBind()
 AGAIN:
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
 #ifdef DEBUG
@@ -3065,7 +3065,7 @@ AGAIN:
         emitDispIGlist(false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif // DEBUG
 }
 
