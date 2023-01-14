@@ -4092,6 +4092,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 			offset += MINT_STACK_SLOT_SIZE;
 		}
 	}
+	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
 	td->il_locals_offset = offset;
 	for (int i = 0; i < num_il_locals; ++i) {
@@ -4119,6 +4120,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
+	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
+
 	td->il_locals_size = offset - td->il_locals_offset;
 	td->total_locals_size = offset;
 
@@ -9990,6 +9993,7 @@ initialize_global_vars (TransformData *td)
 			foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
 	}
+	td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
 }
 
 // Data structure used for offset allocation of call args
@@ -10036,6 +10040,7 @@ get_call_param_size (TransformData *td, InterpInst *call)
 		call_args++;
 		var = *call_args;
 	}
+	param_size = ALIGN_TO (param_size, MINT_STACK_ALIGNMENT);
 	return param_size;
 }
 
@@ -10357,6 +10362,7 @@ interp_alloc_offsets (TransformData *td)
 			ins_index++;
 		}
 	}
+	final_total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
 
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
@@ -10368,7 +10374,7 @@ interp_alloc_offsets (TransformData *td)
 			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
 		}
 	}
-	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_SLOT_SIZE);
+	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
 }
 
 /*
@@ -10580,6 +10586,7 @@ retry:
 	// When unoptimized, the param area is stored in the same order, within the IL execution stack.
 	g_assert (!td->optimized || !td->max_stack_size);
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
+	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
 	rtm->locals_size = td->optimized ? td->param_area_offset : td->total_locals_size;
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));

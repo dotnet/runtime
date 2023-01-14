@@ -403,11 +403,11 @@ get_context (void)
 	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
-		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		context->stack_start = (guchar*)mono_valloc_aligned (INTERP_STACK_SIZE, MINT_STACK_ALIGNMENT, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
 		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
 		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
-		context->stack_pointer = context->stack_start + MINT_STACK_SLOT_SIZE;
+		context->stack_pointer = context->stack_start + MINT_STACK_ALIGNMENT;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
 		/* Make sure all data is initialized before publishing the context */
@@ -2230,6 +2230,7 @@ interp_entry (InterpEntryData *data)
 			sp_args = STACK_ADD_BYTES (sp_args, size);
 		}
 	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	InterpFrame frame = {0};
 	frame.imethod = data->rmethod;
@@ -3107,6 +3108,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		}
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
+	newsp = (stackval*)ALIGN_TO (newsp, MINT_STACK_ALIGNMENT);
 	context->stack_pointer = (guchar*)newsp;
 	g_assert (context->stack_pointer < context->stack_end);
 
@@ -4219,6 +4221,8 @@ call:
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
+			g_assert_checked (((gsize)context->stack_pointer % MINT_STACK_ALIGNMENT) == 0);
+
 			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
 				context->stack_end = context->stack_real_end;
 				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
@@ -7945,6 +7949,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		}
 		findex ++;
 	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	/* Allocate frame */
 	InterpFrame frame = {0};
