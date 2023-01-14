@@ -1007,13 +1007,22 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     ULONG       cbSigBlob,
     mdToken* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    if (md_is_field_sig(pvSigBlob, cbSigBlob))
+    {
+        return FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
+    }
+    else
+    {
+        return FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
+    }
+}
 
-    return E_NOTIMPL;
+namespace
+{
+    size_t min(size_t a, size_t b)
+    {
+        return a < b ? a : b;
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
@@ -1051,12 +1060,26 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
 
     for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
     {
+        uint32_t flags;
+        if (!md_get_column_value_as_constant(methodCursor, mdtMethodDef_Flags, 1, &flags))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Ignore PrivateScope methods. By the spec, they can only be referred to by a MethodDef token
+        // and cannot be discovered in any other way.
+        if (IsMdPrivateScope(flags))
+            continue;
+
         const char* methodName;
         if (!md_get_column_value_as_utf8(methodCursor, mdtMethodDef_Name, 1, &methodName))
             return CLDB_E_FILE_CORRUPT;
         if (strncmp(methodName, cvt, cvt.Length()) != 0)
             continue;
-        if (memcmp(methodDefSig, methodDefSigSpan, methodDefSigSpan.size()) != 0)
+
+        const uint8_t* signature;
+        uint32_t signatureLength;
+        if (!md_get_column_value_as_blob(methodCursor, mdtMethodDef_Signature, 1, &signature, &signatureLength))
+            return CLDB_E_FILE_CORRUPT;
+        if (memcmp(methodDefSig, methodDefSigSpan, min(signatureLength, methodDefSigSpan.size())) != 0)
             continue;
         if (!md_cursor_to_token(methodCursor, pmb))
             return CLDB_E_FILE_CORRUPT;
@@ -1072,13 +1095,52 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     ULONG       cbSigBlob,
     mdFieldDef* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    HRESULT hr;
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+    
+    if (td == mdTypeDefNil || td == mdTokenNil)
+        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
 
-    return E_NOTIMPL;
+    mdcursor_t typedefCursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), td, &typedefCursor))
+        return false;
+
+    mdcursor_t fieldCursor;
+    uint32_t count;
+    if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_FieldList, &fieldCursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+
+    for(uint32_t i = 0; i < count; md_cursor_next(&fieldCursor), i++)
+    {
+        uint32_t flags;
+        if (!md_get_column_value_as_constant(fieldCursor, mdtField_Flags, 1, &flags))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Ignore PrivateScope fields. By the spec, they can only be referred to by a FieldDef token
+        // and cannot be discovered in any other way.
+        if (IsFdPrivateScope(flags))
+            continue;
+
+        const char* name;
+        if (!md_get_column_value_as_utf8(fieldCursor, mdtField_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+        if (strncmp(name, cvt, cvt.Length()) != 0)
+            continue;
+
+        const uint8_t* signature;
+        uint32_t signatureLength;
+        if (!md_get_column_value_as_blob(fieldCursor, mdtField_Signature, 1, &signature, &signatureLength))
+            return CLDB_E_FILE_CORRUPT;
+        if (memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+            continue;
+        if (!md_cursor_to_token(fieldCursor, pmb))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
@@ -1088,13 +1150,51 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     ULONG       cbSigBlob,
     mdMemberRef* pmr)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmr);
+    HRESULT hr;
+    
+    if (IsNilToken(td))
+        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
+    
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_MemberRef, &cursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+    
+    for (uint32_t i = 0; i < count; md_cursor_next(&cursor), i++)
+    {
+        mdToken refParent;
+        if (!md_get_column_value_as_token(cursor, mdtMemberRef_Class, 1, &refParent))
+            return CLDB_E_FILE_CORRUPT;
+        
+        if (refParent != td)
+            continue;
+        
+        if (szName != NULL)
+        {
+            const char* name;
+            if (!md_get_column_value_as_utf8(cursor, mdtMemberRef_Name, 1, &name))
+                return CLDB_E_FILE_CORRUPT;
+            pal::StringConvert<WCHAR, char> cvt{ szName };
+            if (!cvt.Success())
+                return E_INVALIDARG;
+            if (strncmp(name, cvt, cvt.Length()) != 0)
+                continue;
+        }
 
-    return E_NOTIMPL;
+        if (pvSigBlob != NULL)
+        {
+            const uint8_t* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(cursor, mdtMemberRef_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+                continue;
+        }
+        if (!md_cursor_to_token(cursor, pmr))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(

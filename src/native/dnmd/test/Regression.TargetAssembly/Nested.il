@@ -108,4 +108,8 @@
     {
         ret
     }
+
+    .field public int32 Field1
+
+    .field public int64 Field2
 }

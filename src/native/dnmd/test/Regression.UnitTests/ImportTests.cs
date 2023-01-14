@@ -292,12 +292,34 @@ namespace Regression.UnitTests
                     var memberrefs = AssertAndReturn(EnumMemberRefs(baselineImport, methoddef), EnumMemberRefs(currentImport, methoddef));
                     foreach (var memberref in memberrefs)
                     {
-                        Assert.Equal(GetMemberRefProps(baselineImport, memberref, out _, out _), GetMemberRefProps(currentImport, memberref, out _, out _));
+                        Assert.Equal(GetMemberRefProps(baselineImport, memberref, out nint sigBlob, out uint sigBlobLength), GetMemberRefProps(currentImport, memberref, out _, out _));
+                        Assert.Equal(VerifyFindMemberRef(baselineImport, memberref), VerifyFindMemberRef(currentImport, memberref));
                     }
                     Assert.Equal(EnumMethodSemantics(baselineImport, methoddef), EnumMethodSemantics(currentImport, methoddef));
                 }
 
                 Assert.Equal(EnumCustomAttributes(baselineImport, typedef), EnumCustomAttributes(currentImport, typedef));
+            }
+
+            static List<uint> VerifyFindMemberRef(IMetaDataImport import, uint memberRef)
+            {
+                List<uint> values = new();
+                char[] nameBuffer = new char[CharBuffer];
+                int hr = import.GetMemberRefProps(memberRef, out uint parent, nameBuffer, nameBuffer.Length, out int nameLength, out nint pvSigBlob, out uint cbSigBlob);
+                byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
+                values.Add((uint)hr);
+                if (hr >= 0)
+                {
+                    // We were able to get the name, now try looking up a memberRef by name and by sig
+                    string name = new string(nameBuffer, 0, nameLength - 1);
+                    hr = import.FindMemberRef(parent, name, sig, sig.Length, out uint nameAndSig);
+                    values.Add(nameAndSig);
+                    hr = import.FindMemberRef(parent, name, null, 0, out uint nameOnly);
+                    values.Add(nameOnly);
+                    hr = import.FindMemberRef(parent, null, sig, sig.Length, out uint sigOnly);
+                    values.Add(sigOnly);
+                }
+                return values;
             }
         }
 
@@ -326,16 +348,14 @@ namespace Regression.UnitTests
             Assert.Equal(FindTypeDefByName(baselineImport, tgt, tkB2Base), FindTypeDefByName(currentImport, tgt, tkB2Base));
 
             var methodDefName = "MethodDef";
-            var tkMethodDefBase = AssertAndReturn(FindMethodDef(baselineImport, tkB1Base, methodDefName), FindMethodDef(currentImport, tkB1Base, methodDefName));
+            var tkMethodDef = AssertAndReturn(FindMethodDef(baselineImport, tkB1Base, methodDefName), FindMethodDef(currentImport, tkB1Base, methodDefName));
 
-            Assert.Equal(GetMethodProps(baselineImport, tkMethodDefBase, out _, out _), GetMethodProps(currentImport, tkMethodDefBase, out nint defSigBlob, out uint defSigBlobLength));
+            Assert.Equal(GetMethodProps(baselineImport, tkMethodDef, out _, out _), GetMethodProps(currentImport, tkMethodDef, out nint defSigBlob, out uint defSigBlobLength));
             Assert.Equal(FindMethod(baselineImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength), FindMethod(currentImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength));
 
             var methodRef1Name = "MethodRef1";
             var tkMemberRefNoVarArgsBase = AssertAndReturn(FindMemberRef(baselineImport, tkB1Base, methodRef1Name), FindMemberRef(currentImport, tkB1Base, methodRef1Name));
 
-            // TODO: Baseline doesn't like the signature we're using. Let's mess with the signature in IL to figure out exactly what it will like
-            // If baseline doesn't work, it doesn't matter if we work.
             Assert.Equal(GetMemberRefProps(baselineImport, tkMemberRefNoVarArgsBase, out _, out _), GetMemberRefProps(currentImport, tkMemberRefNoVarArgsBase, out nint ref1Blob, out uint ref1BlobLength));
             Assert.Equal(FindMethod(baselineImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength), FindMethod(currentImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength));
 
@@ -344,6 +364,16 @@ namespace Regression.UnitTests
 
             Assert.Equal(GetMemberRefProps(baselineImport, tkMemberRefVarArgsBase, out _, out _), GetMemberRefProps(currentImport, tkMemberRefVarArgsBase, out nint ref2Blob, out uint ref2BlobLength));
             Assert.Equal(FindMethod(baselineImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength), FindMethod(currentImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength));
+
+            var fieldName = "Field1";
+            var tkField = AssertAndReturn(EnumFieldsWithName(baselineImport, tkB2, fieldName), EnumFieldsWithName(currentImport, tkB2, fieldName))[0];
+
+            var nameBuffer = new char[CharBuffer];
+            Assert.Equal(
+                baselineImport.GetFieldProps(tkField, out _, nameBuffer, nameBuffer.Length, out _, out _, out nint sigBlob, out uint sigBlobLength, out _, out _, out _),
+                currentImport.GetFieldProps(tkField, out _, nameBuffer, nameBuffer.Length, out _, out _, out nint _, out uint _, out _, out _, out _));
+
+            Assert.Equal(FindField(baselineImport, tkB2, fieldName, sigBlob, sigBlobLength), FindField(currentImport, tkB2, fieldName, sigBlob, sigBlobLength));
 
             static uint FindTokenByName(IMetaDataImport import, string name)
             {
@@ -373,7 +403,9 @@ namespace Regression.UnitTests
             static uint FindMemberRef(IMetaDataImport import, uint type, string methodName)
             {
                 var methodDef = FindMethodDef(import, type, methodName);
-                return EnumMemberRefs(import, methodDef)[0];
+                int hr = import.FindMemberRef(methodDef, methodName, null, 0, out uint pmr);
+                Assert.Equal(0, hr);
+                return pmr;
             }
 
             static unsafe uint FindMethod(IMetaDataImport import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
@@ -381,7 +413,21 @@ namespace Regression.UnitTests
                 byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
                 int hr = import.FindMethod(td, name, sig, (uint)sig.Length, out uint methodToken);
                 Assert.Equal(0, hr);
+                hr = import.FindMember(td, name, sig, (uint)sig.Length, out uint memberToken);
+                Assert.Equal(0, hr);
+                Assert.Equal(methodToken, memberToken);
                 return methodToken;
+            }
+
+            static unsafe uint FindField(IMetaDataImport import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
+            {
+                byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
+                int hr = import.FindField(td, name, sig, (uint)sig.Length, out uint fieldToken);
+                Assert.Equal(0, hr);
+                hr = import.FindMember(td, name, sig, (uint)sig.Length, out uint memberToken);
+                Assert.Equal(0, hr);
+                Assert.Equal(fieldToken, memberToken);
+                return fieldToken;
             }
         }
 
@@ -779,14 +825,14 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumFieldsWithName(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumFieldsWithName(IMetaDataImport import, uint typedef, string name = "_name")
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
             nint hcorenum = 0;
             try
             {
-                while (0 == import.EnumFieldsWithName(ref hcorenum, typedef, "_name", tokensBuffer, tokensBuffer.Length, out uint returned)
+                while (0 == import.EnumFieldsWithName(ref hcorenum, typedef, name, tokensBuffer, tokensBuffer.Length, out uint returned)
                     && returned != 0)
                 {
                     for (int i = 0; i < returned; ++i)

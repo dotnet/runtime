@@ -86,7 +86,7 @@ namespace Common
         int FindField(uint td, [MarshalAs(UnmanagedType.LPWStr)]string szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[] pvSigBlob, uint cbSigBlob, out uint pmb);
 
         [PreserveSig]
-        int FindMemberRef(uint td, [MarshalAs(UnmanagedType.LPWStr)]string szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[] pvSigBlob, int cbSigBlob, out uint pmr);
+        int FindMemberRef(uint td, [MarshalAs(UnmanagedType.LPWStr)]string? szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[]? pvSigBlob, int cbSigBlob, out uint pmr);
 
         [PreserveSig]
         int GetMethodProps(uint mb, out uint pClass, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]char[] szMethod, int cchMethod, out int pchMethod, out uint pdwAttr, out IntPtr ppvSigBlob, out uint pcbSigBlob, out uint pulCodeRVA, out uint pdwImplFlags);
