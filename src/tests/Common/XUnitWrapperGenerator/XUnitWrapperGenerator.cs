@@ -160,8 +160,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}_templog.xml""))");
-        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}_templog.xml"");");
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.templog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.templog.xml"");");
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
@@ -187,7 +187,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
                     currentTestExecutor++;
                     testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
-                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}_templog.xml"")) {{");
+                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml"")) {{");
                     builder.AppendLine($"TestExecutor{currentTestExecutor}();");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
                 }

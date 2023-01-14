@@ -18,56 +18,38 @@ public class XUnitLogChecker
         if (args.Count() < 2)
         {
             Console.WriteLine("The path to the log file and the name of the wrapper"
-			      + " are required for an accurate check and fixing.");
+                              + " are required for an accurate check and fixing.");
             return -1;
         }
 
-	string resultsDir = args[0];
-	string wrapperName = args[1];
+        string resultsDir = args[0];
+        string wrapperName = args[1];
 
-	if (!Directory.Exists(resultsDir))
-	{
-	    Console.WriteLine($"The given path '{resultsDir}' was not found.");
-	    return -2;
-	}
+        string tempLogName = $"{wrapperName}.templog.xml";
+        string finalLogName = $"{wrapperName}.testResults.xml";
 
-        // Check if the XUnit log is well-formed. If yes, then we have nothing
-        // else to do :)
-        // if (TryLoadXml(args[0]))
-        // {
-        //     Console.WriteLine($"The given XML '{args[0]}' is well formed! Exiting...");
-        //     return 0;
-        // }
+        string tempLogPath = Path.Combine(resultsDir, tempLogName);
+        string finalLogPath = Path.Combine(resultsDir, finalLogName);
+        
+        if (File.Exists(finalLogPath))
+        {
+            Console.WriteLine($"Item '{wrapperName}' did complete successfully!");
+            return 0;
+        }
 
-	string tempLogName = $"{wrapperName}_templog.xml";
-	string finalLogName = $"{wrapperName}.testResults.xml";
+        if (!File.Exists(tempLogPath))
+        {
+            Console.WriteLine("No logs were found. Something went very wrong"
+                              + " with this item...");
+            return -2;
+        }
 
-	if (File.Exists(Path.Combine(resultsDir, finalLogName)))
-	{
-	    Console.WriteLine($"Item '{wrapperName}' did complete successfully!");
-	    return 0;
-	}
+        FixTheXml(tempLogPath);
 
-        FixTheXml(Path.Combine(resultsDir, tempLogName));
+        // Rename the temp log to the final log, so that Helix can use it without
+        // knowing what transpired here.
+        File.Move(tempLogPath, finalLogPath);
         return 0;
-    }
-
-    static bool TryLoadXml(string xFile)
-    {
-        try
-        {
-            using (var xReader = XmlReader.Create(new StreamReader(xFile)))
-            {
-                var xDocument = new XmlDocument();
-                xDocument.Load(xReader);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"The given XML {xFile} was malformed. Fixing now...");
-            return false;
-        }
-        return true;
     }
 
     // Missing Stuff: Write the final log file, not append to the temporary one.
