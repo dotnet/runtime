@@ -26,7 +26,6 @@
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 
 #define INTERP_STACK_SIZE (1024*1024)

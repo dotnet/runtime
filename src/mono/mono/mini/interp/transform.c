@@ -3229,7 +3229,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	MonoMethodSignature *csignature;
 	int is_virtual = *td->ip == CEE_CALLVIRT;
 	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
-	guint32 res_size = 0;
 	int op = -1;
 	int native = 0;
 	int need_null_check = is_virtual;
@@ -3520,19 +3519,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		MonoClass *klass = mono_class_from_mono_type_internal (csignature->ret);
 
 		if (mt == MINT_TYPE_VT) {
+			guint32 res_size;
 			if (csignature->pinvoke && !csignature->marshalling_disabled && method->wrapper_type != MONO_WRAPPER_NONE)
 				res_size = mono_class_native_size (klass, NULL);
 			else
 				res_size = mono_class_value_size (klass, NULL);
 			push_type_vt (td, klass, res_size);
-			res_size = ALIGN_TO (res_size, MINT_VT_ALIGNMENT);
 			if (mono_class_has_failure (klass)) {
 				mono_error_set_for_class_failure (error, klass);
 				return FALSE;
 			}
 		} else {
 			push_type (td, stack_type[mt], klass);
-			res_size = MINT_STACK_SLOT_SIZE;
 		}
 		dreg = td->sp [-1].local;
 	} else {
@@ -4067,8 +4065,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->locals_capacity = td->locals_size;
 	offset = 0;
 
-	g_assert (MINT_STACK_SLOT_SIZE == MINT_VT_ALIGNMENT);
-
 	/*
 	 * We will load arguments as if they are locals. Unlike normal locals, every argument
 	 * is stored in a stackval sized slot and valuetypes have special semantics since we
@@ -4123,7 +4119,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
-	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
 	td->il_locals_size = offset - td->il_locals_offset;
 	td->total_locals_size = offset;
 
@@ -6238,8 +6233,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (ftype);
 			int field_size = mono_class_value_size (field_klass, NULL);
-			int obj_size = mono_class_value_size (klass, NULL);
-			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
 			{
 				if (is_static) {
