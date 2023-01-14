@@ -136,6 +136,7 @@ list(APPEND EVENTPIPE_SOURCES
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/AotDisabledEventPipeInterface.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/disabledeventpipeinternal.cpp
 )
 
 set(GC_DIR ../../gc)
