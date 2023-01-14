@@ -93,6 +93,16 @@ namespace ILCompiler
             }
         }
 
+        /*
+         * The MarkAndPreserve method in NativeAOT is substantially different from the MarkAndPreserve method in illink. NativeAOT does not have global
+         * storage, nor uses the same marking logic as illink so it cannot defer the marking for a posterior stage and needs to add the elements to the
+         * graph while processing the descriptor file.
+         * At the same time the MarkAndPreserve logic can describe which elements to preserve inside a type by using the tag 'TypePreserve' allowing to
+         * keep methods (including constructors), fields or all the elements of the type.
+         * Given that we have already implemented a similar logic that keeps elements on a type via a binder using DynamicallyAccessedMembers attribute,
+         * this method reuses that code functionality by transforming the TypePreserve into it's DynamicallyAccessedMemberTypes equivalent and then
+         * calling the binder logic.
+         */
         private void MarkAndPreserve(TypeDesc type, XPathNavigator nav, TypePreserve preserve)
         {
             var bindingOptions = preserve switch {
