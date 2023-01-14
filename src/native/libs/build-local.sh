@@ -32,5 +32,3 @@ if [ -d "$SHIM_SOURCE_DIR" ]; then
         exit 1
     fi
 fi
-
-exit 0
