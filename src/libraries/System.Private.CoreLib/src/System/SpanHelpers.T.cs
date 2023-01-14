@@ -3336,9 +3336,9 @@ namespace System
             int count = 0;
 
             ref T end = ref Unsafe.Add(ref current, length);
-            if (Vector128.IsHardwareAccelerated && length >= Vector128<ushort>.Count)
+            if (Vector128.IsHardwareAccelerated && length >= Vector128<T>.Count)
             {
-                if (Vector256.IsHardwareAccelerated && length >= Vector256<ushort>.Count)
+                if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
                 {
                     Vector256<T> targetVector = Vector256.Create(value);
                     ref T oneVectorAwayFromEndMinus1 = ref Unsafe.Subtract(ref end, Vector256<T>.Count - 1);
