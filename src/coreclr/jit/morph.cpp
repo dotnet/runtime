@@ -11062,9 +11062,12 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
     // of root and child values
     if (op1->OperIs(GT_UDIV, GT_DIV) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst())
     {
-
         GenTree* chOp1 = op1->gtGetOp1();
         GenTree* chOp2 = op1->gtGetOp2();
+
+        // If there is a division by zero
+        if (chOp2->IsIntegralConst(0))
+            return nullptr;
 
         IntegralRange boundRange = IntegralRange::ForNode(op2, this);
         int64_t       upperBound = IntegralRange::SymbolicToRealValue(boundRange.GetUpperBound());
