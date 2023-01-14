@@ -3857,10 +3857,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
-    GenTree* impX86BaseIntrinsic(NamedIntrinsic        intrinsic,
-                                 CORINFO_METHOD_HANDLE method,
-                                 CORINFO_SIG_INFO*     sig,
-                                 CorInfoType           simdBaseJitType);
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
