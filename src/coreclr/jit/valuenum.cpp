@@ -8636,6 +8636,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         {
             assert(address == -1);
             assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic);
+            byteOffset = fieldSeq->GetOffset();
         }
 
         int       size           = (int)genTypeSize(tree->TypeGet());
