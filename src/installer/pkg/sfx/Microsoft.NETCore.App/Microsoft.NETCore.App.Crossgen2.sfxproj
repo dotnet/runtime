@@ -36,6 +36,7 @@
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
               ;_IsPublishing=true
               ;RuntimeIdentifier=$(PackageRID)
+              ;NativeAotSupported=$(NativeAotSupported)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
 
@@ -43,6 +44,7 @@
              Targets="Publish;PublishItemsOutputGroup"
              Properties="_IsPublishing=true
               ;RuntimeIdentifier=$(PackageRID)
+              ;NativeAotSupported=$(NativeAotSupported)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
       <Output TaskParameter="TargetOutputs"
