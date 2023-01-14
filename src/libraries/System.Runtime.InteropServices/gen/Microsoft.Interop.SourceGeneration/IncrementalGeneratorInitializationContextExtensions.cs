@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -33,11 +34,18 @@ namespace Microsoft.Interop
 
         private static readonly Version FirstNonCoreVersion = new(5, 0);
 
+        // Parse from the informational version as that is the only version that always matches the TFM version
+        // even in debug builds.
+        private static readonly Version ThisAssemblyVersion = Version.Parse(
+            typeof(IncrementalGeneratorInitializationContextExtensions).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split('-')[0]);
+
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
             // PERF: With the .NET SDK, this path is equivalent to calling CompilationExtensions.CreateStubEnvironment.
             // However, using the compilation here has been known to cause perf issues, so instead we'll use MSBuild properties
-            // and directly inferring from syntax the information we need to calculate for the StubEnvironment object
+            // from the .NET SDK, the version of the source generator assembly, and directly inferring from syntax
+            // the information we need to calculate for the StubEnvironment object
             // and only include the compilation after all of that is already done.
             var tfmVersion = context.AnalyzerConfigOptionsProvider
                 .Select((options, ct) => new TargetFrameworkSettings(options.GlobalOptions))
@@ -46,8 +54,13 @@ namespace Microsoft.Interop
                     ".NETStandard" => TargetFramework.Standard,
                     ".NETCoreApp" when tfm.Version is not null && tfm.Version < FirstNonCoreVersion => TargetFramework.Core,
                     ".NETCoreApp" => TargetFramework.Net,
+                    // If the TFM is not specified, we'll infer it from this assembly.
+                    // Since we only ship this assembly as part of the Microsoft.NETCore.App TFM,
+                    // the downlevel support only matters for the repo where this project is built.
+                    // In all other cases, we will only be used from the TFM with the matching version as our assembly.
+                    null => TargetFramework.Net,
                     _ => TargetFramework.Framework
-                }, tfm.Version));
+                }, Version: tfm.Version ?? ThisAssemblyVersion));
 
             var isModuleSkipLocalsInit = context.SyntaxProvider.ForAttributeWithMetadataName(
                 TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute,
