@@ -41128,7 +41128,8 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
     {
 #ifdef MULTIPLE_HEAPS
-        gc_heap* hp = heap_segment_heap (region);
+        // For regions, it doesn't matter which heap is used to decommit the mark array
+        gc_heap* hp = g_heaps [0];
 #else
         gc_heap* hp = pGenGCHeap;
 #endif
