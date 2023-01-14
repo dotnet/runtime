@@ -116,9 +116,7 @@ class DeadCodeElimination
                 s_d.TrySomething();
             }
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractTypeNeverDerivedVirtualsOptimization), nameof(UnreferencedType1));
         }
     }
 
@@ -147,9 +145,7 @@ class DeadCodeElimination
             // and uses a virtual method implementation from Base.
             DoIt(null);
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractNeverDerivedWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
@@ -185,9 +181,7 @@ class DeadCodeElimination
 
             new Derived2().DoSomething();
 
-            // This optimization got disabled, but if it ever gets re-enabled, this test
-            // will ensure we don't reintroduce the old bugs (this was a compiler crash).
-            //ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
+            ThrowIfPresent(typeof(TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall), nameof(UnreferencedType1));
         }
     }
 
