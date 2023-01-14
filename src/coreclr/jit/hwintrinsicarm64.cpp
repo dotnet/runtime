@@ -424,7 +424,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retType == TYP_SIMD8);
 
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(retType, retNode, NI_Vector128_GetLower, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize);
             break;
         }
 
