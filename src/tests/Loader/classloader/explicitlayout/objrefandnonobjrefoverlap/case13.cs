@@ -19,7 +19,7 @@ public class Test
         public int F;
     }
 
-    public ref struct WithByORefs
+    public ref struct WithByRefs
     {
         public ref int F;
     }
@@ -50,7 +50,7 @@ public class Test
         [FieldOffset(0)] public Inner3 Field1;
         public ref struct Inner3
         {
-            public WithByORefs Field2;
+            public WithByRefs Field2;
         }
     }
 
