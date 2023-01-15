@@ -528,7 +528,7 @@ namespace Internal.Runtime.TypeLoader
                         NativeParser ldtokenSigParser = parser.GetParserFromRelativeOffset();
                         MethodDesc constrainedMethod = nativeLayoutInfoLoadContext.GetMethod(ref ldtokenSigParser);
 
-                        TypeLoaderLogger.WriteLine("NonGenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
+                        TypeLoaderLogger.WriteLine("GenericStaticConstrainedMethod: " + constraintType.ToString() + " Method " + constrainedMethod.ToString());
 
                         cell = new GenericStaticConstrainedMethodCell()
                         {

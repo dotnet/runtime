@@ -738,7 +738,6 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
         {
-            // Only GVM templates need entry points.
             Debug.Assert(NeedsEntrypoint(_method));
             unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
