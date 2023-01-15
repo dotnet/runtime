@@ -10802,6 +10802,7 @@ mono_aot_method_hash (MonoMethod *method)
 	guint32 a, b, c;
 	MonoGenericInst *class_ginst = NULL;
 	MonoGenericInst *ginst = NULL;
+	WrapperInfo *info = NULL;
 
 	/* Similar to the hash in mono_method_get_imt_slot () */
 
@@ -10816,11 +10817,20 @@ mono_aot_method_hash (MonoMethod *method)
 	hashes_start = (guint32 *)g_malloc0 (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
 
+	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
+		info = mono_marshal_get_wrapper_info (method);
+
 	/* Some wrappers are assigned to random classes */
-	if (!method->wrapper_type)
+	if (!method->wrapper_type) {
 		klass = method->klass;
-	else
+	} else {
 		klass = mono_defaults.object_class;
+
+		if (method->wrapper_type == MONO_WRAPPER_OTHER &&
+			(info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE || info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR)) {
+			klass = method->klass;
+		}
+	}
 
 	if (!method->wrapper_type) {
 		char *full_name;
@@ -10842,6 +10852,12 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [2] = mono_marshal_get_wrapper_info (method)->d.icall.jit_icall_id;
 	else
 		hashes [2] = mono_metadata_str_hash (method->name);
+
+	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+		if (info && (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG))
+			sig = info->d.gsharedvt.sig;
+	}
+
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	hindex = 5;
@@ -10856,7 +10872,8 @@ mono_aot_method_hash (MonoMethod *method)
 		for (guint i = 0; i < ginst->type_argc; ++i)
 			hashes [hindex ++] = mono_aot_type_hash (ginst->type_argv [i]);
 	}
-	g_assert (hindex == hashes_count);
+	g_assert (hindex <= hashes_count);
+	hashes_count = hindex;
 
 	/* Setup internal state */
 	a = b = c = 0xdeadbeef + (((guint32)hashes_count)<<2);
