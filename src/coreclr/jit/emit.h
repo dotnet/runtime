@@ -1693,7 +1693,6 @@ protected:
 #endif
 
     size_t emitGetInstrDescSize(const instrDesc* id);
-    size_t emitGetInstrDescSizeSC(const instrDesc* id);
 
 #ifdef TARGET_XARCH
 
@@ -2997,13 +2996,14 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     {
         return SMALL_IDSC_SIZE;
     }
-
-    if (id->idIsLargeCns())
+    else if (id->idIsLargeCns())
     {
         return sizeof(instrDescCns);
     }
-
-    return sizeof(instrDesc);
+    else
+    {
+        return sizeof(instrDesc);
+    }
 }
 
 /*****************************************************************************
@@ -3041,27 +3041,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 #endif
 
         return id;
-    }
-}
-
-/*****************************************************************************
- *
- *  Get the instrDesc size for something that contains a constant
- */
-
-inline size_t emitter::emitGetInstrDescSizeSC(const instrDesc* id)
-{
-    if (id->idIsSmallDsc())
-    {
-        return SMALL_IDSC_SIZE;
-    }
-    else if (id->idIsLargeCns())
-    {
-        return sizeof(instrDescCns);
-    }
-    else
-    {
-        return sizeof(instrDesc);
     }
 }
 
