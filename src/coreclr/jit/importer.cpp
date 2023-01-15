@@ -3942,6 +3942,52 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             uint8_t buffer[MaxStructSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
             {
+#ifdef FEATURE_SIMD
+                // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
+                int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
+                if (simdWidth > 0)
+                {
+                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    var_types simdType = getSIMDTypeForSize(simdWidth);
+
+                    bool hwAccelerated = false;
+                    switch (simdType)
+                    {
+#ifdef TARGET_ARM64
+                        case TYP_SIMD8:
+                        case TYP_SIMD12:
+                        case TYP_SIMD16:
+                            hwAccelerated = compExactlyDependsOn(InstructionSet_AdvSimd);
+                            break;
+#endif
+#ifdef TARGET_XARCH
+                        case TYP_SIMD12:
+                        case TYP_SIMD16:
+                            // Let's not complicate the test matrix with "for floating point SSE1 is enough"
+                            hwAccelerated = compExactlyDependsOn(InstructionSet_SSE2);
+                            break;
+                        case TYP_SIMD32:
+                            hwAccelerated = compExactlyDependsOn(InstructionSet_AVX);
+                            break;
+#endif
+                        default:
+                            break;
+                    }
+
+                    if (hwAccelerated)
+                    {
+                        GenTreeVecCon* vec   = gtNewVconNode(simdType);
+                        simd32_t       value = {0};
+                        for (size_t i = 0; i < totalSize; i++)
+                        {
+                            value.i8[i] = buffer[i];
+                        }
+                        vec->gtSimd32Val = value;
+                        return vec;
+                    }
+                }
+#endif
+
                 for (unsigned i = 0; i < totalSize; i++)
                 {
                     if (buffer[i] != 0)
