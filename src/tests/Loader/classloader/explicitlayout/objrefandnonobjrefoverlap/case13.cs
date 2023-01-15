@@ -58,7 +58,6 @@ public class Test
     public static void Validate_Explicit1()
     {
         Load1();
-        // that's enough. if we didn't throw a TypeLoadException, the test case will fail.
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static string Load1()
@@ -71,7 +70,6 @@ public class Test
     public static void Validate_Explicit2()
     {
         Load2();
-        // that's enough. if we didn't throw a TypeLoadException, the test case will fail.
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static string Load2()
@@ -84,7 +82,6 @@ public class Test
     public static void Validate_Explicit3()
     {
         Load3();
-        // that's enough. if we didn't throw a TypeLoadException, the test case will fail.
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static string Load3()
