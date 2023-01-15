@@ -144,5 +144,5 @@ apt install libnuma-dev
 
 Alpine
 ```sh
-apk add cmake numactl-dev
+apk add numactl-dev
 ```
