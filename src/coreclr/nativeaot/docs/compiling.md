@@ -86,13 +86,13 @@ This feature is only supported on Linux. This feature is not supported when cros
 
 ### Prerequisites
 
-Ubuntu (20.04+)
-```
-sudo apt-get install libicu-dev cmake
+Ubuntu
+```sh
+apt install libicu-dev cmake
 ```
 
 Alpine
-```
+```sh
 apk add cmake icu-static icu-dev
 ```
 
@@ -113,7 +113,36 @@ This feature is only supported on Linux. This feature is not supported when cros
 
 ### Prerequisites
 
-Alpine
+Ubuntu
+```sh
+apt install libssl-dev cmake
 ```
+
+Alpine
+```sh
 apk add cmake openssl-dev openssl-libs-static
+```
+
+## Using statically linked NUMA
+This feature can statically link NUMA library (libnuma.a) into your applications at build time.
+NativeAOT binaries built with this feature can run even when NUMA libraries are not installed.
+
+You can use this feature by adding the `StaticNumaLinking` property to your project file as follows:
+
+```xml
+    <PropertyGroup>
+      <StaticNumaLinking>true</StaticNumaLinking>
+    </PropertyGroup>
+```
+
+### Prerequisites
+
+Ubuntu
+```sh
+apt install libnuma-dev
+```
+
+Alpine
+```sh
+apk add cmake numactl-dev
 ```
