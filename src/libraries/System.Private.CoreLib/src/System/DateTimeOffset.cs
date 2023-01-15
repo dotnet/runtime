@@ -1075,7 +1075,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out DateOnly date, out TimeOnly time, out TimeSpan offset)
         {
-            (date, time) = _dateTime;
+            (date, time) = ClockDateTime;
             offset = Offset;
         }
 

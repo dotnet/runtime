@@ -312,7 +312,7 @@ namespace System.Tests
             var time = new TimeOnly(hour, minute, second);
 
             var offset = TimeSpan.FromHours(10);
-            var dateTimeOffset = new DateTimeOffset(date, time, offset) + offset;
+            var dateTimeOffset = new DateTimeOffset(date, time, offset);
             var (obtainedDate, obtainedTime, obtainedOffset) = dateTimeOffset;
             
             Assert.Equal(date, obtainedDate);
