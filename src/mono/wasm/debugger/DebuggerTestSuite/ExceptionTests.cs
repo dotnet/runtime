@@ -17,7 +17,7 @@ namespace DebuggerTests
         public ExceptionTests(ITestOutputHelper testOutput) : base(testOutput)
         {}
 
-        //[ConditionalFact(nameof(RunningOnChrome))]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestAll()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
