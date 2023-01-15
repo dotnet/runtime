@@ -330,7 +330,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
     <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows'" />

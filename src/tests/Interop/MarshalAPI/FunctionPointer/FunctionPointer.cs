@@ -76,6 +76,7 @@ public partial class FunctionPtr
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
             DelegateToFillOutPtr OutPtrDelegate = Marshal.GetDelegateForFunctionPointer<DelegateToFillOutPtr>(ptr);
             OutPtrDelegate(&outVar);
+            GC.KeepAlive(d);
         }
         Assert.Equal(expectedValue, outVar);
     }

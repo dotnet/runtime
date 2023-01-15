@@ -1228,26 +1228,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                             case NI_IsSupported_True:
                             case NI_IsSupported_False:
+                            case NI_IsSupported_Type:
                             {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_get_Count:
-                            case NI_Vector256_get_Count:
+                            case NI_Vector_GetCount:
+                            {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
-                                // TODO: check if it's a loop condition - we unroll such loops.
+                                // TODO: for FEATURE_SIMD check if it's a loop condition - we unroll such loops.
                                 break;
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector64_get_Count:
-                            case NI_Vector128_get_Count:
-                                foldableIntrinsic = true;
-                                pushedStack.PushConstant();
-                                break;
-#endif
+                            }
 
                             case NI_SRCS_UNSAFE_Add:
                             case NI_SRCS_UNSAFE_AddByteOffset:
@@ -1416,6 +1410,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsInt16:
                             case NI_Vector64_AsInt32:
                             case NI_Vector64_AsInt64:
+                            case NI_Vector64_AsNInt:
+                            case NI_Vector64_AsNUInt:
                             case NI_Vector64_AsSByte:
                             case NI_Vector64_AsSingle:
                             case NI_Vector64_AsUInt16:
@@ -1429,6 +1425,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_AsInt16:
                             case NI_Vector128_AsInt32:
                             case NI_Vector128_AsInt64:
+                            case NI_Vector128_AsNInt:
+                            case NI_Vector128_AsNUInt:
                             case NI_Vector128_AsSByte:
                             case NI_Vector128_AsSingle:
                             case NI_Vector128_AsUInt16:
@@ -1457,6 +1455,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_AsInt16:
                             case NI_Vector256_AsInt32:
                             case NI_Vector256_AsInt64:
+                            case NI_Vector256_AsNInt:
+                            case NI_Vector256_AsNUInt:
                             case NI_Vector256_AsSByte:
                             case NI_Vector256_AsSingle:
                             case NI_Vector256_AsUInt16:

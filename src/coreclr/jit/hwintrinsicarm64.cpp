@@ -381,6 +381,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_AsInt16:
         case NI_Vector64_AsInt32:
         case NI_Vector64_AsInt64:
+        case NI_Vector64_AsNInt:
+        case NI_Vector64_AsNUInt:
         case NI_Vector64_AsSByte:
         case NI_Vector64_AsSingle:
         case NI_Vector64_AsUInt16:
@@ -392,6 +394,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsInt16:
         case NI_Vector128_AsInt32:
         case NI_Vector128_AsInt64:
+        case NI_Vector128_AsNInt:
+        case NI_Vector128_AsNUInt:
         case NI_Vector128_AsSByte:
         case NI_Vector128_AsSingle:
         case NI_Vector128_AsUInt16:
@@ -399,7 +403,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_AsUInt64:
         case NI_Vector128_AsVector:
         case NI_Vector128_AsVector4:
-        case NI_Vector128_AsVector128:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -411,6 +414,109 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
             SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            break;
+        }
+
+        case NI_Vector128_AsVector2:
+        {
+            assert(sig->numArgs == 1);
+            assert((simdSize == 16) && (simdBaseType == TYP_FLOAT));
+            assert(retType == TYP_SIMD8);
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_AsVector3:
+        {
+            assert(sig->numArgs == 1);
+            assert((simdSize == 16) && (simdBaseType == TYP_FLOAT));
+            assert(retType == TYP_SIMD12);
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_AsVector128:
+        {
+            assert(!sig->hasThis());
+            assert(numArgs == 1);
+            assert(retType == TYP_SIMD16);
+
+            switch (getSIMDTypeForSize(simdSize))
+            {
+                case TYP_SIMD8:
+                {
+                    assert((simdSize == 8) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD8);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[2] = 0.0f;
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(2, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    op1           = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                   /* isSimdAsHWIntrinsic */ false);
+
+                    idx     = gtNewIconNode(3, TYP_INT);
+                    zero    = gtNewZeroConNode(TYP_FLOAT);
+                    retNode = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                       /* isSimdAsHWIntrinsic */ false);
+
+                    break;
+                }
+
+                case TYP_SIMD12:
+                {
+                    assert((simdSize == 12) && (simdBaseType == TYP_FLOAT));
+
+                    op1 = impSIMDPopStack(TYP_SIMD12);
+
+                    if (op1->IsCnsVec())
+                    {
+                        GenTreeVecCon* vecCon = op1->AsVecCon();
+                        vecCon->gtType        = TYP_SIMD16;
+
+                        vecCon->gtSimd16Val.f32[3] = 0.0f;
+                        return vecCon;
+                    }
+
+                    GenTree* idx  = gtNewIconNode(3, TYP_INT);
+                    GenTree* zero = gtNewZeroConNode(TYP_FLOAT);
+                    retNode       = gtNewSimdWithElementNode(retType, op1, idx, zero, simdBaseJitType, 16,
+                                                       /* isSimdAsHWIntrinsic */ false);
+                    break;
+                }
+
+                case TYP_SIMD16:
+                {
+                    // We fold away the cast here, as it only exists to satisfy
+                    // the type system. It is safe to do this here since the retNode type
+                    // and the signature return type are both the same TYP_SIMD.
+
+                    retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                    SetOpLclRelatedToSIMDIntrinsic(retNode);
+                    assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
             break;
         }
 
@@ -740,18 +846,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impPopStack().val;
             retNode = gtNewSimdCreateScalarUnsafeNode(retType, op1, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_get_Count:
-        case NI_Vector128_get_Count:
-        {
-            assert(!sig->hasThis());
-            assert(numArgs == 0);
-
-            GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
-            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-            retNode = countNode;
             break;
         }
 
@@ -1738,7 +1832,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* vectorOp = impSIMDPopStack(getSIMDTypeForSize(simdSize));
 
             retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize,
-                                               /* isSimdAsHWIntrinsic */ true);
+                                               /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
