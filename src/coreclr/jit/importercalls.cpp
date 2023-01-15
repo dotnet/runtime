@@ -1273,6 +1273,7 @@ DONE:
             fgMarkBackwardJump(loopHead, compCurBB);
 
             compMayConvertTailCallToLoop = true;
+            compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
         }
 
         // We only do these OSR checks in the root method because:
@@ -2240,8 +2241,10 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     impPopStack();
 
     // Turn count and pointer value into constants.
-    GenTree* lengthValue  = gtNewIconNode(count, TYP_INT);
-    GenTree* pointerValue = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
+    GenTree*  lengthValue = gtNewIconNode(count, TYP_INT);
+    FieldSeq* fldSeq =
+        GetFieldSeqStore()->Create(fieldToken, (ssize_t)data, FieldSeq::FieldKind::SimpleStaticKnownAddress);
+    GenTree* pointerValue = gtNewIconHandleNode((size_t)data, GTF_ICON_STATIC_HDL, fldSeq);
 
     // Construct ReadOnlySpan<T> to return.
     CORINFO_CLASS_HANDLE spanHnd     = sig->retTypeClass;
@@ -2354,6 +2357,76 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             assert(sig->numArgs == 0);
             return gtNewIconNode(false);
+        }
+
+        if (ni == NI_IsSupported_Type)
+        {
+            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+
+            switch (simdBaseJitType)
+            {
+                case CORINFO_TYPE_BYTE:
+                case CORINFO_TYPE_UBYTE:
+                case CORINFO_TYPE_SHORT:
+                case CORINFO_TYPE_USHORT:
+                case CORINFO_TYPE_INT:
+                case CORINFO_TYPE_UINT:
+                case CORINFO_TYPE_LONG:
+                case CORINFO_TYPE_ULONG:
+                case CORINFO_TYPE_FLOAT:
+                case CORINFO_TYPE_DOUBLE:
+                case CORINFO_TYPE_NATIVEINT:
+                case CORINFO_TYPE_NATIVEUINT:
+                {
+                    return gtNewIconNode(true);
+                }
+
+                default:
+                {
+                    return gtNewIconNode(false);
+                }
+            }
+        }
+
+        if (ni == NI_Vector_GetCount)
+        {
+            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+            unsigned             simdSize        = info.compCompHnd->getClassSize(clsHnd);
+
+            switch (simdBaseJitType)
+            {
+                case CORINFO_TYPE_BYTE:
+                case CORINFO_TYPE_UBYTE:
+                case CORINFO_TYPE_SHORT:
+                case CORINFO_TYPE_USHORT:
+                case CORINFO_TYPE_INT:
+                case CORINFO_TYPE_UINT:
+                case CORINFO_TYPE_LONG:
+                case CORINFO_TYPE_ULONG:
+                case CORINFO_TYPE_FLOAT:
+                case CORINFO_TYPE_DOUBLE:
+                case CORINFO_TYPE_NATIVEINT:
+                case CORINFO_TYPE_NATIVEUINT:
+                {
+                    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+                    unsigned       elementSize  = genTypeSize(simdBaseType);
+                    GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
+
+#if defined(FEATURE_SIMD)
+                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+#endif // FEATURE_SIMD
+
+                    return countNode;
+                }
+
+                default:
+                {
+                    ni = NI_Throw_PlatformNotSupportedException;
+                    break;
+                }
+            }
         }
 
         if (ni == NI_Throw_PlatformNotSupportedException)
@@ -7345,12 +7418,22 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
-            {
-                // This allows the relevant code paths to be dropped as dead code even
-                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+            // This allows the relevant code paths to be dropped as dead code even
+            // on platforms where FEATURE_HW_INTRINSICS is not supported.
 
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                assert(strcmp(className, "Vector`1") == 0);
+                result = NI_IsSupported_Type;
+            }
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
                 result = NI_IsSupported_False;
+            }
+            else if (strcmp(methodName, "get_Count") == 0)
+            {
+                assert(strcmp(className, "Vector`1") == 0);
+                result = NI_Vector_GetCount;
             }
             else if (gtIsRecursiveCall(method))
             {
@@ -7538,12 +7621,33 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
-            {
-                // This allows the relevant code paths to be dropped as dead code even
-                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+            // This allows the relevant code paths to be dropped as dead code even
+            // on platforms where FEATURE_HW_INTRINSICS is not supported.
 
+            if (strcmp(methodName, "get_IsSupported") == 0)
+            {
+                if (strncmp(className, "Vector", 6) == 0)
+                {
+                    assert((strcmp(className, "Vector64`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
+                           (strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector512`1") == 0));
+
+                    result = NI_IsSupported_Type;
+                }
+                else
+                {
+                    result = NI_IsSupported_False;
+                }
+            }
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
                 result = NI_IsSupported_False;
+            }
+            else if (strcmp(methodName, "get_Count") == 0)
+            {
+                assert((strcmp(className, "Vector64`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
+                       (strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector512`1") == 0));
+
+                result = NI_Vector_GetCount;
             }
             else if (gtIsRecursiveCall(method))
             {

@@ -488,6 +488,8 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->hasthis = sig->hasthis;
 	imethod->vararg = sig->call_convention == MONO_CALL_VARARG;
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
+	// This flag allows us to optimize out the interp_entry 'is this a delegate invoke' checks
+	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
 	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
@@ -2161,12 +2163,6 @@ typedef struct {
 	gpointer *many_args;
 } InterpEntryData;
 
-static MONO_ALWAYS_INLINE gboolean
-is_method_multicastdelegate_invoke (MonoMethod *method)
-{
-	return m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke");
-}
-
 /* Main function for entering the interpreter from compiled code */
 // Do not inline in case order of frame addresses matters.
 static MONO_NEVER_INLINE void
@@ -2196,7 +2192,7 @@ interp_entry (InterpEntryData *data)
 
 	method = rmethod->method;
 
-	if (is_method_multicastdelegate_invoke(method)) {
+	if (rmethod->is_invoke) {
 		/*
 		 * This happens when AOT code for the invoke wrapper is not found.
 		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
@@ -8591,34 +8587,28 @@ mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source
 	*destination = imethod_to_ftnptr (del->interp_method, FALSE);
 }
 
-void
+MONO_ALWAYS_INLINE void
 mono_jiterp_check_pending_unwind (ThreadContext *context)
 {
 	return check_pending_unwind (context);
 }
 
-void *
+MONO_ALWAYS_INLINE void *
 mono_jiterp_get_context (void)
 {
 	return get_context ();
 }
 
-gpointer
+MONO_ALWAYS_INLINE gpointer
 mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size)
 {
 	return frame_data_allocator_alloc(stack, frame, size);
 }
 
-gboolean
+MONO_ALWAYS_INLINE gboolean
 mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 {
 	return mono_interp_isinst (object, klass);
-}
-
-gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method)
-{
-	return is_method_multicastdelegate_invoke (method);
 }
 
 // after interp_entry_prologue the wrapper will set up all the argument values
@@ -8673,6 +8663,13 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
 	type = header.rmethod->rtype;
 	if (type->type != MONO_TYPE_VOID)
 		mono_jiterp_stackval_to_data (type, frame.stack, res);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip)
+{
+	if (G_UNLIKELY (mono_polling_required))
+		do_safepoint (frame, get_context(), ip);
 }
 
 #endif

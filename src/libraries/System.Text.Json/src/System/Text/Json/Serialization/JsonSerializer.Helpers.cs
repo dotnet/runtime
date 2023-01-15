@@ -78,5 +78,8 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
+            handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;
     }
 }

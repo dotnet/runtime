@@ -3776,12 +3776,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 0; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length - 1)];
-                }
-
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
                 string s1 = new string(a);
                 bool result = string.IsNullOrWhiteSpace(s1);
                 Assert.True(result);
@@ -3810,11 +3805,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 0; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
-                }
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
 
                 string s1 = new string(a);
                 bool result = string.IsNullOrWhiteSpace(s1);
@@ -3832,11 +3823,7 @@ namespace System.Tests
             Random rand = new Random(42);
             for (int length = 1; length < 32; length++)
             {
-                char[] a = new char[length];
-                for (int i = 0; i < length; i++)
-                {
-                    a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length)];
-                }
+                char[] a = rand.GetItems<char>(s_whiteSpaceCharacters, length);
                 var span = new Span<char>(a);
 
                 // first character is not a white-space character

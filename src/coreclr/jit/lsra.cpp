@@ -1332,7 +1332,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-#ifdef USING_VARIABLE_LIVE_RANGE
             BasicBlock* prevReportedBlock = bb->bbPrev;
             if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
             {
@@ -1351,7 +1350,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
                 // "getInVarToRegMap"
                 compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
-#endif // USING_VARIABLE_LIVE_RANGE
         }
         else if (newRegNum != REG_STK)
         {

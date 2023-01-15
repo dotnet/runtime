@@ -36,7 +36,7 @@ namespace System.Resources.Extensions
         // a collection of primitive types in a dictionary, indexed by type name
         // using a comparer which handles type name comparisons similar to what
         // is done by reflection
-        private static readonly IReadOnlyDictionary<string, Type> s_primitiveTypes = new Dictionary<string, Type>(16, TypeNameComparer.Instance)
+        private static readonly Dictionary<string, Type> s_primitiveTypes = new Dictionary<string, Type>(16, TypeNameComparer.Instance)
         {
             { typeof(string).FullName!, typeof(string) },
             { typeof(int).FullName!, typeof(int) },

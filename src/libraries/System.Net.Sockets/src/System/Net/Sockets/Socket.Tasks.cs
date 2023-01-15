@@ -733,15 +733,8 @@ namespace System.Net.Sockets
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-
-            if ((uint)offset > (uint)buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)size > (uint)(buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length, nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)size, (uint)(buffer.Length - offset), nameof(size));
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
