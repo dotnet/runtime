@@ -11,14 +11,9 @@ if %argC% lss 4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal enabledelayedexpansion
-set "basePath=%~dp0"
 set "__repoRoot=%~dp0..\.."
 :: normalize
 for %%i in ("%__repoRoot%") do set "__repoRoot=%%~fi"
-:: remove quotes
-set "basePath=%basePath:"=%"
-:: remove trailing slash
-if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
 
 set __SourceDir=%1
 set __IntermediatesDir=%2
