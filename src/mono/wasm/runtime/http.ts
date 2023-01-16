@@ -106,18 +106,14 @@ export async function http_wasm_get_streamed_response_bytes(res: ResponseExtensi
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
-        if (!res.body) {
-            return 0;
-        }
         if (!res.__reader) {
-            res.__reader = res.body.getReader();
+            res.__reader = res.body!.getReader();
         }
         if (!res.__chunk) {
             res.__chunk = await res.__reader.read();
             res.__source_offset = 0;
         }
         if (res.__chunk.done) {
-            res.__reader = undefined;
             return 0;
         }
 
@@ -125,7 +121,7 @@ export async function http_wasm_get_streamed_response_bytes(res: ResponseExtensi
         mono_assert(remaining_source > 0, "expected remaining_source to be greater than 0");
 
         const bytes_copied = Math.min(remaining_source, view.byteLength);
-        const source_view = res.__chunk.value.subarray(res.__source_offset, bytes_copied);
+        const source_view = res.__chunk.value.subarray(res.__source_offset, res.__source_offset + bytes_copied);
         view.set(source_view, 0);
         res.__source_offset += bytes_copied;
         if (remaining_source == bytes_copied) {
