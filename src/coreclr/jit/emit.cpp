@@ -8740,7 +8740,7 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     {
         of = ig->igSize;
     }
-    else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) && no == ig->igInsCnt + 1)
+    else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) != 0 && no == ig->igInsCnt + 1U)
     {
         // This can happen if a instruction was replaced, but the replacement couldn't fit into
         // the same IG and instead was place in a new IG.
