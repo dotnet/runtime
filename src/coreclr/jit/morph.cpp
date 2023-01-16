@@ -6206,7 +6206,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
     if (compPoisoningAnyImplicitByrefs)
     {
-        failTailCall("STRESS_WRITE_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
+        failTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
         return nullptr;
     }
 #endif
