@@ -11215,6 +11215,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // impPoisonImplicitByrefsBeforeReturn:
 //   Spill the stack and insert IR that poisons all implicit byrefs.
 //
+// Remarks:
+//   The memory pointed to by implicit byrefs is owned by the callee but
+//   usually exists on the caller's frame (or on the heap for some reflection
+//   invoke scenarios). This function helps catch situations where the caller
+//   reads from the memory after the invocation, for example due to a bug in
+//   the JIT's own last-use copy elision for implicit byrefs.
+//
 void Compiler::impPoisonImplicitByrefsBeforeReturn()
 {
     bool spilled = false;
