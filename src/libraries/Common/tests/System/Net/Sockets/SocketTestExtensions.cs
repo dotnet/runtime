@@ -42,7 +42,7 @@ namespace System.Net.Sockets.Tests
         {
             IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
-            // PortBlocker creates a temporary socket of the opposite AddressFamily, so parallel tests won't attempt
+            // PortBlocker creates a temporary socket of the opposite AddressFamily in the background, so parallel tests won't attempt
             // to create their listener sockets on the same port, regardless of address family.
             // This should prevent 'listener' from accepting DualMode connections of unrelated tests.
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -51,7 +51,7 @@ namespace System.Net.Sockets.Tests
                 l.BindToAnonymousPort(serverAddress);
                 return l;
             });
-            Socket listener = portBlocker.PrimarySocket; // PortBlocker shall dispose this
+            Socket listener = portBlocker.MainSocket; // PortBlocker shall dispose this
             listener.Listen(1);
 
             IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
@@ -95,61 +95,60 @@ namespace System.Net.Sockets.Tests
 
     /// <summary>
     /// A utility to create and bind a socket while blocking it's port for both IPv4 and IPv6
-    /// by also creating and binding a secondary socket of the opposite address family.
+    /// by also creating and binding a "shadow" socket of the opposite address family.
     /// </summary>
     internal class PortBlocker : IDisposable
     {
         private const int MaxAttempts = 16;
+        private Socket _shadowSocket;
+        public Socket MainSocket { get; }
 
-        private Socket _secondarySocket;
-        public Socket PrimarySocket { get; }
-
-        public PortBlocker(Func<Socket> primarySocketFactory)
+        public PortBlocker(Func<Socket> socketFactory)
         {
             bool success = false;
             for (int i = 0; i < MaxAttempts; i++)
             {
-                PrimarySocket = primarySocketFactory();
-                if (PrimarySocket.LocalEndPoint is not IPEndPoint)
+                MainSocket = socketFactory();
+                if (MainSocket.LocalEndPoint is not IPEndPoint)
                 {
-                    PrimarySocket.Dispose();
-                    throw new Exception($"{nameof(primarySocketFactory)} is expected create and bind the socket.");
+                    MainSocket.Dispose();
+                    throw new Exception($"{nameof(socketFactory)} is expected create and bind the socket.");
                 }
 
-                IPAddress secondaryAddress = PrimarySocket.AddressFamily == AddressFamily.InterNetwork ?
+                IPAddress shadowAddress = MainSocket.AddressFamily == AddressFamily.InterNetwork ?
                         IPAddress.IPv6Loopback :
                         IPAddress.Loopback;
-                int port = ((IPEndPoint)PrimarySocket.LocalEndPoint).Port;
-                IPEndPoint secondaryEndPoint = new IPEndPoint(secondaryAddress, port);
+                int port = ((IPEndPoint)MainSocket.LocalEndPoint).Port;
+                IPEndPoint shadowEndPoint = new IPEndPoint(shadowAddress, port);
 
                 try
                 {
-                    _secondarySocket = new Socket(secondaryAddress.AddressFamily, PrimarySocket.SocketType, PrimarySocket.ProtocolType);
-                    success = TryBindWithoutReuseAddress(_secondarySocket, secondaryEndPoint, out _);
+                    _shadowSocket = new Socket(shadowAddress.AddressFamily, MainSocket.SocketType, MainSocket.ProtocolType);
+                    success = TryBindWithoutReuseAddress(_shadowSocket, shadowEndPoint, out _);
 
                     if (success) break;
                 }
                 catch (SocketException)
                 {
-                    PrimarySocket.Dispose();
-                    _secondarySocket?.Dispose();
+                    MainSocket.Dispose();
+                    _shadowSocket?.Dispose();
                 }
             }
 
             if (!success)
             {
-                throw new Exception($"Failed to create secondary (port blocker) socket in {MaxAttempts} attempts.");
+                throw new Exception($"Failed to create the 'shadow' (port blocker) socket in {MaxAttempts} attempts.");
             }
         }
 
         public void Dispose()
         {
-            PrimarySocket.Dispose();
-            _secondarySocket.Dispose();
+            MainSocket.Dispose();
+            _shadowSocket.Dispose();
         }
 
-        // Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to emulate Windows behavior. See SystemNative_Bind() in 'pal_networking.c'.
-        // To prevent other sockets from succesfully binding to the same port port, we need to avoid this logic when binding the secondary socket.
+        // Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to emulate Windows behavior, see SystemNative_Bind() in 'pal_networking.c'.
+        // To prevent other sockets from succesfully binding to the same port port, we need to avoid this logic when binding the shadow socket.
         // This method is doing a custom P/Invoke to bind() on Unix to achieve that.
         private static unsafe bool TryBindWithoutReuseAddress(Socket socket, IPEndPoint endPoint, out int port)
         {

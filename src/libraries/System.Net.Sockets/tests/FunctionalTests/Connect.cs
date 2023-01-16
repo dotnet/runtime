@@ -206,7 +206,7 @@ namespace System.Net.Sockets.Tests
                 socket.BindToAnonymousPort(IPAddress.Loopback);
                 return socket;
             });
-            Socket a = portBlocker.PrimarySocket;
+            Socket a = portBlocker.MainSocket;
             using Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(b, a.LocalEndPoint));

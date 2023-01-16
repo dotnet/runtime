@@ -289,7 +289,7 @@ namespace System.Net.Sockets.Tests
             SocketServer server = null;
             int port = 0;
 
-            // PortBlocker creates a temporary socket of the opposite AddressFamily, so parallel tests won't attempt
+            // PortBlocker creates a temporary socket of the opposite AddressFamily in the background, so parallel tests won't attempt
             // to create their listener sockets on the same port.
             // This should prevent 'server' from accepting DualMode connections of unrelated tests.
             using PortBlocker blocker = new PortBlocker(() =>
