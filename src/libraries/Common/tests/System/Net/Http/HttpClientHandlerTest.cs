@@ -1080,11 +1080,20 @@ namespace System.Net.Http.Functional.Tests
 
                         // Various forms of reading
                         var buffer = new byte[1];
+                        var buffer2 = new byte[2];
 
                         if (PlatformDetection.IsBrowser)
                         {
 #if !NETFRAMEWORK
-                            Assert.Equal('h', await responseStream.ReadByteAsync());
+                            if(slowChunks)
+                            {
+                                Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer2)));
+                                Assert.Equal((byte)'h', buffer2[0]);
+                            }
+                            else
+                            {
+                                Assert.Equal('h', await responseStream.ReadByteAsync());
+                            }
                             Assert.Equal('e', await responseStream.ReadByteAsync());
                             Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
                             Assert.Equal((byte)'l', buffer[0]);
@@ -1190,9 +1199,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                                 await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("2\r\nel\r\n", false);
-                                await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("8\r\nlo world\r\n", false);
-                                await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("0\r\n\r\n", true);
                             }
                             else
