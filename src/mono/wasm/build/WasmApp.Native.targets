@@ -233,7 +233,6 @@
       <_EmccLDFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       
-      <_EmccLDSFlags Include="-Wl,-u @(WasmUndefinedSymbol, ',')" Condition="@(WasmUndefinedSymbol->Count()) &gt; 0" />
       <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
