@@ -14,7 +14,7 @@ namespace System.Text
         /// <param name="buffer">The buffer to scan.</param>
         /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
         /// byte appears, or -1 if the buffer contains only ASCII bytes.</returns>
-        internal static unsafe int GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte> buffer)
+        private static unsafe int GetIndexOfFirstNonAsciiByte(ReadOnlySpan<byte> buffer)
         {
             if (buffer.IsEmpty)
             {
@@ -36,7 +36,7 @@ namespace System.Text
         /// <param name="buffer">The buffer to scan.</param>
         /// <returns>The index in <paramref name="buffer"/> where the first non-ASCII
         /// char appears, or -1 if the buffer contains only ASCII char.</returns>
-        internal static unsafe int GetIndexOfFirstNonAsciiChar(ReadOnlySpan<char> buffer)
+        private static unsafe int GetIndexOfFirstNonAsciiChar(ReadOnlySpan<char> buffer)
         {
             if (buffer.IsEmpty)
             {

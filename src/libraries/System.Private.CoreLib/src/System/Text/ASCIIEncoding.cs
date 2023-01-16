@@ -193,8 +193,7 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count chars manually.
 
-                int firstNonAsciiIndex = Ascii.GetIndexOfFirstNonAsciiChar(new ReadOnlySpan<char>(pChars, charsLength));
-                byteCount = firstNonAsciiIndex < 0 ? charsLength : firstNonAsciiIndex;
+                byteCount = (int)Ascii.GetIndexOfFirstNonAsciiChar(pChars, (uint)charsLength);
             }
 
             charsConsumed = byteCount;
@@ -513,8 +512,7 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count bytes manually.
 
-                int indexOfFirstNonAscii = Ascii.GetIndexOfFirstNonAsciiByte(new ReadOnlySpan<byte>(pBytes, bytesLength));
-                charCount = indexOfFirstNonAscii < 0 ? bytesLength : indexOfFirstNonAscii;
+                charCount = (int)Ascii.GetIndexOfFirstNonAsciiByte(pBytes, (uint)bytesLength);
             }
 
             bytesConsumed = charCount;

@@ -81,7 +81,7 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII byte is defined as 0x00 - 0x7F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
+        internal static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
         {
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
             // code below. This has two benefits: (a) we can take advantage of specific instructions like
@@ -617,7 +617,7 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII char is defined as 0x0000 - 0x007F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint GetIndexOfFirstNonAsciiChar(char* pBuffer, nuint bufferLength /* in chars */)
+        internal static unsafe nuint GetIndexOfFirstNonAsciiChar(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // If SSE2/ASIMD is supported, use those specific intrinsics instead of the generic vectorized
             // code below. This has two benefits: (a) we can take advantage of specific instructions like
