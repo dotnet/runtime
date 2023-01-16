@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // #error "TODO-RISCV64: missing implementation"
@@ -434,19 +434,27 @@ struct HijackArgs
 {
     union
     {
-        DWORD64 Ra;
-        size_t ReturnAddress;
-    };
-    union
-    {
         struct {
              DWORD64 A0;
              DWORD64 A1;
          };
         size_t ReturnValue[2];
     };
+    union
+    {
+        struct {
+             DWORD64 FA0;
+             DWORD64 FA1;
+         };
+        size_t FPReturnValue[2];
+    };
     DWORD64 Fp; // frame pointer
-    DWORD64 Tp, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11;
+    DWORD64 Gp, Tp, S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11;
+    union
+    {
+        DWORD64 Ra;
+        size_t ReturnAddress;
+    };
  };
 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer

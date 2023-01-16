@@ -1896,7 +1896,9 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
 #elif defined(TARGET_RISCV64)
-    GetContextPointer(cursor, unwContext, UNW_RISCV_X2, (SIZE_T **)&contextPointers->Sp);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X1, (SIZE_T **)&contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X3, (SIZE_T **)&contextPointers->Gp);
+    GetContextPointer(cursor, unwContext, UNW_RISCV_X4, (SIZE_T **)&contextPointers->Tp);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X8, (SIZE_T **)&contextPointers->Fp);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X9, (SIZE_T **)&contextPointers->S1);
     GetContextPointer(cursor, unwContext, UNW_RISCV_X18, (SIZE_T **)&contextPointers->S2);
@@ -2018,8 +2020,9 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
 #elif defined(TARGET_RISCV64)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_RISCV_X1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_RISCV_X2, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_RISCV_X3, (unw_word_t *) &winContext->Gp);
     unw_get_reg(cursor, UNW_RISCV_X4, (unw_word_t *) &winContext->Tp);
     unw_get_reg(cursor, UNW_RISCV_X8, (unw_word_t *) &winContext->Fp);
@@ -2171,7 +2174,9 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_PPC64_R31:    *valp = (unw_word_t)winContext->R31; break;
     case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
 #elif defined(TARGET_RISCV64)
-    case UNW_RISCV_X2:     *valp = (unw_word_t)winContext->Sp; break;
+    case UNW_RISCV_X1:     *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_RISCV_X3:     *valp = (unw_word_t)winContext->Gp; break;
+    case UNW_RISCV_X4:     *valp = (unw_word_t)winContext->Tp; break;
     case UNW_RISCV_X8:     *valp = (unw_word_t)winContext->Fp; break;
     case UNW_RISCV_X9:     *valp = (unw_word_t)winContext->S1; break;
     case UNW_RISCV_X18:    *valp = (unw_word_t)winContext->S2; break;
@@ -2184,6 +2189,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_RISCV_X25:    *valp = (unw_word_t)winContext->S9; break;
     case UNW_RISCV_X26:    *valp = (unw_word_t)winContext->S10; break;
     case UNW_RISCV_X27:    *valp = (unw_word_t)winContext->S11; break;
+    case UNW_RISCV_PC:    *valp = (unw_word_t)winContext->Pc; break;
 #else
 #error unsupported architecture
 #endif

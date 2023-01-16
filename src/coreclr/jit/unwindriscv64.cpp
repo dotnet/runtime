@@ -390,7 +390,7 @@ void DumpUnwindInfo(Compiler*         comp,
             // alloc_s: 000xxxxx: allocate small stack with size < 128 (2^5 * 16)
             // TODO-Review:should say size < 512
             x = b1 & 0x1F;
-            printf("    %02X          alloc_s #%u (0x%02X); addi.d sp, sp, -%u (0x%03X)\n", b1, x, x, x * 16, x * 16);
+            printf("    %02X          alloc_s #%u (0x%02X); addi sp, sp, -%u (0x%03X)\n", b1, x, x, x * 16, x * 16);
         }
 #if 0
         else if ((b1 & 0xE0) == 0x20)
@@ -432,7 +432,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             x = ((DWORD)(b1 & 0x7) << 8) | (DWORD)b2;
 
-            printf("    %02X %02X       alloc_m #%u (0x%03X); addi.d sp, sp, -%u (0x%04X)\n", b1, b2, x, x, x * 16,
+            printf("    %02X %02X       alloc_m #%u (0x%03X); addi sp, sp, -%u (0x%04X)\n", b1, b2, x, x, x * 16,
                    x * 16);
         }
         else if (b1 == 0xD0)
@@ -446,7 +446,7 @@ void DumpUnwindInfo(Compiler*         comp,
             x = (DWORD)b2;
             z = (DWORD)b3;
 
-            printf("    %02X %02X %02X      save_reg X#%u Z#%u (0x%02X); st.d %s, sp, %u\n", b1, b2, b3, x, z, z,
+            printf("    %02X %02X %02X      save_reg X#%u Z#%u (0x%02X); sd %s, sp, %u\n", b1, b2, b3, x, z, z,
                    getRegName(REG_RA + x), z * 8);
         }
 #if 0
@@ -547,7 +547,7 @@ void DumpUnwindInfo(Compiler*         comp,
             x = (DWORD)(b2 >> 4);
             z = ((DWORD)(b2 & 0xF) << 8) | (DWORD)b3;
 
-            printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fst.d %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
+            printf("    %02X %02X %02X      save_freg X#%u Z#%u (0x%02X); fsd %s, [sp, #%u]\n", b1, b2, b3, x, z, z,
                    getRegName(REG_F24 + x), z * 8);
         }
 #if 0
@@ -577,7 +577,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             x = ((DWORD)b2 << 16) | ((DWORD)b3 << 8) | (DWORD)b4;
 
-            printf("    %02X %02X %02X %02X alloc_l %u (0x%06X); addi.d sp, sp, -%u (%06X)\n", b1, b2, b3, b4, x, x,
+            printf("    %02X %02X %02X %02X alloc_l %u (0x%06X); addi sp, sp, -%u (%06X)\n", b1, b2, b3, b4, x, x,
                    x * 16, x * 16);
         }
         else if (b1 == 0xE1)
@@ -596,7 +596,7 @@ void DumpUnwindInfo(Compiler*         comp,
 
             x = ((DWORD)(b2 & 0x1F) << 8) | (DWORD)b3;
 
-            printf("    %02X %02X %02X      add_fp %u (0x%02X); addi.d %s, sp, #%u\n", b1, b2, b3, x, x,
+            printf("    %02X %02X %02X      add_fp %u (0x%02X); addi %s, sp, #%u\n", b1, b2, b3, x, x,
                    getRegName(REG_FP), x * 8);
         }
         else if (b1 == 0xE3)
@@ -625,7 +625,7 @@ void DumpUnwindInfo(Compiler*         comp,
         }
         else
         {
-            printf("===========[loongarch64] Unknown / reserved unwind code: %02X\n", b1);
+            printf("===========[riscv64] Unknown / reserved unwind code: %02X\n", b1);
             // Unknown / reserved unwind code
             assert(!"Internal error decoding unwind codes");
         }

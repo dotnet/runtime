@@ -911,8 +911,28 @@ BOOL IsFunctionFragment(TADDR baseAddress, PTR_RUNTIME_FUNCTION pFunctionEntry)
 
     return ((*pUnwindCodes & 0xFF) == 0xE5);
 #elif defined(TARGET_RISCV64)
-// #error TODO RISCV64
-    return 0;
+    int EpilogCount = (int)(unwindHeader >> 22) & 0x1F;
+    int CodeWords = unwindHeader >> 27;
+    PTR_DWORD pUnwindCodes = (PTR_DWORD)(baseAddress + pFunctionEntry->UnwindData);
+    // Skip header.
+    pUnwindCodes++;
+
+    // Skip extended header.
+    if ((CodeWords == 0) && (EpilogCount == 0))
+    {
+        EpilogCount = (*pUnwindCodes) & 0xFFFF;
+        pUnwindCodes++;
+    }
+
+    // Skip epilog scopes.
+    BOOL Ebit = (unwindHeader >> 21) & 0x1;
+    if (!Ebit && (EpilogCount != 0))
+    {
+        // EpilogCount is the number of exception scopes defined right after the unwindHeader
+        pUnwindCodes += EpilogCount;
+    }
+
+    return ((*pUnwindCodes & 0xFF) == 0xE5);
 #else
     PORTABILITY_ASSERT("IsFunctionFragnent - NYI on this platform");
 #endif
@@ -1117,8 +1137,44 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     return xdata;
 
 #elif defined(TARGET_RISCV64)
-// #error TODO RISCV64
-    return NULL;
+    // TODO: maybe optimize further.
+    // if this function uses packed unwind data then at least one of the two least significant bits
+    // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
+    _ASSERTE((pRuntimeFunction->UnwindData & 0x3) == 0);
+
+    // compute the size of the unwind info
+    PTR_ULONG xdata    = dac_cast<PTR_ULONG>(pRuntimeFunction->UnwindData + moduleBase);
+    ULONG epilogScopes = 0;
+    ULONG unwindWords  = 0;
+    ULONG size = 0;
+
+    //If both Epilog Count and Code Word is not zero
+    //Info of Epilog and Unwind scopes are given by 1 word header
+    //Otherwise this info is given by a 2 word header
+    if ((xdata[0] >> 27) != 0)
+    {
+        size = 4;
+        epilogScopes = (xdata[0] >> 22) & 0x1f;
+        unwindWords = (xdata[0] >> 27) & 0x1f;
+    }
+    else
+    {
+        size = 8;
+        epilogScopes = xdata[1] & 0xffff;
+        unwindWords = (xdata[1] >> 16) & 0xff;
+    }
+
+    if (!(xdata[0] & (1 << 21)))
+        size += 4 * epilogScopes;
+
+    size += 4 * unwindWords;
+
+    _ASSERTE(xdata[0] & (1 << 20)); // personality routine should be always present
+    size += 4;                      // exception handler RVA
+
+    *pSize = size;
+    return xdata;
+
 #else
     PORTABILITY_ASSERT("GetUnwindDataBlob");
     return NULL;
