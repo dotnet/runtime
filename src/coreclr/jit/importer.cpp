@@ -11251,19 +11251,12 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
                 return;
             }
 
-            GenTree* addr;
-            if (start > 0)
-            {
-                addr = gtNewLclFldAddrNode(lclNum, start, TYP_BYREF);
-            }
-            else
-            {
-                addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
-            }
+            GenTreeLclFld* lhs =
+                new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, TYP_STRUCT, lclNum, start, typGetBlkLayout(count));
+            lhs->gtFlags |= GTF_GLOB_REF;
 
-            GenTree* blk = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, typGetBlkLayout(count));
-            GenTree* op  = gtNewBlkOpNode(blk, gtNewIconNode(0xcd));
-            impAppendTree(op, CHECK_SPILL_NONE, DebugInfo());
+            GenTree* asg = gtNewAssignNode(lhs, gtNewOperNode(GT_INIT_VAL, TYP_INT, gtNewIconNode(0xcd)));
+            impAppendTree(asg, CHECK_SPILL_NONE, DebugInfo());
         };
 
         unsigned startOffs = 0;
@@ -11279,7 +11272,10 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
 
             poisonBlock(startOffs, offs - startOffs);
 
-            GenTree* zeroField = gtNewAssignNode(gtNewLclFldNode(lclNum, gcPtr, offs), gtNewZeroConNode(gcPtr));
+            GenTree* gcField = gtNewLclFldNode(lclNum, gcPtr, offs);
+            gcField->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* zeroField = gtNewAssignNode(gcField, gtNewZeroConNode(gcPtr));
             impAppendTree(zeroField, CHECK_SPILL_NONE, DebugInfo());
 
             startOffs = offs + TARGET_POINTER_SIZE;
