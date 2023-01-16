@@ -10181,8 +10181,8 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_dispatchRetBuf++;
                     break;
 
-                case AddressExposedReason::STRESS_WRITE_IMPLICIT_BYREFS:
-                    m_stressWriteImplicitByrefs++;
+                case AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS:
+                    m_stressPoisonImplicitByrefs++;
                     break;
 
                 default:
@@ -10280,6 +10280,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
-    PRINT_STATS(m_stressWriteImplicitByrefs, m_addrExposed);
+    PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

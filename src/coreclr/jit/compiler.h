@@ -467,14 +467,14 @@ enum class DoNotEnregisterReason
 enum class AddressExposedReason
 {
     NONE,
-    PARENT_EXPOSED,               // This is a promoted field but the parent is exposed.
-    TOO_CONSERVATIVE,             // Were marked as exposed to be conservative, fix these places.
-    ESCAPE_ADDRESS,               // The address is escaping, for example, passed as call argument.
-    WIDE_INDIR,                   // We access via indirection with wider type.
-    OSR_EXPOSED,                  // It was exposed in the original method, osr has to repeat it.
-    STRESS_LCL_FLD,               // Stress mode replaces localVar with localFld and makes them addrExposed.
-    DISPATCH_RET_BUF,             // Caller return buffer dispatch.
-    STRESS_WRITE_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
+    PARENT_EXPOSED,                // This is a promoted field but the parent is exposed.
+    TOO_CONSERVATIVE,              // Were marked as exposed to be conservative, fix these places.
+    ESCAPE_ADDRESS,                // The address is escaping, for example, passed as call argument.
+    WIDE_INDIR,                    // We access via indirection with wider type.
+    OSR_EXPOSED,                   // It was exposed in the original method, osr has to repeat it.
+    STRESS_LCL_FLD,                // Stress mode replaces localVar with localFld and makes them addrExposed.
+    DISPATCH_RET_BUF,              // Caller return buffer dispatch.
+    STRESS_POISON_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
 };
 
 #endif // DEBUG
@@ -10141,7 +10141,7 @@ public:
         unsigned m_stressLclFld;
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
-        unsigned m_stressWriteImplicitByrefs;
+        unsigned m_stressPoisonImplicitByrefs;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);

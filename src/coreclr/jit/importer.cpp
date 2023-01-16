@@ -11231,7 +11231,7 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
         {
             for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
             {
-                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress writing byrefs before return"));
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress poisoning byrefs before return"));
             }
 
             spilled = true;
@@ -11239,7 +11239,7 @@ void Compiler::impPoisonImplicitByrefsBeforeReturn()
 
         LclVarDsc* dsc = lvaGetDesc(lclNum);
         // Be conservative about this local to ensure we do not eliminate the poisoning.
-        lvaSetVarAddrExposed(lclNum, AddressExposedReason::STRESS_WRITE_IMPLICIT_BYREFS);
+        lvaSetVarAddrExposed(lclNum, AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS);
 
         assert(varTypeIsStruct(dsc));
         ClassLayout* layout = dsc->GetLayout();
