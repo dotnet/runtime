@@ -8,6 +8,8 @@ namespace System.Net.Security
     /// <summary>
     /// Specifies allowed cipher suites.
     /// </summary>
+    [UnsupportedOSPlatform("windows")]
+    [UnsupportedOSPlatform("android")]
     public sealed partial class CipherSuitesPolicy
     {
         internal CipherSuitesPolicyPal Pal { get; private set; }

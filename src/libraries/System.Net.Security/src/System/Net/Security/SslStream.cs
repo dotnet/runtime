@@ -674,6 +674,9 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("freebsd")]
         public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
