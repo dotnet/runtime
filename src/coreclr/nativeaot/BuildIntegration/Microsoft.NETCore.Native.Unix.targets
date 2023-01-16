@@ -136,6 +136,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
       <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
+      <LinkerArg Include="-static-pie" Condition="'$(StaticExecutable)' == 'true'" />
       <!-- binskim warning BA3010 The GNU_RELRO segment is missing -->
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'osx'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->

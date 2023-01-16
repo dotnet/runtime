@@ -24,11 +24,6 @@ void NUMASupportInitialize()
         g_highestNumaNode = numa_max_node();
     }
 #endif // HAVE_NUMA_H
-    if (!g_numaAvailable)
-    {
-        // No NUMA
-        g_highestNumaNode = 0;
-    }
 }
 
 void NUMASupportCleanup()

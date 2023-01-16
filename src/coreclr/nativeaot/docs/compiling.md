@@ -84,6 +84,8 @@ You can use this feature by adding the `StaticICULinking` property to your proje
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
+License (Unicode): https://github.com/unicode-org/icu/blob/main/icu4c/LICENSE
+
 ### Prerequisites
 
 Ubuntu
@@ -111,6 +113,8 @@ You can use this feature by adding the `StaticOpenSslLinking` property to your p
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
+License (Apache v2.0): https://github.com/openssl/openssl/blob/master/LICENSE.txt
+
 ### Prerequisites
 
 Ubuntu
@@ -134,6 +138,8 @@ You can use this feature by adding the `StaticNumaLinking` property to your proj
   <StaticNumaLinking>true</StaticNumaLinking>
 </PropertyGroup>
 ```
+
+License (LGPL v2.1): https://github.com/numactl/numactl/blob/master/LICENSE.LGPL2.1
 
 ### Prerequisites
 
