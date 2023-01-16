@@ -3869,6 +3869,12 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
             break;
         }
 
+        // Ignore ADD(CNS, CNS-gc-handle)
+        if (addOp2->TypeIs(TYP_REF) && !addOp2->IsIntegralConst(0))
+        {
+            break;
+        }
+
         // mark it with GTF_ADDRMODE_NO_CSE
         add->gtFlags |= GTF_ADDRMODE_NO_CSE;
 
