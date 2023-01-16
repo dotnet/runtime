@@ -6985,7 +6985,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_RET:
                 prefixFlags &= ~PREFIX_TAILCALL; // ret without call before it
-
             RET:
                 if (!impReturnInstruction(prefixFlags, opcode))
                 {
