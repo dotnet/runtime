@@ -8469,9 +8469,9 @@ interp_reorder_bblocks (TransformData *td)
 					while (copy_ins) {
 						InterpInst *new_ins = interp_insert_ins_bb (td, in_bb, in_bb->last_ins, copy_ins->opcode);
 						new_ins->dreg = copy_ins->dreg;
-						new_ins->sregs[0] = copy_ins->sregs[0];
-						if (mono_interp_op_sregs[copy_ins->opcode] > 1)
-							new_ins->sregs[1] = copy_ins->sregs[1];
+						new_ins->sregs [0] = copy_ins->sregs [0];
+						if (mono_interp_op_sregs [copy_ins->opcode] > 1)
+							new_ins->sregs [1] = copy_ins->sregs [1];
 
 						new_ins->data [0] = copy_ins->data [0];
 						if (copy_ins->opcode == MINT_LDC_I4)
@@ -8511,7 +8511,7 @@ interp_reorder_bblocks (TransformData *td)
 				}
 			}
 		} else if (first->opcode == MINT_BR) {
-			// All bblocks jumping into this bblock can jump directly into the br target only if it is a single instruction in a bb
+			// All bblocks jumping into this bblock can jump directly into the br target since it is the single instruction of the bb
 			int i = 0;
 			while (i < bb->in_count) {
 				InterpBasicBlock *in_bb = bb->in_bb [i];
