@@ -309,8 +309,10 @@ namespace WebAssemblyInfo
         }
 
         protected Code[]? funcsCode;
+        internal long funcMetadataSize;
         void ReadCodeSection()
         {
+            var start = Reader.BaseStream.Position;
             UInt32 count = ReadU32();
 
             if (Program.Verbose)
@@ -320,12 +322,15 @@ namespace WebAssemblyInfo
                 Console.WriteLine();
 
             funcsCode = new Code[count];
+            funcMetadataSize += Reader.BaseStream.Position - start;
 
             for (uint i = 0; i < count; i++)
             {
+                start = Reader.BaseStream.Position;
                 funcsCode[i].Idx = i;
                 funcsCode[i].Size = ReadU32();
                 funcsCode[i].Offset = Reader.BaseStream.Position;
+                funcMetadataSize += funcsCode[i].Offset - start;
                 Reader.BaseStream.Seek(funcsCode[i].Offset + funcsCode[i].Size, SeekOrigin.Begin);
             }
         }
@@ -1303,7 +1308,11 @@ namespace WebAssemblyInfo
 
         public string? GetFunctionName(UInt32 idx, bool needsOffset = true)
         {
-            string? name = HasFunctionNames ? functionNames[needsOffset ? FunctionOffset(idx) : idx] : null;
+            string? name = null;
+            var fidx = needsOffset ? FunctionOffset(idx) : idx;
+            if (HasFunctionNames && functionNames.ContainsKey(fidx))
+                name = functionNames[fidx];
+
             if (string.IsNullOrEmpty(name))
                 name = $"idx:{idx}";
 
@@ -1325,47 +1334,53 @@ namespace WebAssemblyInfo
 
         protected delegate void ProcessFunction(UInt32 idx, string? name, object? data);
 
-        protected void FilterFunctions(ProcessFunction processFunction, object? data = null)
+        protected virtual void FilterFunctions(ProcessFunction processFunction, object? data = null)
         {
             if (functions == null)
                 return;
 
             for (UInt32 idx = 0; idx < functions.Length; idx++)
             {
-                string? name = null;
-                bool process = Program.FunctionFilter == null && Program.FunctionOffset == -1;
 
-                if (Program.FunctionOffset != -1 && funcsCode != null
-                    && idx < funcsCode.Length
-                    && funcsCode[idx].Offset <= Program.FunctionOffset && funcsCode[idx].Offset + funcsCode[idx].Size > Program.FunctionOffset)
-                {
-                    process = true;
-                }
-
-                if (!process && Program.FunctionFilter != null)
-                {
-                    if (!HasFunctionNames)
-                        continue;
-
-                    name = GetFunctionName(idx);
-                    if (name == null)
-                        continue;
-
-                    if (!Program.FunctionFilter.Match(name).Success)
-                        continue;
-
-                    process = true;
-                }
-                else if (process)
-                {
-                    name = GetFunctionName(idx);
-                }
-
-                if (!process)
+                if (!FilterFunction(idx, out string? name, data))
                     continue;
 
                 processFunction(idx, name, data);
             }
+        }
+
+        protected virtual bool FilterFunction(uint idx, out string? name, object? data = null)
+        {
+            name = null;
+            bool process = Program.FunctionFilter == null && Program.FunctionOffset == -1;
+
+            if (Program.FunctionOffset != -1 && funcsCode != null
+                && idx < funcsCode.Length
+                && funcsCode[idx].Offset <= Program.FunctionOffset && funcsCode[idx].Offset + funcsCode[idx].Size > Program.FunctionOffset)
+            {
+                process = true;
+            }
+
+            if (!process && Program.FunctionFilter != null)
+            {
+                if (!HasFunctionNames)
+                    return false;
+
+                name = GetFunctionName(idx);
+                if (name == null)
+                    return false;
+
+                if (!Program.FunctionFilter.Match(name).Success)
+                    return false;
+
+                process = true;
+            }
+            else if (process)
+            {
+                name = GetFunctionName(idx);
+            }
+
+            return process;
         }
 
         public void PrintFunctions()

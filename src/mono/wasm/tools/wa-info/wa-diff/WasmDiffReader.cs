@@ -64,45 +64,48 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        void CompareDisassembledFunction(UInt32 idx, string? name, UInt32 otherIdx, string? otherName, WasmDiffReader? other)
+        void CompareDisassembledFunctions(UInt32 idx, string? name, object? data)
         {
-            if (other == null || other.functionTypes == null || other.functions == null || functionTypes == null || functions == null || funcsCode == null || other.funcsCode == null)
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
+            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || funcsCode == null || otherReader.funcsCode == null)
                 throw new InvalidOperationException();
 
-            Function? f1 = null, f2 = null;
+            if (secondPass)
+            {
+                if (Program.ShowFunctionSize)
+                    Console.WriteLine($"code size difference: +{otherReader.funcsCode[idx].Size} bytes");
 
-            if (functions != null && idx < functions.Length)
-                f1 = functions[idx];
+                otherReader.PrintFunctionWithPrefix(idx, name, "+ ");
 
-            if (other != null && (otherName != null || !other.HasFunctionNames) && other.functions != null && otherIdx < other.functions.Length)
-                f2 = other.functions[otherIdx];
+                return;
+            }
 
-            if (f1 != null && f2 == null)
+            // 1st pass
+            Function? f1 = functions[idx], f2 = null;
+            string? otherName = null;
+            uint otherIdx;
+            if (GetOtherIndex(name, idx, otherReader, out otherIdx))
+            {
+                otherName = otherReader.GetFunctionName(otherIdx);
+                f2 = otherReader.functions[otherIdx];
+                processedIndexes.Add(otherIdx);
+            }
+
+            if (f2 == null)
             {
                 if (Program.ShowFunctionSize)
                     Console.WriteLine($"code size difference: -{funcsCode[idx].Size} bytes");
 
                 PrintFunctionWithPrefix(idx, GetFunctionName(idx), "- ");
+
                 return;
             }
-
-            if (f1 == null && f2 != null)
-            {
-                if (Program.ShowFunctionSize)
-                    Console.WriteLine($"code size difference: +{other.funcsCode[otherIdx].Size} bytes");
-
-                other.PrintFunctionWithPrefix(otherIdx, other.GetFunctionName(otherIdx), "+ ");
-                return;
-            }
-
-            if (name == null)
-                name = GetFunctionName(idx);
-
-            if (otherName == null)
-                otherName = other.GetFunctionName(otherIdx);
 
             var functionType1 = functionTypes[functions[idx].TypeIdx];
-            var functionType2 = other.functionTypes[other.functions[otherIdx].TypeIdx];
+            var functionType2 = otherReader.functionTypes[otherReader.functions[otherIdx].TypeIdx];
             string sig1 = functionType1.ToString(name);
             string sig2 = functionType2.ToString(otherName);
 
@@ -110,7 +113,7 @@ namespace WebAssemblyInfo
             int sizeDelta = 0;
             if (Program.ShowFunctionSize)
             {
-                sizeDelta = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+                sizeDelta = (int)otherReader.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
                 sizeDiff = $" code size difference: {sizeDelta} bytes";
             }
 
@@ -123,7 +126,7 @@ namespace WebAssemblyInfo
             }
 
             string code1 = funcsCode[idx].ToString(this, functionType1.Parameters.Types.Length);
-            string code2 = other.funcsCode[otherIdx].ToString(other, functionType1.Parameters.Types.Length);
+            string code2 = otherReader.funcsCode[otherIdx].ToString(otherReader, functionType1.Parameters.Types.Length);
 
             if (code1 == code2)
                 return;
@@ -183,81 +186,58 @@ namespace WebAssemblyInfo
                 Console.WriteLine($"  {l2}");
         }
 
-        void CompareDissassembledFunction(UInt32 idx, string name, object? data)
-        {
-            if (data == null)
-                return;
-
-            UInt32 otherIdx;
-            var otherReader = (WasmDiffReader)data;
-
-            if (otherReader.HasFunctionNames && otherReader != null && otherReader.GetFunctionIdx(name, out otherIdx))
-                CompareDisassembledFunction(idx, name, otherIdx, name, otherReader);
-            else
-                CompareDisassembledFunction(idx, name, idx, null, otherReader);
-        }
-
         public int CompareDissasembledFunctions(WasmReader other)
         {
-            FilterFunctions(CompareDissassembledFunction, other);
+            FilterFunctions(CompareDisassembledFunctions, other);
 
             return 0;
         }
 
         Dictionary<string, int> sizeDiffs = new Dictionary<string, int>();
 
-        void CompareFunctionSizes(UInt32 idx, string? name, UInt32 otherIdx, string? otherName, WasmDiffReader? other)
-        {
-            if (other == null || other.functionTypes == null || other.functions == null || functionTypes == null || functions == null || funcsCode == null || other.funcsCode == null)
-                throw new InvalidOperationException();
-
-            Function? f1 = null, f2 = null;
-
-            if (functions != null && idx < functions.Length)
-                f1 = functions[idx];
-
-            if (other != null && (otherName != null || !other.HasFunctionNames) && other.functions != null && otherIdx < other.functions.Length)
-                f2 = other.functions[otherIdx];
-
-            if (f1 != null && f2 == null)
-            {
-                sizeDiffs[$"-{GetFunctionName(idx)}"] = -(int)funcsCode[idx].Size;
-
-                return;
-            }
-
-            if (f1 == null && f2 != null)
-            {
-                sizeDiffs[$"+{other.GetFunctionName(otherIdx)}"] = (int)other.funcsCode[otherIdx].Size;
-
-                return;
-            }
-
-            if (name == null)
-                name = GetFunctionName(idx);
-
-            if (otherName == null)
-                otherName = other.GetFunctionName(otherIdx);
-
-            if (name == null && otherName == null)
-                return;
-
-            int delta = (int)other.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
-            if (delta != 0)
-                sizeDiffs[name == null ? otherName : name] = delta;
-        }
-
-        void CompareFunctionSizes(UInt32 idx, string name, object? data)
+        void CompareFunctionSizes(UInt32 idx, string? name, object? data)
         {
             if (data == null)
-                return;
+                throw new ArgumentNullException("data");
 
-            UInt32 otherIdx;
-            var otherReader = (WasmDiffReader)data;
-            if (otherReader.HasFunctionNames && otherReader != null && otherReader.GetFunctionIdx(name, out otherIdx))
-                CompareFunctionSizes(idx, name, otherIdx, name, otherReader);
-            else
-                CompareFunctionSizes(idx, name, idx, null, otherReader);
+            (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
+            if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || funcsCode == null || otherReader.funcsCode == null)
+                throw new InvalidOperationException();
+
+            if (secondPass)
+            {
+                sizeDiffs[$"+{name}"] = (int)otherReader.funcsCode[idx].Size;
+
+                return;
+            }
+
+            // 1st pass
+            Function? f1 = functions[idx], f2 = null;
+            string? otherName = null;
+            uint otherIdx;
+            if (GetOtherIndex(name, idx, otherReader, out otherIdx))
+            {
+                otherName = otherReader.GetFunctionName(otherIdx);
+                f2 = otherReader.functions[otherIdx];
+                processedIndexes.Add(otherIdx);
+            }
+
+            if (f2 == null)
+            {
+                sizeDiffs[$"-{name}"] = -(int)funcsCode[idx].Size;
+
+                return;
+            }
+
+            int delta = (int)otherReader.funcsCode[otherIdx].Size - (int)funcsCode[idx].Size;
+            if (delta != 0)
+                sizeDiffs[$" {name}"] = delta;
+        }
+
+        static bool GetOtherIndex(string name, uint idx, WasmDiffReader other, out uint otherIdx)
+        {
+            otherIdx = idx;
+            return other.HasFunctionNames && other.GetFunctionIdx(name, out otherIdx);
         }
 
         public int CompareFunctions(WasmReader other)
@@ -276,15 +256,43 @@ namespace WebAssemblyInfo
             long sum = 0;
             foreach (var v in list)
             {
-                Console.WriteLine($"{v.Value,10} | {v.Key}");
+                Console.WriteLine($"{v.Value,10:n0} | {v.Key}");
                 sum += v.Value;
             }
 
             Console.WriteLine("------------------------------------------------");
-            Console.WriteLine($"{sum,10}   bytes total");
+            Console.WriteLine($"{sum,10:n0}   bytes total");
+            var msize = other.funcMetadataSize - funcMetadataSize;
+            Console.WriteLine($"{sum + msize,10:n0}   bytes total, including metadata");
             Console.WriteLine("------------------------------------------------");
 
             return 0;
+        }
+
+        HashSet<uint> processedIndexes;
+
+        protected override void FilterFunctions(ProcessFunction processFunction, object? data = null)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            WasmDiffReader otherReader = (WasmDiffReader)data ?? throw new InvalidOperationException();
+
+            processedIndexes ??= new HashSet<uint>();
+            base.FilterFunctions(processFunction, (otherReader, false));
+
+            for (UInt32 idx = 0; idx < otherReader.functions.Length; idx++)
+            {
+                if (processedIndexes.Contains(idx))
+                    continue;
+
+                if (!otherReader.FilterFunction(idx, out string? name, data))
+                    continue;
+
+                processFunction(idx, name, (otherReader, true));
+            }
+
+            processedIndexes = null;
         }
     }
 }
