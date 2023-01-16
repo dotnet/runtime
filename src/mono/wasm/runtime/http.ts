@@ -117,6 +117,7 @@ export async function http_wasm_get_streamed_response_bytes(res: ResponseExtensi
             res.__source_offset = 0;
         }
         if (res.__chunk.done) {
+            res.__reader = undefined;
             return 0;
         }
 
