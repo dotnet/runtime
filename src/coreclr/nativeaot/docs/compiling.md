@@ -26,9 +26,9 @@ Once you have added the package sources, add a reference to the ILCompiler packa
 
 or by adding the following element to the project file:
 ```xml
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.0-*" />
-  </ItemGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.0-*" />
+</ItemGroup>
 ```
 
 ## Cross-architecture compilation
@@ -36,9 +36,9 @@ or by adding the following element to the project file:
 Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
 
 ```xml
-    <PropertyGroup>
-        <PublishAot>true</PublishAot>
-    </PropertyGroup>
+<PropertyGroup>
+  <PublishAot>true</PublishAot>
+</PropertyGroup>
 ```
 
 Targeting win-arm64 on a Windows x64 host machine,
@@ -77,9 +77,9 @@ NativeAOT binaries built with this feature can run even when libicu libraries ar
 You can use this feature by adding the `StaticICULinking` property to your project file as follows:
 
 ```xml
-    <PropertyGroup>
-      <StaticICULinking>true</StaticICULinking>
-    </PropertyGroup>
+<PropertyGroup>
+  <StaticICULinking>true</StaticICULinking>
+</PropertyGroup>
 ```
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
@@ -104,9 +104,9 @@ NativeAOT binaries built with this feature can run even when OpenSSL libraries a
 You can use this feature by adding the `StaticOpenSslLinking` property to your project file as follows:
 
 ```xml
-    <PropertyGroup>
-      <StaticOpenSslLinking>true</StaticOpenSslLinking>
-    </PropertyGroup>
+<PropertyGroup>
+  <StaticOpenSslLinking>true</StaticOpenSslLinking>
+</PropertyGroup>
 ```
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
@@ -130,9 +130,9 @@ NativeAOT binaries built with this feature can run even when NUMA libraries are 
 You can use this feature by adding the `StaticNumaLinking` property to your project file as follows:
 
 ```xml
-    <PropertyGroup>
-      <StaticNumaLinking>true</StaticNumaLinking>
-    </PropertyGroup>
+<PropertyGroup>
+  <StaticNumaLinking>true</StaticNumaLinking>
+</PropertyGroup>
 ```
 
 ### Prerequisites
