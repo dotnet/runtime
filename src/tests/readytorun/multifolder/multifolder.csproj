@@ -89,7 +89,7 @@ $(CLRTestBashPreCommands)
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
-    # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+    # Suppress some DOTNET variables for the duration of Crossgen2 execution
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
     __Command=$_DebuggerFullPath

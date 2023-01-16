@@ -38,7 +38,7 @@ set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 $(CLRTestBashPreCommands)
 mkdir r2r
 
-# Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
 export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 
 "$CORE_ROOT/corerun" $CORE_ROOT/crossgen2/crossgen2.dll --out r2r/$(MSBuildProjectName).dll $(MSBuildProjectName).dll -r $CORE_ROOT/*.dll

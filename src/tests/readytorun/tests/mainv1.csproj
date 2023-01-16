@@ -84,7 +84,7 @@ endlocal
     <CLRTestBashPreCommands><![CDATA[
 $(CLRTestBashPreCommands)
 
-# Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
 export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 
 mkdir IL_DLLS
