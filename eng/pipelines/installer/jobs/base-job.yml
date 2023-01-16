@@ -388,6 +388,24 @@ jobs:
         df -h
       displayName: Disk Usage before Build
 
+  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - task: Bash@3
+        displayName: Setup Private Feeds Credentials
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+          arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+        env:
+          Token: $(dn-bot-dnceng-artifact-feeds-rw)
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - task: PowerShell@2
+        displayName: Setup Private Feeds Credentials
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+          arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+        env:
+          Token: $(dn-bot-dnceng-artifact-feeds-rw)
+
   # Build the default subset non-MacOS platforms
   - ${{ if ne(parameters.osGroup, 'OSX') }}:
     - script: $(BaseJobBuildCommand)
