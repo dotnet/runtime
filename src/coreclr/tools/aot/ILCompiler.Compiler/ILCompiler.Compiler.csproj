@@ -698,9 +698,5 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="tools\aot\ilcompiler.compiler\compiler\dataflow\" />
-  </ItemGroup>
-
   <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>
