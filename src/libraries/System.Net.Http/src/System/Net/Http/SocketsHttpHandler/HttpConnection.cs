@@ -171,60 +171,67 @@ namespace System.Net.Http
             }
             else
             {
+                Debug.Assert(_readAheadTaskStatus == ReadAheadTask_NotStarted);
+                _readAheadTaskStatus = ReadAheadTask_CompletionReserved;
+
                 // Perform an async read on the stream, since we're going to need to read from it
                 // anyway, and in doing so we can avoid the extra syscall.
-                EnsureReadAheadTaskHasStarted(useZeroByteRead: false);
+                try
+                {
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
+                    _readAheadTask = _stream.ReadAsync(_readBuffer.AvailableMemory);
+#pragma warning restore CA2012
 
-                return TryOwnReadAheadTaskCompletion();
+                    return !_readAheadTask.IsCompleted;
+                }
+                catch (Exception error)
+                {
+                    // If reading throws, eat the error and don't reuse the connection.
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
+                    return false;
+                }
             }
         }
 
         private bool ReadAheadTaskHasStarted() =>
-            Volatile.Read(ref _readAheadTaskStatus) != ReadAheadTask_NotStarted;
+            _readAheadTaskStatus != ReadAheadTask_NotStarted;
 
         private bool CanOwnReadAheadTaskCompletion() =>
-            Volatile.Read(ref _readAheadTaskStatus) == ReadAheadTask_Started;
+            _readAheadTaskStatus == ReadAheadTask_Started;
 
         private bool TryOwnReadAheadTaskCompletion() =>
             Interlocked.CompareExchange(ref _readAheadTaskStatus, ReadAheadTask_CompletionReserved, ReadAheadTask_Started) == ReadAheadTask_Started;
 
-        private void EnsureReadAheadTaskHasStarted(bool useZeroByteRead)
+        private void EnsureReadAheadTaskHasStarted()
         {
-            if (Interlocked.CompareExchange(ref _readAheadTaskStatus, ReadAheadTask_Started, ReadAheadTask_NotStarted) == ReadAheadTask_NotStarted)
+            if (_readAheadTaskStatus == ReadAheadTask_NotStarted)
             {
                 Debug.Assert(_readAheadTask == default);
 
-#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                if (useZeroByteRead)
-                {
-                    // Avoid capturing the ExecutionContext in the read-ahead task to avoid
-                    // artificially extending the lifetime of unrelated AsyncLocals.
-                    bool restoreFlow = false;
-                    try
-                    {
-                        if (!ExecutionContext.IsFlowSuppressed())
-                        {
-                            ExecutionContext.SuppressFlow();
-                            restoreFlow = true;
-                        }
+                _readAheadTaskStatus = ReadAheadTask_Started;
 
-                        _readAheadTask = ReadAheadWithZeroByteReadAsync();
-                    }
-                    finally
-                    {
-                        if (restoreFlow)
-                        {
-                            ExecutionContext.RestoreFlow();
-                        }
-                    }
-                }
-                else
+                // Avoid capturing the ExecutionContext in the read-ahead task to avoid
+                // artificially extending the lifetime of unrelated AsyncLocals.
+                bool restoreFlow = false;
+                try
                 {
-                    // We should only get here from PrepareForReuse, which means we're about to call
-                    // SendAsync that will observe any exception thrown by this read.
-                    _readAheadTask = _stream.ReadAsync(_readBuffer.AvailableMemory);
-                }
+                    if (!ExecutionContext.IsFlowSuppressed())
+                    {
+                        ExecutionContext.SuppressFlow();
+                        restoreFlow = true;
+                    }
+
+#pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
+                    _readAheadTask = ReadAheadWithZeroByteReadAsync();
 #pragma warning restore CA2012
+                }
+                finally
+                {
+                    if (restoreFlow)
+                    {
+                        ExecutionContext.RestoreFlow();
+                    }
+                }
             }
 
             async ValueTask<int> ReadAheadWithZeroByteReadAsync()
@@ -274,7 +281,7 @@ namespace System.Net.Http
 
             Debug.Assert(!_lastRequestWasAsync || ReadAheadTaskHasStarted());
 
-            EnsureReadAheadTaskHasStarted(useZeroByteRead: true);
+            EnsureReadAheadTaskHasStarted();
 
             return CanOwnReadAheadTaskCompletion();
         }
@@ -2114,7 +2121,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(!ReadAheadTaskHasStarted());
 
-                EnsureReadAheadTaskHasStarted(useZeroByteRead: true);
+                EnsureReadAheadTaskHasStarted();
             }
         }
 
