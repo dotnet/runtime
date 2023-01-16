@@ -16345,10 +16345,23 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStr(
 
     if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
     {
-        // The "register 2" should be same as previous instruction and should either be a general register or stack
-        // pointer.
+        // The "register 2" should be same as previous instruction and should either be a general
+        // register or stack pointer.
         return eRO_none;
     }
+
+    // Don't remove instructions whilst in prologs or epilogs, as these contain  "unwindable"
+    // parts, where we need to report unwind codes to the OS,
+    if (emitIGisInProlog(emitCurIG) || emitIGisInEpilog(emitCurIG))
+    {
+        return eRO_none;
+    }
+#ifdef FEATURE_EH_FUNCLETS
+    if (emitIGisInFuncletProlog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG))
+    {
+        return eRO_none;
+    }
+#endif
 
     return optimisationOrder;
 }
