@@ -176,7 +176,7 @@ namespace System.Collections.Concurrent
         public BlockingCollection(IProducerConsumerCollection<T> collection, int boundedCapacity)
         {
             ArgumentNullException.ThrowIfNull(collection);
-            ArgumentOutOfRangeException.ThrowIfLessThan(boundedCapacity, 1);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(boundedCapacity);
 
             int count = collection.Count;
             if (count > boundedCapacity)
@@ -1611,13 +1611,15 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
-            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-            while (!IsCompleted)
+            if (IsCompleted)
             {
-                if (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
-                {
-                    yield return item;
-                }
+                yield break;
+            }
+
+            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
+            while (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
+            {
+                yield return item;
             }
         }
 

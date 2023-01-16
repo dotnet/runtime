@@ -140,7 +140,7 @@ namespace System.Net.Mail
                 for (int i = 0; i < clientDomainRaw.Length; i++)
                 {
                     ch = clientDomainRaw[i];
-                    if ((ushort)ch <= 0x7F)
+                    if (Ascii.IsValid(ch))
                         sb.Append(ch);
                 }
                 if (sb.Length > 0)

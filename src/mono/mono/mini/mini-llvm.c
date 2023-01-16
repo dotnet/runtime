@@ -646,7 +646,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector4")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
@@ -4411,6 +4411,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		return;
 	}
 
+#ifdef TARGET_WASM
+	if (sig->param_count >= 1000 - 10) {
+		set_failure (ctx, "param count");
+		return;
+	}
+#endif
+
 	cinfo = call->cinfo;
 	g_assert (cinfo);
 	if (call->rgctx_arg_reg)
@@ -7690,7 +7697,41 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildLoad2 (builder, var_type, var, "");
 			break;
 		}
-
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+		case OP_FCVTL:
+		case OP_FCVTL2: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = ins->opcode == OP_FCVTL2;
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			result = LLVMBuildFPExt (builder, result, ret_t, "fcvtl");
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_SSHLL:
+		case OP_SSHLL2:
+		case OP_USHLL:
+		case OP_USHLL2: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			gboolean high = FALSE;
+			gboolean is_unsigned = FALSE;
+			switch (ins->opcode) {
+			case OP_SSHLL2: high = TRUE; break;
+			case OP_USHLL2: high = TRUE; case OP_USHLL: is_unsigned = TRUE; break;
+			}
+			LLVMValueRef result = lhs;
+			if (high)
+				result = extract_high_elements (ctx, result);
+			if (is_unsigned)
+				result = LLVMBuildZExt (builder, result, ret_t, "ushll");
+			else
+				result = LLVMBuildSExt (builder, result, ret_t, "ushll");
+			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 		case OP_EXTRACTX_U2:
 		case OP_XEXTRACT_I1:
@@ -10074,17 +10115,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_FCVTL:
-		case OP_ARM64_FCVTL2: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = ins->opcode == OP_ARM64_FCVTL2;
-			LLVMValueRef result = lhs;
-			if (high)
-				result = extract_high_elements (ctx, result);
-			result = LLVMBuildFPExt (builder, result, ret_t, "arm64_fcvtl");
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_ARM64_FCVTXN:
 		case OP_ARM64_FCVTXN2:
 		case OP_ARM64_FCVTN:
@@ -10772,28 +10802,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_SSHLL:
-		case OP_ARM64_SSHLL2:
-		case OP_ARM64_USHLL:
-		case OP_ARM64_USHLL2: {
-			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = FALSE;
-			gboolean is_unsigned = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_SSHLL2: high = TRUE; break;
-			case OP_ARM64_USHLL2: high = TRUE; case OP_ARM64_USHLL: is_unsigned = TRUE; break;
-			}
-			LLVMValueRef result = lhs;
-			if (high)
-				result = extract_high_elements (ctx, result);
-			if (is_unsigned)
-				result = LLVMBuildZExt (builder, result, ret_t, "arm64_ushll");
-			else
-				result = LLVMBuildSExt (builder, result, ret_t, "arm64_ushll");
-			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_ARM64_SLI:
 		case OP_ARM64_SRI: {
 			LLVMTypeRef intrin_result_t = simd_class_to_llvm_type (ctx, ins->klass);
@@ -11304,7 +11312,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_BSL: {
 			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
 			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
@@ -11317,6 +11325,8 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		case OP_NEGATION:
 		case OP_NEGATION_SCALAR: {
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
@@ -11579,6 +11589,12 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 #ifdef TARGET_WASM
 	if (mono_method_signature_internal (cfg->method)->call_convention == MONO_CALL_VARARG) {
 		cfg->exception_message = g_strdup ("vararg callconv");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
+	if (mono_method_signature_internal (cfg->method)->param_count >= 1000 - 10) {
+		cfg->exception_message = g_strdup ("param count");
 		cfg->disable_llvm = TRUE;
 		return;
 	}

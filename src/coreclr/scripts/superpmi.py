@@ -132,11 +132,11 @@ was built with the same JIT/EE version as the JIT we are using, and run "mcs -pr
 to get that version. Otherwise, use "unknown-jit-ee-version".
 """
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, osx, linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
-target_os_help = "Target OS, for use with cross-compilation JIT (windows, OSX, Linux). Default: current OS."
+target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
 target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
@@ -625,10 +625,10 @@ class SuperPMICollect:
 
         self.core_root = coreclr_args.core_root
 
-        if coreclr_args.host_os == "OSX":
+        if coreclr_args.host_os == "osx":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
         elif coreclr_args.host_os == "windows":
@@ -1444,11 +1444,12 @@ def html_color(color, text):
 def calculate_improvements_regressions(base_diff_sizes):
     num_improvements = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size < base_size)
     num_regressions = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size > base_size)
+    num_same = sum(1 for (base_size, diff_size) in base_diff_sizes if diff_size == base_size)
 
     byte_improvements = sum(max(0, base_size - diff_size) for (base_size, diff_size) in base_diff_sizes)
     byte_regressions = sum(max(0, diff_size - base_size) for (base_size, diff_size) in base_diff_sizes)
 
-    return (num_improvements, num_regressions, byte_improvements, byte_regressions)
+    return (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions)
 
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
@@ -1758,12 +1759,6 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")
 
-                    smallest = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
-                    logging.debug("Smallest {} contexts with binary differences:".format(len(smallest)))
-                    for diff in smallest:
-                        logging.debug(diff["Context"])
-                    logging.debug("")
-
                     if base_metrics is not None and diff_metrics is not None:
                         base_bytes = int(base_metrics["Overall"]["Diffed code bytes"])
                         diff_bytes = int(diff_metrics["Overall"]["Diffed code bytes"])
@@ -1836,12 +1831,13 @@ class SuperPMIReplayAsmDiffs:
                     if self.coreclr_args.metrics is None:
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
 
-                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
 
-                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions)".format(
+                        logging.info("{:,d} contexts with diffs ({:,d} improvements, {:,d} regressions, {:,d} same size)".format(
                             len(diffs),
                             num_improvements,
                             num_regressions,
+                            num_same,
                             byte_improvements,
                             byte_regressions))
                         
@@ -1941,12 +1937,17 @@ class SuperPMIReplayAsmDiffs:
 
                 if missing_base_contexts > 0 or missing_diff_contexts > 0:
                     missed_color = "#d35400"
-                    base_color = missed_color if missing_base_contexts > 0 else "green"
-                    diff_color = missed_color if missing_diff_contexts > 0 else "green"
-                    write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
-                        html_color(missed_color, "MISSED"),
-                        html_color(base_color, "{:,d}".format(missing_base_contexts)),
-                        html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
+                    if missing_base_contexts == missing_diff_contexts:
+                        write_fh.write("{} contexts: {}\n\n".format(
+                            html_color(missed_color, "MISSED"),
+                            html_color(missed_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100))))
+                    else:
+                        base_color = missed_color if missing_base_contexts > 0 else "green"
+                        diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                        write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                            html_color(missed_color, "MISSED"),
+                            html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100)),
+                            html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / diffed_contexts * 100))))
 
                 def has_diffs(row):
                     return int(row["Contexts with diffs"]) > 0
@@ -1992,17 +1993,18 @@ class SuperPMIReplayAsmDiffs:
 
                 if any_diffs:
                     write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Improvements (bytes)|Regressions (bytes)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
                     def write_row(name, diffs):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
-                        (num_improvements, num_regressions, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|\n".format(
+                        (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
                             html_color("green", "{:,d}".format(num_improvements)),
                             html_color("red", "{:,d}".format(num_regressions)),
+                            html_color("blue", "{:,d}".format(num_same)),
                             html_color("green", "-{:,d}".format(byte_improvements)),
                             html_color("red", "+{:,d}".format(byte_regressions))))
 
@@ -2026,13 +2028,15 @@ class SuperPMIReplayAsmDiffs:
                          int(diff_metrics["Overall"]["Missing compiles"])) for (mch_file, base_metrics, diff_metrics, _, _) in asm_diffs]
 
                 def write_row(name, num_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff):
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
+                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
                         name,
                         num_contexts,
                         num_minopts,
                         num_fullopts,
                         num_missed_base,
-                        num_missed_diff))
+                        num_missed_base / num_contexts * 100,
+                        num_missed_diff,
+                        num_missed_diff / num_contexts * 100))
                           
                 for t in rows:
                     write_row(*t)
@@ -2107,14 +2111,25 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
             # available without needing to disassemble all, so pick a subset of
             # interesting diffs to pass to jit-analyze.
 
+            def display_subset(message, subset):
+                logging.debug(message.format(len(subset)))
+                for diff in subset:
+                    logging.debug(diff["Context"])
+                logging.debug("")
+
             # 20 smallest method contexts with diffs
             smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
+            display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
+
             # Order by byte-wise improvement, largest improvements first
             by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
             # 20 top improvements, byte-wise
             top_improvements_bytes = by_diff_size[:20]
             # 20 top regressions, byte-wise
             top_regressions_bytes = by_diff_size[-20:]
+
+            display_subset("Top {} improvements, byte-wise:", top_improvements_bytes)
+            display_subset("Top {} regressions, byte-wise:", top_regressions_bytes)
 
             # Order by percentage-wise size improvement, largest improvements first
             def diff_pct(r):
@@ -2128,7 +2143,16 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
             top_improvements_pct = by_diff_size_pct[:20]
             top_regressions_pct = by_diff_size_pct[-20:]
 
-            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct
+            display_subset("Top {} improvements, percentage-wise:", top_improvements_pct)
+            display_subset("Top {} regressions, percentage-wise:", top_regressions_pct)
+            
+            # 20 contexts without size diffs (possibly GC info diffs), sorted by size
+            zero_size_diffs = filter(lambda r: int(r["Diff size"]) == int(r["Base size"]), diffs)
+            smallest_zero_size_contexts = sorted(zero_size_diffs, key=lambda r: int(r["Context size"]))[:20]
+
+            display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
+
+            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
         final_contexts_indices.sort()
@@ -2385,9 +2409,12 @@ class SuperPMIReplayThroughputDiff:
 
 
 def determine_coredis_tools(coreclr_args):
-    """ Determine the coredistools location. First, look in Core_Root. It will be there if
-        the setup-stress-dependencies.cmd/sh script has been run, which is typically only
-        if tests have been run. If unable to find coredistools, download it from a cached
+    """ Determine the coredistools location in one of several locations:
+        1. First, look in Core_Root. It will be there if the setup-stress-dependencies.cmd/sh
+        script has been run, which is typically only if tests have been run.
+        2. The build appears to restore it and put it in the R2RDump sub-directory. Look there.
+        Copy it to the Core_Root directory if found.
+        3. If unable to find coredistools, download it from a cached
         copy in the CLRJIT Azure Storage. (Ideally, we would instead download the NuGet
         package and extract it using the same mechanism as setup-stress-dependencies
         instead of having our own copy in Azure Storage).
@@ -2416,16 +2443,22 @@ def determine_coredis_tools(coreclr_args):
     if os.path.isfile(coredistools_location):
         logging.info("Using coredistools found at %s", coredistools_location)
     else:
-        # Often, Core_Root will already exist. However, you can do a product build without
-        # creating a Core_Root, and successfully run replay or asm diffs, if we just create Core_Root
-        # and copy coredistools there. Note that our replays all depend on Core_Root existing, as we
-        # set the current directory to Core_Root before running superpmi.
-        if not os.path.isdir(coreclr_args.core_root):
-            logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
-            os.makedirs(coreclr_args.core_root)
-        coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
-        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-        download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
+        coredistools_r2rdump_location = os.path.join(coreclr_args.core_root, "R2RDump", coredistools_dll_name)
+        if os.path.isfile(coredistools_r2rdump_location):
+            logging.info("Using coredistools found at %s (copying to %s)", coredistools_r2rdump_location, coredistools_location)
+            logging.debug("Copying %s -> %s", coredistools_r2rdump_location, coredistools_location)
+            shutil.copy2(coredistools_r2rdump_location, coredistools_location)
+        else:
+            # Often, Core_Root will already exist. However, you can do a product build without
+            # creating a Core_Root, and successfully run replay or asm diffs, if we just create Core_Root
+            # and copy coredistools there. Note that our replays all depend on Core_Root existing, as we
+            # set the current directory to Core_Root before running superpmi.
+            if not os.path.isdir(coreclr_args.core_root):
+                logging.warning("Warning: Core_Root does not exist at \"%s\"; creating it now", coreclr_args.core_root)
+                os.makedirs(coreclr_args.core_root)
+            coredistools_uri = az_blob_storage_superpmi_container_uri + "/libcoredistools/{}-{}/{}".format(coreclr_args.host_os.lower(), coreclr_args.arch.lower(), coredistools_dll_name)
+            skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+            download_one_url(coredistools_uri, coredistools_location, is_azure_storage=True, display_progress=not skip_progress)
 
     assert os.path.isfile(coredistools_location)
     return coredistools_location
@@ -2491,7 +2524,7 @@ def determine_jit_name(coreclr_args):
 
         if coreclr_args.target_arch.startswith("arm"):
             os_name = "universal"
-        elif coreclr_args.target_os == "OSX" or coreclr_args.target_os == "Linux":
+        elif coreclr_args.target_os == "osx" or coreclr_args.target_os == "linux":
             os_name = "unix"
         elif coreclr_args.target_os == "windows":
             os_name = "win"
@@ -2500,9 +2533,9 @@ def determine_jit_name(coreclr_args):
 
         jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "lib" + jit_base_name + ".so"
     elif coreclr_args.host_os == "windows":
         return jit_base_name + ".dll"
@@ -2564,7 +2597,7 @@ def determine_superpmi_tool_name(coreclr_args):
         (str) Name of the superpmi tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "superpmi"
     elif coreclr_args.host_os == "windows":
         return "superpmi.exe"
@@ -2596,7 +2629,7 @@ def determine_mcs_tool_name(coreclr_args):
         (str) Name of the mcs tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "mcs"
     elif coreclr_args.host_os == "windows":
         return "mcs.exe"
@@ -2628,7 +2661,7 @@ def determine_dotnet_tool_name(coreclr_args):
         (str) Name of the dotnet tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "dotnet"
     elif coreclr_args.host_os == "windows":
         return "dotnet.exe"

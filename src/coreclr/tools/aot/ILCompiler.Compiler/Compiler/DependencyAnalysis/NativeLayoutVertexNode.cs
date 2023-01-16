@@ -238,7 +238,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            if (_method.IsVirtual && _method.HasInstantiation)
+            if (_method.IsVirtual && _method.HasInstantiation && !_method.IsGenericMethodDefinition)
             {
                 return GetGenericVirtualMethodDependencies(context);
             }
@@ -256,6 +256,8 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
 
+            // TODO: this should not be needed - we no longer need to materialize RuntimeTypeHandles as part
+            // of the dispatch. Investigate getting rid of this.
             // Variant generic virtual method calls at runtime might need to build the concrete version of the
             // type we could be dispatching on to find the appropriate GVM entry.
             if (_method.OwningType.HasVariance)
@@ -921,6 +923,8 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _type;
         private bool _isUniversalCanon;
 
+        public TypeDesc CanonType => _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateTypeLayoutVertexNode_" + factory.NameMangler.GetMangledTypeName(_type);
 
         public NativeLayoutTemplateTypeLayoutVertexNode(NodeFactory factory, TypeDesc type)
@@ -989,7 +993,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (context.PreinitializationManager.HasLazyStaticConstructor(_type))
+            if (context.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
             }
@@ -1188,7 +1192,7 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.DictionaryLayout, dictionaryLayout.WriteVertex(factory));
             }
 
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type.ConvertToCanonForm(CanonicalFormKind.Specific)))
             {
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
                 MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);

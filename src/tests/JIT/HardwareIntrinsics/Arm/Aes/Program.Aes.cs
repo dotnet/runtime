@@ -11,8 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm._Aes
         static Program()
         {
             JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
-
-
         }
     }
 }

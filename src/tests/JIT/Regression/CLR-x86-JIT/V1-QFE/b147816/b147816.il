@@ -14,6 +14,7 @@
 
 .field public static int32 a at D_a
 
+.class public auto ansi Test_b147816 extends [mscorlib] System.Object {
 .method static public int32 main() cil managed
 { .entrypoint
   .maxstack  3
@@ -40,4 +41,5 @@ Label_Exit:
   call void [System.Console]System.Console::WriteLine(class System.String)
   ldc.i4 100
   ret
+}
 }

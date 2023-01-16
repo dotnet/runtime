@@ -1593,7 +1593,16 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
     }
 
     tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
-    tree->SetIndirExceptionFlags(this);
+
+    if (tree->OperMayThrow(this))
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
     tree->gtFlags |= GTF_ASG;
 
     return tree;

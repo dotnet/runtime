@@ -1708,7 +1708,6 @@ protected:
 #endif
 
     size_t emitGetInstrDescSize(const instrDesc* id);
-    size_t emitGetInstrDescSizeSC(const instrDesc* id);
 
 #ifdef TARGET_XARCH
 
@@ -1760,8 +1759,11 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
-    void emitDispIGlist(bool verbose = false);
+    void emitDispIG(insGroup* ig,
+                    insGroup* igPrev              = nullptr,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
+    void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
@@ -2216,7 +2218,7 @@ private:
 #endif
 
 #ifdef DEBUG
-    void emitCheckIGoffsets();
+    void emitCheckIGList();
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
@@ -3019,13 +3021,14 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     {
         return SMALL_IDSC_SIZE;
     }
-
-    if (id->idIsLargeCns())
+    else if (id->idIsLargeCns())
     {
         return sizeof(instrDescCns);
     }
-
-    return sizeof(instrDesc);
+    else
+    {
+        return sizeof(instrDesc);
+    }
 }
 
 /*****************************************************************************
@@ -3063,27 +3066,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 #endif
 
         return id;
-    }
-}
-
-/*****************************************************************************
- *
- *  Get the instrDesc size for something that contains a constant
- */
-
-inline size_t emitter::emitGetInstrDescSizeSC(const instrDesc* id)
-{
-    if (id->idIsSmallDsc())
-    {
-        return SMALL_IDSC_SIZE;
-    }
-    else if (id->idIsLargeCns())
-    {
-        return sizeof(instrDescCns);
-    }
-    else
-    {
-        return sizeof(instrDesc);
     }
 }
 
@@ -3378,20 +3360,6 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     assert(!callInstrSizeSafe.IsOverflow());
     *instrSize = callInstrSizeSafe.Value();
     return newCodePointer;
-}
-
-/*****************************************************************************
- *
- *  Add a new IG to the current list, and get it ready to receive code.
- */
-
-inline void emitter::emitNewIG()
-{
-    insGroup* ig = emitAllocAndLinkIG();
-
-    /* It's linked in. Now, set it up to accept code */
-
-    emitGenIG(ig);
 }
 
 /*****************************************************************************/

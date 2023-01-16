@@ -169,6 +169,8 @@ struct InterpMethod {
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -297,9 +299,6 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 void
 mono_interp_error_cleanup (MonoError *error);
-
-gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
 
 #if HOST_BROWSER
 

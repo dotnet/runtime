@@ -113,7 +113,6 @@
     <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\GenericVirtualMethodSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
@@ -290,9 +289,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>
@@ -328,9 +324,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
-      <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>

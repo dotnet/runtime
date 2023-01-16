@@ -5,9 +5,9 @@
 
 using System;
 
-class Runtime_43391
+public class Runtime_43391
 {
-    static int Main()
+    public static int Main()
     {
         int r = 58;
         for (int i = 1; i >= 0; i--)

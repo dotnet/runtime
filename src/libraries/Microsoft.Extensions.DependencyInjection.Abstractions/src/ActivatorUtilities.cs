@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return service;
         }
 
-        private static Expression BuildFactoryExpression(
+        private static NewExpression BuildFactoryExpression(
             ConstructorInfo constructor,
             int?[] parameterMap,
             Expression serviceProvider,

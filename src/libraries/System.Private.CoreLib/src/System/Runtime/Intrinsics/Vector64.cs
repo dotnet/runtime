@@ -465,6 +465,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector64<T> vector, T[] destination)
             where T : struct
         {
@@ -475,8 +476,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector64{T}" /> to a given array starting at the specified index.</summary>
@@ -488,6 +488,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex" /> is negative or greater than the length of <paramref name="destination" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void CopyTo<T>(this Vector64<T> vector, T[] destination, int startIndex)
             where T : struct
         {
@@ -503,8 +504,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(destination));
-            Unsafe.WriteUnaligned(ref Unsafe.Add(ref address, startIndex), vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
         }
 
         /// <summary>Copies a <see cref="Vector64{T}" /> to a given span.</summary>
@@ -513,16 +513,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which <paramref name="vector" /> is copied.</param>
         /// <exception cref="ArgumentException">The length of <paramref name="destination" /> is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyTo<T>(this Vector64<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector64<T>.Count)
+            if (destination.Length < Vector64<T>.Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with all elements initialized to the specified value.</summary>
@@ -646,6 +646,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Create<T>(T[] values)
             where T : struct
         {
@@ -656,8 +657,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector64<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref values[0]));
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given array.</summary>
@@ -668,6 +668,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector64{T}.Count" />.</exception>
         /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Create<T>(T[] values, int index)
             where T : struct
         {
@@ -678,8 +679,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.Add(ref address, index));
+            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given readonly span.</summary>
@@ -697,8 +697,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-            return Unsafe.ReadUnaligned<Vector64<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1101,10 +1100,25 @@ namespace System.Runtime.Intrinsics
         {
             T result = default;
 
-            for (int index = 0; index < Vector64<T>.Count; index++)
+            // Doing this as pairs is important for floating-point determinism
+            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
+            // and otherwise the software vs accelerated implementations may differ in returned result.
+
+            if (Vector64<T>.Count != 1)
             {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result = Scalar<T>.Add(result, value);
+                for (int index = 0; index < Vector64<T>.Count; index += 2)
+                {
+                    T value = Scalar<T>.Add(
+                        Scalar<T>.Multiply(left.GetElementUnsafe(index + 0), right.GetElementUnsafe(index + 0)),
+                        Scalar<T>.Multiply(left.GetElementUnsafe(index + 1), right.GetElementUnsafe(index + 1))
+                    );
+
+                    result = Scalar<T>.Add(result, value);
+                }
+            }
+            else
+            {
+                result = Scalar<T>.Multiply(left.GetElementUnsafe(0), right.GetElementUnsafe(0));
             }
 
             return result;
@@ -2428,16 +2442,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
         /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector64{T}.Count" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCopyTo<T>(this Vector64<T> vector, Span<T> destination)
             where T : struct
         {
-            if ((uint)destination.Length < (uint)Vector64<T>.Count)
+            if (destination.Length < Vector64<T>.Count)
             {
                 return false;
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
             return true;
         }
 

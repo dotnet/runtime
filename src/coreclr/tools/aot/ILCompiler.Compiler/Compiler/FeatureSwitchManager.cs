@@ -21,10 +21,10 @@ namespace ILCompiler
         private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(switchValues));
+            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -685,9 +685,11 @@ namespace ILCompiler
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
+            private readonly Logger _logger;
 
-            public FeatureSwitchHashtable(Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
             {
+                _logger = logger;
                 _switchValues = switchValues;
             }
 
@@ -698,7 +700,7 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues);
             }
         }
 
@@ -709,7 +711,7 @@ namespace ILCompiler
             public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
             public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 Module = module;
 
@@ -737,7 +739,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(module.Context, ms, resource, module, "name", featureSwitchValues);
+                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
                 }
             }

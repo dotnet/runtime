@@ -10,18 +10,18 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">
-    <_hostOS>Linux</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</_hostOS>
+    <_hostOS>linux</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">netbsd</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
-    <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">solaris</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
     <HostOS>$(_hostOS)</HostOS>
     <TargetOS Condition="'$(TargetOS)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">browser</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
-    <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
-    <TargetsAppleMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetsAppleMobile>
+    <TargetsMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</TargetsMobile>
+    <TargetsAppleMobile Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetsAppleMobile>
   </PropertyGroup>
 
   <!-- Platform property is required by RepoLayout.props in Arcade SDK. -->
@@ -35,7 +35,8 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'loongarch64'">loongarch64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 's390x'">s390x</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(_hostArch)' == 'ppc64le'">ppc64le</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'Browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'browser' or '$(RuntimeIdentifier)' == 'browser-wasm')">wasm</TargetArchitecture>
+    <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and ('$(TargetOS)' == 'wasi' or '$(RuntimeIdentifier)' == 'wasi-wasm')">wasm</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == '' and '$(TargetsMobile)' == 'true'">x64</TargetArchitecture>
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
@@ -70,11 +71,13 @@
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
-    <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
+    <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
+         in src/mono/wasm/build/WasmApp.LocalBuild.props in sync -->
+    <NetCoreAppToolCurrentVersion>8.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>8.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
@@ -129,6 +132,8 @@
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
+
+    <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -163,38 +168,38 @@
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-    <_portableOS Condition="'$(_hostOS)' == 'OSX'">osx</_portableOS>
+    <_portableOS Condition="'$(_hostOS)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'FreeBSD' or '$(TargetOS)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'freebsd' or '$(TargetOS)' == 'freebsd'">freebsd</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'Solaris' or '$(TargetOS)' == 'Solaris'">solaris</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'solaris' or '$(TargetOS)' == 'solaris'">solaris</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'browser'">browser</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'wasi'">wasi</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'iOSSimulator'">iossimulator</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'iossimulator'">iossimulator</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'tvos'">tvos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvOSSimulator'">tvossimulator</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'tvossimulator'">tvossimulator</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'android'">android</_portableOS>
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
     <_packageLibc Condition="$(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)$(_packageLibc)</_packageOS>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)$(_packageLibc)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateRID">
-    <_toolsRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(_hostArch)</_toolsRID>
+    <_toolsRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS)-$(_hostArch)</_toolsRID>
     <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</_toolsRID>
     <_toolsRID Condition="'$(_toolsRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolsRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser'">linux-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="'$(_runtimeOS)' == 'Browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Android tools, so use the default ones -->
     <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
@@ -202,7 +207,7 @@
     <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
 
     <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iOSSimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvOSSimulator'">osx-x64</_toolsRID>
+    <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iossimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvossimulator'">osx-x64</_toolsRID>
 
     <!-- There are no non-portable builds for Ilasm, Ildasm, ILC etc. -->
     <ToolsRID Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</ToolsRID>
@@ -217,19 +222,19 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
-    <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsFreeBSD Condition="'$(TargetOS)' == 'freebsd'">true</TargetsFreeBSD>
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
-    <TargetsSolaris Condition="'$(TargetOS)' == 'Solaris'">true</TargetsSolaris>
-    <TargetsLinux Condition="'$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'Android'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(TargetOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(TargetOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsMacCatalyst Condition="'$(TargetOS)' == 'MacCatalyst'">true</TargetsMacCatalyst>
-    <TargetsiOS Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">true</TargetsiOS>
-    <TargetstvOS Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">true</TargetstvOS>
-    <TargetsiOSSimulator Condition="'$(TargetOS)' == 'iOSSimulator'">true</TargetsiOSSimulator>
-    <TargetstvOSSimulator Condition="'$(TargetOS)' == 'tvOSSimulator'">true</TargetstvOSSimulator>
-    <TargetsAndroid Condition="'$(TargetOS)' == 'Android'">true</TargetsAndroid>
-    <TargetsBrowser Condition="'$(TargetOS)' == 'Browser'">true</TargetsBrowser>
+    <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
+    <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
+    <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
+    <TargetsiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">true</TargetsiOS>
+    <TargetstvOS Condition="'$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</TargetstvOS>
+    <TargetsiOSSimulator Condition="'$(TargetOS)' == 'iossimulator'">true</TargetsiOSSimulator>
+    <TargetstvOSSimulator Condition="'$(TargetOS)' == 'tvossimulator'">true</TargetstvOSSimulator>
+    <TargetsAndroid Condition="'$(TargetOS)' == 'android'">true</TargetsAndroid>
+    <TargetsBrowser Condition="'$(TargetOS)' == 'browser'">true</TargetsBrowser>
     <TargetsWasi Condition="'$(TargetOS)' == 'wasi'">true</TargetsWasi>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsAndroid)' == 'true'">true</TargetsUnix>
@@ -349,6 +354,7 @@
                                 '$(IsPublishedAppTestProject)' != 'true' and
                                 '$(IsTestSupportProject)' != 'true' and
                                 '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
+                                '$(MSBuildProjectExtension)' != '.pkgproj' and
                                 '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
                                 '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
   </PropertyGroup>

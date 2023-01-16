@@ -11444,8 +11444,12 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_AWR_RRD_RRD:
                 {
-                    reg345 = id->idReg2();
-                    break;
+                    if (ins != INS_extractps)
+                    {
+                        reg345 = id->idReg2();
+                        break;
+                    }
+                    FALLTHROUGH;
                 }
 
                 default:
@@ -14615,6 +14619,21 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 ssize_t emitter::GetInputSizeInBytes(instrDesc* id)
 {
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
+
+    // INS_movd can represent either movd or movq(https://github.com/dotnet/runtime/issues/47943).
+    // As such, this is a special case and we need to calculate size based on emitAttr.
+    if (id->idIns() == INS_movd)
+    {
+        if (EA_SIZE(id->idOpSize()) == EA_8BYTE)
+        {
+            inputSize = Input_64Bit;
+        }
+        else
+        {
+            inputSize = Input_32Bit;
+        }
+    }
+
     switch (inputSize)
     {
         case 0:
@@ -15522,8 +15541,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseSimdEncoding());
+            assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);

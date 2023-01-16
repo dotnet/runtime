@@ -19,7 +19,7 @@
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
-    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">true</UseLocalAppHostPack>
+    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <!-- TODO: Enable when a 8.0.100 SDK is consumed
     <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
@@ -45,7 +45,7 @@
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.Mono.**RID**"
-                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;android-arm64;android-arm;android-x64;android-x86"
+                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;wasi-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;android-arm64;android-arm;android-x64;android-x86"
                       RuntimePackLabels="Mono"
                       Condition="'@(KnownRuntimePack)' == '' or !@(KnownRuntimePack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"/>
     <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
@@ -169,35 +169,6 @@
     <ItemGroup>
       <RuntimeFramework Version="$(ProductVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Filter out conflicting implicit assembly references. -->
-  <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitFrameworkReferences)' != 'true'"
-          DependsOnTargets="ResolveProjectReferences"
-          AfterTargets="ResolveTargetingPackAssets">
-    <ItemGroup>
-      <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
-      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
-    </ItemGroup>
-
-    <!-- Filter out shims from the targeting pack references as an opt-in. -->
-    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                          '$(SkipTargetingPackShimReferences)' == 'true'">
-      <_targetingPackReferenceExclusion Include="@(NetFxReference)" />
-      <_targetingPackReferenceExclusion Include="netstandard" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
-                                              OriginalIdentity="%(Identity)" />
-      <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackReferenceExclusion)" />
-      <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
-      <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 </Project>

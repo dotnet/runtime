@@ -704,10 +704,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key == null)
-            {
-                throw new ObjectDisposedException(nameof(RSAOpenSsl));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEvpPKeyHandle GetKey()
@@ -905,7 +902,7 @@ namespace System.Security.Cryptography
 
         static partial void ThrowIfNotSupported();
 
-        private static Exception PaddingModeNotSupported() =>
+        private static CryptographicException PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
     }
 }

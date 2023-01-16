@@ -5,8 +5,8 @@
   <PropertyGroup>
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <ArchiveName>dotnet-runtime-internal</ArchiveName>
-    <InstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</InstallerName>
-    <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-runtime-internal</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' != 'osx'">dotnet-runtime</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-runtime-internal</InstallerName>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
     <CreateSymbolsArchive Condition="'$(PgoInstrument)' == ''">true</CreateSymbolsArchive>
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>

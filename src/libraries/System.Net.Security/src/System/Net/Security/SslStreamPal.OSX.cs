@@ -61,9 +61,17 @@ namespace System.Net.Security
                     ReadOnlySpan<byte> protocol = protocols.Slice(1, length);
                     if (protocol.SequenceCompareTo<byte>(applicationProtcol.Protocol.Span) == 0)
                     {
-                        if (Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtcol))
+                        int osStatus = Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtcol);
+                        if (osStatus == 0)
                         {
                             context.SelectedApplicationProtocol = applicationProtcol;
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Info(context, $"Selected '{applicationProtcol}' ALPN");
+                        }
+                        else
+                        {
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Error(context, $"Failed to set ALPN: {osStatus}");
                         }
 
                         // We ignore failure and we will move on with ALPN
@@ -290,12 +298,22 @@ namespace System.Net.Security
                 SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status = PerformHandshake(sslHandle);
 
-                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
+                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
+                    // this should happen only for clients
+                    Debug.Assert(clientCertificateSelectionCallback != null);
+
+                    // The callback also saves the selected cert in SslStream.LocalCertificate
                     X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
+
                     if (clientCertificate != null)
                     {
-                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        // build the cert context only if it was not provided by the user
+                        sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(clientCertificate);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null)
+                    {
                         SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
                     }
 

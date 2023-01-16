@@ -11,7 +11,7 @@
 
 .assembly 'b309555' {}
 .assembly extern xunit.core {}
-.class ILGEN_0x1a02e09e {
+.class public ILGEN_0x1a02e09e {
 
 //BEGIN STATIC FIELDS
 
@@ -45,7 +45,7 @@ stloc local_0xc
  clt.un
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
