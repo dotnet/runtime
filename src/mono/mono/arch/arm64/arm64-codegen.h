@@ -919,4 +919,259 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 #define arm_autibsp(p) arm_format_autib ((p), 0b0011, 0b111)
 
+/* C4.1.69 NEON vector ISA */
+
+// Opcode naming convention is arm_neon_<operation>_<elem_count><type>
+// elem_count: number of elements in vector
+// type: element type
+//    b -> byte
+//    h -> half (16bit float)
+//    s -> float, single, int32
+//    d -> double, int64
+
+// Note: Some opcodes are agnostic to data types and always work on the
+//       the entire register, their opcode macros forgo the _<elem_count><type>
+//       suffix, e.g. crypto.
+
+// Opcode prefabricate arguments:
+// q: register size
+//    0 -> lower 64 bits (VREG_LOW)
+//    1 -> full 128 bits (VREG_FULL)
+//    Some opcodes do not support both options, e.g. crypto.
+// op: the base opcode value
+//    This is the opcode value with all options and regs set to 0.
+// rd: destination register (0..31)
+// rm,rn: source registers (both 0..31)
+
+// Note: Final opcodes have registers ordered with destination first. Opcode 
+//       prefabricates have a different ordering that makes reading constants 
+//       from tables easier.
+
+// Note: Certain combinations of data types and q may be unavailable, especially 
+//       with q=0.
+
+#define arm_neon_opcode_2reg(p, q, op, rn, rd) \
+	do { \
+		g_assert ((q < 2) && (rn) < 32 && (rd) < 32); \
+		arm_emit ((p), (op) | (q) << 30 | (rn) << 5 | (rd)); \
+	} while (0)
+
+
+#define arm_neon_opcode_3reg(p, q, op, rm, rn, rd) \
+	do { \
+		g_assert ((q) << 2 && (rm) < 32 && (rn) < 32 && (rd) < 32); \
+		arm_emit ((p), (op) | (q) << 30) | (rm) << 16 | (rn) << 5 | (rd)); \
+	} while (0)
+
+#define VREG_LOW 0b0
+#define VREG_FULL 0b1
+
+#define SIZE_1 (0)
+#define SIZE_2 (1)
+#define SIZE_4 (2)
+#define SIZE_8 (3)
+
+#define SUPPORT_ARM64_FP16 1
+
+/* NEON :: AES */ 
+#define arm_neon_aes_opcode(p, size, opcode, rn, rd) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rn), (rd))
+#define arm_neon_aese(p, rd, rn) arm_neon_aes_opcode ((p), 0b00, 0b00100, (rn), (rd))
+#define arm_neon_aesd(p, rd, rn) arm_neon_aes_opcode ((p), 0b00, 0b00101, (rn), (rd))
+#define arm_neon_aesmc(p, rd, rn) arm_neon_aes_opcode ((p), 0b00, 0b00110, (rn), (rd))
+#define arm_neon_aesimc(p, rd, rn) arm_neon_aes_opcode ((p), 0b00, 0b00111, (rn), (rd))
+
+/* NEON :: 3-register SHA */
+#define arm_neon_sha_3reg_opcode(p, size, opcode, rm, rn, rd) arm_neon_opcode_3reg ((p), VREG_FULL, 0b00011110000000000000000000000000 | (size) << 22 | (opcode) << 12, (rm), (rn), (rd))
+#define arm_neon_sha1c(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b000, (rm), (rn), (rd))
+#define arm_neon_sha1p(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b001, (rm), (rn), (rd))
+#define arm_neon_sha1m(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b010, (rm), (rn), (rd))
+#define arm_neon_sha1su0(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b011, (rm), (rn), (rd))
+#define arm_neon_sha256h(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b100, (rm), (rn), (rd))
+#define arm_neon_sha256h2(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b101, (rm), (rn), (rd))
+#define arm_neon_sha256su1(p, rd, rn, rm) arm_neon_opcode_3reg ((p), 0b00, 0b110, (rm), (rn), (rd))
+
+/* NEON :: 2-register SHA */
+#define arm_neon_sha_2reg_opcode(p, size, opcode, rn, rd) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00011110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rn), (rd))
+#define arm_neon_sha1h(p, rd, rn) arm_neon_sha_2reg_opcode((p), 0b00, 0b0000, (rn), (rd)) 
+#define arm_neon_sha1su1(p, rd, rn) arm_neon_sha_2reg_opcode((p), 0b00, 0b0001, (rn), (rd)) 
+#define arm_neon_sha256su0(p, rd, rn) arm_neon_sha_2reg_opcode((p), 0b00, 0b0010, (rn), (rd)) 
+
+/* NEON :: scalar copy */
+#define arm_neon_sccpy_opcode(p, q, opcode, imm5, rn, rd) arm_neon_opcode_2reg ((p), (q), 0b00011110000000000000010000000000 | (opcode) << 29 | (imm5) << 16, (rn), (rd))
+#define arm_neon_dup_8b(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_LOW, (index << 1) | 0b0001, (rn), (rd))
+#define arm_neon_dup_16b(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_FULL, (index << 1) | 0b0001, (rn), (rd))
+#define arm_neon_dup_4h(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_LOW, (index << 2) | 0b0010, (rn), (rd))
+#define arm_neon_dup_8h(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_FULL, (index << 2) | 0b0010, (rn), (rd))
+#define arm_neon_dup_2s(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_LOW, (index << 3) | 0b0100, (rn), (rd))
+#define arm_neon_dup_4s(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_FULL, (index << 3) | 0b0100, (rn), (rd))
+#define arm_neon_dup_2d(p, rd, rn, index) arm_neon_sccpy_opcode((p), VREG_FULL, (index << 4) | 0b1000, (rn), (rd))
+
+/* NEON :: scalar 3-register same FP16 */
+#ifdef SUPPORT_ARM64_FP16
+	#define arm_neon_3s_fp16_opcode(p, q, u, a, opcode, rm, rn, rd) arm_neon_opcode_3reg ((p), (q) 0b00011110010000000000010000000000 | (u) << 29 | (a) << 23 | (opcode) << 11, (rm), (rn), (rd))
+#else
+	#define arm_neon_3s_fp16_opcode(p, q, opcode, imm5, rn, rd) g_assert_not_reached () /* TODO: make this a static assert */
+#endif
+#define arm_neon_fmulx_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b011, (rm), (rn), (rd))
+#define arm_neon_fmulx_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b011, (rm), (rn), (rd))
+#define arm_neon_fcmeq_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b100, (rm), (rn), (rd))
+#define arm_neon_fcmeq_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b100, (rm), (rn), (rd))
+#define arm_neon_freps_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b111, (rm), (rn), (rd))
+#define arm_neon_freps_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b111, (rm), (rn), (rd))
+#define arm_neon_frsqrts_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b111, (rm), (rn), (rd))
+#define arm_neon_frsqrts_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b111, (rm), (rn), (rd))
+#define arm_neon_fcmge_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b100, (rm), (rn), (rd))
+#define arm_neon_fcmge_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b100, (rm), (rn), (rd))
+#define arm_neon_facge_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b101, (rm), (rn), (rd))
+#define arm_neon_facge_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b101, (rm), (rn), (rd))
+#define arm_neon_fabd_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b010, (rm), (rn), (rd))
+#define arm_neon_fabd_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b010, (rm), (rn), (rd))
+#define arm_neon_fcmgt_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b100, (rm), (rn), (rd))
+#define arm_neon_fcmgt_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b100, (rm), (rn), (rd))
+#define arm_neon_facgt_4h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b101, (rm), (rn), (rd))
+#define arm_neon_facgt_8h(p, rd, rn, rm) arm_neon_3s_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b101, (rm), (rn), (rd))
+
+/* NEON :: scalar 2-register miscellaneous FP16 */
+#ifdef SUPPORT_ARM64_FP16
+	#define arm_neon_2m_fp16_opcode(p, q, u, a, opcode, rn, rd) arm_neon_opcode_2reg ((p), (q), 0b00011110011110000000100000000000 | (u) << 29 | (a) << 23 | (opcode) << 12, (rn), (rd))
+#else
+	#define arm_neon_2m_fp16_opcode(p, q, u, a, opcode, rn, rd) g_assert_not_reached () /* TODO: make this a static assert */
+#endif
+#define arm_neon_fcvtns_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b11010, (rn), (rd))
+#define arm_neon_fcvtns_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b11010, (rn), (rd))
+#define arm_neon_fcvtms_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b11011, (rn), (rd))
+#define arm_neon_fcvtms_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b11011, (rn), (rd))
+#define arm_neon_fcvtas_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b11100, (rn), (rd))
+#define arm_neon_fcvtas_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b11100, (rn), (rd))
+#define arm_neon_scvtf_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b0, 0b11101, (rn), (rd))
+#define arm_neon_scvtf_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b0, 0b11101, (rn), (rd))
+#define arm_neon_fcmgt_zero_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b01100, (rn), (rd))
+#define arm_neon_fcmgt_zero_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b01100, (rn), (rd))
+#define arm_neon_fcmeq_zero_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b01101, (rn), (rd))
+#define arm_neon_fcmeq_zero_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b01101, (rn), (rd))
+#define arm_neon_fcmlt_zero_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b01110, (rn), (rd))
+#define arm_neon_fcmlt_zero_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b01110, (rn), (rd))
+#define arm_neon_fcvtps_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b11010, (rn), (rd))
+#define arm_neon_fcvtps_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b11010, (rn), (rd))
+#define arm_neon_fcvtzs_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b11011, (rn), (rd))
+#define arm_neon_fcvtzs_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b11011, (rn), (rd))
+#define arm_neon_frecpe_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b11101, (rn), (rd))
+#define arm_neon_frecpe_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b11101, (rn), (rd))
+#define arm_neon_frecpx_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b0, 0b1, 0b11111, (rn), (rd))
+#define arm_neon_frecpx_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b0, 0b1, 0b11111, (rn), (rd))
+#define arm_neon_fcvtnu_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b11010, (rn), (rd))
+#define arm_neon_fcvtnu_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b11010, (rn), (rd))
+#define arm_neon_fcvtmu_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b11011, (rn), (rd))
+#define arm_neon_fcvtmu_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b11011, (rn), (rd))
+#define arm_neon_fcvtau_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b11100, (rn), (rd))
+#define arm_neon_fcvtau_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b11100, (rn), (rd))
+#define arm_neon_ucvtf_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b0, 0b11101, (rn), (rd))
+#define arm_neon_ucvtf_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b0, 0b11101, (rn), (rd))
+#define arm_neon_fcmge_zero_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b11000, (rn), (rd))
+#define arm_neon_fcmge_zero_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b11000, (rn), (rd))
+#define arm_neon_fcmle_zero_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b11001, (rn), (rd))
+#define arm_neon_fcmle_zero_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b11001, (rn), (rd))
+#define arm_neon_fcvtpu_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b11010, (rn), (rd))
+#define arm_neon_fcvtpu_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b11010, (rn), (rd))
+#define arm_neon_fcvtzu_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b11111, (rn), (rd))
+#define arm_neon_fcvtzu_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b11111, (rn), (rd))
+#define arm_neon_frsqrte_4h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_LOW, 0b1, 0b1, 0b11101, (rn), (rd))
+#define arm_neon_frsqrte_8h(p, rd, rn) arm_neon_2m_fp16_opcode ((p), VREG_FULL, 0b1, 0b1, 0b11101, (rn), (rd))
+
+/* NEON :: scalar 3-register same extra (FEAT_RDM) */
+#define arm_neon_3s_ex_opcode(p, q, u, size, opcode, rm, rn, rd) arm_neon_opcode_3reg ((p), (q), 0b00011110000000001000010000000000 | (u) << 29 | (size) << 22 | (opcode) << 11, (rm), (rn), (rd))
+#define arm_neon_sqrdmlah_4h(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_LOW, 0b1, 0b01, 0b0000, (rm), (rn), (rd))
+#define arm_neon_sqrdmlah_8h(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_FULL, 0b1, 0b01, 0b0000, (rm), (rn), (rd))
+#define arm_neon_sqrdmlah_2s(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_LOW, 0b1, 0b10, 0b0000, (rm), (rn), (rd))
+#define arm_neon_sqrdmlah_4s(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_FULL, 0b1, 0b10, 0b0000, (rm), (rn), (rd))
+#define arm_neon_sqrdmlsh_4h(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_LOW, 0b1, 0b01, 0b0001, (rm), (rn), (rd))
+#define arm_neon_sqrdmlsh_8h(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_FULL, 0b1, 0b01, 0b0001, (rm), (rn), (rd))
+#define arm_neon_sqrdmlsh_2s(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_LOW, 0b1, 0b10, 0b0001, (rm), (rn), (rd))
+#define arm_neon_sqrdmlsh_4s(p, rd, rn, rm) arm_neon_3s_ex_opcode ((p), VREG_FULL, 0b1, 0b10, 0b0001, (rm), (rn), (rd))
+
+/* NEON :: 2-register miscellaneous */
+#define arm_neon_2m_opcode(p, q, u, size, opcode, rn, rd) arm_neon_opcode_2reg ((p), (q), 0b00011110001000000000100000000000 | (u) << 29 | (size) << 22 | (opcode) << 12, (rn), (rd))
+
+#define arm_neon_suqadd(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b00011, (rn), (rd))
+#define arm_neon_suqadd_8b(p, rd, rn) arm_neon_suqadd ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_suqadd_16b(p, rd, rn) arm_neon_suqadd ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_suqadd_4h(p, rd, rn) arm_neon_suqadd ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_suqadd_8h(p, rd, rn) arm_neon_suqadd ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_suqadd_2s(p, rd, rn) arm_neon_suqadd ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_suqadd_4s(p, rd, rn) arm_neon_suqadd ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_suqadd_2d(p, rd, rn) arm_neon_suqadd ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_sqabs(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b00111, (rn), (rd))
+#define arm_neon_sqabs_8b(p, rd, rn) arm_neon_sqabs ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_sqabs_16b(p, rd, rn) arm_neon_sqabs ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_sqabs_4h(p, rd, rn) arm_neon_sqabs ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_sqabs_8h(p, rd, rn) arm_neon_sqabs ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_sqabs_2s(p, rd, rn) arm_neon_sqabs ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_sqabs_4s(p, rd, rn) arm_neon_sqabs ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_sqabs_2d(p, rd, rn) arm_neon_sqabs ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_cmgt_zero(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b01000, (rn), (rd))
+#define arm_neon_cmgt_zero_8b(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_cmgt_zero_16b(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_cmgt_zero_4h(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_cmgt_zero_8h(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_cmgt_zero_2s(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_cmgt_zero_4s(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_cmgt_zero_2d(p, rd, rn) arm_neon_cmgt_zero ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_cmeq_zero(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b01001, (rn), (rd))
+#define arm_neon_cmeq_zero_8b(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_cmeq_zero_16b(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_cmeq_zero_4h(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_cmeq_zero_8h(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_cmeq_zero_2s(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_cmeq_zero_4s(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_cmeq_zero_2d(p, rd, rn) arm_neon_cmeq_zero ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_cmlt_zero(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b01010, (rn), (rd))
+#define arm_neon_cmlt_zero_8b(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_cmlt_zero_16b(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_cmlt_zero_4h(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_cmlt_zero_8h(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_cmlt_zero_2s(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_cmlt_zero_4s(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_cmlt_zero_2d(p, rd, rn) arm_neon_cmlt_zero ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_abs(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b01011, (rn), (rd))
+#define arm_neon_abs_8b(p, rd, rn) arm_neon_abs ((p), VREG_LOW, SIZE_1, (rn), (rd))
+#define arm_neon_abs_16b(p, rd, rn) arm_neon_abs ((p), VREG_FULL, SIZE_1, (rn), (rd))
+#define arm_neon_abs_4h(p, rd, rn) arm_neon_abs ((p), VREG_LOW, SIZE_2, (rn), (rd))
+#define arm_neon_abs_8h(p, rd, rn) arm_neon_abs ((p), VREG_FULL, SIZE_2, (rn), (rd))
+#define arm_neon_abs_2s(p, rd, rn) arm_neon_abs ((p), VREG_LOW, SIZE_4, (rn), (rd))
+#define arm_neon_abs_4s(p, rd, rn) arm_neon_abs ((p), VREG_FULL, SIZE_4, (rn), (rd))
+#define arm_neon_abs_2d(p, rd, rn) arm_neon_abs ((p), VREG_FULL, SIZE_8, (rn), (rd))
+
+#define arm_neon_sqxtn(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b10100, (rn), (rd))
+#define arm_neon_sqxtn_8h(p, rd, rn) arm_neon_sqxtn ((p), 0b0, SIZE_1, (rd), (rn))
+#define arm_neon_sqxtn2_8h(p, rd, rn) arm_neon_sqxtn ((p), 0b1, SIZE_1, (rd), (rn)) 
+#define arm_neon_sqxtn_4s(p, rd, rn) arm_neon_sqxtn ((p), 0b0, SIZE_2, (rd), (rn))
+#define arm_neon_sqxtn2_4s(p, rd, rn) arm_neon_sqxtn ((p), 0b1, SIZE_2, (rd), (rn)) 
+#define arm_neon_sqxtn_2d(p, rd, rn) arm_neon_sqxtn ((p), 0b0, SIZE_4, (rd), (rn))
+#define arm_neon_sqxtn2_2d(p, rd, rn) arm_neon_sqxtn ((p), 0b1, SIZE_4, (rd), (rn)) 
+
+#define arm_neon_fcvtns(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b11010, (rn), (rd))
+#define arm_neon_fcvtns_2s(p, rd, rn) arm_neon_fcvtns ((p), 0b0, 0b0, (rd), (rn))
+#define arm_neon_fcvtns_4s(p, rd, rn) arm_neon_fcvtns ((p), 0b0, 0b1, (rd), (rn))
+#define arm_neon_fcvtns_2d(p, rd, rn) arm_neon_fcvtns ((p), 0b1, 0b1, (rd), (rn))
+
+#define arm_neon_fcvtms(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b11011, (rn), (rd))
+#define arm_neon_fcvtms_2s(p, rd, rn) arm_neon_fcvtms ((p), 0b0, 0b0, (rd), (rn))
+#define arm_neon_fcvtms_4s(p, rd, rn) arm_neon_fcvtms ((p), 0b0, 0b1, (rd), (rn))
+#define arm_neon_fcvtms_2d(p, rd, rn) arm_neon_fcvtms ((p), 0b1, 0b1, (rd), (rn))
+
+#define arm_neon_fcvtas(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b11100, (rn), (rd))
+#define arm_neon_fcvtas_2s(p, rd, rn) arm_neon_fcvtas ((p), 0b0, 0b0, (rd), (rn))
+#define arm_neon_fcvtas_4s(p, rd, rn) arm_neon_fcvtas ((p), 0b0, 0b1, (rd), (rn))
+#define arm_neon_fcvtas_2d(p, rd, rn) arm_neon_fcvtas ((p), 0b1, 0b1, (rd), (rn))
+
+#define arm_neon_scvtf(p, q, size, rd, rn) arm_neon_2m_opcode ((p), (q), 0b0, (size), 0b11101, (rn), (rd))
+#define arm_neon_scvtf_2s(p, rd, rn) arm_neon_scvtf ((p), 0b0, 0b0, (rd), (rn))
+#define arm_neon_scvtf_4s(p, rd, rn) arm_neon_scvtf ((p), 0b0, 0b1, (rd), (rn))
+#define arm_neon_scvtf_2d(p, rd, rn) arm_neon_scvtf ((p), 0b1, 0b1, (rd), (rn))
+
 #endif /* __arm_CODEGEN_H__ */
