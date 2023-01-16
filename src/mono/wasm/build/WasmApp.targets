@@ -67,6 +67,7 @@
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
+      - $(WasmAllowUndefinedSymbols)        - Appends 'allow-undefined' and 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld (default true, false for nested publish)
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
