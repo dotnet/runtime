@@ -109,8 +109,8 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
     <UseAppHost>false</UseAppHost>
     <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true'">$(_ExtraTrimmerArgs) --substitutions $(MSBuildThisFileDirectory)/ILLink.Substitutions.WasmIntrinsics.xml</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions $(MSBuildThisFileDirectory)/ILLink.Substitutions.NoWasmIntrinsics.xml</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>

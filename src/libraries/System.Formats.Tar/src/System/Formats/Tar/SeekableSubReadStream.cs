@@ -34,10 +34,8 @@ namespace System.Formats.Tar
             set
             {
                 ThrowIfDisposed();
-                if (value < 0 || value >= _endInSuperStream)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(value, _endInSuperStream);
                 _positionInSuperStream = _startInSuperStream + value;
             }
         }

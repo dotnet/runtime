@@ -214,8 +214,9 @@ namespace System.Reflection.Emit
             // The 0th ParameterBuilder does not correspond to an
             // actual parameter, but .NETFramework lets you define
             // it anyway. It is not useful.
-            if (iSequence < 0 || iSequence > GetParametersCount())
-                throw new ArgumentOutOfRangeException(nameof(iSequence));
+            ArgumentOutOfRangeException.ThrowIfNegative(iSequence);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(iSequence, GetParametersCount());
+
             if (type.is_created)
                 throw not_after_created();
 

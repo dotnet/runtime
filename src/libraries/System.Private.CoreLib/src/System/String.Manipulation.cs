@@ -545,9 +545,7 @@ namespace System
         public string Insert(int startIndex, string value)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            if ((uint)startIndex > Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)Length, nameof(startIndex));
 
             int oldLength = Length;
             int insertLength = value.Length;
