@@ -35,8 +35,6 @@ namespace Microsoft.NET.HostModel.Bundle
             Arch = arch ?? RuntimeInformation.OSArchitecture;
             FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
-            Debug.Assert(IsLinux || IsOSX || IsWindows || IsFreeBSD);
-
             if (FrameworkVersion.Major >= 6)
             {
                 BundleMajorVersion = 6u;
@@ -79,7 +77,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsLinux || IsFreeBSD ? ElfUtils.IsElfImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : PEUtils.IsPEImage(filePath);
+            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)
