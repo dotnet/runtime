@@ -67,6 +67,8 @@
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
+      - $(WasmBundleFullIcuData)            - Loads full ICU data (icudt.dat). Only when InvariantGlobalization false. Defaults to false.
+      - $(WasmIcuFileName)                  - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization false and WasmBundleFullIcuData false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -312,13 +314,9 @@
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
+      <_WasmIcuFileName Condition="'$(WasmIcuFileName)' != '' and Exists('$(WasmIcuFileName)')">$(WasmIcuFileName)</_WasmIcuFileName>
+      <_WasmIcuFileName Condition="'$(WasmIcuFileName)' != '' and !Exists('$(WasmIcuFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(WasmIcuFileName.Identity)</_WasmIcuFileName>
     </PropertyGroup>
-
-    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="icudt.dat"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(IcuFileName)' == ''" Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(IcuFileName)' != ''" Include="$(IcuFileName)"/>
-    </ItemGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
@@ -329,12 +327,16 @@
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
-
-      <WasmNativeAsset Condition="Exists('@(WasmIcuDataFileNames)')" Include="@(WasmIcuDataFileNames)"/>
-      <WasmNativeAsset Condition="!Exists('@(WasmIcuDataFileNames)')" Include="@(WasmIcuDataFileNames->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
-
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <IcuAvailableDataFiles Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat" />
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuFileName)' == ''" Include="@(IcuAvailableDataFiles->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuFileName)' != ''" Include="$(_WasmIcuFileName)"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
   </Target>
 
@@ -344,6 +346,7 @@
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+    <Warning Condition="'$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuFileName)' != ''"  Text="%24(WasmIcuFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
 
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>

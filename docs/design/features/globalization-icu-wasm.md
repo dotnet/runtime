@@ -10,9 +10,9 @@ In WASM applications when [globalization invariant mode](globalization-invariant
 
 We can specify the file we want to load, e.g. `icudt_no_CJK.dat` by adding to .csproj:
 ```
-<IcuFileName>icudt_no_CJK.dat</IcuFileName>
+<WasmIcuFileName>icudt_no_CJK.dat</WasmIcuFileName>
 ```
-Only one value for `IcuFileName` can be set. It can also be a custom file, created by the developer. To create a custom ICU file, see `Custom ICU` section below. If no `IcuFileName` was specified, the application's culture will be checked and the corresponding file will be loaded, e.g. for `en-US` file `icudt_EFIGS.dat`, and for `zh-CN` - `icudt_CJK.dat`.
+Only one value for `WasmIcuFileName` can be set. It can also be a custom file, created by the developer. To create a custom ICU file, see `Custom ICU` section below. If no `WasmIcuFileName` was specified, the application's culture will be checked and the corresponding file will be loaded, e.g. for `en-US` file `icudt_EFIGS.dat`, and for `zh-CN` - `icudt_CJK.dat`.
 
 ## Custom ICU
 
@@ -44,7 +44,7 @@ Clone https://github.com/dotnet/icu . See files in https://github.com/dotnet/icu
 
 Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to a suitable location and provide the full path to it in the `.csproj`, e.g.:
 ```xml
-<IcuFileName>C:\Users\wasmUser\icuSources\customIcu.dat</IcuFileName>
+<WasmIcuFileName>C:\Users\wasmUser\icuSources\customIcu.dat</WasmIcuFileName>
 ```
 
 ## Blazor
