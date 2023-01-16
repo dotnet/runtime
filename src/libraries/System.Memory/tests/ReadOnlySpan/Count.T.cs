@@ -357,7 +357,29 @@ namespace System.SpanTests
                 Assert.Equal(2, span.Count(target));
             }
         }
+
+        [Fact]
+        public static void TestOrdinalStringCount_String()
+        {
+            ReadOnlySpan<string> span = new string[] { "ii", "II", "μμ", "ii" };
+            Assert.Equal(2, span.Count("ii"));
+        }
+
+        [Fact]
+        public static void TestOrdinalStringCount_RosString()
+        {
+            ReadOnlySpan<string> span = new string[] { "ii", "II", "μμ", "ii", "μμ" };
+            ReadOnlySpan<string> target = new string[] { "ii", "II" };
+            Assert.Equal(1, span.Count(target));
+        }
         
+        [Fact]
+        public static void TestOverlapDoNotCount_RosChar()
+        {
+            ReadOnlySpan<char> span = new string('a', 10);
+            Assert.Equal(5, span.Count("aa"));
+        }
+
         [Theory]
         [MemberData(nameof(TestHelpers.CountNullData), MemberType = typeof(TestHelpers))]
         public static void CountNull_String(string[] spanInput, int expected)

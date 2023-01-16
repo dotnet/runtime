@@ -26,6 +26,14 @@ namespace System.SpanTests
         }
         
         [Fact]
+        public static void ZeroLengthNeedleCount_RosByte()
+        {
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(new byte[] { 5, 5, 5, 5, 5 });
+
+            Assert.Equal(0, span.Count<byte>(new ReadOnlySpan<byte>()));
+        }
+        
+        [Fact]
         public static void DefaultFilledCount_Byte()
         {
             int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
@@ -84,6 +92,23 @@ namespace System.SpanTests
                 }
             }
         }
+        
+        [Fact]
+        public static void TestSingleValueCount_Byte()
+        {
+            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
+            foreach (int length in lengths)
+            {
+                byte[] a = Enumerable.Range(1, length).Select(i => (byte)i).ToArray();
+                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+
+                foreach (byte value in span)
+                {
+                    ReadOnlySpan<byte> target = new byte[] { value };
+                    Assert.Equal(1, span.Count(target));
+                }
+            }
+        }
 
         [Fact]
         public static void TestNotCount_Byte()
@@ -125,7 +150,7 @@ namespace System.SpanTests
                 Assert.Equal(0, span.Count(target));
             }
         }
-        
+
         [Fact]
         public static void TestAlignmentNotCount_Byte()
         {
@@ -257,6 +282,17 @@ namespace System.SpanTests
                 ReadOnlySpan<byte> target = new byte[] { 99, 99 };
                 Assert.Equal(0, span.Count<byte>(target));
             }
+        }
+        
+        [Fact]
+        public static void TestOverlapDoNotCount_RosByte()
+        {
+            byte[] a = new byte[10];
+            Array.Fill<byte>(a, 6);
+
+
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+            Assert.Equal(5, span.Count(new byte[] { 6, 6 }));
         }
     }
 }
