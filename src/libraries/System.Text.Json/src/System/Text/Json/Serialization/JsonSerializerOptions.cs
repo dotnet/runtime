@@ -161,12 +161,16 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="Serialization.JsonSerializerContext"/> type.
+        /// Appends a <see cref="Serialization.JsonSerializerContext"/> to the metadata resolution of the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
         /// <typeparam name="TContext">The generic definition of the specified context type.</typeparam>
         /// <remarks>
         /// When serializing and deserializing types using the options
         /// instance, metadata for the types will be fetched from the context instance.
+        ///
+        /// The methods supports adding multiple contexts per options instance.
+        /// Metadata will be resolved in the order of configuration, similar to
+        /// how <see cref="JsonTypeInfoResolver.Combine(IJsonTypeInfoResolver?[])"/> resolves metadata.
         /// </remarks>
         public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
         {
