@@ -50,8 +50,11 @@ namespace System.Diagnostics
             if (_noMethodBaseAvailable || _ipAddress == IntPtr.Zero)
                 return false;
 
+            if (_method != null)
+                return true;
+
             IntPtr methodStartAddress = RuntimeImports.RhFindMethodStartAddress(_ipAddress);
-            DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out MethodBase _method);
+            DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
             if (_method == null)
             {
                 _noMethodBaseAvailable = true;
