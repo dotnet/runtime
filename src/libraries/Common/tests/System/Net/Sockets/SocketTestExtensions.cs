@@ -42,8 +42,16 @@ namespace System.Net.Sockets.Tests
         {
             IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
-            using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(serverAddress, 0));
+            // We need to minimize the chances of an unrelated DualMode socket connecting to listener from a parallel test.
+            // PortBlocker will create a temporary socket on the opposite AddressFamily, so parallel tests won't attempt
+            // to create their listener sockets on the same port.
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket l = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                l.BindToAnonymousPort(serverAddress);
+                return l;
+            });
+            Socket listener = portBlocker.PrimarySocket; // PortBlocker shall dispose this
             listener.Listen(1);
 
             IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
@@ -82,6 +90,121 @@ namespace System.Net.Sockets.Tests
             // In case of time-out, ManualResetEventSlim is left undisposed to avoid race conditions,
             // letting SafeHandle's finalizer to do the cleanup.
             return false;
+        }
+    }
+
+    /// <summary>
+    /// A utility to create and bind a socket while blocking it's port for both IPv4 and IPv6 by creating and binding
+    /// a "secondary" / "port blocker" socket on the opposite address family.
+    /// </summary>
+    internal class PortBlocker : IDisposable
+    {
+        private const int MaxAttempts = 16;
+
+        private Socket _secondarySocket;
+        public Socket PrimarySocket { get; }
+
+        public PortBlocker(Func<Socket> primarySocketFactory)
+        {
+            bool success = false;
+            for (int i = 0; i < MaxAttempts; i++)
+            {
+                PrimarySocket = primarySocketFactory();
+                if (PrimarySocket.LocalEndPoint is not IPEndPoint)
+                {
+                    PrimarySocket.Dispose();
+                    throw new Exception($"{nameof(primarySocketFactory)} should create and bind the socket.");
+                }
+
+                IPAddress secondaryAddress = PrimarySocket.AddressFamily == AddressFamily.InterNetwork ?
+                        IPAddress.IPv6Loopback :
+                        IPAddress.Loopback;
+                int port = ((IPEndPoint)PrimarySocket.LocalEndPoint).Port;
+                IPEndPoint secondaryEndPoint = new IPEndPoint(secondaryAddress, port);
+
+                try
+                {
+                    _secondarySocket = new Socket(secondaryAddress.AddressFamily, PrimarySocket.SocketType, PrimarySocket.ProtocolType);
+                    success = TryBindWithoutReuseAddress(_secondarySocket, secondaryEndPoint, out _);
+
+                    if (success) break;
+                }
+                catch (SocketException)
+                {
+                    PrimarySocket.Dispose();
+                    _secondarySocket?.Dispose();
+                }
+            }
+
+            if (!success)
+            {
+                throw new Exception($"Failed to create secondary (port blocker) socket in {MaxAttempts} attempts.");
+            }
+        }
+
+        public void Dispose()
+        {
+            PrimarySocket.Dispose();
+            _secondarySocket.Dispose();
+        }
+
+        private static unsafe bool TryBindWithoutReuseAddress(Socket socket, IPEndPoint endPoint, out int port)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                try
+                {
+                    socket.Bind(endPoint);
+                }
+                catch (SocketException)
+                {
+                    port = default;
+                    return false;
+                }
+
+                port = ((IPEndPoint)socket.LocalEndPoint).Port;
+                return true;
+            }
+
+            SocketAddress addr = endPoint.Serialize();
+            byte[] data = new byte[addr.Size];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = addr[i];
+            }
+
+            fixed (byte* dataPtr = data)
+            {
+                int result = bind(socket.SafeHandle, (nint)dataPtr, (uint)data.Length);
+                if (result != 0)
+                {
+                    port = default;
+                    return false;
+                }
+                uint sockLen = (uint)data.Length;
+                result = getsockname(socket.SafeHandle, (nint)dataPtr, (IntPtr)(&sockLen));
+                if (result != 0)
+                {
+                    port = default;
+                    return false;
+                }
+
+                addr = new SocketAddress(endPoint.AddressFamily, (int)sockLen);
+            }
+
+            for (int i = 0; i < data.Length; i++)
+            {
+                addr[i] = data[i];
+            }
+
+            port = ((IPEndPoint)endPoint.Create(addr)).Port;
+            return true;
+
+            [Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+            static extern int bind(SafeSocketHandle socket, IntPtr socketAddress, uint addrLen);
+
+            [Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+            static extern int getsockname(SafeSocketHandle socket, IntPtr socketAddress, IntPtr addrLenPtr);
         }
     }
 }
