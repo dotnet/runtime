@@ -6203,12 +6203,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                      "invalidating tailcall opportunity");
         return nullptr;
     }
-
-    if (compPoisoningAnyImplicitByrefs)
-    {
-        failTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
-        return nullptr;
-    }
 #endif
 
     // We have to ensure to pass the incoming retValBuf as the
@@ -6255,6 +6249,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Localloc used");
         return nullptr;
     }
+
+#ifdef DEBUG
+    // For explicit tailcalls the importer will avoid inserting stress
+    // poisoning after them. However, implicit tailcalls are marked earlier and
+    // we must filter those out here if we ended up adding any poisoning IR
+    // after them.
+    if (isImplicitOrStressTailCall && compPoisoningAnyImplicitByrefs)
+    {
+        failTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
+        return nullptr;
+    }
+#endif
 
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)
