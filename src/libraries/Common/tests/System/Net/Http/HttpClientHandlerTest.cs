@@ -1188,8 +1188,11 @@ namespace System.Net.Http.Functional.Tests
                             if(slowChunks)
                             {
                                 await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                                await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("2\r\nel\r\n", false);
+                                await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("8\r\nlo world\r\n", false);
+                                await Task.Delay(100);
                                 await connection.SendResponseBodyAsync("0\r\n\r\n", true);
                             }
                             else
