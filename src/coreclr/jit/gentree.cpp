@@ -3870,7 +3870,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
         }
 
         // Ignore ADD(CNS, CNS-gc-handle)
-        if (addOp2->TypeIs(TYP_REF) && !addOp2->IsIntegralConst(0))
+        if (constOnly && addOp2->IsIconHandle(GTF_ICON_OBJ_HDL) && !addOp2->IsIntegralConst(0))
         {
             break;
         }
