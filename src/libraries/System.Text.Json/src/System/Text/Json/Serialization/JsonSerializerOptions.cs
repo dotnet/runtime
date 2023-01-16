@@ -172,7 +172,7 @@ namespace System.Text.Json
         {
             VerifyMutable();
             TContext context = new();
-            context.Options = this;
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(TypeInfoResolver, context);
         }
 
         /// <summary>
