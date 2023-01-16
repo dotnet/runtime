@@ -3971,6 +3971,15 @@ main_loop:
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CALL_ALIGN_STACK) {
+			int call_offset = ip [1];
+			int aligned_call_offset = call_offset + MINT_STACK_SLOT_SIZE;
+			int params_stack_size = ip [2];
+
+			memmove (locals + aligned_call_offset, locals + call_offset, params_stack_size);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
 			// FIXME We don't need to encode the whole signature, just param_count
 			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
@@ -5600,10 +5609,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
 			return_offset = ip [1];
 			call_args_offset = ip [1];
+			int aligned_call_args_offset = ALIGN_TO (call_args_offset, MINT_STACK_ALIGNMENT);
 
 			int param_size = ip [3];
                         if (param_size)
-                                memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+                                memmove (locals + aligned_call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+			call_args_offset = aligned_call_args_offset;
 			LOCAL_VAR (call_args_offset, gpointer) = NULL;
 			ip += 4;
 			goto call;
@@ -5719,19 +5730,21 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gboolean is_vt = ret_size != 0;
 			if (!is_vt)
 				ret_size = MINT_STACK_SLOT_SIZE;
+			return_offset = call_args_offset;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
 
 			MonoClass *newobj_class = cmethod->method->klass;
 
+			call_args_offset = ALIGN_TO (call_args_offset + ret_size, MINT_STACK_ALIGNMENT);
 			// We allocate space on the stack for return value and for this pointer, that is passed to ctor
+			// Here we use return_offset as meaning original call_args_offset
 			if (param_size)
-				memmove (locals + call_args_offset + ret_size + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + return_offset, param_size);
 
 			if (is_vt) {
-				this_ptr = locals + call_args_offset;
+				this_ptr = locals + return_offset;
 				memset (this_ptr, 0, ret_size);
-				call_args_offset += ret_size;
 			} else {
 				// FIXME push/pop LMF
 				MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
@@ -5743,11 +5756,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				error_init_reuse (error);
 				this_ptr = mono_object_new_checked (newobj_class, error);
 				mono_interp_error_cleanup (error); // FIXME: do not swallow the error
-				LOCAL_VAR (call_args_offset, gpointer) = this_ptr; // return value
-				call_args_offset += MINT_STACK_SLOT_SIZE;
+				LOCAL_VAR (return_offset, gpointer) = this_ptr; // return value
 			}
 			LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
-			return_offset = call_args_offset; // unused, prevent warning
 			ip += 5;
 			goto call;
 		}

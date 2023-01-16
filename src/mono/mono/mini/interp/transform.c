@@ -348,10 +348,11 @@ interp_last_ins (InterpBasicBlock *bb)
 			return ret; \
 	} while (0)
 
+// We want to allow any block of stack slots to get moved in order for them to be aligned to MINT_STACK_ALIGNMENT
 #define ENSURE_STACK_SIZE(td, size) \
 	do { \
-		if ((size) > td->max_stack_size) \
-			td->max_stack_size = size; \
+		if ((size) >= td->max_stack_size) \
+			td->max_stack_size = ALIGN_TO (size + MINT_STACK_ALIGNMENT - MINT_STACK_SLOT_SIZE, MINT_STACK_ALIGNMENT); \
 	} while (0)
 
 #define ENSURE_I4(td, sp_off) \
@@ -3656,7 +3657,23 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	}
 	td->ip += 5;
-	td->last_ins->info.call_args = call_args;
+	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
+		td->last_ins->info.call_args = call_args;
+		if (!td->optimized) {
+			int call_dreg = td->last_ins->dreg;
+			int call_offset = td->locals [call_dreg].stack_offset;
+			if ((call_offset % MINT_STACK_ALIGNMENT) != 0) {
+				InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
+				interp_ins_set_dreg (align_ins, call_dreg);
+				align_ins->data [0] = params_stack_size;
+				if (calli) {
+					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
+					int offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT) - call_offset;
+					td->locals [fp_sreg].stack_offset += offset;
+				}
+			}
+		}
+	}
 
 	return TRUE;
 }
@@ -7994,6 +8011,9 @@ compute_native_offset_estimates (TransformData *td)
 				foreach_local_var (td, ins, NULL, alloc_unopt_global_local);
 		}
 	}
+
+	if (!td->optimized)
+		td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
 	return noe;
 }
 
@@ -8237,8 +8257,11 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 					// same offset. Use the dreg offset so we don't need to rely on existing call_args.
 					if (td->optimized)
 						offset = get_local_offset (td, ins->info.call_args [0]);
-					else
+					else if (opcode == MINT_NEWOBJ_ARRAY || opcode == MINT_LDELEMA_TC || opcode == MINT_LDELEMA)
+						// no alignment required since this is not a real call
 						offset = get_local_offset (td, ins->dreg);
+					else
+						offset = ALIGN_TO (get_local_offset (td, ins->dreg), MINT_STACK_ALIGNMENT);
 					*ip++ = GINT_TO_UINT16 (offset);
 				} else {
 					*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [i]));
