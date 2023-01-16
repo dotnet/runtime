@@ -6985,6 +6985,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_RET:
                 prefixFlags &= ~PREFIX_TAILCALL; // ret without call before it
+
             RET:
                 if (!impReturnInstruction(prefixFlags, opcode))
                 {
@@ -10887,6 +10888,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     {
         assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
     }
+
+    if (!compIsForInlining() && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) == 0) &&
+        compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
+    {
+        impPoisonImplicitByrefsBeforeReturn();
+    }
 #endif // DEBUG
 
     GenTree*             op2       = nullptr;
@@ -11203,6 +11210,87 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
     return true;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// impPoisonImplicitByrefsBeforeReturn:
+//   Spill the stack and insert IR that poisons all implicit byrefs.
+//
+void Compiler::impPoisonImplicitByrefsBeforeReturn()
+{
+    bool spilled = false;
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        if (!lvaIsImplicitByRefLocal(lclNum))
+        {
+            continue;
+        }
+
+        compPoisoningAnyImplicitByrefs = true;
+
+        if (!spilled)
+        {
+            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+            {
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress writing byrefs before return"));
+            }
+
+            spilled = true;
+        }
+
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        // Be conservative about this local to ensure we do not eliminate the poisoning.
+        lvaSetVarAddrExposed(lclNum, AddressExposedReason::STRESS_WRITE_IMPLICIT_BYREFS);
+
+        assert(varTypeIsStruct(dsc));
+        ClassLayout* layout = dsc->GetLayout();
+        assert(layout != nullptr);
+
+        auto poisonBlock = [this, lclNum](unsigned start, unsigned count) {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            GenTree* addr;
+            if (start > 0)
+            {
+                addr = gtNewLclFldAddrNode(lclNum, start, TYP_BYREF);
+            }
+            else
+            {
+                addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+            }
+
+            GenTree* blk = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, addr, typGetBlkLayout(count));
+            GenTree* op  = gtNewBlkOpNode(blk, gtNewIconNode(0xcd));
+            impAppendTree(op, CHECK_SPILL_NONE, DebugInfo());
+        };
+
+        unsigned startOffs = 0;
+        unsigned numSlots  = layout->GetSlotCount();
+        for (unsigned curSlot = 0; curSlot < numSlots; curSlot++)
+        {
+            unsigned  offs  = curSlot * TARGET_POINTER_SIZE;
+            var_types gcPtr = layout->GetGCPtrType(curSlot);
+            if (!varTypeIsGC(gcPtr))
+            {
+                continue;
+            }
+
+            poisonBlock(startOffs, offs - startOffs);
+
+            GenTree* zeroField = gtNewAssignNode(gtNewLclFldNode(lclNum, gcPtr, offs), gtNewZeroConNode(gcPtr));
+            impAppendTree(zeroField, CHECK_SPILL_NONE, DebugInfo());
+
+            startOffs = offs + TARGET_POINTER_SIZE;
+        }
+
+        assert(startOffs <= lvaLclExactSize(lclNum));
+        poisonBlock(startOffs, lvaLclExactSize(lclNum) - startOffs);
+    }
+}
+#endif
 
 /*****************************************************************************
  *  Mark the block as unimported.
