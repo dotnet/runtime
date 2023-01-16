@@ -10957,6 +10957,17 @@ typedef struct HashEntry {
 	struct HashEntry *next;
 } HashEntry;
 
+static inline void
+encode_uint_len (guint32 val, int len, guint8 *buf, guint8 **endbuf)
+{
+	if (len == 2) {
+		g_assert (val < 65536);
+		encode_int16 (val, buf, endbuf);
+	} else {
+		encode_int ((gint32)val, buf, endbuf);
+	}
+}
+
 /*
  * emit_extra_methods:
  *
@@ -10972,6 +10983,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	GPtrArray *table;
 	HashEntry *entry, *new_entry;
 	int nmethods, max_chain_length;
+	guint32 max_method_index;
 	int *chain_lengths;
 
 	info_offsets = g_new0 (guint32, acfg->extra_methods->len);
@@ -11010,6 +11022,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		g_ptr_array_add (table, NULL);
 	chain_lengths = g_new0 (int, table_size);
 	max_chain_length = 0;
+	max_method_index = 0;
 	for (guint i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = (MonoMethod *)g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, method);
@@ -11026,6 +11039,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		chain_lengths [hash] ++;
 		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
+		max_method_index = MAX (max_method_index, value);
 
 		new_entry = (HashEntry *)mono_mempool_alloc0 (acfg->mempool, sizeof (HashEntry));
 		new_entry->key = key;
@@ -11048,25 +11062,36 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 	//printf ("MAX: %d\n", max_chain_length);
 
-	buf_size = table->len * 12 + 4;
-	p = buf = (guint8 *)g_malloc (buf_size);
-	encode_int (table_size, p, &p);
+	int key_len = 4;
+	int value_len = max_method_index < 65536 ? 2 : 4;
+	int next_len = table->len < 65536 ? 2 : 4;
 
+	buf_size = table->len * 12 + 20;
+	p = buf = (guint8 *)g_malloc (buf_size);
+	/* Hash size */
+	encode_int (table_size, p, &p);
+	/* Number of rows */
+	encode_int (table->len, p, &p);
+	/* Column sizes */
+	encode_int (key_len, p, &p);
+	encode_int (value_len, p, &p);
+	encode_int (next_len, p, &p);
+	/* Data */
 	for (guint i = 0; i < table->len; ++i) {
 		entry = (HashEntry *)g_ptr_array_index (table, i);
-		if (entry == NULL) {
-			encode_int (0, p, &p);
-			encode_int (0, p, &p);
-			encode_int (0, p, &p);
-		} else {
-			//g_assert (entry->key > 0);
-			encode_int (entry->key, p, &p);
-			encode_int (entry->value, p, &p);
+
+		int key = 0;
+		int value = 0;
+		int next = 0;
+		if (entry != NULL) {
+			key = entry->key;
+			value = entry->value;
 			if (entry->next)
-				encode_int (entry->next->index, p, &p);
-			else
-				encode_int (0, p, &p);
+				next = entry->next->index;
 		}
+		encode_uint_len (key, key_len, p, &p);
+		encode_uint_len (value, value_len, p, &p);
+		encode_uint_len (next, next_len, p, &p);
 	}
 	g_assert (p - buf <= buf_size);
 
