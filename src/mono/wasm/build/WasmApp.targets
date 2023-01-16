@@ -333,7 +333,7 @@
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <IcuAvailableDataFiles Include="icudt_EFIGS.dat;icudt_CJK.dat;icudt_no_CJK.dat" />
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuFileName)' == ''" Include="@(IcuAvailableDataFiles->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')"/>
       <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuFileName)' != ''" Include="$(_WasmIcuFileName)"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
