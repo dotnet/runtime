@@ -46,12 +46,12 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize((DayOfWeek)(-1), options);
             Assert.Equal(@"-1", json);
 
+            // Not permitting integers should throw
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
-            // Not permitting integers should throw
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize((DayOfWeek)(-1), options));
 
-            // Numbers should throw
+            // Quoted numbers should throw
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("1", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>("-1", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Tests
             day = JsonSerializer.Deserialize<DayOfWeek>(@"""Monday""", options);
             Assert.Equal(DayOfWeek.Monday, day);
 
-            // Numbers-formatted json string should also consider naming policy
+            // Numbers-formatted json string should first consider naming policy
             options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false, namingPolicy: new ToEnumNumberNamingPolicy<DayOfWeek>()));
             day = JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options);
