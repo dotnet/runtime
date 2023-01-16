@@ -243,7 +243,6 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(t4, T4),
         REG(t5, T5),
         REG(t6, T6),
-        REG(x0, X0),
 #undef REG
 #define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
         REG(s1, S1),

@@ -3174,6 +3174,371 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             return;
         }
+        case 0x53:
+        {
+            unsigned int opcode2 = (code >> 20) & 0xfff;
+            unsigned int opcode3 = (code >> 12) & 0x7;
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            switch(opcode2)
+            {
+                case 0x000: // FADD.S
+                    assert(opcode3 == 0);
+                    printf("fadd.s       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x080: // FSUB.S
+                    assert(opcode3 == 0);
+                    printf("fsub.s       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x100: // FMUL.S
+                    assert(opcode3 == 0);
+                    printf("fmul.s       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x180: // FDIV.S
+                    assert(opcode3 == 0);
+                    printf("fdiv.s       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x580: // FSQRT.S
+                    assert(opcode3 == 0);
+                    printf("fsqrt.s      %s, %s\n", rd, rs1);
+                    return;
+                case 0x200: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    if (opcode3 == 0) // FSGNJ.S
+                    {
+                        printf("fsgnj.s      %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FSGNJN.S
+                    {
+                        printf("fsgnjn.s     %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 2) // FSGNJX.S
+                    {
+                        printf("fsgnjx.s     %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x280: // FMIN.S & FMXA.S
+                    if (opcode3 == 0) // FMIN.S
+                    {
+                        printf("fmin.s       %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FMAX.S
+                    {
+                        printf("fmax.s       %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xc00: // FCVT.W.S
+                    assert(opcode3 == 0);
+                    printf("fcvt.w.s     %s, %s\n", rd, rs1);
+                    return;
+                case 0xc01: // FCVT.WU.S
+                    assert(opcode3 == 0);
+                    printf("fcvt.wu.s    %s, %s\n", rd, rs1);
+                    return;
+                case 0xe00: // FMV.X.W & FCLASS.S
+                    if (opcode3 == 0) // FMV.X.W
+                    {
+                        printf("fmv.x.w      %s, %s\n", rd, rs1);
+                    }
+                    else if (opcode3 == 1) // FCLASS.S
+                    {
+                        printf("fclass.s     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xa00: // FLE.S & FLT.S & FEQ.S
+                    if (opcode3 == 0) // FLE.S
+                    {
+                        printf("fle.s        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FLT.S
+                    {
+                        printf("flt.s        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 2) // FEQ.S
+                    {
+                    printf("feq.s        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xd00: // FCVT.S.W
+                    assert(opcode3 == 0);
+                    printf("fcvt.s.w     %s, %s\n", rd, rs1);
+                    return;
+                case 0xd01: // FCVT.S.WU
+                    assert(opcode3 == 0);
+                    printf("fcvt.s.wu    %s, %s\n", rd, rs1);
+                    return;
+                case 0xf00: // FMV.W.X
+                    assert(opcode3 == 0);
+                    printf("fmv.w.x      %s, %s\n", rd, rs1);
+                    return;
+                case 0x20: // FADD.D
+                    assert(opcode3 == 0);
+                    printf("fadd.d       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0xa0: // FSUB.D
+                    assert(opcode3 == 0);
+                    printf("fsub.d       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x120: // FMUL.D
+                    assert(opcode3 == 0);
+                    printf("fmul.d       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x1a0: // FDIV.D
+                    assert(opcode3 == 0);
+                    printf("fdiv.d       %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0x5a0: // FSQRT.D
+                    assert(opcode3 == 0);
+                    printf("fsqrt.d      %s, %s\n", rd, rs1);
+                    return;
+                case 0x220: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    if (opcode3 == 0) // FSGNJ.D
+                    {
+                        printf("fsgnj.d      %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FSGNJN.D
+                    {
+                        printf("fsgnjn.d     %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 2) // FSGNJX.D
+                    {
+                        printf("fsgnjx.d     %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x2a0: // FMIN.D & FMAX.D
+                    if (opcode3 == 0) // FMIN.D
+                    {
+                        printf("fmin.d       %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FMAX.D
+                    {
+                        printf("fmax.d       %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x401: // FCVT.S.D
+                    if (opcode3 == 1) // FCVT.S.D
+                    {
+                        printf("fcvt.s.d     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x420: // FCVT.D.S
+                    if (opcode3 == 1) // FCVT.D.S
+                    {
+                        printf("fcvt.d.s     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xa20: // FLE.D & FLT.D & FEQ.D
+                    if (opcode3 == 0) // FLE.D
+                    {
+                        printf("fle.d        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 1) // FLT.D
+                    {
+                        printf("flt.d        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else if (opcode3 == 2) // FEQ.D
+                    {
+                        printf("feq.d        %s, %s, %s\n", rd, rs1, rs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xc20: // FCVT.W.D
+                    if (opcode3 == 1) // FCVT.W.D
+                    {
+                        printf("fcvt.w.d     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xc21: // FCVT.WU.D
+                    if (opcode3 == 1) // FCVT.WU.D
+                    {
+                        printf("fcvt.wu.d    %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xd20: // FCVT.D.W
+                    if (opcode3 == 1) // FCVT.D.W
+                    {
+                        printf("fcvt.d.w     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xd21: // FCVT.D.WU
+                    if (opcode3 == 1) // FCVT.D.WU
+                    {
+                        printf("fcvt.d.wu    %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xc02: // FCVT.L.S
+                    assert(opcode3 == 0);
+                    printf("fcvt.l.s     %s, %s\n", rd, rs1);
+                    return;
+                case 0xc03: // FCVT.LU.S
+                    assert(opcode3 == 0);
+                    printf("fcvt.lu.s    %s, %s\n", rd, rs1);
+                    return;
+                case 0xd02: // FCVT.S.L
+                    assert(opcode3 == 0);
+                    printf("fcvt.s.l     %s, %s\n", rd, rs1);
+                    return;
+                case 0xd03: // FCVT.S.LU
+                    assert(opcode3 == 0);
+                    printf("fcvt.s.lu    %s, %s\n", rd, rs1);
+                    return;
+                case 0xc22: // FCVT.L.D
+                    assert(opcode3 == 0);
+                    printf("fcvt.l.d     %s, %s\n", rd, rs1);
+                    return;
+                case 0xc23: // FCVT.LU.D
+                    assert(opcode3 == 0);
+                    printf("fcvt.lu.d    %s, %s\n", rd, rs1);
+                    return;
+                case 0xe20: // FMV.X.D & FCLASS.D
+                    if (opcode3 == 0) // FMV.X.D
+                    {
+                        printf("fmv.x.d      %s, %s\n", rd, rs1);
+                    }
+                    else if (opcode3 == 1) // FCLASS.D
+                    {
+                        printf("fclass.d     %s, %s\n", rd, rs1);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0xd22: // FCVT.D.L
+                    assert(opcode3 == 0);
+                    printf("fcvt.d.l     %s, %s\n", rd, rs1);
+                    return;
+                case 0xd23: // FCVT.D.LU
+                    assert(opcode3 == 0);
+                    printf("fcvt.d.lu    %s, %s\n", rd, rs1);
+                    return;
+                case 0xf20: // FMV.D.X
+                    assert(opcode3 == 0);
+                    printf("fmv.d.x      %s, %s\n", rd, rs1);
+                    return;
+                default:
+                    printf("RISCV64 illegal instruction: 0x%08X\n", code);
+                    _ASSERTE(!"TODO RISCV64 NYI");
+                    return;
+            }
+            return;
+        }
+        case 0x27:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            int offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+            if (opcode2 == 2) // FSW
+            {
+                    printf("fsw          %s, %d(%s)\n", rs2, offset, rs1);
+            }
+            else if (opcode2 == 3) // FSD
+            {
+                    printf("fsd          %s, %d(%s)\n", rs2, offset, rs1);
+            }
+            else
+            {
+                printf("Not implemented instruction: 0x%08X\n", code);
+                _ASSERTE(!"TODO RISCV64 NYI");
+            }
+            return;
+        }
+        case 0x7:
+        {
+            unsigned int opcode2 = (code >> 12) & 0x7;
+            const char* rs1 = RegNames[(code >> 15) & 0x1f];
+            const char* rd = RegNames[(code >> 7) & 0x1f];
+            int offset = ((code >> 20) & 0xfff);
+            if (offset & 0x800)
+            {
+                offset |= 0xfffff000;
+            }
+            if (opcode2 == 2) // FLW
+            {
+                    printf("flw          %s, %d(%s)\n", rd, offset, rs1);
+            }
+            else if (opcode2 == 3) // FLD
+            {
+                    printf("fld          %s, %d(%s)\n", rd, offset, rs1);
+            }
+            else
+            {
+                printf("Not implemented instruction: 0x%08X\n", code);
+                _ASSERTE(!"TODO RISCV64 NYI");
+            }
+            return;
+        }
         default:
             printf("Not implemented instruction: 0x%08X\n", code);
             _ASSERTE(!"TODO RISCV64 NYI");
