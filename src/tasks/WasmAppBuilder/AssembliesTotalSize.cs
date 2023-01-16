@@ -10,7 +10,7 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-// estimate the total size of the assemblies we are going to load and round it up to 64K
+// estimate the total size of the assemblies we are going to load x2 and round it up to 64K
 public class AssembliesTotalSize : Task
 {
     [Required]
@@ -33,6 +33,7 @@ public class AssembliesTotalSize : Task
             }
             totalSize += info.Length;
         }
+        totalSize *= 2;
         totalSize += 0x10000;
         totalSize &= 0xFFFF0000;
 
