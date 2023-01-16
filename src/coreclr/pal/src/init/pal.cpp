@@ -102,7 +102,6 @@ using namespace CorUnix;
 //
 
 extern "C" BOOL CRTInitStdStreams(void);
-extern "C" VOID NUMASupportCleanup(void);
 
 extern bool g_running_in_exe;
 
@@ -692,7 +691,6 @@ Initialize(
     }
     goto done;
 
-    NUMASupportCleanup();
     /* No cleanup required for CRTInitStdStreams */
 CLEANUP15:
     FILECleanupStdHandles();
