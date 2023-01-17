@@ -1006,14 +1006,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     ULONG       cbSigBlob,
     mdToken* pmb)
 {
-    if (pvSigBlob == nullptr || !md_is_field_sig(pvSigBlob, cbSigBlob))
+    HRESULT hr = FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
+
+    if (hr == CLDB_E_RECORD_NOTFOUND)
     {
-        return FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
+        hr = FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
     }
-    else
-    {
-        return FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
-    }
+    return hr;
 }
 
 namespace
