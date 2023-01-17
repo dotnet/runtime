@@ -266,10 +266,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected void VerifyMutable()
         {
-            if (ParentTypeInfo?.IsReadOnly == true)
-            {
-                ThrowHelper.ThrowInvalidOperationException_PropertyInfoImmutable();
-            }
+            ParentTypeInfo?.VerifyMutable();
         }
 
         internal bool IsConfigured { get; private set; }
