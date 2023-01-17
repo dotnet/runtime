@@ -143,7 +143,6 @@
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
-        AppDir="$(AppleAppDir)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         MainLibraryFileName="$(MainLibraryFileName)"
         Assemblies="@(_AppleAssembliesInternal)"
