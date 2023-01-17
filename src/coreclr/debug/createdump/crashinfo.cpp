@@ -414,7 +414,7 @@ CrashInfo::EnumerateManagedModules()
                     ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
-                        std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
+                        std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
 
                         // Change the module mapping name
                         AddOrReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
@@ -928,6 +928,24 @@ FormatString(const char* format, ...)
     int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
     va_end(args);
     return result > 0 ? std::string(buffer) : std::string();
+}
+
+//
+// Converts a WCHAR into a std:string containing a UTF-8 encoded string.
+//
+std::string
+ConvertString(const WCHAR* str)
+{
+    if (str == nullptr)
+        return{};
+
+    int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    ArrayHolder<char> buffer = new char[len + 1];
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, -1, nullptr, nullptr);
+    return std::string{ buffer };
 }
 
 //

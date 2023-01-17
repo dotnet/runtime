@@ -27,11 +27,9 @@ public:
     virtual unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen) = 0;
 
         // Return the name of the stream, (for error reporting).
-    //virtual const char* name() = 0;
-        // Return the Unicode name of the stream
-    virtual const WCHAR* namew() = 0;
-		//return ptr to buffer containing specified source line
-	virtual char* getLine(int lineNum) = 0;
+    virtual const char* name() = 0;
+        //return ptr to buffer containing specified source line
+    virtual char* getLine(int lineNum) = 0;
 };
 
 /**************************************************************************/
@@ -69,9 +67,9 @@ public:
         return Len;
     }
 
-    const WCHAR* namew()
+    const char* name()
     {
-        return W("local_define");
+        return "local_define";
     }
 
     BOOL IsValid()
@@ -97,14 +95,14 @@ class MappedFileStream : public ReadStream {
 public:
     MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
     {
-        fileNameW = wFileName;
         m_hFile = INVALID_HANDLE_VALUE;
         m_hMapFile = NULL;
         m_pStart = open(wFileName);
         m_pCurr = m_pStart;
         m_pEnd = m_pStart + m_FileSize;
-		//memset(fileNameANSI,0,MAX_FILENAME_LENGTH*4);
-		//WszWideCharToMultiByte(CP_ACP,0,wFileName,-1,fileNameANSI,MAX_FILENAME_LENGTH*4,NULL,NULL);
+        clear_name();
+        WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,fileNameUtf8,MAX_FILENAME_LENGTH*4,NULL,NULL);
+        delete [] wFileName;
     }
     ~MappedFileStream()
     {
@@ -120,8 +118,6 @@ public:
             m_hMapFile = NULL;
             m_hFile = INVALID_HANDLE_VALUE;
             m_FileSize = 0;
-            delete [] fileNameW;
-            fileNameW = NULL;
         }
     }
     unsigned getAll(_Out_ char** pbuff)
@@ -144,19 +140,14 @@ public:
         return Len;
     }
 
-    //const char* name()
-    //{
-    //    return(&fileNameANSI[0]);
-    //}
-
-    const WCHAR* namew()
+    const char* name()
     {
-        return fileNameW;
+       return fileNameUtf8;
     }
 
-    void set_namew(const WCHAR* namew)
+    void clear_name()
     {
-        fileNameW = namew;
+        memset(fileNameUtf8,0,MAX_FILENAME_LENGTH*4);
     }
 
     BOOL IsValid()
@@ -197,8 +188,7 @@ private:
         return (m_hFile == INVALID_HANDLE_VALUE) ? NULL : map_file();
     }
 
-    const WCHAR* fileNameW;     // FileName (for error reporting)
-	//char	fileNameANSI[MAX_FILENAME_LENGTH*4];
+	char	fileNameUtf8[MAX_FILENAME_LENGTH*4]; // FileName (for error reporting)
     HANDLE  m_hFile;                 // File we are reading from
     DWORD   m_FileSize;
     HANDLE  m_hMapFile;
