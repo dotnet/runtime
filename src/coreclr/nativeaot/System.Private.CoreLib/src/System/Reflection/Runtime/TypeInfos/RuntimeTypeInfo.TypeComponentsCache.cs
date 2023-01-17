@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Reflection;
@@ -103,6 +104,22 @@ namespace System.Reflection.Runtime.TypeInfos
             // Generic cache for scenario specific data. For example, it is used to cache Enum names and values.
             internal object? _genericCache;
 
+            // The sole purpose of this struct is to defeat generic code sharing of PerNameQueryCache below.
+            // We eagerly construct PerNameQueryCache when the type components cache is created, but they may not be
+            // actually used in an app that is light on reflection use. But we do have other canonically equivalent
+            // ConcurrentUnifier instances in the program and their use could drag this implementation into the app.
+            // Making the ConcurrentUnifier instance unshareable gives the compiler the ability to unshare this.
+            private struct StringKey : IEquatable<StringKey>
+            {
+                public readonly string Key;
+                public StringKey(string k) => Key = k;
+                public bool Equals(StringKey other) => Key == other.Key;
+                public override bool Equals([NotNullWhen(true)] object? obj) => obj is StringKey k && Equals(k);
+                public override int GetHashCode() => Key.GetHashCode();
+                public static implicit operator StringKey(string k) => new StringKey(k);
+                public static implicit operator string(StringKey k) => k.Key;
+            }
+
             //
             // Each PerName cache persists the results of a Type.Get(name, bindingFlags) for a particular MemberInfoType "M".
             //
@@ -110,7 +127,7 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             // In addition, if "ignoreCase" was passed to the constructor, BindingFlags.IgnoreCase is also in effect.
             //
-            private sealed class PerNameQueryCache<M> : ConcurrentUnifier<string, QueriedMemberList<M>> where M : MemberInfo
+            private sealed class PerNameQueryCache<M> : ConcurrentUnifier<StringKey, QueriedMemberList<M>> where M : MemberInfo
             {
                 public PerNameQueryCache(RuntimeTypeInfo type, bool ignoreCase)
                 {
@@ -118,7 +135,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     _ignoreCase = ignoreCase;
                 }
 
-                protected sealed override QueriedMemberList<M> Factory(string key)
+                protected sealed override QueriedMemberList<M> Factory(StringKey key)
                 {
                     QueriedMemberList<M> result = QueriedMemberList<M>.Create(_type, key, ignoreCase: _ignoreCase);
                     result.Compact();
