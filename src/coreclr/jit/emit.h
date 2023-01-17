@@ -2202,7 +2202,7 @@ private:
     {
         assert((emitHasLastIns() == nullptr) == (emitLastInsIG == nullptr));
 
-        return (emitHasLastIns() != nullptr) &&              // there is an emitLastInstr
+        return emitHasLastIns() &&                           // there is an emitLastInstr
                !emitForceNewIG &&                            // and we're not about to start a new IG
                ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
                 ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
