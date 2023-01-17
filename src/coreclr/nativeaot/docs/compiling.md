@@ -113,7 +113,8 @@ You can use this feature by adding the `StaticOpenSslLinking` property to your p
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
-License (Apache v2.0): https://github.com/openssl/openssl/blob/master/LICENSE.txt
+OpenSSL 3+ License (Apache v2.0): https://github.com/openssl/openssl/blob/master/LICENSE.txt
+OpenSSL releases prior to v3 (dual OpenSSL and SSLeay license): https://www.openssl.org/source/license-openssl-ssleay.txt
 
 ### Prerequisites
 
