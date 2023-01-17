@@ -27,7 +27,7 @@ class FrozenObjectHeapManager
 {
 public:
     FrozenObjectHeapManager();
-    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
+    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish = true);
 
 private:
     Crst m_Crst;

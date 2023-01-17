@@ -14,9 +14,6 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// MeterListener is class used to listen to the metrics instrument measurements recording.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class MeterListener : IDisposable
     {
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.

@@ -4696,7 +4696,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* argNode;
     if (lclNode->TypeIs(TYP_STRUCT))
     {
-        argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
+        argNode = gtNewStructVal(lclNode->GetLayout(this), argAddr);
     }
     else
     {
@@ -4782,7 +4782,17 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
-    GenTreeFlags lastUse = lclNode->gtFlags & GTF_VAR_DEATH;
+    // As a special case, for implicit byref args where we undid promotion we
+    // can often still know whether the use of the implicit byref local is a
+    // last use, and whether we can omit a copy when passed as an argument (the
+    // common reason why promotion is undone).
+    GenTreeFlags lastUse = GTF_EMPTY;
+    VARSET_TP*   deadFields;
+    if (((lclNode->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lclNode, &deadFields))
+    {
+        lastUse = GTF_VAR_DEATH;
+    }
+
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
@@ -4800,7 +4810,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         if (argNodeType == TYP_STRUCT)
         {
-            newArgNode = gtNewObjNode(argNodeLayout, addrNode);
+            newArgNode = gtNewStructVal(argNodeLayout, addrNode);
         }
         else
         {

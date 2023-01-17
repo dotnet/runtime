@@ -585,6 +585,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> Subtract<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ToVector512Unsafe<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ToVector512<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static bool TryCopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Span<T> destination) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static (System.Runtime.Intrinsics.Vector256<ushort> Lower, System.Runtime.Intrinsics.Vector256<ushort> Upper) Widen(System.Runtime.Intrinsics.Vector256<System.Byte> source) { throw null; }
@@ -654,6 +656,327 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> operator -(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator +(System.Runtime.Intrinsics.Vector256<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator >>>(System.Runtime.Intrinsics.Vector256<T> value, int shiftCount) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public static partial class Vector512
+    {
+        public static bool IsHardwareAccelerated { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> Abs<T>(System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Add<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> AndNot<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> AsByte<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> AsDouble<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> AsInt16<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> AsInt32<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> AsInt64<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> AsNInt<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> AsNUInt<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> AsSByte<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> AsSingle<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> AsUInt16<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> AsUInt32<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> AsUInt64<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> AsVector512<T>(this System.Numerics.Vector<T> value) where T : struct { throw null; }
+        public static System.Numerics.Vector<T> AsVector<T>(this System.Runtime.Intrinsics.Vector512<T> value) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<TTo> As<TFrom, TTo>(this System.Runtime.Intrinsics.Vector512<TFrom> vector) where TFrom : struct where TTo : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> BitwiseAnd<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> BitwiseOr<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Ceiling(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Ceiling(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ConditionalSelect<T>(System.Runtime.Intrinsics.Vector512<T> condition, System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector512<System.Int64> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.Double> ConvertToDouble(System.Runtime.Intrinsics.Vector512<System.UInt64> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> ConvertToInt32(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> ConvertToInt64(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector512<System.Int32> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.Single> ConvertToSingle(System.Runtime.Intrinsics.Vector512<System.UInt32> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> ConvertToUInt32(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Span<T> destination) where T : struct { }
+        public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination) where T : struct { }
+        public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination, int startIndex) where T : struct { }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> Create(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> Create(byte e0,  byte e1,  byte e2,  byte e3,  byte e4,  byte e5,  byte e6,  byte e7,  byte e8,  byte e9,  byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31, byte e32, byte e33, byte e34, byte e35, byte e36, byte e37, byte e38, byte e39, byte e40, byte e41, byte e42, byte e43, byte e44, byte e45, byte e46, byte e47, byte e48, byte e49, byte e50, byte e51, byte e52, byte e53, byte e54, byte e55, byte e56, byte e57, byte e58, byte e59, byte e60, byte e61, byte e62, byte e63) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Create(double value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Create(double e0, double e1, double e2, double e3, double e4, double e5, double e6, double e7) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> Create(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15, short e16, short e17, short e18, short e19, short e20, short e21, short e22, short e23, short e24, short e25, short e26, short e27, short e28, short e29, short e30, short e31) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> Create(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> Create(int e0, int e1, int e2, int e3, int e4, int e5, int e6, int e7, int e8, int e9, int e10, int e11, int e12, int e13, int e14, int e15) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> Create(long value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> Create(long e0, long e1, long e2, long e3, long e4, long e5, long e6, long e7) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> Create(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> Create(nuint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> Create(System.Runtime.Intrinsics.Vector256<byte> lower, System.Runtime.Intrinsics.Vector256<byte> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Create(System.Runtime.Intrinsics.Vector256<double> lower, System.Runtime.Intrinsics.Vector256<double> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> Create(System.Runtime.Intrinsics.Vector256<short> lower, System.Runtime.Intrinsics.Vector256<short> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> Create(System.Runtime.Intrinsics.Vector256<int> lower, System.Runtime.Intrinsics.Vector256<int> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> Create(System.Runtime.Intrinsics.Vector256<long> lower, System.Runtime.Intrinsics.Vector256<long> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> Create(System.Runtime.Intrinsics.Vector256<nint> lower, System.Runtime.Intrinsics.Vector256<nint> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> Create(System.Runtime.Intrinsics.Vector256<nuint> lower, System.Runtime.Intrinsics.Vector256<nuint> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> Create(System.Runtime.Intrinsics.Vector256<sbyte> lower, System.Runtime.Intrinsics.Vector256<sbyte> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Create(System.Runtime.Intrinsics.Vector256<float> lower, System.Runtime.Intrinsics.Vector256<float> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> Create(System.Runtime.Intrinsics.Vector256<ushort> lower, System.Runtime.Intrinsics.Vector256<ushort> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> Create(System.Runtime.Intrinsics.Vector256<uint> lower, System.Runtime.Intrinsics.Vector256<uint> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> Create(System.Runtime.Intrinsics.Vector256<ulong> lower, System.Runtime.Intrinsics.Vector256<ulong> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> Create(sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> Create(sbyte e0,  sbyte e1,  sbyte e2,  sbyte e3,  sbyte e4,  sbyte e5,  sbyte e6,  sbyte e7,  sbyte e8,  sbyte e9,  sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31, sbyte e32, sbyte e33, sbyte e34, sbyte e35, sbyte e36, sbyte e37, sbyte e38, sbyte e39, sbyte e40, sbyte e41, sbyte e42, sbyte e43, sbyte e44, sbyte e45, sbyte e46, sbyte e47, sbyte e48, sbyte e49, sbyte e50, sbyte e51, sbyte e52, sbyte e53, sbyte e54, sbyte e55, sbyte e56, sbyte e57, sbyte e58, sbyte e59, sbyte e60, sbyte e61, sbyte e62, sbyte e63) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Create(float value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Create(float e0, float e1, float e2, float e3, float e4, float e5, float e6, float e7, float e8, float e9, float e10, float e11, float e12, float e13, float e14, float e15) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> Create(ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7, ushort e8, ushort e9, ushort e10, ushort e11, ushort e12, ushort e13, ushort e14, ushort e15, ushort e16, ushort e17, ushort e18, ushort e19, ushort e20, ushort e21, ushort e22, ushort e23, ushort e24, ushort e25, ushort e26, ushort e27, ushort e28, ushort e29, ushort e30, ushort e31) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> Create(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> Create(uint e0, uint e1, uint e2, uint e3, uint e4, uint e5, uint e6, uint e7, uint e8, uint e9, uint e10, uint e11, uint e12, uint e13, uint e14, uint e15) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> Create(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> Create(ulong e0, ulong e1, ulong e2, ulong e3, ulong e4, ulong e5, ulong e6, ulong e7) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> CreateScalar(double value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> CreateScalar(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> CreateScalar(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> CreateScalar(long value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> CreateScalar(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> CreateScalar(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> CreateScalar(sbyte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> CreateScalar(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> CreateScalar(ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> CreateScalar(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> CreateScalar(ulong value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateScalar<T>(T value) where T: struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> CreateScalarUnsafe(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> CreateScalarUnsafe(double value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> CreateScalarUnsafe(short value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> CreateScalarUnsafe(int value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> CreateScalarUnsafe(long value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> CreateScalarUnsafe(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> CreateScalarUnsafe(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> CreateScalarUnsafe(sbyte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> CreateScalarUnsafe(float value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> CreateScalarUnsafe(ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> CreateScalarUnsafe(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateScalarUnsafe<T>(T value) where T: struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.ReadOnlySpan<T> values) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.Runtime.Intrinsics.Vector256<T> lower, System.Runtime.Intrinsics.Vector256<T> upper) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T value) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T[] values) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T[] values, int index) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Divide<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Divide<T>(System.Runtime.Intrinsics.Vector512<T> left, T right) where T : struct { throw null; }
+        public static T Dot<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Equals<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Double> Floor(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Floor(System.Runtime.Intrinsics.Vector512<System.Single> vector) { throw null; }
+        public static T GetElement<T>(this System.Runtime.Intrinsics.Vector512<T> vector, int index) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> GetLower<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> GetUpper<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static bool GreaterThanAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool GreaterThanAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool GreaterThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool GreaterThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> GreaterThanOrEqual<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> GreaterThan<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool LessThanAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool LessThanAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool LessThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> LessThan<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector512<T> Load<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Max<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Min<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Multiply<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Multiply<T>(System.Runtime.Intrinsics.Vector512<T> left, T right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Multiply<T>(T left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Single> Narrow(System.Runtime.Intrinsics.Vector512<System.Double> lower, System.Runtime.Intrinsics.Vector512<System.Double> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> Narrow(System.Runtime.Intrinsics.Vector512<System.Int16> lower, System.Runtime.Intrinsics.Vector512<System.Int16> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> Narrow(System.Runtime.Intrinsics.Vector512<System.Int32> lower, System.Runtime.Intrinsics.Vector512<System.Int32> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> Narrow(System.Runtime.Intrinsics.Vector512<System.Int64> lower, System.Runtime.Intrinsics.Vector512<System.Int64> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> Narrow(System.Runtime.Intrinsics.Vector512<System.UInt16> lower, System.Runtime.Intrinsics.Vector512<System.UInt16> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> Narrow(System.Runtime.Intrinsics.Vector512<System.UInt32> lower, System.Runtime.Intrinsics.Vector512<System.UInt32> upper) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> Narrow(System.Runtime.Intrinsics.Vector512<System.UInt64> lower, System.Runtime.Intrinsics.Vector512<System.UInt64> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Negate<T>(System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> OnesComplement<T>(System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.Byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.Int16> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.Int32> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.Int64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> ShiftLeft(System.Runtime.Intrinsics.Vector512<nint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector512<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.SByte> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.UInt16> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.UInt32> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> ShiftLeft(System.Runtime.Intrinsics.Vector512<System.UInt64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<System.Int16> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<System.Int32> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<System.Int64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<nint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<System.SByte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Byte> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.Byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int16> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.Int16> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int32> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.Int32> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<System.Int64> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.Int64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<nint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.SByte> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.SByte> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt16> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.UInt16> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.UInt32> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<System.UInt64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<byte> Shuffle(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<sbyte> Shuffle(System.Runtime.Intrinsics.Vector512<sbyte> vector, System.Runtime.Intrinsics.Vector512<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> Shuffle(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ushort> Shuffle(System.Runtime.Intrinsics.Vector512<ushort> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> Shuffle(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<uint> Shuffle(System.Runtime.Intrinsics.Vector512<uint> vector, System.Runtime.Intrinsics.Vector512<uint> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Shuffle(System.Runtime.Intrinsics.Vector512<float> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> Shuffle(System.Runtime.Intrinsics.Vector512<long> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ulong> Shuffle(System.Runtime.Intrinsics.Vector512<ulong> vector, System.Runtime.Intrinsics.Vector512<ulong> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Shuffle(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Sqrt<T>(System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Subtract<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+        public static T Sum<T>(System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector512<T> vector) where T : struct { throw null; }
+        public static bool TryCopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Span<T> destination) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static (System.Runtime.Intrinsics.Vector512<ushort> Lower, System.Runtime.Intrinsics.Vector512<ushort> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.Byte> source) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector512<int> Lower, System.Runtime.Intrinsics.Vector512<int> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.Int16> source) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector512<long> Lower, System.Runtime.Intrinsics.Vector512<long> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.Int32> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static (System.Runtime.Intrinsics.Vector512<short> Lower, System.Runtime.Intrinsics.Vector512<short> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.SByte> source) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector512<double> Lower, System.Runtime.Intrinsics.Vector512<double> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.Single> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static (System.Runtime.Intrinsics.Vector512<uint> Lower, System.Runtime.Intrinsics.Vector512<uint> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.UInt16> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static (System.Runtime.Intrinsics.Vector512<ulong> Lower, System.Runtime.Intrinsics.Vector512<ulong> Upper) Widen(System.Runtime.Intrinsics.Vector512<System.UInt32> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ushort> WidenLower(System.Runtime.Intrinsics.Vector512<System.Byte> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> WidenLower(System.Runtime.Intrinsics.Vector512<System.Int16> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> WidenLower(System.Runtime.Intrinsics.Vector512<System.Int32> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<short> WidenLower(System.Runtime.Intrinsics.Vector512<System.SByte> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> WidenLower(System.Runtime.Intrinsics.Vector512<System.Single> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<uint> WidenLower(System.Runtime.Intrinsics.Vector512<System.UInt16> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ulong> WidenLower(System.Runtime.Intrinsics.Vector512<System.UInt32> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ushort> WidenUpper(System.Runtime.Intrinsics.Vector512<System.Byte> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> WidenUpper(System.Runtime.Intrinsics.Vector512<System.Int16> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> WidenUpper(System.Runtime.Intrinsics.Vector512<System.Int32> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<short> WidenUpper(System.Runtime.Intrinsics.Vector512<System.SByte> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> WidenUpper(System.Runtime.Intrinsics.Vector512<System.Single> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<uint> WidenUpper(System.Runtime.Intrinsics.Vector512<System.UInt16> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<ulong> WidenUpper(System.Runtime.Intrinsics.Vector512<System.UInt32> source) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> WithElement<T>(this System.Runtime.Intrinsics.Vector512<T> vector, int index, T value) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> WithLower<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> WithUpper<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Runtime.Intrinsics.Vector256<T> value) where T : struct { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Xor<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) where T : struct { throw null; }
+    }
+    public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>> where T : struct
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Runtime.Intrinsics.Vector512<T> AllBitsSet { get { throw null; } }
+        public static int Count { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> One { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> Zero { get { throw null; } }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Runtime.Intrinsics.Vector512<T> other) { throw null; }
+        public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> operator +(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator &(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator |(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator /(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator /(System.Runtime.Intrinsics.Vector512<T> left, T right) { throw null; }
+        public static bool operator ==(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator ^(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static bool operator !=(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator <<(System.Runtime.Intrinsics.Vector512<T> value, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator *(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator *(System.Runtime.Intrinsics.Vector512<T> left, T right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator *(T left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator ~(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator >>(System.Runtime.Intrinsics.Vector512<T> value, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator -(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator -(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator +(System.Runtime.Intrinsics.Vector512<T> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> operator >>>(System.Runtime.Intrinsics.Vector512<T> value, int shiftCount) { throw null; }
         public override string ToString() { throw null; }
     }
     public static partial class Vector64

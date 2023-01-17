@@ -2339,8 +2339,8 @@ namespace System.Collections
 
             public override IEnumerator GetEnumerator(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2350,8 +2350,8 @@ namespace System.Collections
 
             public override ArrayList GetRange(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2372,8 +2372,7 @@ namespace System.Collections
 
             public override int IndexOf(object? value, int startIndex)
             {
-                if (startIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
                 if (startIndex > _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
@@ -2443,8 +2442,7 @@ namespace System.Collections
 
                 if (startIndex >= _baseSize)
                     throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexMustBeLess);
-                if (startIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
                 int i = _baseList.LastIndexOf(value, _baseIndex + startIndex, count);
                 if (i >= 0) return i - _baseIndex;
@@ -2465,8 +2463,8 @@ namespace System.Collections
 
             public override void RemoveRange(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2483,8 +2481,8 @@ namespace System.Collections
 
             public override void Reverse(int index, int count)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -2506,8 +2504,8 @@ namespace System.Collections
 
             public override void Sort(int index, int count, IComparer? comparer)
             {
-                if (index < 0 || count < 0)
-                    throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
                 if (_baseSize - index < count)
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
 

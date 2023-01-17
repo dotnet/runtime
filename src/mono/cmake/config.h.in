@@ -377,9 +377,6 @@
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
 
-/* Define to 1 if you have the `sched_getcpu' function. */
-#cmakedefine HAVE_SCHED_GETCPU 1
-
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
 

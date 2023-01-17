@@ -372,20 +372,6 @@ int main(void)
 
   exit(-1 == max_priority || -1 == min_priority);
 }" HAVE_SCHED_GET_PRIORITY)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sched.h>
-
-int main(void)
-{
-  if (sched_getcpu() >= 0)
-  {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_SCHED_GETCPU)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <stdlib.h>
 #include <time.h>

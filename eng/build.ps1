@@ -130,7 +130,9 @@ if ($subset -eq 'help') {
 }
 
 # Lower-case the passed in OS string.
-$os = $os.ToLowerInvariant()
+if ($os) {
+  $os = $os.ToLowerInvariant()
+}
 
 if ($vs) {
   $archToOpen = $arch[0]
