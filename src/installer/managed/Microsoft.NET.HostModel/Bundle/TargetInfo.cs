@@ -118,6 +118,6 @@ namespace Microsoft.NET.HostModel.Bundle
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
         private string HostFxr => IsWindows ? "hostfxr.dll" : IsOSX ? "libhostfxr.dylib" : "libhostfxr.so";
-        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsOSX "libhostpolicy.dylib" : "libhostpolicy.so";
+        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsOSX ? "libhostpolicy.dylib" : "libhostpolicy.so";
     }
 }
