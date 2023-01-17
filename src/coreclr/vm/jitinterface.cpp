@@ -9439,6 +9439,8 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 #if defined(TARGET_LOONGARCH64)
     size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+#elif defined(TARGET_RISCV64)
+    size = (uint32_t)MethodTable::GetRiscv64PassStructInRegisterFlags(cls);
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();

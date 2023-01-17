@@ -4206,7 +4206,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 }
             }
         }
-#elif TARGET_RISCV64
+#elif defined(TARGET_RISCV64)
          _ASSERTE(!"TODO RISCV64 NYI");
 #else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);

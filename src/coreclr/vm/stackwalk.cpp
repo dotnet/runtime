@@ -647,7 +647,7 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = TADDR(pContext->Lr);
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     uControlPc = TADDR(pContext->Ra);
 
 #else

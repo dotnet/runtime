@@ -1928,6 +1928,10 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     {
         return (OBJECTREF*) pRD->pCurrentContextPointers->Ra;
     }
+    else if (regNum < 8)
+    {
+        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.T0 + (regNum - 5));
+    }
     else if(regNum == 8)
     {
         return (OBJECTREF*) pRD->pCurrentContextPointers->Fp;
@@ -1936,16 +1940,15 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     {
         return (OBJECTREF*) pRD->pCurrentContextPointers->S1;
     }
-    else if (regNum < 8)
-    {
-        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.T0 + (regNum - 5));
-    }
     else if (regNum < 18)
     {
         return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 10));
     }
-
-    return (OBJECTREF*)*(DWORD64**)(&pRD->pCurrentContextPointers->S2 + (regNum-18));
+    else if (regNum < 28)
+    {
+        return (OBJECTREF*)*(DWORD64**)(&pRD->pCurrentContextPointers->S2 + (regNum-18));
+    }
+    return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.T3 + (regNum-28));
 #endif
 }
 
@@ -1953,7 +1956,7 @@ bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
     _ASSERTE(regNum >= 0 && regNum <= 31);
 
-    return (regNum >= 6 && regNum <= 8) || (regNum >= 10 and regNum <= 17) || regNum >= 28;
+    return (regNum >= 5 && regNum <= 7) || (regNum >= 10 and regNum <= 17) || regNum >= 28 || regNum == 1;
 }
 
 bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
@@ -2116,7 +2119,7 @@ int GcInfoDecoder::GetStackReg(int spBase)
 #elif defined(TARGET_LOONGARCH64)
     int esp = 3;
 #elif defined(TARGET_RISCV64)
-    int esp = 3;
+    int esp = 2;
 #endif
 
     if( GC_SP_REL == spBase )

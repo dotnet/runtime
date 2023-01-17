@@ -4804,7 +4804,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         }
         else
         {
-            // TODO-RISCV64: maybe optimize further!
+            // TODO-RISCV64: maybe optimize furtherk!
             UINT32 upper = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
             if (((upper + 0x800) >> 12) != 0)
             {

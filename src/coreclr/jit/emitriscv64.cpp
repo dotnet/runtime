@@ -1102,12 +1102,16 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
     }
     else
     {
-        UINT32 upper = imm >> 32;
+        UINT32 upper = (imm >> 32) & 0xffffffff;
         if (((upper + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, reg, ((upper + 0x800) >> 12));
+            if ((upper & 0xFFF) != 0)
+            {
+                emitIns_R_R_I(INS_addi, size, reg, reg, upper & 0xFFF);
+            }
         }
-        if ((upper & 0xFFF) != 0)
+        else if ((upper & 0xFFF) != 0)
         {
             emitIns_R_R_I(INS_addi, size, reg, REG_R0, upper & 0xFFF);
         }
@@ -2153,7 +2157,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     break;
             }
 
-            ins = INS_ori;
+            ins = INS_addi;
             dstRW += 4;
 
             sz = sizeof(instrDesc);
