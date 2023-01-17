@@ -1672,8 +1672,6 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
             {
                 visitor.UpdateEarlyRefCount(lclNum);
             }
-
-            break;
         }
     }
 
