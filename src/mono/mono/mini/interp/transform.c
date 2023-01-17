@@ -10083,13 +10083,14 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 
 	// Push active call that should be resolved onto the stack
 	call->info.call_info->call_deps = NULL;
-	for (int i = 0; i < ac->active_calls_count; i++)
-		call->info.call_info->call_deps = g_slist_prepend_mempool (td->mempool, call->info.call_info->call_deps, ac->active_calls [i]);
-	ac->deferred_calls = g_slist_prepend_mempool (td->mempool, ac->deferred_calls, call);
-	if (!ac->active_calls_count) {
+	if (ac->active_calls_count) {
+		for (int i = 0; i < ac->active_calls_count; i++)
+			call->info.call_info->call_deps = g_slist_prepend_mempool (td->mempool, call->info.call_info->call_deps, ac->active_calls [i]);
+		ac->deferred_calls = g_slist_prepend_mempool (td->mempool, ac->deferred_calls, call);
+	} else {
 		// If no other active calls, current active call and all deferred calls can be resolved from the stack
-		while (ac->deferred_calls) {
-			InterpInst *deferred_call = (InterpInst*) ac->deferred_calls->data;
+		InterpInst *deferred_call = call;
+		while (deferred_call) {
 			// `base_offset` is a relative offset (to the start of the call args stack) where the args for this call reside.
 			int base_offset = 0;
 			for (GSList *list = deferred_call->info.call_info->call_deps; list; list = list->next) {
@@ -10122,7 +10123,12 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 				deferred_call->info.call_info->call_args = call_args;
 			}
 			deferred_call->info.call_info->call_offset = base_offset;
-			ac->deferred_calls = ac->deferred_calls->next;
+
+			if (ac->deferred_calls) {
+				deferred_call = (InterpInst*) ac->deferred_calls->data;
+				ac->deferred_calls = ac->deferred_calls->next;
+			} else
+				deferred_call = NULL;
 		}
 	}
 }
