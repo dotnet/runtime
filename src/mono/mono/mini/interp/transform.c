@@ -3571,6 +3571,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (op == MINT_LDLEN) {
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 		}
+		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
@@ -3661,9 +3662,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 #endif
 		}
+		init_last_ins_call (td);
 	}
 	td->ip += 5;
-	init_last_ins_call (td);
 	td->last_ins->info.call_info->call_args = call_args;
 
 	return TRUE;
@@ -10081,10 +10082,9 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 	}
 
 	// Push active call that should be resolved onto the stack
-	call->call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
-	call->call_info->call_deps = NULL;
+	call->info.call_info->call_deps = NULL;
 	for (int i = 0; i < ac->active_calls_count; i++)
-		call->call_info->call_deps = g_slist_prepend_mempool (td->mempool, call->call_info->call_deps, ac->active_calls [i]);
+		call->info.call_info->call_deps = g_slist_prepend_mempool (td->mempool, call->info.call_info->call_deps, ac->active_calls [i]);
 	ac->deferred_calls = g_slist_prepend_mempool (td->mempool, ac->deferred_calls, call);
 	if (!ac->active_calls_count) {
 		// If no other active calls, current active call and all deferred calls can be resolved from the stack
@@ -10092,8 +10092,8 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 			InterpInst *deferred_call = (InterpInst*) ac->deferred_calls->data;
 			// `base_offset` is a relative offset (to the start of the call args stack) where the args for this call reside.
 			int base_offset = 0;
-			for (GSList *list = deferred_call->call_info->call_deps; list; list = list->next) {
-				int call_offset = ((InterpInst*)list->data)->call_info->call_offset;
+			for (GSList *list = deferred_call->info.call_info->call_deps; list; list = list->next) {
+				int call_offset = ((InterpInst*)list->data)->info.call_info->call_offset;
 				if (call_offset > base_offset)
 					base_offset = call_offset;
 			}
@@ -10121,7 +10121,7 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 
 				deferred_call->info.call_info->call_args = call_args;
 			}
-			deferred_call->call_info->call_offset = base_offset;
+			deferred_call->info.call_info->call_offset = base_offset;
 			ac->deferred_calls = ac->deferred_calls->next;
 		}
 	}

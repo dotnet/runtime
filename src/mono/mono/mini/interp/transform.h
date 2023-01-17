@@ -85,7 +85,6 @@ struct _InterpInst {
 		InterpBasicBlock **target_bb_table;
 		InterpCallInfo *call_info;
 	} info;
-	InterpCallInfo *call_info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
 	guint16 data [MONO_ZERO_LEN_ARRAY];
