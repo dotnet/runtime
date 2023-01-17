@@ -1322,6 +1322,49 @@ namespace System.Net.Http.Functional.Tests
             server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task ReadAsStreamAsync_StreamingCancellation()
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+#if !NETFRAMEWORK
+                request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+#endif
+
+                var cts = new CancellationTokenSource();
+
+                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
+                {
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
+                    {
+                        // Various forms of reading
+                        var buffer = new byte[1];
+#if !NETFRAMEWORK
+                        Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                        Assert.Equal((byte)'h', buffer[0]);
+                        var sizePromise = responseStream.ReadAsync(new Memory<byte>(buffer), cts.Token);
+                        cts.Cancel();
+                        await Assert.ThrowsAsync<OperationCanceledException>(async () => await sizePromise);
+#endif
+                    }
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
+                    await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    await Task.Delay(100);
+                    await connection.SendResponseBodyAsync("2\r\nel\r\n", false);
+                    await connection.SendResponseBodyAsync("8\r\nlo world\r\n", false);
+                    await connection.SendResponseBodyAsync("0\r\n\r\n", true);
+                });
+            });
+        }
+
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
