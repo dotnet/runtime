@@ -22,6 +22,7 @@ namespace WebAssemblyInfo
         public static bool AotStats;
         public static bool Disassemble;
         public static bool PrintOffsets;
+        public static bool ShowFunctionSize;
 
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 

@@ -19,6 +19,7 @@ namespace WebAssemblyInfo
         public static string DataSectionFile = "";
         public static DataMode DataSectionMode = DataMode.Active;
         public static int DataOffset = 0;
+        public static bool ShowFunctionSize;
 
         static int Main(string[] args)
         {
