@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -176,6 +177,40 @@ namespace System
             if ((ulong)ticks > MaxTicks) ThrowTicksOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
             _dateData = (ulong)ticks | ((ulong)(uint)kind << KindShift);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// The new instance will have the <see cref="DateTimeKind.Unspecified"/> kind.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time)
+        {
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/> respecting a <see cref="DateTimeKind"/>.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="date"/>
+        /// and <paramref name="time"/> specify a local time, Coordinated Universal Time (UTC), or neither.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time, DateTimeKind kind)
+        {
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks) | ((ulong)(uint)kind << KindShift);
         }
 
         internal DateTime(long ticks, DateTimeKind kind, bool isAmbiguousDst)
@@ -1878,6 +1913,40 @@ namespace System
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateTime"/> into <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time)
+        {
+            date = DateOnly.FromDateTime(this);
+            time = TimeOnly.FromDateTime(this);
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="DateOnly"/> by <see cref="Year"/>, <see cref="Month"/> and <see cref="Day"/>.
+        /// </summary>
+        /// <param name="year">
+        /// Deconstructed parameter for <see cref="Year"/>.
+        /// </param>
+        /// <param name="month">
+        /// Deconstructed parameter for <see cref="Month"/>.
+        /// </param>
+        /// <param name="day">
+        /// Deconstructed parameter for <see cref="Day"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day)
+        {
+            GetDate(out year, out month, out day);
+        }
 
         // Returns a string array containing all of the known date and time options for the
         // current culture.  The strings returned are properly formatted date and

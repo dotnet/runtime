@@ -24,6 +24,7 @@ set(NATIVECRYPTO_SOURCES
     pal_signature.c
     pal_ssl.c
     pal_sslstream.c
+    pal_trust_manager.c
     pal_x509.c
     pal_x509chain.c
     pal_x509store.c
