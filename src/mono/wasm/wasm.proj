@@ -237,7 +237,6 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
-
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
