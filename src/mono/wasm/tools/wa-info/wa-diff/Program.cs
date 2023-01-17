@@ -88,7 +88,7 @@ namespace WebAssemblyInfo
                         ShowFunctionSize = true;
                     } },
                 { "v|verbose",
-                    "Output information about progress during the run of the tool",
+                    "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
                     v => VerboseLevel++ },
             };
 

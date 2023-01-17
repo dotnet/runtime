@@ -124,7 +124,7 @@ namespace WebAssemblyInfo
                     "Filter types and process only those matching {REGEX}",
                     v => TypeFilter = new Regex (v) },
                 { "v|verbose",
-                    "Output information about progress during the run of the tool",
+                    "Output information about progress during the run of the tool. Use multiple times to increase verbosity, like -vv",
                     v => VerboseLevel++ },
             };
 
