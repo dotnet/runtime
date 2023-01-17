@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { Module } from "./imports";
 import { MemoryViewType, Span } from "./marshal";
 import { mono_assert } from "./types";
 import { VoidPtr } from "./types/emscripten";
@@ -21,8 +22,11 @@ export function http_wasm_abort_request(abort_controller: AbortController): void
 export function http_wasm_abort_response(res: ResponseExtension): void {
     res.__abort_controller.abort();
     if (res.__reader) {
-        res.__reader.cancel().catch(() => {
-            //we ignore the error
+        res.__reader.cancel().catch((err) => {
+            if (err && err.name !== "AbortError") {
+                Module.printErr("MONO_WASM: Error in http_wasm_abort_response: " + err);
+            }
+            // otherwise, it's expected
         });
     }
 }

@@ -1004,6 +1004,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (enableWasmStreaming && !PlatformDetection.IsBrowser)
+            {
+                // enableWasmStreaming makes only sense on Browser platform
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1194,7 +1200,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         case true:
                             await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
-                            if(slowChunks)
+                            if(PlatformDetection.IsBrowser && slowChunks)
                             {
                                 await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                                 await Task.Delay(100);
