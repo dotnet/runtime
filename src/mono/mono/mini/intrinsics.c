@@ -878,15 +878,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->klass = mono_defaults.runtimetype_class;
 			*ins_type_initialized = TRUE;
 			return ins;
-		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
-			int dreg = alloc_ireg (cfg);
-			int t1 = alloc_ireg (cfg);
-
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, t1, args [0]->dreg, 3);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_MUL_IMM, dreg, t1, 2654435761u);
-			ins->type = STACK_I4;
-
-			return ins;
 		} else if (strcmp (cmethod->name, ".ctor") == 0 && fsig->param_count == 0) {
  			MONO_INST_NEW (cfg, ins, OP_NOP);
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -905,15 +896,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vt_reg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, class_reg, vt_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADI4_MEMBASE, sizes_reg, class_reg, m_class_offsetof_sizes ());
-			return ins;
-		} else if (!strcmp (cmethod->name, "IsPrimitive")) {
-			int dreg = alloc_ireg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, dreg, MONO_STRUCT_OFFSET (MonoVTable, flags));
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, dreg, dreg, MONO_VT_FLAG_ARRAY_IS_PRIMITIVE);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
-			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
-			ins->type = STACK_I4;
 			return ins;
 		}
 
@@ -2082,16 +2064,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true
+	// On FullAOT, return false for RuntimeFeature:
+	// - IsDynamicCodeCompiled 
+	// - IsDynamicCodeSupported and no interpreter
+	// otherwise use the C# code in System.Private.CoreLib
 	if (in_corlib &&
+		cfg->full_aot &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
 		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
-		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") && !cfg->interp) {
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}

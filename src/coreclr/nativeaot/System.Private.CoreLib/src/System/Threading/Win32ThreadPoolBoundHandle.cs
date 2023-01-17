@@ -32,8 +32,7 @@ namespace System.Threading
 
         public static unsafe ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
-            if (handle == null)
-                throw new ArgumentNullException(nameof(handle));
+            ArgumentNullException.ThrowIfNull(handle);
 
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
@@ -64,8 +63,7 @@ namespace System.Threading
 
         private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object state, object pinData, bool flowExecutionContext)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             AddRef();
             try
@@ -87,8 +85,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
-            if (preAllocated == null)
-                throw new ArgumentNullException(nameof(preAllocated));
+            ArgumentNullException.ThrowIfNull(preAllocated);
 
             bool addedRefToThis = false;
             bool addedRefToPreAllocated = false;
@@ -120,8 +117,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
-                throw new ArgumentNullException(nameof(overlapped));
+            ArgumentNullException.ThrowIfNull(overlapped);
 
             Win32ThreadPoolNativeOverlapped* threadPoolOverlapped = Win32ThreadPoolNativeOverlapped.FromNativeOverlapped(overlapped);
             Win32ThreadPoolNativeOverlapped.OverlappedData data = GetOverlappedData(threadPoolOverlapped, this);
@@ -144,8 +140,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe object GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
-                throw new ArgumentNullException(nameof(overlapped));
+            ArgumentNullException.ThrowIfNull(overlapped);
 
             Win32ThreadPoolNativeOverlapped* threadPoolOverlapped = Win32ThreadPoolNativeOverlapped.FromNativeOverlapped(overlapped);
             Win32ThreadPoolNativeOverlapped.OverlappedData data = GetOverlappedData(threadPoolOverlapped, null);

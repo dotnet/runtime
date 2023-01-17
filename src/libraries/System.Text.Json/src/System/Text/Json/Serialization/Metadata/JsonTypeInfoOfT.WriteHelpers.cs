@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // this avoids creating a WriteStack and calling into the converter infrastructure.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 SerializeHandler(writer, rootValue!);
@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
@@ -120,6 +120,8 @@ namespace System.Text.Json.Serialization.Metadata
                     isInvokedByPolymorphicConverter,
                     supportContinuation: true,
                     supportAsync: true);
+
+                state.CancellationToken = cancellationToken;
 
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
@@ -206,7 +208,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // Short-circuit calls into SerializeHandler, if the `CanUseSerializeHandlerInStreaming` heuristic allows it.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(Options.SerializerContext?.CanUseSerializationLogic == true);
+                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(Options, out PooledByteBufferWriter bufferWriter);

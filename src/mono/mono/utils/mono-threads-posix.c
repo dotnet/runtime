@@ -365,16 +365,6 @@ mono_memory_barrier_process_wide (void)
 	g_assert (status == 0);
 }
 
-gint32
-mono_native_thread_processor_id_get (void)
-{
-#ifdef HAVE_SCHED_GETCPU
-	return sched_getcpu ();
-#else
-	return -1;
-#endif
-}
-
 #endif /* defined(_POSIX_VERSION) */
 
 #if defined(USE_POSIX_BACKEND)

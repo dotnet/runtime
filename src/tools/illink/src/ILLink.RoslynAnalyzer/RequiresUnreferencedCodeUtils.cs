@@ -25,8 +25,8 @@ namespace ILLink.RoslynAnalyzer
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the RequiresUnreferencedCode attribute
 		/// </summary>
-		public static bool IsInRequiresUnreferencedCodeAttributeScope (this ISymbol member)
-			=> member.IsInRequiresScope (RequiresUnreferencedCodeAttribute);
+		public static bool IsInRequiresUnreferencedCodeAttributeScope (this ISymbol member, [NotNullWhen (true)] out AttributeData? requiresAttribute)
+			=> member.IsInRequiresScope (RequiresUnreferencedCodeAttribute, out requiresAttribute);
 
 		/// <summary>
 		/// This method verifies that the arguments in an attribute have certain structure.

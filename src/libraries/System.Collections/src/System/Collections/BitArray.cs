@@ -42,10 +42,7 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(int length, bool defaultValue)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), length, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             m_array = new int[GetInt32ArrayLengthFromBitLength(length)];
             m_length = length;
@@ -568,10 +565,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -635,10 +629,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -690,10 +681,7 @@ namespace System.Collections
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 int newints = GetInt32ArrayLengthFromBitLength(value);
                 if (newints > m_array.Length || newints + _ShrinkThreshold < m_array.Length)
@@ -725,8 +713,7 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

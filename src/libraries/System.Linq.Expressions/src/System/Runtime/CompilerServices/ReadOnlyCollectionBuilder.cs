@@ -36,8 +36,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity));
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             _items = new T[capacity];
         }
@@ -80,8 +79,7 @@ namespace System.Runtime.CompilerServices
             get { return _items.Length; }
             set
             {
-                if (value < _size)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
                 if (value != _items.Length)
                 {
@@ -126,8 +124,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item)
         {
-            if (index > _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
             if (_size == _items.Length)
             {
@@ -148,8 +145,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
             _size--;
             if (index < _size)
@@ -169,15 +166,13 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
             set
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 _items[index] = value;
                 _version++;
@@ -384,10 +379,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             Array.Reverse(_items, index, count);
             _version++;

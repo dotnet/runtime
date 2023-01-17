@@ -94,9 +94,6 @@
   <data name="IsolatedStorage_NotValidOnDesktop" xml:space="preserve">
     <value>The Site scope is currently not supported.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="PathNotFound_Path" xml:space="preserve">
     <value>Could not find a part of the path '{0}'.</value>
   </data>

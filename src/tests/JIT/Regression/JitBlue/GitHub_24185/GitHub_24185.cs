@@ -11,7 +11,7 @@ namespace GitHub_24185
 {
     public class Program
     {
-        static int Main()
+        public static int Main()
         {
             try
             {

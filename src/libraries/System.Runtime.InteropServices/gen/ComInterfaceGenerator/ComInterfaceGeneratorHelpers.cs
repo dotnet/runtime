@@ -56,6 +56,8 @@ namespace Microsoft.Interop
                         ? MarshalMode.ManagedToUnmanagedOut
                         : MarshalMode.UnmanagedToManagedIn));
 
+            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
+
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 
             return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion), generatorFactory);

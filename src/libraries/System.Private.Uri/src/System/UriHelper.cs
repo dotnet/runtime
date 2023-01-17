@@ -543,22 +543,21 @@ namespace System
                 return backingString ?? new string(strToClean);
             }
 
-            fixed (char* pStrToClean = &MemoryMarshal.GetReference(strToClean))
+#pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<char> tmpStrToClean = strToClean; // avoid address exposing the span and impacting the other code in the method that uses it
+            return string.Create(tmpStrToClean.Length - charsToRemove, (IntPtr)(&tmpStrToClean), static (buffer, strToCleanPtr) =>
             {
-                return string.Create(strToClean.Length - charsToRemove, (StrToClean: (IntPtr)pStrToClean, strToClean.Length), static (buffer, state) =>
+                int destIndex = 0;
+                foreach (char c in *(ReadOnlySpan<char>*)strToCleanPtr)
                 {
-                    var strToClean = new ReadOnlySpan<char>((char*)state.StrToClean, state.Length);
-                    int destIndex = 0;
-                    foreach (char c in strToClean)
+                    if (!IsBidiControlCharacter(c))
                     {
-                        if (!IsBidiControlCharacter(c))
-                        {
-                            buffer[destIndex++] = c;
-                        }
+                        buffer[destIndex++] = c;
                     }
-                    Debug.Assert(buffer.Length == destIndex);
-                });
-            }
+                }
+                Debug.Assert(buffer.Length == destIndex);
+            });
+#pragma warning restore CS8500
         }
     }
 }

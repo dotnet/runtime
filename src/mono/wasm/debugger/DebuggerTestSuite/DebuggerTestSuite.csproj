@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" InitialTargets="CreateProjectWithColonInSourceName">
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -114,6 +114,36 @@
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+  </Target>
+
+  <Target Name="CreateProjectWithColonInSourceName"
+    Condition="!$([MSBuild]::IsOSPlatform('windows'))">
+    <PropertyGroup>
+        <CsprojContent>
+            <Project Sdk="Microsoft.NET.Sdk">
+            </Project>
+        </CsprojContent>
+        <CsContent>
+            namespace DebuggerTests
+            {
+                public class CheckColonInSourceName
+                {
+                    public static void Evaluate()
+                    {
+                        var a = 123%3B
+                    }
+                }
+            }
+        </CsContent>
+    </PropertyGroup>
+    <WriteLinesToFile
+        File="../tests/debugger-test-with-colon-in-source-name/debugger-test-with-colon-in-source-name.csproj"
+        Lines="$(CsprojContent)"
+        Overwrite="true"/>
+    <WriteLinesToFile
+        File="../tests/debugger-test-with-colon-in-source-name/test:.cs"
+        Lines="$(CsContent)"
+        Overwrite="true"/>
   </Target>
 
 </Project>

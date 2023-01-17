@@ -5,19 +5,15 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 
-using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -65,16 +61,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
-#if FEATURE_UNIVERSAL_GENERICS
-        public override IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind)
+        public override IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod)
         {
-            return CallConverterThunk.GetDelegateThunk(delegateObject, thunkKind);
-        }
-#endif
-
-        public override bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref RuntimeSignature methodSignature, bool lookForDefaultImplementation, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated)
-        {
-            return TypeLoaderEnvironment.Instance.TryGetGenericVirtualTargetForTypeAndSlot(targetHandle, ref declaringType, genericArguments, ref methodName, ref methodSignature, lookForDefaultImplementation, out methodPointer, out dictionaryPointer, out slotUpdated);
+            return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
         }
 
         public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
@@ -272,50 +261,16 @@ namespace Internal.Runtime.TypeLoader
         // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
         // must be an encoded method but any data beyond that is user-defined and returned in "remainingSignature"
         //
-        public bool GetMethodFromSignatureAndContext(RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles, out RuntimeSignature remainingSignature)
+        public MethodDesc GetMethodFromSignatureAndContext(TypeSystemContext context, RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeSignature remainingSignature)
         {
             NativeReader reader = GetNativeLayoutInfoReader(signature);
             NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
 
-            bool result = GetMethodFromSignatureAndContext(ref parser, new TypeManagerHandle(signature.ModuleHandle), typeArgs, methodArgs, out createdType, out nameAndSignature, out genericMethodTypeArgumentHandles);
+            MethodDesc result = TryParseNativeSignatureWorker(context, new TypeManagerHandle(signature.ModuleHandle), ref parser, typeArgs, methodArgs, true) as MethodDesc;
 
             remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
 
             return result;
-        }
-
-        internal bool GetMethodFromSignatureAndContext(ref NativeParser parser, TypeManagerHandle moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
-        {
-            createdType = default(RuntimeTypeHandle);
-            nameAndSignature = null;
-            genericMethodTypeArgumentHandles = null;
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            MethodDesc parsedMethod = TryParseNativeSignatureWorker(context, moduleHandle, ref parser, typeArgs, methodArgs, true) as MethodDesc;
-            if (parsedMethod == null)
-                return false;
-
-            if (!EnsureTypeHandleForType(parsedMethod.OwningType))
-                return false;
-
-            createdType = parsedMethod.OwningType.RuntimeTypeHandle;
-            nameAndSignature = parsedMethod.NameAndSignature;
-            if (!parsedMethod.IsMethodDefinition && parsedMethod.Instantiation.Length > 0)
-            {
-                genericMethodTypeArgumentHandles = new RuntimeTypeHandle[parsedMethod.Instantiation.Length];
-                for (int i = 0; i < parsedMethod.Instantiation.Length; ++i)
-                {
-                    if (!EnsureTypeHandleForType(parsedMethod.Instantiation[i]))
-                        return false;
-
-                    genericMethodTypeArgumentHandles[i] = parsedMethod.Instantiation[i].RuntimeTypeHandle;
-                }
-            }
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return true;
         }
 
         //
@@ -494,12 +449,26 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryGetGenericMethodDictionaryForComponents(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature nameAndSignature, out IntPtr methodDictionary)
         {
-            if (TryLookupGenericMethodDictionaryForComponents(declaringTypeHandle, nameAndSignature, genericMethodArgHandles, out methodDictionary))
+            TypeSystemContext context = TypeSystemContextFactory.Create();
+
+            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
+
+            if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
+            {
+                TypeSystemContextFactory.Recycle(context);
                 return true;
+            }
 
             using (LockHolder.Hold(_typeLoaderLock))
             {
-                return TypeBuilder.TryBuildGenericMethod(declaringTypeHandle, genericMethodArgHandles, nameAndSignature, out methodDictionary);
+                bool success = TypeBuilder.TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
+
+                // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
+                if (success)
+                    TypeSystemContextFactory.Recycle(context);
+
+                return success;
             }
         }
 
@@ -593,80 +562,6 @@ namespace Internal.Runtime.TypeLoader
             return (targetMethod != IntPtr.Zero);
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        public bool TryResolveSingleMetadataFixup(ModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                try
-                {
-                    return TypeBuilder.TryResolveSingleMetadataFixup((NativeFormatModuleInfo)module, metadataToken, fixupKind, out fixupResolution);
-                }
-                catch (Exception ex)
-                {
-                    Environment.FailFast("Failed to resolve metadata token " +
-                        ((uint)metadataToken).LowLevelToString() + ": " + ex.Message);
-                    fixupResolution = IntPtr.Zero;
-                    return false;
-                }
-            }
-        }
-#endif
-
-        public bool TryDispatchMethodOnTarget(NativeFormatModuleInfo module, int metadataToken, RuntimeTypeHandle targetInstanceType, out IntPtr methodAddress)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TryDispatchMethodOnTarget_Inner(
-                    module,
-                    metadataToken,
-                    targetInstanceType,
-                    out methodAddress);
-            }
-        }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        internal DispatchCellInfo ConvertDispatchCellInfo(NativeFormatModuleInfo module, DispatchCellInfo cellInfo)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return ConvertDispatchCellInfo_Inner(
-                    module,
-                    cellInfo);
-            }
-        }
-#endif
-
-        internal unsafe bool TryResolveTypeSlotDispatch(MethodTable* targetType, MethodTable* interfaceType, ushort slot, out IntPtr methodAddress)
-        {
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                return TryResolveTypeSlotDispatch_Inner(targetType, interfaceType, slot, out methodAddress);
-            }
-        }
-
-        public unsafe bool TryGetOrCreateNamedTypeForMetadata(
-            QTypeDefinition qTypeDefinition,
-            out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            if (TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle))
-            {
-                return true;
-            }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            using (LockHolder.Hold(_typeLoaderLock))
-            {
-                IntPtr runtimeTypeHandleAsIntPtr;
-                TypeBuilder.ResolveSingleTypeDefinition(qTypeDefinition, out runtimeTypeHandleAsIntPtr);
-                runtimeTypeHandle = *(RuntimeTypeHandle*)&runtimeTypeHandleAsIntPtr;
-                return true;
-            }
-#else
-            return false;
-#endif
-        }
-
         public static IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
         {
             if (FunctionPointerOps.IsGenericMethodPointer(unboxingFunctionPointer))
@@ -696,25 +591,6 @@ namespace Internal.Runtime.TypeLoader
                     exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
                                                                                         declaringType.ToIntPtr());
                 }
-#if FEATURE_UNIVERSAL_GENERICS
-                else
-                {
-                    IntPtr newExactTarget;
-                    // This check looks for unboxing and instantiating stubs generated dynamically as thunks in the calling convention converter
-                    if (CallConverterThunk.TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(exactTarget,
-                        declaringType, out newExactTarget))
-                    {
-                        // CallingConventionConverter determined non-unboxing stub
-                        exactTarget = newExactTarget;
-                    }
-                    else
-                    {
-                        // Target method was a method on a generic, but it wasn't a shared generic, and thus none of the above
-                        // complex unboxing stub digging logic was necessary. Do nothing, and use exactTarget as discovered
-                        // from GetCodeTarget
-                    }
-                }
-#endif
             }
 
             return exactTarget;

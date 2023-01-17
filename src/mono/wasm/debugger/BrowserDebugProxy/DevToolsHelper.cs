@@ -136,8 +136,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Result(JObject resultOrError, bool isError, JObject fullContent = null)
         {
-            if (resultOrError == null)
-                throw new ArgumentNullException(nameof(resultOrError));
+            ArgumentNullException.ThrowIfNull(resultOrError);
 
             bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
             resultHasError |= resultOrError["exceptionDetails"] != null;
@@ -331,8 +330,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class MonoConstants
     {
-        public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
-        public const string RUNTIME_IS_READY_ID = "fe00e07a-5519-4dfe-b35a-f867dbaf2e28";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
@@ -425,6 +422,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string PauseKind { get; set; }
 
         public object AuxData { get; set; }
+
+        public bool AutoEvaluateProperties { get; set; }
 
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
 

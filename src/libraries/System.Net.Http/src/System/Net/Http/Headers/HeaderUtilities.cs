@@ -38,12 +38,11 @@ namespace System.Net.Http.Headers
                 // using Parameters.Add() they could always add invalid values using HttpHeaders.AddWithoutValidation().
                 // So this check is really for convenience to show users that they're trying to add an invalid
                 // value.
-                if ((value < 0) || (value > 1))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                double d = value.GetValueOrDefault();
+                ArgumentOutOfRangeException.ThrowIfNegative(d);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(d, 1);
 
-                string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);
+                string qualityString = d.ToString("0.0##", NumberFormatInfo.InvariantInfo);
                 if (qualityParameter != null)
                 {
                     qualityParameter.Value = qualityString;
@@ -61,20 +60,6 @@ namespace System.Net.Http.Headers
                     parameters.Remove(qualityParameter);
                 }
             }
-        }
-
-        internal static bool ContainsNonAscii(string input)
-        {
-            Debug.Assert(input != null);
-
-            foreach (char c in input)
-            {
-                if ((int)c > 0x7f)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         // Encode a string using RFC 5987 encoding.

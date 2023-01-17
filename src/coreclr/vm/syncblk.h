@@ -957,6 +957,10 @@ private:
     // Two pointers worth of bytes of the requirement for
     // the current consuming implementation so that is what
     // is being allocated.
+    // If the size of this array is changed, the NativeAOT version
+    // should be updated as well.
+    // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
+    // ObjectiveCMarshal.NativeAot.cs
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 };

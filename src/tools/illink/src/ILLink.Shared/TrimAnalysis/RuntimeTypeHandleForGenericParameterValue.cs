@@ -12,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="GenericParameterValue"/> node.
 	/// </summary>
-	sealed record RuntimeTypeHandleForGenericParameterValue : SingleValue
+	internal sealed record RuntimeTypeHandleForGenericParameterValue : SingleValue
 	{
 		public readonly GenericParameterProxy GenericParameter;
 

@@ -107,6 +107,8 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
+    weak-hash.c
+    weak-hash.h
     mono-ptr-array.h
     monitor.h
     object.c

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
@@ -186,6 +187,21 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             byte[] key1 = ecdhCng.DeriveKeyFromHash(ecdh.PublicKey, HashAlgorithmName.SHA256);
             byte[] key2 = ecdh.DeriveKeyFromHash(ecdhCng.PublicKey, HashAlgorithmName.SHA256);
             Assert.Equal(key1, key2);
+        }
+
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void PlatformCryptoProvider_DeriveKeyMaterial()
+        {
+            using (CngPlatformProviderKey platformKey1 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key1"))
+            using (CngPlatformProviderKey platformKey2 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key2"))
+            using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(platformKey1.Key))
+            using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(platformKey2.Key))
+            {
+                byte[] derivedKey1 = ecdhCng1.DeriveKeyMaterial(platformKey2.Key);
+                byte[] derivedKey2 = ecdhCng2.DeriveKeyMaterial(platformKey1.Key);
+                Assert.Equal(derivedKey1, derivedKey2);
+            }
         }
     }
 }
