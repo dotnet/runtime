@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 using SourceGenerators.Tests;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace LibraryImportGenerator.UnitTests
 {
