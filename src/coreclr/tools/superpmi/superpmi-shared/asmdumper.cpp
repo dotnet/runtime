@@ -82,8 +82,8 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 
         WCHAR instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
-        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %S",
-                                 (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonic);
+        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %s",
+                                 (void*)((size_t)orig_hotCodeBlock + offset), ConvertToUtf8(instrMnemonic).c_str());
         buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "   ; ");
         for (unsigned int i = 0; i < instrSize; i++)
             buff_offset +=
