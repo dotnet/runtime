@@ -38,7 +38,7 @@ https://www.nuget.org/packages/wa-edit
 
 wa-info:
 ```
-Usage: wa-info.exe OPTIONS* file.wasm [file2.wasm ...]
+Usage: wa-info OPTIONS* file.wasm [file2.wasm ...]
 
 Provides information about WebAssembly file(s)
 
@@ -52,11 +52,14 @@ Options:
   -d, --disassemble          Show functions(s) disassembled code
   -f, --function-filter=REGEX
                              Filter wasm functions REGEX
+      --function-offset=REGEX
+                             Filter wasm functions REGEX
   -h, --help, -?             Show this message and exit
   -o, --instruction-offsets  Show instruction offsets
   -t, --type-filter=REGEX    Filter types and process only those matching REGEX
   -v, --verbose              Output information about progress during the run
-                               of the tool
+                               of the tool. Use multiple times to increase
+                               verbosity, like -vv
 ```
 
 wa-diff:
@@ -71,8 +74,13 @@ Options:
   -d, --disassemble          Show functions(s) disassembled code
   -f, --function-filter=REGEX
                              Filter wasm functions REGEX
+      --function-offset=REGEX
+                             Filter wasm functions REGEX
+  -h, --hide-const-loads     Hide const loads values
+  -s, --function-size        Compare function code sizes
   -v, --verbose              Output information about progress during the run
-                               of the tool
+                               of the tool. Use multiple times to increase
+                               verbosity, like -vv
 ```
 
 wa-edit:
@@ -94,7 +102,8 @@ Options:
   -o, --data-offset=VALUE    Data section offset
   -h, --help, -?             Show this message and exit
   -v, --verbose              Output information about progress during the run
-                               of the tool
+                               of the tool. Use multiple times to increase
+                               verbosity, like -vv
 ```
 
 ### Example usage
