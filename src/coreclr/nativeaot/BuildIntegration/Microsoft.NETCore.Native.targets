@@ -355,9 +355,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="CreateLib"
     DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps"
     Inputs="@(LibInputs)"
-    Outputs="$(SharedLibrary)"
-    DependsOnTargets="$(CreateLibDependsOn);$(IlcDynamicBuildPropertyDependencies);SetupOSSpecificProps"
-    >
+    Outputs="$(SharedLibrary)" >
 
     <ItemGroup>
       <CustomLibArg Include="/out:$(SharedLibrary)" Condition="'$(TargetOS)' == 'windows'" />
