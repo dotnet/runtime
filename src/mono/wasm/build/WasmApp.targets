@@ -315,7 +315,7 @@
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
       <_WasmIcuFileName Condition="'$(WasmIcuFileName)' != '' and Exists('$(WasmIcuFileName)')">$(WasmIcuFileName)</_WasmIcuFileName>
-      <_WasmIcuFileName Condition="'$(WasmIcuFileName)' != '' and !Exists('$(WasmIcuFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(WasmIcuFileName.Identity)</_WasmIcuFileName>
+      <_WasmIcuFileName Condition="'$(WasmIcuFileName)' != '' and !Exists('$(WasmIcuFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuFileName)</_WasmIcuFileName>
     </PropertyGroup>
 
     <ItemGroup>

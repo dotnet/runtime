@@ -66,7 +66,8 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-            buildArgs = buildArgs with { ExtraBuildArgs = $"{buildArgs.ExtraBuildArgs} {extraBuildArgs}" };
+            bool hasIcudt =  !invariant;
+            buildArgs = buildArgs with { ExtraBuildArgs = $"{buildArgs.ExtraBuildArgs} {extraBuildArgs}", WasmIncludeFullIcuData = hasIcudt };
             var newBuildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
 
             // key(buildArgs) being changed
@@ -82,7 +83,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,
-                                                HasIcudt: !invariant,
+                                                HasIcudt: hasIcudt,
                                                 CreateProject: false,
                                                 UseCache: false,
                                                 Verbosity: verbosity));
@@ -98,6 +99,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 propertiesBuilder.Append($"<WasmBuildNative>true</WasmBuildNative>");
             if (invariant)
                 propertiesBuilder.Append($"<InvariantGlobalization>true</InvariantGlobalization>");
+            else
+                propertiesBuilder.Append($"<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
             propertiesBuilder.Append(extraProperties);
 
             return ExpandBuildArgs(buildArgs, propertiesBuilder.ToString());

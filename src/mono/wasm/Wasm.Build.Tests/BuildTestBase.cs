@@ -335,6 +335,8 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
                 extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
+            if (buildArgs.WasmIncludeFullIcuData)
+                extraProperties += $"\n<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>";
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -347,9 +349,6 @@ namespace Wasm.Build.Tests
                                   string id,
                                   BuildProjectOptions options)
         {
-            if (options.HasIcudt && string.IsNullOrEmpty(options.PredefinedIcudt))
-                buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
-
             string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
             if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
@@ -1084,7 +1083,8 @@ namespace Wasm.Build.Tests
                             string Config,
                             bool AOT,
                             string ProjectFileContents,
-                            string? ExtraBuildArgs);
+                            string? ExtraBuildArgs,
+                            bool WasmIncludeFullIcuData = true);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
