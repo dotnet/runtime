@@ -2994,9 +2994,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case2/**">
             <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
-        </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/ehverify/eh07_large/**">
             <Issue>llvmfullaot: EH problem</Issue>
