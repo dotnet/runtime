@@ -841,7 +841,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int next_id;
         private readonly int id;
         private readonly ILogger logger;
-        private readonly DebugStore debugStore;
         private Dictionary<int, MethodInfo> methods = new Dictionary<int, MethodInfo>();
         private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
         private readonly List<SourceFile> sources = new List<SourceFile>();
@@ -862,20 +861,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
-        public List<PdbChecksum> PdbChecksums { get; }
+        public PdbChecksum[] PdbChecksums { get; }
 
         public AssemblyInfo(ILogger logger)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
-            PdbChecksums = new();
         }
 
-        public unsafe AssemblyInfo(DebugStore debugStore, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token): this(logger)
+        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token): this(logger)
         {
-            this.debugStore = debugStore;
             using var asmStream = new MemoryStream(assembly);
+            List<PdbChecksum> pdbChecksums = new();
             peReader = new PEReader(asmStream);
             var entries = peReader.ReadDebugDirectory();
             foreach (var entry in peReader.ReadDebugDirectory())
@@ -893,9 +891,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
                 {
                     var checksum = peReader.ReadPdbChecksumDebugDirectoryData(entry);
-                    PdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
+                    pdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
                 }
             }
+            PdbChecksums = pdbChecksums.ToArray();
             asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             var asmDef = asmMetadataReader.GetAssemblyDefinition();
             Name = asmDef.GetAssemblyName().Name + ".dll";
@@ -909,7 +908,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (BadImageFormatException)
                 {
-                    debugStore.monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)", token);
+                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)", token);
                 }
             }
             else
@@ -1053,7 +1052,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
         }
-        internal SourceFile GetOrAddSourceFile(DocumentHandle doc, string documentName)
+        public SourceFile GetOrAddSourceFile(DocumentHandle doc, string documentName)
         {
             if (_documentIdToSourceFileTable.TryGetValue(documentName.GetHashCode(), out SourceFile source))
                 return source;
@@ -1184,12 +1183,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        internal Task LoadPDBFromSymbolServer(CancellationToken token)
-            => this.pdbMetadataReader is null
-                    ? debugStore.LoadPDBFromSymbolServer(this, token)
-                    : Task.CompletedTask;
+        internal async Task LoadPDBFromSymbolServer(DebugStore debugStore, CancellationToken token)
+        {
+            if (TriedToLoadSymbolsOnDemand)
+                return;
+            var pdbName = Path.GetFileName(PdbName);
+            var pdbGuid = PdbGuid.ToString("N").ToUpperInvariant() + (IsPortableCodeView ? "FFFFFFFF" : PdbAge);
+            var key = $"{pdbName}/{pdbGuid}/{pdbName}";
+            SymbolStoreFile file = await debugStore.symbolStore.GetFile(new SymbolStoreKey(key, PdbName, false, PdbChecksums), token);
+            TriedToLoadSymbolsOnDemand = true;
+            if (file == null)
+                return;
+            UpdatePdbInformationFromSymbolServer(file.Stream);
+        }
 
-    }
+}
     internal sealed class SourceFile
     {
         private static readonly Regex regexForEscapeFileName = new(@"([:/])", RegexOptions.Compiled);
@@ -1230,23 +1238,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.DotNetUrlEscaped = $"dotnet://{assembly.Name}/{escapedDocumentName}";
             if (!File.Exists(documentName) && SourceLinkUri != null)
             {
-                string sourceLinkCachedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SourceServer", GetHashOfString(SourceLinkUri.AbsoluteUri), relativePath);
+                string sourceLinkCachedPathPartial = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SourceServer", GetHashOfString(SourceLinkUri.AbsoluteUri));
+                string sourceLinkCachedPath = Path.Combine(sourceLinkCachedPathPartial, _relativePath);
                 if (File.Exists(sourceLinkCachedPath)) //first try to find on cache using relativePath as it's done by VS while debugging
                 {
                     this.FilePath = sourceLinkCachedPath;
                     escapedDocumentName = EscapePathForUri(this.FilePath.Replace("\\", "/"));
-                    this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
                 }
                 else
                 {
-                    sourceLinkCachedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SourceServer", GetHashOfString(SourceLinkUri.AbsoluteUri), Path.GetFileName(relativePath));
+                    sourceLinkCachedPath = Path.Combine(sourceLinkCachedPathPartial, Path.GetFileName(_relativePath));
                     if (File.Exists(sourceLinkCachedPath)) //second try to find on cache without relativePath as it's done by VS when using "Go To Definition (F12)"
                     {
                         this.FilePath = sourceLinkCachedPath;
                         escapedDocumentName = EscapePathForUri(this.FilePath.Replace("\\", "/"));
-                        this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
                     }
                 }
+                this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
             }
             this.Url = new Uri(File.Exists(this.FilePath) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
         }
@@ -1272,8 +1280,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (document.StartsWith(keyTrim, StringComparison.OrdinalIgnoreCase))
                 {
-                    relativePath = document.Replace(keyTrim, "");
-                    SourceLinkUri = new Uri(sourceLinkDocument.Value.TrimEnd('*') + relativePath);
+                    _relativePath = document.Replace(keyTrim, "");
+                    SourceLinkUri = new Uri(sourceLinkDocument.Value.TrimEnd('*') + _relativePath);
                     return;
                 }
             }
@@ -1281,7 +1289,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static string GetHashOfString(string str)
         {
-            byte[] bytes = sha256.ComputeHash(UnicodeEncoding.Unicode.GetBytes(str));
+            byte[] bytes = _sha256.ComputeHash(UnicodeEncoding.Unicode.GetBytes(str));
             StringBuilder builder = new StringBuilder(bytes.Length*2);
             foreach (byte b in bytes)
             {
@@ -1432,13 +1440,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly ILogger logger;
         internal readonly MonoProxy monoProxy;
         private readonly ITracer _tracer;
-        private Microsoft.SymbolStore.SymbolStores.SymbolStore _symbolStore;
+        internal Microsoft.SymbolStore.SymbolStores.SymbolStore symbolStore;
 
         public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
             this.logger = logger;
             this.monoProxy = monoProxy;
-            this.tracer = new Tracer(logger);
+            this._tracer = new Tracer(logger);
             CreateSymbolServer();
         }
 
@@ -1467,7 +1475,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AssemblyInfo assembly;
             try
             {
-                assembly = new AssemblyInfo(this, id, assembly_data, pdb_data, logger, token);
+                assembly = new AssemblyInfo(monoProxy, id, assembly_data, pdb_data, logger, token);
             }
             catch (Exception e)
             {
@@ -1561,9 +1569,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;
                     }
-                    assembly = new AssemblyInfo(this, id, bytes[0], bytes[1], logger, token);
+                    assembly = new AssemblyInfo(monoProxy, id, bytes[0], bytes[1], logger, token);
                     if (symbolStore != null && !monoProxy.JustMyCode)
-                        await assembly.LoadPDBFromSymbolServer(token);
+                        await assembly.LoadPDBFromSymbolServer(this, token);
                 }
                 catch (Exception e)
                 {
@@ -1747,7 +1755,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url.OriginalString : "";
 
-        internal async Task<IEnumerable<AssemblyInfo>> LoadPDBFromSymbolServer(CancellationToken token)
+        internal async Task<IEnumerable<AssemblyInfo>> ReloadAllPDBsFromSymbolServer(CancellationToken token)
         {
             List<AssemblyInfo> ret = new List<AssemblyInfo> ();
             if (symbolStore == null)
@@ -1755,23 +1763,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
-                await LoadPDBFromSymbolServer(asm, token);
+                await asm.LoadPDBFromSymbolServer(this, token);
                 ret.Add(asm);
             }
             return ret;
-        }
-        internal async Task LoadPDBFromSymbolServer(AssemblyInfo asm, CancellationToken token)
-        {
-            if (asm.TriedToLoadSymbolsOnDemand)
-                return;
-            var pdbName = Path.GetFileName(asm.PdbName);
-            var pdbGuid = asm.PdbGuid.ToString("N").ToUpperInvariant() + (asm.IsPortableCodeView ? "FFFFFFFF" : asm.PdbAge);
-            var key = $"{pdbName}/{pdbGuid}/{pdbName}";
-            SymbolStoreFile file = await symbolStore.GetFile(new SymbolStoreKey(key, asm.PdbName, false, asm.PdbChecksums), token);
-            asm.TriedToLoadSymbolsOnDemand = true;
-            if (file == null)
-                return;
-            asm.UpdatePdbInformationFromSymbolServer(file.Stream);
         }
 
         internal void CreateSymbolServer()
@@ -1780,11 +1775,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (string.IsNullOrEmpty(urlServer))
                     continue;
-                symbolStore = new HttpSymbolStore(tracer, symbolStore, new Uri($"{urlServer}/"), null);
+                symbolStore = new HttpSymbolStore(_tracer, symbolStore, new Uri($"{urlServer}/"), null);
             }
             if (!string.IsNullOrEmpty(monoProxy.CachePathSymbolServer))
             {
-                symbolStore = new CacheSymbolStore(tracer, symbolStore, monoProxy.CachePathSymbolServer);
+                symbolStore = new CacheSymbolStore(_tracer, symbolStore, monoProxy.CachePathSymbolServer);
             }
         }
         public sealed class Tracer : ITracer
@@ -1793,28 +1788,28 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             public Tracer(ILogger logger)
             {
-                this.logger = logger;
+                this._logger = logger;
             }
 
-            public void WriteLine(string message) => logger.LogTrace(message);
+            public void WriteLine(string message) => _logger.LogTrace(message);
 
-            public void WriteLine(string format, params object[] arguments) => logger.LogTrace(format, arguments);
+            public void WriteLine(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
 
-            public void Information(string message) => logger.LogInformation(message);
+            public void Information(string message) => _logger.LogInformation(message);
 
-            public void Information(string format, params object[] arguments) => logger.LogInformation(format, arguments);
+            public void Information(string format, params object[] arguments) => _logger.LogInformation(format, arguments);
 
-            public void Warning(string message) => logger.LogWarning(message);
+            public void Warning(string message) => _logger.LogWarning(message);
 
-            public void Warning(string format, params object[] arguments) => logger.LogWarning(format, arguments);
+            public void Warning(string format, params object[] arguments) => _logger.LogWarning(format, arguments);
 
-            public void Error(string message) => logger.LogError(message);
+            public void Error(string message) => _logger.LogError(message);
 
-            public void Error(string format, params object[] arguments) => logger.LogError(format, arguments);
+            public void Error(string format, params object[] arguments) => _logger.LogError(format, arguments);
 
-            public void Verbose(string message) => logger.LogDebug(message);
+            public void Verbose(string message) => _logger.LogDebug(message);
 
-            public void Verbose(string format, params object[] arguments) => logger.LogDebug(format, arguments);
+            public void Verbose(string format, params object[] arguments) => _logger.LogDebug(format, arguments);
         }
     }
 }

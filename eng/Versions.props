@@ -41,6 +41,7 @@
     <MicrosoftCodeAnalysisCSharpVersion>4.5.0-1.22564.5</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisVersion>4.5.0-1.22564.5</MicrosoftCodeAnalysisVersion>
     <MicrosoftNetCompilersToolsetVersion>4.5.0-1.22564.5</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpScriptingVersion>4.5.0-1.22564.5</MicrosoftCodeAnalysisCSharpScriptingVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -244,5 +245,8 @@
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22566.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <!-- BrowserDebugProxy libs -->
+    <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
+    <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
   </PropertyGroup>
 </Project>

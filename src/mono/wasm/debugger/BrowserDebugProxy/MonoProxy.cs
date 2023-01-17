@@ -551,7 +551,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         UrlSymbolServerList.Clear();
                         UrlSymbolServerList.AddRange(urls.Values<string>());
                         if (!JustMyCode)
-                            return await LoadSymbolsFromSymbolServer(id, context, token);
+                            return await ReloadSymbolsFromSymbolServer(id, context, token);
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
@@ -578,13 +578,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
-        private async Task<bool> LoadSymbolsFromSymbolServer(MessageId id, ExecutionContext context, CancellationToken token)
+        private async Task<bool> ReloadSymbolsFromSymbolServer(MessageId id, ExecutionContext context, CancellationToken token)
         {
             if (!await IsRuntimeAlreadyReadyAlready(id, token))
                 return true;
             DebugStore store = await RuntimeReady(id, token);
             store.CreateSymbolServer();
-            var asmList = await store.LoadPDBFromSymbolServer(token);
+            var asmList = await store.ReloadAllPDBsFromSymbolServer(token);
             foreach (var asm in asmList)
             {
                 foreach (var source in asm.Sources)
@@ -610,7 +610,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (JustMyCode != isEnabled && isEnabled == false)
             {
                 JustMyCode = isEnabled;
-                await LoadSymbolsFromSymbolServer(id, context, token);
+                await ReloadSymbolsFromSymbolServer(id, context, token);
             }
             JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
