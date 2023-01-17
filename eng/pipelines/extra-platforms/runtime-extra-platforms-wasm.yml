@@ -22,8 +22,8 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       nameSuffix: _AOT
       runAOT: true
       alwaysRun: true
@@ -32,8 +32,8 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       nameSuffix: _HighResource_AOT
       extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
       buildAOTOnHelix: false
@@ -45,7 +45,7 @@ jobs:
   #- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     #parameters:
       #platforms:
-        #- Browser_wasm_firefox
+        #- browser_wasm_firefox
       #browser: firefox
       ## ff tests are unstable currently
       #shouldContinueOnError: true
@@ -68,7 +68,7 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
+        - browser_wasm
       # Don't run for rolling builds, as this is covered
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
@@ -80,7 +80,7 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
+        - browser_wasm
       nameSuffix: _NodeJs
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
@@ -92,7 +92,7 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm_win
+        - browser_wasm_win
       # Don't run for rolling builds, as this is covered
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
@@ -104,10 +104,10 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        #- Browser_wasm_win
+        - browser_wasm
+        #- browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
@@ -124,10 +124,10 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        #- Browser_wasm_win
+        - browser_wasm
+        #- browser_wasm_win
       nameSuffix: _Threading_PerfTracing
-      extraBuildArgs: /p:WasmEnablePerfTracing=true
+      extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
@@ -144,7 +144,7 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
+        - browser_wasm
       nameSuffix: _EAT
       runAOT: false
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -154,8 +154,8 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       nameSuffix: _AOT
       runAOT: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -166,8 +166,8 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       nameSuffix: _HighResource_AOT
       extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
       buildAOTOnHelix: false
@@ -181,8 +181,8 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -190,22 +190,22 @@ jobs:
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
-        - Browser_wasm_win
+        - browser_wasm
+        - browser_wasm_win
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
+        - browser_wasm
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     parameters:
       platforms:
-        - Browser_wasm_firefox
+        - browser_wasm_firefox
       browser: firefox
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}

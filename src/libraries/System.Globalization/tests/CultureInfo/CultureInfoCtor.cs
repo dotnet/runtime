@@ -242,7 +242,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
             yield return new object[] { "nn", new [] { "nn" }, true };
             yield return new object[] { "nn-NO", new [] { "nn-NO" }, true };
-            yield return new object[] { "no", new [] { "no" }, true };
+            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nso", new [] { "nso" }, true };
             yield return new object[] { "nso-ZA", new [] { "nso-ZA" }, true };
             yield return new object[] { "oc", new [] { "oc" }, true };

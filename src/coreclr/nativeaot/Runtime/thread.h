@@ -1,5 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __thread_h__
+#define __thread_h__
+
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+
 #include "forward_declarations.h"
 
 struct gc_alloc_context;
@@ -131,6 +138,14 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+        TSF_ActivationPending   = 0x00000100,       // An APC with QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC can interrupt another APC.
+                                                    // For suspension APCs it is mostly harmless, but wasteful and in extreme
+                                                    // cases may force the target thread into stack oveflow.
+                                                    // We use this flag to avoid sending another APC when one is still going through.
+                                                    // 
+                                                    // On Unix this is an optimization to not queue up more signals when one is
+                                                    // still being processed.
     };
 private:
 
@@ -282,6 +297,9 @@ public:
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+    bool                IsActivationPending();
+    void                SetActivationPending(bool isPending);
 };
 
 #ifndef __GCENV_BASE_INCLUDED__
@@ -321,3 +339,5 @@ typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 
 #endif // DACCESS_COMPILE
+
+#endif // __thread_h__

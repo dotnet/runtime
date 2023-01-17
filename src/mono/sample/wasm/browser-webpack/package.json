@@ -4,7 +4,7 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "build": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "build": "dotnet build /p:TargetOS=browser /p:TargetArchitecture=wasm -c Debug",
     "webpack": "webpack"
   },
   "devDependencies": {

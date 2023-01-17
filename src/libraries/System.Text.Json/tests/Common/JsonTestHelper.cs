@@ -118,6 +118,63 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Linq Cartesian product
+        /// </summary>
+        public static IEnumerable<(TFirst First, TSecond Second)> CrossJoin<TFirst, TSecond>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second)
+        {
+            TSecond[]? secondCached = null;
+            foreach (TFirst f in first)
+            {
+                secondCached ??= second.ToArray();
+                foreach (TSecond s in secondCached)
+                {
+                    yield return (f, s);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Linq Cartesian product
+        /// </summary>
+        public static IEnumerable<(TFirst First, TSecond Second, TThird Third)> CrossJoin<TFirst, TSecond, TThird>(
+            this IEnumerable<TFirst> first,
+            IEnumerable<TSecond> second,
+            IEnumerable<TThird> third)
+        {
+            TSecond[]? secondCached = null;
+            TThird[]? thirdCached = null;
+
+            foreach (TFirst f in first)
+            {
+                secondCached ??= second.ToArray();
+                foreach (TSecond s in secondCached)
+                {
+                    thirdCached ??= third.ToArray();
+                    foreach (TThird t in thirdCached)
+                    {
+                        yield return (f, s, t);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Linq Cartesian product
+        /// </summary>
+        public static IEnumerable<TResult> CrossJoin<TFirst, TSecond, TResult>(this IEnumerable<TFirst> first, IEnumerable<TSecond> second, Func<TFirst, TSecond, TResult> resultSelector)
+            => first.CrossJoin(second).Select(tuple => resultSelector(tuple.First, tuple.Second));
+
+        /// <summary>
+        /// Linq Cartesian product
+        /// </summary>
+        public static IEnumerable<TResult> CrossJoin<TFirst, TSecond, TThird, TResult>(
+            this IEnumerable<TFirst> first,
+            IEnumerable<TSecond> second,
+            IEnumerable<TThird> third,
+            Func<TFirst, TSecond, TThird, TResult> resultSelector)
+            => first.CrossJoin(second, third).Select(tuple => resultSelector(tuple.First, tuple.Second, tuple.Third));
+
         public static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)
         {
             var list = new List<T>();

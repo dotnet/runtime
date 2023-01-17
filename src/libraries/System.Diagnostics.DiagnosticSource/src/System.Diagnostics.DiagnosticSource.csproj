@@ -16,7 +16,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);ENABLE_HTTP_HANDLER</DefineConstants>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT;MEMORYMARSHAL_SUPPORT;OS_ISBROWSER_SUPPORT</DefineConstants>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
@@ -116,7 +116,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
-    <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
   </ItemGroup>
 

@@ -501,7 +501,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
+    private List<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
@@ -574,7 +574,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -1071,7 +1071,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)

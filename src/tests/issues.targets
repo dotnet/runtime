@@ -14,6 +14,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
             <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/ValueNumbering/ExposedLocalsNumbering/**">
+            <Issue>https://github.com/dotnet/runtime/issues/80184</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -59,6 +62,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>CoreCLR does not implement the mono embedding API</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
+            <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -904,6 +910,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256/Vector256_ro/*">
             <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_r/*">
+            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512/Vector512_ro/*">
+            <Issue>Not compatible with multifile testing. Problem with detecting that a JIT intrinsic is reflection-used.</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/*">
             <Issue>Not compatible with multifile testing.</Issue>
         </ExcludeList>
@@ -1078,6 +1090,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/Vector256_1_ro/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_r/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/Vector512_1_ro/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/184</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/190</Issue>
         </ExcludeList>
@@ -1242,9 +1260,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/201</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected\EmittingIgnoresAccessChecksToAttributeIsRespected/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Ref emit</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
@@ -2213,9 +2228,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/u_fld_il_d/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54396</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3085,7 +3097,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
             <Issue>Needs coreclr build</Issue>
         </ExcludeList>
-        
+
+        <ExcludeList Include = "$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/**">
+            <Issue>Reflection.Emit is not supported on fullaot</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
@@ -3330,6 +3345,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/54867</Issue>
         </ExcludeList>
 
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector512_1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector256_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/54122</Issue>
         </ExcludeList>
@@ -3708,7 +3726,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android'" >
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/**">
             <Issue>No crossgen folder under Core_Root</Issue>
         </ExcludeList>
@@ -3906,13 +3924,13 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'Android' And '$(TargetArchitecture)' == 'arm64' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/fannkuch-redux/fannkuch-redux-5/**">
             <Issue>https://github.com/dotnet/runtime/issues/52781</Issue>
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' " >
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator'">
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -4171,7 +4189,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator')">
+    <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'android' or '$(TargetOS)' == 'iossimulator')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>

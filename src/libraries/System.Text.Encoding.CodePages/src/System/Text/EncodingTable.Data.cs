@@ -18,7 +18,7 @@ namespace System.Text
         // Using indices from s_encodingNamesIndices, we binary search this string when mapping
         // an encoding name to a codepage. Note that these names are all lowercase and are
         // sorted alphabetically.
-        private const string s_encodingNames =
+        private const string EncodingNames =
             "437" + // 437
             "arabic" + // 28596
             "asmo-708" + // 708
@@ -388,7 +388,7 @@ namespace System.Text
         // s_encodingNameIndices contains the start index of every encoding name in the string
         // s_encodingNames. We infer the length of each string by looking at the start index
         // of the next string.
-        private static readonly int[] s_encodingNameIndices = new int[]
+        private static ReadOnlySpan<int> EncodingNameIndices => new int[]
         {
             0, // 437 (437)
             3, // arabic (28596)
@@ -761,7 +761,7 @@ namespace System.Text
         // names listed in s_encodingNames. The way mapping works is we binary search
         // s_encodingNames using s_encodingNamesIndices until we find a match for a given name.
         // The index of the entry in s_encodingNamesIndices will be the index of codepage in s_codePagesByName.
-        private static readonly ushort[] s_codePagesByName = new ushort[]
+        private static ReadOnlySpan<ushort> CodePagesByName => new ushort[]
         {
             437, // 437
             28596, // arabic
@@ -1135,7 +1135,7 @@ namespace System.Text
         // given codepage. This is used to index WebNameIndices to get the start
         // index of the web name in the string WebNames, and to index
         // s_englishNameIndices to get the start of the English name in s_englishNames.
-        private static readonly ushort[] s_mappedCodePages = new ushort[]
+        private static ReadOnlySpan<ushort> MappedCodePages => new ushort[]
         {
             37, // ibm037
             437, // ibm437
@@ -1276,7 +1276,7 @@ namespace System.Text
         // System.Text.Encoding.WebName given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        private const string s_webNames =
+        private const string WebNames =
             "ibm037" + // 37
             "ibm437" + // 437
             "ibm500" + // 500
@@ -1414,7 +1414,7 @@ namespace System.Text
         // s_webNameIndices contains the start index of each code page's default
         // web name in the string s_webNames. It is indexed by an index into
         // s_mappedCodePages.
-        private static readonly int[] s_webNameIndices = new int[]
+        private static ReadOnlySpan<int> WebNameIndices => new int[]
         {
             0, // ibm037 (37)
             6, // ibm437 (437)
@@ -1556,7 +1556,7 @@ namespace System.Text
         // given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        private const string s_englishNames =
+        private const string EnglishNames =
             "IBM EBCDIC (US-Canada)" + // 37
             "OEM United States" + // 437
             "IBM EBCDIC (International)" + // 500
@@ -1693,7 +1693,7 @@ namespace System.Text
 
         // s_englishNameIndices contains the start index of each code page's English
         // name in the string s_englishNames. It is indexed by an index into s_mappedCodePages.
-        private static readonly int[] s_englishNameIndices = new int[]
+        private static ReadOnlySpan<int> EnglishNameIndices => new int[]
         {
             0, // IBM EBCDIC (US-Canada) (37)
             22, // OEM United States (437)

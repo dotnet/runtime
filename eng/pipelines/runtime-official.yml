@@ -51,7 +51,7 @@ extends:
       - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates/job/source-index-stage1.yml
           parameters:
-            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os Linux -ci
+            sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci
 
       #
       # Build CoreCLR
@@ -61,14 +61,14 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: release
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_musl_arm
-          - Linux_musl_arm64
+          - osx_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm
@@ -88,12 +88,12 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             crossDacPlatforms:
-            - Linux_x64
-            - Linux_arm
-            - Linux_arm64
-            - Linux_musl_x64
-            - Linux_musl_arm
-            - Linux_musl_arm64
+            - linux_x64
+            - linux_arm
+            - linux_arm64
+            - linux_musl_x64
+            - linux_musl_arm
+            - linux_musl_arm64
             - windows_x64
             - windows_arm
             - windows_arm64
@@ -106,32 +106,32 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Android_x64
-          - Android_x86
-          - Android_arm
-          - Android_arm64
-          - MacCatalyst_x64
-          - MacCatalyst_arm64
-          - tvOSSimulator_x64
-          - tvOSSimulator_arm64
-          - tvOS_arm64
-          - iOSSimulator_x64
-          - iOSSimulator_x86
-          - iOSSimulator_arm64
-          - iOS_arm
-          - iOS_arm64
-          - OSX_x64
-          - OSX_arm64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Browser_wasm
+          - android_x64
+          - android_x86
+          - android_arm
+          - android_arm64
+          - maccatalyst_x64
+          - maccatalyst_arm64
+          - tvossimulator_x64
+          - tvossimulator_arm64
+          - tvos_arm64
+          - iossimulator_x64
+          - iossimulator_x86
+          - iossimulator_arm64
+          - ios_arm
+          - ios_arm64
+          - osx_x64
+          - osx_arm64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - browser_wasm
           - wasi_wasm
-          - Linux_bionic_arm64
-          - Linux_bionic_x64
-          # - Linux_musl_arm
-          # - Linux_musl_arm64
+          - linux_bionic_arm64
+          - linux_bionic_x64
+          # - linux_musl_arm
+          # - linux_musl_arm64
           - windows_x64
           - windows_x86
           # - windows_arm
@@ -150,7 +150,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Browser_wasm
+          - browser_wasm
           jobParameters:
             buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
             nameSuffix: AllSubsets_Mono_perftrace
@@ -166,7 +166,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Browser_wasm
+          - browser_wasm
           jobParameters:
             buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
             nameSuffix: AllSubsets_Mono_multithread
@@ -183,11 +183,11 @@ extends:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
           buildConfig: release
           platforms:
-          - Android_x64
-          - Browser_wasm
-          - tvOS_arm64
-          - iOS_arm64
-          - MacCatalyst_x64
+          - android_x64
+          - browser_wasm
+          - tvos_arm64
+          - ios_arm64
+          - maccatalyst_x64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -200,18 +200,18 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Linux_x64
+          - linux_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
             monoCrossAOTTargetOS:
-            - Android
-            - Browser
+            - android
+            - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
@@ -223,18 +223,16 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Windows_x64
+          - linux_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
-            - mono_android_offsets
             - mono_browser_offsets
             monoCrossAOTTargetOS:
-            - Android
-            - Browser
+            - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
@@ -246,10 +244,33 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - OSX_x64
+          - windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_android_offsets
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - android
+            - browser
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - osx_x64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                      /p:MonoCrossAOTTargetOS=android+browser+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
@@ -259,11 +280,32 @@ extends:
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
-            - Android
-            - Browser
-            - tvOS
-            - iOS
-            - MacCatalyst
+            - android
+            - browser
+            - tvos
+            - ios
+            - maccatalyst
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
@@ -275,12 +317,12 @@ extends:
       - template: /eng/pipelines/common/platform-matrix-multijob.yml
         parameters:
           platforms:
-          - OSX_x64
-          - Linux_x64
-          # - Linux_arm
-          - Linux_arm64
-          # - Linux_musl_x64
-          # - Linux_musl_arm64
+          - osx_x64
+          - linux_x64
+          # - linux_arm
+          - linux_arm64
+          # - linux_musl_x64
+          # - linux_musl_arm64
           # - windows_x64
           # - windows_x86
           # - windows_arm
@@ -321,14 +363,14 @@ extends:
           jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: Release
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_musl_arm
-          - Linux_musl_arm64
+          - osx_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm
@@ -364,7 +406,7 @@ extends:
           buildConfig: Release
           helixQueueGroup: ci
           platforms:
-          - SourceBuild_Linux_x64
+          - SourceBuild_linux_x64
           jobParameters:
             nameSuffix: PortableSourceBuild
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -384,14 +426,14 @@ extends:
             liveLibrariesBuildConfig: Release
             isOfficialBuild: ${{ variables.isOfficialBuild }}
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_musl_arm
-          - Linux_musl_arm64
+          - osx_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm
@@ -407,9 +449,9 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
-          - Linux_x64
+          - linux_x64
           - windows_arm64
-          - Linux_arm64
+          - linux_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             signBinaries: false
@@ -431,9 +473,9 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
-          - Linux_x64
+          - linux_x64
           - windows_arm64
-          - Linux_arm64
+          - linux_arm64
 
       #
       # Build Workloads
@@ -448,22 +490,22 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:
-            - Build_Android_arm_release_AllSubsets_Mono
-            - Build_Android_arm64_release_AllSubsets_Mono
-            - Build_Android_x86_release_AllSubsets_Mono
-            - Build_Android_x64_release_AllSubsets_Mono
-            - Build_Browser_wasm_Linux_release_AllSubsets_Mono
-            - Build_iOS_arm_release_AllSubsets_Mono
-            - Build_iOS_arm64_release_AllSubsets_Mono
-            - Build_iOSSimulator_x64_release_AllSubsets_Mono
-            - Build_iOSSimulator_x86_release_AllSubsets_Mono
-            - Build_iOSSimulator_arm64_release_AllSubsets_Mono
-            - Build_MacCatalyst_arm64_release_AllSubsets_Mono
-            - Build_MacCatalyst_x64_release_AllSubsets_Mono
-            - Build_tvOS_arm64_release_AllSubsets_Mono
-            - Build_tvOSSimulator_arm64_release_AllSubsets_Mono
-            - Build_tvOSSimulator_x64_release_AllSubsets_Mono
-            - Build_Windows_x64_release_CrossAOT_Mono
+            - Build_android_arm_release_AllSubsets_Mono
+            - Build_android_arm64_release_AllSubsets_Mono
+            - Build_android_x86_release_AllSubsets_Mono
+            - Build_android_x64_release_AllSubsets_Mono
+            - Build_browser_wasm_Linux_release_AllSubsets_Mono
+            - Build_ios_arm_release_AllSubsets_Mono
+            - Build_ios_arm64_release_AllSubsets_Mono
+            - Build_iossimulator_x64_release_AllSubsets_Mono
+            - Build_iossimulator_x86_release_AllSubsets_Mono
+            - Build_iossimulator_arm64_release_AllSubsets_Mono
+            - Build_maccatalyst_arm64_release_AllSubsets_Mono
+            - Build_maccatalyst_x64_release_AllSubsets_Mono
+            - Build_tvos_arm64_release_AllSubsets_Mono
+            - Build_tvossimulator_arm64_release_AllSubsets_Mono
+            - Build_tvossimulator_x64_release_AllSubsets_Mono
+            - Build_windows_x64_release_CrossAOT_Mono
             - installer__coreclr__windows_x64_Release_
             - installer__coreclr__windows_x86_Release_
             - installer__coreclr__windows_arm_Release_

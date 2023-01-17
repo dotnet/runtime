@@ -168,7 +168,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
     endif ()
   endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
 
-  if(CLR_CMAKE_HOST_BROWSER)
+  if(CLR_CMAKE_HOST_BROWSER OR CLR_CMAKE_HOST_WASI)
     # The emscripten build has additional warnings so -Werror breaks
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wno-alloca)
@@ -285,7 +285,13 @@ if (CLR_CMAKE_HOST_UNIX)
       clr_unknown_arch()
     endif()
   elseif(CLR_CMAKE_HOST_FREEBSD)
-    message("Detected FreeBSD amd64")
+    if(CLR_CMAKE_HOST_UNIX_ARM64)
+      message("Detected FreeBSD aarch64")
+    elseif(CLR_CMAKE_HOST_UNIX_AMD64)
+      message("Detected FreeBSD amd64")
+    else()
+      message(FATAL_ERROR "Unsupported FreeBSD architecture")
+    endif()
   elseif(CLR_CMAKE_HOST_NETBSD)
     message("Detected NetBSD amd64")
   elseif(CLR_CMAKE_HOST_SUNOS)
@@ -390,7 +396,7 @@ if (CLR_CMAKE_HOST_UNIX)
       add_definitions(-DLSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
       add_compile_options(-mcpu=apple-m1)
     endif(CLR_CMAKE_HOST_UNIX_ARM64)
-  elseif(NOT CLR_CMAKE_HOST_BROWSER)
+  elseif(NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
     check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
       add_compile_options(-fstack-protector-strong)
@@ -676,7 +682,7 @@ if (MSVC)
   # Set Warning Level 4:
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>) # Pragma data_seg s/b at global scope.
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>:/Zi>) # enable debugging information
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
@@ -795,7 +801,7 @@ if (CLR_CMAKE_HOST_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-elseif (NOT CLR_CMAKE_HOST_BROWSER)
+elseif (NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
     # This is a workaround for upstream issue: https://gitlab.kitware.com/cmake/cmake/-/issues/22995.
     #
     # In Clang.cmake, the decision to use single or double hyphen for target and gcc-toolchain

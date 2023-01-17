@@ -3049,15 +3049,18 @@ decode_exception_debug_info (MonoAotModule *amodule,
 	}
 
 	/* Exception table */
-	if (has_clauses)
-		num_clauses = decode_value (p, &p);
-	else
-		num_clauses = 0;
-
-	if (from_llvm) {
+	if (mono_llvm_only) {
+		/* Handled by the caller */
+		g_assert_not_reached ();
+	} else if (from_llvm) {
 		int len;
 		MonoJitExceptionInfo *clauses;
 		GSList **nesting;
+
+		if (has_clauses)
+			num_clauses = decode_value (p, &p);
+		else
+			num_clauses = 0;
 
 		/*
 		 * Part of the info is encoded by the AOT compiler, the rest is in the .eh_frame
@@ -3134,6 +3137,11 @@ decode_exception_debug_info (MonoAotModule *amodule,
 		}
 		jinfo->from_llvm = 1;
 	} else {
+		if (has_clauses)
+			num_clauses = decode_value (p, &p);
+		else
+			num_clauses = 0;
+
 		int len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
 		/* The jit info table needs to sort addresses so it contains non-authenticated pointers on arm64e */
@@ -3551,7 +3559,10 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 	}
 
 	code = (guint8 *)amodule->methods [method_index];
-	ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
+	if (mono_llvm_only)
+		ex_info = NULL;
+	else
+		ex_info = &amodule->blob [mono_aot_get_offset (amodule->ex_info_offsets, method_index)];
 
 #ifdef HOST_WASM
 	/* WASM methods have no length, can only look up the method address */
@@ -3635,7 +3646,14 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 
 	//printf ("F: %s\n", mono_method_full_name (method, TRUE));
 
-	jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
+	if (mono_llvm_only) {
+		/* Unused */
+		int len = mono_jit_info_size (0, 0, 0);
+		jinfo = (MonoJitInfo *)alloc0_jit_info_data (mem_manager, len, async);
+		mono_jit_info_init (jinfo, method, code, code_len, 0, 0, 0);
+	} else {
+		jinfo = decode_exception_debug_info (amodule, method, ex_info, code, GPTRDIFF_TO_UINT32 (code_len));
+	}
 
 	g_assert ((guint8*)addr >= (guint8*)jinfo->code_start);
 
@@ -4453,6 +4471,11 @@ mono_aot_can_dedup (MonoMethod *method)
 			/* Handled using linkonce */
 			return FALSE;
 #endif
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
+		if (sig->ret->has_cmods) {
+			// FIXME:
+			return FALSE;
+		}
 		return TRUE;
 	}
 	default:
