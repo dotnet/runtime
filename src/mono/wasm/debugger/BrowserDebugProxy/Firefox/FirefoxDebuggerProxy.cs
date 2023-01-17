@@ -28,9 +28,13 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
     {
         if (s_tcpListener is null)
         {
-            //when running from blazor always try to open the same port(which is sent by parameter) to avoid creating a lot of remote debugging connections on firefox
+            // If there is an existing listener on @proxyPort, then use a new dynamic port.
+            // Blazor always tries to open the same port (specified in @proxyPort) to avoid
+            // creating a lot of remote debugging connections on firefox
             if (IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(x => x.Port == proxyPort))
+            {
                 proxyPort = 0;
+            }
             s_tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
             s_tcpListener.Start();
             Console.WriteLine($"Debug proxy for firefox now listening on tcp://{s_tcpListener.LocalEndpoint}." +
