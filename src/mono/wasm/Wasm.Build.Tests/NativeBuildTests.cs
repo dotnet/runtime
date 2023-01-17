@@ -150,24 +150,24 @@ namespace Wasm.Build.Tests
                 call();
                 return 42;
 
-                [DllImport(""simple"")] static extern void call();
+                [DllImport(""undefined"")] static extern void call();
             ";
 
             CreateWasmTemplateProject(id);
 
             AddItemsPropertiesToProject(
                 Path.Combine(_projectDir!, $"{id}.csproj"),
-                extraItems: @$"<NativeFileReference Include=""undefined-symbol.c"" />",
+                extraItems: @$"<NativeFileReference Include=""undefined.c"" />",
                 extraProperties: null
             );
 
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined-symbol.c"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined.c"));
 
             CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release", $"-p:WasmAllowUndefinedSymbols={allowUndefined}");
+                .ExecuteWithCapturedOutput("build", "-c Release", $"-p:WasmAllowUndefinedSymbols={allowUndefined.ToString().ToLower()}");
 
             if (allowUndefined)
             {
