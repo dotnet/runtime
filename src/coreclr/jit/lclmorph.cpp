@@ -606,6 +606,15 @@ public:
             }
         }
 
+        if (node->OperIs(GT_JMP))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+            {
+                UpdateEarlyRefCount(lclNum);
+            }
+        }
+
         PushValue(use);
 
         return Compiler::WALK_CONTINUE;
