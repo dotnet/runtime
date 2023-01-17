@@ -569,49 +569,58 @@ public:
     {
         GenTree* const node = *use;
 
-        if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
+        switch (node->gtOper)
         {
-            MorphStructField(node, user);
-        }
-        else if (node->OperIs(GT_LCL_FLD))
-        {
-            MorphLocalField(node, user);
-        }
-
-        if (node->OperIsLocal() || node->OperIsLocalAddr())
-        {
-            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-            UpdateEarlyRefCount(lclNum);
-
-            if (varDsc->lvIsStructField)
+            case GT_IND:
+            case GT_FIELD:
+            case GT_FIELD_ADDR:
+                MorphStructField(node, user);
+                break;
+            case GT_LCL_FLD:
+                MorphLocalField(node, user);
+                assert(node->OperIsLocal());
+                __fallthrough;
+            case GT_LCL_VAR:
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
             {
-                // Promoted field, increase count for the parent lclVar.
-                //
-                assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
-                unsigned parentLclNum = varDsc->lvParentLcl;
-                UpdateEarlyRefCount(parentLclNum);
-            }
+                unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
+                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-            if (varDsc->lvPromoted)
-            {
-                // Promoted struct, increase count for each promoted field.
-                //
-                for (unsigned childLclNum = varDsc->lvFieldLclStart;
-                     childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
-                {
-                    UpdateEarlyRefCount(childLclNum);
-                }
-            }
-        }
-
-        if (node->OperIs(GT_JMP))
-        {
-            // GT_JMP has implicit uses of all arguments.
-            for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
-            {
                 UpdateEarlyRefCount(lclNum);
+
+                if (varDsc->lvIsStructField)
+                {
+                    // Promoted field, increase count for the parent lclVar.
+                    //
+                    assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
+                    unsigned parentLclNum = varDsc->lvParentLcl;
+                    UpdateEarlyRefCount(parentLclNum);
+                }
+
+                if (varDsc->lvPromoted)
+                {
+                    // Promoted struct, increase count for each promoted field.
+                    //
+                    for (unsigned childLclNum = varDsc->lvFieldLclStart;
+                         childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
+                    {
+                        UpdateEarlyRefCount(childLclNum);
+                    }
+                }
+
+                break;
+            }
+
+            case GT_JMP:
+            {
+                // GT_JMP has implicit uses of all arguments.
+                for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+                {
+                    UpdateEarlyRefCount(lclNum);
+                }
+
+                break;
             }
         }
 
