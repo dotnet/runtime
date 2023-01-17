@@ -16,7 +16,6 @@ namespace System.Net.NetworkInformation
 
         private static Task? s_loopTask;
         private static CancellationTokenSource? s_cancellationTokenSource;
-
         private static IPAddress[]? s_lastIpAddresses;
 
         [UnsupportedOSPlatform("illumos")]
@@ -112,25 +111,29 @@ namespace System.Net.NetworkInformation
             Debug.Assert(s_loopTask is null);
 
             s_cancellationTokenSource = new CancellationTokenSource();
-            s_loopTask = Task.Run(Loop);
+            s_loopTask = Task.Run(() => PeriodicallyCheckIfAddressChanged(s_cancellationTokenSource.Token));
         }
 
         private static void StopLoop()
         {
-            s_cancellationTokenSource?.Cancel();
+            Debug.Assert(s_cancellationTokenSource is not null);
+            Debug.Assert(s_loopTask is not null);
+
+            s_cancellationTokenSource.Cancel();
 
             s_loopTask = null;
             s_cancellationTokenSource = null;
+            s_lastIpAddresses = null;
         }
 
-        private static async Task Loop()
+        private static async Task PeriodicallyCheckIfAddressChanged(CancellationToken cancellationToken)
         {
             using var timer = new PeriodicTimer(s_timerInterval);
-            var token = s_cancellationTokenSource?.Token ?? throw new InvalidOperationException();
 
             try
             {
-                while (await timer.WaitForNextTickAsync(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+                while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false)
+                    && !cancellationToken.IsCancellationRequested)
                 {
                     CheckIfAddressChanged();
                 }
