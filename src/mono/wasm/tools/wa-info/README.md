@@ -195,6 +195,60 @@ Compare functions
    local.tee $3
 ```
 
+Hide load consts, this helps to reduce "noise" when checking the code changes. Output with `-h`
+```
+> wa-diff -h -d -f corlib.*Vector128_1_long_GetHashCode 1.wasm 2.wasm
+(func corlib_System_Runtime_Intrinsics_Vector128_1_long_GetHashCode(param i32, i32) (result i32))
+...
+    i64.load align:3
+    local.get $1
+-   call corlib_System_HashCode_Add_T_ULONG_T_ULONG
++   call corlib_System_HashCode_Add_T_LONG_T_LONG
+    local.get $0
+    i32.const
+...
+    i64.load offset:8 align:3
+    local.get $1
+-   call corlib_System_HashCode_Add_T_ULONG_T_ULONG
++   call corlib_System_HashCode_Add_T_LONG_T_LONG
+    local.get $1
+    local.get $1
+```
+and standard output:
+```
+> wa-diff -d -f corlib.*Vector128_1_long_GetHashCode 1.wasm 2.wasm
+(func corlib_System_Runtime_Intrinsics_Vector128_1_long_GetHashCode(param i32, i32) (result i32))
+...
+   local.tee $1
+   global.set $global:0
+-  i32.const 4411468
++  i32.const 4900240
+   i32.load8.u
+   i32.eqz
+   if
+-   i32.const 869872
++   i32.const 1032336
+    call mono_aot_corlib_init_method
+-   i32.const 4411468
++   i32.const 4900240
+    i32.const 1
+    i32.store8
+...
+    i64.load align:3
+    local.get $1
+-   call corlib_System_HashCode_Add_T_ULONG_T_ULONG
++   call corlib_System_HashCode_Add_T_LONG_T_LONG
+    local.get $0
+    i32.const -1
+...
+    i64.load offset:8 align:3
+    local.get $1
+-   call corlib_System_HashCode_Add_T_ULONG_T_ULONG
++   call corlib_System_HashCode_Add_T_LONG_T_LONG
+    local.get $1
+    local.get $1
+```
+
 Replace Data section
 ```
 > wa-edit -v dotnet.wasm d4.wasm -a -o 0 -d memory.dat
