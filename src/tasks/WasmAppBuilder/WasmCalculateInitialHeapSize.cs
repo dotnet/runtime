@@ -10,7 +10,7 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-// estimate the total memory needed for the assemblies
+/// <summary>estimate the total memory needed for the assemblies.</summary>
 public class WasmCalculateInitialHeapSize : Task
 {
     [Required]
