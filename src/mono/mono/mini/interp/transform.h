@@ -26,6 +26,7 @@
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
+typedef struct _InterpCallInfo InterpCallInfo;
 
 typedef struct
 {
@@ -82,11 +83,9 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
-		// For call instructions, this represents an array of all call arg vars
-		// in the order they are pushed to the stack. This makes it easy to find
-		// all source vars for these types of opcodes. This is terminated with -1.
-		int *call_args;
+		InterpCallInfo *call_info;
 	} info;
+	InterpCallInfo *call_info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
 	guint16 data [MONO_ZERO_LEN_ARRAY];
@@ -142,6 +141,19 @@ struct _InterpBasicBlock {
 	// used by jiterpreter
 	int backwards_branch_target: 1;
 	int contains_call_instruction: 1;
+};
+
+struct _InterpCallInfo {
+	// For call instructions, this represents an array of all call arg vars
+	// in the order they are pushed to the stack. This makes it easy to find
+	// all source vars for these types of opcodes. This is terminated with -1.
+	int *call_args;
+	union {
+		// Array of call dependencies that need to be resolved before
+		GSList *call_deps;
+		// Stack call offset with call arguments
+		int call_offset;
+	};
 };
 
 typedef enum {

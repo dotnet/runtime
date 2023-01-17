@@ -1208,6 +1208,12 @@ store_local (TransformData *td, int local)
 		td->last_ins->data [0] = GINT32_TO_UINT16 (td->locals [local].size);
 }
 
+static void
+init_last_ins_call (TransformData *td) {
+	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+}
+
 static guint32
 get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 {
@@ -1357,13 +1363,13 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	interp_add_ins (td, MINT_ICALL_PP_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	init_last_ins_call (td);
 	if (td->optimized) {
 		int *call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
 		call_args [0] = td->sp [0].local;
 		call_args [1] = td->sp [1].local;
 		call_args [2] = -1;
-		td->last_ins->info.call_args = call_args;
+		td->last_ins->info.call_info->call_args = call_args;
 	} else {
 		// Unoptimized code needs every call to have a dreg for offset allocation,
 		// even if call is void
@@ -1379,8 +1385,8 @@ interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 	interp_add_ins (td, MINT_ICALL_V_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->info.call_args = NULL;
-	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	init_last_ins_call (td);
+	td->last_ins->info.call_info->call_args = NULL;
 	if (!td->optimized) {
 		push_simple_type (td, STACK_TYPE_I4);
 		td->sp--;
@@ -1405,12 +1411,12 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 	interp_add_ins (td, MINT_ICALL_P_V);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+	init_last_ins_call (td);
 	if (td->optimized) {
 		int *call_args = (int*)mono_mempool_alloc (td->mempool, 2 * sizeof (int));
 		call_args [0] = td->sp [0].local;
 		call_args [1] = -1;
-		td->last_ins->info.call_args = call_args;
+		td->last_ins->info.call_info->call_args = call_args;
 	} else {
 		// Unoptimized code needs every call to have a dreg for offset allocation,
 		// even if call is void
@@ -1630,8 +1636,8 @@ dump_interp_inst (InterpInst *ins)
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
 			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
 				g_string_append_printf (str, " c:");
-				int *call_args = ins->info.call_args;
-				if (call_args) {
+				if (ins->info.call_info && ins->info.call_info->call_args) {
+					int *call_args = ins->info.call_info->call_args;
 					while (*call_args != -1) {
 						g_string_append_printf (str, " %d", *call_args);
 						call_args++;
@@ -1988,8 +1994,8 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 			g_assert (rank < G_MAXUINT16 && size < G_MAXUINT16);
 			td->last_ins->data [0] = GINT_TO_UINT16 (rank);
 			td->last_ins->data [1] = GINT_TO_UINT16 (size);
-			td->last_ins->info.call_args = call_args;
-			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+			init_last_ins_call (td);
+			td->last_ins->info.call_info->call_args = call_args;
 		}
 	} else {
 		interp_add_ins (td, MINT_LDELEMA_TC);
@@ -2000,8 +2006,8 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 		}
 		call_args [rank + 1] = -1;
 		td->last_ins->data [0] = get_data_item_index (td, check_class);
-		td->last_ins->info.call_args = call_args;
-		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+		init_last_ins_call (td);
+		td->last_ins->info.call_info->call_args = call_args;
 	}
 
 	push_simple_type (td, STACK_TYPE_MP);
@@ -3441,11 +3447,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 			td->last_ins->data [1] = GUINT32_TO_UINT16 (params_stack_size);
-			td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+			init_last_ins_call (td);
 
 			if (td->optimized) {
 				int *call_args = create_call_args (td, num_args);
-				td->last_ins->info.call_args = call_args;
+				td->last_ins->info.call_info->call_args = call_args;
 			} else {
 				// Dummy dreg
 				push_simple_type (td, STACK_TYPE_I4);
@@ -3569,7 +3575,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
 		interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+		init_last_ins_call (td);
 		td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (target_method));
 	} else {
 		if (is_delegate_invoke) {
@@ -3655,10 +3661,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 #endif
 		}
-		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	}
 	td->ip += 5;
-	td->last_ins->info.call_args = call_args;
+	init_last_ins_call (td);
+	td->last_ins->info.call_info->call_args = call_args;
 
 	return TRUE;
 }
@@ -5895,8 +5901,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-				td->last_ins->info.call_args = call_args;
+				init_last_ins_call (td);
+				td->last_ins->info.call_info->call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
 				if (!td->optimized) {
 					int tos_offset = get_tos_offset (td);
@@ -5927,8 +5933,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 					interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-					td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-					td->last_ins->info.call_args = call_args;
+					init_last_ins_call (td);
+					td->last_ins->info.call_info->call_args = call_args;
 				}
 			} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 					(!strcmp (m_class_get_name (m->klass), "Span`1") ||
@@ -6031,7 +6037,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto_if_nok (error, exit);
 
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
+				init_last_ins_call (td);
 				if (is_protected)
 					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 				// Parameters and this pointer are popped of the stack. The return value remains
@@ -6041,7 +6047,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				for (int i = 0; i < csignature->param_count + 1; i++)
 					call_args [i] = td->sp [i].local;
 				call_args [csignature->param_count + 1] = -1;
-				td->last_ins->info.call_args = call_args;
+				td->last_ins->info.call_info->call_args = call_args;
 			}
 			break;
 		}
@@ -6606,9 +6612,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_simple_type (td, STACK_TYPE_MP);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, klass);
-				td->last_ins->info.call_args = call_args;
+				init_last_ins_call (td);
+				td->last_ins->info.call_info->call_args = call_args;
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 			} else {
 				interp_add_ins (td, MINT_LDELEMA1);
 				td->sp -= 2;
@@ -7272,9 +7278,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						if (dreg != -1)
 							interp_ins_set_dreg (td->last_ins, dreg);
 						interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-						td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
-						td->last_ins->info.call_args = call_args;
+						init_last_ins_call (td);
+						td->last_ins->info.call_info->call_args = call_args;
 					}
 					break;
 				}
@@ -7958,7 +7964,7 @@ foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*cal
 			int sreg = ins->sregs [i];
 
 			if (sreg == MINT_CALL_ARGS_SREG) {
-				int *call_args = ins->info.call_args;
+				int *call_args = ins->info.call_info->call_args;
 				if (call_args) {
 					int var = *call_args;
 					while (var != -1) {
@@ -8240,7 +8246,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 					// In the unoptimized case the return and the start of the param area are always at the
 					// same offset. Use the dreg offset so we don't need to rely on existing call_args.
 					if (td->optimized)
-						offset = get_local_offset (td, ins->info.call_args [0]);
+						offset = get_local_offset (td, ins->info.call_info->call_args [0]);
 					else
 						offset = get_local_offset (td, ins->dreg);
 					*ip++ = GINT_TO_UINT16 (offset);
@@ -9039,7 +9045,7 @@ retry:
 
 			for (int i = 0; i < num_sregs; i++) {
 				if (sregs [i] == MINT_CALL_ARGS_SREG) {
-					int *call_args = ins->info.call_args;
+					int *call_args = ins->info.call_info->call_args;
 					if (call_args) {
 						while (*call_args != -1) {
 							cprop_sreg (td, ins, call_args, local_defs);
@@ -10001,16 +10007,11 @@ initialize_global_vars (TransformData *td)
 
 // Data structure used for offset allocation of call args
 typedef struct {
-	InterpInst *call;
-	// Array of call dependencies that need to be resolved before
-	GPtrArray *deps;
-} ActiveCall;
-
-typedef struct {
 	InterpInst **active_calls;
 	int active_calls_count;
 	int active_calls_capacity;
-	GQueue *deferred_calls;
+	// A deferred call stack implemented as a linked list
+	GSList *deferred_calls;
 } ActiveCalls;
 
 static void
@@ -10019,15 +10020,14 @@ init_active_calls (TransformData *td, ActiveCalls *ac)
 	ac->active_calls_count = 0;
 	ac->active_calls_capacity = 5;
 	ac->active_calls = (InterpInst**)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (InterpInst*));
-	ac->deferred_calls = g_queue_new ();
+	ac->deferred_calls = NULL;
 }
 
 static void
 reinit_active_calls (TransformData *td, ActiveCalls *ac)
 {
 	ac->active_calls_count = 0;
-	g_queue_free (ac->deferred_calls);
-	ac->deferred_calls = g_queue_new ();
+	ac->deferred_calls = NULL;
 }
 
 static void
@@ -10064,7 +10064,7 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
  *
  * For each call, function computes the call offset of each call argument starting from a base offset, and stores the computed call offset into a hash table.
  * The base offset is computed as max offset of all call offsets on which the call depends.
- * Stack ensures that all call offsets on which the call depends are caclulated before the call resolution.
+ * Stack ensures that all call offsets on which the call depends are calculated before the call resolution.
  */
 static void
 end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
@@ -10081,32 +10081,28 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 	}
 
 	// Push active call that should be resolved onto the stack
-	ActiveCall *deferred_call = (ActiveCall*)mono_mempool_alloc (td->mempool, sizeof (ActiveCall));
-	deferred_call->call = call;
-	deferred_call->deps = g_ptr_array_new ();
-	for (int i = 0; i < ac->active_calls_count; i++) {
-		g_ptr_array_add (deferred_call->deps, ac->active_calls [i]);
-	}
-	g_queue_push_head (ac->deferred_calls, (gpointer)deferred_call);
+	call->call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+	call->call_info->call_deps = NULL;
+	for (int i = 0; i < ac->active_calls_count; i++)
+		call->call_info->call_deps = g_slist_prepend_mempool (td->mempool, call->call_info->call_deps, ac->active_calls [i]);
+	ac->deferred_calls = g_slist_prepend_mempool (td->mempool, ac->deferred_calls, call);
 	if (!ac->active_calls_count) {
 		// If no other active calls, current active call and all deferred calls can be resolved from the stack
-		GHashTable *call_offsets = g_hash_table_new_full (NULL, NULL, NULL, g_free);
-		while (!g_queue_is_empty (ac->deferred_calls)) {
-			deferred_call = (ActiveCall*)g_queue_pop_head (ac->deferred_calls);
+		while (ac->deferred_calls) {
+			InterpInst *deferred_call = (InterpInst*) ac->deferred_calls->data;
 			// `base_offset` is a relative offset (to the start of the call args stack) where the args for this call reside.
-			int *base_offset = g_malloc0 (sizeof (int));
-			for (int i = 0; i < deferred_call->deps->len; i++) {
-				int call_offset = *(int*)g_hash_table_lookup (call_offsets, deferred_call->deps->pdata [i]);
-				g_assert (call_offset);
-				if (call_offset > *base_offset)
-					*base_offset = call_offset;
+			int base_offset = 0;
+			for (GSList *list = deferred_call->call_info->call_deps; list; list = list->next) {
+				int call_offset = ((InterpInst*)list->data)->call_info->call_offset;
+				if (call_offset > base_offset)
+					base_offset = call_offset;
 			}
 			// Compute to offset of each call argument
-			int *call_args = deferred_call->call->info.call_args;
+			int *call_args = deferred_call->info.call_info->call_args;
 			if (call_args && (*call_args != -1)) {
 				int var = *call_args;
 				while (var != -1) {
-					alloc_var_offset (td, var, base_offset);
+					alloc_var_offset (td, var, &base_offset);
 					call_args++;
 					var = *call_args;
 				}
@@ -10115,20 +10111,19 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 				// offset for MINT_CALL_ARGS_SREG during compacted instruction emit, we can
 				// always use the offset of the first var in the call_args array
 				int new_var = create_interp_local (td, mono_get_int_type ());
-				td->locals [new_var].call = deferred_call->call;
+				td->locals [new_var].call = deferred_call;
 				td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
-				alloc_var_offset (td, new_var, base_offset);
+				alloc_var_offset (td, new_var, &base_offset);
 
 				call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
 				call_args [0] = new_var;
 				call_args [1] = -1;
 
-				deferred_call->call->info.call_args = call_args;
+				deferred_call->info.call_info->call_args = call_args;
 			}
-			g_ptr_array_free (deferred_call->deps, FALSE);
-			g_hash_table_insert (call_offsets, deferred_call->call, base_offset);
+			deferred_call->call_info->call_offset = base_offset;
+			ac->deferred_calls = ac->deferred_calls->next;
 		}
-		g_hash_table_destroy (call_offsets);
 	}
 }
 
@@ -10251,7 +10246,7 @@ interp_alloc_offsets (TransformData *td)
 				td->locals [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
 			}
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
-				int *call_args = ins->info.call_args;
+				int *call_args = ins->info.call_info->call_args;
 				if (call_args) {
 					guint16 pair_sregs [MINT_MOV_PAIRS_MAX];
 					guint16 pair_dregs [MINT_MOV_PAIRS_MAX];
@@ -10384,7 +10379,6 @@ interp_alloc_offsets (TransformData *td)
 			ins_index++;
 		}
 	}
-	g_queue_free (ac.deferred_calls);
 
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
