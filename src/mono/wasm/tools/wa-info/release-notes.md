@@ -1,3 +1,19 @@
+### Release version 0.1
+
+Changes:
+
+ * let the tools run on newer .NET versions (Aleksey)
+ * load function names from .js.symbol files
+ * fix I32 write
+ * updated README's usage and added more examples
+
+wa-diff
+ * new h|hide-const-loads option to improve readability
+ * new s|function-size option
+ * print function code sizes comparison table for -s option without -d
+ * improved and more complete diff of functions
+ * fix error in function indexes use
+
 ### Release version 0.0.13
 
 Changes:
