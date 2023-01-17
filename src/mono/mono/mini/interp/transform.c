@@ -1212,6 +1212,7 @@ static void
 init_last_ins_call (TransformData *td) {
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+	td->last_ins->info.call_info->call_args = NULL;
 }
 
 static guint32
@@ -1386,7 +1387,6 @@ interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 	init_last_ins_call (td);
-	td->last_ins->info.call_info->call_args = NULL;
 	if (!td->optimized) {
 		push_simple_type (td, STACK_TYPE_I4);
 		td->sp--;
@@ -3571,7 +3571,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (op == MINT_LDLEN) {
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 		}
-		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+		if (!td->last_ins->info.call_info)
+			td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
@@ -7965,8 +7966,8 @@ foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*cal
 			int sreg = ins->sregs [i];
 
 			if (sreg == MINT_CALL_ARGS_SREG) {
-				int *call_args = ins->info.call_info->call_args;
-				if (call_args) {
+				if (ins->info.call_info && ins->info.call_info->call_args) {
+					int *call_args = ins->info.call_info->call_args;
 					int var = *call_args;
 					while (var != -1) {
 						callback (td, var, data);
@@ -9046,8 +9047,8 @@ retry:
 
 			for (int i = 0; i < num_sregs; i++) {
 				if (sregs [i] == MINT_CALL_ARGS_SREG) {
-					int *call_args = ins->info.call_info->call_args;
-					if (call_args) {
+					if (ins->info.call_info && ins->info.call_info->call_args) {
+						int *call_args = ins->info.call_info->call_args;
 						while (*call_args != -1) {
 							cprop_sreg (td, ins, call_args, local_defs);
 							call_args++;
@@ -10252,8 +10253,8 @@ interp_alloc_offsets (TransformData *td)
 				td->locals [ins->dreg].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
 			}
 			if (ins->flags & INTERP_INST_FLAG_CALL) {
-				int *call_args = ins->info.call_info->call_args;
-				if (call_args) {
+				if (ins->info.call_info && ins->info.call_info->call_args) {
+					int *call_args = ins->info.call_info->call_args;
 					guint16 pair_sregs [MINT_MOV_PAIRS_MAX];
 					guint16 pair_dregs [MINT_MOV_PAIRS_MAX];
 					int num_pairs = 0;
