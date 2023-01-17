@@ -403,7 +403,8 @@
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative)" />
-      <HelixCommandLines Include="dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll (Path to Test = JIT/Methodical/Methodical_d1) (Name of Test = Methodical_d1)" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker.dll $(_MergedWrapperDirectory) $(_MergedWrapperName)" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet %25HELIX_CORRELATION_PAYLOAD%25/XUnitLogChecker.dll $(_MergedWrapperDirectory) $(_MergedWrapperName)" />
     </ItemGroup>
 
     <ItemGroup>
