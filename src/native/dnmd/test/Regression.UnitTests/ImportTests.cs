@@ -268,8 +268,8 @@ namespace Regression.UnitTests
             PEMemoryBlock block = managedLibrary.GetMetadata();
 
             // Load metadata
-            IMetaDataImport baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
-            IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
+            IMetaDataImport2 baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
+            IMetaDataImport2 currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
 
             int stride;
             int count;
@@ -301,7 +301,7 @@ namespace Regression.UnitTests
                 Assert.Equal(EnumCustomAttributes(baselineImport, typedef), EnumCustomAttributes(currentImport, typedef));
             }
 
-            static List<uint> VerifyFindMemberRef(IMetaDataImport import, uint memberRef)
+            static List<uint> VerifyFindMemberRef(IMetaDataImport2 import, uint memberRef)
             {
                 List<uint> values = new();
                 char[] nameBuffer = new char[CharBuffer];
@@ -332,8 +332,8 @@ namespace Regression.UnitTests
             PEMemoryBlock block = managedLibrary.GetMetadata();
 
             // Load metadata
-            IMetaDataImport baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
-            IMetaDataImport currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
+            IMetaDataImport2 baselineImport = GetIMetaDataImport(Dispensers.Baseline, ref block);
+            IMetaDataImport2 currentImport = GetIMetaDataImport(Dispensers.Current, ref block);
 
             var tgt = "C";
 
@@ -375,14 +375,14 @@ namespace Regression.UnitTests
 
             Assert.Equal(FindField(baselineImport, tkB2, fieldName, sigBlob, sigBlobLength), FindField(currentImport, tkB2, fieldName, sigBlob, sigBlobLength));
 
-            static uint FindTokenByName(IMetaDataImport import, string name)
+            static uint FindTokenByName(IMetaDataImport2 import, string name)
             {
                 int hr = import.FindTypeDefByName(name, 0, out uint ptd);
                 Assert.Equal(0, hr);
                 return ptd;
             }
 
-            static uint GetTypeDefBaseToken(IMetaDataImport import, uint tk)
+            static uint GetTypeDefBaseToken(IMetaDataImport2 import, uint tk)
             {
                 var name = new char[CharBuffer];
                 int hr = import.GetTypeDefProps(tk,
@@ -395,12 +395,12 @@ namespace Regression.UnitTests
                 return ptkExtends;
             }
 
-            static uint FindMethodDef(IMetaDataImport import, uint type, string methodName)
+            static uint FindMethodDef(IMetaDataImport2 import, uint type, string methodName)
             {
                 return EnumMembersWithName(import, type, methodName)[0];
             }
 
-            static uint FindMemberRef(IMetaDataImport import, uint type, string methodName)
+            static uint FindMemberRef(IMetaDataImport2 import, uint type, string methodName)
             {
                 var methodDef = FindMethodDef(import, type, methodName);
                 int hr = import.FindMemberRef(methodDef, methodName, null, 0, out uint pmr);
@@ -408,7 +408,7 @@ namespace Regression.UnitTests
                 return pmr;
             }
 
-            static unsafe uint FindMethod(IMetaDataImport import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
+            static unsafe uint FindMethod(IMetaDataImport2 import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
             {
                 byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
                 int hr = import.FindMethod(td, name, sig, (uint)sig.Length, out uint methodToken);
@@ -419,7 +419,7 @@ namespace Regression.UnitTests
                 return methodToken;
             }
 
-            static unsafe uint FindField(IMetaDataImport import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
+            static unsafe uint FindField(IMetaDataImport2 import, uint td, string name, nint pvSigBlob, uint cbSigBlob)
             {
                 byte[] sig = new Span<byte>((void*)pvSigBlob, (int)cbSigBlob).ToArray();
                 int hr = import.FindField(td, name, sig, (uint)sig.Length, out uint fieldToken);
@@ -457,7 +457,7 @@ namespace Regression.UnitTests
             return import;
         }
 
-        private static List<uint> GetScopeProps(IMetaDataImport import)
+        private static List<uint> GetScopeProps(IMetaDataImport2 import)
         {
             List<uint> values = new();
 
@@ -482,7 +482,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> EnumTypeDefs(IMetaDataImport import)
+        private static List<uint> EnumTypeDefs(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -507,7 +507,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumTypeRefs(IMetaDataImport import)
+        private static List<uint> EnumTypeRefs(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -532,7 +532,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumTypeSpecs(IMetaDataImport import)
+        private static List<uint> EnumTypeSpecs(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -557,7 +557,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<nuint> GetTypeSpecFromToken(IMetaDataImport import, uint typespec)
+        private static List<nuint> GetTypeSpecFromToken(IMetaDataImport2 import, uint typespec)
         {
             List<nuint> values = new();
 
@@ -572,7 +572,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> EnumModuleRefs(IMetaDataImport import)
+        private static List<uint> EnumModuleRefs(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -597,7 +597,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumInterfaceImpls(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumInterfaceImpls(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -622,7 +622,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMethods(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumMethods(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -647,7 +647,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMethodsWithName(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumMethodsWithName(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -672,7 +672,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMethodImpls(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumMethodImpls(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer1 = new uint[EnumBuffer];
@@ -699,7 +699,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumParams(IMetaDataImport import, uint methoddef)
+        private static List<uint> EnumParams(IMetaDataImport2 import, uint methoddef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -724,7 +724,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMethodSemantics(IMetaDataImport import, uint methoddef)
+        private static List<uint> EnumMethodSemantics(IMetaDataImport2 import, uint methoddef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -749,7 +749,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMemberRefs(IMetaDataImport import, uint tk)
+        private static List<uint> EnumMemberRefs(IMetaDataImport2 import, uint tk)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -775,7 +775,7 @@ namespace Regression.UnitTests
         }
 
 
-        private static List<uint> EnumProperties(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumProperties(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -800,7 +800,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumFields(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumFields(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -825,7 +825,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumFieldsWithName(IMetaDataImport import, uint typedef, string name = "_name")
+        private static List<uint> EnumFieldsWithName(IMetaDataImport2 import, uint typedef, string name = "_name")
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -850,7 +850,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<nuint> EnumPermissionSetsAndGetProps(IMetaDataImport import, uint permTk)
+        private static List<nuint> EnumPermissionSetsAndGetProps(IMetaDataImport2 import, uint permTk)
         {
             List<nuint> values = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -896,7 +896,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetRVA(IMetaDataImport import, uint tk)
+        private static List<uint> GetRVA(IMetaDataImport2 import, uint tk)
         {
             List<uint> values = new();
             int hr = import.GetRVA(tk,
@@ -914,7 +914,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetPinvokeMap(IMetaDataImport import, uint tk)
+        private static List<uint> GetPinvokeMap(IMetaDataImport2 import, uint tk)
         {
             List<uint> values = new();
 
@@ -938,7 +938,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetParamForMethodIndex(IMetaDataImport import, uint tk)
+        private static List<uint> GetParamForMethodIndex(IMetaDataImport2 import, uint tk)
         {
             List<uint> values = new();
 
@@ -958,7 +958,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nint> GetFieldMarshal(IMetaDataImport import, uint tk)
+        private static List<nint> GetFieldMarshal(IMetaDataImport2 import, uint tk)
         {
             List<nint> values = new();
 
@@ -975,7 +975,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static uint IsGlobal(IMetaDataImport import, uint tk)
+        private static uint IsGlobal(IMetaDataImport2 import, uint tk)
         {
             int hr = import.IsGlobal(tk, out uint pbGlobal);
             if (hr != 0)
@@ -986,7 +986,7 @@ namespace Regression.UnitTests
             return pbGlobal;
         }
 
-        private static List<uint> GetTypeDefProps(IMetaDataImport import, uint typedef)
+        private static List<uint> GetTypeDefProps(IMetaDataImport2 import, uint typedef)
         {
             List<uint> values = new();
 
@@ -1010,7 +1010,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> FindTypeDefByName(IMetaDataImport import, string name, uint scope)
+        private static List<uint> FindTypeDefByName(IMetaDataImport2 import, string name, uint scope)
         {
             List<uint> values = new();
 
@@ -1024,7 +1024,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> FindTypeRef(IMetaDataImport import)
+        private static List<uint> FindTypeRef(IMetaDataImport2 import)
         {
             List<uint> values = new();
             int hr;
@@ -1049,7 +1049,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetTypeRefProps(IMetaDataImport import, uint typeref)
+        private static List<uint> GetTypeRefProps(IMetaDataImport2 import, uint typeref)
         {
             List<uint> values = new();
 
@@ -1071,7 +1071,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetModuleRefProps(IMetaDataImport import, uint moduleref)
+        private static List<uint> GetModuleRefProps(IMetaDataImport2 import, uint moduleref)
         {
             List<uint> values = new();
 
@@ -1091,7 +1091,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetMethodProps(IMetaDataImport import, uint methoddef, out nint ppvSigBlob, out uint pcbSigBlob)
+        private static List<nuint> GetMethodProps(IMetaDataImport2 import, uint methoddef, out nint ppvSigBlob, out uint pcbSigBlob)
         {
             List<nuint> values = new();
 
@@ -1124,7 +1124,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetMemberRefProps(IMetaDataImport import, uint tk, out nint ppvSigBlob, out uint pcbSigBlob)
+        private static List<nuint> GetMemberRefProps(IMetaDataImport2 import, uint tk, out nint ppvSigBlob, out uint pcbSigBlob)
         {
             List<nuint> values = new();
 
@@ -1151,7 +1151,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetNestedClassProps(IMetaDataImport import, uint typedef)
+        private static List<uint> GetNestedClassProps(IMetaDataImport2 import, uint typedef)
         {
             List<uint> values = new();
 
@@ -1166,7 +1166,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetCustomAttributeProps(IMetaDataImport import, uint tk)
+        private static List<nuint> GetCustomAttributeProps(IMetaDataImport2 import, uint tk)
         {
             List<nuint> values = new();
 
@@ -1187,7 +1187,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetEventProps(IMetaDataImport import, uint tk, out List<uint> methoddefs)
+        private static List<uint> GetEventProps(IMetaDataImport2 import, uint tk, out List<uint> methoddefs)
         {
             List<uint> values = new();
             methoddefs = new List<uint>();
@@ -1233,7 +1233,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetPropertyProps(IMetaDataImport import, uint tk, out List<uint> methoddefs)
+        private static List<nuint> GetPropertyProps(IMetaDataImport2 import, uint tk, out List<uint> methoddefs)
         {
             List<nuint> values = new();
             methoddefs = new List<uint>();
@@ -1284,7 +1284,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetFieldProps(IMetaDataImport import, uint tk)
+        private static List<nuint> GetFieldProps(IMetaDataImport2 import, uint tk)
         {
             List<nuint> values = new();
 
@@ -1322,7 +1322,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetParamProps(IMetaDataImport import, uint tk)
+        private static List<nuint> GetParamProps(IMetaDataImport2 import, uint tk)
         {
             List<nuint> values = new();
 
@@ -1358,7 +1358,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetMethodSemantics(IMetaDataImport import, uint tkEventProp, uint methodDef)
+        private static List<uint> GetMethodSemantics(IMetaDataImport2 import, uint tkEventProp, uint methodDef)
         {
             List<uint> values = new();
 
@@ -1372,7 +1372,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetClassLayout(IMetaDataImport import, uint typedef)
+        private static List<uint> GetClassLayout(IMetaDataImport2 import, uint typedef)
         {
             List<uint> values = new();
             var offsets = new COR_FIELD_OFFSET[24];
@@ -1399,19 +1399,19 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nuint> GetCustomAttribute_Nullable(IMetaDataImport import, uint tkObj)
+        private static List<nuint> GetCustomAttribute_Nullable(IMetaDataImport2 import, uint tkObj)
         {
             const string NullableAttrName = "System.Runtime.CompilerServices.NullableAttribute";
             return GetCustomAttributeByName(import, NullableAttrName, tkObj);
         }
 
-        private static List<nuint> GetCustomAttribute_CompilerGenerated(IMetaDataImport import, uint tkObj)
+        private static List<nuint> GetCustomAttribute_CompilerGenerated(IMetaDataImport2 import, uint tkObj)
         {
             const string CompilerGeneratedAttrName = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
             return GetCustomAttributeByName(import, CompilerGeneratedAttrName, tkObj);
         }
 
-        private static List<nuint> GetCustomAttributeByName(IMetaDataImport import, string customAttr, uint tkObj)
+        private static List<nuint> GetCustomAttributeByName(IMetaDataImport2 import, string customAttr, uint tkObj)
         {
             List<nuint> values = new();
 
@@ -1429,7 +1429,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<nint> GetNameFromToken(IMetaDataImport import, uint tkObj)
+        private static List<nint> GetNameFromToken(IMetaDataImport2 import, uint tkObj)
         {
             List<nint> values = new();
 
@@ -1443,7 +1443,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> GetNativeCallConvFromSig(IMetaDataImport import, nint sig, uint sigLen)
+        private static List<uint> GetNativeCallConvFromSig(IMetaDataImport2 import, nint sig, uint sigLen)
         {
             List<uint> values = new();
 
@@ -1457,7 +1457,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> EnumEvents(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumEvents(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1482,7 +1482,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMembers(IMetaDataImport import, uint typedef)
+        private static List<uint> EnumMembers(IMetaDataImport2 import, uint typedef)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1507,7 +1507,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> EnumMembersWithName(IMetaDataImport import, uint typedef, string memberName = ".ctor")
+        private static List<uint> EnumMembersWithName(IMetaDataImport2 import, uint typedef, string memberName = ".ctor")
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1532,7 +1532,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<uint> ResetEnum(IMetaDataImport import)
+        private static List<uint> ResetEnum(IMetaDataImport2 import)
         {
             // We are going to test the ResetEnum() API using the
             // EnumMembers() API because it enumerates more than one table.
@@ -1567,7 +1567,7 @@ namespace Regression.UnitTests
             }
             return tokens;
 
-            static void ReadInMembers(IMetaDataImport import, ref nint hcorenum, uint tk, ref List<uint> tokens)
+            static void ReadInMembers(IMetaDataImport2 import, ref nint hcorenum, uint tk, ref List<uint> tokens)
             {
                 var tokensBuffer = new uint[EnumBuffer];
                 if (0 == import.EnumMembers(ref hcorenum, tk, tokensBuffer, tokensBuffer.Length, out uint returned)
@@ -1581,7 +1581,7 @@ namespace Regression.UnitTests
             }
         }
 
-        private static List<uint> EnumCustomAttributes(IMetaDataImport import, uint tk = 0, uint tkType = 0)
+        private static List<uint> EnumCustomAttributes(IMetaDataImport2 import, uint tk = 0, uint tkType = 0)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1729,7 +1729,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> EnumSignatures(IMetaDataImport import)
+        private static List<uint> EnumSignatures(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1754,7 +1754,7 @@ namespace Regression.UnitTests
             return tokens;
         }
 
-        private static List<nint> GetSigFromToken(IMetaDataImport import, uint tk)
+        private static List<nint> GetSigFromToken(IMetaDataImport2 import, uint tk)
         {
             List<nint> values = new();
 
@@ -1769,7 +1769,7 @@ namespace Regression.UnitTests
             return values;
         }
 
-        private static List<uint> EnumUserStrings(IMetaDataImport import)
+        private static List<uint> EnumUserStrings(IMetaDataImport2 import)
         {
             List<uint> tokens = new();
             var tokensBuffer = new uint[EnumBuffer];
@@ -1801,7 +1801,7 @@ namespace Regression.UnitTests
             return new string(buffer, 0, Math.Min(written, buffer.Length));
         }
 
-        private static string GetUserString(IMetaDataImport import, uint tk)
+        private static string GetUserString(IMetaDataImport2 import, uint tk)
         {
             var buffer = new char[CharBuffer];
             Assert.True(0 <= import.GetUserString(tk, buffer, buffer.Length, out int written));
