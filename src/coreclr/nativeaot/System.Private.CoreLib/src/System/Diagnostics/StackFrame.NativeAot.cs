@@ -47,13 +47,14 @@ namespace System.Diagnostics
 
         private bool TryInitializeMethodBase()
         {
-            if (_noMethodBaseAvailable || _ipAddress == IntPtr.Zero)
+            if (_noMethodBaseAvailable || _ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)
                 return false;
 
             if (_method != null)
                 return true;
 
-            IntPtr methodStartAddress = RuntimeImports.RhFindMethodStartAddress(_ipAddress);
+            IntPtr methodStartAddress = _ipAddress - _nativeOffset;
+            Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == methodStartAddress);
             DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
             if (_method == null)
             {
