@@ -524,6 +524,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             _asyncScopes ??= Array.Empty<AsyncScopeDebugInformation>();
         }
+
         public void UpdateEnC(MetadataReader pdbMetadataReaderParm, int methodIdx)
         {
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(methodIdx));
@@ -861,7 +862,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
-        internal List<PdbChecksum> PdbChecksums { get; }
+        public List<PdbChecksum> PdbChecksums { get; }
 
         public AssemblyInfo(ILogger logger)
         {
@@ -1209,8 +1210,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string AssemblyName => assembly.Name;
         public SourceId SourceId => new SourceId(assembly.Id, this.Id);
         public IEnumerable<MethodInfo> Methods => this.methods.Values;
-        private static SHA256 sha256 = System.Security.Cryptography.SHA256.Create();
-        private string relativePath;
+        private static SHA256 _sha256 = System.Security.Cryptography.SHA256.Create();
+        private string _relativePath;
 
         internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, string documentName, Dictionary<string, string> sourceLinkMappings)
         {
@@ -1430,8 +1431,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
         private readonly ILogger logger;
         internal readonly MonoProxy monoProxy;
-        private readonly ITracer tracer;
-        private Microsoft.SymbolStore.SymbolStores.SymbolStore symbolStore;
+        private readonly ITracer _tracer;
+        private Microsoft.SymbolStore.SymbolStores.SymbolStore _symbolStore;
 
         public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
@@ -1788,9 +1789,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         public sealed class Tracer : ITracer
         {
-            public ILogger logger;
+            private ILogger _logger;
 
-            internal Tracer(ILogger logger)
+            public Tracer(ILogger logger)
             {
                 this.logger = logger;
             }

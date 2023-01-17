@@ -8,10 +8,10 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
-	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
   </ItemGroup>
 
   <ItemGroup>

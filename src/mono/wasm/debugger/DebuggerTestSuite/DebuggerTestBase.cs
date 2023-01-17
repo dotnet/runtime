@@ -1502,7 +1502,6 @@ namespace DebuggerTests
             Assert.True(res.IsOk);
         }
 
-
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)
         {
             foreach (var arg in args)
