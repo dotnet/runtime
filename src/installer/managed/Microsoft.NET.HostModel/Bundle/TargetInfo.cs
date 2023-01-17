@@ -117,7 +117,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
-        private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
-        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";
+        private string HostFxr => IsWindows ? "hostfxr.dll" : IsOSX ? "libhostfxr.dylib" : "libhostfxr.so";
+        private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsOSX "libhostpolicy.dylib" : "libhostpolicy.so";
     }
 }
