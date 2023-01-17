@@ -9,11 +9,16 @@ The goal is to have the majority of code located in this folder, as that code is
 Any runtime-specific `partial` part which also has a shared part should use a runtime-specific file name suffix to ease the navigation.
 
 * `*.CoreCLR.cs` for CoreCLR runtime
+* `*.NativeAot.cs` for NativeAot runtime
 * `*.Mono.cs` for Mono runtime
 
 ## System.Private.CoreLib CoreCLR Sources
 
 The CoreCLR specific sources can be found at [src/coreclr/System.Private.CoreLib](../../../coreclr/System.Private.CoreLib/).
+
+## System.Private.CoreLib NativeAot Sources
+
+The NativeAot specific sources can be found at [coreclr/nativeaot/System.Private.CoreLib/src](../../../coreclr/nativeaot/System.Private.CoreLib/src/).
 
 ## System.Private.CoreLib Mono Sources
 
