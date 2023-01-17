@@ -13,14 +13,8 @@
   <Import Project="$(MSBuildThisFileDirectory)\Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(IlcCalledViaPackage)' == 'true'" />
   <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
 
-  <!-- To ensure the dependencies are run before evaluating the inputs and outputs, we have the dummy Target
-    run the dependencies as a DependsOnTargets, then the real target (BuildAllFrameworkLibrariesCore) lists the 
-    dummy target as a BeforeTarget -->
   <Target Name="BuildAllFrameworkLibraries"
     DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" />
-
-  <Target Name="BuildAllFrameworkLibrariesCore"
-    BeforeTargets="BuildAllFrameworkLibraries"
     Inputs="@(DefaultFrameworkAssemblies)"
     Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
     <ItemGroup>
@@ -35,7 +29,6 @@
 
   <Target Name="BuildAllFrameworkLibrariesAsSingleLib"
     DependsOnTargets="BuildAllFrameworkLibraries">
-
     <ItemGroup>
       <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
     </ItemGroup>
