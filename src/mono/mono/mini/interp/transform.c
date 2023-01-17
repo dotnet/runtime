@@ -10062,7 +10062,7 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
  *
  * If there are no other active calls, function retrieves calls from the stack and resolves them, including the current call and all deferred calls.
  *
- * For each call, function computes the call offset of each call argument starting from a base offset, and stores the computed call offset into a hash table.
+ * For each call, function computes the call offset of each call argument starting from a base offset, and stores the computed call offset into a InterpInst.
  * The base offset is computed as max offset of all call offsets on which the call depends.
  * Stack ensures that all call offsets on which the call depends are calculated before the call resolution.
  */
