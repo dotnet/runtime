@@ -89,7 +89,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public override string ToString()
         {
-            string os = IsWindows ? "win" : IsLinux ? "linux" : IsFreeBSD ? "freebsd" : "osx";
+            string os = IsWindows ? "win" : OS.ToString().ToLowerInvariant();
             string arch = Arch.ToString().ToLowerInvariant();
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
