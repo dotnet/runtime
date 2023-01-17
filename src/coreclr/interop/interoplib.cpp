@@ -46,7 +46,7 @@ namespace InteropLib
 
         void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
         {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(static_cast<IUnknown*>(wrapperMaybe));
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(static_cast<IUnknown*>(wrapperMaybe));
 
             // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
             _ASSERTE(wrapper != nullptr);
