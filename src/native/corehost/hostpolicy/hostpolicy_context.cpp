@@ -114,6 +114,13 @@ namespace
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
 
+        // Properties computed on demand by the host
+        if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+        {
+            return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
+        }
+
+        // Properties from runtime initialization
         pal::string_t key_str;
         if (pal::clr_palstring(key, &key_str))
         {

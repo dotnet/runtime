@@ -30,6 +30,13 @@ typedef struct {
 	gpointer args [16];
 	gpointer *many_args;
 } InterpEntryData;
+
+typedef struct {
+	InterpMethod *rmethod; // 0
+	ThreadContext *context; // 4
+	gpointer orig_domain; // 8
+	gpointer attach_cookie; // 12
+} JiterpEntryDataHeader;
 */
 
 const // offsetOfStack = 12,

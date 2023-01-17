@@ -69,7 +69,7 @@ extends:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: Checked
             platforms:
-            - Linux_x64
+            - linux_x64
             - windows_x64
             jobParameters:
               timeoutInMinutes: 100
@@ -87,7 +87,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             timeoutInMinutes: 100
@@ -135,7 +135,7 @@ extends:
               useOfficialAllConfigurations: true
               dependsOnGlobalBuild: true
             platforms:
-            - Linux_x64
+            - linux_x64
             - windows_x64
 
       - ${{ if ne(variables.isOfficialBuild, true) }}:
@@ -147,12 +147,12 @@ extends:
             jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
             buildConfig: Checked
             platforms:
-            - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+            - CoreClrTestBuildHost # Either osx_x64 or linux_x64
             jobParameters:
               testGroup: innerloop
               dependsOn:
-              - build_Linux_x64_Checked_
-              - build_Linux_x64_Release_
+              - build_linux_x64_Checked_
+              - build_linux_x64_Release_
 
         #
         # CoreCLR Test executions using live libraries
@@ -162,7 +162,7 @@ extends:
             jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
             buildConfig: Checked
             platforms:
-            - Linux_x64
+            - linux_x64
             helixQueueGroup: pr
             helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
             jobParameters:
@@ -195,7 +195,7 @@ extends:
             jobTemplate: /eng/pipelines/libraries/run-test-job.yml
             buildConfig: Release
             platforms:
-            - Linux_x64
+            - linux_x64
             helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
             jobParameters:
               isRollingBuild: false
@@ -205,7 +205,7 @@ extends:
               dependsOnTestBuildConfiguration: Release
               dependsOnTestArchitecture: x64
               dependsOn:
-              - build_Linux_x64_Release_
+              - build_linux_x64_Release_
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:

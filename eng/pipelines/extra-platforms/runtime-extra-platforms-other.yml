@@ -16,11 +16,11 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -35,11 +35,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -53,11 +53,11 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: Release
     platforms:
-    - Linux_x64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_x64
-    - OSX_x64
+    - linux_x64
+    - linux_arm
+    - linux_arm64
+    - linux_musl_x64
+    - osx_x64
     - windows_x64
     - windows_x86
     - windows_arm64
@@ -84,11 +84,11 @@ jobs:
     platforms:
     - windows_x64
     - windows_arm64
-    - OSX_x64
-    - OSX_arm64
-    - Linux_x64
-    - Linux_arm64
-    - Linux_musl_x64
+    - osx_x64
+    - osx_arm64
+    - linux_x64
+    - linux_arm64
+    - linux_musl_x64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
@@ -117,7 +117,7 @@ jobs:
     buildConfig: Release
     platforms:
     - windows_x64
-    - Linux_arm64
+    - linux_arm64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
@@ -164,7 +164,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Windows_x64
+    - windows_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -204,7 +204,7 @@ jobs:
     runtimeFlavor: mono
     buildConfig: release
     platforms:
-    - Linux_arm64
+    - linux_arm64
     jobParameters:
       condition: >-
         or(
@@ -222,7 +222,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    - CoreClrTestBuildHost # Either osx_x64 or linux_x64
     jobParameters:
       testGroup: innerloop
       condition: >-
@@ -240,7 +240,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - Linux_arm64
+    - linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -263,7 +263,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - Linux_arm64
+    - linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

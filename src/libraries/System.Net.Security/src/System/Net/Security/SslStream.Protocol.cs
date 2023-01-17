@@ -119,6 +119,10 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
+
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy?.Dispose();
+#endif
         }
 
         //
@@ -1009,13 +1013,6 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
-                if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
-                {
-                    // We may select client cert but it may not be used.
-                    // This is primarily issue on Windows with credential caching
-                    _selectedClientCertificate = null;
-                }
-
                 if (_remoteCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");

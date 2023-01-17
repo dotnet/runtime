@@ -21,7 +21,7 @@ if [ "$2" != "" ]; then
     libraries_configuration=${libraries_configuration^} # Uppercase first character
 fi
 
-testhost_root=$repo_root/artifacts/bin/testhost/net$version-Linux-$libraries_configuration-x64
+testhost_root=$repo_root/artifacts/bin/testhost/net$version-linux-$libraries_configuration-x64
 echo "StressConfiguration: $stress_configuration, LibrariesConfiguration: $libraries_configuration, testhost: $testhost_root"
 
 if [[ ! -d $testhost_root ]]; then

@@ -661,7 +661,7 @@ namespace System.Net.Tests
         }
 
         private static string GetRandomText(int length) =>
-            new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + Random.Shared.Next(0, 26))).ToArray());
+            new string(Random.Shared.GetItems<char>("abcdefghijklmnopqrstuvwxyz", 512 * 1024));
 
         [OuterLoop("Uses external servers")]
         [Theory]

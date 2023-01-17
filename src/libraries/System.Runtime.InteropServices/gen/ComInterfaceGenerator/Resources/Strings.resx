@@ -201,4 +201,10 @@
   <data name="InvalidExceptionMarshallingValue" xml:space="preserve">
     <value>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</value>
   </data>
+  <data name="InterfaceTypeNotSupportedTitle" xml:space="preserve">
+    <value>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
+    <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
+  </data>
 </root>

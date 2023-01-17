@@ -38,6 +38,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
+            private const string JsonUnmappedMemberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
             private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
@@ -706,6 +707,7 @@ namespace System.Text.Json.SourceGeneration
                 List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
+                JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
@@ -725,6 +727,12 @@ namespace System.Text.Json.SourceGeneration
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
+                        continue;
+                    }
+                    else if (attributeTypeFullName == JsonUnmappedMemberHandlingAttributeFullName)
+                    {
+                        IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                        unmappedMemberHandling = (JsonUnmappedMemberHandling)ctorArgs[0].Value!;
                         continue;
                     }
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
@@ -1130,6 +1138,7 @@ namespace System.Text.Json.SourceGeneration
                     generationMode,
                     classType,
                     numberHandling,
+                    unmappedMemberHandling,
                     propGenSpecList,
                     paramGenSpecArray,
                     propertyInitializerSpecList,

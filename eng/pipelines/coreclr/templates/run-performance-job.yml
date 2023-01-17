@@ -71,9 +71,9 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&
           sudo apt-get -y install nodejs &&
           npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
-          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 v8@11.0.162 &&
-          rm -f ~/.jsvu/v8 &&
-          ln -s ~/.jsvu/v8-11.0.162 ~/.jsvu/v8
+          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8 &&
+          find ~/.jsvu -ls &&
+          ~/.jsvu/v8 -e "console.log(`V8 version: ${this.version()}`)"
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - HelixPreCommandsWasmOnLinux: echo
     - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'

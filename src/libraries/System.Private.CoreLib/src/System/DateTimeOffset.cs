@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -114,6 +115,17 @@ namespace System
             }
             _offsetMinutes = ValidateOffset(offset);
             _dateTime = ValidateDate(dateTime, offset);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTimeOffset"/> structure by <paramref name="date"/>, <paramref name="time"/> and <paramref name="offset"/>.
+        /// </summary>
+        /// <param name="date">The date part</param>
+        /// <param name="time">The time part</param>
+        /// <param name="offset">The time's offset from Coordinated Universal Time (UTC).</param>
+        public DateTimeOffset(DateOnly date, TimeOnly time, TimeSpan offset)
+            : this(new DateTime(date, time), offset)
+        {
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -1047,6 +1059,25 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTimeOffset left, DateTimeOffset right) =>
             left.UtcDateTime >= right.UtcDateTime;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateTimeOffset"/> into <see cref="DateOnly"/>, <see cref="TimeOnly"/> and <see cref="TimeSpan"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>
+        /// </param>
+        /// <param name="offset">
+        /// Deconstructed parameter for <see cref="Offset"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time, out TimeSpan offset)
+        {
+            (date, time) = ClockDateTime;
+            offset = Offset;
+        }
 
         //
         // IParsable

@@ -150,7 +150,7 @@ jobs:
           $(CommonMSBuildArgs)
           $(MsbuildSigningArguments)
 
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
 
       - name: CommonMSBuildArgs
         value: >-
@@ -170,7 +170,7 @@ jobs:
           $(CommonMSBuildArgs)
           $(OfficialBuildArg)
 
-    - ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'Android', 'Browser') }}:
+    - ${{ if in(parameters.osGroup, 'ios', 'tvos', 'android', 'browser') }}:
 
       - name: CommonMSBuildArgs
         value: >-
@@ -189,7 +189,7 @@ jobs:
           $(CommonMSBuildArgs)
           $(OfficialBuildArg)
 
-    - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
+    - ${{ if in(parameters.osGroup, 'linux', 'freebsd') }}:
       - name: CommonMSBuildArgs
         value: >-
           /p:Configuration=$(_BuildConfig)
@@ -201,7 +201,7 @@ jobs:
       - name: _PortableBuild
         value: ${{ eq(parameters.osSubgroup, '') }}
 
-      - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
+      - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'linux')) }}:
         - name: _PortableBuild
           value: true
 
@@ -313,7 +313,7 @@ jobs:
             displayName: 'Libraries artifacts'
             cleanUnpackFolder: false
 
-      - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+      - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
           displayName: Install Build Dependencies
 
@@ -323,13 +323,13 @@ jobs:
           displayName: Disk Usage before Build
 
     # Build the default subset non-MacOS platforms
-      - ${{ if ne(parameters.osGroup, 'OSX') }}:
+      - ${{ if ne(parameters.osGroup, 'osx') }}:
         - script: $(BaseJobBuildCommand)
           displayName: Build
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
       # Build corehost, sign and add entitlements to MacOS binaries
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
         - script: $(BaseJobBuildCommand) -subset host.native
           displayName: Build CoreHost
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
@@ -349,20 +349,20 @@ jobs:
           displayName: Build and Package
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
 
-      - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+      - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
             du -sh $(Build.SourcesDirectory)/*
             df -h
           displayName: Disk Usage after Build
 
       # Only in glibc leg, we produce RPMs and Debs
-      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), or(eq(parameters.platform, 'Linux_x64'), eq(parameters.platform, 'Linux_arm64')), eq(parameters.osSubgroup, ''), eq(parameters.pgoType, ''))}}:
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), or(eq(parameters.platform, 'linux_x64'), eq(parameters.platform, 'linux_arm64')), eq(parameters.osSubgroup, ''), eq(parameters.pgoType, ''))}}:
         - ${{ each packageBuild in parameters.packageDistroList }}:
           # This leg's RID matches the build image. Build its distro-dependent packages, as well as
           # the distro-independent installers. (There's no particular reason to build the distro-
           # independent installers on this leg, but we need to do it somewhere.)
-          # Currently, Linux_arm64 supports 'rpm' type only.
-          - ${{ if or(not(eq(parameters.platform, 'Linux_arm64')), eq(packageBuild.packageType, 'rpm')) }}:
+          # Currently, linux_arm64 supports 'rpm' type only.
+          - ${{ if or(not(eq(parameters.platform, 'linux_arm64')), eq(packageBuild.packageType, 'rpm')) }}:
             - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
               parameters:
                 packageType: ${{ packageBuild.packageType }}

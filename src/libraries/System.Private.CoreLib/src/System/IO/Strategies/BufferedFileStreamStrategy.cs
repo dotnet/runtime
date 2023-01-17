@@ -318,6 +318,8 @@ namespace System.IO.Strategies
                 {
                     if (_readLen == _readPos && buffer.Length >= _bufferSize)
                     {
+                        // invalidate the buffered data, otherwise certain Seek operation followed by a ReadAsync could try to re-use data from _buffer
+                        _readPos = _readLen = 0;
                         // hot path #1: the read buffer is empty and buffering would not be beneficial
                         // To find out why we are bypassing cache here, please see WriteAsync comments.
                         return _strategy.ReadAsync(buffer, cancellationToken);
