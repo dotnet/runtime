@@ -142,27 +142,26 @@
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
-        MainLibraryFileName="$(MainLibraryFileName)"
         Assemblies="@(_AppleAssembliesInternal)"
-        Arch="$(TargetArchitecture)"
-        OutputDirectory="$(AppleAppBundleDir)"
-        Optimized="$(Optimized)"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        BuildAppBundle="$(GenerateXcodeProject)"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        ForceAOT="$(RunAOTCompilation)"
+        ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)"
+        InvariantGlobalization="$(InvariantGlobalization)"
+        UseConsoleUITemplate="True"
         GenerateXcodeProject="$(GenerateXcodeProject)"
         GenerateCMakeProject="$(GenerateCMakeProject)"
-        UseConsoleUITemplate="True"
-        ForceAOT="$(RunAOTCompilation)"
+        BuildAppBundle="$(GenerateXcodeProject)"
+        Optimized="$(Optimized)"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"
         OutputDirectory="$(AppleAppBundleDir)"
         NativeMainSource="$(NativeMainSource)"
         AppDir="$(AppleAppDir)">
-        InvariantGlobalization="$(InvariantGlobalization)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
