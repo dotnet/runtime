@@ -50,6 +50,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(StaticNumaLinking)' == 'true'" Include="$(IlcSdkPath)libnumasupportstatic.a" />
+      <NativeLibrary Condition="'$(StaticNumaLinking)' != 'true'" Include="$(IlcSdkPath)libnumasupportdynamic.a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -67,6 +69,12 @@ The .NET Foundation licenses this file to you under the MIT license.
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(StaticNumaLinking)' == 'true' and '$(NativeLib)' != 'Static'">
+      <StaticNumaLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticNumaLibs Include="-lnuma" />
+      <StaticNumaLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static'">
@@ -121,12 +129,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'osx'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'osx'" />
       <LinkerArg Include="-L/usr/lib/swift" Condition="'$(TargetOS)' == 'osx'" />
+      <LinkerArg Include="@(StaticNumaLibs)" Condition="'$(StaticNumaLinking)' == 'true'" />
       <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
       <LinkerArg Include="@(StaticSslLibs)" Condition="'$(StaticOpenSslLinking)' == 'true'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
-      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == '' and '$(PositionIndependentExecutable)' != 'false'" />
+      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
+      <LinkerArg Include="-static-pie" Condition="'$(StaticExecutable)' == 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <!-- binskim warning BA3010 The GNU_RELRO segment is missing -->
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'osx'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
