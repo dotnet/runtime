@@ -1031,7 +1031,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     ULONG       cbSigBlob,
     mdMethodDef* pmb)
 {
-    HRESULT hr;
     pal::StringConvert<WCHAR, char> cvt{ szName };
     if (!cvt.Success())
         return E_INVALIDARG;
@@ -1055,7 +1054,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     size_t methodDefSigLength;
     if (!md_get_methoddefsig_from_methodrefsig(pvSigBlob, cbSigBlob, &methodDefSig, &methodDefSigLength))
         return E_INVALIDARG;
-    malloc_ptr<uint8_t> methodDefSigPtr{ methodDefSig };
+    malloc_ptr methodDefSigPtr{ methodDefSig };
 
     for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
     {
@@ -1080,7 +1079,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
             uint32_t signatureLength;
             if (!md_get_column_value_as_blob(methodCursor, mdtMethodDef_Signature, 1, &signature, &signatureLength))
                 return CLDB_E_FILE_CORRUPT;
-            if (::memcmp(methodDefSig, methodDefSigPtr, min(signatureLength, methodDefSigLength)) != 0)
+            if (::memcmp(methodDefSig, methodDefSigPtr.get(), min(signatureLength, methodDefSigLength)) != 0)
                 continue;
         }
         if (!md_cursor_to_token(methodCursor, pmb))
@@ -1097,7 +1096,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     ULONG       cbSigBlob,
     mdFieldDef* pmb)
 {
-    HRESULT hr;
     pal::StringConvert<WCHAR, char> cvt{ szName };
     if (!cvt.Success())
         return E_INVALIDARG;
@@ -1157,8 +1155,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     ULONG       cbSigBlob,
     mdMemberRef* pmr)
 {
-    HRESULT hr;
-    
     if (IsNilToken(td))
     {
         td = MD_GLOBAL_PARENT_TOKEN;
