@@ -5,7 +5,9 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,10 +28,13 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
     {
         if (s_tcpListener is null)
         {
+            //when running from blazor always try to open the same port(which is sent by parameter) to avoid creating a lot of remote debugging connections on firefox
+            if (IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(x => x.Port == proxyPort))
+                proxyPort = 0;
             s_tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
             s_tcpListener.Start();
             Console.WriteLine($"Debug proxy for firefox now listening on tcp://{s_tcpListener.LocalEndpoint}." +
-                                (browserPort >= 0 ? $" And expecting firefox at port {browserPort} ." : string.Empty));
+                                (browserPort >= 0 ? $" And expecting firefox at port {browserPort}." : string.Empty));
         }
     }
 
