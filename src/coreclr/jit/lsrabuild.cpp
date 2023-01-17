@@ -557,6 +557,21 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 {
     if (theInterval != nullptr)
     {
+#if defined(TARGET_AMD64)
+        if (mask == RBM_LOWSIMD)
+        {
+            // Constrain if we have to for float/simd types
+            if (varTypeIsFloating(theInterval->registerType) || varTypeIsSIMD(theInterval->registerType))
+            {
+                mask = lowSIMDRegs();
+            }
+            else
+            {
+                mask = RBM_NONE;
+            }
+
+        }
+#endif
         if (mask == RBM_NONE)
         {
             mask = allRegs(theInterval->registerType);
