@@ -569,58 +569,40 @@ public:
     {
         GenTree* const node = *use;
 
-        switch (node->gtOper)
+        if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
         {
-            case GT_IND:
-            case GT_FIELD:
-            case GT_FIELD_ADDR:
-                MorphStructField(node, user);
-                break;
-            case GT_LCL_FLD:
-                MorphLocalField(node, user);
-                assert(node->OperIsLocal());
-                __fallthrough;
-            case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            MorphStructField(node, user);
+        }
+        else if (node->OperIs(GT_LCL_FLD))
+        {
+            MorphLocalField(node, user);
+        }
+
+        if (node->OperIsLocal() || node->OperIsLocalAddr())
+        {
+            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            UpdateEarlyRefCount(lclNum);
+
+            if (varDsc->lvIsStructField)
             {
-                unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-                UpdateEarlyRefCount(lclNum);
-
-                if (varDsc->lvIsStructField)
-                {
-                    // Promoted field, increase count for the parent lclVar.
-                    //
-                    assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
-                    unsigned parentLclNum = varDsc->lvParentLcl;
-                    UpdateEarlyRefCount(parentLclNum);
-                }
-
-                if (varDsc->lvPromoted)
-                {
-                    // Promoted struct, increase count for each promoted field.
-                    //
-                    for (unsigned childLclNum = varDsc->lvFieldLclStart;
-                         childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
-                    {
-                        UpdateEarlyRefCount(childLclNum);
-                    }
-                }
-
-                break;
+                // Promoted field, increase count for the parent lclVar.
+                //
+                assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
+                unsigned parentLclNum = varDsc->lvParentLcl;
+                UpdateEarlyRefCount(parentLclNum);
             }
 
-            case GT_JMP:
+            if (varDsc->lvPromoted)
             {
-                // GT_JMP has implicit uses of all arguments.
-                for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+                // Promoted struct, increase count for each promoted field.
+                //
+                for (unsigned childLclNum = varDsc->lvFieldLclStart;
+                     childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
                 {
-                    UpdateEarlyRefCount(lclNum);
+                    UpdateEarlyRefCount(childLclNum);
                 }
-
-                break;
             }
         }
 
@@ -1484,6 +1466,7 @@ private:
         m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
+public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
     //
@@ -1563,6 +1546,7 @@ private:
         }
     }
 
+private:
     //------------------------------------------------------------------------
     // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
     //
@@ -1677,6 +1661,19 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 #endif
 
             visitor.VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(this))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                visitor.UpdateEarlyRefCount(lclNum);
+            }
+
+            break;
         }
     }
 
