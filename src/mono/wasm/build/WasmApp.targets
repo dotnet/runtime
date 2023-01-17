@@ -1,7 +1,7 @@
 <Project>
   <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="AssembliesTotalSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -204,9 +204,9 @@
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
     </ItemGroup>
 
-    <AssembliesTotalSize Assemblies="@(WasmAssembliesToBundle)">
-      <Output TaskParameter="TotalSize" PropertyName="_WasmAssembliesTotalSize" />
-    </AssembliesTotalSize>
+    <WasmCalculateInitialHeapSize Assemblies="@(WasmAssembliesToBundle)">
+      <Output TaskParameter="TotalSize" PropertyName="_WasmCalculateInitialHeapSize" />
+    </WasmCalculateInitialHeapSize>
 
     <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
       <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>

@@ -149,9 +149,9 @@
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
-    <AssembliesTotalSize Assemblies="@(WasmAssembliesToBundle)">
-      <Output TaskParameter="TotalSize" PropertyName="_WasmAssembliesTotalSize" />
-    </AssembliesTotalSize>
+    <WasmCalculateInitialHeapSize Assemblies="@(WasmAssembliesToBundle)">
+      <Output TaskParameter="TotalSize" PropertyName="_WasmCalculateInitialHeapSize" />
+    </WasmCalculateInitialHeapSize>
 
     <PropertyGroup>
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
@@ -192,7 +192,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmAssembliesTotalSize)' != '' and $(_WasmAssembliesTotalSize) > 16777216">$(_WasmAssembliesTotalSize)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculateInitialHeapSize)' != '' and $(_WasmCalculateInitialHeapSize) > 16777216">$(_WasmCalculateInitialHeapSize)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
     </PropertyGroup>
 

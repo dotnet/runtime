@@ -10,8 +10,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-// estimate the total size of the assemblies we are going to load x2 and round it up to 64K
-public class AssembliesTotalSize : Task
+// estimate the total memory needed for the assemblies
+public class WasmCalculateInitialHeapSize : Task
 {
     [Required]
     [NotNull]
@@ -22,7 +22,7 @@ public class AssembliesTotalSize : Task
 
     public override bool Execute ()
     {
-        long totalSize=0;
+        long totalDllSize=0;
         foreach (var asm in Assemblies)
         {
             var info = new FileInfo(asm);
@@ -31,13 +31,15 @@ public class AssembliesTotalSize : Task
                 Log.LogError($"Could not find assembly '{asm}'");
                 return false;
             }
-            totalSize += info.Length;
+            totalDllSize += info.Length;
         }
-        totalSize *= 2;
-        totalSize += 0x10000;
-        totalSize &= 0xFFFF0000;
 
-        TotalSize = totalSize;
+        // this is arbitrary guess about memory overhead of the runtime, after the assemblies are loaded
+        const double extraMemoryRatio = 1.2;
+        long memorySize = (long) (totalDllSize * extraMemoryRatio);
+
+        // round it up to 64KB page size for wasm
+        TotalSize = (memorySize + 0x10000) & 0xFFFF0000;
 
         return true;
     }
