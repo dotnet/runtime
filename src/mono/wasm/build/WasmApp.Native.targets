@@ -150,7 +150,7 @@
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
     <WasmCalculateInitialHeapSize Assemblies="@(WasmAssembliesToBundle)">
-      <Output TaskParameter="TotalSize" PropertyName="_WasmCalculateInitialHeapSize" />
+      <Output TaskParameter="TotalSize" PropertyName="_WasmCalculatedInitialHeapSize" />
     </WasmCalculateInitialHeapSize>
 
     <PropertyGroup>
@@ -192,7 +192,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculateInitialHeapSize)' != '' and $(_WasmCalculateInitialHeapSize) > 16777216">$(_WasmCalculateInitialHeapSize)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
     </PropertyGroup>
 

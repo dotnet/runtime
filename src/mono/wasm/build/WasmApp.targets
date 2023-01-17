@@ -204,10 +204,6 @@
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
     </ItemGroup>
 
-    <WasmCalculateInitialHeapSize Assemblies="@(WasmAssembliesToBundle)">
-      <Output TaskParameter="TotalSize" PropertyName="_WasmCalculateInitialHeapSize" />
-    </WasmCalculateInitialHeapSize>
-
     <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
       <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
     </PropertyGroup>
