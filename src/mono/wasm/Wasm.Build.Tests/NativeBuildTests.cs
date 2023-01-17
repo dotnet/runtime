@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -38,7 +40,7 @@ namespace Wasm.Build.Tests
                                 DotnetWasmFromRuntimePack: false));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                        test: output => {},
+                        test: output => { },
                         host: host, id: id);
         }
 
@@ -132,6 +134,50 @@ namespace Wasm.Build.Tests
 
             Assert.True(res.ExitCode != 0, "Expected publish to fail");
             Assert.Contains("Stopping after AOT", res.Output);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
+        {
+            string id = $"UndefinedNativeSymbol_{(allowUndefined ? "allowed" : "disabled")}_{Path.GetRandomFileName()}";
+
+            string code = @"
+                using System;
+                using System.Runtime.InteropServices;
+
+                call();
+                return 42;
+
+                [DllImport(""simple"")] static extern void call();
+            ";
+
+            CreateWasmTemplateProject(id);
+
+            AddItemsPropertiesToProject(
+                Path.Combine(_projectDir!, $"{id}.csproj"),
+                extraItems: @$"<NativeFileReference Include=""undefined-symbol.c"" />",
+                extraProperties: null
+            );
+
+            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined-symbol.c"));
+
+            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
+                .WithWorkingDirectory(_projectDir!)
+                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .ExecuteWithCapturedOutput("build", "-c Release", $"-p:WasmAllowUndefinedSymbols={allowUndefined}");
+
+            if (allowUndefined)
+            {
+                Assert.True(result.ExitCode == 0, "Expected build to succeed");
+            }
+            else
+            {
+                Assert.False(result.ExitCode == 0, "Expected build to fail");
+                Assert.Contains("undefined symbol: sgfg", result.Output);
+            }
         }
     }
 }
