@@ -18,6 +18,6 @@ namespace Wasm.Build.Tests
         internal static readonly string? BuiltNuGetsPath           = Environment.GetEnvironmentVariable("BUILT_NUGETS_PATH");
         internal static readonly string? BrowserPathForTests       = Environment.GetEnvironmentVariable("BROWSER_PATH_FOR_TESTS");
         internal static readonly bool    ShowBuildOutput           = Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
-        internal static readonly bool UseWebcil = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is not null;
+        internal static readonly bool UseWebcil = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
     }
 }
