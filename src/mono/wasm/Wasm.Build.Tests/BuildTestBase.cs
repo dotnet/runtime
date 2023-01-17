@@ -486,7 +486,7 @@ namespace Wasm.Build.Tests
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
-                AddItemsPropertiesToProject("<RunAnalyzers>true</RunAnalyzers>");
+                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
             return projectfile;
         }
 
