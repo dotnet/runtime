@@ -15,7 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 4310) // cast truncates constant value - happens for (int8_t)0xb1
 #endif
 
-
 #ifdef TARGET_XARCH
 #include "emit.h"
 #include "codegen.h"
@@ -29,7 +28,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
 #define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
 #endif
-
 
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
@@ -11057,6 +11055,6 @@ bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
 
 #endif // TARGET_XARCH
 
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
-#undef CNT_CALLEE_TRASH_FLOAT 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT

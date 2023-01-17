@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define CNT_CALLEE_TRASH_FLOAT_USE (this->cntCalleeTrashFloat)
 #endif
 
-
 /*****************************************************************************/
 
 void Compiler::optInit()
@@ -10708,7 +10707,6 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 #endif // DEBUG
 }
 
-
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
-#undef CNT_CALLEE_TRASH_FLOAT 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT

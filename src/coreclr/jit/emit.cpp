@@ -27,7 +27,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
 #endif
 
-
 /*****************************************************************************
  *
  *  Represent an emitter location.
@@ -3386,6 +3385,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #endif // TARGET_XARCH
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -3458,6 +3458,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         assert(!id->idIsLargeCns());
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -9954,7 +9955,6 @@ void emitter::emitEnableGC()
 }
 #endif // !defined(JIT32_GCENCODER)
 
-
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
 #undef CNT_CALLEE_TRASH_FLOAT_USE

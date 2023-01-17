@@ -10645,14 +10645,13 @@ public:
     // to TARGET_AMD64 only.
     //
     // Users of `targetamd.h` need to define three macros, RBM_ALLFLOAT_USE, RBM_FLT_CALLEE_TRASH_USE,
-    // and CNT_CALLEE_TRASH_FLOAT_USE which should point to these three variables respectively. 
+    // and CNT_CALLEE_TRASH_FLOAT_USE which should point to these three variables respectively.
     // We did this to avoid poluting all `targetXXX.h` macro definitions with a compiler parameter, where only
-    // TARGET_AMD64 requires one. 
+    // TARGET_AMD64 requires one.
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
 #endif // TARGET_AMD64
-
 
 }; // end of class Compiler
 

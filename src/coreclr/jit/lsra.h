@@ -82,7 +82,7 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 //------------------------------------------------------------------------
 // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
 //
-inline regMaskTP callerSaveRegs(RegisterType rt, Compiler *compiler)
+inline regMaskTP callerSaveRegs(RegisterType rt, Compiler* compiler)
 {
     return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
 }
@@ -2003,7 +2003,7 @@ public:
 
 #ifdef DEBUG
     // print out representation
-    void dump();
+    void dump(Compiler* compiler);
     // concise representation for embedding
     void tinyDump();
     // extremely concise representation
@@ -2539,7 +2539,7 @@ public:
 };
 
 #ifdef DEBUG
-void dumpRegMask(regMaskTP regs);
+void dumpRegMask(regMaskTP regs, Compiler* compiler);
 #endif // DEBUG
 
 /*****************************************************************************/

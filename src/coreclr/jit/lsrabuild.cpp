@@ -166,7 +166,7 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
     newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
 #endif // DEBUG
 
-    DBEXEC(VERBOSE, newInt->dump());
+    DBEXEC(VERBOSE, newInt->dump(this->compiler));
     return newInt;
 }
 
@@ -3018,7 +3018,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             printf("Last use of V%02u between PUTARG and CALL. Removing occupied arg regs from preferences: ",
                    compiler->lvaTrackedIndexToLclNum(varIndex));
-            dumpRegMask(unpref);
+            dumpRegMask(unpref, this->compiler);
             printf("\n");
         }
 #endif
@@ -4150,7 +4150,6 @@ int LinearScan::BuildCmp(GenTree* tree)
     return srcCount;
 }
 
-
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
-#undef CNT_CALLEE_TRASH_FLOAT 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT

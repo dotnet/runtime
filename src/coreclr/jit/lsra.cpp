@@ -1894,7 +1894,7 @@ void LinearScan::identifyCandidates()
                 }
             }
             JITDUMP("  ");
-            DBEXEC(VERBOSE, newInt->dump());
+            DBEXEC(VERBOSE, newInt->dump(compiler));
         }
         else
         {
@@ -5693,7 +5693,7 @@ void LinearScan::allocateRegisters()
             if (interval.isActive)
             {
                 printf("Active ");
-                interval.dump();
+                interval.dump(this->compiler);
             }
         }
 
@@ -8975,8 +8975,18 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
 }
 #endif // TRACK_LSRA_STATS
 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT_USE
+
 #ifdef DEBUG
-void dumpRegMask(regMaskTP regs)
+// Please see the comment for these instance variables in `compiler.h`
+#if defined(TARGET_AMD64)
+#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
+#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
+#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#endif
+void dumpRegMask(regMaskTP regs, Compiler* compiler)
 {
     if (regs == RBM_ALLINT)
     {
@@ -8986,7 +8996,6 @@ void dumpRegMask(regMaskTP regs)
     {
         printf("[allIntButFP]");
     }
-    /*
     else if (regs == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
@@ -8995,12 +9004,14 @@ void dumpRegMask(regMaskTP regs)
     {
         printf("[allDouble]");
     }
-    */
     else
     {
         dspRegMask(regs);
     }
 }
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT_USE
 
 static const char* getRefTypeName(RefType refType)
 {
@@ -9072,7 +9083,7 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    dumpRegMask(registerAssignment);
+    dumpRegMask(registerAssignment, linearScan->compiler);
 
     printf(" minReg=%d", minRegCandidateCount);
 
@@ -9135,7 +9146,7 @@ void RegRecord::dump()
     tinyDump();
 }
 
-void Interval::dump()
+void Interval::dump(Compiler* compiler)
 {
     printf("Interval %2u:", intervalIndex);
 
@@ -9208,7 +9219,7 @@ void Interval::dump()
     printf(" physReg:%s", getRegName(physReg));
 
     printf(" Preferences=");
-    dumpRegMask(this->registerPreferences);
+    dumpRegMask(this->registerPreferences, compiler);
 
     if (relatedInterval)
     {
@@ -9290,7 +9301,7 @@ void LinearScan::lsraDumpIntervals(const char* msg)
     {
         // only dump something if it has references
         // if (interval->firstRefPosition)
-        interval.dump();
+        interval.dump(this->compiler);
     }
 
     printf("\n");
@@ -12061,7 +12072,3 @@ Selection_Done:
     foundRegBit = candidates;
     return candidates;
 }
-
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
-#undef CNT_CALLEE_TRASH_FLOAT_USE

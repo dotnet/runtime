@@ -782,8 +782,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     }
 }
 
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
 #undef CNT_CALLEE_TRASH_FLOAT_USE
 
 #if defined(TARGET_AMD64)
@@ -791,7 +791,6 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 #define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
 #define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
 #endif
-
 
 // Need an explicit instantiation.
 template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife);
@@ -9431,7 +9430,6 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
     return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
 }
 
-
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
 #undef CNT_CALLEE_TRASH_FLOAT_USE

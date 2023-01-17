@@ -212,6 +212,10 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
     return id->idAddr()->iiaAddrMode.amDisp;
 }
 
+#undef RBM_ALLFLOAT_USE
+#undef RBM_FLT_CALLEE_TRASH_USE
+#undef CNT_CALLEE_TRASH_FLOAT_USE
+
 #endif // TARGET_XARCH
 
 /*****************************************************************************
@@ -220,8 +224,6 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
  */
 /*static*/ inline void emitter::emitEncodeCallGCregs(regMaskTP regmask, instrDesc* id)
 {
-    //assert((regmask & RBM_CALLEE_TRASH) == 0);
-
     unsigned encodeMask;
 
 #ifdef TARGET_X86
@@ -546,11 +548,6 @@ bool emitter::emitGenNoGCLst(Callback& cb)
     return true;
 }
 
-#undef RBM_ALLFLOAT_USE 
-#undef RBM_FLT_CALLEE_TRASH_USE 
-#undef CNT_CALLEE_TRASH_FLOAT_USE
-
 /*****************************************************************************/
 #endif //_EMITINL_H_
 /*****************************************************************************/
-
