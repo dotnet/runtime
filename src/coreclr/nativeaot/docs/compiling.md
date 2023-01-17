@@ -139,7 +139,7 @@ You can use this feature by adding the `StaticNumaLinking` property to your proj
 </PropertyGroup>
 ```
 
-License (LGPL v2.1): https://github.com/numactl/numactl/blob/master/LICENSE.LGPL2.1
+License (LGPL v2.1): https://github.com/numactl/numactl/blob/master/LICENSE.LGPL2.1. Note that this license imposes specific requirements on distribution of statically linked binaries.
 
 ### Prerequisites
 
