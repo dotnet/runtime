@@ -94,15 +94,15 @@ namespace Microsoft.NET.HostModel.Bundle
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
 
-        private static OSPlatform _freebsdOSPlatform = OSPlatform.Create("FREEBSD");
+        private static readonly OSPlatform s_freebsdOSPlatform = OSPlatform.Create("FREEBSD");
 
         private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
-                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : RuntimeInformation.IsOSPlatform(_freebsdOSPlatform) ? _freebsdOSPlatform : OSPlatform.Windows;
+                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : RuntimeInformation.IsOSPlatform(s_freebsdOSPlatform) ? s_freebsdOSPlatform : OSPlatform.Windows;
 
         public bool IsLinux => OS.Equals(OSPlatform.Linux);
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);
-        public bool IsFreeBSD => OS.Equals(_freebsdOSPlatform);
+        public bool IsFreeBSD => OS.Equals(s_freebsdOSPlatform);
 
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.
