@@ -1030,10 +1030,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     ULONG       cbSigBlob,
     mdMethodDef* pmb)
 {
-    pal::StringConvert<WCHAR, char> cvt{ szName };
-    if (!cvt.Success())
-        return E_INVALIDARG;
-    
     if (td == mdTypeDefNil || td == mdTokenNil)
     {
         td = MD_GLOBAL_PARENT_TOKEN;
@@ -1054,6 +1050,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     if (!md_get_methoddefsig_from_methodrefsig(pvSigBlob, cbSigBlob, &methodDefSig, &methodDefSigLength))
         return E_INVALIDARG;
     malloc_ptr methodDefSigPtr{ methodDefSig };
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
 
     for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
     {
@@ -1095,10 +1095,6 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     ULONG       cbSigBlob,
     mdFieldDef* pmb)
 {
-    pal::StringConvert<WCHAR, char> cvt{ szName };
-    if (!cvt.Success())
-        return E_INVALIDARG;
-    
     if (td == mdTypeDefNil || td == mdTokenNil)
     {
         td = MD_GLOBAL_PARENT_TOKEN;
@@ -1113,6 +1109,10 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     uint32_t count;
     if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_FieldList, &fieldCursor, &count))
         return CLDB_E_FILE_CORRUPT;
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
 
     for (uint32_t i = 0; i < count; md_cursor_next(&fieldCursor), i++)
     {
@@ -3246,6 +3246,16 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(
     DWORD* pccBufSize)
 {
     char const* versionString = md_get_version_string(_md_ptr.get());
+    if (versionString == nullptr)
+    {
+        if (ccBufSize > 0)
+            pwzBuf[0] = W('\0');
+        
+        if (pccBufSize != nullptr)
+            *pccBufSize = 0;
+
+        return S_OK;
+    }
     return ConvertAndReturnStringOutput(versionString, pwzBuf, ccBufSize, pccBufSize);
 }
 
