@@ -2,7 +2,6 @@
 
 #include "pal.hpp"
 #include "impl.hpp"
-#include "span.hpp"
 
 #define MD_MODULE_TOKEN TokenFromRid(1, mdtModule)
 #define MD_GLOBAL_PARENT_TOKEN TokenFromRid(1, mdtTypeDef)
@@ -1007,13 +1006,13 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     ULONG       cbSigBlob,
     mdToken* pmb)
 {
-    if (md_is_field_sig(pvSigBlob, cbSigBlob))
+    if (pvSigBlob == nullptr || !md_is_field_sig(pvSigBlob, cbSigBlob))
     {
-        return FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
+        return FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
     }
     else
     {
-        return FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
+        return FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
     }
 }
 
@@ -1038,7 +1037,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
         return E_INVALIDARG;
     
     if (td == mdTypeDefNil || td == mdTokenNil)
-        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
 
     mdcursor_t typedefCursor;
 
@@ -1053,10 +1054,8 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     uint8_t* methodDefSig;
     size_t methodDefSigLength;
     if (!md_get_methoddefsig_from_methodrefsig(pvSigBlob, cbSigBlob, &methodDefSig, &methodDefSigLength))
-    {
         return E_INVALIDARG;
-    }
-    malloc_span<uint8_t> methodDefSigSpan{ methodDefSig, methodDefSigLength };
+    malloc_ptr<uint8_t> methodDefSigPtr{ methodDefSig };
 
     for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
     {
@@ -1069,18 +1068,21 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
         if (IsMdPrivateScope(flags))
             continue;
 
-        const char* methodName;
+        char const* methodName;
         if (!md_get_column_value_as_utf8(methodCursor, mdtMethodDef_Name, 1, &methodName))
             return CLDB_E_FILE_CORRUPT;
-        if (strncmp(methodName, cvt, cvt.Length()) != 0)
+        if (::strncmp(methodName, cvt, cvt.Length()) != 0)
             continue;
 
-        const uint8_t* signature;
-        uint32_t signatureLength;
-        if (!md_get_column_value_as_blob(methodCursor, mdtMethodDef_Signature, 1, &signature, &signatureLength))
-            return CLDB_E_FILE_CORRUPT;
-        if (memcmp(methodDefSig, methodDefSigSpan, min(signatureLength, methodDefSigSpan.size())) != 0)
-            continue;
+        if (pvSigBlob != nullptr)
+        {
+            uint8_t const* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(methodCursor, mdtMethodDef_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (::memcmp(methodDefSig, methodDefSigPtr, min(signatureLength, methodDefSigLength)) != 0)
+                continue;
+        }
         if (!md_cursor_to_token(methodCursor, pmb))
             return CLDB_E_FILE_CORRUPT;
         return S_OK;
@@ -1101,7 +1103,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
         return E_INVALIDARG;
     
     if (td == mdTypeDefNil || td == mdTokenNil)
-        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
 
     mdcursor_t typedefCursor;
 
@@ -1113,7 +1117,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_FieldList, &fieldCursor, &count))
         return CLDB_E_FILE_CORRUPT;
 
-    for(uint32_t i = 0; i < count; md_cursor_next(&fieldCursor), i++)
+    for (uint32_t i = 0; i < count; md_cursor_next(&fieldCursor), i++)
     {
         uint32_t flags;
         if (!md_get_column_value_as_constant(fieldCursor, mdtField_Flags, 1, &flags))
@@ -1124,18 +1128,21 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
         if (IsFdPrivateScope(flags))
             continue;
 
-        const char* name;
+        char const* name;
         if (!md_get_column_value_as_utf8(fieldCursor, mdtField_Name, 1, &name))
             return CLDB_E_FILE_CORRUPT;
-        if (strncmp(name, cvt, cvt.Length()) != 0)
+        if (::strncmp(name, cvt, cvt.Length()) != 0)
             continue;
 
-        const uint8_t* signature;
-        uint32_t signatureLength;
-        if (!md_get_column_value_as_blob(fieldCursor, mdtField_Signature, 1, &signature, &signatureLength))
-            return CLDB_E_FILE_CORRUPT;
-        if (memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
-            continue;
+        if (pvSigBlob != nullptr)
+        {
+            uint8_t const* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(fieldCursor, mdtField_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (::memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+                continue;
+        }
         if (!md_cursor_to_token(fieldCursor, pmb))
             return CLDB_E_FILE_CORRUPT;
         return S_OK;
@@ -1153,7 +1160,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     HRESULT hr;
     
     if (IsNilToken(td))
-        RETURN_IF_FAILED(FindTypeDefByName(W("<Module>"), mdTokenNil, &td));
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
     
     mdcursor_t cursor;
     uint32_t count;
@@ -1169,25 +1178,25 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
         if (refParent != td)
             continue;
         
-        if (szName != NULL)
+        if (szName != nullptr)
         {
-            const char* name;
+            char const* name;
             if (!md_get_column_value_as_utf8(cursor, mdtMemberRef_Name, 1, &name))
                 return CLDB_E_FILE_CORRUPT;
             pal::StringConvert<WCHAR, char> cvt{ szName };
             if (!cvt.Success())
                 return E_INVALIDARG;
-            if (strncmp(name, cvt, cvt.Length()) != 0)
+            if (::strncmp(name, cvt, cvt.Length()) != 0)
                 continue;
         }
 
-        if (pvSigBlob != NULL)
+        if (pvSigBlob != nullptr)
         {
-            const uint8_t* signature;
+            uint8_t const* signature;
             uint32_t signatureLength;
             if (!md_get_column_value_as_blob(cursor, mdtMemberRef_Signature, 1, &signature, &signatureLength))
                 return CLDB_E_FILE_CORRUPT;
-            if (memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+            if (::memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
                 continue;
         }
         if (!md_cursor_to_token(cursor, pmr))
@@ -3145,7 +3154,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSpecProps(
     if (!md_get_column_value_as_token(cursor, mdtMethodSpec_Method, 1, tkParent))
         return CLDB_E_FILE_CORRUPT;
 
-    const uint8_t* signatureBlob;
+    uint8_t const* signatureBlob;
     uint32_t signatureBlobLength;
     if (!md_get_column_value_as_blob(cursor, mdtMethodSpec_Instantiation, 1, &signatureBlob, &signatureBlobLength))
         return CLDB_E_FILE_CORRUPT;
@@ -3241,7 +3250,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(
     DWORD       ccBufSize,
     DWORD* pccBufSize)
 {
-    const char* versionString = md_get_version_string(_md_ptr.get());
+    char const* versionString = md_get_version_string(_md_ptr.get());
     return ConvertAndReturnStringOutput(versionString, pwzBuf, ccBufSize, pccBufSize);
 }
 

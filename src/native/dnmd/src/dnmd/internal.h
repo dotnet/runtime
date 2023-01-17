@@ -248,6 +248,9 @@ bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o);
 // II.23.2
 bool decompress_u32(uint8_t const** data, size_t* data_len, uint32_t* o);
 bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o);
-bool compress_u32(uint32_t data, uint8_t* compressed, size_t* used_len);
+// II.23.2
+// compressed_len is an in/out parameter. If compress_u32 returns true, then
+// compressed_len is set to the number of bytes written to compressed.
+bool compress_u32(uint32_t data, uint8_t* compressed, size_t* compressed_len);
 
 #endif // _SRC_DNMD_INTERNAL_H_

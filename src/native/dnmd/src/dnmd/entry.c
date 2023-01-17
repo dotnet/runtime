@@ -276,9 +276,11 @@ bool md_dump_tables(mdhandle_t handle, int32_t table_id)
     return true;
 }
 
-const char* md_get_version_string(mdhandle_t handle)
+char const* md_get_version_string(mdhandle_t handle)
 {
     mdcxt_t* cxt = extract_mdcxt(handle);
+    if (cxt == NULL)
+        return NULL;
     return cxt->version;
 }
 

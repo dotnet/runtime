@@ -164,6 +164,8 @@ enum {
     SIGN_MASK_FOURBYTE = 0xf0000000,        // Mask the same size as the missing bits.
 };
 
+// II.23.2
+// This is a big-endian format in the physical form.
 bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o)
 {
     uint32_t unsigned_value;
@@ -197,27 +199,35 @@ bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o)
     return true;
 }
 
-bool compress_u32(uint32_t data, uint8_t* compressed, size_t* used_len)
+// II.23.2
+// This is a big-endian format in the physical form.
+bool compress_u32(uint32_t data, uint8_t* compressed, size_t* compressed_len)
 {
-    assert(compressed != NULL && used_len != NULL);
-    if (data <= 0x7F)
+    assert(compressed != NULL && compressed_len != NULL);
+    if (data <= 0x7f)
     {
+        if (*compressed_len < 1)
+            return false;
         compressed[0] = (uint8_t)data;
-        *used_len = 1;
+        *compressed_len = 1;
     }
     else if (data <= 0x3fff)
     {
+        if (*compressed_len < 2)
+            return false;
         compressed[0] = (uint8_t)((data >> 8) | 0x80);
         compressed[1] = (uint8_t)data;
-        *used_len = 2;
+        *compressed_len = 2;
     }
     else if (data <= 0x1fffffff)
     {
+        if (*compressed_len < 4)
+            return false;
         compressed[0] = (uint8_t)((data >> 24) | 0xc0);
         compressed[1] = (uint8_t)(data >> 16);
         compressed[2] = (uint8_t)(data >> 8);
         compressed[3] = (uint8_t)data;
-        *used_len = 4;
+        *compressed_len = 4;
     }
     else
     {

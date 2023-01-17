@@ -23,7 +23,7 @@ bool md_validate(mdhandle_t handle);
 // Set table_id to '-1' to print out all tables.
 bool md_dump_tables(mdhandle_t handle, int32_t table_id);
 
-const char* md_get_version_string(mdhandle_t handle);
+char const* md_get_version_string(mdhandle_t handle);
 
 //
 // All tables possible in ECMA-335

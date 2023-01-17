@@ -12,10 +12,7 @@ bool md_is_field_sig(uint8_t const* sig, size_t sig_len)
 
 static bool skip_if_sentinel(uint8_t const** sig, size_t* sig_length)
 {
-    if (sig == NULL || sig_length == NULL || *sig_length == 0)
-    {
-        return false;
-    }
+    assert(sig != NULL && sig_length != NULL && *sig_length != 0);
 
     if ((*sig)[0] == ELEMENT_TYPE_SENTINEL)
     {
@@ -31,10 +28,7 @@ static bool skip_if_sentinel(uint8_t const** sig, size_t* sig_length)
 // II.23.2.12 Type
 static bool skip_sig_element(uint8_t const** sig, size_t* sig_length)
 {
-    if (sig == NULL || sig_length == NULL || *sig_length == 0)
-    {
-        return false;
-    }
+    assert(sig != NULL && sig_length != NULL && *sig_length != 0);
 
     uint8_t elem_type;
     uint32_t ignored_compressed_u32_arg;
@@ -68,7 +62,8 @@ static bool skip_sig_element(uint8_t const** sig, size_t* sig_length)
             return true;
         case ELEMENT_TYPE_FNPTR:
         {
-            // We need to read a whole MethodDefSig (II.23.2.1) or MethodRefSig (II.23.2.2)  here
+            // We need to read a whole MethodDefSig (II.23.2.1) or MethodRefSig (II.23.2.2) here
+            // See II.23.2.12 Type for more details
             uint8_t call_conv;
             if (!read_u8(sig, sig_length, &call_conv))
             {
@@ -97,9 +92,10 @@ static bool skip_sig_element(uint8_t const** sig, size_t* sig_length)
             // skip parameters
             for (uint32_t i = 0; i < param_count; i++)
             {
-                // If we see the SENTIEL element, we'll skip it.
-                // It doesn't count as a parameter.
-                skip_if_sentinel(sig, sig_length);
+                // If we see the SENTINEL element, we'll skip it.
+                // As defined in II.23.2.2, the ParamCount field caounts the number of
+                // Param instances, and SENTINEL is a separate entity in the signature than the Param instances.
+                (void)skip_if_sentinel(sig, sig_length);
                 if (!skip_sig_element(sig, sig_length))
                 {
                     return false;
@@ -252,16 +248,19 @@ bool md_get_methoddefsig_from_methodrefsig(uint8_t const* sig, size_t ref_sig_le
     // and update the parameter count.
     // We need to account for the fact that the parameter count may be encoded with less bytes
     // as it is emitted using the compressed unsigned integer format.
+    // A compressed integer can take up a maximum of 4 bytes, so we only need a four-byte buffer here.
     uint8_t encoded_original_param_count[4];
-    size_t encoded_original_param_count_length;
+    size_t encoded_original_param_count_length = 4;
     compress_u32(param_count, encoded_original_param_count, &encoded_original_param_count_length);
 
     uint8_t encoded_def_param_count[4];
-    size_t encoded_def_param_count_length;
+    size_t encoded_def_param_count_length = 4;
     compress_u32(i, encoded_def_param_count, &encoded_def_param_count_length);
 
     size_t def_sig_buffer_len = *def_sig_len = (uint32_t)(def_sig_end - sig) - encoded_original_param_count_length + encoded_def_param_count_length;
     uint8_t * def_sig_buffer = *def_sig = malloc(def_sig_buffer_len);
+    if (!def_sig_buffer)
+        return false;
 
     def_sig_buffer[0] = call_conv;
     advance_stream(&def_sig_buffer, &def_sig_buffer_len, 1);
