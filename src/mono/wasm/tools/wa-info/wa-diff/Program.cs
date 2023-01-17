@@ -13,11 +13,12 @@ namespace WebAssemblyInfo
         static public bool Verbose { get { return VerboseLevel > 0; } }
         static public bool Verbose2 { get { return VerboseLevel > 1; } }
 
-        static internal Regex? AssemblyFilter;
-        static internal Regex? FunctionFilter;
-        static internal long FunctionOffset = -1;
-        static internal bool ShowFunctionSize = false;
-        static internal Regex? TypeFilter;
+        public static Regex? AssemblyFilter;
+        public static Regex? FunctionFilter;
+        public static long FunctionOffset = -1;
+        public static bool ShowFunctionSize = false;
+        public static bool ShowConstLoad = true;
+        public static Regex? TypeFilter;
 
         public static bool AotStats;
         public static bool Disassemble;
@@ -75,6 +76,11 @@ namespace WebAssemblyInfo
                                 FunctionOffset = offset;
                             else if (v.StartsWith("0x") && long.TryParse(v[2..], NumberStyles.AllowHexSpecifier, null, out offset))
                                 FunctionOffset = offset;
+                    } },
+                { "h|hide-const-loads",
+                    "Hide const loads values",
+                    v => {
+                        ShowConstLoad = false;
                     } },
                 { "s|function-size",
                     "Compare function code sizes",

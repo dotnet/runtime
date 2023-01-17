@@ -20,6 +20,7 @@ namespace WebAssemblyInfo
         public static DataMode DataSectionMode = DataMode.Active;
         public static int DataOffset = 0;
         public static bool ShowFunctionSize;
+        public static bool ShowConstLoad = true;
 
         static int Main(string[] args)
         {
