@@ -62,6 +62,7 @@ jobs:
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}

@@ -108,6 +108,8 @@ jobs:
       # Variables used by arcade to gather asset manifests
       - name: _DotNetPublishToBlobFeed
         value: true
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: AzureDevOps-Artifact-Feeds-Pats
     - name: officialBuildIdArg
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
