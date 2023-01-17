@@ -87,15 +87,13 @@ namespace System.Linq
             // Destination *must* be non-empty and exactly match the range length
             private void InitializeSpan(Span<int> destination)
             {
-                Debug.Assert((_end - _start) == destination.Length);
-
                 if (destination.Length < Vector<int>.Count * 2)
                 {
-                    int end = _start + _end;
+                    int end = _end;
                     ref int pos = ref MemoryMarshal.GetReference(destination);
-                    for (int num = _start; num < end; num++)
+                    for (int cur = _start; cur < end; cur++)
                     {
-                        pos = num;
+                        pos = cur;
                         pos = ref Unsafe.Add(ref pos, 1);
                     }
                 }
