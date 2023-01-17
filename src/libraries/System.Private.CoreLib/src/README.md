@@ -18,7 +18,7 @@ The CoreCLR specific sources can be found at [src/coreclr/System.Private.CoreLib
 
 ## System.Private.CoreLib NativeAot Sources
 
-The NativeAot specific sources can be found at [coreclr/nativeaot/System.Private.CoreLib/src](../../../coreclr/nativeaot/System.Private.CoreLib/src/).
+The NativeAot specific sources can be found at [src/coreclr/nativeaot/System.Private.CoreLib/src](../../../coreclr/nativeaot/System.Private.CoreLib/src/).
 
 ## System.Private.CoreLib Mono Sources
 
