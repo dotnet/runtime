@@ -16,6 +16,7 @@ set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS
 target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
+    ${ICU_LIB_DIR}/libicudata.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
