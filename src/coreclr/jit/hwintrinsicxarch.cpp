@@ -512,7 +512,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         return nullptr;
     }
 
-    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    var_types simdBaseType = TYP_UNKNOWN;
     if (simdSize != 0)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
@@ -2358,8 +2358,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_X86Serialize_Serialize:
         {
             assert(sig->numArgs == 0);
-            assert(retType == TYP_VOID);
-            assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
 
             retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;

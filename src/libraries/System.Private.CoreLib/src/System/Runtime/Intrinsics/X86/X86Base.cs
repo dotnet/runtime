@@ -93,12 +93,6 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
-        /// void _mm_pause (void);
-        ///   PAUSE
-        /// </summary>
-        public static void Pause() => Pause();
-
-        /// <summary>
         /// unsigned _udiv64(unsigned __int64 dividend, unsigned divisor, unsigned* remainder)
         ///   DIV reg/m32
         /// </summary>
@@ -119,5 +113,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   IDIV reg/m
         /// </summary>
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) => DivRem(lower, upper, divisor);
+
+        /// <summary>
+        /// void _mm_pause (void);
+        ///   PAUSE
+        /// </summary>
+        public static void Pause() => Pause();
     }
 }
