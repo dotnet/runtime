@@ -2988,6 +2988,12 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	
+	MonoClass *elem;
+	while (!m_class_is_enumtype (klass) && 
+		!mono_class_is_nullable (klass) &&
+		(klass != (elem = m_class_get_element_class (klass))))
+		klass = elem;
 
 	MonoClass *klass_nested_in;
 	while ((klass_nested_in = m_class_get_nested_in (klass)))
@@ -3569,7 +3575,6 @@ static guint64
 read_enum_value (const char *mem, int type)
 {
 	switch (type) {
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
 		return *(guint8*)mem;
 	case MONO_TYPE_I1:
@@ -3606,8 +3611,7 @@ write_enum_value (void *mem, int type, guint64 value)
 {
 	switch (type) {
 	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN: {
+	case MONO_TYPE_I1: {
 		guint8 *p = (guint8*)mem;
 		*p = GUINT64_TO_UINT8 (value);
 		break;

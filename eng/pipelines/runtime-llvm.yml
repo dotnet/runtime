@@ -73,7 +73,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -92,8 +92,8 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -115,8 +115,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -135,7 +135,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -158,8 +158,8 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             runtimeVariant: llvmaot
             condition: >-
@@ -178,9 +178,9 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
+          - linux_x64
           # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-          #- Linux_arm64
+          #- linux_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -204,8 +204,8 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:

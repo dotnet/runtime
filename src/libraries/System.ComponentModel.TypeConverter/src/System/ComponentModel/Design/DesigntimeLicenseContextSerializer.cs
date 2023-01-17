@@ -52,7 +52,7 @@ namespace System.ComponentModel.Design
 
         private static void SerializeWithBinaryFormatter(Stream o, string cryptoKey, DesigntimeLicenseContext context)
         {
-            IFormatter formatter = new BinaryFormatter();
+            var formatter = new BinaryFormatter();
 #pragma warning disable SYSLIB0011
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             formatter.Serialize(o, new object[] { cryptoKey, context._savedLicenseKeys });
@@ -135,7 +135,7 @@ namespace System.ComponentModel.Design
             if (EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)
             {
 #pragma warning disable SYSLIB0011
-                IFormatter formatter = new BinaryFormatter();
+                var formatter = new BinaryFormatter();
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 object obj = formatter.Deserialize(wrappedStream);

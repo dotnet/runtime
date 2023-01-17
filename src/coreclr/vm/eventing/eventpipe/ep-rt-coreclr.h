@@ -12,6 +12,7 @@
 #include "fstream.h"
 #include "typestring.h"
 #include "clrversion.h"
+#include "hostinformation.h"
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -1134,8 +1135,13 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 		}
 	}
 
-	// fallback to the empty string if we can't get assembly info, e.g., if the runtime is
+	// get the name from the host if we can't get assembly info, e.g., if the runtime is
 	// suspended before an assembly is loaded.
+	SString assembly_name;
+	if (HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
+		return assembly_name.GetUTF8 ();
+
+	// fallback to the empty string
 	return reinterpret_cast<const ep_char8_t*>("");
 }
 

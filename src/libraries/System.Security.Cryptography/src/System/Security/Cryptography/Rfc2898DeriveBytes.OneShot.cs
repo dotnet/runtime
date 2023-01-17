@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     public partial class Rfc2898DeriveBytes
     {
         // Throwing UTF8 on invalid input.
-        private static readonly Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
 
         /// <summary>
         /// Creates a PBKDF2 derived key from password bytes.

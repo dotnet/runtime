@@ -60,7 +60,6 @@ namespace System
             if (underlyingType == typeof(float)) return GetNameInlined(GetEnumInfo<float>(rt), *(float*)&value);
             if (underlyingType == typeof(double)) return GetNameInlined(GetEnumInfo<double>(rt), *(double*)&value);
             if (underlyingType == typeof(char)) return GetNameInlined(GetEnumInfo<char>(rt), *(char*)&value);
-            if (underlyingType == typeof(bool)) return GetNameInlined(GetEnumInfo<byte>(rt), *(bool*)&value ? (byte)1 : (byte)0);
 #endif
             throw CreateUnknownEnumTypeException();
         }
@@ -132,10 +131,6 @@ namespace System
                 case TypeCode.Char:
                     if (uint64Value > char.MaxValue) return null;
                     return GetName(GetEnumInfo<char>(enumType), (char)uint64Value);
-
-                case TypeCode.Boolean:
-                    if (uint64Value > 1) return null;
-                    return GetName(GetEnumInfo<byte>(enumType), (byte)uint64Value);
 #endif
             };
 
@@ -235,7 +230,6 @@ namespace System
             else if (underlyingType == typeof(float)) names = GetEnumInfo<float>(rt).Names;
             else if (underlyingType == typeof(double)) names = GetEnumInfo<double>(rt).Names;
             else if (underlyingType == typeof(char)) names = GetEnumInfo<char>(rt).Names;
-            else if (underlyingType == typeof(bool)) names = GetEnumInfo<byte>(rt).Names;
 #endif
             else throw CreateUnknownEnumTypeException();
 
@@ -276,7 +270,6 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType).Names,
                 CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType).Names,
-                CorElementType.ELEMENT_TYPE_BOOLEAN => GetEnumInfo<byte>(enumType).Names,
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -365,7 +358,6 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType, getNames: false).CloneValues(),
                 CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType, getNames: false).CloneValues(),
-                CorElementType.ELEMENT_TYPE_BOOLEAN => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values),
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -393,7 +385,6 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I => GetEnumInfo<nint>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_U => GetEnumInfo<nuint>(enumType, getNames: false).Values,
                 CorElementType.ELEMENT_TYPE_CHAR => GetEnumInfo<char>(enumType, getNames: false).Values,
-                CorElementType.ELEMENT_TYPE_BOOLEAN => CopyByteArrayToNewBoolArray(GetEnumInfo<byte>(enumType, getNames: false).Values), // this is the only case that clones, out of necessity
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
@@ -472,23 +463,6 @@ namespace System
             }
         }
 
-        /// <summary>Marshals a byte[] to a bool[].</summary>
-        /// <param name="bytes">The input byte array.</param>
-        /// <returns>A new bool[] containing true whereever a byte was non-zero and false wherever a byte was zero.</returns>
-        /// <remarks>
-        /// Since bool isn't a numeric type, we use an EnumInfo{byte} for bool-based enums. This method is used to translate
-        /// that EnumInfo's Values back to bools.
-        /// </remarks>
-        private static bool[] CopyByteArrayToNewBoolArray(byte[] bytes)
-        {
-            bool[] result = new bool[bytes.Length];
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                result[i] = bytes[i] != 0;
-            }
-            return result;
-        }
-
         /// <summary>Returns a <see cref="bool"/> telling whether a given integral value, or its name as a string, exists in a specified enumeration.</summary>
         /// <typeparam name="TEnum">The type of the enumeration.</typeparam>
         /// <param name="value">The value or name of a constant in <typeparamref name="TEnum"/>.</param>
@@ -513,7 +487,6 @@ namespace System
             if (underlyingType == typeof(float)) return IsDefinedPrimitive(rt, *(float*)&value);
             if (underlyingType == typeof(double)) return IsDefinedPrimitive(rt, *(double*)&value);
             if (underlyingType == typeof(char)) return IsDefinedPrimitive(rt, *(char*)&value);
-            if (underlyingType == typeof(bool)) return IsDefinedPrimitive(rt, *(bool*)&value ? (byte)1 : (byte)0);
 #endif
 
             throw CreateUnknownEnumTypeException();
@@ -844,13 +817,6 @@ namespace System
                         }
                         break;
 
-                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                        {
-                            parsed = TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out byte localResult);
-                            result = localResult;
-                        }
-                        break;
-
                     default:
                         throw CreateUnknownEnumTypeException();
                 }
@@ -943,7 +909,6 @@ namespace System
             if (underlyingType == typeof(nint)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
             if (underlyingType == typeof(nuint)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
             if (underlyingType == typeof(char)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, char>(ref result));
-            if (underlyingType == typeof(bool)) return TryParseByValueOrName(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
 #endif
 
             throw CreateUnknownEnumTypeException();
@@ -1186,7 +1151,6 @@ namespace System
                 case TypeCode.UInt32: return (uint)value;
                 case TypeCode.UInt64: return (ulong)value;
                 case TypeCode.Char: return (char)value;
-                case TypeCode.Boolean: return (bool)value ? 1UL : 0UL;
             };
 
             if (value is not null)
@@ -1423,7 +1387,6 @@ namespace System
                     CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, ref rawData),
                     CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, ref rawData),
-                    CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, null, ref rawData),
                     _ => throw CreateUnknownEnumTypeException(),
                 };
 #else
@@ -1475,7 +1438,6 @@ namespace System
                     CorElementType.ELEMENT_TYPE_I => ToString<nint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_U => ToString<nuint>(enumType, formatChar, ref rawData),
                     CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(enumType, formatChar, ref rawData),
-                    CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(enumType, formatChar.ToString(), ref rawData),
                     _ => throw CreateUnknownEnumTypeException(),
                 };
 #else
@@ -1567,73 +1529,6 @@ namespace System
             };
 
             return result;
-        }
-
-        /// <summary>ToString implementation to use for enums with bool as an underlying type.</summary>
-        /// <remarks>
-        /// bool is the only underlying type that doesn't fit our scheme using INumber{T}, since it doesn't implement the numeric interfaces.
-        /// We can mostly make everything work for it by substituting byte, but for some rendering purposes we need to use a dedicated implementation.
-        /// Performance here is not an issue; these can't be expressed in C#, and serve little purpose, so bool-based enums are exceedingly rare.
-        /// This exists purely for compat.
-        /// </remarks>
-        private static string ToStringBool(RuntimeType enumType, string? format, ref byte rawData)
-        {
-            if (string.IsNullOrEmpty(format))
-            {
-                format = "g";
-            }
-
-            byte byteValue = rawData;
-            bool boolValue = byteValue != 0;
-
-            string? result;
-            switch (format[0] | 0x20)
-            {
-                case 'g':
-                    EnumInfo<byte> enumInfo = GetEnumInfo<byte>(enumType);
-                    result = enumInfo.HasFlagsAttribute ? FormatFlagNames(enumInfo, byteValue) : GetName(enumInfo, byteValue);
-                    if (result is null)
-                    {
-                        goto case 'd';
-                    }
-                    break;
-
-                case 'd':
-                    return boolValue.ToString();
-
-                case 'x':
-                    return boolValue ? "01" : "00";
-
-                case 'f':
-                    result = FormatFlagNames(GetEnumInfo<byte>(enumType), byteValue);
-                    if (result is null)
-                    {
-                        goto case 'd';
-                    }
-                    break;
-
-                default:
-                    throw CreateInvalidFormatSpecifierException();
-            }
-
-            return result;
-        }
-
-        /// <summary>TryFormat implementation to use for enums with bool as an underlying type.</summary>
-        /// <remarks>See remarks on <see cref="ToStringBool"/>.</remarks>
-        private static bool TryFormatBool(RuntimeType enumType, bool boolValue, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format)
-        {
-            byte byteValue = boolValue ? (byte)1 : (byte)0;
-
-            string result = ToStringBool(enumType, format.ToString(), ref byteValue);
-            if (result.TryCopyTo(destination))
-            {
-                charsWritten = result.Length;
-                return true;
-            }
-
-            charsWritten = 0;
-            return false;
         }
 
         /// <summary>Formats the data for the underlying value as hex into a new, fixed-length string.</summary>
@@ -1772,7 +1667,6 @@ namespace System
                         CorElementType.ELEMENT_TYPE_I => ToString<nint>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_U => ToString<nuint>(rtType, formatChar, ref rawData),
                         CorElementType.ELEMENT_TYPE_CHAR => ToString<char>(rtType, formatChar, ref rawData),
-                        CorElementType.ELEMENT_TYPE_BOOLEAN => ToStringBool(rtType, format, ref rawData),
 #endif
                         _ => throw CreateUnknownEnumTypeException(),
                     };
@@ -1812,7 +1706,6 @@ namespace System
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten),
-                    CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -1835,7 +1728,6 @@ namespace System
                     CorElementType.ELEMENT_TYPE_I => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nint>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, nuint>(ref rawData), destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_CHAR => TryFormatPrimitiveNonDefault(enumType, Unsafe.As<byte, char>(ref rawData), destination, out charsWritten, format),
-                    CorElementType.ELEMENT_TYPE_BOOLEAN => TryFormatBool(enumType, rawData != 0, destination, out charsWritten, format),
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
@@ -1875,7 +1767,6 @@ namespace System
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, *(double*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, *(char*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format: default);
 #endif
             }
             else
@@ -1894,7 +1785,6 @@ namespace System
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, *(double*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, *(char*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format);
 #endif
             }
 
@@ -1936,7 +1826,6 @@ namespace System
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveDefault(rt, *(float*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(double)) return TryFormatPrimitiveDefault(rt, *(double*)&value, destination, out charsWritten);
                 if (underlyingType == typeof(char)) return TryFormatPrimitiveDefault(rt, *(char*)&value, destination, out charsWritten);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format: default);
 #endif
             }
             else
@@ -1955,7 +1844,6 @@ namespace System
                 if (underlyingType == typeof(float)) return TryFormatPrimitiveNonDefault(rt, *(float*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(double)) return TryFormatPrimitiveNonDefault(rt, *(double*)&value, destination, out charsWritten, format);
                 if (underlyingType == typeof(char)) return TryFormatPrimitiveNonDefault(rt, *(char*)&value, destination, out charsWritten, format);
-                if (underlyingType == typeof(bool)) return TryFormatBool(rt, *(bool*)&value, destination, out charsWritten, format);
 #endif
             }
 
@@ -2248,19 +2136,17 @@ namespace System
 
         [DoesNotReturn]
         private static void ThrowInvalidRuntimeType(Type enumType) =>
-            throw (enumType is not RuntimeType ?
-                new ArgumentException(SR.Arg_MustBeType, nameof(enumType)) :
-                new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType)));
+            throw new ArgumentException(enumType is not RuntimeType ? SR.Arg_MustBeType : SR.Arg_MustBeEnum, nameof(enumType));
 
         private static void ThrowInvalidEmptyParseArgument() =>
             throw new ArgumentException(SR.Arg_MustContainEnumInfo, "value");
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/78300
-        private static Exception CreateInvalidFormatSpecifierException() =>
+        private static FormatException CreateInvalidFormatSpecifierException() =>
             new FormatException(SR.Format_InvalidEnumFormatSpecification);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateUnknownEnumTypeException() =>
+        private static InvalidOperationException CreateUnknownEnumTypeException() =>
             new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
 
         public TypeCode GetTypeCode() =>
@@ -2275,7 +2161,6 @@ namespace System
                 CorElementType.ELEMENT_TYPE_I8 => TypeCode.Int64,
                 CorElementType.ELEMENT_TYPE_U8 => TypeCode.UInt64,
                 CorElementType.ELEMENT_TYPE_CHAR => TypeCode.Char,
-                CorElementType.ELEMENT_TYPE_BOOLEAN => TypeCode.Boolean,
                 // There's no TypeCode for nint or nuint, and our VB support (or at least
                 // tests) needs to be updated in order to include float/double here.
                 _ => throw CreateUnknownEnumTypeException(),
@@ -2314,7 +2199,6 @@ namespace System
                 case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
                 case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
                 case TypeCode.Char: return ToObject(enumType, (char)value);
-                case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
             };
 
             Type valueType = value.GetType();

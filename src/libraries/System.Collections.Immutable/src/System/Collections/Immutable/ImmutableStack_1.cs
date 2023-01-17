@@ -229,7 +229,7 @@ namespace System.Collections.Immutable
         /// <returns>The reversed stack.</returns>
         internal ImmutableStack<T> Reverse()
         {
-            var r = this.Clear();
+            ImmutableStack<T> r = this.Clear();
             for (ImmutableStack<T> f = this; !f.IsEmpty; f = f.Pop())
             {
                 r = r.Push(f.Peek());
