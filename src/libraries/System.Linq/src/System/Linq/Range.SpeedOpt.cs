@@ -20,8 +20,7 @@ namespace System.Linq
 
             public int[] ToArray()
             {
-                int[] array = GC.AllocateUninitializedArray<int>(_end - _start);
-
+                int[] array = new int[_end - _start];
                 InitializeSpan(array);
                 return array;
             }
@@ -85,6 +84,7 @@ namespace System.Linq
             }
 
             // Destination *must* be non-empty and exactly match the range length
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void InitializeSpan(Span<int> destination)
             {
                 if (destination.Length < Vector<int>.Count * 2)
