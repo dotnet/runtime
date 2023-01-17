@@ -263,3 +263,11 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
 else()
   add_subdirectory(Portable)
 endif()
+
+if (CLR_CMAKE_TARGET_UNIX)
+  add_library(numasupportdynamic STATIC ${GC_DIR}/unix/numasupport.dynamic.cpp)
+  install_static_library(numasupportdynamic aotsdk nativeaot)
+
+  add_library(numasupportstatic STATIC ${GC_DIR}/unix/numasupport.static.cpp)
+  install_static_library(numasupportstatic aotsdk nativeaot)
+endif(CLR_CMAKE_TARGET_UNIX)

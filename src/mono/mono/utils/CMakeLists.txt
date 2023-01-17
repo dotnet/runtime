@@ -89,8 +89,6 @@ set(utils_common_sources
     mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
-    mono-value-hash.h
-    mono-value-hash.c
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
