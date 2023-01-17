@@ -628,7 +628,54 @@ AdjustContextForVirtualStub(
         EXCEPTION_RECORD *pExceptionRecord,
         CONTEXT *pContext)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    LIMITED_METHOD_CONTRACT;
+
+    Thread * pThread = GetThreadNULLOk();
+
+    // We may not have a managed thread object. Example is an AV on the helper thread.
+    // (perhaps during StubManager::IsStub)
+    if (pThread == NULL)
+    {
+        return FALSE;
+    }
+
+    PCODE f_IP = GetIP(pContext);
+
+    VirtualCallStubManager::StubKind sk;
+    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+
+    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    {
+        if (*PTR_DWORD(f_IP - 4) != DISPATCH_STUB_FIRST_DWORD)
+        {
+            _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            return FALSE;
+        }
+    }
+    else
+    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    {
+        if (*PTR_DWORD(f_IP) != RESOLVE_STUB_FIRST_DWORD)
+        {
+            _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            return FALSE;
+        }
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    PCODE callsite = GetAdjustedCallAddress(GetRA(pContext));
+
+    // Lr must already have been saved before calling so it should not be necessary to restore Lr
+
+    if (pExceptionRecord != NULL)
+    {
+        pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    }
+    SetIP(pContext, callsite);
+
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
