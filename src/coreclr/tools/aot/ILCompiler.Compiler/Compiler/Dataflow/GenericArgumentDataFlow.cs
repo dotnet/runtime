@@ -44,7 +44,7 @@ namespace ILCompiler.Dataflow
                 _origin,
                 _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
                 _logger);
-            return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, genericParameter.GetDisplayName ());
+            return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, genericParameter.GetDisplayName());
         }
 
         private DependencyList RequireDynamicallyAccessedMembers(

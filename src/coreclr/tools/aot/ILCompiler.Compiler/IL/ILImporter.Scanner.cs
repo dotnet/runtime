@@ -956,7 +956,6 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(obj is FieldDesc);
                 var field = (FieldDesc)obj;
 
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, field);
