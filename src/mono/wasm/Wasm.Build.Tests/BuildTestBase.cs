@@ -323,7 +323,6 @@ namespace Wasm.Build.Tests
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>test-main.js</WasmMainJSPath>
-                ##USE_WEBCIL##
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -340,8 +339,11 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
+            if (UseWebcil) {
+                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+            }
+
             string projectContents = projectTemplate
-                                        .Replace("##USE_WEBCIL##", UseWebcil ? "<WasmEnableWebcil>true</WasmEnableWebcil>" : "")
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
                                         .Replace("##EXTRA_ITEMS##", extraItems)
                                         .Replace("##INSERT_AT_END##", insertAtEnd);
@@ -493,6 +495,8 @@ namespace Wasm.Build.Tests
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
                 AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectfile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
             return projectfile;
         }
 
@@ -505,7 +509,10 @@ namespace Wasm.Build.Tests
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
-            return Path.Combine(_projectDir!, $"{id}.csproj");
+            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            return projectFile;
         }
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
