@@ -8536,15 +8536,15 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    tree where only one of the constants is expected to have a field sequence.
 //
 // Arguments:
-//    vnStore  - ValueNumStore object
-//    tree     - tree node to inspect
-//    pAddress - [Out] resulting address with all offsets combined
-//    pFseq    - [Out] field sequence
+//    vnStore    - ValueNumStore object
+//    tree       - tree node to inspect
+//    byteOffset - [Out] resulting byte offset
+//    pFseq      - [Out] field sequence
 //
 // Return Value:
 //    true if the given tree is a static field address
 //
-static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
     ssize_t val = 0;
 
@@ -8555,8 +8555,8 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
         if (cns2->gtFieldSeq != nullptr)
         {
-            *pAddress = -1;
-            *pFseq    = cns2->gtFieldSeq;
+            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
+            *pFseq      = cns2->gtFieldSeq;
             return true;
         }
     }
@@ -8592,8 +8592,8 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     if ((tree->IsCnsIntOrI()) && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
         (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
     {
-        *pFseq    = tree->AsIntCon()->gtFieldSeq;
-        *pAddress = tree->AsIntCon()->IconValue() + val;
+        *pFseq      = tree->AsIntCon()->gtFieldSeq;
+        *byteOffset = tree->AsIntCon()->IconValue() + val - tree->AsIntCon()->gtFieldSeq->GetOffset();
         return true;
     }
     return false;
@@ -8622,26 +8622,14 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     //   sbyte GetVal() => RVA[1]; // fold to '100'
     //
-    ssize_t   address  = 0;
-    FieldSeq* fieldSeq = nullptr;
+    ssize_t   byteOffset = 0;
+    FieldSeq* fieldSeq   = nullptr;
     if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
-        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
+        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
-        ssize_t              byteOffset  = 0;
-        if (fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress)
-        {
-            byteOffset = address - fieldSeq->GetOffset();
-        }
-        else
-        {
-            assert(address == -1);
-            assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic);
-            byteOffset = fieldSeq->GetOffset();
-        }
-
-        int       size           = (int)genTypeSize(tree->TypeGet());
-        const int maxElementSize = sizeof(int64_t);
+        CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
+        int                  size           = (int)genTypeSize(tree->TypeGet());
+        const int            maxElementSize = sizeof(int64_t);
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
