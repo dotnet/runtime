@@ -490,11 +490,11 @@ bool DefaultPolicy::BudgetCheck() const
     //
     InlineStrategy* strategy = m_RootCompiler->m_inlineStrategy;
 
-    const bool preferSpeed = m_RootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
-    const bool isAot       = m_RootCompiler->opts.IsReadyToRun();
+    const bool isPrejit   = m_RootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isSpeedOpt = m_RootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
 
     // Ignore time budget for AOT + PreferSpeed, otherwise check if we run out of it.
-    const bool overBudget = !(isAot && preferSpeed) && strategy->BudgetCheck(EstimatedTotalILSize());
+    const bool overBudget = !(isPrejit && isSpeedOpt) && strategy->BudgetCheck(EstimatedTotalILSize());
 
     if (overBudget)
     {
