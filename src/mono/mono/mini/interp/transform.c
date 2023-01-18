@@ -1211,7 +1211,8 @@ store_local (TransformData *td, int local)
 static void
 init_last_ins_call (TransformData *td) {
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-	td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+	if (!td->last_ins->info.call_info)
+		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	td->last_ins->info.call_info->call_args = NULL;
 }
 
@@ -3571,8 +3572,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (op == MINT_LDLEN) {
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 		}
-		if (!td->last_ins->info.call_info)
-			td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	} else if (!calli && !is_delegate_invoke && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		interp_ins_set_dreg (td->last_ins, dreg);
@@ -3666,6 +3665,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		init_last_ins_call (td);
 	}
 	td->ip += 5;
+	if (!td->last_ins->info.call_info)
+		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	td->last_ins->info.call_info->call_args = call_args;
 
 	return TRUE;
