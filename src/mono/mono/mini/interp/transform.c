@@ -1211,8 +1211,7 @@ store_local (TransformData *td, int local)
 static void
 init_last_ins_call (TransformData *td) {
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
-	if (!td->last_ins->info.call_info)
-		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
+	td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	td->last_ins->info.call_info->call_args = NULL;
 }
 
@@ -3663,11 +3662,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		}
 		init_last_ins_call (td);
+		td->last_ins->info.call_info->call_args = call_args;
 	}
 	td->ip += 5;
-	if (!td->last_ins->info.call_info)
-		td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
-	td->last_ins->info.call_info->call_args = call_args;
 
 	return TRUE;
 }
@@ -10046,7 +10043,6 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 		ac->active_calls = (InterpInst**)mono_mempool_alloc (td->mempool, ac->active_calls_capacity * sizeof (InterpInst*));
 		memcpy (ac->active_calls, old, ac->active_calls_count * sizeof (InterpInst*));
 	}
-	ac->active_calls [ac->active_calls_count] = (InterpInst*)mono_mempool_alloc (td->mempool, sizeof (InterpInst));
 	ac->active_calls [ac->active_calls_count] = call;
 	ac->active_calls_count++;
 
