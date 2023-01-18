@@ -143,7 +143,7 @@
     <Error Condition="!Exists('$(TestEnvFilePath)')" Text="File $(TestEnvFilePath) not found!" />
   </Target>
 
-  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'Browser' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator'" Name="CreateAllScenarioTestEnvFiles">
+  <Target Condition="'$(Scenarios)' != '' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" Name="CreateAllScenarioTestEnvFiles">
     <!-- This target creates one __TestEnv file for each of the scenarios in the $(Scenarios) comma-separated list. -->
 
     <Message Importance="High" Text="Creating per-scenario TestEnv files for scenarios $(Scenarios)" />

@@ -1199,6 +1199,17 @@ namespace DebuggerTests
             }
         }
 
+        protected async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (_, res) = await EvaluateOnCallFrame(call_frame_id, arg.expression, expect_ok: false);
+                if (arg.class_name != null)
+                    AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
+            }
+        }
+
+
         internal void AssertEqual(object expected, object actual, string label)
         {
             if (expected?.Equals(actual) == true)

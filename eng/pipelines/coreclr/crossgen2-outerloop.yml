@@ -20,15 +20,15 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - Linux_arm
-          - Linux_x64
-          - Linux_arm64
-          - OSX_arm64
-          - OSX_x64
+          - linux_arm
+          - linux_x64
+          - linux_arm64
+          - osx_arm64
+          - osx_x64
           - windows_x86
           - windows_x64
           - windows_arm64
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: outerloop
 
@@ -37,10 +37,10 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
-          - OSX_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - osx_arm64
           - windows_x86
           - windows_x64
           jobParameters:
@@ -51,15 +51,15 @@ extends:
           jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
-          - OSX_arm64
-          - OSX_x64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - osx_arm64
+          - osx_x64
           - windows_x86
           - windows_x64
           - windows_arm64
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             isOfficialBuild: false
             liveRuntimeBuildConfig: Release
@@ -69,7 +69,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: outerloop
 
@@ -80,10 +80,10 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: checked
           platforms:
-          - Linux_x64
-          - Linux_arm64
-          - OSX_arm64
-          - OSX_x64
+          - linux_x64
+          - linux_arm64
+          - osx_arm64
+          - osx_x64
           - windows_x64
           - windows_arm64
           jobParameters:
@@ -100,11 +100,11 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: checked
           platforms:
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
-          - OSX_x64
-          - OSX_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - osx_x64
+          - osx_arm64
           - windows_arm64
           - windows_x64
           - windows_x86
@@ -122,10 +122,10 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-build-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm
-          - Linux_arm64
-          - Linux_x64
-          - OSX_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - osx_arm64
           - windows_x86
           - windows_x64
           jobParameters:
@@ -140,7 +140,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
           buildConfig: Release
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x86
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -173,7 +173,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
           buildConfig: Release
           platforms:
-          - Linux_x64
+          - linux_x64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -189,7 +189,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm
+          - linux_arm
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -205,7 +205,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm64
+          - linux_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -221,7 +221,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
           buildConfig: Release
           platforms:
-          - OSX_arm64
+          - osx_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:

@@ -21,13 +21,13 @@ namespace System.Composition.TypedParts.Discovery
     {
         private readonly TypeInfo _partType;
         private readonly AttributedModelProvider _attributeContext;
-        private readonly ICollection<DiscoveredExport> _exports = new List<DiscoveredExport>();
+        private readonly List<DiscoveredExport> _exports = new List<DiscoveredExport>();
         private readonly ActivationFeature[] _activationFeatures;
         private readonly Lazy<IDictionary<string, object>> _partMetadata;
 
         // This is unbounded so potentially a source of memory consumption,
         // but in reality unlikely to be a problem.
-        private readonly IList<Type[]> _appliedArguments = new List<Type[]>();
+        private readonly List<Type[]> _appliedArguments = new List<Type[]>();
 
         // Lazily initialised among potentially many exports
         private ConstructorInfo _constructor;

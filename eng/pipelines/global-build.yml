@@ -50,8 +50,8 @@ extends:
           buildConfig: release
           platforms:
           - windows_x86
-          - OSX_x64
-          - OSX_arm64
+          - osx_x64
+          - osx_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: Runtime_Debug
@@ -91,7 +91,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - Linux_x64
+          - linux_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: Runtime_Release
@@ -112,7 +112,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - Linux_x64
+          - linux_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: RuntimeFlavor_Mono
@@ -152,7 +152,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - Linux_x64
+          - linux_x64
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
             buildArgs: -subset libs -allconfigurations
@@ -170,7 +170,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
-          - SourceBuild_Linux_x64
+          - SourceBuild_linux_x64
           jobParameters:
             nameSuffix: PortableSourceBuild
             extraStepsParameters:

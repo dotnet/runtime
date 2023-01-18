@@ -280,7 +280,7 @@ namespace System.Collections.Frozen.Tests
                 foreach (int skip in new[] { 2, 3, 5 })
                 {
                     var original = new HashSet<int>(Enumerable.Range(-3, size).Where(i => i % skip == 0));
-                    var frozen = original.ToFrozenSet();
+                    FrozenSet<int> frozen = original.ToFrozenSet();
 
                     for (int i = -10; i <= size + 66; i++)
                     {
@@ -314,14 +314,14 @@ namespace System.Collections.Frozen.Tests
                 {
                     var original = new HashSet<long>();
 
-                    var min = start;
-                    var max = start + size - 1;
+                    long min = start;
+                    long max = start + size - 1;
                     for (long i = min; i != max; i++)
                     {
                         original.Add(i);
                     }
 
-                    var frozen = original.ToFrozenSet();
+                    FrozenSet<long> frozen = original.ToFrozenSet();
 
                     min = start > long.MinValue ? start - 10 : start;
                     max = start + size - 1 < long.MaxValue ? start + size + 9 : start + size - 1;
@@ -364,7 +364,7 @@ namespace System.Collections.Frozen.Tests
                 };
 
                 HashSet<T> hs = new();
-                foreach (var value in values)
+                foreach (T value in values)
                 {
                     hs.Add(value);
                 }
@@ -378,7 +378,7 @@ namespace System.Collections.Frozen.Tests
                 Assert.True(s.Overlaps(hs));
                 Assert.True(hs.Overlaps(s));
 
-                foreach (var v in hs)
+                foreach (T v in hs)
                 {
                     s.Contains(v);
                 }
@@ -405,7 +405,7 @@ namespace System.Collections.Frozen.Tests
                 };
 
                 HashSet<int> hs = new();
-                foreach (var value in values)
+                foreach (int value in values)
                 {
                     hs.Add(value);
                 }

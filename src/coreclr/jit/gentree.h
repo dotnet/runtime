@@ -7334,6 +7334,7 @@ class GenTreeList
 {
     GenTree* m_trees;
 
+public:
     // Forward iterator for the execution order GenTree linked list (using `gtNext` pointer).
     //
     class iterator
@@ -7341,7 +7342,7 @@ class GenTreeList
         GenTree* m_tree;
 
     public:
-        iterator(GenTree* tree) : m_tree(tree)
+        explicit iterator(GenTree* tree) : m_tree(tree)
         {
         }
 
@@ -7362,8 +7363,7 @@ class GenTreeList
         }
     };
 
-public:
-    GenTreeList(GenTree* trees) : m_trees(trees)
+    explicit GenTreeList(GenTree* trees) : m_trees(trees)
     {
     }
 
@@ -7376,6 +7376,67 @@ public:
     {
         return iterator(nullptr);
     }
+};
+
+class LocalsGenTreeList
+{
+    Statement* m_stmt;
+
+public:
+    class iterator
+    {
+        GenTreeLclVarCommon* m_tree;
+
+    public:
+        explicit iterator(GenTreeLclVarCommon* tree) : m_tree(tree)
+        {
+        }
+
+        GenTreeLclVarCommon* operator*() const
+        {
+            return m_tree;
+        }
+
+        iterator& operator++()
+        {
+            assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIsLocalAddr());
+            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtNext);
+            return *this;
+        }
+
+        iterator& operator--()
+        {
+            assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIsLocalAddr());
+            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtPrev);
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_tree != i.m_tree;
+        }
+    };
+
+    explicit LocalsGenTreeList(Statement* stmt) : m_stmt(stmt)
+    {
+    }
+
+    iterator begin() const;
+
+    iterator end() const
+    {
+        return iterator(nullptr);
+    }
+
+    void Remove(GenTreeLclVarCommon* node);
+    void Replace(GenTreeLclVarCommon* firstNode,
+                 GenTreeLclVarCommon* lastNode,
+                 GenTreeLclVarCommon* newFirstNode,
+                 GenTreeLclVarCommon* newLastNode);
+
+private:
+    GenTree** GetForwardEdge(GenTreeLclVarCommon* node);
+    GenTree** GetBackwardEdge(GenTreeLclVarCommon* node);
 };
 
 // We use the following format when printing the Statement number: Statement->GetID()
@@ -7422,14 +7483,8 @@ public:
         m_treeList = treeHead;
     }
 
-    // TreeList: convenience method for enabling range-based `for` iteration over the
-    // execution order of the GenTree linked list, e.g.:
-    //    for (GenTree* const tree : stmt->TreeList()) ...
-    //
-    GenTreeList TreeList() const
-    {
-        return GenTreeList(GetTreeList());
-    }
+    GenTreeList       TreeList() const;
+    LocalsGenTreeList LocalsTreeList();
 
     const DebugInfo& GetDebugInfo() const
     {

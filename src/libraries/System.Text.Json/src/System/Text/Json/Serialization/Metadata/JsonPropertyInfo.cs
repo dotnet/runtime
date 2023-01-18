@@ -289,11 +289,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void Configure()
         {
-            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
-            Debug.Assert(!ParentTypeInfo.IsConfigured);
-
-            DeclaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
-
             if (!IsForTypeInfo)
             {
                 CacheNameAsUtf8BytesAndEscapedNameSection();
@@ -443,7 +438,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForTypeInfo()
         {
-            if (DeclaringTypeNumberHandling != null && DeclaringTypeNumberHandling != JsonNumberHandling.Strict && !EffectiveConverter.IsInternalConverter)
+            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(!ParentTypeInfo.IsConfigured);
+
+            JsonNumberHandling? declaringTypeNumberHandling = ParentTypeInfo.NumberHandling;
+
+            if (declaringTypeNumberHandling != null && declaringTypeNumberHandling != JsonNumberHandling.Strict && !EffectiveConverter.IsInternalConverter)
             {
                 ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
             }
@@ -454,7 +454,7 @@ namespace System.Text.Json.Serialization.Metadata
                 // custom collections e.g. public class MyNumberList : List<int>.
 
                 // Priority 1: Get handling from the type (parent type in this case is the type itself).
-                EffectiveNumberHandling = DeclaringTypeNumberHandling;
+                EffectiveNumberHandling = declaringTypeNumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!EffectiveNumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -466,6 +466,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForProperty()
         {
+            Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
             Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
 
@@ -474,7 +475,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeNumberHandling ?? _jsonTypeInfo.NumberHandling;
+                JsonNumberHandling? handling = NumberHandling ?? ParentTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -824,11 +825,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// Relevant to source generated metadata: is the property public?
         /// </summary>
         internal bool SrcGen_IsPublic { get; set; }
-
-        /// <summary>
-        /// Number handling for declaring type
-        /// </summary>
-        internal JsonNumberHandling? DeclaringTypeNumberHandling { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="JsonNumberHandling"/> applied to the current property.

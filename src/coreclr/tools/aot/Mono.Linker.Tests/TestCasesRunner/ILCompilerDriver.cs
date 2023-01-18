@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
@@ -64,16 +65,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			ILProvider ilProvider = new NativeAotILProvider ();
 
-			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
+			foreach (var descriptor in options.Descriptors) {
+				if (!File.Exists (descriptor))
+					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
+				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
+			}
 
 			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
+
+			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
+
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,
 				typeSystemContext,
 				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (options.FeatureSwitches),
+				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),

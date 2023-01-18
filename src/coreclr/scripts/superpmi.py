@@ -132,11 +132,11 @@ was built with the same JIT/EE version as the JIT we are using, and run "mcs -pr
 to get that version. Otherwise, use "unknown-jit-ee-version".
 """
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, osx, linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
-target_os_help = "Target OS, for use with cross-compilation JIT (windows, OSX, Linux). Default: current OS."
+target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
 target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
@@ -341,7 +341,7 @@ asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Gener
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets DOTNET_JitGCDump; requires instructions to be prefixed by offsets).")
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets DOTNET_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
-asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
+asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
@@ -625,10 +625,10 @@ class SuperPMICollect:
 
         self.core_root = coreclr_args.core_root
 
-        if coreclr_args.host_os == "OSX":
+        if coreclr_args.host_os == "osx":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
         elif coreclr_args.host_os == "windows":
@@ -1788,7 +1788,8 @@ class SuperPMIReplayAsmDiffs:
                                 jit_analyze_summary_file = os.path.join(asm_root_dir, "summary.md")
                                 command = [ jit_analyze_path, "--md", jit_analyze_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 if self.coreclr_args.metrics:
-                                    command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
+                                    for metric in self.coreclr_args.metrics:
+                                        command += [ "--metrics", metric ]
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
 
@@ -2524,7 +2525,7 @@ def determine_jit_name(coreclr_args):
 
         if coreclr_args.target_arch.startswith("arm"):
             os_name = "universal"
-        elif coreclr_args.target_os == "OSX" or coreclr_args.target_os == "Linux":
+        elif coreclr_args.target_os == "osx" or coreclr_args.target_os == "linux":
             os_name = "unix"
         elif coreclr_args.target_os == "windows":
             os_name = "win"
@@ -2533,9 +2534,9 @@ def determine_jit_name(coreclr_args):
 
         jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "lib" + jit_base_name + ".so"
     elif coreclr_args.host_os == "windows":
         return jit_base_name + ".dll"
@@ -2597,7 +2598,7 @@ def determine_superpmi_tool_name(coreclr_args):
         (str) Name of the superpmi tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "superpmi"
     elif coreclr_args.host_os == "windows":
         return "superpmi.exe"
@@ -2629,7 +2630,7 @@ def determine_mcs_tool_name(coreclr_args):
         (str) Name of the mcs tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "mcs"
     elif coreclr_args.host_os == "windows":
         return "mcs.exe"
@@ -2661,7 +2662,7 @@ def determine_dotnet_tool_name(coreclr_args):
         (str) Name of the dotnet tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "dotnet"
     elif coreclr_args.host_os == "windows":
         return "dotnet.exe"
