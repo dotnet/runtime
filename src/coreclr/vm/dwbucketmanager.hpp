@@ -1149,7 +1149,7 @@ void BaseBucketParamsManager::LogParam(_In_z_ LPCWSTR paramValue, BucketParamete
     MAKE_UTF8PTR_FROMWIDE_NOTHROW(paramValueUtf8, paramValue);
     // the BucketParameterIndex enum starts at 0 however we refer to Watson
     // bucket params with 1-based indices so we add one to paramIndex.
-    LOG((LF_EH, LL_INFO10, "       p %d: %s\n", paramIndex + 1, paramValueUtf8));
+    LOG((LF_EH, LL_INFO10, "       p %d: %s\n", paramIndex + 1, (paramValueUtf8 ? paramValueUtf8 : "<Alloc failed>")));
 #endif // LOGGING
     ++m_countParamsLogged;
 #endif
