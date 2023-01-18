@@ -4001,7 +4001,26 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             if (needCheckOv)
             {
-                _ASSERTE(!"TODO RISCV64 NYI");
+                assert(REG_RA != dst->GetRegNum());
+                assert(REG_RA != src1->GetRegNum());
+                assert(REG_RA != src2->GetRegNum());
+
+                instruction ins2;
+
+                if ((dst->gtFlags & GTF_UNSIGNED) != 0)
+                {
+                    if (attr == EA_4BYTE)
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    ins2 = INS_mulhu;
+                }
+                else
+                {
+                    if (attr == EA_4BYTE)
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    ins2 = INS_mulh;
+                }
+
+                emitIns_R_R_R(ins2, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
             }
 
             // n * n bytes will store n bytes result
