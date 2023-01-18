@@ -241,5 +241,20 @@ internal static partial class Interop
                     flags);
             }
         }
+
+        internal static unsafe byte[] DeriveKeyMaterialTruncate(
+            SafeNCryptSecretHandle secretAgreement,
+            SecretAgreementFlags flags)
+        {
+            byte[] result = DeriveKeyMaterial(
+                secretAgreement,
+                BCryptNative.KeyDerivationFunction.Raw,
+                ReadOnlySpan<NCryptBuffer>.Empty,
+                flags);
+
+            // Win32 returns the result as little endian. So we need to flip it to big endian.
+            Array.Reverse(result);
+            return result;
+        }
     }
 }
