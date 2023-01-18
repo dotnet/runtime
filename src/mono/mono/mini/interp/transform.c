@@ -357,10 +357,11 @@ interp_last_ins (InterpBasicBlock *bb)
 			return ret; \
 	} while (0)
 
+// We want to allow any block of stack slots to get moved in order for them to be aligned to MINT_STACK_ALIGNMENT
 #define ENSURE_STACK_SIZE(td, size) \
 	do { \
-		if ((size) > td->max_stack_size) \
-			td->max_stack_size = size; \
+		if ((size) >= td->max_stack_size) \
+			td->max_stack_size = ALIGN_TO (size + MINT_STACK_ALIGNMENT - MINT_STACK_SLOT_SIZE, MINT_STACK_ALIGNMENT); \
 	} while (0)
 
 #define ENSURE_I4(td, sp_off) \
@@ -3238,7 +3239,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	MonoMethodSignature *csignature;
 	int is_virtual = *td->ip == CEE_CALLVIRT;
 	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
-	guint32 res_size = 0;
 	int op = -1;
 	int native = 0;
 	int need_null_check = is_virtual;
@@ -3529,19 +3529,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		MonoClass *klass = mono_class_from_mono_type_internal (csignature->ret);
 
 		if (mt == MINT_TYPE_VT) {
+			guint32 res_size;
 			if (csignature->pinvoke && !csignature->marshalling_disabled && method->wrapper_type != MONO_WRAPPER_NONE)
 				res_size = mono_class_native_size (klass, NULL);
 			else
 				res_size = mono_class_value_size (klass, NULL);
 			push_type_vt (td, klass, res_size);
-			res_size = ALIGN_TO (res_size, MINT_VT_ALIGNMENT);
 			if (mono_class_has_failure (klass)) {
 				mono_error_set_for_class_failure (error, klass);
 				return FALSE;
 			}
 		} else {
 			push_type (td, stack_type[mt], klass);
-			res_size = MINT_STACK_SLOT_SIZE;
 		}
 		dreg = td->sp [-1].local;
 	} else {
@@ -3667,7 +3666,23 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	}
 	td->ip += 5;
-	td->last_ins->info.call_args = call_args;
+	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
+		td->last_ins->info.call_args = call_args;
+		if (!td->optimized) {
+			int call_dreg = td->last_ins->dreg;
+			int call_offset = td->locals [call_dreg].stack_offset;
+			if ((call_offset % MINT_STACK_ALIGNMENT) != 0) {
+				InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
+				interp_ins_set_dreg (align_ins, call_dreg);
+				align_ins->data [0] = params_stack_size;
+				if (calli) {
+					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
+					int offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT) - call_offset;
+					td->locals [fp_sreg].stack_offset += offset;
+				}
+			}
+		}
+	}
 
 	return TRUE;
 }
@@ -4100,8 +4115,6 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->locals_capacity = td->locals_size;
 	offset = 0;
 
-	g_assert (MINT_STACK_SLOT_SIZE == MINT_VT_ALIGNMENT);
-
 	/*
 	 * We will load arguments as if they are locals. Unlike normal locals, every argument
 	 * is stored in a stackval sized slot and valuetypes have special semantics since we
@@ -4129,6 +4142,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 			offset += MINT_STACK_SLOT_SIZE;
 		}
 	}
+	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
 	td->il_locals_offset = offset;
 	for (int i = 0; i < num_il_locals; ++i) {
@@ -4156,7 +4170,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
 		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 	}
-	offset = ALIGN_TO (offset, MINT_VT_ALIGNMENT);
+	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
+
 	td->il_locals_size = offset - td->il_locals_offset;
 	td->total_locals_size = offset;
 
@@ -6285,8 +6300,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (ftype);
 			int field_size = mono_class_value_size (field_klass, NULL);
-			int obj_size = mono_class_value_size (klass, NULL);
-			obj_size = ALIGN_TO (obj_size, MINT_VT_ALIGNMENT);
 
 			{
 				if (is_static) {
@@ -8046,6 +8059,9 @@ compute_native_offset_estimates (TransformData *td)
 				foreach_local_var (td, ins, NULL, alloc_unopt_global_local);
 		}
 	}
+
+	if (!td->optimized)
+		td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
 	return noe;
 }
 
@@ -8289,8 +8305,11 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 					// same offset. Use the dreg offset so we don't need to rely on existing call_args.
 					if (td->optimized)
 						offset = get_local_offset (td, ins->info.call_args [0]);
-					else
+					else if (opcode == MINT_NEWOBJ_ARRAY || opcode == MINT_LDELEMA_TC || opcode == MINT_LDELEMA)
+						// no alignment required since this is not a real call
 						offset = get_local_offset (td, ins->dreg);
+					else
+						offset = ALIGN_TO (get_local_offset (td, ins->dreg), MINT_STACK_ALIGNMENT);
 					*ip++ = GINT_TO_UINT16 (offset);
 				} else {
 					*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [i]));
@@ -10106,6 +10125,7 @@ initialize_global_vars (TransformData *td)
 			foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
 	}
+	td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
 }
 
 // Data structure used for offset allocation of call args
@@ -10152,6 +10172,7 @@ get_call_param_size (TransformData *td, InterpInst *call)
 		call_args++;
 		var = *call_args;
 	}
+	param_size = ALIGN_TO (param_size, MINT_STACK_ALIGNMENT);
 	return param_size;
 }
 
@@ -10473,6 +10494,7 @@ interp_alloc_offsets (TransformData *td)
 			ins_index++;
 		}
 	}
+	final_total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
 
 	// Iterate over all call args locals, update their final offset (aka add td->total_locals_size to them)
 	// then also update td->total_locals_size to account for this space.
@@ -10484,7 +10506,7 @@ interp_alloc_offsets (TransformData *td)
 			final_total_locals_size = MAX (td->locals [i].offset + td->locals [i].size, final_total_locals_size);
 		}
 	}
-	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_SLOT_SIZE);
+	td->total_locals_size = ALIGN_TO (final_total_locals_size, MINT_STACK_ALIGNMENT);
 }
 
 /*
@@ -10696,6 +10718,7 @@ retry:
 	// When unoptimized, the param area is stored in the same order, within the IL execution stack.
 	g_assert (!td->optimized || !td->max_stack_size);
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
+	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
 	rtm->locals_size = td->optimized ? td->param_area_offset : td->total_locals_size;
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
