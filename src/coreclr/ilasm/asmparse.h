@@ -102,7 +102,6 @@ public:
         m_pEnd = m_pStart + m_FileSize;
         clear_name();
         WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,fileNameUtf8,MAX_FILENAME_LENGTH*4,NULL,NULL);
-        delete [] wFileName;
     }
     ~MappedFileStream()
     {

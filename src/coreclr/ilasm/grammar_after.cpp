@@ -1007,6 +1007,7 @@ Its_An_Id:
                                 {
                                     parser->PEStack.PUSH(PENV);
                                     PASM->SetSourceFileName(FullFileName(wzFile,CP_UTF8)); // deletes the argument!
+                                    delete [] wzFile;
                                     parser->CreateEnvironment(pIn);
                                     NEXT_TOKEN;
                                 }
