@@ -29,7 +29,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(OSHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(IlcHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
