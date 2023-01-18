@@ -151,6 +151,7 @@ HRESULT MulticoreJitRecorder::WriteOutput()
     // Go into preemptive mode for file operations
     GCX_PREEMP();
 
+    EX_TRY
     {
         CFileStream fileStream;
 
@@ -159,6 +160,9 @@ HRESULT MulticoreJitRecorder::WriteOutput()
             hr = WriteOutput(& fileStream);
         }
     }
+    EX_CATCH
+    { }
+    EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
 }
