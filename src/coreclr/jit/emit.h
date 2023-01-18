@@ -2200,7 +2200,7 @@ private:
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns() const
     {
-        assert(emitHasLastIns() == (emitLastInsIG == nullptr));
+        assert(emitHasLastIns() == (emitLastInsIG != nullptr));
 
         return emitHasLastIns() &&                           // there is an emitLastInstr
                !emitForceNewIG &&                            // and we're not about to start a new IG
