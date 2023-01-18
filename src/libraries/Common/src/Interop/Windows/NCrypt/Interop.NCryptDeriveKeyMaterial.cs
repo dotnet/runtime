@@ -246,6 +246,11 @@ internal static partial class Interop
             SafeNCryptSecretHandle secretAgreement,
             SecretAgreementFlags flags)
         {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             byte[] result = DeriveKeyMaterial(
                 secretAgreement,
                 BCryptNative.KeyDerivationFunction.Raw,
