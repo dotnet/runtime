@@ -153,8 +153,9 @@
     <Compile Include="System\Net\NetworkInformation\AndroidIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPv4InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPv6InterfaceProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidNetworkInterface.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'freebsd'">
@@ -175,9 +176,6 @@
     <!-- BSD Common -->
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" Link="Common\Interop\BSD\System.Native\Interop.ProtocolStatistics.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" Link="Common\Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.OSX.cs" />
