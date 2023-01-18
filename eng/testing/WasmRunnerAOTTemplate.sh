@@ -37,6 +37,7 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 			JS_ENGINE="--engine=NodeJS"
 		else
 			JS_ENGINE="--engine=V8"
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--experimental-wasm-simd"
 		fi
 	fi
 
