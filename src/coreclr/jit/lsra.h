@@ -35,6 +35,7 @@ const unsigned int RegisterTypeCount    = 2;
 typedef var_types RegisterType;
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
+#define MaskRegisterType TYP_MASK
 
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
@@ -486,6 +487,12 @@ public:
         {
             registerType = FloatRegisterType;
         }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        else if (emitter::isMaskReg(reg))
+        {
+            registerType = MaskRegisterType;
+        }
+#endif
         else
         {
             // The constructor defaults to IntRegisterType
@@ -1090,6 +1097,9 @@ private:
     RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
     RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
     RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+#if defined(FEATURE_SIMD)
+    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+#endif
     void buildInternalRegisterUses();
 
     void writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg);
@@ -1598,6 +1608,7 @@ private:
     PhasedVar<regMaskTP>  availableIntRegs;
     PhasedVar<regMaskTP>  availableFloatRegs;
     PhasedVar<regMaskTP>  availableDoubleRegs;
+    PhasedVar<regMaskTP>  availableMaskRegs;
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a

@@ -682,6 +682,11 @@ inline bool isFloatRegType(var_types type)
     return varTypeUsesFloatReg(type);
 }
 
+inline bool isMaskReg(var_types type)
+{
+    return varTypeIsMask(type);
+}
+
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.
 #if defined(WINDOWS_AMD64_ABI)
 #if !defined(TARGET_AMD64)

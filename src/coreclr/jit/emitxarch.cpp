@@ -34,8 +34,15 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
     return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
+bool emitter::IsKInstruction(instruction ins)
+{
+    return (ins >= INS_FIRST_K_INSTRUCTION) && (ins <= INS_LAST_K_INSTRUCTION);
+}
+
 //------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse instruction.
+// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
+// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -46,7 +53,7 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
 bool emitter::IsAvx512OrPriorInstruction(instruction ins)
 {
     // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION)) || IsKInstruction(ins);
 }
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
@@ -154,7 +161,7 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
 
 bool emitter::IsVexEncodedInstruction(instruction ins) const
 {
-    return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
+    return UseVEXEncoding() && (IsSSEOrAVXInstruction(ins) || IsKInstruction(ins));
 }
 
 //------------------------------------------------------------------------
@@ -262,6 +269,11 @@ bool emitter::IsEvexEncodedInstruction(instruction ins) const
         // Might need new INS_<INS_NAME>*suffix* instructions for these.
         case INS_vbroadcastf128: // INS_vbroadcastf32x4, INS_vbroadcastf64x2.
         case INS_vbroadcasti128: // INS_vbroadcasti32x4, INS_vbroadcasti64x2.
+
+        case INS_kmovb:
+        case INS_kmovw:
+        case INS_kmovd:
+        case INS_kmovq:
 
             // TODO-XARCH-AVX512 these need to be encoded with the proper individual EVEX instructions (movdqu8,
             // movdqu16 etc)
@@ -1248,6 +1260,8 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
         case INS_vpgatherqq:
         case INS_vgatherdpd:
         case INS_vgatherqpd:
+        case INS_vpmovw2m:
+        case INS_vpmovq2m:
             return true;
         default:
             break;
@@ -1307,7 +1321,7 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     // so we never need it
     if ((ins != INS_push) && (ins != INS_pop) && (ins != INS_movq) && (ins != INS_movzx) && (ins != INS_push_hide) &&
         (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && (ins != INS_tail_i_jmp) &&
-        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
+        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)) && (ins != INS_kmovb) && (ins != INS_kmovw) && (ins != INS_kmovd))
     {
         return true;
     }
@@ -3477,7 +3491,16 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    code_t code = insCodeRM(ins);
+    code_t code;
+    if (IsKInstruction(ins))
+    {
+        code = insCodeRR(ins);
+        code = AddVexPrefix(ins, code, EA_SIZE(id->idOpSize()));
+    }
+    else
+    {
+        code = insCodeRM(ins);
+    }
 
     UNATIVE_OFFSET sz = emitGetAdjustedSize(id, code);
 
@@ -5850,6 +5873,10 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movupd:
         case INS_movups:
         case INS_movzx:
+        case INS_kmovb:
+        case INS_kmovw:
+        case INS_kmovd:
+        case INS_kmovq:
         {
             return true;
         }
@@ -5970,6 +5997,15 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 #endif // TARGET_AMD64
+
+        case INS_kmovb:
+        case INS_kmovw:
+        case INS_kmovd:
+        case INS_kmovq:
+        {
+            hasSideEffect = true;
+            break;
+        }
 
         default:
         {
@@ -6181,6 +6217,12 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             break;
         }
 #endif // TARGET_AMD64
+
+        case INS_kmovb:
+        case INS_kmovw:
+        case INS_kmovd:
+        case INS_kmovq:
+            break;
 
         default:
         {
@@ -9578,6 +9620,11 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 #ifdef TARGET_AMD64
     char suffix = '\0';
 
+    if (isMaskReg(reg))
+    {
+        return emitKregName(reg);
+    }
+
     switch (EA_SIZE(attr))
     {
         case EA_64BYTE:
@@ -9789,6 +9836,24 @@ const char* emitter::emitZMMregName(unsigned reg)
 {
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) "z" sname,
+#include "register.h"
+    };
+
+    assert(reg < REG_COUNT);
+    assert(reg < ArrLen(regNames));
+
+    return regNames[reg];
+}
+
+/*****************************************************************************
+ *
+ *  Return a string that represents the given K register.
+ */
+
+const char* emitter::emitKregName(unsigned reg)
+{
+    static const char* const regNames[] = {
+#define REGDEF(name, rnum, mask, sname) sname,
 #include "register.h"
     };
 
@@ -13802,7 +13867,16 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
 
-        if ((ins != INS_movd) || isFloatReg(reg1))
+        if (IsKInstruction(ins))
+        {
+            code = insCodeRR(ins);
+            if (isGeneralRegister(reg1))
+            {
+                // kmov r, k form, flip last byte of opcode from 0x92 to 0x93
+                code |= 0x01;
+            }
+        }
+        else if ((ins != INS_movd) || isFloatReg(reg1))
         {
             code = insCodeRM(ins);
         }
@@ -18103,6 +18177,27 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 #endif
+
+        case INS_vpmovb2m:
+        case INS_vpmovw2m:
+        case INS_vpmovd2m:
+        case INS_vpmovq2m:
+        {
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
+        case INS_kmovb:
+        case INS_kmovw:
+        case INS_kmovd:
+        case INS_kmovq:
+        {
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
         default:
             // unhandled instruction insFmt combination
             perfScoreUnhandledInstruction(id, &result);
