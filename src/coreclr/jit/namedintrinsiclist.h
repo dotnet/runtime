@@ -56,7 +56,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Collections_Generic_Comparer_get_Default,
     NI_System_Collections_Generic_EqualityComparer_get_Default,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,
-    NI_System_Numerics_BitOperations_PopCount,
+
     NI_System_GC_KeepAlive,
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
@@ -186,6 +186,18 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_WriteUnaligned,
 
     NI_SRCS_UNSAFE_END,
+
+    NI_PRIMITIVE_START,
+
+    NI_PRIMITIVE_Crc32C,
+    NI_PRIMITIVE_LeadingZeroCount,
+    NI_PRIMITIVE_Log2,
+    NI_PRIMITIVE_PopCount,
+    NI_PRIMITIVE_RotateLeft,
+    NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_TrailingZeroCount,
+
+    NI_PRIMITIVE_END,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

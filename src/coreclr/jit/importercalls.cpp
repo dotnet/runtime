@@ -2439,6 +2439,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             assert(!mustExpand);
             return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
         }
+
+        if ((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END))
+        {
+            assert(!mustExpand);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig);
+        }
     }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -3635,27 +3641,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            // Fold PopCount for constant input
-            case NI_System_Numerics_BitOperations_PopCount:
-            {
-                assert(sig->numArgs == 1);
-                if (impStackTop().val->IsIntegralConst())
-                {
-                    typeInfo argType = verParseArgSigToTypeInfo(sig, sig->args).NormaliseForStack();
-                    INT64    cns     = impPopStack().val->AsIntConCommon()->IntegralValue();
-                    if (argType.IsType(TI_LONG))
-                    {
-                        retNode = gtNewIconNode(genCountBits(cns), callType);
-                    }
-                    else
-                    {
-                        assert(argType.IsType(TI_INT));
-                        retNode = gtNewIconNode(genCountBits(static_cast<unsigned>(cns)), callType);
-                    }
-                }
-                break;
-            }
-
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
@@ -4167,6 +4152,562 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             unreached();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// impPrimitiveNamedIntrinsic: import a NamedIntrinsic representing a primitive operation
+//
+// Arguments:
+//    intrinsic - the intrinsic being imported
+//    clsHnd    - handle for the intrinsic method's class
+//    method    - handle for the intrinsic method
+//    sig       - signature of the intrinsic method
+//
+// Returns:
+//    IR tree to use in place of the call, or nullptr if the jit should treat
+//    the intrinsic call like a normal call.
+//
+GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
+                                              CORINFO_CLASS_HANDLE  clsHnd,
+                                              CORINFO_METHOD_HANDLE method,
+                                              CORINFO_SIG_INFO*     sig)
+{
+    assert(sig->sigInst.classInstCount == 0);
+
+    var_types retType = JITtype2varType(sig->retType);
+    assert(varTypeIsArithmetic(retType));
+
+    NamedIntrinsic hwintrinsic = NI_Illegal;
+
+    CORINFO_ARG_LIST_HANDLE args = sig->args;
+
+    assert((sig->numArgs == 1) || (sig->numArgs == 2));
+
+    CORINFO_CLASS_HANDLE op1ClsHnd;
+    CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op1ClsHnd));
+    var_types            baseType    = JITtype2varType(baseJitType);
+
+    GenTree* result = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_PRIMITIVE_Crc32C:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_INT);
+
+            // Crc32 needs the base type from op2
+
+            CORINFO_CLASS_HANDLE op2ClsHnd;
+            args = info.compCompHnd->getArgNext(args);
+
+            baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op2ClsHnd));
+            baseType    = JITtype2varType(baseJitType);
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
+            {
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                if (varTypeIsLong(baseType))
+                {
+                    hwintrinsic = NI_SSE42_X64_Crc32;
+                    op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
+                }
+                else
+                {
+                    hwintrinsic = NI_SSE42_Crc32;
+                    baseType    = genActualType(baseType);
+                }
+
+                result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
+
+                // We use the simdBaseJitType to bring the type of the second argument to codegen
+                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
+            {
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_Crc32_Arm64_ComputeCrc32C : NI_Crc32_ComputeCrc32C;
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, op2, hwintrinsic);
+                baseType    = TYP_INT;
+
+                // We use the simdBaseJitType to bring the type of the second argument to codegen
+                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_LeadingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::LeadingZeroCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::LeadingZeroCount(cns), baseType);
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_LZCNT_X64_LeadingZeroCount : NI_LZCNT_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                // We're importing this as the following...
+                // * 32-bit lzcnt: (value == 0) ? 32 : (31 ^ BSR(value))
+                // * 64-bit lzcnt: (value == 0) ? 64 : (63 ^ BSR(value))
+
+                GenTree* op1Dup;
+                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Cloning op1 for LeadingZeroCount"));
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+
+                GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
+
+                GenTree* trueRes;
+                GenTree* icon;
+
+                if (varTypeIsLong(baseType))
+                {
+                    trueRes = gtNewLconNode(64);
+                    icon    = gtNewLconNode(63);
+                }
+                else
+                {
+                    trueRes = gtNewIconNode(32, baseType);
+                    icon    = gtNewIconNode(31, baseType);
+                }
+
+                GenTree*      falseRes = gtNewOperNode(GT_XOR, baseType, op1Dup, icon);
+                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+
+                result = gtNewQmarkNode(baseType, cond, colon);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for LeadingZeroCount Qmark"));
+                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, baseType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                baseType    = TYP_INT;
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_Log2:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+
+                    if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int64_t>(cns) >= 0))
+                    {
+                        result = gtNewLconNode(BitOperations::Log2(cns));
+                    }
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+
+                    if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int32_t>(cns) >= 0))
+                    {
+                        result = gtNewIconNode(BitOperations::Log2(cns), baseType);
+                    }
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+            if (varTypeIsSigned(baseType))
+            {
+                // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
+                break;
+            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig);
+
+            if (lzcnt != nullptr)
+            {
+                GenTree* icon;
+
+                if (varTypeIsLong(retType))
+                {
+                    icon = gtNewLconNode(63);
+                }
+                else
+                {
+                    icon = gtNewIconNode(31, retType);
+                }
+
+                result   = gtNewOperNode(GT_XOR, retType, lzcnt, icon);
+                baseType = retType;
+            }
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_PopCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::PopCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::PopCount(cns), baseType);
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_POPCNT_X64_PopCount : NI_POPCNT_PopCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+            {
+                // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_RotateLeft:
+        {
+            assert(sig->numArgs == 2);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op2 = impStackTop().val;
+
+            if (!op2->IsIntegralConst())
+            {
+                // TODO-CQ: ROL currently expects op2 to be a constant
+                break;
+            }
+
+            // Pop the value from the stack
+            impPopStack();
+
+            GenTree* op1  = impPopStack().val;
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+
+            if (op1->IsIntegralConst())
+            {
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result        = gtNewLconNode(BitOperations::RotateLeft(cns1, cns2));
+                }
+                else
+                {
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                }
+                break;
+            }
+
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
+            op2->AsIntConCommon()->SetIconValue(cns2);
+            result = gtFoldExpr(gtNewOperNode(GT_ROL, baseType, op1, op2));
+
+            break;
+        }
+
+        case NI_PRIMITIVE_RotateRight:
+        {
+            assert(sig->numArgs == 2);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op2 = impStackTop().val;
+
+            if (!op2->IsIntegralConst())
+            {
+                // TODO-CQ: ROR currently expects op2 to be a constant
+                break;
+            }
+
+            // Pop the value from the stack
+            impPopStack();
+
+            GenTree* op1  = impPopStack().val;
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+
+            if (op1->IsIntegralConst())
+            {
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result        = gtNewLconNode(BitOperations::RotateRight(cns1, cns2));
+                }
+                else
+                {
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
+                }
+                break;
+            }
+
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
+            op2->AsIntConCommon()->SetIconValue(cns2);
+            result = gtFoldExpr(gtNewOperNode(GT_ROR, baseType, op1, op2));
+
+            break;
+        }
+
+        case NI_PRIMITIVE_TrailingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::TrailingZeroCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::TrailingZeroCount(cns), baseType);
+                }
+
+                baseType = retType;
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_BMI1_X64_TrailingZeroCount : NI_BMI1_TrailingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                // We're importing this as the following...
+                // * 32-bit tzcnt: (value == 0) ? 32 : BSF(value)
+                // * 64-bit tzcnt: (value == 0) ? 64 : BSF(value)
+
+                GenTree* op1Dup;
+                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Cloning op1 for TrailingZeroCount"));
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
+                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+
+                GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
+
+                GenTree* trueRes;
+
+                if (varTypeIsLong(baseType))
+                {
+                    trueRes = gtNewLconNode(64);
+                }
+                else
+                {
+                    trueRes = gtNewIconNode(32, baseType);
+                }
+
+                GenTree*      falseRes = op1Dup;
+                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+
+                result = gtNewQmarkNode(baseType, cond, colon);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for TrailingZeroCount Qmark"));
+                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, baseType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic =
+                    varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
+                op1 = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    if ((result != nullptr) && (retType != baseType))
+    {
+        // We're either LONG->INT or INT->LONG
+        assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+        result = gtFoldExpr(gtNewCastNode(retType, result, /* unsigned */ true, retType));
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -7071,6 +7612,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     result = NI_System_GC_KeepAlive;
                 }
             }
+            else if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
+                     (strcmp(className, "IntPtr") == 0))
+            {
+                result = lookupPrimitiveNamedIntrinsic(method, methodName);
+            }
             else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
             {
                 if (strcmp(methodName, "Abs") == 0)
@@ -7314,6 +7860,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     result = NI_System_Type_op_Inequality;
                 }
             }
+            else if ((strcmp(className, "UInt32") == 0) || (strcmp(className, "UInt64") == 0) ||
+                     (strcmp(className, "UIntPtr") == 0))
+            {
+                result = lookupPrimitiveNamedIntrinsic(method, methodName);
+            }
         }
         else if (namespaceName[0] == '.')
         {
@@ -7353,10 +7904,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strcmp(className, "BitOperations") == 0)
                 {
-                    if (strcmp(methodName, "PopCount") == 0)
-                    {
-                        result = NI_System_Numerics_BitOperations_PopCount;
-                    }
+                    result = lookupPrimitiveNamedIntrinsic(method, methodName);
                 }
                 else
                 {
@@ -7712,6 +8260,55 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("Recognized\n");
     }
+    return result;
+}
+
+//------------------------------------------------------------------------
+// lookupPrimitiveNamedIntrinsic: map method to jit named intrinsic value
+//
+// Arguments:
+//    method -- method handle for method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+NamedIntrinsic Compiler::lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
+{
+    NamedIntrinsic result = NI_Illegal;
+
+    if (strcmp(methodName, "Crc32C") == 0)
+    {
+        result = NI_PRIMITIVE_Crc32C;
+    }
+    else if (strcmp(methodName, "LeadingZeroCount") == 0)
+    {
+        result = NI_PRIMITIVE_LeadingZeroCount;
+    }
+    else if (strcmp(methodName, "Log2") == 0)
+    {
+        result = NI_PRIMITIVE_Log2;
+    }
+    else if (strcmp(methodName, "PopCount") == 0)
+    {
+        result = NI_PRIMITIVE_PopCount;
+    }
+    else if (strcmp(methodName, "RotateLeft") == 0)
+    {
+        result = NI_PRIMITIVE_RotateLeft;
+    }
+    else if (strcmp(methodName, "RotateRight") == 0)
+    {
+        result = NI_PRIMITIVE_RotateRight;
+    }
+    else if (strcmp(methodName, "TrailingZeroCount") == 0)
+    {
+        result = NI_PRIMITIVE_TrailingZeroCount;
+    }
+
     return result;
 }
 
