@@ -9665,6 +9665,15 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_AND;
         cmpOp  = GT_EQ;
     }
+    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
+             (it1val == 1 && it2val == 1 && it3val == 1))
+    {
+        // Case: x == 1 || y == 1
+        //      t1:c1==1 t2:c2==1 t3:c3==1
+        //      ==> true if (c1|c2)!=0
+        foldOp = GT_OR;
+        cmpOp  = GT_NE;
+    }
     else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
              (it1val == 0 && it2val == 0 && it3val == 1))
     {
@@ -9691,7 +9700,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     }
 
     if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool) &&
-        (it1val != 0 || it2val != 0 || it3val != 0))
+        ((it1val != 0 && it1val != 1) || (it2val != 0 && it2val != 1) || (it3val != 0 && it3val != 1)))
     {
         // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
