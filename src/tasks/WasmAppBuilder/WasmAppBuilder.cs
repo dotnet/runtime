@@ -37,7 +37,7 @@ public class WasmAppBuilder : Task
 
     // full list of ICU data files we produce can be found here:
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-    public string[]? IcuDataFileNames { get; set; }
+    public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
     public int DebugLevel { get; set; }
     public ITaskItem[]? SatelliteAssemblies { get; set; }
@@ -162,7 +162,7 @@ public class WasmAppBuilder : Task
         if (!File.Exists(MainJS))
             throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
-            throw new LogAsErrorException("IcuDataFileNames property shouldn't be empty if InvariantGlobalization=false");
+            throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
 
         if (Assemblies.Length == 0)
         {
@@ -312,8 +312,12 @@ public class WasmAppBuilder : Task
 
         if (!InvariantGlobalization)
         {
+            bool loadRemote = RemoteSources?.Length > 0;
             foreach (var idfn in IcuDataFileNames!)
-                config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = RemoteSources?.Length > 0 });
+            {
+                if (File.Exists(idfn))
+                    config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = loadRemote });
+            }
         }
 
 

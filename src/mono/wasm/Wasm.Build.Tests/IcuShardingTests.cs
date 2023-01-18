@@ -64,7 +64,7 @@ public class IcuShardingTests : BuildTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = false };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuFileName>{shardName}</WasmIcuFileName>");
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>");
 
         string programText = GetProgramText(expectedLocales, missingLocales);
         (_, string output) = BuildProject(buildArgs,

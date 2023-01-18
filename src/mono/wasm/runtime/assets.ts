@@ -51,8 +51,8 @@ export function get_preferred_icu_asset(): string | null {
     if (!runtimeHelpers.config.assets)
         return null;
 
-    // By setting <WasmIcuFileName> user can define what ICU source file they want to load.
-    // There is no need to check application's culture when <WasmIcuFileName> is set.
+    // By setting <WasmIcuDataFileName> user can define what ICU source file they want to load.
+    // There is no need to check application's culture when <WasmIcuDataFileName> is set.
     // If it was not set, then we have 3 "icu" assets in config and we should choose
     // only one for loading, this one that matches the application's locale.
     const icuAssets = runtimeHelpers.config.assets.filter(a => a["behavior"] == "icu");
