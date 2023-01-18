@@ -6,8 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
-    <!-- some tests require full ICU data, force it -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />

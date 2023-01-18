@@ -3,8 +3,6 @@
     <NoWarn>$(NoWarn),0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <!-- some tests require full ICU data, force it -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />

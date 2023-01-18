@@ -5,6 +5,8 @@
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == '' and $(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</TestStrongNameKeyId>
     <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
+   <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 
   <!-- resources.targets need to be imported before the Arcade SDK. -->

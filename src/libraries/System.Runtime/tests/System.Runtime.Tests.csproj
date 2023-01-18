@@ -7,7 +7,6 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
 
   <!--
