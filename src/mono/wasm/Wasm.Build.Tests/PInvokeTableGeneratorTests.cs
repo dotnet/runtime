@@ -376,6 +376,7 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [ActiveIssue("FIXME: MetadataLoadContet dotnet build crash", typeof(BuildTestBase), nameof(UseWebcil))]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
