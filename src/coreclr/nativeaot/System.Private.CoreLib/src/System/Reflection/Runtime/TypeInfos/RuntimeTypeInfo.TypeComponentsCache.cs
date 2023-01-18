@@ -44,12 +44,16 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             //  BindingFlags == Public | NonPublic | Instance | Static | FlattenHierarchy
             //
-            public QueriedMemberList<M> GetQueriedMembers<M>(string name, bool ignoreCase) where M : MemberInfo
+            public QueriedMemberList<M> GetQueriedMembers<M>(MemberPolicies<M> policies, string name, bool ignoreCase) where M : MemberInfo
             {
-                int index = MemberPolicies<M>.MemberTypeIndex;
+                int index = policies.Index;
                 object obj = ignoreCase ? _perNameQueryCaches_CaseInsensitive[index] : _perNameQueryCaches_CaseSensitive[index];
                 Debug.Assert(obj is PerNameQueryCache<M>);
                 PerNameQueryCache<M> unifier = Unsafe.As<PerNameQueryCache<M>>(obj);
+
+                // Set the policies if they're not set yet. See the comment on SetPolicies on why we do this for details.
+                unifier.SetPolicies(policies);
+
                 QueriedMemberList<M> result = unifier.GetOrAdd(name);
                 return result;
             }
@@ -59,13 +63,13 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             //  BindingFlags == Public | NonPublic | Instance | Static | FlattenHierarchy
             //
-            public QueriedMemberList<M> GetQueriedMembers<M>() where M : MemberInfo
+            public QueriedMemberList<M> GetQueriedMembers<M>(MemberPolicies<M> policies) where M : MemberInfo
             {
-                int index = MemberPolicies<M>.MemberTypeIndex;
+                int index = policies.Index;
                 object result = Volatile.Read(ref _nameAgnosticQueryCaches[index]);
                 if (result == null)
                 {
-                    QueriedMemberList<M> newResult = QueriedMemberList<M>.Create(_type, optionalNameFilter: null, ignoreCase: false);
+                    QueriedMemberList<M> newResult = QueriedMemberList<M>.Create(policies, _type, optionalNameFilter: null, ignoreCase: false);
                     newResult.Compact();
                     result = newResult;
                     Volatile.Write(ref _nameAgnosticQueryCaches[index], result);
@@ -104,22 +108,6 @@ namespace System.Reflection.Runtime.TypeInfos
             // Generic cache for scenario specific data. For example, it is used to cache Enum names and values.
             internal object? _genericCache;
 
-            // The sole purpose of this struct is to defeat generic code sharing of PerNameQueryCache below.
-            // We eagerly construct PerNameQueryCache when the type components cache is created, but they may not be
-            // actually used in an app that is light on reflection use. But we do have other canonically equivalent
-            // ConcurrentUnifier instances in the program and their use could drag this implementation into the app.
-            // Making the ConcurrentUnifier instance unshareable gives the compiler the ability to unshare this.
-            private struct StringKey : IEquatable<StringKey>
-            {
-                public readonly string Key;
-                public StringKey(string k) => Key = k;
-                public bool Equals(StringKey other) => Key == other.Key;
-                public override bool Equals([NotNullWhen(true)] object? obj) => obj is StringKey k && Equals(k);
-                public override int GetHashCode() => Key.GetHashCode();
-                public static implicit operator StringKey(string k) => new StringKey(k);
-                public static implicit operator string(StringKey k) => k.Key;
-            }
-
             //
             // Each PerName cache persists the results of a Type.Get(name, bindingFlags) for a particular MemberInfoType "M".
             //
@@ -127,7 +115,7 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             // In addition, if "ignoreCase" was passed to the constructor, BindingFlags.IgnoreCase is also in effect.
             //
-            private sealed class PerNameQueryCache<M> : ConcurrentUnifier<StringKey, QueriedMemberList<M>> where M : MemberInfo
+            private sealed class PerNameQueryCache<M> : ConcurrentUnifier<string, QueriedMemberList<M>> where M : MemberInfo
             {
                 public PerNameQueryCache(RuntimeTypeInfo type, bool ignoreCase)
                 {
@@ -135,13 +123,23 @@ namespace System.Reflection.Runtime.TypeInfos
                     _ignoreCase = ignoreCase;
                 }
 
-                protected sealed override QueriedMemberList<M> Factory(StringKey key)
+                // This looks like something that should have been a parameter to the constructor, but we do this on
+                // purpose - the PerNameQueryCache instances are created eagerly, but not all apps might require
+                // MemberPolicies for all members. This allows us to delay creating the MemberPolicies instance
+                // until the need arises.
+                public void SetPolicies(MemberPolicies<M> policies)
                 {
-                    QueriedMemberList<M> result = QueriedMemberList<M>.Create(_type, key, ignoreCase: _ignoreCase);
+                    _policies = policies;
+                }
+
+                protected sealed override QueriedMemberList<M> Factory(string key)
+                {
+                    QueriedMemberList<M> result = QueriedMemberList<M>.Create(_policies, _type, key, ignoreCase: _ignoreCase);
                     result.Compact();
                     return result;
                 }
 
+                private MemberPolicies<M> _policies;
                 private readonly RuntimeTypeInfo _type;
                 private readonly bool _ignoreCase;
             }

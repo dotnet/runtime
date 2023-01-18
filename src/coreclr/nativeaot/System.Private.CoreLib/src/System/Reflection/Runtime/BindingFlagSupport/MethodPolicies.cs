@@ -13,6 +13,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class MethodPolicies : MemberPolicies<MethodInfo>
     {
+        public static readonly MethodPolicies Instance = new MethodPolicies();
+
+        public MethodPolicies() : base(MemberTypeIndex.Method) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
         public sealed override IEnumerable<MethodInfo> GetDeclaredMembers(TypeInfo typeInfo)
