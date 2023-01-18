@@ -3673,7 +3673,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 	td->ip += 5;
 	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
-		td->last_ins->info.call_args = call_args;
+		td->last_ins->info.call_info->call_args = call_args;
 		if (!td->optimized) {
 			int call_dreg = td->last_ins->dreg;
 			int call_offset = td->locals [call_dreg].stack_offset;
