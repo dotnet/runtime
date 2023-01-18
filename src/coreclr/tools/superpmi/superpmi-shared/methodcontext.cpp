@@ -6847,8 +6847,9 @@ void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, in
 
 void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value)
 {
-    const WCHAR* name = (const WCHAR*)GetIntConfigValue->GetBuffer(key.nameIndex);
-    printf("GetIntConfigValue name %s, default value %d, value %d", ConvertToUtf8(name).c_str(), key.defaultValue, value);
+    const WCHAR* name    = (const WCHAR*)GetIntConfigValue->GetBuffer(key.nameIndex);
+    std::string nameUtf8 = ConvertToUtf8(name);
+    printf("GetIntConfigValue name %s, default value %d, value %d", nameUtf8.c_str(), key.defaultValue, value);
     GetIntConfigValue->Unlock();
 }
 

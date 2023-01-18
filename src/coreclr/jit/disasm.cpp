@@ -1229,7 +1229,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
         if (fFirst)
         {
             pdis->CchFormatInstr(wz, ArrLen(wz));
-            fprintf(pfile, "%-*ls %S\n", cchBytesMax, pwzBytes, wz);
+            fprintf(pfile, "%-*S %S\n", cchBytesMax, pwzBytes, wz);
         }
 
         else

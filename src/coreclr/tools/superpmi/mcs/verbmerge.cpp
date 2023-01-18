@@ -261,7 +261,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      searchPattern,
         }
         else
         {
-            LogError("Failed to find pattern '%s'. GetLastError()=%u", ConvertToUtf8(searchPattern).c_str(), GetLastError());
+            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+            LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPatternUtf8.c_str(), GetLastError());
             result = -1;
         }
         goto CLEAN_UP;

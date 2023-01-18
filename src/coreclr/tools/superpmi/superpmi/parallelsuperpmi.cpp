@@ -440,9 +440,6 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
 
 #define MAX_CMDLINE_SIZE 0x1000 // 4 KB
 
-// Forward declare function. Including directly spmiutil.h causes other build issues.
-std::string ConvertToUtf8(const WCHAR* str);
-
 //-------------------------------------------------------------
 // addJitOptionArgument: Writes jitOption arguments to the argument string for a child spmi process.
 //
