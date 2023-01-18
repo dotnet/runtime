@@ -58,7 +58,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
     - container: browser_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly
 
     - container: wasi_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly
