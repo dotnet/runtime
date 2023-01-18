@@ -77,11 +77,30 @@ inline bool varTypeIsSIMD(T vt)
             return false;
     }
 }
+
+template <class T>
+inline bool varTypeIsOpmask(T vt)
+{
+    switch (TypeGet(vt))
+    {
+        case TYP_OPMASK:
+            return true;
+        default:
+            return false;
+    }
+}
+
 #else  // FEATURE_SIMD
 
 // Always return false if FEATURE_SIMD is not enabled
 template <class T>
 inline bool varTypeIsSIMD(T vt)
+{
+    return false;
+}
+
+template <class T>
+inline bool varTypeIsOpmask(T vt)
 {
     return false;
 }

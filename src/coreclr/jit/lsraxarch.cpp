@@ -2498,6 +2498,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_AVX512F_MoveMaskSpec:
+            {
+                srcCount += BuildOperandUses(op1);
+                buildInternalOpmaskRegisterDefForNode(intrinsicTree);
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
             default:
             {
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
