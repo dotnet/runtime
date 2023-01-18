@@ -1166,35 +1166,37 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res;
         }
 
-        internal void UpdatePdbInformationFromSymbolServer(Stream streamToReadFrom)
-        {
-            var pdbStream = new MemoryStream();
-            streamToReadFrom.Position = 0;
-            streamToReadFrom.CopyTo(pdbStream);
-            pdbStream.Position = 0;
-            pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-            if (pdbMetadataReader == null)
-                return;
-            ProcessSourceLink();
-            foreach (var method in this.Methods)
-            {
-                method.Value.pdbMetadataReader = pdbMetadataReader;
-                method.Value.UpdatePdbInformation(method.Value.methodDefHandle);
-            }
-        }
-
         internal async Task LoadPDBFromSymbolServer(DebugStore debugStore, CancellationToken token)
         {
-            if (TriedToLoadSymbolsOnDemand)
-                return;
-            var pdbName = Path.GetFileName(PdbName);
-            var pdbGuid = PdbGuid.ToString("N").ToUpperInvariant() + (IsPortableCodeView ? "FFFFFFFF" : PdbAge);
-            var key = $"{pdbName}/{pdbGuid}/{pdbName}";
-            SymbolStoreFile file = await debugStore.symbolStore.GetFile(new SymbolStoreKey(key, PdbName, false, PdbChecksums), token);
-            TriedToLoadSymbolsOnDemand = true;
-            if (file == null)
-                return;
-            UpdatePdbInformationFromSymbolServer(file.Stream);
+            try
+            {
+                if (TriedToLoadSymbolsOnDemand)
+                    return;
+                var pdbName = Path.GetFileName(PdbName);
+                var pdbGuid = PdbGuid.ToString("N").ToUpperInvariant() + (IsPortableCodeView ? "FFFFFFFF" : PdbAge);
+                var key = $"{pdbName}/{pdbGuid}/{pdbName}";
+                SymbolStoreFile file = await debugStore.symbolStore.GetFile(new SymbolStoreKey(key, PdbName, false, PdbChecksums), token);
+                TriedToLoadSymbolsOnDemand = true;
+                if (file == null)
+                    return;
+                var pdbStream = new MemoryStream();
+                file.Stream.Position = 0;
+                file.Stream.CopyTo(pdbStream);
+                pdbStream.Position = 0;
+                pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
+                if (pdbMetadataReader == null)
+                    return;
+                ProcessSourceLink();
+                foreach (var method in this.Methods)
+                {
+                    method.Value.pdbMetadataReader = pdbMetadataReader;
+                    method.Value.UpdatePdbInformation(method.Value.methodDefHandle);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"Failed to load symbols from symbol server. ({ex.Message})");
+            }
         }
 
 }
@@ -1447,7 +1449,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.logger = logger;
             this.monoProxy = monoProxy;
             this._tracer = new Tracer(logger);
-            CreateSymbolServer();
+            UpdateSymbolStore(monoProxy.UrlSymbolServerList, monoProxy.CachePathSymbolServer);
         }
 
         private sealed class DebugItem
@@ -1570,8 +1572,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         continue;
                     }
                     assembly = new AssemblyInfo(monoProxy, id, bytes[0], bytes[1], logger, token);
-                    if (symbolStore != null && !monoProxy.JustMyCode)
-                        await assembly.LoadPDBFromSymbolServer(this, token);
                 }
                 catch (Exception e)
                 {
@@ -1755,31 +1755,47 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url.OriginalString : "";
 
-        internal async Task<IEnumerable<AssemblyInfo>> ReloadAllPDBsFromSymbolServer(CancellationToken token)
+        internal async Task ReloadAllPDBsFromSymbolServersAndSendSources(MonoProxy monoProxy, SessionId id, ExecutionContext context, CancellationToken token)
         {
-            List<AssemblyInfo> ret = new List<AssemblyInfo> ();
             if (symbolStore == null)
-                return ret;
+                return;
+            monoProxy.SendLog(id, "Loading symbols from symbol servers.", token);
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
                 await asm.LoadPDBFromSymbolServer(this, token);
-                ret.Add(asm);
+                foreach (var source in asm.Sources)
+                    await monoProxy.OnSourceFileAdded(id, source, context, token);
             }
-            return ret;
+            monoProxy.SendLog(id, "Symbols from symbol servers completely loaded.", token);
         }
 
-        internal void CreateSymbolServer()
+        internal void UpdateSymbolStore(List<string> urlSymbolServerList, string cachePathSymbolServer)
         {
-            foreach (var urlServer in monoProxy.UrlSymbolServerList)
+            symbolStore = null;
+            foreach (var urlServer in urlSymbolServerList)
             {
                 if (string.IsNullOrEmpty(urlServer))
                     continue;
-                symbolStore = new HttpSymbolStore(_tracer, symbolStore, new Uri($"{urlServer}/"), null);
+                try
+                {
+                    symbolStore = new HttpSymbolStore(_tracer, symbolStore, new Uri($"{urlServer}/"), null);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Failed to create HttpSymbolStore for this URL - {urlServer} - {ex.Message}");
+                }
             }
-            if (!string.IsNullOrEmpty(monoProxy.CachePathSymbolServer))
+            if (!string.IsNullOrEmpty(cachePathSymbolServer))
             {
-                symbolStore = new CacheSymbolStore(_tracer, symbolStore, monoProxy.CachePathSymbolServer);
+                try
+                {
+                    symbolStore = new CacheSymbolStore(_tracer, symbolStore, cachePathSymbolServer);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Failed to create CacheSymbolStore for this path - {cachePathSymbolServer} - {ex.Message}");
+                }
             }
         }
         public sealed class Tracer : ITracer
@@ -1795,21 +1811,21 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             public void WriteLine(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
 
-            public void Information(string message) => _logger.LogInformation(message);
+            public void Information(string message) => _logger.LogTrace(message);
 
-            public void Information(string format, params object[] arguments) => _logger.LogInformation(format, arguments);
+            public void Information(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
 
-            public void Warning(string message) => _logger.LogWarning(message);
+            public void Warning(string message) => _logger.LogTrace(message);
 
-            public void Warning(string format, params object[] arguments) => _logger.LogWarning(format, arguments);
+            public void Warning(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
 
-            public void Error(string message) => _logger.LogError(message);
+            public void Error(string message) => _logger.LogTrace(message);
 
-            public void Error(string format, params object[] arguments) => _logger.LogError(format, arguments);
+            public void Error(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
 
-            public void Verbose(string message) => _logger.LogDebug(message);
+            public void Verbose(string message) => _logger.LogTrace(message);
 
-            public void Verbose(string format, params object[] arguments) => _logger.LogDebug(format, arguments);
+            public void Verbose(string format, params object[] arguments) => _logger.LogTrace(format, arguments);
         }
     }
 }

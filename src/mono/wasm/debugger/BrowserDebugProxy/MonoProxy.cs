@@ -192,6 +192,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 {
                                     await RuntimeReady(sessionId, token);
                                     await SendResume(sessionId, token);
+                                    if (!JustMyCode)
+                                        await ReloadSymbolsFromSymbolServer(sessionId, GetContext(sessionId), token);
                                     return true;
                                 }
                             case "mono_wasm_fire_debugger_agent_message":
@@ -551,7 +553,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         UrlSymbolServerList.Clear();
                         UrlSymbolServerList.AddRange(urls.Values<string>());
                         if (!JustMyCode)
+                        {
+                            if (!await IsRuntimeAlreadyReadyAlready(id, token))
+                                return true;
                             return await ReloadSymbolsFromSymbolServer(id, context, token);
+                        }
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
@@ -578,18 +584,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
-        private async Task<bool> ReloadSymbolsFromSymbolServer(MessageId id, ExecutionContext context, CancellationToken token)
+        private async Task<bool> ReloadSymbolsFromSymbolServer(SessionId id, ExecutionContext context, CancellationToken token)
         {
-            if (!await IsRuntimeAlreadyReadyAlready(id, token))
-                return true;
-            DebugStore store = await RuntimeReady(id, token);
-            store.CreateSymbolServer();
-            var asmList = await store.ReloadAllPDBsFromSymbolServer(token);
-            foreach (var asm in asmList)
-            {
-                foreach (var source in asm.Sources)
-                    await OnSourceFileAdded(id, source, context, token);
-            }
+            DebugStore store = await LoadStore(id, true, token);
+            store.UpdateSymbolStore(UrlSymbolServerList, CachePathSymbolServer);
+            await store.ReloadAllPDBsFromSymbolServersAndSendSources(this, id, context, token);
             return true;
         }
 
@@ -610,7 +609,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (JustMyCode != isEnabled && isEnabled == false)
             {
                 JustMyCode = isEnabled;
-                await ReloadSymbolsFromSymbolServer(id, context, token);
+                if (await IsRuntimeAlreadyReadyAlready(id, token))
+                    await ReloadSymbolsFromSymbolServer(id, context, token);
             }
             JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
