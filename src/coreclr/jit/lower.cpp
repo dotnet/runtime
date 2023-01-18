@@ -6939,7 +6939,6 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
     }
 #endif // TARGET_XARCH
 
-
     if (canEnregister)
     {
         lclNode->SetMultiReg();
