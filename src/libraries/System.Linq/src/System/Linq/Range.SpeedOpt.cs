@@ -83,7 +83,6 @@ namespace System.Linq
             }
 
             // Destination *must* be non-empty and exactly match the range length
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void InitializeSpan(Span<int> destination)
             {
                 if (destination.Length < Vector<int>.Count * 2)
