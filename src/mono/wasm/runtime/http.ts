@@ -106,7 +106,7 @@ export function http_wasm_get_response_bytes(res: ResponseExtension, view: Span)
     return bytes_read;
 }
 
-export async function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
+export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
