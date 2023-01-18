@@ -5275,26 +5275,29 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
+    bool madeChanges = fgRenumberBlocks();
+
     if (compCodeOpt() == SMALL_CODE)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // do not invert any loops
     }
-
-    bool madeChanges = false; // Assume no changes made
-    for (BasicBlock* const block : Blocks())
+    else
     {
-        // Make sure the appropriate fields are initialized
-        //
-        if (block->bbWeight == BB_ZERO_WEIGHT)
+        for (BasicBlock* const block : Blocks())
         {
-            // Zero weighted block can't have a LOOP_HEAD flag
-            noway_assert(block->isLoopHead() == false);
-            continue;
-        }
+            // Make sure the appropriate fields are initialized
+            //
+            if (block->bbWeight == BB_ZERO_WEIGHT)
+            {
+                // Zero weighted block can't have a LOOP_HEAD flag
+                noway_assert(block->isLoopHead() == false);
+                continue;
+            }
 
-        if (optInvertWhileLoop(block))
-        {
-            madeChanges = true;
+            if (optInvertWhileLoop(block))
+            {
+                madeChanges = true;
+            }
         }
     }
 
