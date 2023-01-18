@@ -10,7 +10,7 @@
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
-    <!-- <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
@@ -45,9 +45,9 @@
     <Compile Include="CultureInfo\CultureInfoCalendar.cs" />
     <Compile Include="CultureInfo\CultureInfoClone.cs" />
     <Compile Include="CultureInfo\CultureInfoCompareInfo.cs" />
-    <Compile Include="CultureInfo\CultureInfoCtor.cs" /> -->
+    <Compile Include="CultureInfo\CultureInfoCtor.cs" />
     <Compile Include="CultureInfo\CultureInfoDateTimeFormat.cs" />
-    <!-- <Compile Include="CultureInfo\CultureInfoEnglishName.cs" />
+    <Compile Include="CultureInfo\CultureInfoEnglishName.cs" />
     <Compile Include="CultureInfo\CultureInfoEquals.cs" />
     <Compile Include="CultureInfo\CultureInfoGetFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoGetHashCode.cs" />
@@ -59,7 +59,7 @@
     <Compile Include="CultureInfo\CultureInfoReadOnly.cs" />
     <Compile Include="CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
     <Compile Include="CultureInfo\CultureInfoCurrentCulture.cs" />
-    <Compile Include="CultureInfo\GetCultureInfo.cs" /> -->
+    <Compile Include="CultureInfo\GetCultureInfo.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedDayNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthGenitiveNames.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoAbbreviatedMonthNames.cs" />
@@ -95,7 +95,7 @@
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoTests.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoUniversalSortableDateTimePattern.cs" />
     <Compile Include="DateTimeFormatInfo\DateTimeFormatInfoYearMonthPattern.cs" />
-    <!-- <Compile Include="NumberFormatInfo\NumberFormatInfoClone.cs" />
+    <Compile Include="NumberFormatInfo\NumberFormatInfoClone.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalDigits.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyDecimalSeparator.cs" />
     <Compile Include="NumberFormatInfo\NumberFormatInfoCurrencyGroupSeparator.cs" />
@@ -116,7 +116,7 @@
     <Compile Include="System\Globalization\SortVersionTests.cs" />
     <Compile Include="System\Globalization\TextInfoTests.cs" />
     <Compile Include="System\Globalization\TextElementEnumeratorTests.cs" />
-    <Compile Include="System\Globalization\UnicodeCategoryTests.cs" /> -->
+    <Compile Include="System\Globalization\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="Common\System\RandomDataGenerator.cs" />
