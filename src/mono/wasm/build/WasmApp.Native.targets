@@ -270,7 +270,8 @@
       <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" />
     </ItemGroup>
     <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' != 'true'">
-      <_EmccLDSFlags Include="-s LLD_REPORT_UNDEFINED -s ERROR_ON_UNDEFINED_SYMBOLS=1" />
+      <_EmccLDSFlags Include="-s LLD_REPORT_UNDEFINED" />
+      <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
