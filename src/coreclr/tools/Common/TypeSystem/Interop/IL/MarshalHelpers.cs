@@ -874,6 +874,7 @@ namespace Internal.TypeSystem.Interop
             // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
             // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
             // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+            // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
             // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
             return !InteropTypes.IsSystemNullable(type.Context, type)
                 && !InteropTypes.IsSystemSpan(type.Context, type)
@@ -881,6 +882,7 @@ namespace Internal.TypeSystem.Interop
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(type.Context, type)
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type)
                 && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector512T(type.Context, type)
                 && !InteropTypes.IsSystemNumericsVectorT(type.Context, type);
         }
 

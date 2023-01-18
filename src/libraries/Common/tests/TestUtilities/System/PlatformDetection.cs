@@ -619,8 +619,7 @@ namespace System
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable(variableName);
-            return (val != null && val == "true");
+            return Environment.GetEnvironmentVariable(variableName) is "true";
         }
 
         private static string GetNodeJSPlatform()

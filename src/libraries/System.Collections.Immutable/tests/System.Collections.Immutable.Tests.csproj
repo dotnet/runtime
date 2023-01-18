@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -40,7 +40,9 @@
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs" Link="Common\System\ShouldNotBeInvokedException.cs" />
     <!-- Frozen Collections Tests -->
     <Compile Include="Frozen\FrozenSetTests.cs" />
-    <Compile Include="Frozen\FrozenDictionaryTest.cs" />
+    <Compile Include="Frozen\FrozenDictionaryTests.cs" />
+    <Compile Include="Frozen\ComparerPickerTests.cs" />
+    <Compile Include="Frozen\ComparerTests.cs" />
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DelegateEqualityComparer.cs" Link="Common\System\Collections\DelegateEqualityComparer.cs" />

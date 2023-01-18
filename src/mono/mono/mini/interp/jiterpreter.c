@@ -346,7 +346,7 @@ mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 	ThreadContext *context = mono_jiterp_get_context();
 	gpointer mem;
 	if (len > 0) {
-		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
 		if (frame->imethod->init_locals)
 			memset (mem, 0, len);
@@ -683,6 +683,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LD_DELEGATE_METHOD_PTR:
 		case MINT_LDTSFLDA:
 		case MINT_SAFEPOINT:
+		case MINT_INTRINS_GET_HASHCODE:
+		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -935,6 +937,23 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
 	jiterpreter_do_jit_call = dispatcher;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	if (!obj)
+		return 0;
+	return (obj->vtable->flags & MONO_VT_FLAG_ARRAY_OR_STRING) != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_hashcode (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	g_assert (obj);
+	return mono_object_hash_internal (obj);
 }
 
 // HACK: fix C4206

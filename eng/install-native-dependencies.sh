@@ -30,6 +30,6 @@ elif [ "$os" = "maccatalyst" ] || [ "$os" = "osx" ] || [ "$os" = "macos" ] || [ 
     # brew update --preinstall
     brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
 else
-    echo "Must pass 'Linux', 'macOS', 'maccatalyst', 'iOS' or 'tvOS' as first argument."
+    echo "Must pass 'linux', 'macos', 'maccatalyst', 'ios' or 'tvos' as first argument."
     exit 1
 fi

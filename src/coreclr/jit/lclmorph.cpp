@@ -944,20 +944,21 @@ private:
         else
         {
             // Otherwise it must be accessed through some kind of indirection. Usually this is
-            // something like IND(ADDR(LCL_VAR)), global morph will change it to GT_LCL_VAR or
-            // GT_LCL_FLD so the lclvar does not need to be address exposed.
+            // something like IND(LCL_ADDR_VAR), which we will change to LCL_VAR or LCL_FLD so
+            // the lclvar does not need to be address exposed.
             //
             // However, it is possible for the indirection to be wider than the lclvar
             // (e.g. *(long*)&int32Var) or to have a field offset that pushes the indirection
-            // past the end of the lclvar memory location. In such cases morph doesn't do
-            // anything so the lclvar needs to be address exposed.
+            // past the end of the lclvar memory location. In such cases we cannot do anything
+            // so the lclvar needs to be address exposed.
             //
             // More importantly, if the lclvar is a promoted struct field then the parent lclvar
             // also needs to be address exposed so we get dependent struct promotion. Code like
             // *(long*)&int32Var has undefined behavior and it's practically useless but reading,
             // say, 2 consecutive Int32 struct fields as Int64 has more practical value.
 
-            LclVarDsc* varDsc    = m_compiler->lvaGetDesc(val.LclNum());
+            unsigned   lclNum    = val.LclNum();
+            LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
             unsigned   indirSize = GetIndirSize(node);
             bool       isWide;
 
@@ -976,24 +977,18 @@ private:
                 {
                     isWide = true;
                 }
-                else if (varDsc->TypeGet() == TYP_STRUCT)
-                {
-                    isWide = (endOffset.Value() > varDsc->lvExactSize);
-                }
                 else
                 {
-                    // For small int types use the real type size, not the stack slot size.
-                    // Morph does manage to transform `*(int*)&byteVar` into just byteVar where
-                    // the LCL_VAR node has type TYP_INT. But such code is simply bogus and
-                    // there's no reason to attempt to optimize it. It makes more sense to
-                    // mark the variable address exposed in such circumstances.
-                    //
-                    // Same for "small" SIMD types - SIMD8/12 have 8/12 bytes, even if the
-                    // stack location may have 16 bytes.
-                    //
-                    // For TYP_BLK variables the type size is 0 so they're always address
-                    // exposed.
-                    isWide = (endOffset.Value() > genTypeSize(varDsc->TypeGet()));
+                    isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
+
+                    if (varDsc->TypeGet() == TYP_BLK)
+                    {
+                        // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
+                        // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
+                        // variable ends up untracked and VN treats untracked-not-exposed locals more conservatively
+                        // than exposed ones.
+                        m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+                    }
                 }
             }
 
@@ -1471,6 +1466,7 @@ private:
         m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
+public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
     //
@@ -1550,6 +1546,7 @@ private:
         }
     }
 
+private:
     //------------------------------------------------------------------------
     // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
     //
@@ -1664,6 +1661,17 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 #endif
 
             visitor.VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(this))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                visitor.UpdateEarlyRefCount(lclNum);
+            }
         }
     }
 

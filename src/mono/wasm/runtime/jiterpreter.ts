@@ -252,6 +252,8 @@ function getTraceImports () {
         ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
         ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
+        ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
+        ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -510,6 +512,16 @@ function generate_wasm (
                 "frame": WasmValtype.i32,
                 "ip": WasmValtype.i32,
             }, WasmValtype.void
+        );
+        builder.defineType(
+            "hashcode", {
+                "ppObj": WasmValtype.i32,
+            }, WasmValtype.i32
+        );
+        builder.defineType(
+            "hascsize", {
+                "ppObj": WasmValtype.i32,
+            }, WasmValtype.i32
         );
 
         builder.generateTypeSection();
@@ -1076,6 +1088,18 @@ function generate_wasm_body (
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
+            case MintOpcode.MINT_INTRINS_GET_HASHCODE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("hashcode");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            case MintOpcode.MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("hascsize");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
 
             case MintOpcode.MINT_CASTCLASS:
             case MintOpcode.MINT_ISINST:
@@ -2426,7 +2450,9 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
         : relopBranchInfo;
 
     const relopInfo = binopTable[relop];
-    if (!relopInfo)
+    const intrinsicFpBinop = intrinsicFpBinops[relop];
+
+    if (!relopInfo && !intrinsicFpBinop)
         return false;
 
     // We have to wrap the computation of the branch condition inside the
@@ -2437,7 +2463,19 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
     if (traceBranchDisplacements)
         console.log(`relop @${ip} displacement=${displacement}`);
 
-    append_ldloc(builder, getArgU16(ip, 1), relopInfo[1]);
+    const operandLoadOp = relopInfo
+        ? relopInfo[1]
+        : (
+            intrinsicFpBinop == WasmOpcode.nop
+                ? WasmOpcode.f64_load
+                : WasmOpcode.f32_load
+        );
+
+    append_ldloc(builder, getArgU16(ip, 1), operandLoadOp);
+    // Promote f32 lhs to f64 if necessary
+    if (!relopInfo && (intrinsicFpBinop != WasmOpcode.nop))
+        builder.appendU8(intrinsicFpBinop);
+
     // Compare with immediate
     if (Array.isArray(relopBranchInfo) && relopBranchInfo[1]) {
         // For i8 immediates we need to generate an i64.const even though
@@ -2446,8 +2484,19 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
         builder.appendU8(relopBranchInfo[1]);
         builder.appendLeb(getArgI16(ip, 2));
     } else
-        append_ldloc(builder, getArgU16(ip, 2), relopInfo[1]);
-    builder.appendU8(relopInfo[0]);
+        append_ldloc(builder, getArgU16(ip, 2), operandLoadOp);
+
+    // Promote f32 rhs to f64 if necessary
+    if (!relopInfo && (intrinsicFpBinop != WasmOpcode.nop))
+        builder.appendU8(intrinsicFpBinop);
+
+    if (relopInfo) {
+        builder.appendU8(relopInfo[0]);
+    } else {
+        builder.i32_const(<any>relop);
+        builder.callImport("relop_fp");
+    }
+
     return emit_branch(builder, ip, opcode, displacement);
 }
 
@@ -2601,24 +2650,35 @@ function emit_math_intrinsic (builder: WasmBuilder, ip: MintOpcodePtr, opcode: M
 
 function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     const isLoad = (opcode >= MintOpcode.MINT_LDIND_I1) &&
-        (opcode <= MintOpcode.MINT_LDIND_OFFSET_IMM_I8);
+        (opcode <= MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I8);
+    const isAddMul = (
+        (opcode >= MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I1) &&
+        (opcode <= MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I8)
+    );
     const isOffset = (
         (opcode >= MintOpcode.MINT_LDIND_OFFSET_I1) &&
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_IMM_I8)
     ) || (
         (opcode >= MintOpcode.MINT_STIND_OFFSET_I1) &&
         (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
-    );
+    ) || isAddMul;
     const isImm = (
         (opcode >= MintOpcode.MINT_LDIND_OFFSET_IMM_I1) &&
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_IMM_I8)
     ) || (
         (opcode >= MintOpcode.MINT_STIND_OFFSET_IMM_I1) &&
         (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
-    );
+    ) || isAddMul;
 
-    let valueVarIndex, addressVarIndex, offsetVarIndex = -1, constantOffset = 0;
-    if (isOffset) {
+    let valueVarIndex, addressVarIndex, offsetVarIndex = -1, constantOffset = 0,
+        constantMultiplier = 1;
+    if (isAddMul) {
+        valueVarIndex = getArgU16(ip, 1);
+        addressVarIndex = getArgU16(ip, 2);
+        offsetVarIndex = getArgU16(ip, 3);
+        constantOffset = getArgI16(ip, 4);
+        constantMultiplier = getArgI16(ip, 5);
+    } else if (isOffset) {
         if (isImm) {
             if (isLoad) {
                 valueVarIndex = getArgU16(ip, 1);
@@ -2652,30 +2712,26 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
     switch (opcode) {
         case MintOpcode.MINT_LDIND_I1:
         case MintOpcode.MINT_LDIND_OFFSET_I1:
+        case MintOpcode.MINT_LDIND_OFFSET_IMM_I1:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I1:
             getter = WasmOpcode.i32_load8_s;
             break;
         case MintOpcode.MINT_LDIND_U1:
         case MintOpcode.MINT_LDIND_OFFSET_U1:
+        case MintOpcode.MINT_LDIND_OFFSET_IMM_U1:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_U1:
             getter = WasmOpcode.i32_load8_u;
             break;
         case MintOpcode.MINT_LDIND_I2:
         case MintOpcode.MINT_LDIND_OFFSET_I2:
+        case MintOpcode.MINT_LDIND_OFFSET_IMM_I2:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I2:
             getter = WasmOpcode.i32_load16_s;
             break;
         case MintOpcode.MINT_LDIND_U2:
         case MintOpcode.MINT_LDIND_OFFSET_U2:
-            getter = WasmOpcode.i32_load16_u;
-            break;
-        case MintOpcode.MINT_LDIND_OFFSET_IMM_I1:
-            getter = WasmOpcode.i32_load8_s;
-            break;
-        case MintOpcode.MINT_LDIND_OFFSET_IMM_U1:
-            getter = WasmOpcode.i32_load8_u;
-            break;
-        case MintOpcode.MINT_LDIND_OFFSET_IMM_I2:
-            getter = WasmOpcode.i32_load16_s;
-            break;
         case MintOpcode.MINT_LDIND_OFFSET_IMM_U2:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_U2:
             getter = WasmOpcode.i32_load16_u;
             break;
         case MintOpcode.MINT_STIND_I1:
@@ -2693,6 +2749,7 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
         case MintOpcode.MINT_LDIND_I4:
         case MintOpcode.MINT_LDIND_OFFSET_I4:
         case MintOpcode.MINT_LDIND_OFFSET_IMM_I4:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I4:
         case MintOpcode.MINT_STIND_I4:
         case MintOpcode.MINT_STIND_OFFSET_I4:
         case MintOpcode.MINT_STIND_OFFSET_IMM_I4:
@@ -2712,6 +2769,7 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
         case MintOpcode.MINT_LDIND_I8:
         case MintOpcode.MINT_LDIND_OFFSET_I8:
         case MintOpcode.MINT_LDIND_OFFSET_IMM_I8:
+        case MintOpcode.MINT_LDIND_OFFSET_ADD_MUL_IMM_I8:
         case MintOpcode.MINT_STIND_I8:
         case MintOpcode.MINT_STIND_OFFSET_I8:
         case MintOpcode.MINT_STIND_OFFSET_IMM_I8:
@@ -2733,7 +2791,20 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
         builder.local("cknull_ptr");
         // For ldind_offset we need to load an offset from another local
         //  and then add it to the null checked address
-        if (isOffset && offsetVarIndex >= 0) {
+        if (isAddMul) {
+            // ptr = (char*)ptr + (LOCAL_VAR (ip [3], mono_i) + (gint16)ip [4]) * (gint16)ip [5];
+            append_ldloc(builder, offsetVarIndex, WasmOpcode.i32_load);
+            if (constantOffset !== 0) {
+                builder.i32_const(constantOffset);
+                builder.appendU8(WasmOpcode.i32_add);
+                constantOffset = 0;
+            }
+            if (constantMultiplier !== 1) {
+                builder.i32_const(constantMultiplier);
+                builder.appendU8(WasmOpcode.i32_mul);
+            }
+            builder.appendU8(WasmOpcode.i32_add);
+        } else if (isOffset && offsetVarIndex >= 0) {
             append_ldloc(builder, offsetVarIndex, WasmOpcode.i32_load);
             builder.appendU8(WasmOpcode.i32_add);
         } else if (constantOffset < 0) {

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Globalization;
+using System.ComponentModel;
 
 namespace System
 {
@@ -276,6 +277,88 @@ namespace System
         /// <param name="t2">The second TimeOnly instance..</param>
         /// <returns>The elapsed time between t1 and t2.</returns>
         public static TimeSpan operator -(TimeOnly t1, TimeOnly t2) => new TimeSpan((t1._ticks - t2._ticks + TimeSpan.TicksPerDay) % TimeSpan.TicksPerDay);
+
+        /// <summary>
+        /// Deconstructs <see cref="TimeOnly"/> by <see cref="Hour"/> and <see cref="Minute"/>.
+        /// </summary>
+        /// <param name="hour">
+        /// Deconstructed parameter for <see cref="Hour"/>.
+        /// </param>
+        /// <param name="minute">
+        /// Deconstructed parameter for <see cref="Minute"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute)
+        {
+            hour = Hour;
+            minute = Minute;
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="TimeOnly"/> by <see cref="Hour"/>, <see cref="Minute"/> and <see cref="Second"/>.
+        /// </summary>
+        /// <param name="hour">
+        /// Deconstructed parameter for <see cref="Hour"/>.
+        /// </param>
+        /// <param name="minute">
+        /// Deconstructed parameter for <see cref="Minute"/>.
+        /// </param>
+        /// <param name="second">
+        /// Deconstructed parameter for <see cref="Second"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second)
+        {
+            (hour, minute) = this;
+            second = Second;
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="TimeOnly"/> by <see cref="Hour"/>, <see cref="Minute"/>, <see cref="Second"/> and <see cref="Millisecond"/>.
+        /// </summary>
+        /// <param name="hour">
+        /// Deconstructed parameter for <see cref="Hour"/>.
+        /// </param>
+        /// <param name="minute">
+        /// Deconstructed parameter for <see cref="Minute"/>.
+        /// </param>
+        /// <param name="second">
+        /// Deconstructed parameter for <see cref="Second"/>.
+        /// </param>
+        /// <param name="millisecond">
+        /// Deconstructed parameter for <see cref="Millisecond"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second, out int millisecond)
+        {
+            (hour, minute, second) = this;
+            millisecond = Millisecond;
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="TimeOnly"/> by <see cref="Hour"/>, <see cref="Minute"/>, <see cref="Second"/>, <see cref="Millisecond"/> and <see cref="Microsecond"/>.
+        /// </summary>
+        /// <param name="hour">
+        /// Deconstructed parameter for <see cref="Hour"/>.
+        /// </param>
+        /// <param name="minute">
+        /// Deconstructed parameter for <see cref="Minute"/>.
+        /// </param>
+        /// <param name="second">
+        /// Deconstructed parameter for <see cref="Second"/>.
+        /// </param>
+        /// <param name="millisecond">
+        /// Deconstructed parameter for <see cref="Millisecond"/>.
+        /// </param>
+        /// <param name="microsecond">
+        /// Deconstructed parameter for <see cref="Microsecond"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second, out int millisecond, out int microsecond)
+        {
+            (hour, minute, second, millisecond) = this;
+            microsecond = Microsecond;
+        }
 
         /// <summary>
         /// Constructs a TimeOnly object from a TimeSpan representing the time elapsed since midnight.

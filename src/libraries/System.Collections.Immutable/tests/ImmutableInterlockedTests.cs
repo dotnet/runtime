@@ -185,11 +185,11 @@ namespace System.Collections.Immutable.Tests
         {
             UpdateHelper<ImmutableHashSet<int>>(func =>
             {
-                var set = ImmutableHashSet.Create<int>();
+                ImmutableHashSet<int> set = ImmutableHashSet.Create<int>();
                 var task2TransformEntered = new AutoResetEvent(false);
                 var task1TransformExited = new AutoResetEvent(false);
 
-                var task1 = Task.Run(delegate
+                Task task1 = Task.Run(delegate
                 {
                     int transform1ExecutionCounter = 0;
                     func(
@@ -204,7 +204,7 @@ namespace System.Collections.Immutable.Tests
                     Assert.Equal(1, transform1ExecutionCounter);
                 });
 
-                var task2 = Task.Run(delegate
+                Task task2 = Task.Run(delegate
                 {
                     int transform2ExecutionCounter = 0;
                     func(
@@ -244,11 +244,11 @@ namespace System.Collections.Immutable.Tests
         {
             UpdateArrayHelper<int>(func =>
             {
-                var array = ImmutableArray.Create<int>();
+                ImmutableArray<int> array = ImmutableArray.Create<int>();
                 var task2TransformEntered = new AutoResetEvent(false);
                 var task1TransformExited = new AutoResetEvent(false);
 
-                var task1 = Task.Run(delegate
+                Task task1 = Task.Run(delegate
                 {
                     int transform1ExecutionCounter = 0;
                     func(
@@ -263,7 +263,7 @@ namespace System.Collections.Immutable.Tests
                     Assert.Equal(1, transform1ExecutionCounter);
                 });
 
-                var task2 = Task.Run(delegate
+                Task task2 = Task.Run(delegate
                 {
                     int transform2ExecutionCounter = 0;
                     func(
@@ -302,7 +302,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedExchangeArrayDefault()
         {
             ImmutableArray<int> array = default(ImmutableArray<int>);
-            var oldValue = ImmutableInterlocked.InterlockedExchange(ref array, ImmutableArray.Create<int>());
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedExchange(ref array, ImmutableArray.Create<int>());
             Assert.True(oldValue.IsDefault);
             Assert.False(array.IsDefault);
         }
@@ -311,7 +311,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedExchangeArrayNonDefault()
         {
             ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
-            var oldValue = ImmutableInterlocked.InterlockedExchange(ref array, ImmutableArray.Create<int>(4, 5, 6));
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedExchange(ref array, ImmutableArray.Create<int>(4, 5, 6));
             Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 4, 5, 6 }, array);
         }
@@ -320,7 +320,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationDefault_EqualToComparand()
         {
             ImmutableArray<int> array = default(ImmutableArray<int>);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
             Assert.True(oldValue.IsDefault);
             Assert.Equal(new[] { 4, 5, 6 }, array);
         }
@@ -329,7 +329,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationDefault_NotEqualToComparand()
         {
             ImmutableArray<int> array = default(ImmutableArray<int>);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
             Assert.True(oldValue.IsDefault);
             Assert.True(array.IsDefault);
         }
@@ -338,7 +338,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationNotDefault_EqualToComparand()
         {
             ImmutableArray<int> array = ImmutableArray.Create<int>(1, 2, 3);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
             Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 4, 5, 6 }, array);
         }
@@ -347,7 +347,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationNotDefault_EqualToComparandDifferentInstance()
         {
             ImmutableArray<int> array = ImmutableArray.Create<int>(1, 2, 3);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), ImmutableArray.Create<int>(1, 2, 3));
             Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 1, 2, 3 }, array);
         }
@@ -356,7 +356,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationNotDefault_NotEqualToDefaultComparand()
         {
             ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), default(ImmutableArray<int>));
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), default(ImmutableArray<int>));
             Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 1, 2, 3 }, array);
         }
@@ -365,7 +365,7 @@ namespace System.Collections.Immutable.Tests
         public void InterlockedCompareExchangeArray_LocationNotDefault_NotEqualToNonDefaultComparand()
         {
             ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
-            var oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
+            ImmutableArray<int> oldValue = ImmutableInterlocked.InterlockedCompareExchange(ref array, ImmutableArray.Create<int>(4, 5, 6), array);
             Assert.Equal(new[] { 1, 2, 3 }, oldValue);
             Assert.Equal(new[] { 4, 5, 6 }, array);
         }
@@ -383,7 +383,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetOrAddDictionaryValue()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
             string value = ImmutableInterlocked.GetOrAdd(ref dictionary, 1, "a");
             Assert.Equal("a", value);
             value = ImmutableInterlocked.GetOrAdd(ref dictionary, 1, "b");
@@ -393,7 +393,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetOrAddDictionaryValueFactory()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
             string value = ImmutableInterlocked.GetOrAdd(
                 ref dictionary,
                 1,
@@ -414,7 +414,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void GetOrAddDictionaryValueFactoryWithArg()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
             string value = ImmutableInterlocked.GetOrAdd(
                 ref dictionary,
                 1,
@@ -437,7 +437,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddOrUpdateDictionaryAddValue()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
             string value = ImmutableInterlocked.AddOrUpdate(ref dictionary, 1, "a", (k, v) => { throw new ShouldNotBeInvokedException(); });
             Assert.Equal("a", value);
             Assert.Equal("a", dictionary[1]);
@@ -450,7 +450,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddOrUpdateDictionaryAddValueFactory()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
             string value = ImmutableInterlocked.AddOrUpdate(ref dictionary, 1, k => "a", (k, v) => { throw new ShouldNotBeInvokedException(); });
             Assert.Equal("a", value);
             Assert.Equal("a", dictionary[1]);
@@ -463,7 +463,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryAddDictionary()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
 
             Assert.True(ImmutableInterlocked.TryAdd(ref dictionary, 1, "a"));
             Assert.Equal("a", dictionary[1]);
@@ -476,10 +476,10 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryUpdateDictionary()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
 
             // missing
-            var before = dictionary;
+            ImmutableDictionary<int, string> before = dictionary;
             Assert.False(ImmutableInterlocked.TryUpdate(ref dictionary, 1, "a", "b"));
             Assert.Same(before, dictionary);
 
@@ -497,7 +497,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryRemoveDictionary()
         {
-            var dictionary = ImmutableDictionary.Create<int, string>();
+            ImmutableDictionary<int, string> dictionary = ImmutableDictionary.Create<int, string>();
 
             string value;
             Assert.False(ImmutableInterlocked.TryRemove(ref dictionary, 1, out value));
@@ -512,7 +512,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void PushStack()
         {
-            var stack = ImmutableStack.Create<int>();
+            ImmutableStack<int> stack = ImmutableStack.Create<int>();
             ImmutableInterlocked.Push(ref stack, 5);
             Assert.False(stack.IsEmpty);
             Assert.Equal(5, stack.Peek());
@@ -526,7 +526,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryPopStack()
         {
-            var stack = ImmutableStack.Create<int>();
+            ImmutableStack<int> stack = ImmutableStack.Create<int>();
 
             int value;
             Assert.False(ImmutableInterlocked.TryPop(ref stack, out value));
@@ -541,7 +541,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void TryDequeueQueue()
         {
-            var queue = ImmutableQueue.Create<int>();
+            ImmutableQueue<int> queue = ImmutableQueue.Create<int>();
             int value;
             Assert.False(ImmutableInterlocked.TryDequeue(ref queue, out value));
             Assert.Equal(0, value);
@@ -558,7 +558,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnqueueQueue()
         {
-            var queue = ImmutableQueue.Create<int>();
+            ImmutableQueue<int> queue = ImmutableQueue.Create<int>();
             ImmutableInterlocked.Enqueue(ref queue, 1);
             Assert.Equal(1, queue.Peek());
             Assert.True(queue.Dequeue().IsEmpty);

@@ -81,7 +81,7 @@
     </ItemGroup>
   </Target>
   <Target Name="PreserveEnCAssembliesFromLinking"
-          Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'"
           BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- Don't modify EnC test assemblies -->
@@ -95,7 +95,7 @@
   </Target>
   <Target Name="IncludeDeltasInWasmBundle"
           BeforeTargets="PrepareForWasmBuildApp"
-          Condition="'$(TargetOS)' == 'Browser'">
+          Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->

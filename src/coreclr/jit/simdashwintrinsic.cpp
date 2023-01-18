@@ -664,10 +664,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_StoreAligned:
         case NI_VectorT128_StoreAlignedNonTemporal:
         {
-            if (!opts.MinOpts())
+            if (opts.OptimizationDisabled())
             {
                 // ARM64 doesn't have aligned loads/stores, but aligned simd ops are only validated
-                // to be aligned during minopts, so only skip the intrinsic handling if we're minopts
+                // to be aligned when optimizations are disable, so only skip the intrinsic handling
+                // if optimizations are enabled
                 return nullptr;
             }
             break;
@@ -734,16 +735,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #endif // TARGET_XARCH
                 {
                     return gtNewAllBitsSetConNode(retType);
-                }
-
-                case NI_VectorT128_get_Count:
-#if defined(TARGET_XARCH)
-                case NI_VectorT256_get_Count:
-#endif // TARGET_XARCH
-                {
-                    GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, simdBaseType), TYP_INT);
-                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
-                    return countNode;
                 }
 
                 case NI_Vector2_get_One:
@@ -832,6 +823,52 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #endif // TARGET_XARCH
                 {
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_Load:
+                case NI_VectorT128_LoadUnsafe:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_Load:
+                case NI_VectorT256_LoadUnsafe:
+#endif // TARGET_XARCH
+                {
+                    if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op1 = op1->gtGetOp1();
+                    }
+
+                    return gtNewSimdLoadNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_LoadAligned:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_LoadAligned:
+#endif // TARGET_XARCH
+                {
+                    if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op1 = op1->gtGetOp1();
+                    }
+
+                    return gtNewSimdLoadAlignedNode(retType, op1, simdBaseJitType, simdSize,
+                                                    /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_LoadAlignedNonTemporal:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_LoadAlignedNonTemporal:
+#endif // TARGET_XARCH
+                {
+                    if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op1 = op1->gtGetOp1();
+                    }
+
+                    return gtNewSimdLoadNonTemporalNode(retType, op1, simdBaseJitType, simdSize,
+                                                        /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_op_UnaryNegation:
@@ -931,136 +968,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 
-                case NI_VectorT128_Load:
-                case NI_VectorT256_Load:
-                case NI_VectorT128_LoadUnsafe:
-                case NI_VectorT256_LoadUnsafe:
-                {
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        loadIntrinsic = NI_AVX_LoadVector256;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        loadIntrinsic = NI_SSE2_LoadVector128;
-                    }
-                    else
-                    {
-                        loadIntrinsic = NI_SSE_LoadVector128;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_LoadAligned:
-                case NI_VectorT256_LoadAligned:
-                {
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        loadIntrinsic = NI_AVX_LoadAlignedVector256;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        loadIntrinsic = NI_SSE2_LoadAlignedVector128;
-                    }
-                    else
-                    {
-                        loadIntrinsic = NI_SSE_LoadAlignedVector128;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_LoadAlignedNonTemporal:
-                case NI_VectorT256_LoadAlignedNonTemporal:
-                {
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    // We don't guarantee a non-temporal load will actually occur, so fallback
-                    // to regular aligned loads if the required ISA isn't supported.
-
-                    NamedIntrinsic loadIntrinsic = NI_Illegal;
-                    bool           isNonTemporal = false;
-
-                    if (simdSize == 32)
-                    {
-                        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                        {
-                            loadIntrinsic = NI_AVX2_LoadAlignedVector256NonTemporal;
-                            isNonTemporal = true;
-                        }
-                        else
-                        {
-                            loadIntrinsic = NI_AVX_LoadAlignedVector256;
-                        }
-                    }
-                    else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                    {
-                        loadIntrinsic = NI_SSE41_LoadAlignedVector128NonTemporal;
-                        isNonTemporal = true;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        loadIntrinsic = NI_SSE2_LoadAlignedVector128;
-                    }
-                    else
-                    {
-                        loadIntrinsic = NI_SSE_LoadAlignedVector128;
-                    }
-
-                    if (isNonTemporal)
-                    {
-                        // float and double don't have actual instructions for non-temporal loads
-                        // so we'll just use the equivalent integer instruction instead.
-
-                        if (simdBaseType == TYP_FLOAT)
-                        {
-                            simdBaseJitType = CORINFO_TYPE_INT;
-                        }
-                        else if (simdBaseType == TYP_DOUBLE)
-                        {
-                            simdBaseJitType = CORINFO_TYPE_LONG;
-                        }
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
                 case NI_VectorT256_ToScalar:
                 {
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector256_ToScalar, simdBaseJitType, simdSize,
@@ -1107,46 +1014,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(simdBaseType == TYP_DOUBLE);
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero,
                                                     simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_Load:
-                case NI_VectorT128_LoadUnsafe:
-                case NI_VectorT128_LoadAligned:
-                {
-                    // ARM64 doesn't have aligned loads, but aligned loads are only validated to be
-                    // aligned during minopts, so the earlier check skips ths intrinsic handling if
-                    // we're minopts and we should otherwise treat it as a regular load
-
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_LoadVector128, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_LoadAlignedNonTemporal:
-                {
-                    // ARM64 has non-temporal loads (LDNP) but we don't currently support them
-
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_LoadVector128, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
                 }
 #else
 #error Unsupported platform
@@ -1453,6 +1320,26 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                  /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_VectorT128_LoadUnsafeIndex:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_LoadUnsafeIndex:
+#endif // TARGET_XARCH
+                {
+                    GenTree* tmp;
+
+                    if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op1 = op1->gtGetOp1();
+                    }
+
+                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
+                    op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, tmp);
+                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+
+                    return gtNewSimdLoadNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_Vector2_Max:
                 case NI_Vector3_Max:
                 case NI_Vector4_Max:
@@ -1534,6 +1421,58 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_VectorT128_Store:
+                case NI_VectorT128_StoreUnsafe:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_Store:
+                case NI_VectorT256_StoreUnsafe:
+#endif // TARGET_XARCH
+                {
+                    assert(retType == TYP_VOID);
+
+                    if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op2 = op2->gtGetOp1();
+                    }
+
+                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_StoreAligned:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_StoreAligned:
+#endif // TARGET_XARCH
+                {
+                    assert(retType == TYP_VOID);
+
+                    if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op2 = op2->gtGetOp1();
+                    }
+
+                    return gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_StoreAlignedNonTemporal:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_StoreAlignedNonTemporal:
+#endif // TARGET_XARCH
+                {
+                    assert(retType == TYP_VOID);
+
+                    if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op2 = op2->gtGetOp1();
+                    }
+
+                    return gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize,
+                                                         /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_Vector2_op_Subtraction:
                 case NI_Vector3_op_Subtraction:
                 case NI_Vector4_op_Subtraction:
@@ -1547,158 +1486,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
-
-#if defined(TARGET_XARCH)
-                case NI_VectorT128_LoadUnsafeIndex:
-                case NI_VectorT256_LoadUnsafeIndex:
-                {
-                    GenTree* tmp;
-
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
-                    op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, tmp);
-                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
-
-                    NamedIntrinsic loadIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        loadIntrinsic = NI_AVX_LoadVector256;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        loadIntrinsic = NI_SSE2_LoadVector128;
-                    }
-                    else
-                    {
-                        loadIntrinsic = NI_SSE_LoadVector128;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_Store:
-                case NI_VectorT256_Store:
-                case NI_VectorT128_StoreUnsafe:
-                case NI_VectorT256_StoreUnsafe:
-                {
-                    NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        storeIntrinsic = NI_AVX_Store;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        storeIntrinsic = NI_SSE2_Store;
-                    }
-                    else
-                    {
-                        storeIntrinsic = NI_SSE_Store;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_StoreAligned:
-                case NI_VectorT256_StoreAligned:
-                {
-                    NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        storeIntrinsic = NI_AVX_StoreAligned;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        storeIntrinsic = NI_SSE2_StoreAligned;
-                    }
-                    else
-                    {
-                        storeIntrinsic = NI_SSE_StoreAligned;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_StoreAlignedNonTemporal:
-                case NI_VectorT256_StoreAlignedNonTemporal:
-                {
-                    NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        storeIntrinsic = NI_AVX_StoreAlignedNonTemporal;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        storeIntrinsic = NI_SSE2_StoreAlignedNonTemporal;
-                    }
-                    else
-                    {
-                        storeIntrinsic = NI_SSE_StoreAlignedNonTemporal;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-#elif defined(TARGET_ARM64)
-                case NI_VectorT128_LoadUnsafeIndex:
-                {
-                    GenTree* tmp;
-
-                    if (op1->OperIs(GT_CAST))
-                    {
-                        // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                        // we really want, so throw away the cast.
-                        if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                        {
-                            op1 = op1->gtGetOp1();
-                        }
-                    }
-
-                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
-                    op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, tmp);
-                    op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
-
-                    return gtNewSimdHWIntrinsicNode(retType, op1, NI_AdvSimd_LoadVector128, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_Store:
-                case NI_VectorT128_StoreUnsafe:
-                case NI_VectorT128_StoreAligned:
-                {
-                    // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
-                    // aligned during minopts, so the earlier check skips ths intrinsic handling if
-                    // we're minopts and we should otherwise treat it as a regular store
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-
-                case NI_VectorT128_StoreAlignedNonTemporal:
-                {
-                    // ARM64 has non-temporal stores (STNP) but we don't currently support them
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
 
                 default:
                 {
@@ -1716,13 +1503,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
-            }
-
-            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic))
-            {
-                assert(newobjThis == nullptr);
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
             }
 
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
@@ -1759,6 +1539,27 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     return gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_VectorT128_StoreUnsafeIndex:
+#if defined(TARGET_XARCH)
+                case NI_VectorT256_StoreUnsafeIndex:
+#endif // TARGET_XARCH
+                {
+                    assert(retType == TYP_VOID);
+                    GenTree* tmp;
+
+                    if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
+                    {
+                        // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                        op2 = op2->gtGetOp1();
+                    }
+
+                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
+                    op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, tmp);
+                    op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
+
+                    return gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Vector2_Create:
@@ -1853,49 +1654,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                     /* isSimdAsHWIntrinsic */ true);
                 }
 
-#if defined(TARGET_XARCH)
-                case NI_VectorT128_StoreUnsafeIndex:
-                case NI_VectorT256_StoreUnsafeIndex:
-                {
-                    GenTree* tmp;
-
-                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                    op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, tmp);
-                    op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
-
-                    NamedIntrinsic storeIntrinsic = NI_Illegal;
-
-                    if (simdSize == 32)
-                    {
-                        storeIntrinsic = NI_AVX_Store;
-                    }
-                    else if (simdBaseType != TYP_FLOAT)
-                    {
-                        storeIntrinsic = NI_SSE2_Store;
-                    }
-                    else
-                    {
-                        storeIntrinsic = NI_SSE_Store;
-                    }
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-#elif defined(TARGET_ARM64)
-                case NI_VectorT128_StoreUnsafeIndex:
-                {
-                    GenTree* tmp;
-
-                    tmp = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                    op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, tmp);
-                    op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
-
-                    return gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize,
-                                                    /* isSimdAsHWIntrinsic */ true);
-                }
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
                 default:
                 {
                     // Some platforms warn about unhandled switch cases
@@ -1916,8 +1674,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              4 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
-
-            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             CORINFO_ARG_LIST_HANDLE arg2 = argList;
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
@@ -2038,8 +1794,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              5 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
-
-            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             CORINFO_ARG_LIST_HANDLE arg2 = argList;
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
