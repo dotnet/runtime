@@ -31,7 +31,7 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
             // If there is an existing listener on @proxyPort, then use a new dynamic port.
             // Blazor always tries to open the same port (specified in @proxyPort) to avoid
             // creating a lot of remote debugging connections on firefox
-            if (IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(x => x.Port == proxyPort))
+            if (proxyPort != 0 && IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(x => x.Port == proxyPort))
             {
                 proxyPort = 0;
             }
