@@ -469,13 +469,15 @@ namespace Wasm.Build.Tests
                                                               "tasks",
                                                               BuildTestBase.DefaultTargetFramework); // not net472!
             if (!Directory.Exists(tasksDir)) {
-                string tasksDirParent = Path.GetDirectoryName (tasksDir);
-                if (!Directory.Exists(tasksDirParent)) {
-                    _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
-                }
-                _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
-                foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
-                    _testOutput.WriteLine($"  - {subdir}");
+                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
+                if (!string.IsNullOrEmpty (tasksDirParent)) {
+                    if (!Directory.Exists(tasksDirParent)) {
+                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
+                    }
+                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
+                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
+                        _testOutput.WriteLine($"  - {subdir}");
+                    }
                 }
                 throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
             }
