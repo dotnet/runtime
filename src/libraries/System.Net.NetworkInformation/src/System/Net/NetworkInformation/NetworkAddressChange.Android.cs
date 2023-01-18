@@ -111,7 +111,7 @@ namespace System.Net.NetworkInformation
             Debug.Assert(s_loopTask is null);
 
             s_cancellationTokenSource = new CancellationTokenSource();
-            s_loopTask = Task.Run(() => PeriodicallyCheckIfAddressChanged(s_cancellationTokenSource.Token));
+            s_loopTask = Task.Run(() => PeriodicallyCheckIfNetworkChanged(s_cancellationTokenSource.Token));
         }
 
         private static void StopLoop()
@@ -126,7 +126,7 @@ namespace System.Net.NetworkInformation
             s_lastIpAddresses = null;
         }
 
-        private static async Task PeriodicallyCheckIfAddressChanged(CancellationToken cancellationToken)
+        private static async Task PeriodicallyCheckIfNetworkChanged(CancellationToken cancellationToken)
         {
             using var timer = new PeriodicTimer(s_timerInterval);
 
@@ -135,7 +135,7 @@ namespace System.Net.NetworkInformation
                 while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false)
                     && !cancellationToken.IsCancellationRequested)
                 {
-                    CheckIfAddressChanged();
+                    CheckIfNetworkChanged();
                 }
             }
             catch (OperationCanceledException)
@@ -143,12 +143,12 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static void CheckIfAddressChanged()
+        private static void CheckIfNetworkChanged()
         {
             var newAddresses = GetIPAddresses();
-            if (s_lastIpAddresses is IPAddress[] oldAddresses && AddressesChanged(oldAddresses, newAddresses))
+            if (s_lastIpAddresses is IPAddress[] oldAddresses && NetworkChanged(oldAddresses, newAddresses))
             {
-                OnAddressChanged();
+                OnNetworkChanged();
             }
 
             s_lastIpAddresses = newAddresses;
@@ -171,7 +171,7 @@ namespace System.Net.NetworkInformation
             return addresses.ToArray();
         }
 
-        private static bool AddressesChanged(IPAddress[] oldAddresses, IPAddress[] newAddresses)
+        private static bool NetworkChanged(IPAddress[] oldAddresses, IPAddress[] newAddresses)
         {
             if (oldAddresses.Length != newAddresses.Length)
             {
@@ -189,7 +189,7 @@ namespace System.Net.NetworkInformation
             return false;
         }
 
-        private static void OnAddressChanged()
+        private static void OnNetworkChanged()
         {
             Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>? addressChangedSubscribers = null;
             Dictionary<NetworkAvailabilityChangedEventHandler, ExecutionContext?>? availabilityChangedSubscribers = null;
