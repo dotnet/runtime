@@ -372,6 +372,21 @@ decode_value (guint8 *ptr, guint8 **rptr)
 	return len;
 }
 
+static guint32
+decode_uint_with_len (int len, guint8 *p)
+{
+	int value = 0;
+
+	if (len == 2) {
+		value = (guint32)p [0] + ((guint32)p [1] << 8);
+	} else if (len == 4) {
+		value = (guint32)p [0] + ((guint32)p [1] << 8) + ((guint32)p [2] << 16) + ((guint32)p [3] << 24);
+	} else {
+		g_assert_not_reached ();
+	}
+	return value;
+}
+
 /*
  * mono_aot_get_offset:
  *
@@ -4352,9 +4367,8 @@ static guint32
 find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, guint32 hash_full)
 {
 	ERROR_DECL (error);
-	guint32 table_size, entry_size, hash;
-	guint32 *table, *entry;
-	guint32 index;
+	guint32 hash, index;
+	guint32 *table;
 	// static guint32 n_extra_decodes; // used for debugging
 
 	// The AOT module containing the MonoMethod
@@ -4366,23 +4380,30 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 	if (!metadata_amodule || metadata_amodule->out_of_date || !code_amodule || code_amodule->out_of_date)
 		return 0xffffff;
 
-	table_size = code_amodule->extra_method_table [0];
-	hash = hash_full % table_size;
-	table = code_amodule->extra_method_table + 1;
-	entry_size = 3;
+	table = code_amodule->extra_method_table;
+	guint32 hash_table_size = table [0];
+	int key_len = table [2];
+	int value_len = table [3];
+	int next_len = table [4];
+	int entry_size = key_len + value_len + next_len;
 
-	entry = &table [hash * entry_size];
+	hash = hash_full % hash_table_size;
 
-	if (entry [0] == 0)
-		return 0xffffff;
+	guint8 *data = (guint8*)(table + 5);
+	guint8 *entry = data + (hash * entry_size);
+	guint32 key, value, next;
 
 	index = 0xffffff;
 	while (TRUE) {
-		guint32 key = entry [0];
-		guint32 value = entry [1];
-		guint32 next = entry [entry_size - 1];
 		MonoMethod *m;
 		guint8 *p, *orig_p;
+
+		key = decode_uint_with_len (key_len, entry);
+		value = decode_uint_with_len (value_len, entry + key_len);
+		next = decode_uint_with_len (next_len, entry + key_len + next_len);
+
+		if (key == 0)
+			return 0xffffff;
 
 		p = code_amodule->blob + key;
 		orig_p = p;
@@ -4417,7 +4438,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 		}*/
 
 		if (next != 0)
-			entry = &table [next * entry_size];
+			entry = data + (next * entry_size);
 		else
 			break;
 	}
