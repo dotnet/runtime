@@ -175,6 +175,7 @@ namespace GenUnicodeProp
             PrintByteArray(tableName.Replace('1', '3'), file, levels[2]);
         }
 
+#pragma warning disable 8714
         private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file)
         {
             Console.WriteLine("    ******************************** .");
@@ -201,6 +202,7 @@ namespace GenUnicodeProp
 
             PrintByteArray(tableName, file, binaryOutput.ToArray());
         }
+#pragma warning restore 8714
 
         private static void PrintByteArray(string tableName, StreamWriter file, byte[] str)
         {

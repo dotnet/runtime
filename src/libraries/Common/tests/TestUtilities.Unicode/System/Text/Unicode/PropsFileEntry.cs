@@ -31,7 +31,7 @@ namespace System.Text.Unicode
 
         public bool IsSingleCodePoint => (FirstCodePoint == LastCodePoint);
 
-        public static bool TryParseLine(string line, out PropsFileEntry value)
+        public static bool TryParseLine(string line, out PropsFileEntry? value)
         {
             Match match = _regex.Match(line);
 
