@@ -468,8 +468,17 @@ namespace Wasm.Build.Tests
                                                               s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
                                                               "tasks",
                                                               BuildTestBase.DefaultTargetFramework); // not net472!
-            if (!Directory.Exists(tasksDir))
+            if (!Directory.Exists(tasksDir)) {
+                string tasksDirParent = Path.GetDirectoryName (tasksDir);
+                if (!Directory.Exists(tasksDirParent)) {
+                    _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
+                }
+                _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
+                foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
+                    _testOutput.WriteLine($"  - {subdir}");
+                }
                 throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
+            }
 
             string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
                                             .FirstOrDefault();
