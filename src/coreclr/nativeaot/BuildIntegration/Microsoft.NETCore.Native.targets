@@ -133,7 +133,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcMibcPath Condition="'$(IlcMibcPath)' == ''">$(RuntimePackagePath)\mibc\</IlcMibcPath>
     </PropertyGroup>
 
-    <!-- If running from a package these values need to be set again with the resolved IlcXYZPath -->
     <ItemGroup>
       <PrivateSdkAssemblies Include="$(IlcSdkPath)*.dll" />
 
