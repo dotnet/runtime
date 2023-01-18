@@ -30,7 +30,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
