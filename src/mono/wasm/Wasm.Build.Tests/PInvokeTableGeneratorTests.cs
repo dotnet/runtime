@@ -376,7 +376,6 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [ActiveIssue("FIXME: MetadataLoadContet dotnet build crash", typeof(BuildTestBase), nameof(UseWebcil))]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
@@ -467,7 +466,8 @@ namespace Wasm.Build.Tests
             string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
                                                               "Microsoft.NET.Runtime.WebAssembly.Sdk",
                                                               s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks");
+                                                              "tasks",
+                                                              BuildTestBase.DefaultTargetFramework); // not net472!
             if (!Directory.Exists(tasksDir))
                 throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
 
@@ -475,6 +475,8 @@ namespace Wasm.Build.Tests
                                             .FirstOrDefault();
             if (string.IsNullOrEmpty(taskPath))
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
+
+            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
 
             projectCode = projectCode
                 .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
