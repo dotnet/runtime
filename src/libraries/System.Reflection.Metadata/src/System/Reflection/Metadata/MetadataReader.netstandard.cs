@@ -86,10 +86,9 @@ namespace System.Reflection.Metadata
                     MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                     AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
 
-                    GetPEKind(peReader, out PortableExecutableKinds peKind, out ImageFileMachine machine);
                     AssemblyFlags aFlags = mdReader.AssemblyTable.GetFlags();
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-                    assemblyName.ProcessorArchitecture = CalculateProcArchIndex(peKind, machine, aFlags);
+                    assemblyName.ProcessorArchitecture = CalculateProcArch(peReader, aFlags);
 #pragma warning restore SYSLIB0037
 
                     return assemblyName;
@@ -108,64 +107,39 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private static void GetPEKind(PEReader peReader, out PortableExecutableKinds peKind, out ImageFileMachine machine)
+        private static ProcessorArchitecture CalculateProcArch(PEReader peReader, AssemblyFlags aFlags)
         {
-            PEHeaders peHeaders = peReader.PEHeaders;
-            PEMagic peMagic = peHeaders.PEHeader!.Magic;
-            Machine coffMachine = peHeaders.CoffHeader.Machine;
-            CorFlags corFlags = peHeaders.CorHeader!.Flags;
-
-            peKind = default;
-            if ((corFlags & CorFlags.ILOnly) != 0)
-                peKind |= PortableExecutableKinds.ILOnly;
-
-            if ((corFlags & CorFlags.Prefers32Bit) != 0)
-                peKind |= PortableExecutableKinds.Preferred32Bit;
-            else if ((corFlags & CorFlags.Requires32Bit) != 0)
-                peKind |= PortableExecutableKinds.Required32Bit;
-
-            if (peMagic == PEMagic.PE32Plus)
-                peKind |= PortableExecutableKinds.PE32Plus;
-
-            machine = (ImageFileMachine)coffMachine;
-        }
-
-        private static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyFlags flags)
-        {
-            if (((uint)flags & 0xF0) == 0x70)
+            // 0x70 specifies "reference assembly".
+            // For these, CLR wants to return None as arch so they can be always loaded, regardless of process type.
+            if (((uint)aFlags & 0xF0) == 0x70)
                 return ProcessorArchitecture.None;
 
-            if ((pek & PortableExecutableKinds.PE32Plus) == PortableExecutableKinds.PE32Plus)
+            PEHeaders peHeaders = peReader.PEHeaders;
+            switch (peHeaders.CoffHeader.Machine)
             {
-                switch (ifm)
-                {
-                    case ImageFileMachine.IA64:
-                        return ProcessorArchitecture.IA64;
-                    case ImageFileMachine.AMD64:
-                        return ProcessorArchitecture.Amd64;
-                    case ImageFileMachine.I386:
-                        if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
-                            return ProcessorArchitecture.MSIL;
-                        break;
-                }
-            }
-            else
-            {
-                if (ifm == ImageFileMachine.I386)
-                {
-                    if ((pek & PortableExecutableKinds.Required32Bit) == PortableExecutableKinds.Required32Bit)
-                        return ProcessorArchitecture.X86;
-
-                    if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
-                        return ProcessorArchitecture.MSIL;
-
-                    return ProcessorArchitecture.X86;
-                }
-                if (ifm == ImageFileMachine.ARM)
-                {
+                case Machine.IA64:
+                    return ProcessorArchitecture.IA64;
+                case Machine.Arm:
                     return ProcessorArchitecture.Arm;
-                }
+                case Machine.Amd64:
+                    return ProcessorArchitecture.Amd64;
+                case Machine.I386:
+                    {
+                        CorFlags flags = peHeaders.CorHeader!.Flags;
+                        if ((flags & CorFlags.ILOnly) != 0 &&
+                            (flags & CorFlags.Requires32Bit) == 0)
+                        {
+                            // platform neutral.
+                            return ProcessorArchitecture.MSIL;
+                        }
+
+                        // requires x86
+                        return ProcessorArchitecture.X86;
+                    }
             }
+
+            // ProcessorArchitecture is a legacy API and does not cover other Machine kinds.
+            // For example ARM64 is not expressible
             return ProcessorArchitecture.None;
         }
 
