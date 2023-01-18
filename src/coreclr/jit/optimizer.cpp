@@ -9690,7 +9690,8 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         return false;
     }
 
-    if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
+    if ((foldOp == GT_AND || (cmpOp == GT_NE && foldOp != GT_OR)) && (!m_testInfo1.isBool || !m_testInfo2.isBool) &&
+        (it1val != 0 || it2val != 0 || it3val != 0))
     {
         // x == 1 && y == 1: Skip cases where x or y is greater than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
