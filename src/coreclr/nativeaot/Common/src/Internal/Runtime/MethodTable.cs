@@ -634,7 +634,7 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || IsGenericTypeDefinition);
 
                 if (!HasGenericVariance)
                     return null;
@@ -791,6 +791,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsTrackedReferenceWithFinalizer
+        {
+            get
+            {
+                return (ExtendedFlags & (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag) != 0;
+            }
+        }
+
         internal uint ValueTypeFieldPadding
         {
             get
@@ -858,10 +866,13 @@ namespace Internal.Runtime
                 if (NumInterfaces == 0)
                     return false;
                 byte* optionalFields = OptionalFieldsPtr;
-                if (optionalFields == null)
-                    return false;
-                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
-                if (idxDispatchMap == 0xffffffff)
+
+                const uint NoDispatchMap = 0xffffffff;
+                uint idxDispatchMap = NoDispatchMap;
+                if (optionalFields != null)
+                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
+
+                if (idxDispatchMap == NoDispatchMap)
                 {
                     if (IsDynamicType)
                         return DynamicTemplateType->HasDispatchMap;
@@ -878,12 +889,15 @@ namespace Internal.Runtime
                 if (NumInterfaces == 0)
                     return null;
                 byte* optionalFields = OptionalFieldsPtr;
-                if (optionalFields == null)
-                    return null;
-                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
-                if (idxDispatchMap == 0xffffffff && IsDynamicType)
+                const uint NoDispatchMap = 0xffffffff;
+                uint idxDispatchMap = NoDispatchMap;
+                if (optionalFields != null)
+                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
+                if (idxDispatchMap == NoDispatchMap)
                 {
-                    return DynamicTemplateType->DispatchMap;
+                    if (IsDynamicType)
+                        return DynamicTemplateType->DispatchMap;
+                    return null;
                 }
 
                 if (SupportsRelativePointers)
@@ -1350,6 +1364,12 @@ namespace Internal.Runtime
             {
                 return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uFlags = (_uFlags & ~(uint)EETypeFlags.ElementTypeMask) | ((uint)value << (byte)EETypeFlags.ElementTypeShift);
+            }
+#endif
         }
 
         public bool HasCctor
@@ -1432,10 +1452,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_GenericComposition)
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || (IsGenericTypeDefinition && HasGenericVariance));
                 return cbOffset;
             }
-            if (IsGeneric)
+            if (IsGeneric || (IsGenericTypeDefinition && HasGenericVariance))
             {
                 cbOffset += relativeOrFullPointerOffset;
             }

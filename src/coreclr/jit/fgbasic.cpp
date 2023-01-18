@@ -87,10 +87,12 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;
+    fgIsDoingEarlyLiveness = false;
+    fgDidEarlyLiveness     = false;
 
     /* Statement list is not threaded yet */
 
-    fgStmtListThreaded = false;
+    fgNodeThreading = NodeThreading::None;
 
     // Initialize the logic for adding code. This is used to insert code such
     // as the code that raises an exception when an array range check fails.
@@ -120,6 +122,8 @@ void Compiler::fgInit()
 
     /* This is set by fgComputeReachability */
     fgEnterBlks = BlockSetOps::UninitVal();
+
+    fgUsedSharedTemps = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     fgAlwaysBlks = BlockSetOps::UninitVal();
@@ -1172,18 +1176,30 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
                             case NI_System_Numerics_BitOperations_PopCount:
 #if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_Create:
+                            case NI_Vector64_CreateScalar:
+                            case NI_Vector64_CreateScalarUnsafe:
+#endif // TARGET_ARM64
+                            case NI_Vector2_Create:
+                            case NI_Vector2_CreateBroadcast:
+                            case NI_Vector3_Create:
+                            case NI_Vector3_CreateBroadcast:
+                            case NI_Vector3_CreateFromVector2:
+                            case NI_Vector4_Create:
+                            case NI_Vector4_CreateBroadcast:
+                            case NI_Vector4_CreateFromVector2:
+                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
+                            case NI_VectorT128_CreateBroadcast:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_Create:
                             case NI_Vector256_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
-                            case NI_Vector64_Create:
-                            case NI_Vector64_CreateScalar:
-                            case NI_Vector64_CreateScalarUnsafe:
-#endif
+                            case NI_VectorT256_CreateBroadcast:
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {
                                 // Top() in order to keep it as is in case of foldableIntrinsic
@@ -1212,25 +1228,320 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                             case NI_IsSupported_True:
                             case NI_IsSupported_False:
+                            case NI_IsSupported_Type:
                             {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             }
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_get_Count:
-                            case NI_Vector256_get_Count:
+
+                            case NI_Vector_GetCount:
+                            {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
-                                // TODO: check if it's a loop condition - we unroll such loops.
+                                // TODO: for FEATURE_SIMD check if it's a loop condition - we unroll such loops.
                                 break;
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector64_get_Count:
-                            case NI_Vector128_get_Count:
+                            }
+
+                            case NI_SRCS_UNSAFE_Add:
+                            case NI_SRCS_UNSAFE_AddByteOffset:
+                            case NI_SRCS_UNSAFE_AreSame:
+                            case NI_SRCS_UNSAFE_ByteOffset:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsNullRef:
+                            case NI_SRCS_UNSAFE_Subtract:
+                            case NI_SRCS_UNSAFE_SubtractByteOffset:
+                            {
+                                // These are effectively primitive binary operations so the
+                                // handling roughly mirrors the handling for CEE_ADD and
+                                // friends that exists elsewhere in this method
+
+                                if (!preciseScan)
+                                {
+                                    switch (ni)
+                                    {
+                                        case NI_SRCS_UNSAFE_AreSame:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsNullRef:
+                                        {
+                                            fgObserveInlineConstants(opcode, pushedStack, isInlining);
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Unlike the normal binary operation handling, this is an intrinsic call that will
+                                    // get replaced
+                                    // with simple IR, so we care about `const op const` as well.
+
+                                    FgStack::FgSlot arg0;
+
+                                    bool isArg0Arg, isArg0Const, isArg1Const;
+                                    bool isArg1Arg, isArg0ConstArg, isArg1ConstArg;
+
+                                    if (ni == NI_SRCS_UNSAFE_IsNullRef)
+                                    {
+                                        // IsNullRef is unary, but it always compares against 0
+
+                                        arg0 = pushedStack.Top(0);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        isArg1Arg      = false;
+                                        isArg1Const    = true;
+                                        isArg1ConstArg = false;
+                                    }
+                                    else
+                                    {
+                                        arg0 = pushedStack.Top(1);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        FgStack::FgSlot arg1 = pushedStack.Top(0);
+
+                                        isArg1Arg      = FgStack::IsArgument(arg0);
+                                        isArg1Const    = FgStack::IsConstant(arg1);
+                                        isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
+                                    }
+
+                                    // Const op ConstArg -> ConstArg
+                                    if (isArg0Const && isArg1ConstArg)
+                                    {
+                                        // keep stack unchanged
+                                        foldableIntrinsic = true;
+                                    }
+                                    // ConstArg op Const    -> ConstArg
+                                    // ConstArg op ConstArg -> ConstArg
+                                    else if (isArg0ConstArg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        if (isArg1Const)
+                                        {
+                                            pushedStack.Push(arg0);
+                                        }
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Const op Const -> Const
+                                    else if (isArg0Const && isArg1Const)
+                                    {
+                                        // both are constants so we still want to track this as foldable, unlike
+                                        // what is done for the regulary binary operator handling, since we have
+                                        // a CEE_CALL node and not something more primitive
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Arg op ConstArg
+                                    // Arg op Const
+                                    else if (isArg0Arg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        // "Arg op CNS" --> keep arg0 in the stack for the next ops
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling pushes arg0
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+                                    // ConstArg op Arg
+                                    // Const    op Arg
+                                    else if (isArg1Arg && (isArg0Const || isArg0ConstArg))
+                                    {
+                                        // "CNS op ARG" --> keep arg1 in the stack for the next ops
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling keeps arg1
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+
+                                    // X op ConstArg
+                                    if (isArg1ConstArg)
+                                    {
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+                                    }
+                                }
+
+                                break;
+                            }
+
+                            case NI_SRCS_UNSAFE_AsPointer:
+                            {
+                                // These are effectively primitive unary operations so the
+                                // handling roughly mirrors the handling for CEE_CONV_U and
+                                // friends that exists elsewhere in this method
+
+                                FgStack::FgSlot arg = pushedStack.Top();
+
+                                if (FgStack::IsConstArgument(arg, impInlineInfo))
+                                {
+                                    foldableIntrinsic = true;
+                                }
+                                else if (FgStack::IsArgument(arg))
+                                {
+                                    handled = true;
+                                }
+                                else if (FgStack::IsConstant(arg))
+                                {
+                                    // input is a constant so we still want to track this as foldable, unlike
+                                    // what is done for the regulary unary operator handling, since we have
+                                    // a CEE_CALL node and not something more primitive
+                                    foldableIntrinsic = true;
+                                }
+
+                                break;
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_As:
+                            case NI_Vector64_AsByte:
+                            case NI_Vector64_AsDouble:
+                            case NI_Vector64_AsInt16:
+                            case NI_Vector64_AsInt32:
+                            case NI_Vector64_AsInt64:
+                            case NI_Vector64_AsNInt:
+                            case NI_Vector64_AsNUInt:
+                            case NI_Vector64_AsSByte:
+                            case NI_Vector64_AsSingle:
+                            case NI_Vector64_AsUInt16:
+                            case NI_Vector64_AsUInt32:
+                            case NI_Vector64_AsUInt64:
+                            case NI_Vector64_op_UnaryPlus:
+#endif // TARGET_XARCH
+                            case NI_Vector128_As:
+                            case NI_Vector128_AsByte:
+                            case NI_Vector128_AsDouble:
+                            case NI_Vector128_AsInt16:
+                            case NI_Vector128_AsInt32:
+                            case NI_Vector128_AsInt64:
+                            case NI_Vector128_AsNInt:
+                            case NI_Vector128_AsNUInt:
+                            case NI_Vector128_AsSByte:
+                            case NI_Vector128_AsSingle:
+                            case NI_Vector128_AsUInt16:
+                            case NI_Vector128_AsUInt32:
+                            case NI_Vector128_AsUInt64:
+                            case NI_Vector128_AsVector4:
+                            case NI_Vector128_op_UnaryPlus:
+                            case NI_VectorT128_As:
+                            case NI_VectorT128_AsVectorByte:
+                            case NI_VectorT128_AsVectorDouble:
+                            case NI_VectorT128_AsVectorInt16:
+                            case NI_VectorT128_AsVectorInt32:
+                            case NI_VectorT128_AsVectorInt64:
+                            case NI_VectorT128_AsVectorNInt:
+                            case NI_VectorT128_AsVectorNUInt:
+                            case NI_VectorT128_AsVectorSByte:
+                            case NI_VectorT128_AsVectorSingle:
+                            case NI_VectorT128_AsVectorUInt16:
+                            case NI_VectorT128_AsVectorUInt32:
+                            case NI_VectorT128_AsVectorUInt64:
+                            case NI_VectorT128_op_UnaryPlus:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_As:
+                            case NI_Vector256_AsByte:
+                            case NI_Vector256_AsDouble:
+                            case NI_Vector256_AsInt16:
+                            case NI_Vector256_AsInt32:
+                            case NI_Vector256_AsInt64:
+                            case NI_Vector256_AsNInt:
+                            case NI_Vector256_AsNUInt:
+                            case NI_Vector256_AsSByte:
+                            case NI_Vector256_AsSingle:
+                            case NI_Vector256_AsUInt16:
+                            case NI_Vector256_AsUInt32:
+                            case NI_Vector256_AsUInt64:
+                            case NI_Vector256_op_UnaryPlus:
+                            case NI_VectorT256_As:
+                            case NI_VectorT256_AsVectorByte:
+                            case NI_VectorT256_AsVectorDouble:
+                            case NI_VectorT256_AsVectorInt16:
+                            case NI_VectorT256_AsVectorInt32:
+                            case NI_VectorT256_AsVectorInt64:
+                            case NI_VectorT256_AsVectorNInt:
+                            case NI_VectorT256_AsVectorNUInt:
+                            case NI_VectorT256_AsVectorSByte:
+                            case NI_VectorT256_AsVectorSingle:
+                            case NI_VectorT256_AsVectorUInt16:
+                            case NI_VectorT256_AsVectorUInt32:
+                            case NI_VectorT256_AsVectorUInt64:
+                            case NI_VectorT256_op_UnaryPlus:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            case NI_SRCS_UNSAFE_As:
+                            case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_SkipInit:
+                            {
+                                // TODO-CQ: These are no-ops in that they never produce any IR
+                                // and simply return op1 untouched. We should really track them
+                                // as such and adjust the multiplier even more, but we'll settle
+                                // for marking it as foldable until additional work can happen.
+
+                                foldableIntrinsic = true;
+                                break;
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_One:
+                            case NI_Vector64_get_Zero:
+#endif // TARGET_ARM64
+                            case NI_Vector2_get_One:
+                            case NI_Vector2_get_Zero:
+                            case NI_Vector3_get_One:
+                            case NI_Vector3_get_Zero:
+                            case NI_Vector4_get_One:
+                            case NI_Vector4_get_Zero:
+                            case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_One:
+                            case NI_Vector128_get_Zero:
+                            case NI_VectorT128_get_AllBitsSet:
+                            case NI_VectorT128_get_One:
+                            case NI_VectorT128_get_Zero:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_One:
+                            case NI_Vector256_get_Zero:
+                            case NI_VectorT256_get_AllBitsSet:
+                            case NI_VectorT256_get_One:
+                            case NI_VectorT256_get_Zero:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            {
+                                // These always produce a vector constant
+
+                                foldableIntrinsic = true;
+
+                                // TODO-CQ: We should really push a constant onto the stack
+                                // However, this isn't trivially possible without the inliner
+                                // understanding a new type of "vector constant" so it doesn't
+                                // negatively impact other possible checks/handling
+
+                                break;
+                            }
+
+                            case NI_SRCS_UNSAFE_NullRef:
+                            case NI_SRCS_UNSAFE_SizeOf:
+                            {
+                                // These always produce a constant
+
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
+
                                 break;
-#endif
+                            }
 
                             default:
                             {
@@ -3616,6 +3927,11 @@ void Compiler::fgFixEntryFlowForOSR()
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
     fgFirstBB->bbJumpDest = osrEntry;
     fgAddRefPred(osrEntry, fgFirstBB);
+
+    // Give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    fgFirstBB->inheritWeight(fgOSREntryBB);
 
     JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, osrEntry->bbNum);

@@ -12,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// This is the System.RuntimeTypeHandle equivalent to a <see cref="SystemTypeValue"/> node.
 	/// </summary>
-	sealed record RuntimeTypeHandleValue : SingleValue
+	internal sealed record RuntimeTypeHandleValue : SingleValue
 	{
 		public RuntimeTypeHandleValue (in TypeProxy representedType)
 		{

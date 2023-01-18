@@ -44,7 +44,7 @@ public class X<K> where K: IGet
     K[] a;
 }
 
-class B
+public class B
 {
     public static int Main()
     {

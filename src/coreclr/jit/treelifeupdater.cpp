@@ -8,13 +8,10 @@
 template <bool ForCodeGen>
 TreeLifeUpdater<ForCodeGen>::TreeLifeUpdater(Compiler* compiler)
     : compiler(compiler)
-    , newLife(VarSetOps::MakeEmpty(compiler))
-    , stackVarDeltaSet(VarSetOps::MakeEmpty(compiler))
-    , varDeltaSet(VarSetOps::MakeEmpty(compiler))
-    , gcTrkStkDeltaSet(VarSetOps::MakeEmpty(compiler))
 #ifdef DEBUG
-    , gcVarPtrSetNew(VarSetOps::MakeEmpty(compiler))
     , epoch(compiler->GetCurLVEpoch())
+    , oldLife(VarSetOps::MakeEmpty(compiler))
+    , oldStackPtrsLife(VarSetOps::MakeEmpty(compiler))
 #endif // DEBUG
 {
 }
@@ -43,24 +40,22 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
     unsigned   fieldVarNum = parentVarDsc->lvFieldLclStart + multiRegIndex;
     LclVarDsc* fldVarDsc   = compiler->lvaGetDesc(fieldVarNum);
     assert(fldVarDsc->lvTracked);
-    unsigned fldVarIndex = fldVarDsc->lvVarIndex;
     assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
 
-    VarSetOps::Assign(compiler, newLife, compiler->compCurLife);
+    StoreCurrentLifeForDump();
     bool isBorn  = ((lclNode->gtFlags & GTF_VAR_DEF) != 0);
     bool isDying = !isBorn && lclNode->IsLastUse(multiRegIndex);
-    // GTF_SPILL will be set if any registers need to be spilled.
-    GenTreeFlags spillFlags = (lclNode->gtFlags & lclNode->GetRegSpillFlagByIdx(multiRegIndex));
-    bool         spill      = ((spillFlags & GTF_SPILL) != 0);
-    bool         isInMemory = false;
 
     if (isBorn || isDying)
     {
+        bool previouslyLive = VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
+        UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isDying);
+
         if (ForCodeGen)
         {
-            regNumber reg     = lclNode->GetRegNumByIdx(multiRegIndex);
-            bool      isInReg = fldVarDsc->lvIsInReg() && reg != REG_NA;
-            isInMemory        = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
+            regNumber reg        = lclNode->GetRegNumByIdx(multiRegIndex);
+            bool      isInReg    = fldVarDsc->lvIsInReg() && reg != REG_NA;
+            bool      isInMemory = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
             if (isInReg)
             {
                 if (isBorn)
@@ -69,87 +64,30 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
                 }
                 compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(lclNode));
             }
-        }
-        // First, update the live set
-        if (isDying)
-        {
-            VarSetOps::RemoveElemD(compiler, newLife, fldVarIndex);
-        }
-        else
-        {
-            VarSetOps::AddElemD(compiler, newLife, fldVarIndex);
-        }
-    }
 
-    if (!VarSetOps::Equal(compiler, compiler->compCurLife, newLife))
-    {
-#ifdef DEBUG
-        if (compiler->verbose)
-        {
-            printf("\t\t\t\t\t\t\tLive vars: ");
-            dumpConvertedVarSet(compiler, compiler->compCurLife);
-            printf(" => ");
-            dumpConvertedVarSet(compiler, newLife);
-            printf("\n");
-        }
-#endif // DEBUG
-
-        VarSetOps::Assign(compiler, compiler->compCurLife, newLife);
-
-        if (ForCodeGen)
-        {
-            // Only add vars to the gcInfo.gcVarPtrSetCur if they are currently on stack, since the
-            // gcInfo.gcTrkStkPtrLcls
-            // includes all TRACKED vars that EVER live on the stack (i.e. are not always in a register).
-            VarSetOps::Assign(compiler, gcTrkStkDeltaSet, compiler->codeGen->gcInfo.gcTrkStkPtrLcls);
-            if (isInMemory && VarSetOps::IsMember(compiler, gcTrkStkDeltaSet, fldVarIndex))
+            if (isInMemory &&
+                VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarDsc->lvVarIndex))
             {
-#ifdef DEBUG
-                if (compiler->verbose)
-                {
-                    printf("\t\t\t\t\t\t\tGCvars: ");
-                    dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
-                    printf(" => ");
-                }
-#endif // DEBUG
-
-                if (isBorn)
-                {
-                    VarSetOps::AddElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarIndex);
-                }
-                else
-                {
-                    VarSetOps::RemoveElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarIndex);
-                }
-
-#ifdef DEBUG
-                if (compiler->verbose)
-                {
-                    dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
-                    printf("\n");
-                }
-#endif // DEBUG
+                UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc, isBorn, isDying);
             }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
-            // For each of the LclVarDsc that are reporting change, variable or fields
-            compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc, fieldVarNum, isBorn,
-                                                                                        isDying);
-#endif // USING_VARIABLE_LIVE_RANGE
-
-#ifdef USING_SCOPE_INFO
-            compiler->codeGen->siUpdate();
-#endif // USING_SCOPE_INFO
+            if (previouslyLive != isBorn)
+            {
+                compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc, fieldVarNum,
+                                                                                            isBorn, isDying);
+            }
         }
     }
 
-    if (ForCodeGen && spill)
+    bool spill = false;
+    // GTF_SPILL will be set if any registers need to be spilled.
+    if (ForCodeGen && ((lclNode->gtFlags & lclNode->GetRegSpillFlagByIdx(multiRegIndex) & GTF_SPILL) != 0))
     {
-        if (VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarIndex))
+        if (VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarDsc->lvVarIndex))
         {
-            if (!VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarIndex))
+            if (!VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc->lvVarIndex))
             {
-                VarSetOps::AddElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarIndex);
+                VarSetOps::AddElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc->lvVarIndex);
 #ifdef DEBUG
                 if (compiler->verbose)
                 {
@@ -158,56 +96,36 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
 #endif // DEBUG
             }
         }
-        return true;
+
+        spill = true;
     }
-    return false;
+
+    DumpLifeDelta();
+
+    return spill;
 }
 
 //------------------------------------------------------------------------
 // UpdateLifeVar: Update live sets for a given tree.
 //
 // Arguments:
-//    tree - the tree which affects liveness.
+//    tree       - the tree which affects liveness
+//    lclVarTree - the local tree
+//
+// Notes:
+//    Most commonly "tree" and "lclVarTree" will be the same, however,
+//    that will not be true for indirect defs ("STOREIND(LCL_ADDR, ...)")
+//    and uses ("OBJ(LCL_ADDR)")
 //
 template <bool ForCodeGen>
-void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
+void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree)
 {
-    GenTree* indirAddrLocal = compiler->fgIsIndirOfAddrOfLocal(tree);
-    assert(tree->OperIsNonPhiLocal() || indirAddrLocal != nullptr);
+    assert(lclVarTree->OperIsNonPhiLocal() || lclVarTree->OperIsLocalAddr());
 
-    // Get the local var tree -- if "tree" is "Ldobj(addr(x))", or "ind(addr(x))" this is "x", else it's "tree".
-    GenTree* lclVarTree = indirAddrLocal;
-    if (lclVarTree == nullptr)
-    {
-        lclVarTree = tree;
-    }
-    unsigned int lclNum = lclVarTree->AsLclVarCommon()->GetLclNum();
+    unsigned int lclNum = lclVarTree->GetLclNum();
     LclVarDsc*   varDsc = compiler->lvaGetDesc(lclNum);
 
-#ifdef DEBUG
-#if !defined(TARGET_AMD64)
-    // There are no addr nodes on ARM and we are experimenting with encountering vars in 'random' order.
-    // Struct fields are not traversed in a consistent order, so ignore them when
-    // verifying that we see the var nodes in execution order
-    if (ForCodeGen)
-    {
-        if (tree->OperIsIndir())
-        {
-            assert(indirAddrLocal != NULL);
-        }
-        else if (tree->gtNext != NULL && tree->gtNext->gtOper == GT_ADDR &&
-                 ((tree->gtNext->gtNext == NULL || !tree->gtNext->gtNext->OperIsIndir())))
-        {
-            assert(tree->IsLocal()); // Can only take the address of a local.
-            // The ADDR might occur in a context where the address it contributes is eventually
-            // dereferenced, so we can't say that this is not a use or def.
-        }
-    }
-#endif // !TARGET_AMD64
-#endif // DEBUG
-
     compiler->compCurLifeTree = tree;
-    VarSetOps::Assign(compiler, newLife, compiler->compCurLife);
 
     // By codegen, a struct may not be TYP_STRUCT, so we have to
     // check lvPromoted, for the case where the fields are being
@@ -217,246 +135,166 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
         return;
     }
 
-    // if it's a partial definition then variable "x" must have had a previous, original, site to be born.
-    bool isBorn;
-    bool isDying;
-    // GTF_SPILL will be set on a MultiRegLclVar if any registers need to be spilled.
-    bool spill           = ((lclVarTree->gtFlags & GTF_SPILL) != 0);
-    bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
-    if (isMultiRegLocal)
-    {
-        // We should never have an 'IndirOfAddrOfLocal' for a multi-reg.
-        assert(lclVarTree == tree);
-        assert((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
-        isBorn = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
-        // Note that for multireg locals we can have definitions for which some of those are last uses.
-        // We don't want to add those to the varDeltaSet because otherwise they will be added as newly
-        // live.
-        isDying = !isBorn && lclVarTree->HasLastUse();
-    }
-    else
-    {
-        isBorn  = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0 && (lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
-        isDying = ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
-    }
+    StoreCurrentLifeForDump();
 
-    // Since all tracked vars are register candidates, but not all are in registers at all times,
-    // we maintain two separate sets of variables - the total set of variables that are either
-    // born or dying here, and the subset of those that are on the stack
-    VarSetOps::ClearD(compiler, stackVarDeltaSet);
+    bool isBorn = ((lclVarTree->gtFlags & GTF_VAR_DEF) != 0) && ((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
 
-    if (isBorn || isDying)
+    if (varDsc->lvTracked)
     {
-        VarSetOps::ClearD(compiler, varDeltaSet);
+        assert(!varDsc->lvPromoted && !lclVarTree->IsMultiRegLclVar());
 
-        if (varDsc->lvTracked)
+        bool isDying = (lclVarTree->gtFlags & GTF_VAR_DEATH) != 0;
+
+        if (isBorn || isDying)
         {
-            VarSetOps::AddElemD(compiler, varDeltaSet, varDsc->lvVarIndex);
+            bool previouslyLive = VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex);
+            UpdateLifeBit(compiler->compCurLife, varDsc, isBorn, isDying);
+
             if (ForCodeGen)
             {
                 if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg(compiler))
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }
-                bool isInReg    = varDsc->lvIsInReg() && tree->GetRegNum() != REG_NA;
+
+                bool isInReg    = varDsc->lvIsInReg() && (tree->GetRegNum() != REG_NA);
                 bool isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
                 if (isInReg)
                 {
                     compiler->codeGen->genUpdateRegLife(varDsc, isBorn, isDying DEBUGARG(tree));
                 }
-                if (isInMemory)
-                {
-                    VarSetOps::AddElemD(compiler, stackVarDeltaSet, varDsc->lvVarIndex);
-                }
-            }
-        }
-        else if (ForCodeGen && lclVarTree->IsMultiRegLclVar())
-        {
-            assert(varDsc->lvPromoted && compiler->lvaEnregMultiRegVars);
-            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
-            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
-            {
-                bool       fieldIsSpilled = spill && ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                LclVarDsc* fldVarDsc      = compiler->lvaGetDesc(firstFieldVarNum + i);
-                noway_assert(fldVarDsc->lvIsStructField);
-                assert(fldVarDsc->lvTracked);
-                unsigned  fldVarIndex  = fldVarDsc->lvVarIndex;
-                regNumber reg          = lclVarTree->AsLclVar()->GetRegNumByIdx(i);
-                bool      isInReg      = fldVarDsc->lvIsInReg() && reg != REG_NA;
-                bool      isInMemory   = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
-                bool      isFieldDying = lclVarTree->AsLclVar()->IsLastUse(i);
-                if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
-                {
-                    VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
-                    if (isInMemory)
-                    {
-                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                    }
-                }
-                if (isInReg)
-                {
-                    if (isBorn)
-                    {
-                        compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
-                    }
-                    compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
-                    // If this was marked for spill, genProduceReg should already have spilled it.
-                    assert(!fieldIsSpilled);
-                }
-            }
-            spill = false;
-        }
-        else if (varDsc->lvPromoted)
-        {
-            // If hasDeadTrackedFieldVars is true, then, for a LDOBJ(ADDR(<promoted struct local>)),
-            // *deadTrackedFieldVars indicates which tracked field vars are dying.
-            bool hasDeadTrackedFieldVars = false;
 
-            if (indirAddrLocal != nullptr && isDying)
-            {
-                assert(!isBorn); // GTF_VAR_DEATH only set for LDOBJ last use.
-                VARSET_TP* deadTrackedFieldVars = nullptr;
-                hasDeadTrackedFieldVars =
-                    compiler->LookupPromotedStructDeathVars(indirAddrLocal, &deadTrackedFieldVars);
-                if (hasDeadTrackedFieldVars)
+                if (isInMemory &&
+                    VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
                 {
-                    VarSetOps::Assign(compiler, varDeltaSet, *deadTrackedFieldVars);
+                    UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc, isBorn, isDying);
                 }
-            }
 
-            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
-            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
-            {
-                LclVarDsc* fldVarDsc = compiler->lvaGetDesc(firstFieldVarNum + i);
-                noway_assert(fldVarDsc->lvIsStructField);
-                if (fldVarDsc->lvTracked)
+                if ((isDying != isBorn) && (isBorn != previouslyLive))
                 {
-                    unsigned fldVarIndex = fldVarDsc->lvVarIndex;
-                    // We should never see enregistered fields in a struct local unless
-                    // IsMultiRegLclVar() returns true, in which case we've handled this above.
-                    assert(!fldVarDsc->lvIsInReg());
-                    noway_assert(fldVarIndex < compiler->lvaTrackedCount);
-                    if (!hasDeadTrackedFieldVars)
-                    {
-                        VarSetOps::AddElemD(compiler, varDeltaSet, fldVarIndex);
-                        if (ForCodeGen)
-                        {
-                            // We repeat this call here and below to avoid the VarSetOps::IsMember
-                            // test in this, the common case, where we have no deadTrackedFieldVars.
-                            VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                        }
-                    }
-                    else if (ForCodeGen && VarSetOps::IsMember(compiler, varDeltaSet, fldVarIndex))
-                    {
-                        VarSetOps::AddElemD(compiler, stackVarDeltaSet, fldVarIndex);
-                    }
+                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum, isBorn,
+                                                                                                isDying);
                 }
             }
         }
 
-        // First, update the live set
-        if (isDying)
+        if (ForCodeGen && ((lclVarTree->gtFlags & GTF_SPILL) != 0))
         {
-            // We'd like to be able to assert the following, however if we are walking
-            // through a qmark/colon tree, we may encounter multiple last-use nodes.
-            // assert (VarSetOps::IsSubset(compiler, regVarDeltaSet, newLife));
-            VarSetOps::DiffD(compiler, newLife, varDeltaSet);
-        }
-        else
-        {
-            // This shouldn't be in newLife, unless this is debug code, in which
-            // case we keep vars live everywhere, OR the variable is address-exposed,
-            // OR this block is part of a try block, in which case it may be live at the handler
-            // Could add a check that, if it's in newLife, that it's also in
-            // fgGetHandlerLiveVars(compCurBB), but seems excessive
-            //
-            // For a dead store, it can be the case that we set both isBorn and isDying to true.
-            // (We don't eliminate dead stores under MinOpts, so we can't assume they're always
-            // eliminated.)  If it's both, we handled it above.
-            VarSetOps::UnionD(compiler, newLife, varDeltaSet);
+            compiler->codeGen->genSpillVar(tree);
+
+            if (VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
+            {
+                if (!VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
+                {
+                    VarSetOps::AddElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+                    JITDUMP("\t\t\t\t\t\t\tVar V%02u becoming live\n", lclNum);
+                }
+            }
         }
     }
-
-    if (!VarSetOps::Equal(compiler, compiler->compCurLife, newLife))
+    else if (varDsc->lvPromoted)
     {
+        bool isMultiRegLocal = lclVarTree->IsMultiRegLclVar();
 #ifdef DEBUG
-        if (compiler->verbose)
+        if (isMultiRegLocal)
         {
-            printf("\t\t\t\t\t\t\tLive vars: ");
-            dumpConvertedVarSet(compiler, compiler->compCurLife);
-            printf(" => ");
-            dumpConvertedVarSet(compiler, newLife);
-            printf("\n");
+            // We should never have an indirect reference for a multi-reg.
+            assert(lclVarTree == tree);
+            assert((lclVarTree->gtFlags & GTF_VAR_USEASG) == 0);
         }
-#endif // DEBUG
+#endif
 
-        VarSetOps::Assign(compiler, compiler->compCurLife, newLife);
-
-        if (ForCodeGen)
+        // TODO: Fields can die even at a def.
+        bool isAnyFieldDying =
+            isMultiRegLocal ? !isBorn && lclVarTree->HasLastUse() : ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
+        if (isBorn || isAnyFieldDying)
         {
-            // Only add vars to the gcInfo.gcVarPtrSetCur if they are currently on stack, since the
-            // gcInfo.gcTrkStkPtrLcls
-            // includes all TRACKED vars that EVER live on the stack (i.e. are not always in a register).
-            VarSetOps::Assign(compiler, gcTrkStkDeltaSet, compiler->codeGen->gcInfo.gcTrkStkPtrLcls);
-            VarSetOps::IntersectionD(compiler, gcTrkStkDeltaSet, stackVarDeltaSet);
-            if (!VarSetOps::IsEmpty(compiler, gcTrkStkDeltaSet))
-            {
-#ifdef DEBUG
-                if (compiler->verbose)
-                {
-                    printf("\t\t\t\t\t\t\tGCvars: ");
-                    dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
-                    printf(" => ");
-                }
-#endif // DEBUG
+            VARSET_TP* deadTrackedFieldVars    = nullptr;
+            bool       hasDeadTrackedFieldVars = false;
 
-                if (isBorn)
+            // TODO-Review: the code below does not look right. We can have last uses for simple LCL_VARs
+            // as well as indirect uses.
+            if (!isMultiRegLocal && (tree != lclVarTree) && isAnyFieldDying)
+            {
+                assert(!isBorn); // GTF_VAR_DEATH only set for non-partial last use.
+                hasDeadTrackedFieldVars = compiler->LookupPromotedStructDeathVars(lclVarTree, &deadTrackedFieldVars);
+            }
+
+            unsigned firstFieldVarNum = varDsc->lvFieldLclStart;
+            for (unsigned i = 0; i < varDsc->lvFieldCnt; ++i)
+            {
+                unsigned   fldLclNum = firstFieldVarNum + i;
+                LclVarDsc* fldVarDsc = compiler->lvaGetDesc(fldLclNum);
+                assert(fldVarDsc->lvIsStructField);
+                if (!fldVarDsc->lvTracked)
                 {
-                    VarSetOps::UnionD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, gcTrkStkDeltaSet);
+                    // multi-reg locals are expected to have all fields tracked so that they are register candidates.
+                    assert(!isMultiRegLocal);
+                    continue;
+                }
+
+                // We should never see enregistered fields in a struct local unless
+                // IsMultiRegLclVar() returns true.
+                assert(isMultiRegLocal || !fldVarDsc->lvIsInReg());
+
+                bool isInReg        = fldVarDsc->lvIsInReg() && (lclVarTree->AsLclVar()->GetRegNumByIdx(i) != REG_NA);
+                bool isInMemory     = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
+                bool previouslyLive = VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
+
+                bool isFieldDying;
+
+                if (isMultiRegLocal)
+                {
+                    isFieldDying = lclVarTree->IsLastUse(i);
+                    // TODO: Remove this condition which disallows marking
+                    // some fields as dead even though they are dying when other
+                    // fields are defined.
+                    if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
+                    {
+                        UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isFieldDying);
+                    }
                 }
                 else
                 {
-                    VarSetOps::DiffD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, gcTrkStkDeltaSet);
+                    isFieldDying = isAnyFieldDying && (!hasDeadTrackedFieldVars ||
+                                                       VarSetOps::IsMember(compiler, *deadTrackedFieldVars, i));
+                    UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isFieldDying);
                 }
 
-#ifdef DEBUG
-                if (compiler->verbose)
+                if (ForCodeGen)
                 {
-                    dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
-                    printf("\n");
+                    if (isInReg)
+                    {
+                        if (isBorn)
+                        {
+                            compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
+                        }
+
+                        compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
+                        // If this was marked for spill genProduceReg should already have spilled it.
+                        bool fieldNeedsSpill = ((lclVarTree->gtFlags & GTF_SPILL) != 0) &&
+                                               ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
+                        assert(!fieldNeedsSpill);
+                    }
+
+                    if (isInMemory &&
+                        VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarDsc->lvVarIndex))
+                    {
+                        UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc, isBorn, isFieldDying);
+                    }
+
+                    if ((isFieldDying != isBorn) && (isBorn != previouslyLive))
+                    {
+                        compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc,
+                                                                                                    fldLclNum, isBorn,
+                                                                                                    isFieldDying);
+                    }
                 }
-#endif // DEBUG
-            }
-
-#ifdef USING_VARIABLE_LIVE_RANGE
-            // For each of the LclVarDsc that are reporting change, variable or fields
-            compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRanges(varDeltaSet, isBorn, isDying);
-#endif // USING_VARIABLE_LIVE_RANGE
-
-#ifdef USING_SCOPE_INFO
-            compiler->codeGen->siUpdate();
-#endif // USING_SCOPE_INFO
-        }
-    }
-
-    if (ForCodeGen && spill)
-    {
-        assert(!varDsc->lvPromoted);
-        compiler->codeGen->genSpillVar(tree);
-        if (VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, varDsc->lvVarIndex))
-        {
-            if (!VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
-            {
-                VarSetOps::AddElemD(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
-#ifdef DEBUG
-                if (compiler->verbose)
-                {
-                    printf("\t\t\t\t\t\t\tVar V%02u becoming live\n", compiler->lvaGetLclNum(varDsc));
-                }
-#endif // DEBUG
             }
         }
     }
+
+    DumpLifeDelta();
 }
 
 //------------------------------------------------------------------------
@@ -475,12 +313,93 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
         return;
     }
 
-    if (!tree->OperIsNonPhiLocal() && compiler->fgIsIndirOfAddrOfLocal(tree) == nullptr)
+    // Note that after lowering, we can see indirect uses and definitions of tracked variables.
+    // TODO-Bug: we're not handling calls with return buffers here properly.
+    GenTreeLclVarCommon* lclVarTree = nullptr;
+    if (tree->OperIsNonPhiLocal())
     {
-        return;
+        lclVarTree = tree->AsLclVarCommon();
+    }
+    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIsLocalAddr())
+    {
+        lclVarTree = tree->AsIndir()->Addr()->AsLclVarCommon();
     }
 
-    UpdateLifeVar(tree);
+    if (lclVarTree != nullptr)
+    {
+        UpdateLifeVar(tree, lclVarTree);
+    }
+}
+
+//------------------------------------------------------------------------
+// UpdateLifeBit: Update a liveness set for a specific local depending on whether it is being born or dying.
+//
+// Arguments:
+//    set - The life set
+//    dsc - The local's description
+//    isBorn - Whether the local is being born now
+//    isDying - Whether the local is dying now
+//
+template <bool ForCodeGen>
+void TreeLifeUpdater<ForCodeGen>::UpdateLifeBit(VARSET_TP& set, LclVarDsc* dsc, bool isBorn, bool isDying)
+{
+    if (isDying)
+    {
+        VarSetOps::RemoveElemD(compiler, set, dsc->lvVarIndex);
+    }
+    else if (isBorn)
+    {
+        VarSetOps::AddElemD(compiler, set, dsc->lvVarIndex);
+    }
+}
+
+//------------------------------------------------------------------------
+// StoreCurrentLifeForDump: Store current liveness information so that deltas
+// can be dumped after potential updates.
+//
+template <bool ForCodeGen>
+void           TreeLifeUpdater<ForCodeGen>::StoreCurrentLifeForDump()
+{
+#ifdef DEBUG
+    if (compiler->verbose)
+    {
+        VarSetOps::Assign(compiler, oldLife, compiler->compCurLife);
+
+        if (ForCodeGen)
+        {
+            VarSetOps::Assign(compiler, oldStackPtrsLife, compiler->codeGen->gcInfo.gcVarPtrSetCur);
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// DumpLifeDelta: Dump the delta of liveness changes that happened since
+// StoreCurrentLifeForDump was called.
+//
+template <bool ForCodeGen>
+void           TreeLifeUpdater<ForCodeGen>::DumpLifeDelta()
+{
+#ifdef DEBUG
+    if (compiler->verbose && !VarSetOps::Equal(compiler, oldLife, compiler->compCurLife))
+    {
+        printf("\t\t\t\t\t\t\tLive vars: ");
+        dumpConvertedVarSet(compiler, oldLife);
+        printf(" => ");
+        dumpConvertedVarSet(compiler, compiler->compCurLife);
+        printf("\n");
+    }
+
+    if (ForCodeGen && compiler->verbose &&
+        !VarSetOps::Equal(compiler, oldStackPtrsLife, compiler->codeGen->gcInfo.gcVarPtrSetCur))
+    {
+        printf("\t\t\t\t\t\t\tGC vars: ");
+        dumpConvertedVarSet(compiler, oldStackPtrsLife);
+        printf(" => ");
+        dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
+        printf("\n");
+    }
+#endif // DEBUG
 }
 
 template class TreeLifeUpdater<true>;

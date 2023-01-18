@@ -135,7 +135,7 @@ namespace System.Xml
                 _manageNamespaces = true;
             }
 
-            _thisNSResolver = this as IXmlNamespaceResolver;
+            _thisNSResolver = this;
             _xmlResolver = xmlResolver;
             _processInlineSchema = (readerSettings.ValidationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0;
 
@@ -1163,10 +1163,8 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             if (i < _coreReaderAttributeCount)
             {
@@ -1273,10 +1271,8 @@ namespace System.Xml
         // Moves to the attribute with the specified index
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             _currentAttrIndex = i;
             if (i < _coreReaderAttributeCount)

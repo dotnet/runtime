@@ -308,7 +308,7 @@ namespace System.ComponentModel.Composition.Hosting
             return exports!;
         }
 
-        private IEnumerable<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
+        private List<Export> InternalGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition)
         {
             ThrowIfDisposed();
             EnsureRunning();

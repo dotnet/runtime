@@ -45,6 +45,7 @@
 #include "daccess.h"
 
 #include "GCMemoryHelpers.h"
+#include "interoplibinterface.h"
 
 #include "holder.h"
 #include "volatile.h"
@@ -143,7 +144,6 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
 // success or false if a subsystem failed to initialize.
 
 #ifndef DACCESS_COMPILE
-CrstStatic g_SuspendEELock;
 #ifdef _MSC_VER
 #pragma warning(disable:4815) // zero-sized array in stack object will have no elements
 #endif // _MSC_VER
@@ -167,9 +167,6 @@ bool RedhawkGCInterface::InitializeSubsystems()
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
-
-    if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
-        return false;
 
 #ifdef FEATURE_SVR_GC
     g_heap_type = (g_pRhConfig->GetgcServer() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
@@ -641,10 +638,8 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
 
-    g_SuspendEELock.Enter();
-
+    GetThreadStore()->LockThreadStore();
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
-
     GetThreadStore()->SuspendAllThreads(true);
 
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
@@ -668,8 +663,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
-
-    g_SuspendEELock.Leave();
+    GetThreadStore()->UnlockThreadStore();
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }
@@ -682,13 +676,25 @@ void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 
 void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (!is_concurrent)
+    {
+        ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 // EE can perform post stack scanning action, while the user threads are still suspended
-void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* /*sc*/)
+void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* sc)
 {
     // Invoke any registered callouts for the end of the mark phase.
     RestrictedCallouts::InvokeGcCallouts(GCRC_AfterMarkPhase, condemned);
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+    {
+        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 void GCToEEInterface::GcDone(int condemned)
@@ -699,6 +705,11 @@ void GCToEEInterface::GcDone(int condemned)
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference(pObject, &isReferenced))
+        return isReferenced;
+#endif // FEATURE_OBJCMARSHAL
     return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObject);
 }
 
@@ -1153,6 +1164,14 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (obj->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue(obj);
+        return false;
+    }
+#endif
+
     if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
         return false;
 

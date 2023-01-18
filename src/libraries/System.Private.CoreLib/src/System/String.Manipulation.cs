@@ -545,9 +545,7 @@ namespace System
         public string Insert(int startIndex, string value)
         {
             ArgumentNullException.ThrowIfNull(value);
-
-            if ((uint)startIndex > Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)Length, nameof(startIndex));
 
             int oldLength = Length;
             int insertLength = value.Length;
@@ -1076,15 +1074,32 @@ namespace System
                 // Find all occurrences of the oldValue character.
                 char c = oldValue[0];
                 int i = 0;
-                while (true)
+
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
                 {
-                    int pos = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos < 0)
+                    while (true)
                     {
-                        break;
+                        int pos = PackedSpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                        if (pos < 0)
+                        {
+                            break;
+                        }
+                        replacementIndices.Append(i + pos);
+                        i += pos + 1;
                     }
-                    replacementIndices.Append(i + pos);
-                    i += pos + 1;
+                }
+                else
+                {
+                    while (true)
+                    {
+                        int pos = SpanHelpers.NonPackedIndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                        if (pos < 0)
+                        {
+                            break;
+                        }
+                        replacementIndices.Append(i + pos);
+                        i += pos + 1;
+                    }
                 }
             }
             else
@@ -1845,13 +1860,16 @@ namespace System
         [DoesNotReturn]
         private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
         {
-            (string paramName, string message) =
-                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
-                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
-                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
-                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-            throw new ArgumentOutOfRangeException(paramName, message);
+            if (startIndex > Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
         }
 
         private string InternalSubString(int startIndex, int length)

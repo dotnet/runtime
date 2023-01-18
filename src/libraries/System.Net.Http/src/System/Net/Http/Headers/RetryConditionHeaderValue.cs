@@ -30,10 +30,7 @@ namespace System.Net.Http.Headers
         public RetryConditionHeaderValue(TimeSpan delta)
         {
             // The amount of seconds for 'delta' must be in the range 0..2^31
-            if (delta.TotalSeconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(delta));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(delta.TotalSeconds, int.MaxValue);
 
             _delta = delta;
         }
@@ -86,7 +83,7 @@ namespace System.Net.Http.Headers
             return _delta.Value.GetHashCode();
         }
 
-        public static RetryConditionHeaderValue Parse(string? input)
+        public static RetryConditionHeaderValue Parse(string input)
         {
             int index = 0;
             return (RetryConditionHeaderValue)GenericHeaderParser.RetryConditionParser.ParseValue(

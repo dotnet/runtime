@@ -179,6 +179,7 @@ namespace System.Reflection.Emit
         //
 #region Sync with RuntimeAssembly.cs and ReflectionAssembly in object-internals.h
         internal IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
 
         private UIntPtr dynamic_assembly; /* GC-tracked */
         private ModuleBuilder[] modules;
@@ -205,6 +206,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
         private AssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
         {
+            EnsureDynamicCodeSupported();
+
             aname = (AssemblyName)n.Clone();
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))

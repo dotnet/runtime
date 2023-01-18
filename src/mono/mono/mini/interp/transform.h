@@ -21,6 +21,9 @@
 #define INTERP_LOCAL_FLAG_GLOBAL 8
 #define INTERP_LOCAL_FLAG_NO_CALL_ARGS 16
 
+#define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
+#define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
+
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
 
@@ -59,6 +62,8 @@ typedef struct {
 	// The instruction that writes this local.
 	InterpInst *ins;
 	int def_index;
+	// ref count for ins->dreg
+	int ref_count;
 } LocalValue;
 
 struct _InterpInst {
@@ -125,6 +130,7 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
+	int reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
 	int eh_block : 1;
 	int dead: 1;
@@ -244,6 +250,7 @@ typedef struct
 	// bail out of inlining when having to generate certain opcodes (like call, throw).
 	int aggressive_inlining : 1;
 	int optimized : 1;
+	int has_invalid_code : 1;
 } TransformData;
 
 #define STACK_TYPE_I4 0

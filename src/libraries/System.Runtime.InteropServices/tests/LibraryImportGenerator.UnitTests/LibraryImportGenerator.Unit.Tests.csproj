@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -17,6 +17,12 @@
             Link="Common\CustomStructMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
             Link="ICustomMarshallingSignatureTestProvider.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpAnalyzerVerifier.cs"
+            Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
+            Link="Verifiers\CSharpCodeFixVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
+            Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
 
   <ItemGroup>

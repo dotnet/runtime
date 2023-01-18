@@ -88,6 +88,7 @@ namespace Internal.Runtime
     {
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
     }
 
     internal enum EETypeKind : uint

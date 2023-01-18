@@ -41,8 +41,7 @@ namespace System.Collections.Generic
         // must be a non-negative number.
         public Stack(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
@@ -292,10 +291,7 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this stack.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {

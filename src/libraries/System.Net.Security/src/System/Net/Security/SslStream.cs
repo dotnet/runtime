@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -170,6 +171,11 @@ namespace System.Net.Security
             }
         }
 
+        // used to track ussage in _nested* variables bellow
+        private const int StreamNotInUse = 0;
+        private const int StreamInUse = 1;
+        private const int StreamDisposed = 2;
+
         private int _nestedWrite;
         private int _nestedRead;
 
@@ -208,6 +214,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.EncryptionPolicy = encryptionPolicy;
             _sslAuthenticationOptions.CertValidationDelegate = userCertificateValidationCallback;
             _sslAuthenticationOptions.CertSelectionDelegate = userCertificateSelectionCallback;
+
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
+#endif
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
@@ -665,6 +675,9 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("freebsd")]
         public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -703,7 +716,7 @@ namespace System.Net.Security
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (Interlocked.Exchange(ref _nestedRead, StreamInUse) == StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -724,7 +737,7 @@ namespace System.Net.Security
                 // Regardless of whether we were able to read a byte from the buffer,
                 // reset the read tracking.  If we weren't able to read a byte, the
                 // subsequent call to Read will set the flag again.
-                _nestedRead = 0;
+                _nestedRead = StreamNotInUse;
             }
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.

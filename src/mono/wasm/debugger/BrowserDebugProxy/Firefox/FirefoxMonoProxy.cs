@@ -234,24 +234,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
     protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
     {
-        if (args["messages"] != null)
-        {
-            // FIXME: duplicate, and will miss any non-runtime-ready messages being forwarded
-            var messages = args["messages"].Value<JArray>();
-            foreach (var message in messages)
-            {
-                var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
-                if (messageArgs != null && messageArgs.Count == 2)
-                {
-                    if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                    {
-                        ResetCmdId();
-                        await RuntimeReady(sessionId, token);
-                    }
-                }
-            }
-            return true;
-        }
         if (args["frame"] != null && args["type"] == null)
         {
             OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["frame"]["consoleActor"].Value<string>()));
@@ -262,7 +244,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             return true;
 
         if (args["type"] == null)
-            return await Task.FromResult(false);
+            return false;
+
         switch (args["type"].Value<string>())
         {
             case "paused":
@@ -299,25 +282,24 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         }
                         if (message["resourceType"].Value<string>() != "console-message")
                             continue;
-                        var messageArgs = message["message"]?["arguments"]?.Value<JArray>();
                         var ctx = GetContextFixefox(sessionId);
                         ctx.GlobalName = args["from"].Value<string>();
-                        if (messageArgs != null && messageArgs.Count == 2)
-                        {
-                            if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                            {
-                                ResetCmdId();
-                                await Task.WhenAll(
-                                    ForwardMessageToIde(args, token),
-                                    RuntimeReady(sessionId, token));
-                            }
-                        }
                     }
                     break;
                 }
             case "target-available-form":
                 {
                     OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["target"]["consoleActor"].Value<string>()));
+                    var ctx = GetContextFixefox(sessionId);
+                    ctx.GlobalName = args["target"]["actor"].Value<string>();
+                    ctx.ThreadName = args["target"]["threadActor"].Value<string>();
+                    ResetCmdId();
+                    if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
+                    {
+                        await ForwardMessageToIde(args, token);
+                        await RuntimeReady(sessionId, token);
+                        return true;
+                    }
                     break;
                 }
         }
@@ -364,6 +346,8 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 {
                     var ctx = GetContextFixefox(sessionId);
                     ctx.ThreadName = args["to"].Value<string>();
+                    if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
+                        await RuntimeReady(sessionId, token);
                     break;
                 }
             case "source":
@@ -691,25 +675,33 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     await SendEvent(sessionId, "", ret.Value, token);
                     return true;
                 }
+            case "DotnetDebugger.runTests":
+                {
+                    await RuntimeReady(sessionId, token);
+                    return true;
+                }
             default:
                 return false;
         }
         return false;
     }
 
-    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
     {
         var context = GetContextFixefox(sessionId);
-        context.LastDebuggerAgentBufferReceived = res;
+        if (context.LastDebuggerAgentBufferReceived != null)
+            logger.LogTrace($"Trying to reset debugger agent buffer before use it.");
+
+        context.LastDebuggerAgentBufferReceived = debuggerAgentBufferTask;
     }
 
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
         var context = GetContextFixefox(sessionId);
-        Result res = context.LastDebuggerAgentBufferReceived;
+        Result res = await context.LastDebuggerAgentBufferReceived;
         if (!res.IsOk)
             return false;
-
+        context.LastDebuggerAgentBufferReceived = null;
         byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);

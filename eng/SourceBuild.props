@@ -34,7 +34,7 @@
     <PropertyGroup>
       <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(SourceBuildNonPortable)' == 'true'">$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>

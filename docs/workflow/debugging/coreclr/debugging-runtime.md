@@ -219,3 +219,18 @@ Native C++ code is not everything in our runtime. Nowadays, there are lots of st
   * Uncheck `Just My Code`. This will allow you debug into the framework libraries.
   * Check `Enable .NET Framework Source Stepping`. This will configure the debugger to download symbols and source automatically for runtime framework binaries. If you built the framework yourself, then you can omit this step without any problems.
   * Check `Suppress JIT optimzation on module load`. This tells the debugger to tell the .NET runtime JIT to generate debuggable code even for modules that may not have been compiled in a `Debug` configuration by the C# compiler. This code is slower, but it provides much higher fidelity breakpoints, stepping, and local variable access. It is the same difference you see when debugging .NET apps in the `Debug` project configuration vs the `Release` project configuration.
+
+#### Resolving Signature Validation Errors in Visual Studio
+
+Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that the debugging libraries that shipped with the .NET Runtime are correctly signed before loading them. If they are unsigned, Visual Studio will show an error like:
+
+> Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
+>
+> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/installer). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+
+If the target process is using a .NET Runtime that is either from a daily build, or one that you built on your own computer, this error will show up. **NOTE**: This error should never happen for official builds of the .NET Runtime from Microsoft. So don’t disable the validation if you expect to be using a .NET Runtime supported by Microsoft.
+
+There are three ways to configure Visual Studio to disable signature validation:
+1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
+2.	The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable: If you want to temporarily disable signature validation, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` in a command prompt, and start Visual Studio (devenv.exe) from this command prompt.
+3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent bases, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`

@@ -24,6 +24,7 @@ parameters:
   enablePublishBuildAssets: false
   enablePublishTestResults: false
   enablePublishUsingPipelines: false
+  enableBuildRetry: false
   disableComponentGovernance: false
   componentGovernanceIgnoreDirectories: ''
   mergeTestResults: false
@@ -86,6 +87,16 @@ jobs:
     # handle variable groups
     - ${{ if ne(variable.group, '') }}:
       - group: ${{ variable.group }}
+
+    # handle template variable syntax
+    # example:
+    # - template: path/to/template.yml
+    #   parameters:
+    #     [key]: [value]
+    - ${{ if ne(variable.template, '') }}:
+      - template: ${{ variable.template }}
+        ${{ if ne(variable.parameters, '') }}:
+          parameters: ${{ variable.parameters }}
 
     # handle key-value variable syntax.
     # example:
@@ -228,3 +239,8 @@ jobs:
         BuildDropPath: ${{ parameters.buildDropPath }}
         IgnoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
 
+  - ${{ if eq(parameters.enableBuildRetry, 'true') }}:
+    - publish: $(Build.SourcesDirectory)\eng\common\BuildConfiguration
+      artifact: BuildConfiguration
+      displayName: Publish build retry configuration
+      continueOnError: true
