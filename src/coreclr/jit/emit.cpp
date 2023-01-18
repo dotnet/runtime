@@ -1020,23 +1020,28 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
     }
 
-    // Fix the last instruction field
+    // Fix the last instruction field, if set. Note that even if there are instructions in the IG,
+    // emitLastIns might not be set if an optimization has just deleted it, and the new instruction
+    // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
+    // at all if this IG is empty.
 
-    if (sz != 0)
+    assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+    if ((emitLastIns != nullptr) && (sz != 0))
     {
-        assert(emitLastIns != nullptr);
+        // If we get here, emitLastIns must be in the current IG we are saving.
+        assert(emitLastInsIG == emitCurIG);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        assert(emitLastIns != nullptr);
         if (emitLastIns->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
 #endif
 
-        emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastInsIG = ig;
     }
 
     // Reset the buffer free pointers
@@ -1185,7 +1190,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1507,6 +1513,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     /* Grab the space for the instruction */
 
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    emitLastInsIG    = emitCurIG;
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));

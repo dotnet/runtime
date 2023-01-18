@@ -4696,7 +4696,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* argNode;
     if (lclNode->TypeIs(TYP_STRUCT))
     {
-        argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
+        argNode = gtNewStructVal(lclNode->GetLayout(this), argAddr);
     }
     else
     {
@@ -4810,7 +4810,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         if (argNodeType == TYP_STRUCT)
         {
-            newArgNode = gtNewObjNode(argNodeLayout, addrNode);
+            newArgNode = gtNewStructVal(argNodeLayout, addrNode);
         }
         else
         {

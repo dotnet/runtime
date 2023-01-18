@@ -1693,7 +1693,6 @@ protected:
 #endif
 
     size_t emitGetInstrDescSize(const instrDesc* id);
-    size_t emitGetInstrDescSizeSC(const instrDesc* id);
 
 #ifdef TARGET_XARCH
 
@@ -2177,19 +2176,24 @@ private:
     }
 
     instrDesc* emitLastIns;
+    insGroup*  emitLastInsIG;
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
-    // We must have a lastInstr to consult.
+    // We must have a non-null emitLastIns to consult.
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns()
     {
-        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
-               !emitForceNewIG &&                          // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
-                                                           //    and it's an extension IG
+        assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+
+        return (emitLastIns != nullptr) &&                   // there is an emitLastInstr
+               !emitForceNewIG &&                            // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
+                                                             //    and it's an extension IG
+               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
+        // and the last instr IG has the same GC interrupt status as the current IG
     }
 
 #ifdef TARGET_ARMARCH
@@ -2997,13 +3001,14 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     {
         return SMALL_IDSC_SIZE;
     }
-
-    if (id->idIsLargeCns())
+    else if (id->idIsLargeCns())
     {
         return sizeof(instrDescCns);
     }
-
-    return sizeof(instrDesc);
+    else
+    {
+        return sizeof(instrDesc);
+    }
 }
 
 /*****************************************************************************
@@ -3041,27 +3046,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 #endif
 
         return id;
-    }
-}
-
-/*****************************************************************************
- *
- *  Get the instrDesc size for something that contains a constant
- */
-
-inline size_t emitter::emitGetInstrDescSizeSC(const instrDesc* id)
-{
-    if (id->idIsSmallDsc())
-    {
-        return SMALL_IDSC_SIZE;
-    }
-    else if (id->idIsLargeCns())
-    {
-        return sizeof(instrDescCns);
-    }
-    else
-    {
-        return sizeof(instrDesc);
     }
 }
 

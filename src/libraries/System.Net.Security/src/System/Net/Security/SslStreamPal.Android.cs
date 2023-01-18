@@ -189,7 +189,7 @@ namespace System.Net.Security
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
-                if ((context == null) || context.IsInvalid)
+                if (context == null || context.IsInvalid)
                 {
                     context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
@@ -212,7 +212,8 @@ namespace System.Net.Security
 
                 outputBuffer = sslContext.ReadPendingWrites();
 
-                return new SecurityStatusPal(statusCode);
+                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+                return new SecurityStatusPal(statusCode, validationException);
             }
             catch (Exception exc)
             {

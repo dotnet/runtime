@@ -193,8 +193,7 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count chars manually.
 
-                int firstNonAsciiIndex = Ascii.GetIndexOfFirstNonAsciiChar(new ReadOnlySpan<char>(pChars, charsLength));
-                byteCount = firstNonAsciiIndex < 0 ? charsLength : firstNonAsciiIndex;
+                byteCount = (int)Ascii.GetIndexOfFirstNonAsciiChar(pChars, (uint)charsLength);
             }
 
             charsConsumed = byteCount;
@@ -355,8 +354,10 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetBytesCommon
         private protected sealed override unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
-            Ascii.FromUtf16(new ReadOnlySpan<char>(pChars, charsLength), new Span<byte>(pBytes, bytesLength), out charsConsumed);
-            return charsConsumed;
+            int bytesWritten = (int)Ascii.NarrowUtf16ToAscii(pChars, pBytes, (uint)Math.Min(charsLength, bytesLength));
+
+            charsConsumed = bytesWritten;
+            return bytesWritten;
         }
 
         private protected sealed override unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder)
@@ -513,8 +514,7 @@ namespace System.Text
             {
                 // Unrecognized fallback mechanism - count bytes manually.
 
-                int indexOfFirstNonAscii = Ascii.GetIndexOfFirstNonAsciiByte(new ReadOnlySpan<byte>(pBytes, bytesLength));
-                charCount = indexOfFirstNonAscii < 0 ? bytesLength : indexOfFirstNonAscii;
+                charCount = (int)Ascii.GetIndexOfFirstNonAsciiByte(pBytes, (uint)bytesLength);
             }
 
             bytesConsumed = charCount;
@@ -627,7 +627,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharsCommon
         private protected sealed override unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
-            Ascii.ToUtf16(new ReadOnlySpan<byte>(pBytes, bytesLength), new Span<char>(pChars, charsLength), out bytesConsumed);
+            bytesConsumed = (int)Ascii.WidenAsciiToUtf16(pBytes, pChars, (uint)Math.Min(charsLength, bytesLength));
             return bytesConsumed;
         }
 

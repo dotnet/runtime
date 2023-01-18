@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable IDE0005
+
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -279,6 +281,15 @@ namespace ILCompiler
 
             ILProvider ilProvider = new NativeAotILProvider();
 
+            var suppressedWarningCategories = new List<string>();
+            if (Get(_command.NoTrimWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (Get(_command.NoAotWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in Get(_command.FeatureSwitches))
             {
@@ -288,16 +299,9 @@ namespace ILCompiler
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
                 featureSwitches.Add(new KeyValuePair<string, bool>(switchAndValue[0], switchValue));
             }
-            ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var suppressedWarningCategories = new List<string>();
-            if (Get(_command.NoTrimWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
-            if (Get(_command.NoAotWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches);
 
-            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
@@ -311,7 +315,7 @@ namespace ILCompiler
                 mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
                     new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
-                resBlockingPolicy = new ManifestResourceBlockingPolicy(featureSwitches);
+                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
