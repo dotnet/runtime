@@ -4515,7 +4515,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 // Scrub all pred list references to block, except for bottom-> bottom->bbNext.
                 //
-                for (BasicBlock* succ : block->Succs())
+                for (BasicBlock* succ : block->Succs(this))
                 {
                     if ((block == bottom) && (succ == bottom->bbNext))
                     {
