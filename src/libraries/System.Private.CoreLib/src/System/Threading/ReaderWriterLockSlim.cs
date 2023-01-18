@@ -238,13 +238,14 @@ namespace System.Threading
             public TimeoutTracker(TimeSpan timeout)
             {
                 long ltm = (long)timeout.TotalMilliseconds;
-                if (ltm < -1 || ltm > (long)int.MaxValue)
-                    throw new ArgumentOutOfRangeException(nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfLessThan(ltm, -1, nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(ltm, int.MaxValue, nameof(timeout));
+
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public TimeoutTracker(int millisecondsTimeout)
@@ -252,9 +253,9 @@ namespace System.Threading
                 ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public int RemainingMilliseconds
