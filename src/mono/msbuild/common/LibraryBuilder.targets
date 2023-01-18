@@ -11,19 +11,21 @@
       <_ExtraLinkerArgs Include="@(_RuntimeSymbolsToKeep)" />
     </ItemGroup>
 
-    <WriteLinesToFile 
-      File="$(AppleAppBundleDir)symbols.txt" 
+    <WriteLinesToFile
+      Condition="'$(_RuntimeSymbolsToKeep.Length)' &gt; 0" 
+      File="$(BundleDir)mobile_symbols.txt" 
       Lines="$(_RuntimeSymbolsToKeep)" 
       Overwrite="true" />
 
     <LibraryBuilderTask
-      Assemblies="@(_AppleAssembliesInternal)"
+      Assemblies="@(AppAssembliesInternal)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       Name="$(AssemblyName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
-      OutputDirectory="$(AppleAppBundleDir)"
-      RuntimeLibraries="@(_RuntimeLibraries)" />
+      OutputDirectory="$(BundleDir)"
+      RuntimeLibraries="@(_RuntimeLibraries)"
+      TargetOS="$(TargetOS)" />
   </Target>
 
 </Project>

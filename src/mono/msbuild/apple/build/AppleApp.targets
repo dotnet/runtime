@@ -18,6 +18,7 @@
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
     <PropertyGroup>
+      <BundleDir>$(AppleAppBundleDir)</BundleDir>
       <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleAppBundleDir)\modules.m</_AotModuleTablePath>
     </PropertyGroup>
@@ -203,6 +204,7 @@ _monovm_runtimeconfig_initialize
 
     <ItemGroup>
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <AppAssembliesInternal Include="@(_AppleAssembliesInternal)" />
     </ItemGroup>
   </Target>
 

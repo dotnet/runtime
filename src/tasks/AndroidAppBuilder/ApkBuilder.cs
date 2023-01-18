@@ -324,6 +324,7 @@ public class ApkBuilder
         string aotSources = assemblerFiles.ToString();
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
+            .Replace("%ProjectName%", ProjectName)
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%AotSources%", aotSources)

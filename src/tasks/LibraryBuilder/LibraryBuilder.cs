@@ -14,6 +14,7 @@ using Microsoft.Build.Utilities;
 public class LibraryBuilderTask : AppBuilderTask
 {
     private string nativeLibraryType = "SHARED";
+    private string targetOS = "";
 
     /// <summary>
     /// The name of the library being generated
@@ -21,6 +22,22 @@ public class LibraryBuilderTask : AppBuilderTask
     [Required]
     [NotNull]
     public string? Name { get; set; }
+
+    /// <summary>
+    /// The name of the OS being targeted
+    /// </summary>
+    [Required]
+    public string TargetOS
+    {
+        get
+        {
+            return targetOS;
+        }
+        set
+        {
+            targetOS = value.ToLowerInvariant();
+        }
+    }
 
     /// <summary>
     /// Extra native sources to be added to the library
@@ -46,6 +63,11 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     [Output]
     public string OutputPath { get; set; } = ""!;
+
+    private string MobileSymbolFileName
+    {
+        get => Path.Combine(OutputDirectory, "mobile_symbols.txt");
+    }
 
     public override bool Execute()
     {
@@ -77,8 +99,13 @@ public class LibraryBuilderTask : AppBuilderTask
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
-                linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {compiledAssembly.ExportsFile}\"");
+                SpecifyExportedSymbols(compiledAssembly.ExportsFile, linkerArgs);
             }
+        }
+
+        if (hasExports && TargetOS == "android")
+        {
+            linkerArgs.AppendLine($"    \"-Wl,-retain-symbols-file {MobileSymbolFileName}\"");
         }
 
         foreach (ITaskItem item in ExtraSources)
@@ -97,6 +124,23 @@ public class LibraryBuilderTask : AppBuilderTask
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
             linkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+        }
+    }
+
+    private void SpecifyExportedSymbols(string exportsFile, StringBuilder linkerArgs)
+    {
+        if (TargetOS == "android")
+        {
+            string exportContent = $"{File.ReadAllText(exportsFile)}\n";
+
+            if (exportContent.Trim().Length > 0)
+            {
+                File.AppendAllText(MobileSymbolFileName, exportContent);
+            }
+        }
+        else
+        {
+            linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {exportsFile}\"");
         }
     }
 

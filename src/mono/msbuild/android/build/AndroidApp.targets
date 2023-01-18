@@ -13,6 +13,51 @@
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <BundleDir>$(AndroidAppBundleDir)</BundleDir>
+      <_MonoHeaderPath>$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0</_MonoHeaderPath>
+      <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_RuntimeSymbolsToKeep>
+register_aot_modules
+mono_jit_init_version
+mono_jit_exec
+mono_assembly_get_name
+mono_assembly_name_get_culture
+mono_assembly_name_get_name
+mono_assembly_open
+mono_class_get_method_from_name
+mono_class_get_name
+mono_class_get_namespace
+mono_debug_init
+mono_dllmap_insert
+mono_domain_get
+mono_gc_init_finalizer_thread
+mono_get_exception_class
+mono_install_assembly_preload_hook
+mono_install_load_aot_data_hook
+mono_install_unhandled_exception_hook
+mono_jit_cleanup
+mono_jit_parse_options
+mono_jit_set_aot_mode
+mono_object_get_class
+mono_object_get_virtual_method
+mono_runtime_invoke
+mono_set_crash_chaining
+mono_set_signal_chaining
+mono_string_to_utf8
+mono_trace_set_log_handler
+monovm_initialize
+monovm_runtimeconfig_initialize
+mono_aot_register_module
+mono_polling_required
+mono_thread_interruption_request_flag
+
+      </_RuntimeSymbolsToKeep>
+    </PropertyGroup>
+
     <ItemGroup>
       <!-- static vs dylibs -->
       <!-- add all non stub libs first -->
@@ -64,44 +109,7 @@
       <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
       <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
       <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
-      <_CommonLinkerArgs Include="-Wl,-exported_symbols_list symbols.txt" />
     </ItemGroup>
-    
-    <PropertyGroup>
-      <_RuntimeSymbolsToKeep>
-_register_aot_modules
-_mono_jit_init_version
-_mono_jit_exec
-_mono_assembly_get_name
-_mono_assembly_name_get_culture
-_mono_assembly_name_get_name
-_mono_assembly_open
-_mono_class_get_method_from_name
-_mono_class_get_name
-_mono_class_get_namespace
-_mono_debug_init
-_mono_dllmap_insert
-_mono_domain_get
-_mono_gc_init_finalizer_thread
-_mono_get_exception_class
-_mono_install_assembly_preload_hook
-_mono_install_load_aot_data_hook
-_mono_install_unhandled_exception_hook
-_mono_jit_cleanup
-_mono_jit_parse_options
-_mono_jit_set_aot_mode
-_mono_object_get_class
-_mono_object_get_virtual_method
-_mono_runtime_invoke
-_mono_set_crash_chaining
-_mono_set_signal_chaining
-_mono_string_to_utf8
-_mono_trace_set_log_handler
-_monovm_initialize
-_monovm_runtimeconfig_initialize
-
-      </_RuntimeSymbolsToKeep>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_BeforeAndroidBuildApp">
@@ -190,22 +198,28 @@ _monovm_runtimeconfig_initialize
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLibrary)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
+    </PropertyGroup>
+
     <MonoAOTCompiler
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(_AOTMode)"
-        OutputType="AsmOnly"
+        AotModulesTablePath="$(_AotModuleTablePath)"
         Assemblies="@(_AotInputAssemblies)"
-        AotModulesTablePath="$(AndroidAppBundleDir)\modules.c"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        LLVMPath="$(MonoAotCrossDir)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
-        UseLLVM="$(MonoEnableLLVM)"
-        LLVMPath="$(MonoAotCrossDir)">
+        Mode="$(_AOTMode)"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        OutputType="AsmOnly"
+        UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AndroidAssembliesInternal" />
     </MonoAOTCompiler>
 
     <ItemGroup>
       <_AndroidAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+      <AppAssembliesInternal Include="@(_AndroidAssembliesInternal)" />
     </ItemGroup>
   </Target>
 
@@ -221,7 +235,7 @@ _monovm_runtimeconfig_initialize
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
+        MonoRuntimeHeaders="$(_MonoHeaderPath)"
         Assemblies="@(_AndroidAssembliesInternal)"
         MainLibraryFileName="$(MainLibraryFileName)"
         IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
