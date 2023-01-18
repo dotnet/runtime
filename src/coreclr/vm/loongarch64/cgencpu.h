@@ -34,15 +34,15 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      40  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         40  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_NDIRECT_IMPORT_PRECODE
 
 #define USE_INDIRECT_CODEHEADER
 
-#define HAS_FIXUP_PRECODE                       1
-#define HAS_FIXUP_PRECODE_CHUNKS                1
+#define HAS_FIXUP_PRECODE
+#define HAS_FIXUP_PRECODE_CHUNKS
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
+#define HAS_THISPTR_RETBUF_PRECODE
 
 #define CODE_SIZE_ALIGN                         8
 #define CACHE_LINE_SIZE                         64
@@ -52,8 +52,8 @@ extern PCODE GetPreStubEntryPoint();
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: v0 and v1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_ARGREGS                           // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                         // CallDescrWorker has FloatArgumentRegisters parameter
 
 #define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes. Loongarch size is ??
 

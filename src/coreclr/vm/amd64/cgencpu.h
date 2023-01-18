@@ -51,11 +51,11 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 // Also in CorCompile.h, FnTableAccess.h
 #define USE_INDIRECT_CODEHEADER                 // use CodeHeader, RealCodeHeader construct
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
-#define HAS_FIXUP_PRECODE                       1
+#define HAS_NDIRECT_IMPORT_PRECODE
+#define HAS_FIXUP_PRECODE
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
+#define HAS_THISPTR_RETBUF_PRECODE
 
 #define CODE_SIZE_ALIGN                         16   // must alloc code blocks on 8-byte boundaries; for perf reasons we use 16 byte boundaries
 #define CACHE_LINE_SIZE                         64   // Current AMD64 processors have 64-byte cache lines as per AMD64 optimization manual
@@ -66,8 +66,8 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16   // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16   // bytes
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes
-#define CALLDESCR_ARGREGS                       1    // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1    // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_ARGREGS                            // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                          // CallDescrWorker has FloatArgumentRegisters parameter
 #else
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes

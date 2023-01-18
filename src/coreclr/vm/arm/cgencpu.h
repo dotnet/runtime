@@ -58,9 +58,9 @@ EXTERN_C void checkStack(void);
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#define HAS_COMPACT_ENTRYPOINTS                 1
+#define HAS_COMPACT_ENTRYPOINTS
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_NDIRECT_IMPORT_PRECODE
 
 #define USE_INDIRECT_CODEHEADER
 
@@ -68,10 +68,10 @@ EXTERN_C void checkStack(void);
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
-#define HAS_FIXUP_PRECODE                       1
+#define HAS_FIXUP_PRECODE
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
+#define HAS_THISPTR_RETBUF_PRECODE
 
 #define CODE_SIZE_ALIGN                         4
 #define CACHE_LINE_SIZE                         32  // As per Intel Optimization Manual the cache line size is 32 bytes
@@ -80,8 +80,8 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         32  // bytes (maximum HFA size is 4 doubles)
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 4   // bytes
 
-#define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
-#define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
+#define CALLDESCR_ARGREGS                           // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                         // CallDescrWorker has FloatArgumentRegisters parameter
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.

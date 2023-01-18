@@ -75,15 +75,15 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 #define USE_INDIRECT_CODEHEADER
 #endif // FEATURE_EH_FUNCLETS
 
-#define HAS_COMPACT_ENTRYPOINTS                 1
+#define HAS_COMPACT_ENTRYPOINTS
 
 // Needed for PInvoke inlining in ngened images
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_NDIRECT_IMPORT_PRECODE
 
-#define HAS_FIXUP_PRECODE                       1
+#define HAS_FIXUP_PRECODE
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
-#define HAS_THISPTR_RETBUF_PRECODE              1
+#define HAS_THISPTR_RETBUF_PRECODE
 
 #define CODE_SIZE_ALIGN                         4
 #define CACHE_LINE_SIZE                         32  // As per Intel Optimization Manual the cache line size is 32 bytes
