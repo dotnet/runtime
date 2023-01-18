@@ -12,9 +12,6 @@ namespace System.Text
     [DebuggerDisplay("{Format}")]
     public sealed class CompositeFormat
     {
-        /// <summary>Number of chars to stackalloc as part of a formatting and parsing operations.</summary>
-        internal const int StackAllocCharSize = 256;
-
         /// <summary>The parsed segments that make up the composite format string.</summary>
         /// <remarks>
         /// Every segment represents either a literal or a format hole, based on whether Literal
@@ -134,7 +131,7 @@ namespace System.Text
             // it significantly in order to maintain compatibility and accidental regression, multiple literals
             // next to each other might be parsed separately due to braces in between them.  This builder then
             // allows us to merge those segments back together easily prior to their being appended to the list.
-            var vsb = new ValueStringBuilder(stackalloc char[StackAllocCharSize]);
+            var vsb = new ValueStringBuilder(stackalloc char[string.StackallocCharBufferSizeLimit]);
 
             // Repeatedly find the next hole and process it.
             int pos = 0;

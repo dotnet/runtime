@@ -653,7 +653,7 @@ namespace System
             }
 
             // Create the interpolated string handler.
-            var handler = new DefaultInterpolatedStringHandler(format._literalLength, format._formattedCount, provider, stackalloc char[CompositeFormat.StackAllocCharSize]);
+            var handler = new DefaultInterpolatedStringHandler(format._literalLength, format._formattedCount, provider, stackalloc char[StackallocCharBufferSizeLimit]);
 
             // Format each segment.
             foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
