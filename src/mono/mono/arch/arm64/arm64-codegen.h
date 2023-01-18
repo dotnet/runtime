@@ -1831,4 +1831,26 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_sqrdmlsh_2s(p, rd, rn, rm, index) arm_neon_sidx_sqdm_d_opcode ((p), VREG_LOW, 0b1, 0b1111, (rd), (rn), (rm), (index))
 #define arm_neon_sqrdmlsh_4s(p, rd, rn, rm, index) arm_neon_sidx_sqdm_d_opcode ((p), VREG_FULL, 0b1, 0b1111, (rd), (rn), (rm), (index))
 
+/* NEON :: table lookup */
+#define arm_neon_lut_opcode(p, q, op2, len, op, rd, rn, rm) arm_neon_opcode_3reg ((p), (q), 0b00001110000000000000000000000000, (rd), (rn), (rm))
+#define arm_neon_tbl1_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b00, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbl1_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b00, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbx1_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b00, 0b1, (rd), (rn), (rm))
+#define arm_neon_tbx1_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b00, 0b1, (rd), (rn), (rm))
+
+#define arm_neon_tbl2_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b01, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbl2_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b01, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbx2_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b01, 0b1, (rd), (rn), (rm))
+#define arm_neon_tbx2_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b01, 0b1, (rd), (rn), (rm))
+
+#define arm_neon_tbl3_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b10, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbl3_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b10, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbx3_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b10, 0b1, (rd), (rn), (rm))
+#define arm_neon_tbx3_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b10, 0b1, (rd), (rn), (rm))
+
+#define arm_neon_tbl4_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b11, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbl4_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b11, 0b0, (rd), (rn), (rm))
+#define arm_neon_tbx4_8b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_LOW, 0b00, 0b11, 0b1, (rd), (rn), (rm))
+#define arm_neon_tbx4_16b(p, rd, rn, rm) arm_neon_lut_opcode ((p), VREG_FULL, 0b00, 0b11, 0b1, (rd), (rn), (rm))
+
 #endif /* __arm_CODEGEN_H__ */
