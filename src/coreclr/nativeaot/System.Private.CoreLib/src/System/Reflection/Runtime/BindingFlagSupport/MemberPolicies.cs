@@ -25,9 +25,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //=================================================================================================================
 
         //
-        // Returns all of the directly declared members on the given TypeInfo.
+        // Returns all of the directly declared members on the given Type.
         //
-        public abstract IEnumerable<M> GetDeclaredMembers(TypeInfo typeInfo);
+        public abstract IEnumerable<M> GetDeclaredMembers(Type type);
 
         //
         // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
@@ -188,6 +188,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             // Either way, we can trust Reflection's result here.
             return false;
         }
+
+        protected const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         //
         // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M

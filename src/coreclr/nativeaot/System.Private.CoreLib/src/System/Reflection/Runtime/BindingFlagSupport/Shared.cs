@@ -156,16 +156,16 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return null;
             }
             string name = member.Name;
-            TypeInfo typeInfo = member.DeclaringType.GetTypeInfo();
+            Type type = member.DeclaringType!;
             for (;;)
             {
-                Type? baseType = typeInfo.BaseType;
+                Type? baseType = type.BaseType;
                 if (baseType == null)
                 {
                     return null;
                 }
-                typeInfo = baseType.GetTypeInfo();
-                foreach (M candidate in policies.GetDeclaredMembers(typeInfo))
+                type = baseType;
+                foreach (M candidate in policies.GetDeclaredMembers(type))
                 {
                     if (candidate.Name != name)
                     {
