@@ -5716,7 +5716,27 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Check legality only if an inline expansion is desirable.
     if (shouldExpandInline)
     {
-        if (isCastClass)
+        CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
+        if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
+            ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
+            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
+            (actualImplCls != NO_CLASS_HANDLE) && impIsClassExact(actualImplCls))
+        {
+            // if an interface has a single implementation on NativeAOT where we won't load new types,
+            // we can assume that our object is always of that implementation's type, e.g.:
+            //
+            // var case1 = obj is IMyInterface;
+            // var case2 = (IMyInterface)obj;
+            //
+            //   can be optimized to:
+            //
+            // var case1 = o is not null && o.GetType() == typeof(MyInterfaceImpl);
+            // var case2 = (o is null || o.GetType() == typeof(MyInterfaceImpl)) ? o : HELPER_CALL(o);
+            //
+            canExpandInline = true;
+            exactCls        = actualImplCls;
+        }
+        else if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
