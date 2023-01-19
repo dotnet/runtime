@@ -23,7 +23,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode
 
     - container: linux_musl_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm-alpine
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm
 

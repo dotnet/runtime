@@ -491,9 +491,6 @@ mono_thread_info_suspend_lock (void);
 void
 mono_thread_info_suspend_unlock (void);
 
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
-
 MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 

@@ -486,7 +486,7 @@ namespace Wasm.Build.Tests
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
-                AddItemsPropertiesToProject("<RunAnalyzers>true</RunAnalyzers>");
+                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
             return projectfile;
         }
 
@@ -990,6 +990,8 @@ namespace Wasm.Build.Tests
 
         public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
         {
+            if (!File.Exists(projectFile))
+                throw new Exception ($"{projectFile} does not exist");
             if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
 

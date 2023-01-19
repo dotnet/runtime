@@ -2079,10 +2079,6 @@ protected:
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
     bool decommit_step (uint64_t step_milliseconds);
-#ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    size_t decommit_region (heap_segment* region, int bucket, int h_number);
-#endif //USE_REGIONS
     PER_HEAP
     void decommit_heap_segment (heap_segment* seg);
     PER_HEAP_ISOLATED
