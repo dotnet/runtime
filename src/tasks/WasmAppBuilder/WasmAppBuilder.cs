@@ -315,8 +315,12 @@ public class WasmAppBuilder : Task
             bool loadRemote = RemoteSources?.Length > 0;
             foreach (var idfn in IcuDataFileNames!)
             {
-                if (File.Exists(idfn))
-                    config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = loadRemote });
+                if (!File.Exists(idfn))
+                {
+                    Log.LogError($"Expected the file defined as ICU resource: {idfn} to exist but it does not.");
+                    return false;
+                }
+                config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = loadRemote });
             }
         }
 
