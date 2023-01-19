@@ -1043,6 +1043,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\StartupHookProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Manipulation.cs" />
