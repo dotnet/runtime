@@ -4702,7 +4702,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 	if (element_class == mono_defaults.object_class)
 		return STELEMREF_OBJECT;
 	if (is_monomorphic_array (element_class))
-		return STELEMREF_SEALED_CLASS;
+		return STELEMREF_COMPLEX;
 
 	/* magic ifaces requires aditional checks for when the element type is an array */
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && m_class_is_array_special_interface (element_class))
