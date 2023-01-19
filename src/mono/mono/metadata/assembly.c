@@ -1462,8 +1462,7 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 	if (g_str_has_suffix (bundled_name, ".webcil") && g_str_has_suffix (name, ".dll")) {
 		size_t bprefix = strlen (bundled_name) - 7;
 		size_t nprefix = strlen (name) - 4;
-		size_t longer = MAX(bprefix, nprefix);
-		if (strncmp (bundled_name, name, longer) == 0)
+		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
 			return TRUE;
 	}
 	return FALSE;
