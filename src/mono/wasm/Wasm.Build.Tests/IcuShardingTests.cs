@@ -18,9 +18,13 @@ public class IcuShardingTests : BuildTestBase
     {
     }
 
+    private static string customIcuPath = Path.Combine(Directory.GetCurrentDirectory().Split("artifacts")[0], "src", "mono", "wasm", "testassets", "icudt_custom.dat");
+
     public static IEnumerable<object?[]> IcuExpectedAndMissingShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
+                // custom file contains only 4 locales, nothing else:
+                new object[] { customIcuPath, new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"}, new string[] { "fr-FR", "hr-HR", "ko-KR" } },
                 new object[] { "icudt.dat", new string[] { "en-GB", "zh-CN", "hr-HR" }, new string[] { "xx-yy" } },
                 new object[] { "icudt_EFIGS.dat", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },
                 new object[] { "icudt_CJK.dat", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },
@@ -60,7 +64,7 @@ public class IcuShardingTests : BuildTestBase
     [MemberData(nameof(IcuExpectedAndMissingShardTestData), parameters: new object[] { true, RunHost.All })]
     public void TestIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
     {
-        string projectName = $"shard_{shardName}_{buildArgs.Config}_{buildArgs.AOT}";
+        string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = false };
