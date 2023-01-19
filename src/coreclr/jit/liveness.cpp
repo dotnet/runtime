@@ -1726,11 +1726,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
             bool           fieldLive = VarSetOps::IsMember(this, life, varIndex);
             anyFieldLive |= fieldLive;
 
-            if (fieldLive)
-            {
-                lclVarNode->ClearLastUse(i - varDsc.lvFieldLclStart);
-            }
-            else
+            if (!fieldLive)
             {
                 lclVarNode->SetLastUse(i - varDsc.lvFieldLclStart);
             }
