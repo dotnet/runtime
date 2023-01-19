@@ -1179,14 +1179,19 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                     else if (loop._upper == int.MaxValue)
                     {
-                        // The special case of a R*S loop is handled separately, as the general case handler could cause infinite recursion.
-                        // The paths that backtracking would explore before stopping here are (1) consuming a character in the first iteration
-                        // of the loop and (2) skipping the loop and continuing with anything higher priority than nullability in S.
+                        // The special case of a R*S loop with a nullable body is handled separately, as the general case handler could cause
+                        // infinite recursion. The paths that backtracking would explore before stopping here are (1) consuming a character in the
+                        // first iteration of the loop and (2) skipping the loop and continuing with anything higher priority than nullability in S.
                         // For example, a pattern (a|b??)*c? would prune into essentially a?(a|b??)*c?|c?. Note that pruning only one peeled-out
                         // iteration of the loop is necessary, since anchors could change the priority of nullability in other locations in the input.
-                        return CreateAlternate(builder,
+                        // Additionally, a high-priority nullable body will always be skipped, in which case only option (2) is included. Finally, in
+                        // all cases the loop body must not be dropped, as doing so could affect whether some capture groups match zero characters or
+                        // don't match at all.
+                        SymbolicRegexNode<TSet> skipLoopCase = CreateConcat(builder, loop._left.PruneLowerPriorityThanNullability(builder, context),
+                                tail.PruneLowerPriorityThanNullability(builder, context));
+                        return loop._left.IsHighPriorityNullableFor(context) ? skipLoopCase : CreateAlternate(builder,
                             CreateConcat(builder, loop._left.PruneLowerPriorityThanNullability(builder, context), CreateConcat(builder, loop, tail)),
-                            tail.PruneLowerPriorityThanNullability(builder, context));
+                            skipLoopCase);
                     }
                     // For an eager loop with finite upper bound and nullable body fall back to the general case handler
                 }
