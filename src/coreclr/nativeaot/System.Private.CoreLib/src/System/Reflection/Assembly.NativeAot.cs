@@ -29,8 +29,7 @@ namespace System.Reflection
 
         public static Assembly Load(string assemblyString)
         {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
+            ArgumentNullException.ThrowIfNull(assemblyString);
 
             AssemblyName name = new AssemblyName(assemblyString);
             return Load(name);
@@ -39,8 +38,7 @@ namespace System.Reflection
         [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
         public static Assembly LoadWithPartialName(string partialName)
         {
-            if (partialName == null)
-                throw new ArgumentNullException(nameof(partialName));
+            ArgumentNullException.ThrowIfNull(partialName);
 
             if ((partialName.Length == 0) || (partialName[0] == '\0'))
                 throw new ArgumentException(SR.Format_StringZeroLength, nameof(partialName));

@@ -156,7 +156,7 @@ internal class OVFTest
         }
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
 #if OP_DIV
 		const string op = "div.ovf";

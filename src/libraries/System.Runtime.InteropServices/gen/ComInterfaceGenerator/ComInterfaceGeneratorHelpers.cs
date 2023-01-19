@@ -11,7 +11,7 @@ namespace Microsoft.Interop
 {
     internal static class ComInterfaceGeneratorHelpers
     {
-        public static MarshallingGeneratorFactoryKey<(TargetFramework, Version)> CreateGeneratorFactory(StubEnvironment env)
+        public static MarshallingGeneratorFactoryKey<(TargetFramework, Version)> CreateGeneratorFactory(StubEnvironment env, MarshalDirection direction)
         {
             IMarshallingGeneratorFactory generatorFactory;
 
@@ -44,7 +44,19 @@ namespace Microsoft.Interop
             generatorFactory = new AttributedMarshallingModelGeneratorFactory(
                 generatorFactory,
                 elementFactory,
-                new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
+                new AttributedMarshallingModelOptions(
+                    runtimeMarshallingDisabled,
+                    direction == MarshalDirection.ManagedToUnmanaged
+                        ? MarshalMode.ManagedToUnmanagedIn
+                        : MarshalMode.UnmanagedToManagedOut,
+                    direction == MarshalDirection.ManagedToUnmanaged
+                        ? MarshalMode.ManagedToUnmanagedRef
+                        : MarshalMode.UnmanagedToManagedRef,
+                    direction == MarshalDirection.ManagedToUnmanaged
+                        ? MarshalMode.ManagedToUnmanagedOut
+                        : MarshalMode.UnmanagedToManagedIn));
+
+            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 

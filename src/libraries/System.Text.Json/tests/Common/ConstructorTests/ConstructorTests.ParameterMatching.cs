@@ -1477,7 +1477,7 @@ namespace System.Text.Json.Serialization.Tests
                 SampleEnumUInt32 enum5 = SampleEnumUInt32.MinZero,
                 string str1 = "abc",
                 string str2 = "",
-                string str3 = "\n\r⁉️\'\"\u200D\f\t\v\0\a\b\\\'\"",
+                string str3 = "\n\r\u2049\uFE0F\'\"\u200D\f\t\v\0\a\b\\\'\"",
                 char char1 = 'a',
                 char char2 = '\u200D',
                 double double1 = double.NegativeInfinity,

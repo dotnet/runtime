@@ -93,6 +93,7 @@ parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", de
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
+parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
@@ -643,9 +644,9 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "OSX":
+    if host_os == "osx":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
-    elif host_os == "Linux":
+    elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
             coredump_pattern = f.read().rstrip()
     else:
@@ -687,7 +688,7 @@ def setup_coredump_generation(host_os):
 
     print("CoreDump generation enabled")
 
-    if host_os == "Linux" and os.path.isfile("/proc/self/coredump_filter"):
+    if host_os == "linux" and os.path.isfile("/proc/self/coredump_filter"):
         # Include memory in private and shared file-backed mappings in the dump.
         # This ensures that we can see disassembly from our shared libraries when
         # inspecting the contents of the dump. See 'man core' for details.
@@ -719,9 +720,9 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "OSX":
+    if host_os == "osx":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
-    elif host_os == "Linux":
+    elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
     else:
         print("Not printing coredump due to unsupported OS: %s" % host_os)
@@ -807,7 +808,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
-    elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
+    elif host_os == "linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
         with open("/proc/sys/kernel/core_uses_pid", "r") as f:
             if f.read().rstrip() == "1":
                 coredump_name_uses_pid=True
@@ -874,13 +875,17 @@ def run_tests(args,
         print("Large Version Bubble enabled")
         os.environ["LargeVersionBubble"] = "1"
 
+    if args.synthesize_pgo:
+        print("Synthesizing PGO")
+        os.environ["CrossGen2SynthesizePgo"] = "1"
+
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
 
     if args.run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
-        os.environ["RunInUnloadableContext"] = "1";
+        os.environ["RunInUnloadableContext"] = "1"
         per_test_timeout = 40*60*1000
 
     if args.tiering_test:
@@ -925,7 +930,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
+    requires_coreroot = args.host_os != "browser" and args.host_os != "android"
     coreclr_setup_args = CoreclrArguments(args,
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot,
@@ -995,6 +1000,11 @@ def setup_args(args):
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
+
+    coreclr_setup_args.verify(args,
+                              "synthesize_pgo",
+                              lambda arg: True,
+                              "Error setting synthesize_pgo")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
@@ -1195,7 +1205,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
     Args:
         xml_result_file      : results xml file to parse
         args                 : arguments
-        tests                : dictionary of individual test results
+        tests                : list of individual test results
         assemblies           : dictionary of per-assembly aggregations
     """
 
@@ -1242,14 +1252,13 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
                         test_location_on_filesystem = None
                     test_output = test.findtext("output")
-                    assert tests[test_name] == None
-                    tests[test_name] = defaultdict(lambda: None, {
+                    tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
                         "result" : result,
                         "time": time,
                         "test_output": test_output
-                    })
+                    }))
                     if result == "Pass":
                         assembly_info["passed"] += 1
                     elif result == "Fail":
@@ -1273,7 +1282,6 @@ def print_summary(tests, assemblies):
     failed_tests = []
 
     for test in tests:
-        test = tests[test]
         if test["result"] == "Fail":
             print("Failed test: %s" % test["name"])
 
@@ -1340,7 +1348,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["result"] == "Fail" and tests[item]["test_path"] is not None]
+    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1385,7 +1393,7 @@ def main(args):
 
     if not args.skip_test_run:
         assemblies = defaultdict(lambda: None)
-        tests = defaultdict(lambda: None)
+        tests = []
         parse_test_results(args, tests, assemblies)
         print_summary(tests, assemblies)
         create_repro(args, env, tests)

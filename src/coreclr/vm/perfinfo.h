@@ -22,7 +22,7 @@ class PerfInfo {
 public:
     PerfInfo(int pid);
     ~PerfInfo();
-    void LogImage(PEAssembly* pPEAssembly, WCHAR* guid);
+    void LogImage(PEAssembly* pPEAssembly, CHAR* guid);
 
 private:
     CFileStream* m_Stream;

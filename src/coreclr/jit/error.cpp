@@ -239,7 +239,7 @@ DWORD getBreakOnBadCode()
 /*****************************************************************************/
 void debugError(const char* msg, const char* file, unsigned line)
 {
-    const char* tail = strrchr(file, '\\');
+    const char* tail = strrchr(file, DIRECTORY_SEPARATOR_CHAR_A);
     if (tail != nullptr)
     {
         tail = tail + 1;

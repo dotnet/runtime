@@ -46,6 +46,7 @@
         }
       ],
       "defaultValue": "net8.0",
+      "replaces": "net7.0",
       "displayName": "framework"
     }
   }

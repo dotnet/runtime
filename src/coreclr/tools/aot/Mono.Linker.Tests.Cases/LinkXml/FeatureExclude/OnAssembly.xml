@@ -1,0 +1,8 @@
+<linker>
+    <assembly fullname="library1, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="one">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.Dependencies.OnAssembly_Lib1/FeatureOneClass"/>
+    </assembly>
+    <assembly fullname="library2, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="two">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.Dependencies.OnAssembly_Lib2/FeatureTwoClass"/>
+    </assembly>
+</linker>

@@ -67,7 +67,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
     m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, this, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
-    
+
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
     m_pManifestMetadata = LoadManifestMetadata();
 
@@ -82,12 +82,12 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
         m_assemblySimpleNameToIndexMap.Add(AssemblyNameIndex(assemblyName, m_manifestAssemblyCount));
         m_manifestAssemblyCount++;
     }
-    
+
     // When a composite image contributes to a larger version bubble, its manifest assembly
     // count may exceed its component assembly count as it may contain references to
     // assemblies outside of the composite image that are part of its version bubble.
     _ASSERTE(m_manifestAssemblyCount >= m_componentAssemblyCount);
-    
+
     S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(m_manifestAssemblyCount);
 
     // Note: Memory allocated on loader heap is zero filled
@@ -195,7 +195,7 @@ NativeImage *NativeImage::Open(
 
                 fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
                 fullPath += compositeImageFileName;
-                
+
                 EX_TRY
                 {
                     peLoadedImage = PEImageLayout::LoadNative(fullPath);
@@ -212,10 +212,13 @@ NativeImage *NativeImage::Open(
         if (peLoadedImage.IsNull())
         {
             // Failed to locate the native composite R2R image
-            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
+#ifdef LOGGING
+            SString searchPaths(searchPathsConfig != nullptr ? searchPathsConfig : W("<use DOTNET_NativeImageSearchPaths to set>"));
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%s'\n",
                 nativeImageFileName,
-                path.GetUnicode(),
-                searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
+                path.GetUTF8(),
+                searchPaths.GetUTF8()));
+#endif // LOGGING
             RaiseFailFastException(nullptr, nullptr, 0);
         }
     }

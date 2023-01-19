@@ -93,4 +93,7 @@ inline constexpr unsigned ArrLen(T (&)[size])
     return size;
 }
 
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd);
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
+
 #endif // !_SPMIUtil

@@ -320,10 +320,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 SetSpecialHeaders(HttpKnownHeaderNames.ContentLength, value.ToString());
             }
         }

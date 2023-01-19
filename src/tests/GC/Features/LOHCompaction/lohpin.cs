@@ -22,7 +22,7 @@ namespace LOHPin
          *   - compact LOH then check the address of the objects
          * */
  
-        static int Main(string[] args)
+        static int Main()
         {
             List<GCHandle> GCHandleList = new List<GCHandle>();
             int ListSize = 300;

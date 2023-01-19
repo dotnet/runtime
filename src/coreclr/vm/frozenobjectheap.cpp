@@ -18,7 +18,7 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 // Allocates an object of the give size (including header) on a frozen segment.
 // May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
-Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
+Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish)
 {
     CONTRACTL
     {
@@ -32,47 +32,59 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     return nullptr;
 #else // FEATURE_BASICFREEZE
 
-    CrstHolder ch(&m_Crst);
-
-    _ASSERT(type != nullptr);
-    _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
-
-    // NOTE: objectSize is expected be the full size including header
-    _ASSERT(objectSize >= MIN_OBJECT_SIZE);
-
-    if (objectSize > FOH_COMMIT_SIZE)
+    Object* obj = nullptr;
     {
-        // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
-        // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
-        return nullptr;
-    }
+        CrstHolder ch(&m_Crst);
 
-    if (m_CurrentSegment == nullptr)
-    {
-        // Create the first segment on first allocation
-        m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
-        m_FrozenSegments.Append(m_CurrentSegment);
-        _ASSERT(m_CurrentSegment != nullptr);
-    }
+        _ASSERT(type != nullptr);
+        _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
-    Object* obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+    #ifdef FEATURE_64BIT_ALIGNMENT
+        _ASSERT(!type->RequiresAlign8());
+    #endif
 
-    // The only case where it can be null is when the current segment is full and we need
-    // to create a new one
-    if (obj == nullptr)
-    {
-        // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
-        // Use the same size in case if prevSegmentSize*2 operation overflows.
-        size_t prevSegmentSize = m_CurrentSegment->GetSize();
-        m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
-        m_FrozenSegments.Append(m_CurrentSegment);
+        // NOTE: objectSize is expected be the full size including header
+        _ASSERT(objectSize >= MIN_OBJECT_SIZE);
 
-        // Try again
+        if (objectSize > FOH_COMMIT_SIZE)
+        {
+            // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
+            // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
+            return nullptr;
+        }
+
+        if (m_CurrentSegment == nullptr)
+        {
+            // Create the first segment on first allocation
+            m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
+            m_FrozenSegments.Append(m_CurrentSegment);
+            _ASSERT(m_CurrentSegment != nullptr);
+        }
+
         obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
 
-        // This time it's not expected to be null
-        _ASSERT(obj != nullptr);
+        // The only case where it can be null is when the current segment is full and we need
+        // to create a new one
+        if (obj == nullptr)
+        {
+            // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
+            // Use the same size in case if prevSegmentSize*2 operation overflows.
+            size_t prevSegmentSize = m_CurrentSegment->GetSize();
+            m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
+            m_FrozenSegments.Append(m_CurrentSegment);
+
+            // Try again
+            obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+
+            // This time it's not expected to be null
+            _ASSERT(obj != nullptr);
+        }
     }
+    if (publish)
+    {
+        PublishFrozenObject(obj);
+    }
+
     return obj;
 #endif // !FEATURE_BASICFREEZE
 }

@@ -1224,7 +1224,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
     if (compiler->killGCRefs(tree))
     {
         RefPosition* pos =
-            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (allRegs(TYP_REF) & ~RBM_ARG_REGS));
+            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS));
         insertedKills = true;
     }
 
@@ -1368,7 +1368,7 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regTy
 RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
     // The candidate set should contain only integer registers.
-    assert((internalCands & ~allRegs(TYP_INT)) == RBM_NONE);
+    assert((internalCands & ~availableIntRegs) == RBM_NONE);
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, IntRegisterType, internalCands);
     return defRefPosition;
@@ -1387,7 +1387,7 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
     // The candidate set should contain only float registers.
-    assert((internalCands & ~allRegs(TYP_FLOAT)) == RBM_NONE);
+    assert((internalCands & ~availableFloatRegs) == RBM_NONE);
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, FloatRegisterType, internalCands);
     return defRefPosition;
@@ -2823,7 +2823,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
     {
         if (dstCandidates == RBM_NONE)
         {
-            dstCandidates = allRegs(TYP_INT);
+            dstCandidates = availableIntRegs;
         }
         dstCandidates &= ~RBM_NON_BYTE_REGS;
         assert(dstCandidates != RBM_NONE);
@@ -3221,8 +3221,7 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
             assert(hwintrinsic->Op(2)->IsCnsIntOrI());
         }
 
-        BuildUse(hwintrinsic->Op(1), candidates);
-        return 1;
+        return BuildOperandUses(hwintrinsic->Op(1), candidates);
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64

@@ -194,7 +194,12 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
         PTR_MethodTable pMethodTable = pMD->GetMethodTable();
 
         // Standard fast check
-        if (!pMethodTable->ValidateWithPossibleAV())
+        if ((pMethodTable == NULL) || dac_cast<TADDR>(pMethodTable) == (TADDR)-1)
+        {
+            retval = FALSE;
+        }
+
+        if (retval && !pMethodTable->ValidateWithPossibleAV())
         {
             retval = FALSE;
         }
@@ -1334,7 +1339,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
                     nChars > 0 && nChars <= ARRAY_SIZE(path))
                 {
                     WCHAR* pFile = path + nChars - 1;
-                    while ((pFile >= path) && (*pFile != W('\\')))
+                    while ((pFile >= path) && (*pFile != DIRECTORY_SEPARATOR_CHAR_W))
                     {
                         pFile--;
                     }

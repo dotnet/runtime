@@ -27,7 +27,7 @@ public class cs1
 #pragma warning restore 0414
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static int Main(String[] args)
+    public static int Main()
     {
         try
         {

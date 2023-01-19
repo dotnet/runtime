@@ -45,6 +45,11 @@
       <Architectures>wasm</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="wasi">
+      <Parent>any</Parent>
+      <Architectures>wasm</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="maccatalyst">
       <Parent>ios</Parent>
       <Architectures>x64;arm64</Architectures>
@@ -178,7 +183,7 @@
 
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
-      <Architectures>x64</Architectures>
+      <Architectures>x64;arm64</Architectures>
       <Versions>12;13</Versions>
     </RuntimeGroup>
 

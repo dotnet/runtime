@@ -18,9 +18,6 @@ interp_intrins_ordinal_ignore_case_ascii (guint32 valueA, guint32 valueB);
 int
 interp_intrins_64ordinal_ignore_case_ascii (guint64 valueA, guint64 valueB);
 
-MonoString*
-interp_intrins_u32_to_decstr (guint32 value, MonoArray *cache, MonoVTable *vtable);
-
 mono_u
 interp_intrins_widen_ascii_to_utf16 (guint8 *pAsciiBuffer, mono_unichar2 *pUtf16Buffer, mono_u elementCount);
 

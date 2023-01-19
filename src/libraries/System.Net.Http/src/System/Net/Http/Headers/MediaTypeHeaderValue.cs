@@ -149,7 +149,7 @@ namespace System.Net.Http.Headers
         /// <returns>A <see cref="MediaTypeHeaderValue"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="input"/> is a <see langword="null"/> reference.</exception>
         /// <exception cref="FormatException"><parmref name="input"/> is not valid media type header value information.</exception>
-        public static MediaTypeHeaderValue Parse(string? input)
+        public static MediaTypeHeaderValue Parse(string input)
         {
             int index = 0;
             return (MediaTypeHeaderValue)MediaTypeHeaderParser.SingleValueParser.ParseValue(input, null, ref index);

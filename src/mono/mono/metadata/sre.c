@@ -3949,6 +3949,7 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	gboolean ret = TRUE;
 	MonoReflectionDynamicMethod *mb;
 	MonoAssembly *ass = NULL;
+	MonoObjectHandle ref_handle = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	error_init (error);
 
@@ -3977,8 +3978,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 	for (gint32 i = 0; i < mb->nrefs; i += 2) {
 		MonoClass *handle_class;
 		gpointer ref;
-		MonoObject *obj = mono_array_get_internal (mb->refs, MonoObject*, i);
-		MONO_HANDLE_PIN (obj);
+		MonoObject *obj;
+
+		obj = mono_array_get_internal (mb->refs, MonoObject*, i);
+		/* Reuse the handle since we are inside a loop */
+		MONO_HANDLE_ASSIGN_RAW (ref_handle, obj);
 
 		if (strcmp (obj->vtable->klass->name, "DynamicMethod") == 0) {
 			MonoReflectionDynamicMethod *method = (MonoReflectionDynamicMethod*)obj;

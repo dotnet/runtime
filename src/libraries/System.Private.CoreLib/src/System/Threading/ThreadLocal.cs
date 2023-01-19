@@ -302,10 +302,7 @@ namespace System.Threading
         {
             // If the object has been disposed, the id will be -1.
             int id = ~_idComplement;
-            if (id < 0)
-            {
-                throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(id < 0, this);
 
             Debugger.NotifyOfCrossThreadDependency();
 
@@ -335,10 +332,7 @@ namespace System.Threading
             int id = ~_idComplement;
 
             // If the object has been disposed, id will be -1.
-            if (id < 0)
-            {
-                throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(id < 0, this);
 
             // If a slot array has not been created on this thread yet, create it.
             if (slotArray == null)
@@ -374,10 +368,7 @@ namespace System.Threading
                 // if this ThreadLocal instance was disposed on another thread and another ThreadLocal instance was
                 // created, we definitely won't assign the value into the wrong instance.
 
-                if (!_initialized)
-                {
-                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-                }
+                ObjectDisposedException.ThrowIf(!_initialized, this);
 
                 slot!._value = value;
             }
@@ -396,10 +387,7 @@ namespace System.Threading
             {
                 // Check that the instance has not been disposed. It is important to check this under a lock, since
                 // Dispose also executes under a lock.
-                if (!_initialized)
-                {
-                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-                }
+                ObjectDisposedException.ThrowIf(!_initialized, this);
 
                 Debug.Assert(_linkedSlot != null, "Should only be null if disposed");
                 LinkedSlot? firstRealNode = _linkedSlot._next;
@@ -439,7 +427,7 @@ namespace System.Threading
                 }
 
                 List<T>? list = GetValuesAsList(); // returns null if disposed
-                if (list == null) throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
+                ObjectDisposedException.ThrowIf(list is null, this);
                 return list;
             }
         }
@@ -491,10 +479,7 @@ namespace System.Threading
             get
             {
                 int id = ~_idComplement;
-                if (id < 0)
-                {
-                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-                }
+                ObjectDisposedException.ThrowIf(id < 0, this);
 
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 return slotArray != null && id < slotArray.Length && slotArray[id].Value != null;

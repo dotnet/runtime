@@ -138,7 +138,7 @@ pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallb
     return currentRid;
 }
 
-bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
     pal::string_t host_rid = get_current_rid(rid_fallback_graph);
 
@@ -193,10 +193,9 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
             }
         }
     }
-    return true;
 }
 
-bool deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets)
+void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets)
 {
     rid_specific_assets_t& assets = *p_assets;
     for (const auto& package : json[_X("targets")][target_name.c_str()].GetObject())
@@ -253,15 +252,10 @@ bool deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
         }
     }
 
-    if (!perform_rid_fallback(&assets, rid_fallback_graph))
-    {
-        return false;
-    }
-
-    return true;
+    perform_rid_fallback(&assets, rid_fallback_graph);
 }
 
-bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets)
+void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets)
 {
     deps_assets_t& assets = *p_assets;
     for (const auto& package : json[_X("targets")][target_name.c_str()].GetObject())
@@ -311,20 +305,12 @@ bool deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
             }
         }
     }
-    return true;
 }
 
-bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
 {
-    if (!process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets))
-    {
-        return false;
-    }
-
-    if (!process_targets(json, target_name, &m_assets))
-    {
-        return false;
-    }
+    process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets);
+    process_targets(json, target_name, &m_assets);
 
     auto package_exists = [&](const pal::string_t& package) -> bool {
         return m_rid_assets.libs.count(package) || m_assets.libs.count(package);
@@ -357,16 +343,11 @@ bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const
     };
 
     reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
-
-    return true;
 }
 
-bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name)
+void deps_json_t::load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name)
 {
-    if (!process_targets(json, target_name, &m_assets))
-    {
-        return false;
-    }
+    process_targets(json, target_name, &m_assets);
 
     auto package_exists = [&](const pal::string_t& package) -> bool {
         return m_assets.libs.count(package);
@@ -408,7 +389,6 @@ bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         }
         trace::verbose(_X("}"));
     }
-    return true;
 }
 
 bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
@@ -438,7 +418,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 // Load the deps file and parse its "entry" lines which contain the "fields" of
 // the entry. Populate an array of these entries.
 //
-bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
     m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
@@ -448,14 +428,14 @@ bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
     {
         // If file doesn't exist, then assume parsed.
         trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
-        return true;
+        m_valid = true;
+        return;
     }
 
     if (!json.parse_file(m_deps_file))
-    {
-        return false;
-    }
+        return;
 
+    m_valid = true;
     const auto& runtime_target = json.document()[_X("runtimeTarget")];
     const pal::string_t& name = runtime_target.IsString() ?
         runtime_target.GetString() :
@@ -464,7 +444,11 @@ bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
     trace::verbose(_X("Loading deps file... %s as framework dependent=[%d]"), deps_path.c_str(), is_framework_dependent);
 
     if (is_framework_dependent)
-        return load_framework_dependent(deps_path, json.document(), name, rid_fallback_graph);
-
-    return load_self_contained(deps_path, json.document(), name);
+    {
+        load_framework_dependent(deps_path, json.document(), name, rid_fallback_graph);
+    }
+    else
+    {
+        load_self_contained(deps_path, json.document(), name);
+    }
 }

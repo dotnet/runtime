@@ -68,11 +68,11 @@ export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>
 
 Now we're ready to build everything for Android:
 ```
-./build.sh mono+libs -os Android -arch x64
+./build.sh mono+libs -os android -arch x64
 ```
 and even run tests one by one for each library:
 ```
-./build.sh libs.tests -os Android -arch x64 -test
+./build.sh libs.tests -os android -arch x64 -test
 ```
 Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device is plugged in and unlocked.
 `AVD Manager` tool recommends to install `x86` images by default so if you follow that recommendation make sure `-arch x86` was used for the build script.
@@ -80,7 +80,7 @@ Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device 
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
+./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64
 ```
 
 ### Running the functional tests
@@ -89,7 +89,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=Android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
@@ -147,7 +147,7 @@ ${ANDROID_SDK_ROOT}/emulator/emulator -avd ${EMULATOR_NAME_X64} &
 The emulator can be launched with a variety of options. Run `emulator -help` to see the full list.
 
 ### Existing Limitations
-- `-os Android` is not supported for Windows yet (`WSL` can be used instead)
+- `-os android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
 - AOT and Interpreter modes are not supported yet
 

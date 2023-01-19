@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization.Metadata
             : base(converter, options)
         {
             NumberHandling = GetNumberHandlingForType(Type);
+            if (Kind == JsonTypeInfoKind.Object)
+            {
+                UnmappedMemberHandling = GetUnmappedMemberHandling(Type);
+            }
+
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
@@ -32,7 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
             converter.ConfigureJsonTypeInfoUsingReflection(this, options);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         internal override void LateAddProperties()
         {
@@ -44,96 +49,29 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            const BindingFlags BindingFlags =
-                BindingFlags.Instance |
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.DeclaredOnly;
-
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            bool propertyOrderSpecified = false;
             // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
             // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
             bool shouldCheckMembersForRequiredMemberAttribute =
                 typeof(T).HasRequiredMemberAttribute()
                 && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
-            // Walk through the inheritance hierarchy, starting from the most derived type upward.
-            for (Type? currentType = Type; currentType != null; currentType = currentType.BaseType)
+            bool propertyOrderSpecified = false;
+            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
+
+            // Walk the type hierarchy starting from the current type up to the base type(s)
+            foreach (Type currentType in Type.GetSortedTypeHierarchy())
             {
-                PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
-
-                // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
-                // is finished initializing and added to the cache in JsonSerializerOptions.
-                // Default 'capacity' to the common non-polymorphic + property case.
-                PropertyCache ??= CreatePropertyCache(capacity: properties.Length);
-
-                foreach (PropertyInfo propertyInfo in properties)
+                if (currentType == ObjectType)
                 {
-                    string propertyName = propertyInfo.Name;
-
-                    // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
-                    if (propertyInfo.GetIndexParameters().Length > 0 ||
-                        PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
-                    {
-                        continue;
-                    }
-
-                    // For now we only support public properties (i.e. setter and/or getter is public).
-                    if (propertyInfo.GetMethod?.IsPublic == true ||
-                        propertyInfo.SetMethod?.IsPublic == true)
-                    {
-                        CacheMember(
-                            typeToConvert: propertyInfo.PropertyType,
-                            memberInfo: propertyInfo,
-                            ref propertyOrderSpecified,
-                            ref ignoredMembers,
-                            shouldCheckMembersForRequiredMemberAttribute);
-                    }
-                    else
-                    {
-                        if (propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyName, currentType);
-                        }
-
-                        // Non-public properties should not be included for (de)serialization.
-                    }
+                    // Don't process any members for typeof(object)
+                    break;
                 }
 
-                foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
-                {
-                    string fieldName = fieldInfo.Name;
-
-                    if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
-                    {
-                        continue;
-                    }
-
-                    bool hasJsonInclude = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
-
-                    if (fieldInfo.IsPublic)
-                    {
-                        if (hasJsonInclude || Options.IncludeFields)
-                        {
-                            CacheMember(
-                                typeToConvert: fieldInfo.FieldType,
-                                memberInfo: fieldInfo,
-                                ref propertyOrderSpecified,
-                                ref ignoredMembers,
-                                shouldCheckMembersForRequiredMemberAttribute);
-                        }
-                    }
-                    else
-                    {
-                        if (hasJsonInclude)
-                        {
-                            ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(fieldName, currentType);
-                        }
-
-                        // Non-public fields should not be included for (de)serialization.
-                    }
-                }
+                AddMembersDeclaredBySuperType(
+                    currentType,
+                    shouldCheckMembersForRequiredMemberAttribute,
+                    ref propertyOrderSpecified,
+                    ref ignoredMembers);
             }
 
             Debug.Assert(PropertyCache != null);
@@ -141,6 +79,98 @@ namespace System.Text.Json.Serialization.Metadata
             if (propertyOrderSpecified)
             {
                 PropertyCache.List.StableSortByKey(static p => p.Value.Order);
+            }
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        private void AddMembersDeclaredBySuperType(
+            Type currentType,
+            bool shouldCheckMembersForRequiredMemberAttribute,
+            ref bool propertyOrderSpecified,
+            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+        {
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(currentType.IsAssignableFrom(Type));
+
+            const BindingFlags BindingFlags =
+                BindingFlags.Instance |
+                BindingFlags.Public |
+                BindingFlags.NonPublic |
+                BindingFlags.DeclaredOnly;
+
+            PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
+
+            // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
+            // is finished initializing and added to the cache in JsonSerializerOptions.
+            // Default 'capacity' to the common non-polymorphic + property case.
+            PropertyCache ??= CreatePropertyCache(capacity: properties.Length);
+
+            foreach (PropertyInfo propertyInfo in properties)
+            {
+                string propertyName = propertyInfo.Name;
+
+                // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
+                if (propertyInfo.GetIndexParameters().Length > 0 ||
+                    PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
+                {
+                    continue;
+                }
+
+                // For now we only support public properties (i.e. setter and/or getter is public).
+                if (propertyInfo.GetMethod?.IsPublic == true ||
+                    propertyInfo.SetMethod?.IsPublic == true)
+                {
+                    CacheMember(
+                        typeToConvert: propertyInfo.PropertyType,
+                        memberInfo: propertyInfo,
+                        ref propertyOrderSpecified,
+                        ref ignoredMembers,
+                        shouldCheckMembersForRequiredMemberAttribute);
+                }
+                else
+                {
+                    if (propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyName, currentType);
+                    }
+
+                    // Non-public properties should not be included for (de)serialization.
+                }
+            }
+
+            foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
+            {
+                string fieldName = fieldInfo.Name;
+
+                if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                {
+                    continue;
+                }
+
+                bool hasJsonInclude = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+
+                if (fieldInfo.IsPublic)
+                {
+                    if (hasJsonInclude || Options.IncludeFields)
+                    {
+                        CacheMember(
+                            typeToConvert: fieldInfo.FieldType,
+                            memberInfo: fieldInfo,
+                            ref propertyOrderSpecified,
+                            ref ignoredMembers,
+                            shouldCheckMembersForRequiredMemberAttribute);
+                    }
+                }
+                else
+                {
+                    if (hasJsonInclude)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(fieldName, currentType);
+                    }
+
+                    // Non-public fields should not be included for (de)serialization.
+                }
             }
         }
 
@@ -205,6 +235,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonNumberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.Handling;
+        }
+
+        private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
+        {
+            JsonUnmappedMemberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
+            return numberHandlingAttribute?.UnmappedMemberHandling;
         }
 
         private static bool PropertyIsOverriddenAndIgnored(

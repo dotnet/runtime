@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
@@ -14,10 +13,18 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
     internal sealed class TypeGenerationSpec
     {
+        public TypeGenerationSpec(Type type)
+        {
+            Type = type;
+            TypeRef = type.GetCompilableName();
+            TypeInfoPropertyName = type.GetTypeInfoPropertyName();
+            IsValueType = type.IsValueType;
+        }
+
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
-        public string TypeRef { get; private set; }
+        public string TypeRef { get; private init; }
 
         /// <summary>
         /// If specified as a root type via <c>JsonSerializableAttribute</c>, specifies the location of the attribute application.
@@ -42,7 +49,7 @@ namespace System.Text.Json.SourceGeneration
 
         public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
-        public Type Type { get; private set; }
+        public Type Type { get; private init; }
 
         public ClassType ClassType { get; private set; }
 
@@ -50,15 +57,19 @@ namespace System.Text.Json.SourceGeneration
         public bool ImplementsIJsonOnSerializing { get; private set; }
 
         public bool IsPolymorphic { get; private set; }
-        public bool IsValueType { get; private set; }
+        public bool IsValueType { get; private init; }
 
         public bool CanBeNull { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
         public ParameterGenerationSpec[]? CtorParamGenSpecArray { get; private set; }
+
+        public List<PropertyInitializerGenerationSpec>? PropertyInitializerSpecList { get; private set; }
+        public int PropertyInitializersWithoutMatchingConstructorParameters { get; private set; }
 
         public CollectionType CollectionType { get; private set; }
 
@@ -67,6 +78,8 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? CollectionValueTypeMetadata { get; private set; }
 
         public ObjectConstructionStrategy ConstructionStrategy { get; private set; }
+
+        public bool ConstructorSetsRequiredParameters { get; private set; }
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
@@ -93,7 +106,7 @@ namespace System.Text.Json.SourceGeneration
         {
             get
             {
-                string builderName;
+                string? builderName;
 
                 if (CollectionType == CollectionType.ImmutableDictionary)
                 {
@@ -115,15 +128,17 @@ namespace System.Text.Json.SourceGeneration
 
         public void Initialize(
             JsonSourceGenerationMode generationMode,
-            Type type,
             ClassType classType,
             JsonNumberHandling? numberHandling,
+            JsonUnmappedMemberHandling? unmappedMemberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
+            List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
+            bool constructorSetsRequiredMembers,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? runtimeTypeRef,
             TypeGenerationSpec? extensionDataPropertyTypeSpec,
@@ -136,20 +151,19 @@ namespace System.Text.Json.SourceGeneration
             bool isPolymorphic)
         {
             GenerationMode = generationMode;
-            TypeRef = type.GetCompilableName();
-            TypeInfoPropertyName = type.GetTypeInfoPropertyName();
-            Type = type;
             ClassType = classType;
-            IsValueType = type.IsValueType;
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
+            UnmappedMemberHandling = unmappedMemberHandling;
             PropertyGenSpecList = propertyGenSpecList;
+            PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
+            ConstructorSetsRequiredParameters = constructorSetsRequiredMembers;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             RuntimeTypeRef = runtimeTypeRef;
             ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;
@@ -166,6 +180,9 @@ namespace System.Text.Json.SourceGeneration
                 [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                 out bool castingRequiredForProps)
         {
+            Debug.Assert(PropertyGenSpecList != null);
+
+            castingRequiredForProps = false;
             serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
             Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
 
@@ -198,6 +215,10 @@ namespace System.Text.Json.SourceGeneration
                     continue;
                 }
 
+                // Using properties from an interface hierarchy -- require explicit casting when
+                // getting properties in the fast path to account for possible diamond ambiguities.
+                castingRequiredForProps |= Type.IsInterface && propGenSpec.DeclaringType != Type;
+
                 string memberName = propGenSpec.ClrName!;
 
                 // The JsonPropertyNameAttribute or naming policy resulted in a collision.
@@ -210,32 +231,52 @@ namespace System.Text.Json.SourceGeneration
                         // Overwrite previously cached property since it has [JsonIgnore].
                         serializableProperties[propGenSpec.RuntimePropertyName] = propGenSpec;
                     }
-                    else if (
-                        // Does the current property have `JsonIgnoreAttribute`?
-                        propGenSpec.DefaultIgnoreCondition != JsonIgnoreCondition.Always &&
-                        // Is the current property hidden by the previously cached property
-                        // (with `new` keyword, or by overriding)?
-                        other.ClrName != memberName &&
-                        // Was a property with the same CLR name was ignored? That property hid the current property,
-                        // thus, if it was ignored, the current property should be ignored too.
-                        ignoredMembers?.ContainsKey(memberName) != true)
+                    else
                     {
-                        // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
-                        serializableProperties = null;
-                        castingRequiredForProps = false;
-                        return false;
+                        bool ignoreCurrentProperty;
+
+                        if (!Type.IsInterface)
+                        {
+                            ignoreCurrentProperty =
+                                // Does the current property have `JsonIgnoreAttribute`?
+                                propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
+                                // Is the current property hidden by the previously cached property
+                                // (with `new` keyword, or by overriding)?
+                                other.ClrName == memberName ||
+                                // Was a property with the same CLR name ignored? That property hid the current property,
+                                // thus, if it was ignored, the current property should be ignored too.
+                                ignoredMembers?.ContainsKey(memberName) == true;
+                        }
+                        else
+                        {
+                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
+                            // Conflicts like this are possible in two cases:
+                            // 1. Diamond ambiguity in property names, or
+                            // 2. Linear interface hierarchies that use properties with DIMs.
+                            //
+                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
+                            // adding support for DIMs in the future, however that would require adding more APIs
+                            // for the case of source gen.
+
+                            ignoreCurrentProperty = propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always;
+                        }
+
+                        if (!ignoreCurrentProperty)
+                        {
+                            // We have a conflict, emit a stub method that throws.
+                            goto ReturnFalse;
+                        }
                     }
-                    // Ignore the current property.
                 }
 
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
-                    (ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>()).Add(memberName, propGenSpec);
+                    (ignoredMembers ??= new()).Add(memberName, propGenSpec);
                 }
             }
 
             Debug.Assert(PropertyGenSpecList.Count >= serializableProperties.Count);
-            castingRequiredForProps = PropertyGenSpecList.Count > serializableProperties.Count;
+            castingRequiredForProps |= PropertyGenSpecList.Count > serializableProperties.Count;
             return true;
 
         ReturnFalse:
@@ -257,6 +298,8 @@ namespace System.Text.Json.SourceGeneration
                 {
                     return false;
                 }
+
+                Debug.Assert(PropertyGenSpecList != null);
 
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {

@@ -6,9 +6,9 @@ namespace Test
 {
     using System;
 
-    class App
+    public class App
     {
-        static int Main()
+        public static int Main()
         {
             ulong a = 0x00000000005d909c;
             ulong b = 0x00004021bfa15862;

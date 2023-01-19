@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
+        /// Disposes the current <see cref="TarReader"/> instance, closes the archive stream, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
@@ -57,12 +57,17 @@ namespace System.Formats.Tar
             {
                 _isDisposed = true;
 
-                if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                if (!_leaveOpen)
                 {
-                    foreach (Stream s in _dataStreamsToDispose)
+                    if (_dataStreamsToDispose?.Count > 0)
                     {
-                        s.Dispose();
+                        foreach (Stream s in _dataStreamsToDispose)
+                        {
+                            s.Dispose();
+                        }
                     }
+
+                    _archiveStream.Dispose();
                 }
             }
         }
@@ -77,12 +82,17 @@ namespace System.Formats.Tar
             {
                 _isDisposed = true;
 
-                if (!_leaveOpen && _dataStreamsToDispose?.Count > 0)
+                if (!_leaveOpen)
                 {
-                    foreach (Stream s in _dataStreamsToDispose)
+                    if (_dataStreamsToDispose?.Count > 0)
                     {
-                        await s.DisposeAsync().ConfigureAwait(false);
+                        foreach (Stream s in _dataStreamsToDispose)
+                        {
+                            await s.DisposeAsync().ConfigureAwait(false);
+                        }
                     }
+
+                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
                 }
             }
         }

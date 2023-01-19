@@ -1291,7 +1291,7 @@ namespace System.Xml.XPath
 
         public virtual void ReplaceSelf(string newNode)
         {
-            XmlReader reader = CreateContextReader(newNode, false);
+            XmlTextReader reader = CreateContextReader(newNode, false);
             ReplaceSelf(reader);
         }
 
@@ -1787,7 +1787,7 @@ namespace System.Xml.XPath
             }
         }
 
-        private static XPathExpression CompileMatchPattern(string xpath)
+        private static CompiledXpathExpr CompileMatchPattern(string xpath)
         {
             bool hasPrefix;
             Query query = new QueryBuilder().BuildPatternQuery(xpath, out hasPrefix);
@@ -1986,12 +1986,12 @@ namespace System.Xml.XPath
             return false;
         }
 
-        private XmlReader CreateReader()
+        private XPathNavigatorReader CreateReader()
         {
             return XPathNavigatorReader.Create(this);
         }
 
-        private XmlReader CreateContextReader(string xml, bool fromCurrentNode)
+        private XmlTextReader CreateContextReader(string xml, bool fromCurrentNode)
         {
             ArgumentNullException.ThrowIfNull(xml);
 

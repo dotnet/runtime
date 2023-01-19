@@ -7,9 +7,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly s{}
+.assembly 'b85566'{}
 .class public s {
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
      ldc.r8	5.5

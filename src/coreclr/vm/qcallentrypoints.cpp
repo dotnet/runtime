@@ -205,7 +205,6 @@ static const Entry s_QCall[] =
     DllImportEntry(LoaderAllocator_Destroy)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
-    DllImportEntry(ThreadNative_UninterruptibleSleep0)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)

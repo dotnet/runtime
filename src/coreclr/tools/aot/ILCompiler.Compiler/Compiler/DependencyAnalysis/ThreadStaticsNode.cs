@@ -64,8 +64,21 @@ namespace ILCompiler.DependencyAnalysis
 
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
 
-            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;
+        }
+
+        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // If we have a type loader template for this type, we need to keep track of the generated
+            // bases in the type info hashtable. The type symbol node does such accounting.
+            return new CombinedDependencyListEntry[]
+            {
+                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Keeping track of template-constructable type static bases"),
+            };
         }
 
         public override bool StaticDependenciesAreComputed => true;

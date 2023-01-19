@@ -312,8 +312,7 @@ namespace System.Security.Cryptography
 
         private int GetCiphertextLengthBlockAligned(int plaintextLength, PaddingMode paddingMode)
         {
-            if (plaintextLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(plaintextLength);
 
             int blockSizeBits = BlockSize; // The BlockSize property is in bits.
 
@@ -394,12 +393,8 @@ namespace System.Security.Cryptography
         /// </remarks>
         public int GetCiphertextLengthCfb(int plaintextLength, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
-            if (plaintextLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(plaintextLength), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (feedbackSizeInBits <= 0)
-                throw new ArgumentOutOfRangeException(nameof(feedbackSizeInBits), SR.ArgumentOutOfRange_NeedPosNum);
-
+            ArgumentOutOfRangeException.ThrowIfNegative(plaintextLength);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(feedbackSizeInBits);
             if ((feedbackSizeInBits & 0b111) != 0)
                 throw new ArgumentException(SR.Argument_BitsMustBeWholeBytes, nameof(feedbackSizeInBits));
 

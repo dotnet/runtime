@@ -12,9 +12,6 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class UpDownCounter<T> : Instrument<T> where T : struct
     {
         internal UpDownCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description)

@@ -100,6 +100,7 @@
 
   <Target Name="GetChromeVersion" AfterTargets="Build" Condition="'$(InstallChromeForTests)' == 'true'">
     <GetChromeVersions
+                Condition="'$(ChromeVersion)' == ''"
                 OSIdentifier="$(ChromeOSIdentifier)"
                 OSPrefix="$(_ChromeOSPrefix)"
                 Channel="$(ChromeChannel)"

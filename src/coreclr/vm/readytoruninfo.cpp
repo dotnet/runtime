@@ -429,7 +429,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
     fflush(r2rLogFile);
 }
 

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -13,8 +12,6 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public static class Host
     {
-        internal const string RequiresDynamicCodeMessage = "Hosting uses Microsoft.Extensions.DependencyInjection, which may require generating code dynamically at runtime.";
-
         /// <summary>
         /// Initializes a new instance of the <see cref="HostBuilder"/> class with pre-configured defaults.
         /// </summary>
@@ -31,7 +28,6 @@ namespace Microsoft.Extensions.Hosting
         ///   </list>
         /// </remarks>
         /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public static IHostBuilder CreateDefaultBuilder() =>
             CreateDefaultBuilder(args: null);
 
@@ -54,7 +50,6 @@ namespace Microsoft.Extensions.Hosting
         /// </remarks>
         /// <param name="args">The command line args.</param>
         /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public static IHostBuilder CreateDefaultBuilder(string[]? args)
         {
             HostBuilder builder = new();
@@ -78,7 +73,6 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
         ///   </list>
         /// </remarks>
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public static HostApplicationBuilder CreateApplicationBuilder() => new HostApplicationBuilder();
 
         /// <summary>
@@ -99,7 +93,6 @@ namespace Microsoft.Extensions.Hosting
         ///   </list>
         /// </remarks>
         /// <param name="args">The command line args.</param>
-        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         public static HostApplicationBuilder CreateApplicationBuilder(string[]? args) => new HostApplicationBuilder(args);
     }
 }

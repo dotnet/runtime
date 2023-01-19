@@ -26,8 +26,9 @@
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+// This alignment provides us with straight forward support for Vector128
+#define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -169,6 +170,8 @@ struct InterpMethod {
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -297,6 +300,37 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 void
 mono_interp_error_cleanup (MonoError *error);
+
+#if HOST_BROWSER
+
+gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass);
+
+void
+mono_jiterp_check_pending_unwind (ThreadContext *context);
+
+void *
+mono_jiterp_get_context (void);
+
+int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode);
+
+int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
+
+void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
+
+int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
+
+int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+#endif
 
 static inline int
 mint_type(MonoType *type)

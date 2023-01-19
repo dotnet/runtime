@@ -17,10 +17,7 @@ internal sealed class OletxDependentTransaction : OletxTransaction
     internal OletxDependentTransaction(RealOletxTransaction realTransaction, bool delayCommit)
         : base(realTransaction)
     {
-        if (realTransaction == null)
-        {
-            throw new ArgumentNullException(nameof(realTransaction));
-        }
+        ArgumentNullException.ThrowIfNull(realTransaction);
 
         _volatileEnlistmentContainer = RealOletxTransaction.AddDependentClone(delayCommit);
 

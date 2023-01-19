@@ -87,7 +87,7 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
         }
 
         // Stream end must fit into the buffer and we have to check integer overflow (stream start is already checked)
-        if ((((LPBYTE)pvCurrentData + cbCurrentData) < (LPBYTE)pvCurrentData)  ||
+        if ((cbCurrentData > cbData)  ||
             (((LPBYTE)pvCurrentData + cbCurrentData) > ((LPBYTE)pData + cbData)))
         {
             Debug_ReportError("Stream data are not within MetaData block.");

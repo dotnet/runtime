@@ -28,7 +28,7 @@ public class GitHub_24657
         }
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int returnVal = 100;
         var array = new [] { new TestStruct(123), new TestStruct(456) };

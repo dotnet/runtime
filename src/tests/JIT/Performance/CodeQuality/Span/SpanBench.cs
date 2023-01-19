@@ -1074,7 +1074,7 @@ namespace Span
         #endregion // TestSpanAPIs
 
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Now simulate xunit-perf's benchmark discovery so we know what tests to invoke
             TypeInfo t = typeof(SpanBench).GetTypeInfo();

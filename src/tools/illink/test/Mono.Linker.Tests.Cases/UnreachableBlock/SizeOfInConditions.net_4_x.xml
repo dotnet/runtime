@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="mscorlib">
+    <type fullname="System.IntPtr">
+      <method signature="System.Int32 get_Size()" body="stub" value="16">
+      </method>
+    </type>
+    <type fullname="System.UIntPtr">
+      <method signature="System.Int32 get_Size()" body="stub" value="32">
+      </method>
+    </type>
+  </assembly>
+</linker>

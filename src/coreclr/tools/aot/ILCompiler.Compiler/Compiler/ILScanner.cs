@@ -247,6 +247,11 @@ namespace ILCompiler
             return new ScannedMethodImportationErrorProvider(MarkedNodes);
         }
 
+        public TypePreinit.TypePreinitializationPolicy GetPreinitializationPolicy()
+        {
+            return new ScannedPreinitializationPolicy(_factory.PreinitializationManager, MarkedNodes);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -396,6 +401,8 @@ namespace ILCompiler
                             }
                         }
 
+                        _constructedTypes.Add(type);
+
                         if (type.IsInterface)
                         {
                             if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
@@ -422,9 +429,6 @@ namespace ILCompiler
                             //    program view.
                             //
 
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                _constructedTypes.Add(type);
-
                             if (type is not MetadataType { IsAbstract: true })
                             {
                                 // Record all interfaces this class implements to _interfaceImplementators
@@ -438,7 +442,9 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            _canonConstructedTypes.Add(canonType.GetClosestDefType());
+
+                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                                _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
@@ -628,6 +634,57 @@ namespace ILCompiler
 
             public override TypeSystemException GetCompilationError(MethodDesc method)
                 => _importationErrors.TryGetValue(method, out var exception) ? exception : null;
+        }
+
+        private sealed class ScannedPreinitializationPolicy : TypePreinit.TypePreinitializationPolicy
+        {
+            private readonly HashSet<TypeDesc> _canonFormsWithCctorChecks = new HashSet<TypeDesc>();
+
+            public ScannedPreinitializationPolicy(PreinitializationManager preinitManager, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                foreach (var markedNode in markedNodes)
+                {
+                    // If there's a type loader template for a type, we can create new instances
+                    // at runtime that will not be preinitialized.
+                    // This makes sure accessing static bases of template-constructed types
+                    // goes through a cctor check.
+                    if (markedNode is NativeLayoutTemplateTypeLayoutVertexNode typeTemplate)
+                    {
+                        _canonFormsWithCctorChecks.Add(typeTemplate.CanonType);
+                    }
+
+                    // If there's a type for which we have a canonical form that requires
+                    // a cctor check, make sure accessing the static base from a shared generic context
+                    // will trigger the cctor.
+                    // This makes sure that "static object Read<T>() => SomeType<T>.StaticField" will do
+                    // a cctor check if any of the canonically-equivalent SomeType instantiations required
+                    // a cctor check.
+                    if (markedNode is NonGCStaticsNode nonGCStatics
+                        && nonGCStatics.Type.ConvertToCanonForm(CanonicalFormKind.Specific) != nonGCStatics.Type
+                        && nonGCStatics.HasLazyStaticConstructor)
+                    {
+                        _canonFormsWithCctorChecks.Add(nonGCStatics.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    }
+
+                    // Also look at EETypes to cover the cases when the non-GC static base wasn't generated.
+                    // This makes assert around CanPreinitializeAllConcreteFormsForCanonForm happy.
+                    if (markedNode is EETypeNode eeType
+                        && eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific) != eeType.Type
+                        && preinitManager.HasLazyStaticConstructor(eeType.Type))
+                    {
+                        _canonFormsWithCctorChecks.Add(eeType.Type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                    }
+                }
+            }
+
+            public override bool CanPreinitialize(DefType type) => true;
+
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type)
+            {
+                // The form we're asking about should be canonical, but may not be normalized
+                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                return !_canonFormsWithCctorChecks.Contains(type.NormalizeInstantiation());
+            }
         }
     }
 }

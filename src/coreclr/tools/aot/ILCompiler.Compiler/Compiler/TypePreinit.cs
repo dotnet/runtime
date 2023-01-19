@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -31,14 +32,16 @@ namespace ILCompiler
         private readonly MetadataType _type;
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly ILProvider _ilProvider;
+        private readonly TypePreinitializationPolicy _policy;
         private readonly Dictionary<FieldDesc, Value> _fieldValues = new Dictionary<FieldDesc, Value>();
         private readonly Dictionary<string, StringInstance> _internedStrings = new Dictionary<string, StringInstance>();
 
-        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider)
+        private TypePreinit(MetadataType owningType, CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy)
         {
             _type = owningType;
             _compilationGroup = compilationGroup;
             _ilProvider = ilProvider;
+            _policy = policy;
 
             // Zero initialize all fields we model.
             foreach (var field in owningType.GetFields())
@@ -50,38 +53,34 @@ namespace ILCompiler
             }
         }
 
-        // Could potentially expose this as a policy class. When type loader is not present or
-        // the given type can't be constructed by the type loader, preinitialization could still
-        // happen.
-        private static bool CanPreinitializeByPolicy(TypeDesc type)
-        {
-            // If the type has a canonical form the runtime type loader could create
-            // a new type sharing code with this one. They need to agree on how
-            // initialization happens. We can't preinitialize runtime-created
-            // generic types at compile time.
-            if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
-                .IsCanonicalSubtype(CanonicalFormKind.Any))
-                return false;
-
-            return true;
-        }
-
-        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, MetadataType type)
+        public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, TypePreinitializationPolicy policy, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
+            Debug.Assert(!type.IsRuntimeDeterminedSubtype);
 
-            if (!CanPreinitializeByPolicy(type))
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                // It's an odd question to ask about canonical types. Defer to policy that might
+                // have more information.
+                // If the policy allows it, we allow it, but create invalid field values so that
+                // things still crash if someone wanted to do more with canonical types than just
+                // ask if a cctor check is necessary to access.
+                if (policy.CanPreinitializeAllConcreteFormsForCanonForm(type))
+                    return new PreinitializationInfo(type, Array.Empty<KeyValuePair<FieldDesc, ISerializableValue>>());
+
                 return new PreinitializationInfo(type, "Disallowed by policy");
+            }
 
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+            if (!policy.CanPreinitialize(type))
+                return new PreinitializationInfo(type, "Disallowed by policy");
 
             TypePreinit preinit = null;
 
             Status status;
             try
             {
-                preinit = new TypePreinit(type, compilationGroup, ilProvider);
+                preinit = new TypePreinit(type, compilationGroup, ilProvider, policy);
                 int instructions = 0;
                 status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, ref instructions, out _);
             }
@@ -336,9 +335,9 @@ namespace ILCompiler
                             }
                             else if (field.IsInitOnly
                                 && field.OwningType.HasStaticConstructor
-                                && CanPreinitializeByPolicy(field.OwningType))
+                                && _policy.CanPreinitialize(field.OwningType))
                             {
-                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider, _policy);
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
 
@@ -402,6 +401,7 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.call:
+                    case ILOpcode.callvirt:
                         {
                             MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                             MethodSignature methodSig = method.Signature;
@@ -425,6 +425,13 @@ namespace ILCompiler
                             for (int i = numParams - 1; i >= 0; i--)
                             {
                                 methodParams[i] = stack.PopIntoLocation(GetArgType(method, i));
+                            }
+
+                            if (opcode == ILOpcode.callvirt)
+                            {
+                                // Only support non-virtual methods for now + we don't emulate NRE on null this
+                                if (method.IsVirtual || methodParams[0] == null)
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value retVal;
@@ -598,6 +605,11 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
                             }
 
+                            if (field.FieldType.IsByRef)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Byref field");
+                            }
+
                             var settableInstance = instance.Value as IHasInstanceFields;
                             if (settableInstance == null)
                             {
@@ -709,9 +721,12 @@ namespace ILCompiler
                                 switch (opcode)
                                 {
                                     case ILOpcode.conv_u:
+                                    case ILOpcode.conv_i:
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
                                         break;
+                                    default:
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.Float)
@@ -2259,28 +2274,65 @@ namespace ILCompiler
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
-        private sealed class StringInstance : ReferenceTypeValue
+        private sealed class StringInstance : ReferenceTypeValue, IHasInstanceFields
         {
-            private readonly string _value;
+            private readonly byte[] _value;
 
+            private string ValueAsString
+            {
+                get
+                {
+                    FieldDesc firstCharField = Type.GetField("_firstChar");
+                    int startOffset = firstCharField.Offset.AsInt;
+                    int length = _value.Length - startOffset - sizeof(char) /* terminating null */;
+                    return new string(MemoryMarshal.Cast<byte, char>(
+                        ((ReadOnlySpan<byte>)_value).Slice(startOffset, length)));
+                }
+            }
             public StringInstance(TypeDesc stringType, string value)
                 : base(stringType)
             {
-                _value = value;
+                _value = ConstructStringInstance(stringType, value);
+            }
+
+            private static byte[] ConstructStringInstance(TypeDesc stringType, ReadOnlySpan<char> value)
+            {
+                int pointerSize = stringType.Context.Target.PointerSize;
+                var bytes = new byte[
+                    pointerSize /* MethodTable */
+                    + sizeof(int) /* length */
+                    + (value.Length * sizeof(char)) /* bytes */
+                    + sizeof(char) /* null terminator */];
+
+                FieldDesc lengthField = stringType.GetField("_stringLength");
+                Debug.Assert(lengthField.FieldType.IsWellKnownType(WellKnownType.Int32)
+                    && lengthField.Offset.AsInt == pointerSize);
+                new FieldAccessor(bytes).SetField(lengthField, ValueTypeValue.FromInt32(value.Length));
+
+                FieldDesc firstCharField = stringType.GetField("_firstChar");
+                Debug.Assert(firstCharField.FieldType.IsWellKnownType(WellKnownType.Char)
+                    && firstCharField.Offset.AsInt == pointerSize + sizeof(int) /* length */);
+
+                value.CopyTo(MemoryMarshal.Cast<byte, char>(((Span<byte>)bytes).Slice(firstCharField.Offset.AsInt)));
+
+                return bytes;
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitPointerReloc(factory.SerializedStringObject(_value));
+                builder.EmitPointerReloc(factory.SerializedStringObject(ValueAsString));
             }
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
-                data = factory.SerializedStringObject(_value);
+                data = factory.SerializedStringObject(ValueAsString);
                 return true;
             }
 
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
+            Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_value).GetField(field);
+            void IHasInstanceFields.SetField(FieldDesc field, Value value) => ThrowHelper.ThrowInvalidProgramException();
+            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
         }
 
 #pragma warning disable CA1852
@@ -2490,6 +2542,40 @@ namespace ILCompiler
                 Debug.Assert(field.IsStatic && !field.HasRva && !field.IsThreadStatic && !field.IsLiteral);
                 return _fieldValues[field];
             }
+        }
+
+        public abstract class TypePreinitializationPolicy
+        {
+            /// <summary>
+            /// Returns true if the preinitialization system may attempt to preinitialize this type.
+            /// </summary>
+            public abstract bool CanPreinitialize(DefType type);
+
+            /// <summary>
+            /// Returns true if all concrete forms of this canonical form will be preinitialized.
+            /// This can only be answered by a whole program view.
+            /// </summary>
+            public abstract bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type);
+        }
+
+        /// <summary>
+        /// Preinitialization policy that doesn't allow preinitialization.
+        /// </summary>
+        public sealed class DisabledPreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => false;
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
+        }
+
+        /// <summary>
+        /// Preinitialization policy that assumes new canonical forms of types could be created
+        /// at runtime.
+        /// </summary>
+        public sealed class TypeLoaderAwarePreinitializationPolicy : TypePreinitializationPolicy
+        {
+            public override bool CanPreinitialize(DefType type) => true;
+
+            public override bool CanPreinitializeAllConcreteFormsForCanonForm(DefType type) => false;
         }
     }
 }

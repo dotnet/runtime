@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -496,13 +497,14 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+
 #ifdef DEBUG
 	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
 	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
@@ -1223,6 +1225,12 @@ mono_wasm_array_length (MonoArray *array)
 	return mono_array_length (array);
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_array_length_ref (MonoArray **array)
+{
+	return mono_array_length (*array);
+}
+
 EMSCRIPTEN_KEEPALIVE MonoObject*
 mono_wasm_array_get (MonoArray *array, int idx)
 {
@@ -1230,10 +1238,10 @@ mono_wasm_array_get (MonoArray *array, int idx)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_array_get_ref (MonoArray **array, int idx, MonoObject **result)
+mono_wasm_array_get_ref (PPVOLATILE(MonoArray) array, int idx, PPVOLATILE(MonoObject) result)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_gc_wbarrier_generic_store_atomic(result, mono_array_get (*array, MonoObject*, idx));
+	mono_gc_wbarrier_generic_store_atomic((void*)result, mono_array_get ((MonoArray*)*array, MonoObject*, idx));
 	MONO_EXIT_GC_UNSAFE;
 }
 
@@ -1481,6 +1489,11 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 	return I52_ERROR_NONE;
 }
 
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_method_get_name (MonoMethod *method) {
-	return mono_method_full_name(method, 0);
+// JS is responsible for freeing this
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
+	return mono_method_get_full_name(method);
+}
+
+EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
+	return mono_method_get_name(method);
 }
