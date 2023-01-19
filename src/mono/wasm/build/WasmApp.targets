@@ -24,7 +24,7 @@
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
       - $(WasmEmitSymbolMap)      - Generates a `dotnet.js.symbols` file with a map of wasm function number to name.
-      - $(WasmAggressivelyMinifyJs) - Use closure compiler to aggressively minify dotnet.js.
+      - $(WasmMinifyJsLevel) - Use closure compiler to minify dotnet.js after linking. Default:`SIMPLE_OPTIMIZATIONS`. Other option is `NONE`.
       - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use

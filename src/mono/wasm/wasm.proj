@@ -33,7 +33,8 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <WasmAggressivelyMinifyJs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(Configuration)' != 'Debug'">true</WasmAggressivelyMinifyJs>
+    <WasmMinifyJsLevel Condition="'$(WasmMinifyJsLevel)' == '' and '$(Configuration)' == 'Release'">SIMPLE_OPTIMIZATIONS</WasmMinifyJsLevel>
+    <WasmMinifyJsLevel Condition="'$(WasmMinifyJsLevel)' == ''">NONE</WasmMinifyJsLevel>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -260,7 +261,7 @@
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
-      <CMakeConfigurationLinkFlags Condition="'$(WasmAggressivelyMinifyJs)' == 'true'">$(CMakeConfigurationLinkFlags) --closure 1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(WasmMinifyJsLevel)' != 'NONE'">$(CMakeConfigurationLinkFlags) --closure 1 --closure-args=--compilation_level=$(WasmMinifyJsLevel)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
@@ -309,7 +310,6 @@
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
                        runtime/es6/dotnet.es6.post.js;
-                       runtime/es6/dotnet.es6.externs.js;
                        runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />

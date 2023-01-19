@@ -156,8 +156,8 @@
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <WasmAggressivelyMinifyJs Condition="'$(WasmAggressivelyMinifyJs)' == '' and '$(Configuration)' == 'Release' and '$(WasmNativeStrip)' == 'true'">true</WasmAggressivelyMinifyJs>
-      <WasmAggressivelyMinifyJs Condition="'$(WasmAggressivelyMinifyJs)' == ''">false</WasmAggressivelyMinifyJs>
+      <WasmMinifyJsLevel Condition="'$(WasmMinifyJsLevel)' == '' and '$(Configuration)' == 'Release'">SIMPLE_OPTIMIZATIONS</WasmMinifyJsLevel>
+      <WasmMinifyJsLevel Condition="'$(WasmMinifyJsLevel)' == ''">NONE</WasmMinifyJsLevel>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -256,11 +256,9 @@
       <JSFileType Include="lib.js"     Kind="js-library" />
       <JSFileType Include="post.js"    Kind="post-js" />
       <JSFileType Include="extpost.js" Kind="extern-post-js" />
-      <ExtFileType Include="externs.js" Kind="closure-args=--externs=" />
 
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.%(JSFileType.Identity)"     Kind="%(JSFileType.Kind)" />
       <_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\es6\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" />
-      <_WasmExtraExtFile Include="$(_WasmRuntimePackSrcDir)/es6/*.%(ExtFileType.Identity)" Kind="%(ExtFileType.Kind)" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
 
@@ -405,11 +403,8 @@
       <_EmccLinkStepArgs Include="--%(_WasmExtraJSFile.Kind) &quot;%(_WasmExtraJSFile.Identity)&quot;" Condition="'%(_WasmExtraJSFile.Kind)' != ''" />
       <_WasmLinkDependencies Include="@(_WasmExtraJSFile)" />
 
-      <_EmccLinkStepArgs Condition="'$(WasmAggressivelyMinifyJs)' == 'true'" Include="--closure 1" />
-      <!--
-      <_EmccLinkStepArgs Condition="'$(WasmAggressivelyMinifyJs)' == 'true'" Include=" - - closure-args= - - compilation_level=SIMPLE_OPTIMIZATIONS" />
-      -->
-      <_EmccLinkStepArgs Include="--%(_WasmExtraExtFile.Kind)&quot;%(_WasmExtraExtFile.Identity)&quot;" Condition="'$(WasmAggressivelyMinifyJs)' == 'true' and '%(_WasmExtraExtFile.Kind)' != ''" />
+      <_EmccLinkStepArgs Condition="'$(WasmMinifyJsLevel)' != 'NONE'" Include="--closure 1" />
+      <_EmccLinkStepArgs Condition="'$(WasmMinifyJsLevel)' != 'NONE'" Include="--closure-args=--compilation_level=$(WasmMinifyJsLevel)" />
 
       <_EmccLinkStepArgs Include="&quot;%(_WasmNativeFileForLinking.Identity)&quot;" />
       <_WasmLinkDependencies Include="@(_WasmNativeFileForLinking)" />
@@ -422,10 +417,8 @@
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
-    <PropertyGroup>
-      <_EmccLinkStepArgs2>@(_EmccLinkStepArgs, '&#x0a;')</_EmccLinkStepArgs2>
-    </PropertyGroup>
-    <WriteLinesToFile Lines="$(_EmccLinkStepArgs2.Replace('\','/'))" File="$(_EmccLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <WriteLinesToFile Lines="@(_EmccLinkStepArgs)" File="$(_EmccLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccLinkRsp)" />
     </ItemGroup>
