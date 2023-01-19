@@ -35,14 +35,6 @@ namespace System.Text.Json.Serialization
 
                 return options;
             }
-
-            internal set
-            {
-                Debug.Assert(!value.IsReadOnly);
-                value.TypeInfoResolver = this;
-                value.MakeReadOnly();
-                _options = value;
-            }
         }
 
         /// <summary>
@@ -94,7 +86,9 @@ namespace System.Text.Json.Serialization
             if (options != null)
             {
                 options.VerifyMutable();
-                Options = options;
+                options.TypeInfoResolver = this;
+                options.MakeReadOnly();
+                _options = options;
             }
         }
 

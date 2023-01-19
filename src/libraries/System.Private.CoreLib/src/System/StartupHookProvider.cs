@@ -11,7 +11,7 @@ using System.Runtime.Loader;
 
 namespace System
 {
-    internal static class StartupHookProvider
+    internal static partial class StartupHookProvider
     {
         private const string StartupHookTypeName = "StartupHook";
         private const string InitializeMethodName = "Initialize";
@@ -31,12 +31,6 @@ namespace System
         {
             if (!IsSupported)
                 return;
-
-            // Initialize tracing before any user code can be called if EventSource is enabled.
-            if (EventSource.IsSupported)
-            {
-                System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
-            }
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
             if (startupHooksVariable == null)
