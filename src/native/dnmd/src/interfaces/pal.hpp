@@ -105,4 +105,10 @@ namespace pal
     };
 }
 
+#ifdef BUILD_WINDOWS
+#define W(str) L##str
+#else
+#define W(str) u##str
+#endif
+
 #endif // _SRC_INTERFACES_PAL_HPP_

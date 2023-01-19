@@ -7,5 +7,6 @@
 
   <ItemGroup>
     <Compile Include="Nested.il" />
+    <None Include="Nested.il" />
   </ItemGroup>
 </Project>

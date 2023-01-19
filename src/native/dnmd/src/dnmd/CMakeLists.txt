@@ -4,6 +4,7 @@ set(SOURCES
   query.c
   streams.c
   tables.c
+  sig.c
 )
 
 set(HEADERS

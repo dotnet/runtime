@@ -3,9 +3,9 @@
 namespace Common
 {
     [ComImport]
-    [Guid("7DAC8207-D3AE-4c75-9B67-92801A497D44")]
+    [Guid("FCE5EFA0-8BBA-4f8e-A036-8F2022B08466")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IMetaDataImport
+    public interface IMetaDataImport2
     {
         [PreserveSig]
         void CloseEnum(IntPtr hEnum);
@@ -86,7 +86,7 @@ namespace Common
         int FindField(uint td, [MarshalAs(UnmanagedType.LPWStr)]string szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[] pvSigBlob, uint cbSigBlob, out uint pmb);
 
         [PreserveSig]
-        int FindMemberRef(uint td, [MarshalAs(UnmanagedType.LPWStr)]string szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[] pvSigBlob, int cbSigBlob, out uint pmr);
+        int FindMemberRef(uint td, [MarshalAs(UnmanagedType.LPWStr)]string? szName, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]byte[]? pvSigBlob, int cbSigBlob, out uint pmr);
 
         [PreserveSig]
         int GetMethodProps(uint mb, out uint pClass, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]char[] szMethod, int cchMethod, out int pchMethod, out uint pdwAttr, out IntPtr ppvSigBlob, out uint pcbSigBlob, out uint pulCodeRVA, out uint pdwImplFlags);
@@ -193,6 +193,30 @@ namespace Common
 
         [PreserveSig]
         int IsGlobal(uint pd, out uint pbGlobal);
+
+        [PreserveSig]
+        int EnumGenericParameters(ref IntPtr phEnum, uint tk, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]uint[] rGenericParams, int cMax, out uint pcGenericParams);
+
+        [PreserveSig]
+        int GetGenericParamProps(uint gp, out uint pulParamSeq, out uint pdwParamFlags, out uint ptOwner, out uint reserved, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 6)]char[] szName, int cchName, out int pchName);
+
+        [PreserveSig]
+        int GetMethodSpecProps(uint mi, out uint tkParent, out IntPtr ppvSigBlob, out uint pcbSigBlob);
+
+        [PreserveSig]
+        int EnumGenericParamConstraints(ref IntPtr phEnum, uint tk, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]uint[] rGenericParamConstraints, int cMax, out uint pcGenericParamConstraints);
+
+        [PreserveSig]
+        int GetGenericParamConstraintProps(uint gpc, out uint tkParam, out uint tkConstraintType);
+
+        [PreserveSig]
+        int GetPEKind(out uint pdwPEKind, out uint pdwMAchine);
+
+        [PreserveSig]
+        int GetVersionString([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]char[] pwzBuf, int cchBuf, out int pchBuf);
+
+        [PreserveSig]
+        int EnumMethodSpecs(ref IntPtr phEnum, uint tk, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)]uint[] rMethodSpecs, int cMax, out uint pcMethodSpecs);
     }
 
     [StructLayout(LayoutKind.Sequential)]

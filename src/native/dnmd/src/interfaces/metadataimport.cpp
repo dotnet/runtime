@@ -1006,13 +1006,21 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
     ULONG       cbSigBlob,
     mdToken* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    HRESULT hr = FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
 
-    return E_NOTIMPL;
+    if (hr == CLDB_E_RECORD_NOTFOUND)
+    {
+        hr = FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
+    }
+    return hr;
+}
+
+namespace
+{
+    size_t min(size_t a, size_t b)
+    {
+        return a < b ? a : b;
+    }
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
@@ -1022,13 +1030,62 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
     ULONG       cbSigBlob,
     mdMethodDef* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    if (td == mdTypeDefNil || td == mdTokenNil)
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
 
-    return E_NOTIMPL;
+    mdcursor_t typedefCursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), td, &typedefCursor))
+        return false;
+
+    mdcursor_t methodCursor;
+    uint32_t count;
+    if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_MethodList, &methodCursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+
+    uint8_t* methodDefSig;
+    size_t methodDefSigLength;
+    if (!md_get_methoddefsig_from_methodrefsig(pvSigBlob, cbSigBlob, &methodDefSig, &methodDefSigLength))
+        return E_INVALIDARG;
+    malloc_ptr methodDefSigPtr{ methodDefSig };
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    for(uint32_t i = 0; i < count; md_cursor_next(&methodCursor), i++)
+    {
+        uint32_t flags;
+        if (!md_get_column_value_as_constant(methodCursor, mdtMethodDef_Flags, 1, &flags))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Ignore PrivateScope methods. By the spec, they can only be referred to by a MethodDef token
+        // and cannot be discovered in any other way.
+        if (IsMdPrivateScope(flags))
+            continue;
+
+        char const* methodName;
+        if (!md_get_column_value_as_utf8(methodCursor, mdtMethodDef_Name, 1, &methodName))
+            return CLDB_E_FILE_CORRUPT;
+        if (::strncmp(methodName, cvt, cvt.Length()) != 0)
+            continue;
+
+        if (pvSigBlob != nullptr)
+        {
+            uint8_t const* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(methodCursor, mdtMethodDef_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (::memcmp(methodDefSig, methodDefSigPtr.get(), min(signatureLength, methodDefSigLength)) != 0)
+                continue;
+        }
+        if (!md_cursor_to_token(methodCursor, pmb))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
@@ -1038,13 +1095,56 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindField(
     ULONG       cbSigBlob,
     mdFieldDef* pmb)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmb);
+    if (td == mdTypeDefNil || td == mdTokenNil)
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
 
-    return E_NOTIMPL;
+    mdcursor_t typedefCursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), td, &typedefCursor))
+        return false;
+
+    mdcursor_t fieldCursor;
+    uint32_t count;
+    if (!md_get_column_value_as_range(typedefCursor, mdtTypeDef_FieldList, &fieldCursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    for (uint32_t i = 0; i < count; md_cursor_next(&fieldCursor), i++)
+    {
+        uint32_t flags;
+        if (!md_get_column_value_as_constant(fieldCursor, mdtField_Flags, 1, &flags))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Ignore PrivateScope fields. By the spec, they can only be referred to by a FieldDef token
+        // and cannot be discovered in any other way.
+        if (IsFdPrivateScope(flags))
+            continue;
+
+        char const* name;
+        if (!md_get_column_value_as_utf8(fieldCursor, mdtField_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+        if (::strncmp(name, cvt, cvt.Length()) != 0)
+            continue;
+
+        if (pvSigBlob != nullptr)
+        {
+            uint8_t const* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(fieldCursor, mdtField_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (::memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+                continue;
+        }
+        if (!md_cursor_to_token(fieldCursor, pmb))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
@@ -1054,13 +1154,51 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     ULONG       cbSigBlob,
     mdMemberRef* pmr)
 {
-    UNREFERENCED_PARAMETER(td);
-    UNREFERENCED_PARAMETER(szName);
-    UNREFERENCED_PARAMETER(pvSigBlob);
-    UNREFERENCED_PARAMETER(cbSigBlob);
-    UNREFERENCED_PARAMETER(pmr);
+    if (IsNilToken(td))
+    {
+        td = MD_GLOBAL_PARENT_TOKEN;
+    }
+    
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_MemberRef, &cursor, &count))
+        return CLDB_E_FILE_CORRUPT;
+    
+    for (uint32_t i = 0; i < count; md_cursor_next(&cursor), i++)
+    {
+        mdToken refParent;
+        if (!md_get_column_value_as_token(cursor, mdtMemberRef_Class, 1, &refParent))
+            return CLDB_E_FILE_CORRUPT;
+        
+        if (refParent != td)
+            continue;
+        
+        if (szName != nullptr)
+        {
+            char const* name;
+            if (!md_get_column_value_as_utf8(cursor, mdtMemberRef_Name, 1, &name))
+                return CLDB_E_FILE_CORRUPT;
+            pal::StringConvert<WCHAR, char> cvt{ szName };
+            if (!cvt.Success())
+                return E_INVALIDARG;
+            if (::strncmp(name, cvt, cvt.Length()) != 0)
+                continue;
+        }
 
-    return E_NOTIMPL;
+        if (pvSigBlob != nullptr)
+        {
+            uint8_t const* signature;
+            uint32_t signatureLength;
+            if (!md_get_column_value_as_blob(cursor, mdtMemberRef_Signature, 1, &signature, &signatureLength))
+                return CLDB_E_FILE_CORRUPT;
+            if (::memcmp(pvSigBlob, signature, min(cbSigBlob, signatureLength)) != 0)
+                continue;
+        }
+        if (!md_cursor_to_token(cursor, pmr))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodProps(
@@ -2919,13 +3057,44 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParams(
     ULONG       cMax,
     ULONG* pcGenericParams)
 {
-    UNREFERENCED_PARAMETER(phEnum);
-    UNREFERENCED_PARAMETER(tk);
-    UNREFERENCED_PARAMETER(rGenericParams);
-    UNREFERENCED_PARAMETER(cMax);
-    UNREFERENCED_PARAMETER(pcGenericParams);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_GenericParam, &cursor, &count))
+            return CLDB_E_RECORD_NOTFOUND;
 
-    return E_NOTIMPL;
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
+        struct _Finder
+        {
+            HCORENUMImpl& EnumImpl;
+            mdToken Token;
+            HRESULT hr;
+            HRESULT Result; // Result of the operation
+
+            bool operator()(mdcursor_t c)
+            {
+                md_cursor_to_token(c, &Token);
+                if (FAILED(hr = HCORENUMImpl::AddToDynamicEnum(EnumImpl, Token)))
+                {
+                    Result = hr;
+                    return true;
+                }
+
+                return false;
+            }
+        } finder{ *enumImpl, mdTokenNil, S_OK, S_OK };
+
+        EnumTableRange(cursor, count, mdtGenericParam_Owner, tk, finder);
+        RETURN_IF_FAILED(finder.Result);
+
+        *phEnum = cleanup.release();
+    }
+    return enumImpl->ReadTokens(rGenericParams, cMax, pcGenericParams);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamProps(
@@ -2939,16 +3108,31 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamProps(
     ULONG        cchName,
     ULONG* pchName)
 {
-    UNREFERENCED_PARAMETER(gp);
-    UNREFERENCED_PARAMETER(pulParamSeq);
-    UNREFERENCED_PARAMETER(pdwParamFlags);
-    UNREFERENCED_PARAMETER(ptOwner);
     UNREFERENCED_PARAMETER(reserved);
-    UNREFERENCED_PARAMETER(wzname);
-    UNREFERENCED_PARAMETER(cchName);
-    UNREFERENCED_PARAMETER(pchName);
 
-    return E_NOTIMPL;
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), gp, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (!md_get_column_value_as_token(cursor, mdtGenericParam_Owner, 1, ptOwner))
+        return CLDB_E_FILE_CORRUPT;
+    
+    uint32_t sequenceNumber;
+    if (!md_get_column_value_as_constant(cursor, mdtGenericParam_Number, 1, &sequenceNumber))
+        return CLDB_E_FILE_CORRUPT;
+    *pulParamSeq = sequenceNumber;
+
+    uint32_t paramFlags;
+    if (!md_get_column_value_as_constant(cursor, mdtGenericParam_Flags, 1, &paramFlags))
+        return CLDB_E_FILE_CORRUPT;
+    *pdwParamFlags = paramFlags;
+
+    char const* name;
+    if (1 != md_get_column_value_as_utf8(cursor, mdtGenericParam_Name, 1, &name))
+        return CLDB_E_FILE_CORRUPT;
+
+    return ConvertAndReturnStringOutput(name, wzname, cchName, pchName);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSpecProps(
@@ -2957,12 +3141,23 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetMethodSpecProps(
     PCCOR_SIGNATURE* ppvSigBlob,
     ULONG* pcbSigBlob)
 {
-    UNREFERENCED_PARAMETER(mi);
-    UNREFERENCED_PARAMETER(tkParent);
-    UNREFERENCED_PARAMETER(ppvSigBlob);
-    UNREFERENCED_PARAMETER(pcbSigBlob);
+    mdcursor_t cursor;
 
-    return E_NOTIMPL;
+    if (!md_token_to_cursor(_md_ptr.get(), mi, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+    
+    if (!md_get_column_value_as_token(cursor, mdtMethodSpec_Method, 1, tkParent))
+        return CLDB_E_FILE_CORRUPT;
+
+    uint8_t const* signatureBlob;
+    uint32_t signatureBlobLength;
+    if (!md_get_column_value_as_blob(cursor, mdtMethodSpec_Instantiation, 1, &signatureBlob, &signatureBlobLength))
+        return CLDB_E_FILE_CORRUPT;
+
+    *ppvSigBlob = (PCCOR_SIGNATURE)signatureBlob;
+    *pcbSigBlob = signatureBlobLength;
+
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParamConstraints(
@@ -2972,13 +3167,44 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumGenericParamConstraints(
     ULONG       cMax,
     ULONG* pcGenericParamConstraints)
 {
-    UNREFERENCED_PARAMETER(phEnum);
-    UNREFERENCED_PARAMETER(tk);
-    UNREFERENCED_PARAMETER(rGenericParamConstraints);
-    UNREFERENCED_PARAMETER(cMax);
-    UNREFERENCED_PARAMETER(pcGenericParamConstraints);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_GenericParamConstraint, &cursor, &count))
+            return CLDB_E_RECORD_NOTFOUND;
 
-    return E_NOTIMPL;
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
+        struct _Finder
+        {
+            HCORENUMImpl& EnumImpl;
+            mdToken Token;
+            HRESULT hr;
+            HRESULT Result; // Result of the operation
+
+            bool operator()(mdcursor_t c)
+            {
+                md_cursor_to_token(c, &Token);
+                if (FAILED(hr = HCORENUMImpl::AddToDynamicEnum(EnumImpl, Token)))
+                {
+                    Result = hr;
+                    return true;
+                }
+
+                return false;
+            }
+        } finder{ *enumImpl, mdTokenNil, S_OK, S_OK };
+
+        EnumTableRange(cursor, count, mdtGenericParamConstraint_Owner, tk, finder);
+        RETURN_IF_FAILED(finder.Result);
+
+        *phEnum = cleanup.release();
+    }
+    return enumImpl->ReadTokens(rGenericParamConstraints, cMax, pcGenericParamConstraints);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamConstraintProps(
@@ -2986,11 +3212,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetGenericParamConstraintProps(
     mdGenericParam* ptGenericParam,
     mdToken* ptkConstraintType)
 {
-    UNREFERENCED_PARAMETER(gpc);
-    UNREFERENCED_PARAMETER(ptGenericParam);
-    UNREFERENCED_PARAMETER(ptkConstraintType);
+    mdcursor_t cursor;
 
-    return E_NOTIMPL;
+    if (!md_token_to_cursor(_md_ptr.get(), gpc, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (!md_get_column_value_as_token(cursor, mdtGenericParamConstraint_Owner, 1, ptGenericParam))
+        return CLDB_E_FILE_CORRUPT;
+    
+    if (!md_get_column_value_as_token(cursor, mdtGenericParamConstraint_Constraint, 1, ptkConstraintType))
+        return CLDB_E_FILE_CORRUPT;
+    
+    return S_OK;
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPEKind(
@@ -3000,6 +3233,9 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetPEKind(
     UNREFERENCED_PARAMETER(pdwPEKind);
     UNREFERENCED_PARAMETER(pdwMAchine);
 
+    // Requires PE data to be available.
+    // This implementation only has the metadata tables.
+    // It does not have any information about the PE envelope.
     return E_NOTIMPL;
 }
 
@@ -3009,11 +3245,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetVersionString(
     DWORD       ccBufSize,
     DWORD* pccBufSize)
 {
-    UNREFERENCED_PARAMETER(pwzBuf);
-    UNREFERENCED_PARAMETER(ccBufSize);
-    UNREFERENCED_PARAMETER(pccBufSize);
+    char const* versionString = md_get_version_string(_md_ptr.get());
+    if (versionString == nullptr)
+    {
+        if (ccBufSize > 0)
+            pwzBuf[0] = W('\0');
+        
+        if (pccBufSize != nullptr)
+            *pccBufSize = 0;
 
-    return E_NOTIMPL;
+        return S_OK;
+    }
+    return ConvertAndReturnStringOutput(versionString, pwzBuf, ccBufSize, pccBufSize);
 }
 
 HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSpecs(
@@ -3023,11 +3266,42 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSpecs(
     ULONG       cMax,
     ULONG* pcMethodSpecs)
 {
-    UNREFERENCED_PARAMETER(phEnum);
-    UNREFERENCED_PARAMETER(tk);
-    UNREFERENCED_PARAMETER(rMethodSpecs);
-    UNREFERENCED_PARAMETER(cMax);
-    UNREFERENCED_PARAMETER(pcMethodSpecs);
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        mdcursor_t cursor;
+        uint32_t count;
+        if (!md_create_cursor(_md_ptr.get(), mdtid_MethodSpec, &cursor, &count))
+            return CLDB_E_RECORD_NOTFOUND;
 
-    return E_NOTIMPL;
+        RETURN_IF_FAILED(HCORENUMImpl::CreateDynamicEnum(&enumImpl));
+        HCORENUMImpl_ptr cleanup{ enumImpl };
+
+        struct _Finder
+        {
+            HCORENUMImpl& EnumImpl;
+            mdToken Token;
+            HRESULT hr;
+            HRESULT Result; // Result of the operation
+
+            bool operator()(mdcursor_t c)
+            {
+                md_cursor_to_token(c, &Token);
+                if (FAILED(hr = HCORENUMImpl::AddToDynamicEnum(EnumImpl, Token)))
+                {
+                    Result = hr;
+                    return true;
+                }
+
+                return false;
+            }
+        } finder{ *enumImpl, mdTokenNil, S_OK, S_OK };
+
+        EnumTableRange(cursor, count, mdtMethodSpec_Method, tk, finder);
+        RETURN_IF_FAILED(finder.Result);
+
+        *phEnum = cleanup.release();
+    }
+    return enumImpl->ReadTokens(rMethodSpecs, cMax, pcMethodSpecs);
 }

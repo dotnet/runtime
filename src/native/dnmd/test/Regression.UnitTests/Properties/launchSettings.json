@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Regression.UnitTests": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

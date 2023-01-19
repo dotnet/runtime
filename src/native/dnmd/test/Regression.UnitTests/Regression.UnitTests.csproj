@@ -5,14 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="../Common/Dispensers.cs" Link="Dispensers.cs" />
     <Compile Include="../Common/IMetaDataDispenser.cs" Link="IMetaDataDispenser.cs" />
-    <Compile Include="../Common/IMetaDataImport.cs" Link="IMetaDataImport.cs" />
+    <Compile Include="../Common/IMetaDataImport2.cs" Link="IMetaDataImport2.cs" />
   </ItemGroup>
 
   <ItemGroup>

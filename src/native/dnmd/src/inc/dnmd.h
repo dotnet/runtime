@@ -23,6 +23,8 @@ bool md_validate(mdhandle_t handle);
 // Set table_id to '-1' to print out all tables.
 bool md_dump_tables(mdhandle_t handle, int32_t table_id);
 
+char const* md_get_version_string(mdhandle_t handle);
+
 //
 // All tables possible in ECMA-335
 //
@@ -358,6 +360,13 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 // See md_get_column_value_as_range() for getting the complete range.
 bool md_find_token_of_range_element(mdcursor_t element, mdToken* tk);
 bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor);
+
+bool md_is_field_sig(uint8_t const* sig, size_t sig_len);
+
+// Get the equivalent MethodDefSig (II.23.2.1) from a MethodRefSig (II.23.2.2).
+// sig is a pointer to a MethodRefSig blob.
+// If the return value is true, def_sig will be a pointer to malloc-d memory containing the MethodDefSig for the MethodRefSig.
+bool md_get_methoddefsig_from_methodrefsig(uint8_t const* sig, size_t ref_sig_len, uint8_t** def_sig, size_t* def_sig_len);
 
 #ifdef __cplusplus
 }

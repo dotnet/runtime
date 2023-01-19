@@ -10,6 +10,28 @@
     {
         ret
     }
+
+    .method public newslot virtual hidebysig instance void MethodDef() cil managed
+    {
+        ret
+    }
+    
+    .method public newslot virtual hidebysig instance vararg void MethodRef1(
+        int32,
+        uint16*,
+        int64&,
+        object[]) cil managed
+    {
+        ret
+    }
+
+    .method public newslot virtual hidebysig instance vararg void MethodRef2(
+        valuetype [System.Runtime]System.Guid,
+        string[][1...3,-1...,..., 4] modreq(A1) modopt([System.Runtime]System.Object) pinned,
+        method void * (int32)) cil managed
+    {
+        ret
+    }
 }
 
 .class public auto ansi beforefieldinit B1
@@ -28,6 +50,42 @@
     .method public hidebysig specialname rtspecialname
         instance void .ctor () cil managed
     {
+        ret
+    }
+
+    .method public virtual hidebysig instance void MethodDef() cil managed
+    {
+        .override A1::MethodDef
+        ret
+    }
+
+    // We don't actually use these two methods, but we need them to provide the MemberRef tokens
+    // that we use in the FindMethod tests.
+    .method public virtual hidebysig instance vararg void MethodRefWithoutVarargsArguments(
+        int32,
+        uint16*,
+        int64&,
+        object[]) cil managed
+    {
+        .override method instance vararg void A1::MethodRef1(
+            int32,
+            uint16*,
+            int64&,
+            object[])
+        ret
+    }
+
+    .method public virtual hidebysig instance vararg void MethodRefWithVarargsArguments(
+        valuetype [System.Runtime]System.Guid,
+        string[][1...3,-1...,..., 4] modreq(A1) modopt([System.Runtime]System.Object) pinned,
+        method void * (int32)) cil managed
+    {
+        .override method instance vararg void A1::MethodRef2(
+            valuetype [System.Runtime]System.Guid,
+            string[][1...3,-1...,..., 4] modreq(A1) modopt([System.Runtime]System.Object) pinned,
+            method void * (int32),
+            ...,
+            int32)
         ret
     }
 }
@@ -50,4 +108,8 @@
     {
         ret
     }
+
+    .field public int32 Field1
+
+    .field public int64 Field2
 }
