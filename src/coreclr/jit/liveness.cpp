@@ -1746,7 +1746,6 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
         else
         {
-            lclVarNode->ClearLastUse(i - varDsc.lvFieldLclStart);
             anyFieldLive = true;
         }
     }
