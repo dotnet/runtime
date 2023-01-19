@@ -532,6 +532,11 @@
   </ItemGroup>
 
   <ItemGroup>
+      <!-- FunctionalTests TestAssets are not, themselves, tests. -->
+      <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\TestAssets\**\*.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
