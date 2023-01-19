@@ -37,9 +37,13 @@ internal sealed class PInvokeTableGenerator
 
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-        foreach (var aname in assemblies)
+        foreach (var asmPath in assemblies)
         {
-            var a = mlc.LoadFromAssemblyPath(aname);
+            if (!File.Exists(asmPath))
+                throw new LogAsErrorException($"Cannot find assembly {asmPath}");
+
+            Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes");
+            var a = mlc.LoadFromAssemblyPath(asmPath);
             foreach (var type in a.GetTypes())
                 CollectPInvokes(pinvokes, callbacks, signatures, type);
         }
