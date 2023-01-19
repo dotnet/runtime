@@ -152,8 +152,9 @@
     <Compile Include="System\Net\NetworkInformation\AndroidIPInterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPv4InterfaceProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPv6InterfaceProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidNetworkInterface.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Android.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Android.cs" />
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
@@ -187,7 +188,7 @@
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true'">
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true') or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
