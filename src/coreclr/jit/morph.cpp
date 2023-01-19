@@ -3947,7 +3947,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
-        GenTreeLclVarCommon* implicitByRefLcl = argx->IsImplicitByrefParameterValue(this);
+        GenTree*             implicitByRefLclAddr;
+        GenTreeLclVarCommon* implicitByRefLcl =
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
@@ -3993,7 +3995,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 if (implicitByRefLcl != nullptr)
                 {
-                    arg->SetEarlyNode(lcl);
+                    arg->SetEarlyNode(implicitByRefLclAddr);
                 }
                 else
                 {
@@ -5890,8 +5892,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 // and so still be able to avoid a struct copy.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg is an implicit byref param.
-                    GenTreeLclVar* const lcl = arg.GetNode()->IsImplicitByrefParameterValue(this);
+                    // First, see if this arg off of an implicit byref param.
+                    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                     if (lcl != nullptr)
                     {
@@ -5963,7 +5965,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
                                     {
                                         GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetNode()->IsImplicitByrefParameterValue(this);
+                                            arg2.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                                         if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
