@@ -7,6 +7,7 @@ parameters:
   isExtraPlatformsBuild: false
   isAndroidEmulatorOnlyBuild: false
   isRollingBuild: false
+  allApiLevels: false
 
 jobs:
 
@@ -39,6 +40,7 @@ jobs:
       runtimeVariant: minijit
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
+      allApiLevels: ${{ parameters.allApiLevels }}
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
@@ -75,6 +77,7 @@ jobs:
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
+      allApiLevels: ${{ parameters.allApiLevels }}
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
@@ -106,6 +109,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
+      allApiLevels: ${{ parameters.allApiLevels }}
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:

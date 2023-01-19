@@ -104,6 +104,18 @@ jobs:
     # Android
     - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
       - Ubuntu.1804.Amd64.Android.29.Open
+      - ${{ if eq(parameters.jobParameters.allApiLevels, true) }}:
+        - Ubuntu.1804.Amd64.Android.21.Open
+        - Ubuntu.1804.Amd64.Android.22.Open
+        - Ubuntu.1804.Amd64.Android.23.Open
+        - Ubuntu.1804.Amd64.Android.24.Open
+        - Ubuntu.1804.Amd64.Android.25.Open
+        - Ubuntu.1804.Amd64.Android.26.Open
+        - Ubuntu.1804.Amd64.Android.27.Open
+        - Ubuntu.1804.Amd64.Android.28.Open
+        - Ubuntu.1804.Amd64.Android.30.Open
+        - Ubuntu.1804.Amd64.Android.31.Open
+        - Ubuntu.1804.Amd64.Android.32.Open
     - ${{ if in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm64') }}:
       - Windows.10.Amd64.Android.Open
 
