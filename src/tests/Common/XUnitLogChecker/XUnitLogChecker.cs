@@ -52,7 +52,6 @@ public class XUnitLogChecker
         return 0;
     }
 
-    // Missing Stuff: Write the final log file, not append to the temporary one.
     static void FixTheXml(string xFile)
     {
         var tags = new Stack<string>();
@@ -68,7 +67,33 @@ public class XUnitLogChecker
                 // Push the next opening tag to the stack. We need only the actual
                 // tag without the opening and closing symbols, so we ask LINQ to
                 // lend us a hand.
-                tags.Push(new String(m.Value.Where(c => char.IsLetter(c)).ToArray()));
+                string nextOpen = new String(m.Value
+                                              .Where(c => char.IsLetter(c))
+                                              .ToArray());
+
+                // During testing, I encountered a case where one of the labels
+                // a 'test' tag, had incomplete quotes. Since this can only happen
+                // with 'test' tags, we handle this case separately. It's also
+                // worth noting that in theory, this case can only happen if it's
+                // the last line in the log. But to be safe, we'll check all the
+                // 'test' tags.
+                if (nextOpen.Equals("test"))
+                {
+                    int quoteCount = 0;
+
+                    // Good ol' simple loop showed better performance in counting
+                    // the quotes.
+                    foreach (char c in line.AsSpan())
+                    {
+                        if (c == '"')
+                            quoteCount++;
+                    }
+
+                    if ((quoteCount % 2) != 0)
+                        nextOpen = "testWithMissingQuote";
+                }
+
+                tags.Push(nextOpen);
             }
 
             // If we found any closing tags, then ensure they match their respective
@@ -102,6 +127,8 @@ public class XUnitLogChecker
             string tag = tags.Pop();
             if (tag.Equals("CDATA"))
                 xsw.WriteLine("]]>");
+            else if (tag.Equals("testWithMissingQuote"))
+                xsw.WriteLine("\"</test>");
             else
                 xsw.WriteLine($"</{tag}>");
         }
