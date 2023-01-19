@@ -238,6 +238,7 @@ struct insPlaceholderGroupData
 struct insGroup
 {
     insGroup* igNext;
+    insGroup* igPrev;
 
 #ifdef DEBUG
     insGroup* igSelf; // for consistency checking
@@ -303,6 +304,10 @@ struct insGroup
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
 
+    // Last instruction in group, if any (nullptr if none); used for backwards navigation.
+    // (Should be type emitter::instrDesc*).
+    void* igLastIns;
+
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
 #endif
@@ -317,6 +322,10 @@ struct insGroup
         BYTE*                    igData;   // addr of instruction descriptors
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
+
+    // Last instruction in group, if any (nullptr if none); used for backwards navigation.
+    // (Should be type emitter::instrDesc*).
+    void*    igLastIns;
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
@@ -557,8 +566,6 @@ protected:
 
 #endif // TARGET_XARCH
 
-    struct instrDesc;
-
     struct instrDescDebugInfo
     {
         unsigned          idNum;
@@ -667,12 +674,6 @@ protected:
         }
 #endif
 
-        void idSetRelocFlags(emitAttr attr)
-        {
-            _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
-            _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
-        }
-
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:   17 bits
@@ -712,7 +713,6 @@ protected:
         // the live gcrefReg mask for the call instructions on x86/x64
         //
         regNumber _idReg1 : REGNUM_BITS; // register num
-
         regNumber _idReg2 : REGNUM_BITS;
 
         ////////////////////////////////////////////////////////////////////////
@@ -721,7 +721,7 @@ protected:
         // amd64: 38 bits
         // arm:   32 bits
         // arm64: 31 bits
-        CLANG_FORMAT_COMMENT_ANCHOR;
+        // loongarch64: 28 bits
 
         unsigned _idSmallDsc : 1;  // is this a "small" descriptor?
         unsigned _idLargeCns : 1;  // does a large constant     follow?
@@ -753,18 +753,6 @@ protected:
         unsigned _idLclVar : 1;    // access a local on stack
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
         insOpts  _idInsOpt : 3;    // options for Load/Store instructions
-
-// For arm we have used 16 bits
-#define ID_EXTRA_BITFIELD_BITS (16)
-
-#elif defined(TARGET_ARM64)
-// For Arm64, we have used 17 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (17)
-#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
-                                 // For xarch and LoongArch64, we have used 14 bits from the second DWORD.
-#define ID_EXTRA_BITFIELD_BITS (14)
-#else
-#error Unsupported or unset target architecture
 #endif
 
         ////////////////////////////////////////////////////////////////////////
@@ -775,41 +763,88 @@ protected:
         // arm64: 49 bits
         // loongarch64: 46 bits
 
+        //
+        // How many bits have been used beyond the first 32?
+        // Define ID_EXTRA_BITFIELD_BITS to that number.
+        //
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_ARM)
+#define ID_EXTRA_BITFIELD_BITS (16)
+#elif defined(TARGET_ARM64)
+#define ID_EXTRA_BITFIELD_BITS (17)
+#elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
+#define ID_EXTRA_BITFIELD_BITS (14)
+#else
+#error Unsupported or unset target architecture
+#endif
+
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
 
 #define ID_EXTRA_RELOC_BITS (2)
 
-        ////////////////////////////////////////////////////////////////////////
-        // Space taken up to here:
-        // x86:   48 bits
-        // amd64: 48 bits
-        // arm:   50 bits
-        // arm64: 51 bits
-        // loongarch64: 48 bits
+        // "Pointer" to previous instrDesc in this group. If zero, there is
+        // no previous instrDesc. If non-zero, then _idScaledPrevOffset * 4
+        // is the size in bytes of the previous instrDesc; subtract that from
+        // the current instrDesc* to reach the previous one.
+        // All instrDesc types are <= 56 bytes, but we also need m_debugInfoSize,
+        // which is pointer sized, so 5 bits are required on 64-bit and 4 bits
+        // on 32-bit.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS)
+#ifdef TARGET_64BIT
+        unsigned _idScaledPrevOffset : 5;
+#define ID_EXTRA_PREV_OFFSET_BITS (5)
+#else
+        unsigned _idScaledPrevOffset : 4;
+#define ID_EXTRA_PREV_OFFSET_BITS (4)
+#endif
+
+        ////////////////////////////////////////////////////////////////////////
+        // Space taken up to here:
+        // x86:   52 bits
+        // amd64: 53 bits
+        // arm:   54 bits
+        // arm64: 56 bits
+        // loongarch64: 53 bits
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
 /* Use whatever bits are left over for small constants */
 
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
+        C_ASSERT(ID_BIT_SMALL_CNS > 0);
 #define ID_MIN_SMALL_CNS 0
 #define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size:
-        // x86:   16 bits
-        // amd64: 16 bits
-        // arm:   14 bits
-        // arm64: 13 bits
+        // x86:   12 bits
+        // amd64: 12 bits
+        // arm:   10 bits
+        // arm64: 9 bits
+        // loongarch64: 12 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here: 64 bits, all architectures, by design.
         ////////////////////////////////////////////////////////////////////////
+
+        //
+        // This is the end of the 'small' instrDesc which is the same on all platforms
+        //
+        // If you add lots more fields that need to be cleared (such
+        // as various flags), you might need to update the body of
+        // emitter::emitAllocInstr() to clear them.
+        //
+        // SMALL_IDSC_SIZE is this size, in bytes.
+        //
         CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define SMALL_IDSC_SIZE 8
 
     public:
         instrDescDebugInfo* idDebugOnlyInfo() const
@@ -825,21 +860,6 @@ protected:
 
     private:
         CLANG_FORMAT_COMMENT_ANCHOR;
-
-//
-// This is the end of the 'small' instrDesc which is the same on all platforms
-// Sizes (includes one pointer):
-//   x86:   2 DWORDs, 96 bits
-//   amd64: 4 DWORDs, 128 bits
-//   arm:   3 DWORDs, 96 bits
-//   arm64: 4 DWORDs, 128 bits
-// There should no padding or alignment issues on any platform or configuration.
-//
-// If you add lots more fields that need to be cleared (such
-// as various flags), you might need to update the body of
-// emitter::emitAllocInstr() to clear them.
-
-#define SMALL_IDSC_SIZE 8
 
         void checkSizes();
 
@@ -1327,6 +1347,25 @@ protected:
             return idIsDspReloc() || idIsCnsReloc();
         }
 
+        void idSetRelocFlags(emitAttr attr)
+        {
+            _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
+            _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
+        }
+
+        // Return the stored size of the previous instrDesc in bytes, or zero if there
+        // is no previous instrDesc in this group.
+        unsigned idPrevSize()
+        {
+            return _idScaledPrevOffset * 4;
+        }
+        void idSetPrevSize(unsigned prevInstrDescSizeInBytes)
+        {
+            assert(prevInstrDescSizeInBytes % 4 == 0);
+            _idScaledPrevOffset = prevInstrDescSizeInBytes / 4;
+            assert(idPrevSize() == prevInstrDescSizeInBytes);
+        }
+
         unsigned idSmallCns() const
         {
             return _idSmallCns;
@@ -1744,10 +1783,7 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig,
-                    insGroup* igPrev              = nullptr,
-                    bool      displayInstructions = false,
-                    bool      displayLocation     = true);
+    void emitDispIG(insGroup* ig, bool displayInstructions = false, bool displayLocation = true);
     void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
@@ -1969,7 +2005,10 @@ private:
     /*      The logic that creates and keeps track of instruction groups    */
     /************************************************************************/
 
-    // SC_IG_BUFFER_SIZE defines the size, in bytes, of the single, global instruction group buffer.
+    // The IG buffer size is the size, in bytes, of the single, global instruction group buffer.
+    // It is computed dynamically based on SC_IG_BUFFER_NUM_SMALL_DESCS, SC_IG_BUFFER_NUM_LARGE_DESCS,
+    // and whether a debug info pointer is being saved.
+    //
     // When a label is reached, or the buffer is filled, the precise amount of the buffer that was
     // used is copied to a newly allocated, precisely sized buffer, and the global buffer is reset
     // for use with the next set of instructions (see emitSavIG). If the buffer was filled before
@@ -2177,6 +2216,7 @@ private:
 
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
+    unsigned   emitLastInsFullSize;
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
@@ -2237,6 +2277,9 @@ private:
     static void emitGenerateUnwindNop(instrDesc* id, void* context);
 
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+
+    bool emitPrevID(insGroup*& ig, instrDesc*& id);
+    bool emitGetLastIns(insGroup** pig, instrDesc** pid);
 
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
