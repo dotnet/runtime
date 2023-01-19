@@ -81,7 +81,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-        <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Aot.EventPipe.lib;</AdditionalDependencies>
+        <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\eventPipe-enabled.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">

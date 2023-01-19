@@ -239,6 +239,7 @@ public:
         ep_rt_utf8_string_free (outputPathUTF8);
         return result;
     }
+#endif // defined(NATIVEAOT_CORPROF_INCLUDE_IS_READY)
 
     static inline void Disable(EventPipeSessionID id)
     {
@@ -253,6 +254,7 @@ public:
         ep_disable(id);
     }
 
+#if defined(NATIVEAOT_CORPROF_INCLUDE_IS_READY)
     static inline void StartStreaming(EventPipeSessionID id)
     {
         CONTRACTL
@@ -328,6 +330,7 @@ public:
 
         ep_add_provider_to_session (provider, session);
     }
+#endif // defined(NATIVEAOT_CORPROF_INCLUDE_IS_READY)
 
     static inline EventPipeProvider * GetProvider (LPCWSTR providerName)
     {
@@ -348,6 +351,7 @@ public:
         return provider;
     }
 
+#if defined(NATIVEAOT_CORPROF_INCLUDE_IS_READY)
     static EventPipeSessionProvider * CreateSessionProvider(const EventPipeProviderConfigurationAdapter &providerConfig)
     {
         CONTRACTL

@@ -38,7 +38,7 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
 {
-    __debugbreak();
+    EventPipeAdapter::Disable(sessionID);
 }
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
@@ -71,8 +71,8 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
 
 EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(LPCWSTR providerName)
 {
-    __debugbreak();
-    return 0;
+    EventPipeProvider* pProvider = EventPipeAdapter::GetProvider(providerName);
+    return reinterpret_cast<intptr_t>(pProvider);
 }
 
 EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t provHandle)

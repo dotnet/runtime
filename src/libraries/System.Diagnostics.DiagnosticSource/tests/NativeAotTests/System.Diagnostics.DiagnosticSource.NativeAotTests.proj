@@ -3,7 +3,7 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="DiagnosticSourceEventSourceTests.cs"
-                               EnabledProperties="EventSourceSupport" />
+                               EnabledProperties="EventSourceSupport;EnableNativeEventPipe" />                               
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -1,4 +1,3 @@
-# These need to happen before the VM and debug-pal includes.
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 include_directories(${EP_GENERATED_HEADER_PATH})
@@ -120,7 +119,7 @@ list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${CMAKE_CURRENT_SOURCE_DIR}/eventpipeinternal.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/eventpipeadapter.h
    ${CMAKE_CURRENT_SOURCE_DIR}/diagnosticserveradapter.h
-   ${CMAKE_CURRENT_SOURCE_DIR}/AotEnabledEventPipeInterface.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/EnabledEventPipeInterface.cpp
 )
 
 list(APPEND EVENTPIPE_SOURCES
@@ -135,7 +134,7 @@ list(APPEND EVENTPIPE_SOURCES
 )
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
-  ${CMAKE_CURRENT_SOURCE_DIR}/AotDisabledEventPipeInterface.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/DisabledEventPipeInterface.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/disabledeventpipeinternal.cpp
 )
 

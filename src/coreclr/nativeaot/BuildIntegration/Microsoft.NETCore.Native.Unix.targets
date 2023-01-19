@@ -40,11 +40,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
 
-      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'OSX'">$ORIGIN</IlcRPath>
-      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'OSX'">@executable_path</IlcRPath>
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'osx'">$ORIGIN</IlcRPath>
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'osx'">@executable_path</IlcRPath>
 
       <EventPipeName>libeventpipe-disabled</EventPipeName>
-      <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true'">libAot.EventPipe</AotEventPipeName>
+      <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true'">libeventpipe-enabled</AotEventPipeName>
     </PropertyGroup>
 
     <ItemGroup>
