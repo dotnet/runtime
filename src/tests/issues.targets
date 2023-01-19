@@ -4258,7 +4258,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="( $(TargetOS) == 'iOSSimulator' or (TargetOS) == 'iOS' ) and '$(TargetArchitecture)' == 'arm64'" >
+    <ItemGroup Condition="( '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS' ) and '$(TargetArchitecture)' == 'arm64'" >
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
