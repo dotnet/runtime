@@ -1425,6 +1425,7 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 #define WID 16
 #define LNG 32
 #define NRW 64
+#define WR2 128 // writes operand 2 instead of 1
 
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
@@ -1536,6 +1537,19 @@ bool emitter::emitInsIsVectorWide(instruction ins)
         return false;
 }
 
+//------------------------------------------------------------------------
+// emitInsDestIsOp2: Returns true if the instruction is one of the special
+// cases that has its destination register as the second register operand
+// instead of the first.
+//
+bool emitter::emitInsDestIsOp2(instruction ins)
+{
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & WR2) != 0;
+    else
+        return false;
+}
+
 #undef LD
 #undef ST
 #undef CMP
@@ -1543,6 +1557,7 @@ bool emitter::emitInsIsVectorWide(instruction ins)
 #undef WID
 #undef LNG
 #undef NRW
+#undef WR2
 
 /*****************************************************************************
  *
@@ -10754,6 +10769,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rt(id->idReg2());             // ttttt
             code |= insEncodeReg_Rn(id->idReg3());             // nnnnn
             dst += emitOutput_Instr(dst, code);
+
+            // Some instructions with this encoding return their result in the
+            // second operand register instead of the first so we special case
+            // the GC update here and skip the common path down below.
+            if (emitInsDestIsOp2(ins))
+            {
+                if (id->idGCref() != GCT_NONE)
+                {
+                    emitGCregLiveUpd(id->idGCref(), id->idReg2(), dst);
+                }
+                else
+                {
+                    emitGCregDeadUpd(id->idReg2(), dst);
+                }
+
+                goto SKIP_GC_UPDATE;
+            }
+
             break;
 
         case IF_LS_3F: // LS_3F   .Q.........mmmmm ....ssnnnnnttttt      Vt Rn Rm
@@ -11663,6 +11696,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     if (emitInsMayWriteToGCReg(id)) // True if "id->idIns()" writes to a register than can hold GC ref.
     {
         // We assume that "idReg1" is the primary destination register for all instructions
+        assert(!emitInsDestIsOp2(ins));
         if (id->idGCref() != GCT_NONE)
         {
             emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
@@ -11687,6 +11721,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
     }
 
+SKIP_GC_UPDATE:
     // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
     // ref or overwritten one.
     if (emitInsWritesToLclVarStackLoc(id) || emitInsWritesToLclVarStackLocPair(id))

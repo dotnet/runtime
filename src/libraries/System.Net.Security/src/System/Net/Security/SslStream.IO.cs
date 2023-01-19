@@ -512,6 +512,28 @@ namespace System.Net.Security
                 return true;
             }
 
+            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_securityContext!))
+            {
+                // We may select client cert but it may not be used.
+                // This is primarily an issue on Windows with credential caching.
+                _selectedClientCertificate = null;
+            }
+
+#if TARGET_ANDROID
+            // On Android, the remote certificate verification can be invoked from Java TrustManager's callback
+            // during the handshake process. If that has occurred, we shouldn't run the validation again and
+            // return the existing validation result.
+            //
+            // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
+            // the peer didn't provide any certificate (for example when the peer is the client) and the validation
+            // result hasn't been set. In that case we still need to run the verification at this point.
+            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, out alertToken, out bool isValid))
+            {
+                _handshakeCompleted = isValid;
+                return isValid;
+            }
+#endif
+
             if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
