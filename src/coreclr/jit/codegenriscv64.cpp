@@ -3903,8 +3903,8 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                         emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
                         emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
 
-                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp1, 32);
-                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp1, 32);
+                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
+                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
                     }
                     else
                     {
