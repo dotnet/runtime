@@ -912,8 +912,50 @@ public:
     // Get layout information for the argument that the ArgIterator is currently visiting.
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
     {
-        // TODO RISCV64
-        _ASSERTE(!"TODO RISCV64 NYI");
+        LIMITED_METHOD_CONTRACT;
+
+        pLoc->Init();
+
+        if (m_hasArgLocDescForStructInRegs)
+        {
+            *pLoc = m_argLocDescForStructInRegs;
+            return;
+        }
+
+        if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
+        {
+            // TODO-RISCV64: support SIMD.
+            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
+
+            assert(!m_argTypeHandle.IsHFA());
+
+            pLoc->m_cFloatReg = 1;
+
+            return;
+        }
+
+        int cSlots = (GetArgSize() + 7)/ 8;
+
+        // Composites greater than 16bytes are passed by reference
+        if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        {
+            cSlots = 1;
+        }
+
+        if (!TransitionBlock::IsStackArgumentOffset(argOffset))
+        {
+            // At least one used integer register passed.
+            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
+            pLoc->m_cGenReg = cSlots;
+        }
+        else
+        {
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            pLoc->m_byteStackSize = cSlots << 3;
+        }
+
+        return;
     }
 #endif // TARGET_RISCV64
 protected:

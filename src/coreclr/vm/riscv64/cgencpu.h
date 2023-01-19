@@ -361,6 +361,9 @@ public:
     };
 
     static void Init();
+    static bool isValidSimm12(int value) {
+        return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
+    }
 
     void EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall);
     void EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect);
@@ -391,7 +394,7 @@ public:
     void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0);
     void EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset=0);
 
-    void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
+    void EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset);
 
     void EmitCallRegister(IntReg reg);
     void EmitRet(IntReg reg);

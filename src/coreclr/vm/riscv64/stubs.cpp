@@ -852,7 +852,7 @@ void StubLinkerCPU::EmitCondFlagJump(CodeLabel * target, UINT cond)
 
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    Emit32(0x00000067 | (regTarget << 15));
 }
 
 void StubLinkerCPU::EmitRet(IntReg Xn)
@@ -922,10 +922,11 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int
     }
 }
 
-// Load Register (Register Offset)
-void StubLinkerCPU::EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option)
+void StubLinkerCPU::EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    // fld ft,base,offset
+    _ASSERTE(offset <= 2047 && offset >= -2048);
+    Emit32(0x2b800000 | (base.reg << 15) | ((offset & 0xfff)<<20) | (ft.reg << 7));
 }
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
@@ -958,7 +959,124 @@ void StubLinkerCPU::Init()
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
+    // field and saved in t6. Tailcall to the target method after re-arranging the arguments
+    // ld  t6, a0, offsetof(DelegateObject, _methodPtrAux)
+    EmitLoadStoreRegImm(eLOAD, IntReg(31)/*t6*/, IntReg(10)/*a0*/, DelegateObject::GetOffsetOfMethodPtrAux());
+    // addi t5, a0, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into t5 used by ResolveWorkerAsmStub
+    EmitAddImm(30/*t5*/, 10/*a0*/, DelegateObject::GetOffsetOfMethodPtrAux());
+
+    int delay_index[8] = {-1};
+    bool is_store = false;
+    UINT16 index = 0;
+    int i = 0;
+    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++, i++)
+    {
+        if (pEntry->srcofs & ShuffleEntry::REGMASK)
+        {
+            // Source in register, destination in register
+
+            // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
+            // If source is present in register then destination may be a stack-slot.
+            _ASSERTE(((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK)) || !(pEntry->dstofs & (ShuffleEntry::FPREGMASK | ShuffleEntry::REGMASK)));
+            _ASSERTE((pEntry->dstofs & ShuffleEntry::OFSREGMASK) <= 8);//should amend for offset!
+            _ASSERTE((pEntry->srcofs & ShuffleEntry::OFSREGMASK) <= 8);
+
+            if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
+            {
+                _ASSERTE(!"RISCV64: not validated on riscv64!!!");
+                // FirstFloatReg is 10;
+                int j = 10;
+                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
+                {
+                    j++;
+                }
+                assert((pEntry->dstofs - pEntry->srcofs) == index);
+                assert(8 > index);
+
+                int tmp_reg = 0; // f0.
+                ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
+                while (index)
+                {
+                    // fld(Ft, sp, offset);
+                    _ASSERTE(isValidSimm12(tmp_entry->srcofs << 3));
+                    Emit32(0x3007 | (tmp_reg << 15) | (2 << 7/*sp*/) | ((tmp_entry->srcofs << 3) << 20));
+                    tmp_reg++;
+                    index--;
+                    tmp_entry++;
+                }
+
+                j -= 1;
+                tmp_entry = pEntry + j;
+                i += j;
+                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
+                {
+                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK)// fsgnj.d fd, fs, fs
+                        Emit32(0x22000053 | ((pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) << 7) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 15) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20));
+                    else //// fsd(Ft, Rn, offset);
+                    {
+                        _ASSERTE(isValidSimm12((pEntry[j].dstofs * sizeof(long))));
+                        Emit32(0x3027 | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20) | (2 << 15 /*sp*/) | ((pEntry[j].dstofs * sizeof(long) & 0x1f) << 7) | ((pEntry[j].dstofs * sizeof(long) & 0x7f) << 25));
+                    }
+                    j--;
+                }
+                assert(tmp_reg <= 11);
+                /*
+                while (tmp_reg > 11)
+                {
+                    tmp_reg--;
+                    // fmov.d fd, fs
+                    Emit32(0x01149800 | index | (tmp_reg << 5));
+                    index++;
+                }
+                */
+                index = 0;
+                pEntry = tmp_entry;
+            }
+            else
+            {
+                // 10 is the offset of FirstGenArgReg to FirstGenReg
+                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
+                assert((pEntry->dstofs & ShuffleEntry::OFSMASK) < (pEntry->srcofs & ShuffleEntry::OFSMASK));
+                EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSMASK) + 10));
+            }
+        }
+        else if (pEntry->dstofs & ShuffleEntry::REGMASK)
+        {
+            // source must be on the stack
+            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
+
+            if (pEntry->dstofs & ShuffleEntry::FPREGMASK)
+            {
+                if (!is_store)
+                {
+                    delay_index[index++] = i;
+                    continue;
+                }
+                EmitLoadFloatRegImm(FloatReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), RegSp, pEntry->srcofs * sizeof(void*));
+            }
+            else
+            {
+                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
+                EmitLoadStoreRegImm(eLOAD, IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 10), RegSp, pEntry->srcofs * sizeof(void*));
+            }
+        }
+        else
+        {
+            // source must be on the stack
+            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
+
+            // dest must be on the stack
+            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
+
+            EmitLoadStoreRegImm(eLOAD, IntReg(29)/*t4*/, RegSp, pEntry->srcofs * sizeof(void*));
+            EmitLoadStoreRegImm(eSTORE, IntReg(29)/*t4*/, RegSp, pEntry->dstofs * sizeof(void*));
+        }
+    }
+
+    // Tailcall to target
+    // jalr x0, 0(t6)
+    EmitJumpRegister(31);
 }
 
 // Emits code to adjust arguments for static delegate target.
