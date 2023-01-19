@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,21 +15,45 @@ namespace Wasm.Build.Tests;
 public class IcuShardingTests : BuildTestBase
 {
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
-    {
-    }
+        : base(output, buildContext) { }
 
     private static string customIcuPath = Path.Combine(Directory.GetCurrentDirectory().Split("artifacts")[0], "src", "mono", "wasm", "testassets", "icudt_custom.dat");
+    private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"};
+    private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR"};
 
-    public static IEnumerable<object?[]> IcuExpectedAndMissingShardTestData(bool aot, RunHost host)
+    public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
                 // custom file contains only 4 locales, nothing else:
-                new object[] { customIcuPath, new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"}, new string[] { "fr-FR", "hr-HR", "ko-KR" } },
+                new object[] { customIcuPath, customIcuExpectedLocales, customIcuMissingLocales })
+            .WithRunHosts(host)
+            .UnwrapItemsAsArrays();
+
+    public static IEnumerable<object?[]> IcuExpectedAndMissingShardFromRuntimePackTestData(bool aot, RunHost host)
+        => ConfigWithAOTData(aot)
+            .Multiply(
                 new object[] { "icudt.dat", new string[] { "en-GB", "zh-CN", "hr-HR" }, new string[] { "xx-yy" } },
                 new object[] { "icudt_EFIGS.dat", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },
                 new object[] { "icudt_CJK.dat", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },
                 new object[] { "icudt_no_CJK.dat", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN"} })
+            .WithRunHosts(host)
+            .UnwrapItemsAsArrays();
+
+    public static IEnumerable<object?[]> FullIcuWithInvariantTestData(bool aot, RunHost host)
+        => ConfigWithAOTData(aot)
+            .Multiply(
+                new object[] { true, true, new string[] { "en-GB", "pl-PL", "ko-KR" } },
+                new object[] { true, false, new string[] { "en-GB", "pl-PL", "ko-KR" } },
+                new object[] { false, false, new string[] { "en-GB", "pl-PL", "ko-KR" } },
+                new object[] { false, true, new string[] { "en-GB", "pl-PL", "ko-KR" } })
+            .WithRunHosts(host)
+            .UnwrapItemsAsArrays();
+
+    public static IEnumerable<object?[]> FullIcuWithICustomIcuTestData(bool aot, RunHost host)
+        => ConfigWithAOTData(aot)
+            .Multiply(
+                new object[] { true },
+                new object[] { false })
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -57,12 +82,33 @@ public class IcuShardingTests : BuildTestBase
         return 42;
         ";
 
+    private void CheckExpectedLocales(string[] expectedLocales, string runOutput)
+    {
+        foreach (var loc in expectedLocales)
+            Assert.Contains($"Found expected locale: {loc} - {loc}", runOutput);
+    }
+
+    private void CheckMissingLocales(string[] missingLocales, string runOutput)
+    {
+        foreach (var loc in missingLocales)
+            Assert.Contains($"Missing locale as planned: {loc}", runOutput);
+    }
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.All })]
+    public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
+        TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.All })]
+    public void CustomIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
+        TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
+
     // on Chrome: when loading only EFIGS or only CJK, CoreLib's failure on culture not found cannot be easily caught:
     // Encountered infinite recursion while looking up resource 'Argument_CultureNotSupported' in System.Private.CoreLib.
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(IcuExpectedAndMissingShardTestData), parameters: new object[] { true, RunHost.All })]
-    public void TestIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
+    private void TestIcuShards(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
     {
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -78,14 +124,86 @@ public class IcuShardingTests : BuildTestBase
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             PredefinedIcudt: shardName));
 
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42,
-                    test: output => {},
-                    host: host, id: id);
+        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
 
-        foreach (var loc in expectedLocales)
-            Assert.Contains($"Found expected locale: {loc} - {loc}", runOutput);
+        CheckExpectedLocales(expectedLocales, runOutput);
+        CheckMissingLocales(missingLocales, runOutput);
+    }
 
-        foreach (var loc in missingLocales)
-            Assert.Contains($"Missing locale as planned: {loc}", runOutput);
+    [Theory]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.All })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.All })]
+    public void FullIcuFromRuntimePackWithInvariant(BuildArgs buildArgs, bool invariant, bool fullIcu, string[] testedLocales, RunHost host, string id)
+    {
+        string projectName = $"fullIcuInvariant_{fullIcu}_{invariant}_{buildArgs.Config}_{buildArgs.AOT}";
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+
+        buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = fullIcu };
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization>");
+
+        // in invariant mode, all locales should be missing
+        string[] expectedLocales = invariant ? Array.Empty<string>() : testedLocales;
+        string[] missingLocales = invariant ? testedLocales : Array.Empty<string>();
+        string programText = GetProgramText(expectedLocales, missingLocales);
+        (_, string output) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                            HasIcudt: !invariant));
+
+        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+
+        if (invariant)
+            Assert.Contains("Only the invariant culture is supported in globalization-invariant mode", runOutput);
+        CheckExpectedLocales(expectedLocales, runOutput);
+        CheckMissingLocales(missingLocales, runOutput);
+    }
+
+    [Theory]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.All })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.All })]
+    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool hasCustomIcu, RunHost host, string id)
+    {
+        string projectName = $"fullIcuCustom_{hasCustomIcu}_{buildArgs.Config}_{buildArgs.AOT}";
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+
+        buildArgs = buildArgs with { ProjectName = projectName };
+        if (hasCustomIcu)
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcuPath}</WasmIcuDataFileName>");
+
+        // custom icu has locales that are not present in full icu data and the other way around
+        string[] expectedLocales = hasCustomIcu ? customIcuExpectedLocales : customIcuMissingLocales;
+        string[] missingLocales = hasCustomIcu ? customIcuMissingLocales : customIcuExpectedLocales;
+        string programText = GetProgramText(expectedLocales, missingLocales);
+        (_, string output) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                            PredefinedIcudt: hasCustomIcu ? customIcuPath : ""));
+
+        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+
+        if (hasCustomIcu)
+            Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", runOutput);
+        CheckExpectedLocales(expectedLocales, runOutput);
+        CheckMissingLocales(missingLocales, runOutput);
+    }
+
+    [Theory]
+    [BuildAndRun(host: RunHost.None)]
+    public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string id)
+    {
+        string projectName = $"invalidCustomIcu_{buildArgs.Config}_{buildArgs.AOT}";
+        buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = false };
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>nonexisting.dat</WasmIcuDataFileName>");
+
+        (_, string output) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                            ExpectSuccess: false));
+        Assert.Contains("File in location $(WasmIcuDataFileName)=nonexisting.dat cannot be found neither when used as absolute path nor a relative runtime pack path.", output);
     }
 }
