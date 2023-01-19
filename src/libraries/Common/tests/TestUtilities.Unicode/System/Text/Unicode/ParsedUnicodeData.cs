@@ -108,9 +108,9 @@ namespace System.Text.Unicode
             {
                 if (PropsFileEntry.TryParseLine(thisLine, out PropsFileEntry? value))
                 {
-                    BidiClass bidiClass = BidiClassMap[value!.PropName];
+                    BidiClass bidiClass = BidiClassMap[value.PropName];
 
-                    for (int i = value!.FirstCodePoint; i <= value!.LastCodePoint /* inclusive */; i++)
+                    for (int i = value.FirstCodePoint; i <= value.LastCodePoint /* inclusive */; i++)
                     {
                         dict.Add(i, bidiClass);
                     }
@@ -135,7 +135,7 @@ namespace System.Text.Unicode
             {
                 if (PropsFileEntry.TryParseLine(thisLine, out PropsFileEntry? value))
                 {
-                    if (value!.IsSingleCodePoint)
+                    if (value.IsSingleCodePoint)
                     {
                         // Single code point of format "XXXX ; <Name>" (name shouldn't end with '*')
 
@@ -177,7 +177,7 @@ namespace System.Text.Unicode
                 {
                     if (PropsFileEntry.TryParseLine(thisLine, out PropsFileEntry? value))
                     {
-                        if (Enum.TryParse<GraphemeClusterBreakProperty>(value!.PropName, out GraphemeClusterBreakProperty property))
+                        if (Enum.TryParse<GraphemeClusterBreakProperty>(value.PropName, out GraphemeClusterBreakProperty property))
                         {
                             for (int i = value.FirstCodePoint; i <= value.LastCodePoint /* inclusive */; i++)
                             {
@@ -208,7 +208,7 @@ namespace System.Text.Unicode
 
                 if (PropsFileEntry.TryParseLine(thisLine, out PropsFileEntry? value))
                 {
-                    CodePointFlags newFlag = Enum.Parse<CodePointFlags>(value!.PropName);
+                    CodePointFlags newFlag = Enum.Parse<CodePointFlags>(value.PropName);
                     for (int i = value.FirstCodePoint; i <= value.LastCodePoint /* inclusive */; i++)
                     {
                         dict.TryGetValue(i, out CodePointFlags flagsForThisCodePoint /* could be default(T) */);
