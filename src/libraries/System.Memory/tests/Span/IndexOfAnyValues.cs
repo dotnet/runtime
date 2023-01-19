@@ -394,7 +394,7 @@ namespace System.SpanTests
         private static class IndexOfAnyValuesTestHelper
         {
             private const int MaxNeedleLength = 10;
-            private const int MaxHaystackLength = 40;
+            private const int MaxHaystackLength = 100;
 
             private static readonly char[] s_randomAsciiChars;
             private static readonly char[] s_randomLatin1Chars;

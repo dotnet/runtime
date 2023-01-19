@@ -1512,6 +1512,24 @@ enum API_ICorJitInfo_Names
     API_COUNT
 };
 
+enum class FlowGraphUpdates
+{
+    COMPUTE_BASICS  = 0,      // renumber blocks, reachability, etc
+    COMPUTE_DOMS    = 1 << 0, // recompute dominators
+    COMPUTE_RETURNS = 1 << 1, // recompute return blocks
+    COMPUTE_LOOPS   = 1 << 2, // recompute loop table
+};
+
+inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
+{
+    return (FlowGraphUpdates)((unsigned int)a | (unsigned int)b);
+}
+
+inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
+{
+    return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
+}
+
 //---------------------------------------------------------------
 // Compilation time.
 //
@@ -5142,12 +5160,10 @@ protected:
     // && postOrder(A) >= postOrder(B) making the computation O(1).
     void fgNumberDomTree(DomTreeNode* domTree);
 
-    // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets,
+    // When the flow graph changes, we need to update the block numbers, reachability sets,
     // dominators, and possibly loops.
-    void fgUpdateChangedFlowGraph(const bool computePreds        = true,
-                                  const bool computeDoms         = true,
-                                  const bool computeReturnBlocks = false,
-                                  const bool computeLoops        = false);
+    //
+    void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
     // Compute the predecessors of the blocks in the control flow graph.

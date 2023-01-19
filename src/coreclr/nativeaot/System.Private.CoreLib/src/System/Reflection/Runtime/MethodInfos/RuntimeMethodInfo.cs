@@ -118,7 +118,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
                 if (next == null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
