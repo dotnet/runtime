@@ -308,7 +308,7 @@ typedef struct MonoAotCompile {
 	GHashTable *image_hash;
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
-	GHashTable *method_to_pinvoke_import;
+	GHashTable *method_to_pinvoke_scope_import;
 	GHashTable *direct_pinvokes;
 	GHashTable *method_to_external_icall_symbol_name;
 	GPtrArray *extra_methods;
@@ -6115,40 +6115,55 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
-static const char *
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
+static gboolean
+method_to_pinvoke_has_scope_import (MonoAotCompile *acfg, MonoMethod *method, const char **module, const char **entrypoint)
 {
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
+	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
 	guint32 im_cols [MONO_IMPLMAP_SIZE];
-	char *import;
+	int module_idx;
+	const char **scope_import;
+	guint32 scope_token;
 
-	import = (char *)g_hash_table_lookup (acfg->method_to_pinvoke_import, method);
-	if (import != NULL)
-		return import;
+	if (g_hash_table_lookup_extended (acfg->method_to_pinvoke_scope_import, method, NULL, (gpointer *)&scope_import) && scope_import) {
+		if (module)
+			*module = g_strdup (scope_import[0]);
+		if (entrypoint)
+			*entrypoint = g_strdup (scope_import[1]);
+		return TRUE;
+	}
 
 	if (piinfo->implmap_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
-		return NULL;
+		return FALSE;
 
 	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
 
-	int module_idx = im_cols [MONO_IMPLMAP_SCOPE];
+	module_idx = im_cols [MONO_IMPLMAP_SCOPE];
 	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, module_idx))
-		return NULL;
+		return FALSE;
 
-	import = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+	scope_import = (const char **) g_malloc0 (3 * sizeof (scope_import));
+	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
+	scope_import[0] = g_strdup_printf ("%s", mono_metadata_string_heap (image, scope_token));
+	scope_import[1] = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
 
-	g_hash_table_insert (acfg->method_to_pinvoke_import, method, import);
+	g_hash_table_insert (acfg->method_to_pinvoke_scope_import, method, scope_import);
 
-	return import;
+	if (module)
+		*module = g_strdup (scope_import[0]);
+	if (entrypoint)
+		*entrypoint = g_strdup (scope_import[1]);
+
+	return TRUE;
 }
 #else
-static const char *
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
+static gboolean
+method_to_pinvoke_has_scope_import (MonoAotCompile *acfg, MonoMethod *method, const char **module, const char **entrypoint)
 {
-	return NULL;
+	return FALSE;
 }
 #endif
 
@@ -6161,21 +6176,26 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method)
 static gboolean
 is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
 {
+	gboolean direct_pinvoke_specified = FALSE;
+	const char *module_name, *sym;
+	GHashTable *val;
+
 	if (acfg->aot_opts.direct_pinvoke)
 		return TRUE;
 
 	if (!acfg->aot_opts.direct_pinvokes && !acfg->aot_opts.direct_pinvoke_lists)
 		return FALSE;
 
-	const char *sym = get_pinvoke_import (acfg, method);
-	const char *module_name = acfg->image->module_name;
-	GHashTable *val;
-	if (g_hash_table_lookup_extended (acfg->direct_pinvokes, module_name, NULL, (gpointer *)&val)) {
+	if (method_to_pinvoke_has_scope_import (acfg, method, &module_name, &sym) && g_hash_table_lookup_extended (acfg->direct_pinvokes, module_name, NULL, (gpointer *)&val)) {
 		if (!val)
-			return TRUE;
-		return g_hash_table_contains (val, sym);
+			direct_pinvoke_specified = TRUE;
+		else
+			direct_pinvoke_specified = g_hash_table_contains (val, sym);
 	}
-	return FALSE;
+	g_free ((char *)module_name);
+	g_free ((char *)sym);
+
+	return direct_pinvoke_specified;
 }
 
 /*
@@ -6523,7 +6543,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						if (!(patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 							direct_pinvoke = lookup_icall_symbol_name_aot (patch_info->data.method);
 						else
-							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
+							method_to_pinvoke_has_scope_import (acfg, patch_info->data.method, NULL, &direct_pinvoke);
 						if (direct_pinvoke && !never_direct_pinvoke (direct_pinvoke)) {
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
@@ -10203,7 +10223,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 				sym = lookup_icall_symbol_name_aot (method);
 			else if (is_direct_pinvoke_specified_for_method (llvm_acfg, method))
-				sym = get_pinvoke_import (llvm_acfg, method);
+				method_to_pinvoke_has_scope_import (llvm_acfg, method, NULL, &sym);
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 			char const * const name = info->c_symbol;
@@ -13752,7 +13772,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->patch_to_plt_entry = g_new0 (GHashTable*, MONO_PATCH_INFO_NUM);
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, NULL);
-	acfg->method_to_pinvoke_import = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->method_to_pinvoke_scope_import = g_hash_table_new_full (NULL, NULL, NULL, (GDestroyNotify)g_strfreev);
 	acfg->direct_pinvokes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, (GDestroyNotify)g_hash_table_destroy);
 	acfg->method_to_external_icall_symbol_name = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
@@ -13857,7 +13877,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_free (acfg->patch_to_plt_entry);
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
-	g_hash_table_destroy (acfg->method_to_pinvoke_import);
+	g_hash_table_destroy (acfg->method_to_pinvoke_scope_import);
 	g_hash_table_destroy (acfg->direct_pinvokes);
 	g_hash_table_destroy (acfg->method_to_external_icall_symbol_name);
 	g_hash_table_destroy (acfg->image_hash);
