@@ -92,6 +92,8 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
+        bool hasExports = false;
+
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
             aotSources.AppendLine(compiledAssembly.AssemblerFile);
