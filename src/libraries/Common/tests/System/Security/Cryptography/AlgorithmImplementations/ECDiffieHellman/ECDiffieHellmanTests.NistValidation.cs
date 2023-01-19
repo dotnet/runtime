@@ -227,8 +227,15 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             byte[] hashedZ = zHasher.ComputeHash(iutZ);
             Assert.Equal(hashedZ.ByteArrayToHex(), deriveHash.ByteArrayToHex());
 
-            byte[] rawDerived = iut.DeriveSecretAgreement(cavsPublic);
-            Assert.Equal(iutZ.ByteArrayToHex(), rawDerived.ByteArrayToHex());
+            if (ECDiffieHellmanFactory.SupportsRawDerivation)
+            {
+                byte[] rawDerived = iut.DeriveSecretAgreement(cavsPublic);
+                Assert.Equal(iutZ.ByteArrayToHex(), rawDerived.ByteArrayToHex());
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => iut.DeriveSecretAgreement(cavsPublic));
+            }
         }
     }
 #endif
