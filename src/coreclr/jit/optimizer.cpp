@@ -2684,8 +2684,7 @@ NO_MORE_LOOPS:
     }
     if (mod)
     {
-        constexpr bool computePreds = true;
-        fgUpdateChangedFlowGraph(computePreds);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
     if (false /* pre-header stress */)
@@ -2698,10 +2697,7 @@ NO_MORE_LOOPS:
 
         if (fgModified)
         {
-            // The predecessors were maintained in fgCreateLoopPreHeader; don't rebuild them.
-            constexpr bool computePreds = false;
-            constexpr bool computeDoms  = true;
-            fgUpdateChangedFlowGraph(computePreds, computeDoms);
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
         }
     }
 
@@ -3082,6 +3078,10 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ true);
 
+            fgRemoveRefPred(t, h);
+            fgAddRefPred(t, newH);
+            fgAddRefPred(newH, h);
+
             // Anything that flows into sibling will flow here.
             // So we use sibling.H as our best guess for weight.
             //
@@ -3259,6 +3259,10 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     const bool        extendRegion = BasicBlock::sameTryRegion(t, b);
     BasicBlock* const newT         = fgNewBBbefore(BBJ_NONE, t, extendRegion);
 
+    fgRemoveRefPred(t, h);
+    fgAddRefPred(t, newT);
+    fgAddRefPred(newT, h);
+
     // Initially give newT the same weight as t; we will subtract from
     // this for each edge that does not move from t to newT.
     //
@@ -3308,7 +3312,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                 JITDUMP("in optCanonicalizeLoop (current): redirect bottom->top backedge " FMT_BB " -> " FMT_BB
                         " to " FMT_BB " -> " FMT_BB "\n",
                         topPredBlock->bbNum, t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(b, blockMap);
+                optRedirectBlock(b, blockMap, RedirectBlockOption::UpdatePredLists);
             }
         }
         else if (option == LoopCanonicalizationOption::Outer)
@@ -3340,7 +3344,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
                         " -> " FMT_BB "\n",
                         topPredBlock == h ? "head" : "nonloop", topPredBlock == h ? "" : "back", topPredBlock->bbNum,
                         t->bbNum, topPredBlock->bbNum, newT->bbNum);
-                optRedirectBlock(topPredBlock, blockMap);
+                optRedirectBlock(topPredBlock, blockMap, RedirectBlockOption::UpdatePredLists);
             }
         }
         else
@@ -4464,7 +4468,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
                 }
 
-                // We fall into to this unroll iteration from the bottom block (first iteration)
+                // We fall into this unroll iteration from the bottom block (first iteration)
                 // or from the previous unroll clone of the bottom block (subsequent iterations).
                 // After doing this, all the newly cloned blocks now have proper flow and pred lists.
                 //
@@ -4511,7 +4515,7 @@ PhaseStatus Compiler::optUnrollLoops()
 
                 // Scrub all pred list references to block, except for bottom-> bottom->bbNext.
                 //
-                for (BasicBlock* succ : block->Succs())
+                for (BasicBlock* succ : block->Succs(this))
                 {
                     if ((block == bottom) && (succ == bottom->bbNext))
                     {
@@ -4639,12 +4643,16 @@ PhaseStatus Compiler::optUnrollLoops()
 
         // If we unrolled any nested loops, we rebuild the loop table (including recomputing the
         // return blocks list).
-
-        constexpr bool computePreds        = false;
-        constexpr bool computeDoms         = true;
-        const bool     computeReturnBlocks = anyNestedLoopsUnrolled;
-        const bool     computeLoops        = anyNestedLoopsUnrolled;
-        fgUpdateChangedFlowGraph(computePreds, computeDoms, computeReturnBlocks, computeLoops);
+        //
+        if (anyNestedLoopsUnrolled)
+        {
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS | FlowGraphUpdates::COMPUTE_RETURNS |
+                                     FlowGraphUpdates::COMPUTE_LOOPS);
+        }
+        else
+        {
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
+        }
 
         DBEXEC(verbose, fgDispBasicBlocks());
     }
@@ -5267,26 +5275,29 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
+    bool madeChanges = fgRenumberBlocks();
+
     if (compCodeOpt() == SMALL_CODE)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // do not invert any loops
     }
-
-    bool madeChanges = false; // Assume no changes made
-    for (BasicBlock* const block : Blocks())
+    else
     {
-        // Make sure the appropriate fields are initialized
-        //
-        if (block->bbWeight == BB_ZERO_WEIGHT)
+        for (BasicBlock* const block : Blocks())
         {
-            // Zero weighted block can't have a LOOP_HEAD flag
-            noway_assert(block->isLoopHead() == false);
-            continue;
-        }
+            // Make sure the appropriate fields are initialized
+            //
+            if (block->bbWeight == BB_ZERO_WEIGHT)
+            {
+                // Zero weighted block can't have a LOOP_HEAD flag
+                noway_assert(block->isLoopHead() == false);
+                continue;
+            }
 
-        if (optInvertWhileLoop(block))
-        {
-            madeChanges = true;
+            if (optInvertWhileLoop(block))
+            {
+                madeChanges = true;
+            }
         }
     }
 

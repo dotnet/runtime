@@ -10,13 +10,13 @@ using System.Reflection.Metadata;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
 
 using ILLink.Shared;
 
 using static ILCompiler.Dataflow.DynamicallyAccessedMembersBinder;
-
-using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -24,22 +24,55 @@ namespace ILCompiler.DependencyAnalysis
     /// Computes the list of dependencies from DynamicDependencyAttribute.
     /// https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
     /// </summary>
-    internal static class DynamicDependencyAttributeAlgorithm
+    public class DynamicDependencyAttributesOnEntityNode : DependencyNodeCore<NodeFactory>
     {
+        private readonly TypeSystemEntity _entity;
+
+        public DynamicDependencyAttributesOnEntityNode(TypeSystemEntity entity)
+        {
+            Debug.Assert(entity is EcmaMethod || entity is EcmaField);
+            _entity = entity;
+        }
+
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
-            foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, method, method.OwningType, attribute);
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DynamicDependencyAttributesOnEntity(method), "DynamicDependencyAttribute present");
             }
         }
 
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaField field)
         {
-            foreach (var attribute in field.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+            if (field.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, field, field.OwningType, attribute);
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DynamicDependencyAttributesOnEntity(field), "DynamicDependencyAttribute present");
             }
+        }
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            DependencyList dependencies = null;
+            switch (_entity)
+            {
+                case EcmaMethod method:
+                    foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+                    {
+                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, method, method.OwningType, attribute);
+                    }
+                    break;
+
+                case EcmaField field:
+                    foreach (var attribute in field.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
+                    {
+                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, field, field.OwningType, attribute);
+                    }
+                    break;
+            }
+
+            return dependencies;
         }
 
         private static void AddDependenciesDueToDynamicDependencyAttribute(
@@ -69,6 +102,8 @@ namespace ILCompiler.DependencyAnalysis
             var fixedArgs = attribute.FixedArguments;
             TypeDesc targetType;
 
+            UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
+
             if (fixedArgs.Length > 0 && fixedArgs[0].Value is string sigFromAttribute)
             {
                 switch (fixedArgs.Length)
@@ -89,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis
                         ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
                         if (asm == null)
                         {
-                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                            metadataManager.Logger.LogWarning(
                                 new MessageOrigin(entity),
                                 DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
                                 assemblyStringFromAttribute);
@@ -99,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
                         targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
                         if (targetType == null)
                         {
-                            ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                            metadataManager.Logger.LogWarning(
                                 new MessageOrigin(entity),
                                 DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
                                 typeStringFromAttribute);
@@ -116,7 +151,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!members.Any())
                 {
-                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                    metadataManager.Logger.LogWarning(
                         new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         sigFromAttribute,
@@ -138,7 +173,7 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleDesc asm = factory.TypeSystemContext.ResolveAssembly(new System.Reflection.AssemblyName(assemblyStringFromAttribute), throwIfNotFound: false);
                     if (asm == null)
                     {
-                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                        metadataManager.Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedAssemblyInDynamicDependencyAttribute,
                             assemblyStringFromAttribute);
@@ -148,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis
                     targetType = DocumentationSignatureParser.GetTypeByDocumentationSignature((IAssemblyDesc)asm, typeStringFromAttribute);
                     if (targetType == null)
                     {
-                        ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
+                        metadataManager.Logger.LogWarning(
                             new MessageOrigin(entity),
                             DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute,
                             typeStringFromAttribute);
@@ -165,8 +200,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!members.Any())
                 {
-                    ((UsageBasedMetadataManager)factory.MetadataManager).Logger.LogWarning(
-                    new MessageOrigin(entity),
+                    metadataManager.Logger.LogWarning(
+                        new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
                         memberTypesFromAttribute.ToString(),
                         targetType.GetDisplayName());
@@ -184,36 +219,31 @@ namespace ILCompiler.DependencyAnalysis
             const string reason = "DynamicDependencyAttribute";
 
             // Now root the discovered members
+            ReflectionMarker reflectionMarker = new ReflectionMarker(
+                metadataManager.Logger,
+                factory,
+                metadataManager.FlowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: true);
             foreach (var member in members)
             {
-                switch (member)
-                {
-                    case MethodDesc m:
-                        RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, m, reason);
-                        break;
-                    case FieldDesc field:
-                        RootingHelpers.TryGetDependenciesForReflectedField(ref dependencies, factory, field, reason);
-                        break;
-                    case MetadataType nestedType:
-                        RootingHelpers.TryGetDependenciesForReflectedType(ref dependencies, factory, nestedType, reason);
-                        break;
-                    case PropertyPseudoDesc property:
-                        if (property.GetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, property.GetMethod, reason);
-                        if (property.SetMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, property.SetMethod, reason);
-                        break;
-                    case EventPseudoDesc @event:
-                        if (@event.AddMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, @event.AddMethod, reason);
-                        if (@event.RemoveMethod != null)
-                            RootingHelpers.TryGetDependenciesForReflectedMethod(ref dependencies, factory, @event.RemoveMethod, reason);
-                        break;
-                    default:
-                        Debug.Fail(member.GetType().ToString());
-                        break;
-                }
+                reflectionMarker.MarkTypeSystemEntity(new MessageOrigin(entity), member, reason);
             }
+
+            dependencies ??= new DependencyList();
+            dependencies.AddRange(reflectionMarker.Dependencies);
         }
+
+        protected override string GetName(NodeFactory factory)
+        {
+            return "DynamicDependencyAttribute analysis for " + _entity.GetDisplayName();
+        }
+
+        public override bool InterestingForDynamicDependencyAnalysis => false;
+        public override bool HasDynamicDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
+        public override bool StaticDependenciesAreComputed => true;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
     }
 }
