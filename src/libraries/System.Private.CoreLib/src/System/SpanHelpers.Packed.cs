@@ -24,11 +24,14 @@ namespace System
 
         // Not all values can benefit from packing the searchSpace. See comments in PackSources below.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool CanUsePackedIndexOf<T>(T value) =>
-            PackedIndexOfIsSupported &&
-            RuntimeHelpers.IsBitwiseEquatable<T>() &&
-            sizeof(T) == sizeof(ushort) &&
-            *(ushort*)&value - 1u < 254u;
+        public static unsafe bool CanUsePackedIndexOf<T>(T value)
+        {
+            Debug.Assert(PackedIndexOfIsSupported);
+            Debug.Assert(RuntimeHelpers.IsBitwiseEquatable<T>());
+            Debug.Assert(sizeof(T) == sizeof(ushort));
+
+            return *(ushort*)&value - 1u < 254u;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOf(ref char searchSpace, char value, int length) =>

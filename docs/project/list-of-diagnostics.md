@@ -192,6 +192,16 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1078`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
 |  __`SYSLIB1079`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
 |  __`SYSLIB1080`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1081`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1082`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1083`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1084`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1085`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1086`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1087`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1088`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1089`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
+|  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)

@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
-        [SkipOnPlatform(TestPlatforms.Android, "IPv6 loopback with SSL doesn't work on Android")]
+        [SkipOnPlatform(TestPlatforms.Android, "TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -205,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
             {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -287,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
             {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };

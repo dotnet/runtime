@@ -2128,9 +2128,6 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     if (delta == 0)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, /* canSkip */ false);
-#ifdef USING_SCOPE_INFO
-        psiMoveESPtoEBP();
-#endif // USING_SCOPE_INFO
     }
     else
     {
@@ -2242,13 +2239,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
             *pInitRegZeroed = false;
         }
     }
-
-#ifdef USING_SCOPE_INFO
-    if (!doubleAlignOrFramePointerUsed())
-    {
-        psiAdjustStackLevel(frameSize);
-    }
-#endif // USING_SCOPE_INFO
 }
 
 //------------------------------------------------------------------------
@@ -9563,12 +9553,6 @@ void CodeGen::genPushCalleeSavedRegisters()
         {
             inst_RV(INS_push, reg, TYP_REF);
             compiler->unwindPush(reg);
-#ifdef USING_SCOPE_INFO
-            if (!doubleAlignOrFramePointerUsed())
-            {
-                psiAdjustStackLevel(REGSIZE_BYTES);
-            }
-#endif // USING_SCOPE_INFO
             rsPushRegs &= ~regBit;
         }
     }

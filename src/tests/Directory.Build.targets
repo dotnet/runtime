@@ -170,12 +170,17 @@
       <!-- Filter static lib files for Windows -->
       <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
 
+      <!-- Filter .dex and .jar files for Android -->
+      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.dex'" Include="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.jar'" Include="@(NativeProjectBinariesMatched)" />
+
       <!-- Merge the filtered lists -->
       <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesJavaLibFilter)" />
     </ItemGroup>
 
      <!-- There are currently no native project binaries on wasm or Android -->

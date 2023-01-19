@@ -135,7 +135,7 @@
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=20000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=4400" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=8400" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
       <MonoAotOption Include="llvm" />
@@ -210,7 +210,7 @@
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.so;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.dex;$(MicrosoftNetCoreAppRuntimePackDir)native/**/*.jar" />
       <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
@@ -238,7 +238,6 @@
         RuntimeIdentifier="$(RuntimeIdentifier)"
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
-        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         RuntimeComponents="$(RuntimeComponents)"
         DiagnosticPorts="$(DiagnosticPorts)"
         StripDebugSymbols="$(StripDebugSymbols)"

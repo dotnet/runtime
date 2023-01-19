@@ -174,16 +174,19 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 // to be recomputed if they know certain things do NOT need to be recomputed.
 //
 // Arguments:
-//    computePreds        -- `true` if we should recompute predecessors
-//    computeDoms         -- `true` if we should recompute dominators
-//    computeReturnBlocks -- `true` if we should recompute the list of return blocks
-//    computeLoops        -- `true` if we should recompute the loop table
+//    updates -- enum flag set indicating what to update
 //
-void Compiler::fgUpdateChangedFlowGraph(const bool computePreds,
-                                        const bool computeDoms,
-                                        const bool computeReturnBlocks,
-                                        const bool computeLoops)
+// Notes:
+//    Always renumbers, computes enter blocks, and computes reachability.
+//    Optionally rebuilds dominators, return blocks, and computes loop information.
+//
+void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 {
+    const bool computeDoms = ((updates & FlowGraphUpdates::COMPUTE_DOMS) == FlowGraphUpdates::COMPUTE_DOMS);
+    const bool computeReturnBlocks =
+        ((updates & FlowGraphUpdates::COMPUTE_RETURNS) == FlowGraphUpdates::COMPUTE_RETURNS);
+    const bool computeLoops = ((updates & FlowGraphUpdates::COMPUTE_LOOPS) == FlowGraphUpdates::COMPUTE_LOOPS);
+
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
 
@@ -194,11 +197,6 @@ void Compiler::fgUpdateChangedFlowGraph(const bool computePreds,
 
     JITDUMP("\nRenumbering the basic blocks for fgUpdateChangeFlowGraph\n");
     fgRenumberBlocks();
-
-    if (computePreds) // This condition is only here until all phases don't require it.
-    {
-        fgComputePreds();
-    }
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
     if (computeDoms)

@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedMethodPreservedByLinkXmlIsKept/Unused">
+      <method signature="System.Void PreservedMethod()" />
+      <method signature="System.Void PreservedMethod2(System.Int32,System.String)" />
+      <method name="PreservedMethod3" />
+      <method signature="System.Void PreservedMethod4(System.Collections.Generic.List`1&lt;System.Int32&gt;)" />
+      <method signature="System.Void PreservedMethod5(T)" />
+    </type>
+  </assembly>
+</linker>

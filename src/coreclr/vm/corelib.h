@@ -484,6 +484,7 @@ DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallback
 DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
 DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
+DEFINE_CLASS(VECTOR512T,            Intrinsics,             Vector512`1)
 
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
@@ -813,7 +814,7 @@ DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrame
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, PROCESS_STARTUP_HOOKS, ProcessStartupHooks, SM_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)

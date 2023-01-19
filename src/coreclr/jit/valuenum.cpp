@@ -8610,7 +8610,8 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   address  = 0;
     FieldSeq* fieldSeq = nullptr;
-    if (varTypeIsIntegral(tree) && GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
+    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
     {
         assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -8677,6 +8678,18 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                     {
                         READ_VALUE(uint64_t);
                         tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
+                        return true;
+                    }
+                    case TYP_FLOAT:
+                    {
+                        READ_VALUE(float);
+                        tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(val));
+                        return true;
+                    }
+                    case TYP_DOUBLE:
+                    {
+                        READ_VALUE(double);
+                        tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
                         return true;
                     }
                     default:
