@@ -4649,7 +4649,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
-        lvaRefCountState = RCS_INVALID;
+        lvaRefCountState       = RCS_INVALID;
+        fgLocalVarLivenessDone = false;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         if (fgNeedToAddFinallyTargetBits)
