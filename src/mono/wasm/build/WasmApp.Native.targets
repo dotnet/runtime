@@ -187,6 +187,7 @@
       <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -369,7 +370,9 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmCalculateMemorySize" DependsOnTargets="_CheckEmccIsExpectedVersion">
+  <Target Name="_WasmCalculateMemorySize" 
+      Condition="'$(EmccInitialHeapSize)' == ''"
+      DependsOnTargets="_CheckEmccIsExpectedVersion">
     <ItemGroup>
       <_AOTObjectFile Include="%(_BitcodeFile.ObjectFile)" />
     </ItemGroup>
@@ -394,13 +397,9 @@
       <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
     </WasmCalculateInitialHeapSize>
     <PropertyGroup>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
     </PropertyGroup>
-    <ItemGroup>
-      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmCalculateMemorySize">
@@ -414,6 +413,8 @@
     </PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
