@@ -111,6 +111,7 @@
     <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23059.1</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23059.1</runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23059.1</runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion>1.0.0-alpha.1.23059.1</runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
@@ -248,5 +249,6 @@
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23059.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23059.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23059.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimefreebsdx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23059.1</runtimefreebsdx64MicrosoftNETCoreRuntimeJITToolsVersion>
   </PropertyGroup>
 </Project>
