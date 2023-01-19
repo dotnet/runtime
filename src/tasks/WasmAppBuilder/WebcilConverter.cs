@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 
+using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
