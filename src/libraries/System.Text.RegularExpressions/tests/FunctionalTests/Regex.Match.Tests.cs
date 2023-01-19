@@ -965,6 +965,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(a|\b){2}", "ac", RegexOptions.None, 0, 2, true, "a");
             yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
