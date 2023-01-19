@@ -176,8 +176,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 
                 if (isDying == previouslyLive)
                 {
-                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum, !isDying,
-                                                                                                isDying);
+                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum,
+                                                                                                !isDying, isDying);
                 }
             }
         }
@@ -267,9 +267,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 
                 if (isDying == previouslyLive)
                 {
-                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc,
-                                                                                                fldLclNum, !isDying,
-                                                                                                isDying);
+                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc, fldLclNum,
+                                                                                                !isDying, isDying);
                 }
             }
         }
@@ -359,7 +358,7 @@ void           TreeLifeUpdater<ForCodeGen>::StoreCurrentLifeForDump()
 // StoreCurrentLifeForDump was called.
 //
 template <bool ForCodeGen>
-void           TreeLifeUpdater<ForCodeGen>::DumpLifeDelta(GenTree* tree)
+void TreeLifeUpdater<ForCodeGen>::DumpLifeDelta(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose && !VarSetOps::Equal(compiler, oldLife, compiler->compCurLife))
