@@ -64,6 +64,7 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestIsValueTypeWithoutTypeHandle.Run();
 
         //
         // Mostly functionality tests
@@ -2120,6 +2121,69 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestIsValueTypeWithoutTypeHandle
+    {
+        [Nothing(
+        ReferenceTypes = new[]
+        {
+            typeof(NonGenericType),
+            typeof(GenericType<int>),
+            typeof(ReferencedBaseType<int>),
+            typeof(GenericWithReferenceBaseType<int>)
+        },
+        ValueTypes = new[]
+        {
+            typeof(GenericStruct<int>),
+            typeof(NonGenericStruct),
+            typeof(Container<int>.GenericEnum)
+        })]
+        public static void Run()
+        {
+            var ps = MethodBase.GetCurrentMethod().GetCustomAttribute<NothingAttribute>();
+            foreach (var t in ps.ReferenceTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+            foreach (var t in ps.ValueTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+
+            static void AssertNoTypeHandle(Type t)
+            {
+                RuntimeTypeHandle h = default;
+                try
+                {
+                    h = t.TypeHandle;
+                }
+                catch (Exception) { }
+
+                if (!h.Equals(default(RuntimeTypeHandle)))
+                    throw new Exception();
+            }
+        }
+
+        public class GenericBaseType<T> { }
+        public class GenericType<T> : GenericBaseType<T> { }
+        public class NonGenericType : GenericBaseType<int> { }
+        public class ReferencedBaseType<T> { }
+        public class GenericWithReferenceBaseType<T> : ReferencedBaseType<T> { }
+        public struct GenericStruct<T> { }
+        public struct NonGenericStruct { }
+        public class Container<T>
+        {
+            public enum GenericEnum { }
+        }
+
+        class NothingAttribute : Attribute
+        {
+            public Type[] ReferenceTypes;
+            public Type[] ValueTypes;
         }
     }
 
