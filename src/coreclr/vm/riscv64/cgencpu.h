@@ -241,9 +241,9 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     // We require 8-byte alignment so the LD instruction is aligned properly
     _ASSERTE(((UINT_PTR)pCode & 7) == 0);
 
-    // pcaddi  $r21,4
-    // ld.d  $r21,$r21,0
-    // jirl  $r0,$r21,0
+    // auipc ra, 0
+    // ld    ra, ra, 16
+    // jalr  r0, ra, 0
     // nop    //padding.
 
     pCode[0] = 0x00000097; //auipc ra,0

@@ -4142,7 +4142,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
-                    tempReg1 = src1->GetSingleTempReg();
+                    tempReg1 = REG_T2; // TODO CHECK REG_RA to REG_T2 // src1->GetSingleTempReg();
                     tempReg2 = codeGen->rsGetRsvdReg();
                     assert(tempReg1 != tempReg2);
                     assert(tempReg1 != saveOperReg1);
