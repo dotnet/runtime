@@ -4618,6 +4618,8 @@ is_monomorphic_array (MonoClass *klass)
 		return FALSE;
 
 	element_class = m_class_get_element_class (klass);
+	if (m_class_get_byval_arg (element_class)->type == MONO_TYPE_FNPTR)
+		return FALSE;
 	return mono_class_is_sealed (element_class) || m_class_is_valuetype (element_class);
 }
 
@@ -4627,7 +4629,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 	if (element_class == mono_defaults.object_class)
 		return STELEMREF_OBJECT;
 	if (is_monomorphic_array (element_class))
-		return STELEMREF_COMPLEX;
+		return STELEMREF_SEALED_CLASS;
 
 	/* magic ifaces requires aditional checks for when the element type is an array */
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && m_class_is_array_special_interface (element_class))
