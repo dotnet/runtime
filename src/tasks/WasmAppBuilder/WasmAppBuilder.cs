@@ -188,6 +188,8 @@ public class WasmAppBuilder : Task
         var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
+        if (UseWebcil)
+            Log.LogMessage (MessageImportance.Normal, "Converting assemblies to Webcil");
         foreach (var assembly in _assemblies)
         {
             if (UseWebcil)

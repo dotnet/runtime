@@ -37,7 +37,7 @@ public class WebcilConverter
 
     public void ConvertToWebcil()
     {
-        Log.LogMessage($"Converting to Webcil: input {_inputPath} output: {_outputPath}");
+        Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");
         _converter.ConvertToWebcil();
     }
 
