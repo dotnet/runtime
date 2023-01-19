@@ -129,7 +129,9 @@ jobs:
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+    # Do not set up nuget sources for source build because the source build scripts already do this.
+    # This will cause the working tree to be dirty, which breaks the stash command when shallow clones are used, like in CI or official builds.
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(parameters.buildingOnSourceBuildImage, true)) }}:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - task: Bash@3
           displayName: Setup Private Feeds Credentials
