@@ -9,7 +9,15 @@
 #include "ep-event-instance.h"
 #include "ep-rt.h"
 
-#include <inttypes.h>
+// Some configurations don't seem to have access to inttypes.h
+#ifndef PRIu64
+#if defined(TARGET_UNIX)
+#define PRIu64 "lu"
+#else 
+#define PRIu64 "llu"
+#endif
+#endif
+
 
 #ifdef EP_CHECKED_BUILD
 
