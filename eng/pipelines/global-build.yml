@@ -125,12 +125,12 @@ jobs:
 #
 # SourceBuild Build
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - SourceBuild_Linux_x64
-    jobParameters:
-      nameSuffix: SourceBuild
-      timeoutInMinutes: 90
+#- template: /eng/pipelines/common/platform-matrix.yml
+#  parameters:
+#    jobTemplate: /eng/pipelines/common/global-build-job.yml
+#    buildConfig: release
+#    platforms:
+#    - SourceBuild_Linux_x64
+#    jobParameters:
+#      nameSuffix: SourceBuild
+#      timeoutInMinutes: 90
