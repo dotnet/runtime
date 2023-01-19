@@ -931,29 +931,42 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (shouldReturn)
                 return true;
 
-            if (j == 0 && method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
+            if (j == 0)
             {
-                if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
+                if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
                 {
-                    if (event_kind == EventKind.Step)
-                        context.IsSkippingHiddenMethod = true;
-                    if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                        return true;
-                }
-                if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
-                {
-                    if (event_kind == EventKind.Step ||
-                    (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                     {
-                        if (context.IsResumedAfterBp)
-                            context.IsResumedAfterBp = false;
-                        else if (event_kind != EventKind.UserBreak)
-                            context.IsSteppingThroughMethod = true;
+                        if (event_kind == EventKind.Step)
+                            context.IsSkippingHiddenMethod = true;
                         if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
                             return true;
                     }
-                    if (event_kind == EventKind.Breakpoint)
-                        context.IsResumedAfterBp = true;
+                    if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
+                    {
+                        if (event_kind == EventKind.Step ||
+                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                        {
+                            if (context.IsResumedAfterBp)
+                                context.IsResumedAfterBp = false;
+                            else if (event_kind != EventKind.UserBreak)
+                                context.IsSteppingThroughMethod = true;
+                            if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                                return true;
+                        }
+                        if (event_kind == EventKind.Breakpoint)
+                            context.IsResumedAfterBp = true;
+                    }
+                }
+                else
+                {
+                    if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode == true && !method.Info.hasDebugInformation)
+                    {
+                        if (event_kind == EventKind.Step)
+                            context.IsSkippingHiddenMethod = true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
+                    }
                 }
             }
             return false;
