@@ -150,7 +150,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 
         if (isBorn || isDying)
         {
-            bool previouslyLive = VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex);
+            bool previouslyLive = ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex);
             UpdateLifeBit(compiler->compCurLife, varDsc, isBorn, isDying);
 
             if (ForCodeGen)
@@ -207,21 +207,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
         }
 #endif
 
-        // TODO: Fields can die even at a def.
-        bool isAnyFieldDying =
-            isMultiRegLocal ? !isBorn && lclVarTree->HasLastUse() : ((lclVarTree->gtFlags & GTF_VAR_DEATH) != 0);
-        if (isBorn || isAnyFieldDying)
-        {
-            VARSET_TP* deadTrackedFieldVars    = nullptr;
-            bool       hasDeadTrackedFieldVars = false;
-
-            // TODO-Review: the code below does not look right. We can have last uses for simple LCL_VARs
-            // as well as indirect uses.
-            if (!isMultiRegLocal && (tree != lclVarTree) && isAnyFieldDying)
-            {
-                assert(!isBorn); // GTF_VAR_DEATH only set for non-partial last use.
-                hasDeadTrackedFieldVars = compiler->LookupPromotedStructDeathVars(lclVarTree, &deadTrackedFieldVars);
-            }
+        bool isAnyFieldDying = lclVarTree->HasLastUse();
 
         if (isBorn || isAnyFieldDying)
         {
@@ -238,62 +224,50 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                     continue;
                 }
 
+                bool previouslyLive = ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
+                bool isDying        = lclVarTree->IsLastUse(i);
+                UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isDying);
+
+                if (!ForCodeGen)
+                {
+                    continue;
+                }
+
                 // We should never see enregistered fields in a struct local unless
                 // IsMultiRegLclVar() returns true.
                 assert(isMultiRegLocal || !fldVarDsc->lvIsInReg());
 
-                bool isInReg        = fldVarDsc->lvIsInReg() && (lclVarTree->AsLclVar()->GetRegNumByIdx(i) != REG_NA);
-                bool isInMemory     = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
-                bool previouslyLive = VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
+                bool isInReg    = fldVarDsc->lvIsInReg() && (lclVarTree->AsLclVar()->GetRegNumByIdx(i) != REG_NA);
+                bool isInMemory = !isInReg || fldVarDsc->IsAlwaysAliveInMemory();
 
-                bool isFieldDying;
-
-                if (isMultiRegLocal)
+                if (isInReg)
                 {
-                    isFieldDying = lclVarTree->IsLastUse(i);
-                    // TODO: Remove this condition which disallows marking
-                    // some fields as dead even though they are dying when other
-                    // fields are defined.
-                    if ((isBorn && !isFieldDying) || (!isBorn && isFieldDying))
+                    if (isBorn)
                     {
-                        UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isFieldDying);
+                        compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
                     }
-                }
-                else
-                {
-                    isFieldDying = isAnyFieldDying && (!hasDeadTrackedFieldVars ||
-                                                       VarSetOps::IsMember(compiler, *deadTrackedFieldVars, i));
-                    UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isFieldDying);
+
+                    compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isDying DEBUGARG(tree));
+
+#ifdef DEBUG
+                    // If this was marked for spill genProduceReg should already have spilled it.
+                    bool fieldNeedsSpill = ((lclVarTree->gtFlags & GTF_SPILL) != 0) &&
+                                           ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
+                    assert(!fieldNeedsSpill);
+#endif
                 }
 
-                if (ForCodeGen)
+                if (isInMemory &&
+                    VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarDsc->lvVarIndex))
                 {
-                    if (isInReg)
-                    {
-                        if (isBorn)
-                        {
-                            compiler->codeGen->genUpdateVarReg(fldVarDsc, tree, i);
-                        }
+                    UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc, isBorn, isDying);
+                }
 
-                        compiler->codeGen->genUpdateRegLife(fldVarDsc, isBorn, isFieldDying DEBUGARG(tree));
-                        // If this was marked for spill genProduceReg should already have spilled it.
-                        bool fieldNeedsSpill = ((lclVarTree->gtFlags & GTF_SPILL) != 0) &&
-                                               ((lclVarTree->GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                        assert(!fieldNeedsSpill);
-                    }
-
-                    if (isInMemory &&
-                        VarSetOps::IsMember(compiler, compiler->codeGen->gcInfo.gcTrkStkPtrLcls, fldVarDsc->lvVarIndex))
-                    {
-                        UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc, isBorn, isFieldDying);
-                    }
-
-                    if ((isFieldDying != isBorn) && (isBorn != previouslyLive))
-                    {
-                        compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc,
-                                                                                                    fldLclNum, isBorn,
-                                                                                                    isFieldDying);
-                    }
+                if ((isDying != isBorn) && (isBorn != previouslyLive))
+                {
+                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc,
+                                                                                                fldLclNum, isBorn,
+                                                                                                isDying);
                 }
             }
         }
