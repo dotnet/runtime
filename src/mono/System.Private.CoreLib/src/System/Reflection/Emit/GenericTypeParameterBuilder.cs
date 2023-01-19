@@ -448,7 +448,7 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private static Exception not_supported()
+        private static NotSupportedException not_supported()
         {
             return new NotSupportedException();
         }

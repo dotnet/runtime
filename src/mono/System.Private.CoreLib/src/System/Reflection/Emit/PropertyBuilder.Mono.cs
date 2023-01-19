@@ -220,7 +220,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static Exception not_supported()
+        private static NotSupportedException not_supported()
         {
             return new NotSupportedException(SR.NotSupported_DynamicModule);
         }

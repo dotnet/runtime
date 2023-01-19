@@ -114,7 +114,7 @@ namespace System
             return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
-        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static ListDictionaryInternal CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
     }

@@ -66,7 +66,7 @@ namespace System.Linq.Expressions
             return ReduceMemberInit(NewExpression, Bindings, keepOnStack: true);
         }
 
-        private static Expression ReduceMemberInit(
+        private static BlockExpression ReduceMemberInit(
             Expression objExpression, ReadOnlyCollection<MemberBinding> bindings, bool keepOnStack)
         {
             ParameterExpression objVar = Variable(objExpression.Type);

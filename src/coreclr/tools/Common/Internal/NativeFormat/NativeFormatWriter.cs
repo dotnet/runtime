@@ -195,7 +195,7 @@ namespace Internal.NativeFormat
         // This is the price we have to pay for using UTF8. Thing like High Surrogate Start Char - '\ud800'
         // can be expressed in UTF-16 (which is the format used to store ECMA metadata), but don't have
         // a representation in UTF-8.
-        private static Encoding _stringEncoding = new UTF8Encoding(false, false);
+        private static readonly UTF8Encoding _stringEncoding = new UTF8Encoding(false, false);
 
         public void WriteString(string s)
         {

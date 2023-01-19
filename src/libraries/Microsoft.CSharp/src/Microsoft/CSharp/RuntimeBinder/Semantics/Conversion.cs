@@ -1372,7 +1372,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          * Bind a constant cast to or from decimal. Return null if cast can't be done.
          */
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private static Expr BindDecimalConstCast(CType destType, CType srcType, ExprConstant src)
+        private static ExprConstant? BindDecimalConstCast(CType destType, CType srcType, ExprConstant src)
         {
             CType typeDecimal = SymbolLoader.GetPredefindType(PredefinedType.PT_DECIMAL);
             ConstVal cv;

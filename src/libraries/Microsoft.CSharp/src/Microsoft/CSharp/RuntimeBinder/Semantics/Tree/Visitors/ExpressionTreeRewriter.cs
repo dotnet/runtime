@@ -357,7 +357,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private Expr GenerateDelegateInvoke(ExprCall expr)
+        private ExprCall GenerateDelegateInvoke(ExprCall expr)
         {
             Debug.Assert(expr != null);
             ExprMemberGroup memberGroup = expr.MemberGroup;
@@ -627,7 +627,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
+        private ExprCall GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
 
@@ -665,11 +665,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private Expr GenerateConversion(Expr arg, CType CType, bool bChecked) =>
+        private ExprCall GenerateConversion(Expr arg, CType CType, bool bChecked) =>
             GenerateConversionWithSource(Visit(arg), CType, bChecked || arg.isChecked());
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private static Expr GenerateConversionWithSource(Expr pTarget, CType pType, bool bChecked)
+        private static ExprCall GenerateConversionWithSource(Expr pTarget, CType pType, bool bChecked)
         {
             PREDEFMETH pdm = bChecked ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED : PREDEFMETH.PM_EXPRESSION_CONVERT;
             Expr pTypeOf = CreateTypeOf(pType);
@@ -677,7 +677,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private Expr GenerateValueAccessConversion(Expr pArgument)
+        private ExprCall GenerateValueAccessConversion(Expr pArgument)
         {
             Debug.Assert(pArgument != null);
             CType pStrippedTypeOfArgument = pArgument.Type.StripNubs();
@@ -785,7 +785,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private static Expr GenerateParameter(string name, CType CType)
+        private static ExprCall GenerateParameter(string name, CType CType)
         {
             SymbolLoader.GetPredefindType(PredefinedType.PT_STRING);  // force an ensure state
             ExprConstant nameString = ExprFactory.CreateStringConstant(name);
@@ -828,7 +828,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private Expr GenerateConstructor(ExprCall expr)
+        private ExprCall GenerateConstructor(ExprCall expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
@@ -873,7 +873,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private static Expr GenerateConstant(Expr expr)
+        private static ExprCall GenerateConstant(Expr expr)
         {
             EXPRFLAG flags = 0;
 

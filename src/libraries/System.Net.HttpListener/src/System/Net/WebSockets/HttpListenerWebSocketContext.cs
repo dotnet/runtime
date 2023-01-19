@@ -86,7 +86,7 @@ namespace System.Net.WebSockets
 
         public override WebSocket WebSocket => _webSocket;
 
-        private static IPrincipal? CopyPrincipal(IPrincipal user)
+        private static GenericPrincipal? CopyPrincipal(IPrincipal user)
         {
             if (user != null)
             {

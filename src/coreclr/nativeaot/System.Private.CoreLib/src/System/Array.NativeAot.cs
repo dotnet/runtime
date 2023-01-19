@@ -93,6 +93,7 @@ namespace System
             }
         }
 
+#pragma warning disable CA1859
         private static void ValidateElementType(Type elementType)
         {
             while (elementType.IsArray)
@@ -106,6 +107,7 @@ namespace System
             if (elementType.ContainsGenericParameters)
                 throw new NotSupportedException(SR.NotSupported_OpenType);
         }
+#pragma warning restore CA1859
 
         public unsafe void Initialize()
         {
