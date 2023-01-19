@@ -5735,6 +5735,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             //
             canExpandInline = true;
             exactCls        = actualImplCls;
+
+            JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
+                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
         }
         else if (isCastClass)
         {
