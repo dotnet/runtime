@@ -23,6 +23,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class NestedTypePolicies : MemberPolicies<Type>
     {
+        public static readonly NestedTypePolicies Instance = new NestedTypePolicies();
+
+        public NestedTypePolicies() : base(MemberTypeIndex.NestedType) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
         public sealed override IEnumerable<Type> GetDeclaredMembers(TypeInfo typeInfo)

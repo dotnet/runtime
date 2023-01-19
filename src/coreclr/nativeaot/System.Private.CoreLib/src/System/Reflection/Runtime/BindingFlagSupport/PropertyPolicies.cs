@@ -13,6 +13,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class PropertyPolicies : MemberPolicies<PropertyInfo>
     {
+        public static readonly PropertyPolicies Instance = new PropertyPolicies();
+
+        public PropertyPolicies() : base(MemberTypeIndex.Property) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
         public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
@@ -54,7 +58,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
             MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
+            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         //

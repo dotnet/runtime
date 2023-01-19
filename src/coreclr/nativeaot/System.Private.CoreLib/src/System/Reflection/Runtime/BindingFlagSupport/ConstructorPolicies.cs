@@ -13,6 +13,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class ConstructorPolicies : MemberPolicies<ConstructorInfo>
     {
+        public static readonly ConstructorPolicies Instance = new ConstructorPolicies();
+
+        public ConstructorPolicies() : base(MemberTypeIndex.Constructor) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
         public sealed override IEnumerable<ConstructorInfo> GetDeclaredMembers(TypeInfo typeInfo)
