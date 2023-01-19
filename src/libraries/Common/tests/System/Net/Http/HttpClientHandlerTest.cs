@@ -1010,6 +1010,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            var tcs = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1095,6 +1096,7 @@ namespace System.Net.Http.Functional.Tests
                             {
                                 Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer2)));
                                 Assert.Equal((byte)'h', buffer2[0]);
+                                tcs.SetResult(true);
                             }
                             else
                             {
@@ -1203,7 +1205,7 @@ namespace System.Net.Http.Functional.Tests
                             if(PlatformDetection.IsBrowser && slowChunks)
                             {
                                 await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
-                                await Task.Delay(100);
+                                await tcs.Task;
                                 await connection.SendResponseBodyAsync("2\r\nel\r\n", false);
                                 await connection.SendResponseBodyAsync("8\r\nlo world\r\n", false);
                                 await connection.SendResponseBodyAsync("0\r\n\r\n", true);
@@ -1323,9 +1325,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_StreamingCancellation()
         {
             var tcs = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1344,6 +1348,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
                         Assert.Equal((byte)'h', buffer[0]);
                         var sizePromise = responseStream.ReadAsync(new Memory<byte>(buffer), cts.Token);
+                        await tcs2.Task; // wait for the request and response header to be sent
                         cts.Cancel();
                         await Assert.ThrowsAsync<TaskCanceledException>(async () => await sizePromise);
                         tcs.SetResult(true);
@@ -1357,6 +1362,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.ReadRequestDataAsync();
                     await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
                     await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    tcs2.SetResult(true);
                     await tcs.Task;
                 });
             });
@@ -1366,6 +1372,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ReadAsStreamAsync_Cancellation()
         {
             var tcs = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1373,6 +1380,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 {
                     var responsePromise = client.SendAsync(TestAsync, request, cts.Token);
+                    await tcs2.Task; // wait for the request to be sent
                     cts.Cancel();
                     await Assert.ThrowsAsync<TaskCanceledException>(async () => await responsePromise);
                     tcs.SetResult(true);
@@ -1382,6 +1390,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
+                    tcs2.SetResult(true);
                     await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
                     await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
                     await tcs.Task;
