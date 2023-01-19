@@ -693,7 +693,7 @@ namespace ILCompiler
             string reason = "Use of a field";
 
             bool generatesMetadata = false;
-            if (!writtenField.OwningType.IsRuntimeDeterminedSubtype && !IsReflectionBlocked(writtenField))
+            if (!IsReflectionBlocked(writtenField))
             {
                 if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
                 {

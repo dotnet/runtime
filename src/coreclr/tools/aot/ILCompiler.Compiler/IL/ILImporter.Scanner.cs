@@ -941,7 +941,7 @@ namespace Internal.IL
             {
                 var method = (MethodDesc)obj;
 
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, method);
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
 
                 if (method.IsRuntimeDeterminedExactMethod)
                 {
@@ -958,7 +958,7 @@ namespace Internal.IL
             {
                 var field = (FieldDesc)obj;
 
-                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, field);
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
                 // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
