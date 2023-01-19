@@ -189,7 +189,7 @@ void emitterStaticStats(FILE* fout)
     // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
     // here, do not include that.
 
-    const unsigned igBuffSize =
+    const size_t igBuffSize =
         (SC_IG_BUFFER_NUM_SMALL_DESCS * SMALL_IDSC_SIZE) + (SC_IG_BUFFER_NUM_LARGE_DESCS * sizeof(emitter::instrDesc));
 
     // insGroup members
