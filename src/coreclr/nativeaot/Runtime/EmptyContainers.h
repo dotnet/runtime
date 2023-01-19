@@ -142,7 +142,7 @@ public:
 
     void InsertHead(T *pObj)
     {
-        __debugbreak();
+        PalDebugBreak();
     }
 
 
@@ -180,7 +180,7 @@ public:
 
         T * operator->() const 
         {
-            __debugbreak();
+            PalDebugBreak();
             return m_cur;
         }
 
@@ -231,13 +231,13 @@ struct SListElem_EP
 
     ElemT const & operator*() const
     { 
-        __debugbreak();
+        PalDebugBreak();
         return m_Value; 
     }
 
     ElemT & operator*()
     { 
-        __debugbreak();
+        PalDebugBreak();
         return m_Value; 
     }
 
@@ -285,7 +285,7 @@ public:
     bool PushNoThrow(const T & value)
     {
         if(m_curSize >= maxSize)
-            __debugbreak();
+            PalDebugBreak();
         m_array[m_curSize++] = value;
         return true;
     }

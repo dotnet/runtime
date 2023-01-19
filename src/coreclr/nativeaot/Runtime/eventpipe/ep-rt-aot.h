@@ -1148,7 +1148,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
     STATIC_CONTRACT_NOTHROW;
 
     // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    __debugbreak();
+    PalDebugBreak();
 
     // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
     // suspended before an assembly is loaded.
@@ -1411,7 +1411,7 @@ ep_rt_method_get_simple_assembly_name (
     STATIC_CONTRACT_NOTHROW;
 
     // TODO: Design MethodDesc and method name services if/when needed
-    __debugbreak();
+    PalDebugBreak();
 
     return false;
 
@@ -1425,7 +1425,7 @@ ep_rt_method_get_full_name (
     size_t name_len)
 {
     // TODO: Design MethodDesc and method name services if/when needed
-    __debugbreak();
+    PalDebugBreak();
 
     return false;
 }
@@ -1436,26 +1436,6 @@ void
 ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context is not available in NativeAOT
-
-/**
-    // Mono implementation
-	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
-	}
-
-    // CoreCLR
-	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
-	}
-*/
-
-    //__debugbreak();	
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -1615,7 +1595,7 @@ ep_rt_config_value_get_config (void)
     STATIC_CONTRACT_NOTHROW;
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeConfig)
-    __debugbreak();
+    PalDebugBreak();
     return nullptr;
 //	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
@@ -1628,7 +1608,7 @@ ep_rt_config_value_get_output_path (void)
     STATIC_CONTRACT_NOTHROW;
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputPath)
-    __debugbreak();
+    PalDebugBreak();
     return nullptr;
 }
 
@@ -1640,7 +1620,7 @@ ep_rt_config_value_get_circular_mb (void)
     STATIC_CONTRACT_NOTHROW;
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    __debugbreak();
+    PalDebugBreak();
     return 0;
 }
 
@@ -1652,7 +1632,7 @@ ep_rt_config_value_get_output_streaming (void)
     STATIC_CONTRACT_NOTHROW;
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
-    __debugbreak();
+    PalDebugBreak();
     return false;
 }
 
@@ -1845,7 +1825,7 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
     // TODO: NativeAOT CLREventStatic doesn't have GetHandleUNHOSTED
-    __debugbreak();
+    PalDebugBreak();
     return 0;
 }
 
@@ -1881,8 +1861,6 @@ bool
 ep_rt_process_detach (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // TODO: Does NativeAot have the concept of process detach
-    // __debugbreak();
 
     return false;
 }
@@ -1893,8 +1871,6 @@ bool
 ep_rt_process_shutdown (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // TODO: Does NativeAot have the concept of process shutdown
-    //__debugbreak();
 
     return false;
 }
@@ -1948,7 +1924,7 @@ ep_rt_is_running (void)
 {
     STATIC_CONTRACT_NOTHROW;
     // TODO: Does NativeAot have the concept of EEStarted
-    __debugbreak();
+    PalDebugBreak();
 
     return false;
 }
@@ -1963,7 +1939,7 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
     //TODO: Write execution checkpoint rundown events.
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    __debugbreak();
+    PalDebugBreak();
 }
 
 /*
@@ -2102,7 +2078,6 @@ ep_rt_set_server_name(void)
 {
     // TODO: Need to set name for  the thread
     // ::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
-    //__debugbreak();
 }
 
 
@@ -2137,7 +2112,7 @@ ep_rt_current_processor_get_number (void)
         // PROCESSOR_NUMBER proc;
         // GetCurrentProcessorNumberEx (&proc);
         // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
-        __debugbreak();
+        PalDebugBreak();
     }
 #endif
     return 0xFFFFFFFF;
@@ -2154,7 +2129,7 @@ ep_rt_processors_get_count (void)
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
 #else    
-    __debugbreak();
+    PalDebugBreak();
     return 0xffff;
 #endif
 }
@@ -2168,7 +2143,7 @@ ep_rt_current_thread_get_id (void)
 
 #ifdef TARGET_UNIX
     // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
-    __debugbreak();    
+    PalDebugBreak();    
     return static_cast<ep_rt_thread_id_t>(0);
 #else
     return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
@@ -2217,7 +2192,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
     	value.wMilliseconds);
 #else
     // TODO: Get System time
-    __debugbreak();
+    PalDebugBreak();
 #endif
 
 }
@@ -2241,8 +2216,7 @@ ep_rt_system_get_alloc_granularity (void)
 {
     STATIC_CONTRACT_NOTHROW;
     // return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
-    //__debugbreak();
-    return 0x10000;//0xffff;
+    return 0x10000;
 }
 
 static
@@ -2266,7 +2240,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
     ep_return_null_if_nok (path_utf16 != NULL);
 
     // TODO: Find out the way to open a file in native
-    __debugbreak();
+    PalDebugBreak();
 
     return 0;
 }
@@ -2279,7 +2253,7 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
     STATIC_CONTRACT_NOTHROW;
 
     // TODO: Find out the way to close a file in native
-    __debugbreak();
+    PalDebugBreak();
     return true;
 }
 
@@ -2296,7 +2270,7 @@ ep_rt_file_write (
     EP_ASSERT (buffer != NULL);
 
     // TODO: Find out the way to write to a file in native
-    __debugbreak();
+    PalDebugBreak();
     
     return false;
 }
@@ -2355,7 +2329,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
     //	}
     //	FreeEnvironmentStringsW (envs);
     // }
-    __debugbreak();
+    PalDebugBreak();
 }
 
 /*
@@ -2766,33 +2740,8 @@ ep_rt_diagnostics_command_line_get (void)
     // TODO: revisit commandline for AOT
     // return reinterpret_cast<const ep_char8_t *>(::GetCommandLineA());
 
-
-    // In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
-    // The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
-    // is different during each phase. We suspend during init where the runtime has populated the commandline with a
-    // mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-    // On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
-    // As a result, we cannot actually cache this value. We need to return the _current_ value.
-    // This function needs to handle freeing the string in order to make it consistent with Mono's version.
-    // There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
-    // and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
     extern ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
-
     ep_char8_t *old_cmd_line = _ep_rt_aot_diagnostics_cmd_line;
-
-    // ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
-    // __debugbreak();
-    // ep_char8_t *new_cmd_line = NULL;
-    // if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
-    //     // same as old, so free the new one
-    //     ep_rt_utf8_string_free (new_cmd_line);
-    // } else {
-    //     // attempt an update, and give up if you lose the race
-    //     if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_aot_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
-    //         ep_rt_utf8_string_free (new_cmd_line);
-    //     }
-    // }
-
     return _ep_rt_aot_diagnostics_cmd_line;
 }
 
@@ -2873,7 +2822,6 @@ ep_rt_thread_setup (void)
     // TODO: Implement thread creation/management if needed
     // Thread* thread_handle = SetupThreadNoThrow ();
     // EP_ASSERT (thread_handle != NULL);
-    //__debugbreak();
 }
 
 static
@@ -2922,7 +2870,7 @@ ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
 
     // TODO: Implement thread creation/management if needed
     // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
-    __debugbreak();
+    PalDebugBreak();
     return NULL;
 }
 
@@ -2961,7 +2909,7 @@ ep_rt_thread_get_activity_id_handle (void)
     STATIC_CONTRACT_NOTHROW;
     // TODO: Implement thread creation/management if needed
     // return GetThread ();
-    __debugbreak();
+    PalDebugBreak();
     return NULL;
 }
 
@@ -2975,7 +2923,7 @@ ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id
 
     // TODO: Implement thread creation/management if needed
     // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
-    __debugbreak();
+    PalDebugBreak();
     return NULL;
 }
 
@@ -3010,7 +2958,7 @@ ep_rt_thread_set_activity_id (
 
     // TODO: Implement thread creation/management if needed
     // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
-    __debugbreak();
+    PalDebugBreak();
 }
 
 #undef EP_YIELD_WHILE

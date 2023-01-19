@@ -36,7 +36,7 @@ public:
     static bool IsNull(const ELEMENT &e) { return e == (const ELEMENT) 0; }
     static bool IsDeleted(const ELEMENT &e) 
     { 
-        __debugbreak();
+        PalDebugBreak();
         return false;
         //return e == (const ELEMENT) -1;
     }
@@ -316,12 +316,12 @@ class SHash_EP : public TRAITS
     
     bool AddNoThrow(const element_t &element)
     {
-        __debugbreak();
+        PalDebugBreak();
         return false;
     }
     bool AddOrReplaceNoThrow(const element_t &element)
     {
-        __debugbreak();
+        PalDebugBreak();
         return false;
     }
 
@@ -332,13 +332,13 @@ class SHash_EP : public TRAITS
 
     void Remove(key_t key)
     {
-        __debugbreak();
+        PalDebugBreak();
     }
 
     // Remove the specific element.
     void Remove(Iterator& i)
     {
-        __debugbreak();
+        PalDebugBreak();
     }
     void RemoveAll()
     {
@@ -508,17 +508,14 @@ public:
 
     static key_t GetKey(element_t e)
     {
-        //__debugbreak();
         return e.Key();
     }
     static bool Equals(key_t k1, key_t k2)
     {
-        //__debugbreak();
         return k1 == k2;
     }
     static count_t Hash(key_t k)
     {
-        //__debugbreak();
         return (count_t)(size_t)k;
     }
 
@@ -526,11 +523,6 @@ public:
     { 
         return element_t(KEY(),VALUE());
     }
-    // static const element_t Deleted() 
-    // { 
-    //     __debugbreak();
-    //     return element_t(KEY(-1), VALUE()); 
-    // }
     static bool IsNull(const element_t &e) 
     { 
         return e.Key() == KEY();
@@ -542,13 +534,13 @@ public:
 
     key_t const & Key() const
     {
-        __debugbreak();
+        PalDebugBreak();
         return *(new KEY());
     }
 
     value_t const & Value() const
     {
-        __debugbreak();
+        PalDebugBreak();
         return *(new VALUE());
     }
 };

@@ -43,7 +43,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'osx'">$ORIGIN</IlcRPath>
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'osx'">@executable_path</IlcRPath>
 
-      <EventPipeName>libeventpipe-disabled</EventPipeName>
+      <AotEventPipeName>libeventpipe-disabled</AotEventPipeName>
       <AotEventPipeName Condition="'$(EnableNativeEventPipe)' == 'true'">libeventpipe-enabled</AotEventPipeName>
     </PropertyGroup>
 
