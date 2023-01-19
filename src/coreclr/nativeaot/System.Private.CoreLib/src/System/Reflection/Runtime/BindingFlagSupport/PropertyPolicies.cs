@@ -19,9 +19,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(TypeInfo typeInfo)
+        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(Type type)
         {
-            return typeInfo.DeclaredProperties;
+            return type.GetProperties(DeclaredOnlyLookup);
         }
 
         public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
