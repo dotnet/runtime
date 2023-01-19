@@ -39,6 +39,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'osx'">$ORIGIN</IlcRPath>
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'osx'">@executable_path</IlcRPath>
@@ -141,8 +142,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'osx'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
       <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'osx'" />
-      <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'freebsd') and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="('$(TargetOS)' == 'linux') and '$(NativeLib)' == 'Shared'" />
+      <!-- FreeBSD has two versions of the GSSAPI it can use, but we only use the ports version (MIT version) here -->
+      <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(TargetOS)' == 'freebsd'" />
+      <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
+      <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(TargetOS)' == 'freebsd'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'osx'" />
     </ItemGroup>

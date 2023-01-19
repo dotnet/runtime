@@ -8801,6 +8801,8 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	}
 
 	local_ref_count [sreg]--;
+	result.ins = ins;
+	result.ref_count = 0;
 	local_defs [dreg] = result;
 
 	return ins;
@@ -8978,6 +8980,8 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 
 	local_ref_count [sreg1]--;
 	local_ref_count [sreg2]--;
+	result.ins = ins;
+	result.ref_count = 0;
 	local_defs [dreg] = result;
 	return ins;
 }
