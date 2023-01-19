@@ -1,0 +1,29 @@
+# This is a wrapper yml for `runtime-extra-platforms-androidemulator.yml`,
+# which has all the Android jobs. This file is essentially so we can have
+# point the pipeline in azdo UI to this.
+
+trigger: none
+
+schedules:
+  - cron: "0 4 * * Mon" # run at 4:00 (UTC) on every Monday
+    displayName: Run tests on all Android API levels
+    branches:
+      include:
+      - main
+    always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+          allApiLevels: true
