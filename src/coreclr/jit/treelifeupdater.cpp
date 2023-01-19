@@ -103,7 +103,7 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
         spill = true;
     }
 
-    DumpLifeDelta();
+    DumpLifeDelta(lclNode);
 
     return spill;
 }
@@ -173,9 +173,9 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                     UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, varDsc, isBorn, isDying);
                 }
 
-                if ((isDying != isBorn) && (isBorn != previouslyLive))
+                if (isDying == previouslyLive)
                 {
-                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum, isBorn,
+                    compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(varDsc, lclNum, !isDying,
                                                                                                 isDying);
                 }
             }
@@ -263,17 +263,17 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                     UpdateLifeBit(compiler->codeGen->gcInfo.gcVarPtrSetCur, fldVarDsc, isBorn, isDying);
                 }
 
-                if ((isDying != isBorn) && (isBorn != previouslyLive))
+                if (isDying == previouslyLive)
                 {
                     compiler->codeGen->getVariableLiveKeeper()->siStartOrCloseVariableLiveRange(fldVarDsc,
-                                                                                                fldLclNum, isBorn,
+                                                                                                fldLclNum, !isDying,
                                                                                                 isDying);
                 }
             }
         }
     }
 
-    DumpLifeDelta();
+    DumpLifeDelta(tree);
 }
 
 //------------------------------------------------------------------------
@@ -357,12 +357,12 @@ void           TreeLifeUpdater<ForCodeGen>::StoreCurrentLifeForDump()
 // StoreCurrentLifeForDump was called.
 //
 template <bool ForCodeGen>
-void           TreeLifeUpdater<ForCodeGen>::DumpLifeDelta()
+void           TreeLifeUpdater<ForCodeGen>::DumpLifeDelta(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose && !VarSetOps::Equal(compiler, oldLife, compiler->compCurLife))
     {
-        printf("\t\t\t\t\t\t\tLive vars: ");
+        printf("\t\t\t\tLive vars after [%06u]: ", Compiler::dspTreeID(tree));
         dumpConvertedVarSet(compiler, oldLife);
         printf(" => ");
         dumpConvertedVarSet(compiler, compiler->compCurLife);
@@ -372,7 +372,7 @@ void           TreeLifeUpdater<ForCodeGen>::DumpLifeDelta()
     if (ForCodeGen && compiler->verbose &&
         !VarSetOps::Equal(compiler, oldStackPtrsLife, compiler->codeGen->gcInfo.gcVarPtrSetCur))
     {
-        printf("\t\t\t\t\t\t\tGC vars: ");
+        printf("\t\t\t\tGC vars after [%06u]: ", Compiler::dspTreeID(tree));
         dumpConvertedVarSet(compiler, oldStackPtrsLife);
         printf(" => ");
         dumpConvertedVarSet(compiler, compiler->codeGen->gcInfo.gcVarPtrSetCur);
