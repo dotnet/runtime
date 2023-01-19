@@ -16,11 +16,6 @@ namespace System.Text.RegularExpressions
     {
         public const int CharactersPerRange = 1024;
 
-        private static readonly char[] s_specialCasingSetBehaviors = new char[5]
-        {
-            'I', 'i', '\u0130', 'I', '\u0131'
-        };
-
         /// <summary>
         /// Performs a fast lookup which determines if a character is involved in case conversion, as well as
         /// returns the characters that should be considered equivalent in case it does participate in case conversion.
@@ -45,14 +40,14 @@ namespace System.Text.RegularExpressions
                 equivalences = c switch
                 {
                     // Invariant mappings
-                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => s_specialCasingSetBehaviors.AsSpan(0, 2), // 'I' and 'i'
+                    'i' or 'I' when mappingBehavior is RegexCaseBehavior.Invariant => "Ii".AsSpan(),
 
                     // Non-Turkish mappings
-                    'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => s_specialCasingSetBehaviors.AsSpan(0, 3), // 'I', 'i', and '\u0130'
+                    'i' or 'I' or '\u0130' when mappingBehavior is RegexCaseBehavior.NonTurkish => "Ii\u0130".AsSpan(),
 
                     // Turkish mappings
-                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(3, 2), // 'I' and '\u0131'
-                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => s_specialCasingSetBehaviors.AsSpan(1, 2), // 'i' and '\u0130'
+                    'I' or '\u0131' when mappingBehavior is RegexCaseBehavior.Turkish => "I\u0131".AsSpan(),
+                    'i' or '\u0130' when mappingBehavior is RegexCaseBehavior.Turkish => "i\u0130".AsSpan(),
 
                     // Default
                     _ => default
@@ -158,7 +153,7 @@ namespace System.Text.RegularExpressions
 
             byte count = (byte)((mappingValue >> 13) & 0b111);
             ushort index3 = (ushort)(mappingValue & 0x1FFF);
-            equivalences = EquivalenceCasingValues.AsSpan(index3, count);
+            equivalences = EquivalenceCasingValues.Slice(index3, count);
 
             return true;
         }

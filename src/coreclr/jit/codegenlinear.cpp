@@ -86,9 +86,7 @@ void CodeGen::genInitialize()
         siInit();
     }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     initializeVariableLiveKeeper();
-#endif //  USING_VARIABLE_LIVE_RANGE
 
     genPendingCallLabel = nullptr;
 
@@ -555,30 +553,14 @@ void CodeGen::genCodeForBBlist()
             isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
         }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
         {
             varLiveKeeper->siEndAllVariableLiveRange(compiler->compCurLife);
         }
-#endif // USING_VARIABLE_LIVE_RANGE
 
         if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
         {
             siEndBlock(block);
-
-#ifdef USING_SCOPE_INFO
-            if (isLastBlockProcessed && siOpenScopeList.scNext)
-            {
-                /* This assert no longer holds, because we may insert a throw
-                   block to demarcate the end of a try or finally region when they
-                   are at the end of the method.  It would be nice if we could fix
-                   our code so that this throw block will no longer be necessary. */
-
-                // noway_assert(block->bbCodeOffsEnd != compiler->info.compILCodeSize);
-
-                siCloseAllOpenScopes();
-            }
-#endif // USING_SCOPE_INFO
         }
 
         SubtractStackLevel(savedStkLvl);
@@ -845,16 +827,14 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
-#if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
+#ifdef DEBUG
         if (compiler->verbose)
         {
             varLiveKeeper->dumpBlockVariableLiveRanges(block);
         }
-#endif // defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
-
-        INDEBUG(compiler->compCurBB = nullptr);
-
-    } //------------------ END-FOR each block of the method -------------------
+        compiler->compCurBB = nullptr;
+#endif // DEBUG
+    }  //------------------ END-FOR each block of the method -------------------
 
     // There could be variables alive at this point. For example see lvaKeepAliveAndReportThis.
     // This call is for cleaning the GC refs
@@ -969,14 +949,12 @@ void CodeGen::genSpillVar(GenTree* tree)
         assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
-#ifdef USING_VARIABLE_LIVE_RANGE
     if (needsSpill)
     {
         // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
         // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
         varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
     }
-#endif // USING_VARIABLE_LIVE_RANGE
 }
 
 //------------------------------------------------------------------------
@@ -1091,7 +1069,6 @@ void CodeGen::genUnspillLocal(
     {
         varDsc->SetRegNum(regNum);
 
-#ifdef USING_VARIABLE_LIVE_RANGE
         // We want "VariableLiveRange" inclusive on the beginning and exclusive on the ending.
         // For that we shouldn't report an update of the variable location if is becoming dead
         // on the same native offset.
@@ -1100,7 +1077,6 @@ void CodeGen::genUnspillLocal(
             // Report the home change for this variable
             varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
         }
-#endif // USING_VARIABLE_LIVE_RANGE
 
         if (!varDsc->IsAlwaysAliveInMemory())
         {
@@ -1717,7 +1693,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
-//                     currently GT_SIMD or GT_HWINTRINSIC
+//                     currently GT_HWINTRINSIC
 //
 // Arguments:
 //    tree - the GenTreeMultiOp whose operands will have their liveness updated.
@@ -1880,7 +1856,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         {
             // Need an additional integer register to extract upper 4 bytes from data.
             regNumber tmpReg = nextArgNode->GetSingleTempReg();
-            GetEmitter()->emitStoreSIMD12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
+            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
         }
         else
 #endif // FEATURE_SIMD

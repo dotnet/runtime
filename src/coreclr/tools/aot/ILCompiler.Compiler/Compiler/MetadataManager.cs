@@ -64,6 +64,7 @@ namespace ILCompiler
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -234,10 +235,10 @@ namespace ILCompiler
                 return;
             }
 
-            var reflectableMethodNode = obj as ReflectableMethodNode;
-            if (reflectableMethodNode != null)
+            var reflectedMethodNode = obj as ReflectedMethodNode;
+            if (reflectedMethodNode != null)
             {
-                _reflectableMethods.Add(reflectableMethodNode.Method);
+                _reflectableMethods.Add(reflectedMethodNode.Method);
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
@@ -294,6 +295,11 @@ namespace ILCompiler
             if (obj is FrozenStringNode frozenStr)
             {
                 _frozenObjects.Add(frozenStr);
+            }
+
+            if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
+            {
+                _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
             }
         }
 
@@ -725,6 +731,11 @@ namespace ILCompiler
         public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
         {
             return _frozenObjects;
+        }
+
+        public IEnumerable<MetadataType> GetTypesWithGenericStaticBaseInfos()
+        {
+            return _typesWithGenericStaticBaseInfo;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()

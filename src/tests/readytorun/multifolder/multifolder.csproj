@@ -35,6 +35,7 @@ $(CLRTestBatchPreCommands)
     echo -o:%scriptPath%\multifolder-composite.dll>>%__ResponseFile%
     echo --crp:%scriptPath%\..>>%__ResponseFile%
     echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
+    echo --targetos:$(TargetOS)>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
@@ -42,8 +43,6 @@ $(CLRTestBatchPreCommands)
     REM Suppress GC stand alone mode for the duration of Crossgen2 execution
     set __gcStandaloneModeToRestore=!DOTNET_GCName!
     set DOTNET_GCName=
-    set __gcStandaloneModeToRestore=!COMPlus_GCName!
-    set COMPlus_GCName=
 
     set __Command=%_DebuggerFullPath%
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -87,13 +86,13 @@ $(CLRTestBashPreCommands)
     echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
     echo --crp:$__OutputDir/..>>$__ResponseFile
     echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+    echo --targetos:$(TargetOS)>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
-    # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+    # Suppress some DOTNET variables for the duration of Crossgen2 execution
     export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-    export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
     __Command=$_DebuggerFullPath
     # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path

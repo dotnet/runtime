@@ -1226,11 +1226,10 @@ void DisplayNowayAssertMap()
         NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
         unsigned             i     = 0;
 
-        for (FileLineToCountMap::KeyIterator iter = NowayAssertMap->Begin(), end = NowayAssertMap->End();
-             !iter.Equal(end); ++iter)
+        for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
-            nacp[i].count = iter.GetValue();
-            nacp[i].fl    = iter.Get();
+            nacp[i].count = iter->GetValue();
+            nacp[i].fl    = iter->GetKey();
             ++i;
         }
 
@@ -1776,6 +1775,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
+
+    compPoisoningAnyImplicitByrefs = false;
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
@@ -1849,13 +1850,12 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     fgInit();
     lvaInit();
+    optInit();
 
     if (!compIsForInlining())
     {
         codeGen = getCodeGenerator(this);
-        optInit();
         hashBv::Init(this);
-
         compVarScopeMap = nullptr;
 
         // If this method were a real constructor for Compiler, these would
@@ -4391,13 +4391,21 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
     }
 
+    // If we are doing OSR, update flow to initially reach the appropriate IL offset.
+    //
+    if (opts.IsOSR())
+    {
+        fgFixEntryFlowForOSR();
+    }
+
+    // Enable the post-phase checks that use internal logic to decide when checking makes sense.
+    //
+    activePhaseChecks = PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
+                        PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
-
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // If instrumenting, add block and class probes.
     //
@@ -4405,6 +4413,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
+
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // Transform indirect calls that require control flow expansion.
     //
@@ -4567,6 +4579,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgRenumberBlocks();
         noway_assert(!fgComputePredsDone);
         fgComputePreds();
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
@@ -4599,9 +4613,22 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    if (opts.OptimizationEnabled())
+    {
+        fgNodeThreading = NodeThreading::AllLocals;
+    }
+
+    // Do an early pass of liveness for forward sub and morph. This data is
+    // valid until after morph.
+    //
+    DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
+
+    // Locals tree list is no longer kept valid.
+    fgNodeThreading = NodeThreading::None;
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -4648,8 +4675,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             fgRenumberBlocks();
         }
 
-        // We can now enable all phase checking
-        activePhaseChecks = PhaseChecks::CHECK_ALL;
+        // Enable IR checks
+        activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
     DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
 
@@ -4744,6 +4771,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // nodes properly linked.
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
+
+    fgNodeThreading = NodeThreading::AllTrees;
 
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
@@ -4936,6 +4965,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
+
+    fgNodeThreading = NodeThreading::LIR;
 
     // Here we do "simple lowering".  When the RyuJIT backend works for all
     // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
@@ -6572,13 +6603,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         // We are jitting the root method, or inlining.
         fgFindBasicBlocks();
-
-        // If we are doing OSR, update flow to initially reach the appropriate IL offset.
-        //
-        if (opts.IsOSR())
-        {
-            fgFixEntryFlowForOSR();
-        }
     }
 
     // If we're inlining and the candidate is bad, bail out.
@@ -9326,6 +9350,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_DEATH]");
                 }
+                if (tree->gtFlags & GTF_VAR_EXPLICIT_INIT)
+                {
+                    chars += printf("[VAR_EXPLICIT_INIT]");
+                }
 #if defined(DEBUG)
                 if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
                 {
@@ -10153,6 +10181,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_dispatchRetBuf++;
                     break;
 
+                case AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS:
+                    m_stressPoisonImplicitByrefs++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10248,5 +10280,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
+    PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

@@ -19,7 +19,7 @@ To build CoreCLR on macOS, run `build.sh` while specifying the `clr` subset:
 ./build.sh --subset clr <other args>
 ```
 
-After the build has completed, there should be some files placed in `artifacts/bin/coreclr/OSX.<arch>.<configuration>` (for example `artifacts/bin/coreclr/OSX.x64.Release`). The most important binaries are the following:
+After the build has completed, there should be some files placed in `artifacts/bin/coreclr/osx.<arch>.<configuration>` (for example `artifacts/bin/coreclr/osx.x64.Release`). The most important binaries are the following:
 
 * `corerun`: The command line host. This program loads and starts the CoreCLR runtime and passes the managed program (e.g. `program.dll`) you want to run with it.
 * `libcoreclr.dylib`: The CoreCLR runtime itself.

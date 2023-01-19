@@ -251,7 +251,7 @@ internal static partial class Interop
             return sslCtx;
         }
 
-        internal static void UpdateClientCertiticate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static void UpdateClientCertificate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
         {
             // Disable certificate selection callback. We either got certificate or we will try to proceed without it.
             Interop.Ssl.SslSetClientCertCallback(ssl, 0);

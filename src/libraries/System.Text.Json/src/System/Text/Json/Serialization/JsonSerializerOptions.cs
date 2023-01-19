@@ -62,6 +62,7 @@ namespace System.Text.Json
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
+        private JsonUnmappedMemberHandling _unmappedMemberHandling;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -107,6 +108,7 @@ namespace System.Text.Json
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
             _unknownTypeHandling = options._unknownTypeHandling;
+            _unmappedMemberHandling = options._unmappedMemberHandling;
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
@@ -159,18 +161,22 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="Serialization.JsonSerializerContext"/> type.
+        /// Appends a <see cref="Serialization.JsonSerializerContext"/> to the metadata resolution of the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
         /// <typeparam name="TContext">The generic definition of the specified context type.</typeparam>
         /// <remarks>
         /// When serializing and deserializing types using the options
         /// instance, metadata for the types will be fetched from the context instance.
+        ///
+        /// The methods supports adding multiple contexts per options instance.
+        /// Metadata will be resolved in the order of configuration, similar to
+        /// how <see cref="JsonTypeInfoResolver.Combine(IJsonTypeInfoResolver?[])"/> resolves metadata.
         /// </remarks>
         public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
         {
             VerifyMutable();
             TContext context = new();
-            context.Options = this;
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(TypeInfoResolver, context);
         }
 
         /// <summary>
@@ -551,6 +557,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Determines how <see cref="JsonSerializer"/> handles JSON properties that
+        /// cannot be mapped to a specific .NET member when deserializing object types.
+        /// </summary>
+        public JsonUnmappedMemberHandling UnmappedMemberHandling
+        {
+            get => _unmappedMemberHandling;
+            set
+            {
+                VerifyMutable();
+                _unmappedMemberHandling = value;
+            }
+        }
+
+        /// <summary>
         /// Defines whether JSON should pretty print which includes:
         /// indenting nested JSON tokens, adding new lines, and adding white space between property names and values.
         /// By default, the JSON is serialized without any extra white space.
@@ -585,7 +605,16 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonSerializerContext? SerializerContext => _typeInfoResolver as JsonSerializerContext;
+        internal bool CanUseFastPathSerializationLogic
+        {
+            get
+            {
+                Debug.Assert(IsReadOnly);
+                return _canUseFastPathSerializationLogic ??= _typeInfoResolver is JsonSerializerContext ctx ? ctx.CanUseFastPathSerializationLogic(this) : false;
+            }
+        }
+
+        private bool? _canUseFastPathSerializationLogic;
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;

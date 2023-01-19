@@ -121,6 +121,7 @@ mono_getentropy (guchar *buffer, gssize buffer_size, MonoError *error)
 }
 #endif /* HAVE_GETENTROPY */
 
+#if !defined(DISABLE_EGD_SOCKET)
 static void
 get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, MonoError *error)
 {
@@ -222,6 +223,7 @@ mono_rand_open (void)
 
 	return TRUE;
 }
+#endif /* !DISABLE_EGD_SOCKET */
 
 gpointer
 mono_rand_init (const guchar *seed, gssize seed_size)
@@ -250,9 +252,9 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 	if (res == 1)
 		return TRUE;
 
+#elif !defined(DISABLE_EGD_SOCKET)
 	/* getrandom() or getentropy() function is not available: failed with
 	   ENOSYS or EPERM. Fall back on reading from /dev/urandom. */
-#endif
 
 	if (use_egd) {
 		char *socket_path = g_getenv ("MONO_EGD_SOCKET");
@@ -263,21 +265,22 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 		}
 		get_entropy_from_egd (socket_path, buffer, buffer_size, error);
 		g_free (socket_path);
-	} else {
-		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
-		while (buffer_size > 0) {
-			gssize const err = read (file, buffer, buffer_size);
-			if (err < 0) {
-				if (errno == EINTR)
-					continue;
-				g_warning("Entropy error! Error in read (%s).", strerror (errno));
-				/* exception will be thrown in managed code */
-				mono_error_set_execution_engine (error, "Entropy error! Error in read (%s).", strerror (errno));
-				return FALSE;
-			}
-			buffer += err;
-			buffer_size -= err;
+		return TRUE;
+	}
+#endif
+	/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
+	while (buffer_size > 0) {
+		gssize const err = read (file, buffer, buffer_size);
+		if (err < 0) {
+			if (errno == EINTR)
+				continue;
+			g_warning("Entropy error! Error in read (%s).", strerror (errno));
+			/* exception will be thrown in managed code */
+			mono_error_set_execution_engine (error, "Entropy error! Error in read (%s).", strerror (errno));
+			return FALSE;
 		}
+		buffer += err;
+		buffer_size -= err;
 	}
 	return TRUE;
 }

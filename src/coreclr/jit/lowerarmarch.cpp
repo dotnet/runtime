@@ -222,7 +222,6 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return IsSafeToContainMem(parentNode, childNode);
         }
 
-        // TODO: Handle mneg
         return false;
     }
 
@@ -2481,6 +2480,48 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 #endif
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// ContainCheckNeg : determine whether the source of a neg should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckNeg(GenTreeOp* neg)
+{
+    if (neg->isContained())
+        return;
+
+    if (!varTypeIsIntegral(neg))
+        return;
+
+    if ((neg->gtFlags & GTF_SET_FLAGS))
+        return;
+
+    GenTree* childNode = neg->gtGetOp1();
+    if (childNode->OperIs(GT_MUL))
+    {
+        // Find - (a * b)
+        if (childNode->gtGetOp1()->isContained() || childNode->gtGetOp2()->isContained())
+            return;
+
+        if (childNode->gtOverflow())
+            return;
+
+        if (!varTypeIsIntegral(childNode))
+            return;
+
+        if ((childNode->gtFlags & GTF_SET_FLAGS))
+            return;
+
+        if (IsSafeToContainMem(neg, childNode))
+        {
+            MakeSrcContained(neg, childNode);
+        }
+    }
+}
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
 // ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
 //
@@ -2495,28 +2536,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    switch (simdNode->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            CheckImmedAndMakeContained(simdNode, simdNode->Op(2));
-            break;
-
-        default:
-            break;
-    }
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -2704,18 +2723,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
                 unreached();
-        }
-    }
-    else if ((intrin.id == NI_AdvSimd_LoadVector128) || (intrin.id == NI_AdvSimd_LoadVector64))
-    {
-        assert(intrin.numOperands == 1);
-        assert(HWIntrinsicInfo::lookupCategory(intrin.id) == HW_Category_MemoryLoad);
-
-        GenTree* addr = node->Op(1);
-        if (TryCreateAddrMode(addr, true, node) && IsSafeToContainMem(node, addr))
-        {
-            assert(addr->OperIs(GT_LEA));
-            MakeSrcContained(node, addr);
         }
     }
 }

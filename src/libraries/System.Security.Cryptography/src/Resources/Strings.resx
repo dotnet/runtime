@@ -69,6 +69,9 @@
   <data name="Arg_EmptyOrNullString_Named" xml:space="preserve">
     <value>The '{0}' string cannot be empty or null.</value>
   </data>
+  <data name="Arg_EmptySpan" xml:space="preserve">
+    <value>Span may not be empty.</value>
+  </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
   </data>

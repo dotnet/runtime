@@ -1499,7 +1499,7 @@ public:
     const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
+    LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
     PEImageLayout * GetReadyToRunImage();

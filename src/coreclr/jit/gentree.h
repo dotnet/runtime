@@ -442,7 +442,6 @@ enum GenTreeFlags : unsigned int
 //  well to make sure it's the right operator for the particular flag.
 //---------------------------------------------------------------------
 
-// NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags.
 // These flags are also used by GT_LCL_FLD, and the last-use (DEATH) flags are also used by GenTreeCopyOrReload.
 
     GTF_VAR_DEF             = 0x80000000, // GT_LCL_VAR -- this is a definition
@@ -469,11 +468,12 @@ enum GenTreeFlags : unsigned int
                                           // that returns its result in multiple registers such as a long multiply). Set by
                                           // (and thus only valid after) lowering.
 
-    GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
+    GTF_LIVENESS_MASK     = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_ITERATOR      = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED        = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1088,7 +1088,7 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
                    IsCnsVec());
             return false;
         }
@@ -1642,7 +1642,7 @@ public:
 
     static bool OperIsMultiOp(genTreeOps gtOper)
     {
-        return OperIsSIMD(gtOper) || OperIsHWIntrinsic(gtOper);
+        return OperIsHWIntrinsic(gtOper);
     }
 
     bool OperIsMultiOp() const
@@ -1653,21 +1653,6 @@ public:
     bool OperIsSsaDef() const
     {
         return OperIs(GT_ASG, GT_CALL);
-    }
-
-    // This is here for cleaner FEATURE_SIMD #ifdefs.
-    static bool OperIsSIMD(genTreeOps gtOper)
-    {
-#ifdef FEATURE_SIMD
-        return gtOper == GT_SIMD;
-#else  // !FEATURE_SIMD
-        return false;
-#endif // !FEATURE_SIMD
-    }
-
-    bool OperIsSIMD() const
-    {
-        return OperIsSIMD(gtOper);
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
@@ -1682,11 +1667,6 @@ public:
     bool OperIsHWIntrinsic() const
     {
         return OperIsHWIntrinsic(gtOper);
-    }
-
-    bool OperIsSimdOrHWintrinsic() const
-    {
-        return OperIsSIMD() || OperIsHWIntrinsic();
     }
 
     // This is here for cleaner GT_LONG #ifdefs.
@@ -5587,7 +5567,7 @@ struct GenTreeCall final : public GenTree
         bool mayUseDispatcher = true;
         // Branch predictors on ARM64 generally do not handle the dispatcher as
         // well as on x64 hardware, so only use the validator by default.
-        bool       shouldUseDispatcher = false;
+        bool shouldUseDispatcher = false;
 #else
         // Other platforms do not even support the dispatcher.
         bool mayUseDispatcher    = false;
@@ -6130,20 +6110,12 @@ struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
     GenTree*           gtInlineOperands[2];
-    regNumberSmall     gtOtherReg;    // The second register for multi-reg intrinsics.
-    MultiRegSpillFlags gtSpillFlags;  // Spill flags for multi-reg intrinsics.
-    unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
-    unsigned char gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
-
-#if defined(FEATURE_SIMD)
-    union {
-        SIMDIntrinsicID gtSIMDIntrinsicID; // operation Id
-        NamedIntrinsic  gtHWIntrinsicId;
-    };
-#else
+    regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
+    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
-#endif
 
 public:
     regNumber GetOtherReg() const
@@ -6285,61 +6257,6 @@ public:
         return gtSimdSize != 0;
     }
 };
-
-#ifdef FEATURE_SIMD
-
-/* gtSIMD   -- SIMD intrinsic   (possibly-binary op [NULL op2 is allowed] with additional fields) */
-struct GenTreeSIMD : public GenTreeJitIntrinsic
-{
-    GenTreeSIMD(var_types              type,
-                IntrinsicNodeBuilder&& nodeBuilder,
-                SIMDIntrinsicID        simdIntrinsicID,
-                CorInfoType            simdBaseJitType,
-                unsigned               simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
-    {
-        gtSIMDIntrinsicID = simdIntrinsicID;
-    }
-
-    GenTreeSIMD(var_types       type,
-                CompAllocator   allocator,
-                GenTree*        op1,
-                SIMDIntrinsicID simdIntrinsicID,
-                CorInfoType     simdBaseJitType,
-                unsigned        simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, simdBaseJitType, simdSize, op1)
-    {
-        gtSIMDIntrinsicID = simdIntrinsicID;
-    }
-
-    GenTreeSIMD(var_types       type,
-                CompAllocator   allocator,
-                GenTree*        op1,
-                GenTree*        op2,
-                SIMDIntrinsicID simdIntrinsicID,
-                CorInfoType     simdBaseJitType,
-                unsigned        simdSize)
-        : GenTreeJitIntrinsic(GT_SIMD, type, allocator, simdBaseJitType, simdSize, op1, op2)
-    {
-        gtSIMDIntrinsicID = simdIntrinsicID;
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeSIMD() : GenTreeJitIntrinsic()
-    {
-    }
-#endif
-
-    bool OperIsMemoryLoad() const;
-
-    SIMDIntrinsicID GetSIMDIntrinsicId() const
-    {
-        return gtSIMDIntrinsicID;
-    }
-
-    static bool Equals(GenTreeSIMD* op1, GenTreeSIMD* op2);
-};
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
@@ -6530,7 +6447,8 @@ struct GenTreeIndexAddr : public GenTreeOp
                      CORINFO_CLASS_HANDLE structElemClass,
                      unsigned             elemSize,
                      unsigned             lenOffset,
-                     unsigned             elemOffset)
+                     unsigned             elemOffset,
+                     bool                 boundsCheck)
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
         , gtIndRngFailBB(nullptr)
@@ -6540,13 +6458,8 @@ struct GenTreeIndexAddr : public GenTreeOp
         , gtElemOffset(elemOffset)
     {
         assert(!varTypeIsStruct(elemType) || (structElemClass != NO_CLASS_HANDLE));
-#ifdef DEBUG
-        if (JitConfig.JitSkipArrayBoundCheck() == 1)
-        {
-            // Skip bounds check
-        }
-        else
-#endif
+
+        if (boundsCheck)
         {
             // Do bounds check
             gtFlags |= GTF_INX_RNGCHK;
@@ -7421,6 +7334,7 @@ class GenTreeList
 {
     GenTree* m_trees;
 
+public:
     // Forward iterator for the execution order GenTree linked list (using `gtNext` pointer).
     //
     class iterator
@@ -7428,7 +7342,7 @@ class GenTreeList
         GenTree* m_tree;
 
     public:
-        iterator(GenTree* tree) : m_tree(tree)
+        explicit iterator(GenTree* tree) : m_tree(tree)
         {
         }
 
@@ -7449,8 +7363,7 @@ class GenTreeList
         }
     };
 
-public:
-    GenTreeList(GenTree* trees) : m_trees(trees)
+    explicit GenTreeList(GenTree* trees) : m_trees(trees)
     {
     }
 
@@ -7463,6 +7376,67 @@ public:
     {
         return iterator(nullptr);
     }
+};
+
+class LocalsGenTreeList
+{
+    Statement* m_stmt;
+
+public:
+    class iterator
+    {
+        GenTreeLclVarCommon* m_tree;
+
+    public:
+        explicit iterator(GenTreeLclVarCommon* tree) : m_tree(tree)
+        {
+        }
+
+        GenTreeLclVarCommon* operator*() const
+        {
+            return m_tree;
+        }
+
+        iterator& operator++()
+        {
+            assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIsLocalAddr());
+            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtNext);
+            return *this;
+        }
+
+        iterator& operator--()
+        {
+            assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIsLocalAddr());
+            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtPrev);
+            return *this;
+        }
+
+        bool operator!=(const iterator& i) const
+        {
+            return m_tree != i.m_tree;
+        }
+    };
+
+    explicit LocalsGenTreeList(Statement* stmt) : m_stmt(stmt)
+    {
+    }
+
+    iterator begin() const;
+
+    iterator end() const
+    {
+        return iterator(nullptr);
+    }
+
+    void Remove(GenTreeLclVarCommon* node);
+    void Replace(GenTreeLclVarCommon* firstNode,
+                 GenTreeLclVarCommon* lastNode,
+                 GenTreeLclVarCommon* newFirstNode,
+                 GenTreeLclVarCommon* newLastNode);
+
+private:
+    GenTree** GetForwardEdge(GenTreeLclVarCommon* node);
+    GenTree** GetBackwardEdge(GenTreeLclVarCommon* node);
 };
 
 // We use the following format when printing the Statement number: Statement->GetID()
@@ -7509,14 +7483,8 @@ public:
         m_treeList = treeHead;
     }
 
-    // TreeList: convenience method for enabling range-based `for` iteration over the
-    // execution order of the GenTree linked list, e.g.:
-    //    for (GenTree* const tree : stmt->TreeList()) ...
-    //
-    GenTreeList TreeList() const
-    {
-        return GenTreeList(GetTreeList());
-    }
+    GenTreeList       TreeList() const;
+    LocalsGenTreeList LocalsTreeList();
 
     const DebugInfo& GetDebugInfo() const
     {
@@ -8700,20 +8668,6 @@ inline bool GenTree::IsVectorCreate() const
         }
     }
 #endif // FEATURE_HW_INTRINSICS
-
-#ifdef FEATURE_SIMD
-    if (OperIs(GT_SIMD))
-    {
-        switch (AsSIMD()->GetSIMDIntrinsicId())
-        {
-            case SIMDIntrinsicInitN:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-#endif // FEATURE_SIMD
 
     return false;
 }

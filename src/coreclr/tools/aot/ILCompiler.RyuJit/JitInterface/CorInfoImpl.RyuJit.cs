@@ -1139,7 +1139,7 @@ namespace Internal.JitInterface
                 _compilation.DetectGenericCycles(methodIL.OwningMethod, method);
             }
 
-            return _compilation.NodeFactory.MethodEntrypoint(method, isUnboxingThunk);
+            return _compilation.NodeFactory.MethodEntrypointOrTentativeMethod(method, isUnboxingThunk);
         }
 
         private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)

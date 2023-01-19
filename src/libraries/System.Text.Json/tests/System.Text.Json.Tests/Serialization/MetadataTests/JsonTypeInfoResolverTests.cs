@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,18 +16,39 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class JsonTypeInfoResolverTests
     {
         [Fact]
-        public static void GetTypeInfoNullArguments()
+        public static void CombineNullArgument()
         {
             IJsonTypeInfoResolver[] resolvers = null;
             Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(resolvers));
+        }
 
+        [Fact]
+        public static void Combine_ShouldFlattenResolvers()
+        {
             DefaultJsonTypeInfoResolver nonNullResolver1 = new();
             DefaultJsonTypeInfoResolver nonNullResolver2 = new();
-            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(null));
-            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(null, null));
-            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(nonNullResolver1, null));
-            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(nonNullResolver1, nonNullResolver2, null));
-            Assert.Throws<ArgumentNullException>(() => JsonTypeInfoResolver.Combine(nonNullResolver1, null, nonNullResolver2));
+            DefaultJsonTypeInfoResolver nonNullResolver3 = new();
+
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine());
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine(new IJsonTypeInfoResolver[] { null }));
+            ValidateCombinations(Array.Empty<IJsonTypeInfoResolver>(), JsonTypeInfoResolver.Combine(null, null));
+            ValidateCombinations(new[] { nonNullResolver1 }, JsonTypeInfoResolver.Combine(nonNullResolver1, null));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, JsonTypeInfoResolver.Combine(nonNullResolver1, nonNullResolver2, null));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2 }, JsonTypeInfoResolver.Combine(nonNullResolver1, null, nonNullResolver2));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(nonNullResolver1), nonNullResolver2), nonNullResolver3));
+            ValidateCombinations(new[] { nonNullResolver1, nonNullResolver2, nonNullResolver3 }, JsonTypeInfoResolver.Combine(JsonTypeInfoResolver.Combine(nonNullResolver1, null, nonNullResolver2), nonNullResolver3));
+
+            static void ValidateCombinations(IJsonTypeInfoResolver[] expectedResolvers, IJsonTypeInfoResolver combinedResolver)
+            {
+                if (expectedResolvers.Length == 1)
+                {
+                    Assert.Same(expectedResolvers[0], combinedResolver);
+                }
+                else
+                {
+                    Assert.Equal(expectedResolvers, GetCombinedResolvers(combinedResolver));
+                }
+            }
         }
 
         [Fact]
@@ -126,5 +149,24 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(combined.GetTypeInfo(typeof(StringBuilder), options));
             Assert.Equal(4, resolverId);
         }
+
+        private static IJsonTypeInfoResolver[] GetCombinedResolvers(IJsonTypeInfoResolver resolver)
+        {
+            (Type combinedResolverType, FieldInfo underlyingResolverField) = s_combinedResolverMembers.Value;
+            Assert.IsType(combinedResolverType, resolver);
+            return (IJsonTypeInfoResolver[])underlyingResolverField.GetValue(resolver);
+        }
+
+        private static Lazy<(Type, FieldInfo)> s_combinedResolverMembers = new Lazy<(Type, FieldInfo)>
+        (
+            static () =>
+            {
+                Type? combinedResolverType = typeof(JsonTypeInfoResolver).GetNestedType("CombiningJsonTypeInfoResolver", BindingFlags.NonPublic);
+                Assert.NotNull(combinedResolverType);
+                FieldInfo underlyingResolverField = combinedResolverType.GetField("_resolvers", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.NotNull(underlyingResolverField);
+                return (combinedResolverType, underlyingResolverField);
+            }
+        );
     }
 }

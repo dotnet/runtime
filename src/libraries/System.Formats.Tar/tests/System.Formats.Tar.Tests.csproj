@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>$(MSBuildProjectDirectory)\..\src\Resources\Strings.resx</StringResourcesPath>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
@@ -31,6 +31,7 @@
     <Compile Include="TarFile\TarFile.CreateFromDirectory.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectory.Stream.Tests.cs" />
+    <Compile Include="TarReader\TarReader.Async.Tests.cs" />
     <Compile Include="TarReader\TarReader.StreamConformanceTests.cs" />
     <Compile Include="TarReader\TarReader.File.GlobalExtendedAttributes.Async.Tests.cs" />
     <Compile Include="TarReader\TarReader.File.Async.Tests.Base.cs" />

@@ -13,6 +13,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //==========================================================================================================================
     internal sealed class EventPolicies : MemberPolicies<EventInfo>
     {
+        public static readonly EventPolicies Instance = new EventPolicies();
+
+        public EventPolicies() : base(MemberTypeIndex.Event) { }
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Reflection implementation")]
         public sealed override IEnumerable<EventInfo> GetDeclaredMembers(TypeInfo typeInfo)
@@ -67,7 +71,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         {
             MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
             MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
+            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)

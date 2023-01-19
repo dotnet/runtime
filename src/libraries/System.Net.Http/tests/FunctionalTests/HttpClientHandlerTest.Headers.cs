@@ -215,7 +215,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_LargeHeader_Success(string headerName, int headerValueLength)
         {
             var rand = new Random(42);
-            string headerValue = string.Concat(Enumerable.Range(0, headerValueLength).Select(_ => (char)('A' + rand.Next(26))));
+            string headerValue = new string(rand.GetItems<char>("ABCDEFGHIJKLMNOPQRSTUVWXYZ", headerValueLength));
 
             const string ContentString = "hello world";
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

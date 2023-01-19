@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a base class for frozen dictionaries that store their keys and values in dedicated arrays.</summary>
-    internal abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
+    public abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
         where TKey : notnull
     {
         private protected readonly FrozenHashTable _hashTable;

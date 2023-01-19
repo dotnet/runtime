@@ -20,7 +20,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private IList<string> urlSymbolServerList;
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty" };
+        private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
         public static HttpClient HttpClient => new HttpClient();
@@ -94,7 +94,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.consoleAPICalled":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!contexts.ContainsKey(sessionId))
                             return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
@@ -104,28 +104,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 break;
 
                             int aCount = a.Count();
-                            if (aCount >= 2 &&
-                                a[0]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
-                                a[1]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY_ID)
-                            {
-                                if (aCount > 2)
-                                {
-                                    try
-                                    {
-                                        // The optional 3rd argument is the stringified assembly
-                                        // list so that we don't have to make more round trips
-                                        string loaded = a[2]?["value"]?.ToString();
-                                        if (loaded != null)
-                                            context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
-                                    }
-                                    catch (InvalidCastException ice)
-                                    {
-                                        Log("verbose", ice.ToString());
-                                    }
-                                }
-                                await RuntimeReady(sessionId, token);
-                            }
-                            else if (aCount > 1 && a[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
+                            if (aCount > 1 && a[0]?["value"]?.ToString() == MonoConstants.EVENT_RAISED)
                             {
                                 if (a.Type != JTokenType.Array)
                                 {
@@ -503,6 +482,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
                     }
 
+                case "Runtime.callFunctionOn":
+                    {
+                        try {
+                            return await CallOnFunction(id, args, token);
+                        }
+                        catch (Exception ex) {
+                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                token);
+                            return true;
+                        }
+                    }
+
                 // Protocol extensions
                 case "DotnetDebugger.setDebuggerProperty":
                     {
@@ -552,19 +546,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                         SendResponse(id, await GetMethodLocation(id, args, token), token);
                         return true;
                     }
-                case "Runtime.callFunctionOn":
+                case "DotnetDebugger.setEvaluationOptions":
                     {
+                        //receive the available options from DAP to variables, stack and evaluate commands.
                         try {
-                            return await CallOnFunction(id, args, token);
+                            if (args["options"]?["noFuncEval"]?.Value<bool>() == true)
+                                context.AutoEvaluateProperties = false;
+                            else
+                                context.AutoEvaluateProperties = true;
+                            SendResponse(id, Result.OkFromObject(new { }), token);
                         }
-                        catch (Exception ex) {
-                            logger.LogDebug($"Runtime.callFunctionOn failed for {id} with args {args}: {ex}");
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"DotnetDebugger.setEvaluationOptions failed for {id} with args {args}: {ex}");
                             SendResponse(id,
                                 Result.Exception(new ArgumentException(
-                                    $"Runtime.callFunctionOn not supported with ({args["objectId"]}).")),
+                                    $"DotnetDebugger.setEvaluationOptions got incorrect argument ({args})")),
                                 token);
-                            return true;
                         }
+                        return true;
+                    }
+                case "DotnetDebugger.runTests":
+                    {
+                        SendResponse(id, Result.OkFromObject(new { }), token);
+                        if (await IsRuntimeAlreadyReadyAlready(id, token))
+                            await RuntimeReady(id, token);
+                        return true;
                     }
             }
             // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
@@ -737,6 +744,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (args["forDebuggerDisplayAttribute"]?.Value<bool>() == true)
                     getObjectOptions |= GetObjectCommandOptions.ForDebuggerDisplayAttribute;
             }
+            if (context.AutoEvaluateProperties)
+                getObjectOptions |= GetObjectCommandOptions.AutoExpandable;
             if (JustMyCode)
                 getObjectOptions |= GetObjectCommandOptions.JustMyCode;
             try
@@ -1037,14 +1046,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+        internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Task<Result> debuggerAgentBufferTask)
         {
         }
 
         internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
-            Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
-            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, res);
+            var debuggerAgentBufferTask = SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, debuggerAgentBufferTask);
+            var res = await debuggerAgentBufferTask;
             if (!res.IsOk)
                 return false;
 

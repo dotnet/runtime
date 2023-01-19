@@ -234,8 +234,8 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var newSet = this.Clear();
-            foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
+            ImmutableSortedSet<T> newSet = this.Clear();
+            foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 if (this.Contains(item))
                 {
@@ -254,7 +254,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var result = _root;
+            ImmutableSortedSet<T>.Node result = _root;
             foreach (T item in other.GetEnumerableDisposable<T, Enumerator>())
             {
                 bool mutated;
@@ -273,9 +273,9 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            var otherAsSet = ImmutableSortedSet.CreateRange(_comparer, other);
+            ImmutableSortedSet<T> otherAsSet = ImmutableSortedSet.CreateRange(_comparer, other);
 
-            var result = this.Clear();
+            ImmutableSortedSet<T> result = this.Clear();
             foreach (T item in this)
             {
                 if (!otherAsSet.Contains(item))
@@ -986,8 +986,7 @@ namespace System.Collections.Immutable
                 return true;
             }
 
-            var builder = sequence as Builder;
-            if (builder != null)
+            if (sequence is Builder builder)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -1026,8 +1025,8 @@ namespace System.Collections.Immutable
 
             // Let's not implement in terms of ImmutableSortedSet.Add so that we're
             // not unnecessarily generating a new wrapping set object for each item.
-            var result = _root;
-            foreach (var item in items.GetEnumerableDisposable<T, Enumerator>())
+            ImmutableSortedSet<T>.Node result = _root;
+            foreach (T item in items.GetEnumerableDisposable<T, Enumerator>())
             {
                 bool mutated;
                 result = result.Add(item, _comparer, out mutated);

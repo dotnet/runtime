@@ -391,12 +391,14 @@
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReflectableFieldNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingDataNode.cs" />
@@ -432,6 +434,7 @@
     <Compile Include="Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
+    <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
@@ -440,7 +443,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
     <Compile Include="Compiler\MetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodMetadataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReflectableMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ScannedMethodNode.cs" />
@@ -577,7 +580,6 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\ProcessXmlBase.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
@@ -654,9 +656,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\MemoryMarshalIntrinsics.cs">
-      <Link>IL\Stubs\MemoryMarshalIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
       <Link>IL\Stubs\VolatileIntrinsics.cs</Link>

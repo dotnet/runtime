@@ -682,6 +682,8 @@ OPDEF(MINT_STRLEN, "strlen", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 
+OPDEF(MINT_CALL_ALIGN_STACK, "call_align_stack", 3, 1, 0, MintOpShortInt)
+
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 5, 1, 1, MintOpMethodToken)
@@ -794,6 +796,7 @@ OPDEF(MINT_TIER_PATCHPOINT, "tier_patchpoint", 2, 0, 0, MintOpShortInt)
 
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassToken)
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_INTRINS_TRY_GET_HASHCODE, "intrins_try_get_hashcode", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_GET_TYPE, "intrins_get_type", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_SPAN_CTOR, "intrins_span_ctor", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 4, 1, 2, MintOpNoArgs)
