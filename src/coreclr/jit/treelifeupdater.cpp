@@ -150,7 +150,8 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 
         if (isBorn || isDying)
         {
-            bool previouslyLive = ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex);
+            bool previouslyLive =
+                ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, varDsc->lvVarIndex);
             UpdateLifeBit(compiler->compCurLife, varDsc, isBorn, isDying);
 
             if (ForCodeGen)
@@ -224,8 +225,9 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                     continue;
                 }
 
-                bool previouslyLive = ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
-                bool isDying        = lclVarTree->IsLastUse(i);
+                bool previouslyLive =
+                    ForCodeGen && VarSetOps::IsMember(compiler, compiler->compCurLife, fldVarDsc->lvVarIndex);
+                bool isDying = lclVarTree->IsLastUse(i);
                 UpdateLifeBit(compiler->compCurLife, fldVarDsc, isBorn, isDying);
 
                 if (!ForCodeGen)
