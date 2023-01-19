@@ -5892,7 +5892,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 // and so still be able to avoid a struct copy.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg off of an implicit byref param.
+                    // First, see if this is an arg off of an implicit byref param.
                     GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                     if (lcl != nullptr)
