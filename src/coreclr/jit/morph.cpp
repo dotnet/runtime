@@ -3981,6 +3981,85 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             if (!omitCopy && fgDidEarlyLiveness)
             {
                 omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+
+                if (!varDsc->lvPromoted && !omitCopy)
+                {
+                    struct Visitor : GenTreeVisitor<Visitor>
+                    {
+                        enum
+                        {
+                            DoPreOrder        = true,
+                            UseExecutionOrder = true,
+                        };
+
+                        Visitor(Compiler* comp, GenTree* firstTree, unsigned lclNum)
+                            : GenTreeVisitor(comp), m_firstTree(firstTree), m_lclNum(lclNum)
+                        {
+                        }
+
+                        bool HasInterference = false;
+
+                        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                        {
+                            GenTree* node = *use;
+                            if (node == m_firstTree)
+                            {
+                                m_started = true;
+                                return WALK_SKIP_SUBTREES;
+                            }
+
+                            if (!m_started)
+                            {
+                                return WALK_CONTINUE;
+                            }
+
+                            if ((user != nullptr) && user->IsCall())
+                            {
+                                GenTreeLclVarCommon* lcl = node->IsImplicitByrefParameterValue(m_compiler);
+                                if ((lcl == nullptr) && node->OperIsLocal())
+                                {
+                                    lcl = node->AsLclVarCommon();
+                                }
+
+                                if ((lcl != nullptr) && (lcl->GetLclNum() == m_lclNum))
+                                {
+                                    CallArg* userArg = user->AsCall()->gtArgs.FindByNode(node);
+                                    if ((userArg != nullptr) && userArg->AbiInfo.PassedByRef)
+                                    {
+                                        // Future candidate that will interfere.
+                                        HasInterference = true;
+                                        return WALK_ABORT;
+                                    }
+                                }
+                            }
+
+                            if (node->OperIsLocal())
+                            {
+                                GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
+                                if ((lcl->GetLclNum() == m_lclNum) && ((lcl->gtFlags & GTF_VAR_DEATH) != 0))
+                                {
+                                    // Variable dies before the call and there is no other candidate before it.
+                                    // This means we can still omit the copy.
+                                    return WALK_ABORT;
+                                }
+                            }
+
+                            return WALK_CONTINUE;
+                        }
+
+                    private:
+                        GenTree* m_firstTree;
+                        unsigned m_lclNum;
+                        bool     m_started = false;
+                    };
+
+                    Visitor  visitor(this, argx, varNum);
+                    GenTree* callCopy = call;
+                    if (visitor.WalkTree(&callCopy, nullptr) == WALK_ABORT)
+                    {
+                        omitCopy = !visitor.HasInterference;
+                    }
+                }
             }
 
             if (!omitCopy && (totalAppearances == 1))
