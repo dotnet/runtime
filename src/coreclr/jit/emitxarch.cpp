@@ -4990,10 +4990,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 
 #else // !TARGET_AMD64
 
-            if (size == EA_1BYTE)
-                sz = 2; // Use the long form as the small one has no 'w' bit
-            else
-                sz = 1; // Use short form
+            //if (size == EA_1BYTE)
+            //    sz = 2; // Use the long form as the small one has no 'w' bit
+            //else
+            //    sz = 1; // Use short form
 
 #endif // !TARGET_AMD64
 
@@ -14790,11 +14790,12 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
 unsigned emitter::emitSetAcurateCodeSize(insGroup* ig, instrDesc* id)
 {
     writeableOffset = 0;
-    emitIssuing = true;
+    //emitIssuing = true;
 
     BYTE* curInsAdr = tempOutputMemory;
     emitOutputInstr(ig, id, &tempOutputMemory);
     unsigned actualSize = (unsigned)(tempOutputMemory - curInsAdr);
+    emittedSoFar += actualSize;
     id->idCodeSize(actualSize);
 
 
@@ -14823,7 +14824,7 @@ unsigned emitter::emitSetAcurateCodeSize(insGroup* ig, instrDesc* id)
 #endif
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    assert(emitIssuing);
+    //assert(emitIssuing);
 
     BYTE*         dst           = *dp;
     BYTE*         startDst      = dst;
@@ -15153,7 +15154,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
 #ifdef DEBUG
-            if (ins == INS_call)
+            if ((ins == INS_call) && emitIssuing)
             {
                 emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
                                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);

@@ -1854,6 +1854,13 @@ public:
 
     UNATIVE_OFFSET emitCurCodeOffs(BYTE* dst)
     {
+#ifdef TARGET_XARCH
+        if (!emitIssuing)
+        {
+            return emittedSoFar;
+        }
+#endif
+
         size_t distance;
         if ((dst >= emitCodeBlock) && (dst <= (emitCodeBlock + emitTotalHotCodeSize)))
         {
@@ -1861,13 +1868,13 @@ public:
         }
         else
         {
-            //assert(emitFirstColdIG);
-            //assert(emitColdCodeBlock);
-            //assert((dst >= emitColdCodeBlock) && (dst <= (emitColdCodeBlock + emitTotalColdCodeSize)));
+            assert(emitFirstColdIG);
+            assert(emitColdCodeBlock);
+            assert((dst >= emitColdCodeBlock) && (dst <= (emitColdCodeBlock + emitTotalColdCodeSize)));
 
             distance = (dst - emitColdCodeBlock + emitTotalHotCodeSize);
         }
-        //noway_assert((UNATIVE_OFFSET)distance == distance);
+        noway_assert((UNATIVE_OFFSET)distance == distance);
         return (UNATIVE_OFFSET)distance;
     }
 
@@ -1934,6 +1941,7 @@ public:
 
 #ifdef TARGET_XARCH
     BYTE* tempOutputMemory;
+    unsigned emittedSoFar;
     unsigned emitSetAcurateCodeSize(insGroup* ig, instrDesc* id);
 #endif
 

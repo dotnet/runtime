@@ -1085,6 +1085,7 @@ void emitter::emitBegFN(bool hasFramePtr
 #endif
 
 #ifdef TARGET_XARCH
+    emittedSoFar = 0;
     tempOutputMemory = (BYTE*)emitGetMem(20);
 #endif
 
@@ -8223,7 +8224,8 @@ void emitter::emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp)
 
 void emitter::emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
 
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
@@ -8438,7 +8440,8 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
 
 void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
 
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
@@ -8758,7 +8761,7 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
 
 void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 {
-    assert(emitIssuing);
+    if (!emitIssuing) return;
 
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
@@ -8810,7 +8813,8 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 
 void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
 
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
@@ -8862,7 +8866,8 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
 void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
 
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
@@ -8904,6 +8909,9 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 
 void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum))
 {
+    if (!emitIssuing)
+        return;
+
     assert(abs(offs) % sizeof(int) == 0);
     assert(needsGC(gcType));
 
@@ -8996,7 +9004,8 @@ void emitter::emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr D
 
 void emitter::emitGCvarDeadUpd(int offs, BYTE* addr DEBUG_ARG(unsigned varNum))
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
     assert(abs(offs) % sizeof(int) == 0);
 
     /* Is the frame offset within the "interesting" range? */
@@ -9420,7 +9429,8 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
 
 void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+        return;
 
     unsigned argStkCnt;
     S_UINT16 argRecCnt(0); // arg count for ESP, ptr-arg count for EBP
