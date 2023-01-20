@@ -4467,6 +4467,24 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
+    //
+    auto computePredsPhase = [this]() {
+        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+        fgRenumberBlocks();
+        noway_assert(!fgComputePredsDone);
+        fgComputePreds();
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks::CHECK_FG;
+    };
+    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
@@ -4566,25 +4584,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        noway_assert(!fgComputePredsDone);
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
-
-    // Now that we have pred lists, do some flow-related optimizations
+    // Do some flow-related optimizations
     //
     if (opts.OptimizationEnabled())
     {
