@@ -3950,38 +3950,19 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     assert((totalSize <= 32) && (totalSize <= MaxStructSize));
                     var_types simdType = getSIMDTypeForSize(simdWidth);
 
-                    bool hwAccelerated = false;
-                    switch (simdType)
-                    {
-#ifdef TARGET_ARM64
-                        case TYP_SIMD8:
-                        case TYP_SIMD12:
-                        case TYP_SIMD16:
-                            hwAccelerated = compExactlyDependsOn(InstructionSet_AdvSimd);
-                            break;
-#endif
+// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
+// for TYP_SIMD32 we need to check AVX support on XARCH
 #ifdef TARGET_XARCH
-                        case TYP_SIMD12:
-                        case TYP_SIMD16:
-                            // Let's not complicate the test matrix with "for floating point SSE1 is enough"
-                            hwAccelerated = compExactlyDependsOn(InstructionSet_SSE2);
-                            break;
-                        case TYP_SIMD32:
-                            hwAccelerated = compExactlyDependsOn(InstructionSet_AVX);
-                            break;
+                    bool hwAccelerated = (simdType != TYP_SIMD32) || compExactlyDependsOn(InstructionSet_AVX);
+#else
+                    bool hwAccelerated = true;
 #endif
-                        default:
-                            break;
-                    }
 
                     if (hwAccelerated)
                     {
                         GenTreeVecCon* vec   = gtNewVconNode(simdType);
                         simd32_t       value = {};
-                        for (size_t i = 0; i < totalSize; i++)
-                        {
-                            value.i8[i] = buffer[i];
-                        }
+                        memcpy(&value, buffer, totalSize);
                         vec->gtSimd32Val = value;
                         return vec;
                     }
