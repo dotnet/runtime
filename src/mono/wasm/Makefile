@@ -31,7 +31,8 @@ all: build-all
 
 EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
+#EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
+EMCC=emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
@@ -49,7 +50,8 @@ MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
 
 clean-emsdk:
-	$(RM) -rf $(EMSDK_LOCAL_PATH)
+#	$(RM) -rf $(EMSDK_LOCAL_PATH)
+	@echo "Cleaned emsdk"
 
 #
 # Helper targets

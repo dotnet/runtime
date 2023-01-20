@@ -17,8 +17,7 @@
 #endif
 #endif // __cplusplus
 
-#include <stdarg.h>
-#include <stdlib.h>
+#include "emscripten-compat.h"
 #include <string.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -26,7 +25,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include <eglib-config.h>
+#include "eglib-config.h"
 #include <minipal/utils.h>
 #include <time.h>
 
