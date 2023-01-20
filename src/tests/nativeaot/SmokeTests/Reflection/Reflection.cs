@@ -2154,6 +2154,9 @@ internal static class ReflectionTest
                 Console.WriteLine(t.IsValueType);
             }
 
+            if (!typeof(G<>).GetGenericArguments()[0].IsValueType)
+                throw new Exception();
+
             static void AssertNoTypeHandle(Type t)
             {
                 RuntimeTypeHandle h = default;
@@ -2185,6 +2188,8 @@ internal static class ReflectionTest
             public Type[] ReferenceTypes;
             public Type[] ValueTypes;
         }
+
+        class G<T> where T : struct { }
     }
 
     class TestEntryPoint
@@ -2192,8 +2197,8 @@ internal static class ReflectionTest
         public static void Run()
         {
             Console.WriteLine(nameof(TestEntryPoint));
-			if (Assembly.GetEntryAssembly().EntryPoint == null)
-				throw new Exception();
+            if (Assembly.GetEntryAssembly().EntryPoint == null)
+                throw new Exception();
         }
     }
 
