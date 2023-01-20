@@ -53,18 +53,18 @@
         addi  a0, sp, __PWTB_TransitionBlock
 
         // save hidden arg
-        addi  s0, \HiddenArg, 0
+        addi  s1, \HiddenArg, 0
 
         // save VASigCookieReg
-        addi  s1, \VASigCookieReg, 0
+        addi  s2, \VASigCookieReg, 0
 
         call  C_FUNC(\__PInvokeStubWorkerName)
 
         // restore VASigCookieReg
-        addi  \VASigCookieReg, s1, 0
+        addi  \VASigCookieReg, s2, 0
 
         // restore hidden arg (method desc or unmanaged target)
-        addi  \HiddenArg, s0, 0
+        addi  \HiddenArg, s1, 0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 

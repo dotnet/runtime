@@ -4870,7 +4870,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
-                _ASSERTE(!"TODO RISCV64 NYI");
+                //_ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif
