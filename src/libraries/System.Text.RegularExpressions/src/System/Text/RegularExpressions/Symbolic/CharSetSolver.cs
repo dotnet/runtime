@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// This cache is necessary for the recursive operation algorithms to be guaranteed linear time.
         /// A well-crafted character class could otherwise cause execution time to be exponential.
         /// </remarks>
-        private readonly Dictionary<(int op, BDD a, BDD? b), BDD> _operationCache = new(); // op is BooleanOperation; using int to reuse generic instantiation
+        private readonly Dictionary<(int op, BDD a, BDD? b), BDD> _operationCache = new(); // op is BooleanOperation; using int to reuse generic instantiation with _bddCache
 
         /// <summary>Gets a BDD that contains every non-ASCII character.</summary>
         public BDD NonAscii =>

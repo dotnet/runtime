@@ -379,6 +379,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
 
                 // Handle categories
+
+                const int UnicodeCategoryCount = 1 + (int)UnicodeCategory.OtherNotAssigned;
+                Debug.Assert(!Enum.IsDefined((UnicodeCategory)UnicodeCategoryCount));
+                Span<bool> categoryCodes = stackalloc bool[UnicodeCategoryCount];
+
                 int setLength = set[RegexCharClass.SetLengthIndex];
                 int catLength = set[RegexCharClass.CategoryLengthIndex];
                 int catStart = setLength + RegexCharClass.SetStartIndex;
@@ -422,9 +427,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     // here are valid UnicodeCategories; SpaceConst is never used as part of groups,
                     // as such groups are only constructed in our own RegexCharClass consts, and it's
                     // not used there.
-                    const int UnicodeCategoryCount = 1 + (int)UnicodeCategory.OtherNotAssigned;
-                    Debug.Assert(!Enum.IsDefined((UnicodeCategory)UnicodeCategoryCount));
-                    var categoryCodes = new bool[UnicodeCategoryCount];
+                    categoryCodes.Clear();
                     while (categoryCode != 0)
                     {
                         int cat = Math.Abs((int)categoryCode) - 1;
@@ -477,7 +480,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return result;
 
                 // <summary>Creates a BDD that matches when a character is part of any of the specified UnicodeCategory values.</summary>
-                BDD MapCategoryCodeSetToCondition(bool[] catCodes)
+                BDD MapCategoryCodeSetToCondition(Span<bool> catCodes)
                 {
                     // \w is so common, to help speed up construction we special-case it by using
                     // the combined \w set rather than an or (disjunction) of the component categories.
