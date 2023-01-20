@@ -7685,7 +7685,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto CMP_2_OPs;
 
             CMP_2_OPs:
-                // TODO: we might want to only perform gtFoldExprConst here for TP
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
