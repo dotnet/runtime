@@ -8740,12 +8740,14 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     {
         of = ig->igSize;
     }
+#ifdef TARGET_ARM64
     else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) != 0 && no == ig->igInsCnt + 1U)
     {
         // This can happen if a instruction was replaced, but the replacement couldn't fit into
         // the same IG and instead was place in a new IG.
         return ig->igNext->igOffs + emitFindOffset(ig->igNext, 1);
     }
+#endif
     else if (ig->igFlags & IGF_UPD_ISZ)
     {
         /*
@@ -9238,6 +9240,7 @@ void emitter::emitNxtIG(bool extend)
 // NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
 // generated replacement(s).
 //
+#ifdef TARGET_ARM64
 void emitter::emitRemoveLastInstruction()
 {
     assert(emitLastIns != nullptr);
@@ -9276,6 +9279,7 @@ void emitter::emitRemoveLastInstruction()
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;
 }
+#endif
 
 /*****************************************************************************
  *
