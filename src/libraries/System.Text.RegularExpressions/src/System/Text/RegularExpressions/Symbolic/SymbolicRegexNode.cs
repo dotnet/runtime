@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -80,7 +79,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(kind != SymbolicRegexNodeKind.Singleton || set is not null);
             TSet setOrStartSet = kind == SymbolicRegexNodeKind.Singleton ? set! : ComputeStartSet(builder, kind, left, right);
-            var key = (kind, left, right, lower, upper, setOrStartSet, info);
+            var key = new SymbolicRegexBuilder<TSet>.NodeCacheKey(kind, left, right, lower, upper, setOrStartSet, info);
             if (!builder._nodeCache.TryGetValue(key, out SymbolicRegexNode<TSet>? node))
             {
                 node = new SymbolicRegexNode<TSet>(builder, kind, left, right, lower, upper, setOrStartSet, info);
@@ -1831,7 +1830,6 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             HashSet<TSet> sets = GetSets(builder);
             List<TSet> minterms = MintermGenerator<TSet>.GenerateMinterms(builder._solver, sets);
-            minterms.Sort();
             return minterms.ToArray();
         }
 
