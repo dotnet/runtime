@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-  </PropertyGroup>
+    <!-- The test checks the generated code for a method that accesses statics.
+         In unloadable context the helper to access those is different, so the
+         test fails -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+</PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>

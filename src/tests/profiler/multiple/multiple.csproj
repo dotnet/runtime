@@ -5,6 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This test provides no value for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- The System.Net.Sockets.SocketAsyncEngine.EventLoop on Unix is running forever
+     inside of the unloadable AssemblyLoadContext, preventing its unload -->
+    <UnloadabilityIncompatible Condition="'$(TargetsWindows)' != 'true'">true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

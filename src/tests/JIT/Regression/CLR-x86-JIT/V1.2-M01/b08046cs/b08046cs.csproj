@@ -3,6 +3,9 @@
     <!-- Needed for Environment.Exit -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
+    <!-- System.Text.EncodingHelper.GetSupportedConsoleEncoding in different assembly from System.Console.get_OutputEncoding,
+     tries to load the assembly System.Text.EncodingHelper after the ALC unload started -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>

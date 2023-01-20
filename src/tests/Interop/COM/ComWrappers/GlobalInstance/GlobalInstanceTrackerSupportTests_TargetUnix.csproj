@@ -4,6 +4,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- The test has a static variable holding an instance of an object from the unloadable context -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
