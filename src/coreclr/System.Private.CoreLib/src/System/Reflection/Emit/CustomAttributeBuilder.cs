@@ -57,6 +57,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(namedFields);
             ArgumentNullException.ThrowIfNull(fieldValues);
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
             if (namedProperties.Length != propertyValues.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer, "namedProperties, propertyValues");

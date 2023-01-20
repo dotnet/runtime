@@ -230,6 +230,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(access))] // Automatically keeps all previous fields too due to StructLayout
         internal RuntimeAssemblyBuilder(AssemblyName n, AssemblyBuilderAccess access)
         {
+            EnsureDynamicCodeSupported();
+
             aname = (AssemblyName)n.Clone();
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Test;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -2731,6 +2733,61 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var test = new ClassOverridingVirtualProperty();
             config.Bind(test, b => b.BindNonPublicProperties = true);
             Assert.Equal("a", test.ExposePrivatePropertyValue());
+        }
+
+        [Fact]
+        public void EnsureCallingThePropertySetter()
+        {
+            var json = @"{
+                ""IPFiltering"": {
+                    ""HttpStatusCode"": 401,
+                    ""Blacklist"": [ ""192.168.0.10-192.168.10.20"", ""fe80::/10"" ]
+                }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+
+            OptionWithCollectionProperties options = configuration.GetSection("IPFiltering").Get<OptionWithCollectionProperties>();
+
+            Assert.NotNull(options);
+            Assert.Equal(2, options.Blacklist.Count);
+            Assert.Equal("192.168.0.10-192.168.10.20", options.Blacklist.ElementAt(0));
+            Assert.Equal("fe80::/10", options.Blacklist.ElementAt(1));
+
+            Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
+
+            Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
+            Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
+        }
+
+        public class OptionWithCollectionProperties
+        {
+            private int _otherCode;
+            private ICollection<string> blacklist = new HashSet<string>();
+
+            public ICollection<string> Blacklist
+            {
+                get => this.blacklist;
+                set
+                {
+                    this.blacklist = value ?? new HashSet<string>();
+                    this.ParsedBlacklist = this.blacklist.Select(b => b).ToList();
+                }
+            }
+
+            public int HttpStatusCode { get; set; } = 0;
+
+            // ParsedBlacklist initialized using the setter of Blacklist.
+            public ICollection<string> ParsedBlacklist { get; private set; } = new HashSet<string>();
+
+            // This property not having any match in the configuration. Still the setter need to be called during the binding.
+            public int OtherCode
+            {
+                get => _otherCode;
+                set => _otherCode = value == 0 ? 2 : value;
+            }
         }
 
         private interface ISomeInterface

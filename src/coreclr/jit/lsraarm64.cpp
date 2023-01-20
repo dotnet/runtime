@@ -393,8 +393,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_NEG:
         case GT_NOT:
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
             assert(dstCount == 1);
             BuildDef(tree);
             break;
@@ -934,17 +933,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         bool simdRegToSimdRegMove = false;
 
-        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        switch (intrin.id)
         {
-            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-        }
-        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-        {
-            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-        }
-        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
-        {
-            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            {
+                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+                break;
+            }
+
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+                break;
+            }
+
+            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector3:
+            case NI_Vector128_GetLower:
+            {
+                simdRegToSimdRegMove = true;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,

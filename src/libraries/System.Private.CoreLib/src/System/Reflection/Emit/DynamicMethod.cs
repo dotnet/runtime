@@ -187,6 +187,8 @@ namespace System.Reflection.Emit
             if (s_anonymouslyHostedDynamicMethodsModule != null)
                 return s_anonymouslyHostedDynamicMethodsModule;
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             lock (s_anonymouslyHostedDynamicMethodsModuleLock)
             {
                 if (s_anonymouslyHostedDynamicMethodsModule != null)
@@ -219,6 +221,8 @@ namespace System.Reflection.Emit
                           bool transparentMethod)
         {
             ArgumentNullException.ThrowIfNull(name);
+
+            AssemblyBuilder.EnsureDynamicCodeSupported();
 
             if (attributes != (MethodAttributes.Static | MethodAttributes.Public) || callingConvention != CallingConventions.Standard)
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);

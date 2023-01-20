@@ -65,6 +65,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modopts))]  // Automatically keeps all previous fields too due to StructLayout
         internal SignatureHelper(ModuleBuilder? module, SignatureHelperType type)
         {
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             this.type = type;
             this.module = module;
         }

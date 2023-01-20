@@ -35,7 +35,7 @@ else ()
     set(STATIC_LIB_DESTINATION .)
 endif ()
 
-if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_MACOSX_RPATH ON)
     if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
         set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -48,9 +48,23 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 
-    if (CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         set(GEN_SHARED_LIB 0)
         set(STATIC_LIB_DESTINATION .)
+    endif ()
+
+    if (CLR_CMAKE_TARGET_WASI)
+        set(HOST_WASI 1)
+        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/include/)
+        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/libs-include/)
+        add_compile_options(-Wno-unused-variable)
+        add_compile_options(-Wno-unused-parameter)
+        add_compile_options(-Wno-gnu-statement-expression)
+        add_compile_options(-DHOST_WASI)
+        add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
+        add_compile_options(-D_WASI_EMULATED_SIGNAL)
+        add_compile_options(-D_WASI_EMULATED_MMAN)
+        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -125,10 +139,10 @@ endif ()
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 
-    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
@@ -146,7 +160,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
 
     add_subdirectory(System.Native)
 
-    if (CLR_CMAKE_TARGET_BROWSER)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
     elseif (CLR_CMAKE_TARGET_MACCATALYST)
         add_subdirectory(System.Net.Security.Native)

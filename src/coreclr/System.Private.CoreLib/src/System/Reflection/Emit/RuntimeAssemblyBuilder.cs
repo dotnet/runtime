@@ -52,6 +52,8 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
             }
 
+            EnsureDynamicCodeSupported();
+
             AssemblyLoadContext? assemblyLoadContext =
                 AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly);
 

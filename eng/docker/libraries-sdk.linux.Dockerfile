@@ -45,6 +45,6 @@ COPY --from=corefxbuild \
 
 # Add AspNetCore bits to testhost:
 ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
-ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
+ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
 RUN mkdir -p $_ASPNETCORE_DEST
 RUN cp -r $_ASPNETCORE_SOURCE $_ASPNETCORE_DEST

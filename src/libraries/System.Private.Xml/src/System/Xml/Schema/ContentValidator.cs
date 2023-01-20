@@ -1246,7 +1246,7 @@ namespace System.Xml.Schema
             }
 
             // Add end marker
-            InteriorNode contentRoot = new SequenceNode();
+            var contentRoot = new SequenceNode();
             contentRoot.LeftChild = _contentNode;
             LeafNode endMarker = new LeafNode(_positions!.Add(_symbols!.AddName(XmlQualifiedName.Empty, null), null));
             contentRoot.RightChild = endMarker;

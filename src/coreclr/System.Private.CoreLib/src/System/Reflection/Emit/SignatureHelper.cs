@@ -223,6 +223,8 @@ namespace System.Reflection.Emit
 
             if (m_module == null && mod != null)
                 throw new ArgumentException(SR.NotSupported_MustBeModuleBuilder);
+
+            AssemblyBuilder.EnsureDynamicCodeSupported();
         }
 
         [MemberNotNull(nameof(m_signature))]

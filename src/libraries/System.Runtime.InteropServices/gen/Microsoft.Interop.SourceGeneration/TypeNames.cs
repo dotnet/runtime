@@ -38,7 +38,7 @@ namespace Microsoft.Interop
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
 
-        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`2";
+        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`1";
 
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
@@ -52,6 +52,9 @@ namespace Microsoft.Interop
         public const string System_Exception = "System.Exception";
 
         public const string System_Type = "System.Type";
+
+        public const string System_Int16 = "System.Int16";
+        public const string @short = "short";
 
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
@@ -98,6 +101,9 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
+        public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+        public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
+        public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
     }
 }

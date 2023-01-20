@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
         public const string DefaultTargetFramework = "net8.0";
-        public const string DefaultTargetFrameworkForBlazor = "net7.0";
+        public const string DefaultTargetFrameworkForBlazor = "net8.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -486,7 +486,7 @@ namespace Wasm.Build.Tests
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
-                AddItemsPropertiesToProject("<RunAnalyzers>true</RunAnalyzers>");
+                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
             return projectfile;
         }
 
@@ -990,6 +990,8 @@ namespace Wasm.Build.Tests
 
         public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
         {
+            if (!File.Exists(projectFile))
+                throw new Exception ($"{projectFile} does not exist");
             if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
 

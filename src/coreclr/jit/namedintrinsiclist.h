@@ -93,6 +93,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
 
+    NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
+
     NI_System_String_Equals,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
@@ -112,7 +114,9 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
     NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
