@@ -637,7 +637,7 @@ namespace System
             format.ValidateNumberOfArgs(args.Length);
             return args.Length switch
             {
-                0 => Format(provider, format, 0, 0, 0, args),
+                0 => format.Format,
                 1 => Format(provider, format, args[0], 0, 0, args),
                 2 => Format(provider, format, args[0], args[1], 0, args),
                 _ => Format(provider, format, args[0], args[1], args[2], args),
