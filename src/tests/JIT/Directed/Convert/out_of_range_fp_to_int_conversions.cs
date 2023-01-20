@@ -371,7 +371,7 @@ namespace FPBehaviorApp
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             switch (RuntimeInformation.ProcessArchitecture)
             {
@@ -389,14 +389,6 @@ namespace FPBehaviorApp
                     break;
             }
             Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule} Execute with parameter to adjust");
-            if (args.Length > 0)
-            {
-                if (!Enum.TryParse(args[0], out ManagedConversionRule))
-                {
-                    Console.WriteLine($"Unable to parse {args[0]}");
-                    return 1;
-                }
-            }
             Console.WriteLine("Specific test cases");
 
             TestBitValue(0, 9223372036854777856.0);
