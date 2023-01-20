@@ -1181,7 +1181,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 var pdbStream = new MemoryStream();
                 file.Stream.Position = 0;
-                file.Stream.CopyTo(pdbStream);
+                await file.Stream.CopyToAsync(pdbStream, token);
                 pdbStream.Position = 0;
                 pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
                 if (pdbMetadataReader == null)
@@ -1444,12 +1444,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly ITracer _tracer;
         internal Microsoft.SymbolStore.SymbolStores.SymbolStore symbolStore;
 
+        // The constructor can get invoked multiple times, but only *one* of
+        // the instances will be used.
+        // So, keep this light, and repeatable
         public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
             this.logger = logger;
             this.monoProxy = monoProxy;
             this._tracer = new Tracer(logger);
-            UpdateSymbolStore(monoProxy.UrlSymbolServerList, monoProxy.CachePathSymbolServer);
         }
 
         private sealed class DebugItem
@@ -1759,7 +1761,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (symbolStore == null)
                 return;
-            monoProxy.SendLog(id, "Loading symbols from symbol servers.", token);
+            monoProxy.SendLog(id, "** ReloadAllPDBsFromSymbolServersAndSendSources: Loading symbols from symbol servers.", token);
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
@@ -1800,7 +1802,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
         public sealed class Tracer : ITracer
         {
-            private ILogger _logger;
+            private readonly ILogger _logger;
 
             public Tracer(ILogger logger)
             {

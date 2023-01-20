@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -1043,9 +1044,12 @@ namespace DebuggerTests
         [InlineData(false)]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServer(bool justMyCode)
         {
-            string cachePath = System.IO.Path.GetTempPath();
-            var searchPaths = new JArray();
-            searchPaths.Add("https://symbols.nuget.org/download/symbols");
+            string cachePath = _env.CreateTempDirectory("symbols-cache");
+            _testOutput.WriteLine($"** Using cache path: {cachePath}");
+            var searchPaths = new JArray
+            {
+                "https://symbols.nuget.org/download/symbols"
+            };
             var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
             var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetJustMyCode(justMyCode);
@@ -1073,9 +1077,12 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task SteppingIntoLibraryWithoutSymbolsAndStepAgainAfterLoadSymbols()
         {
-            string cachePath = System.IO.Path.GetTempPath();
-            var searchPaths = new JArray();
-            searchPaths.Add("https://symbols.nuget.org/download/symbols");
+            string cachePath = _env.CreateTempDirectory("symbols-cache");
+            _testOutput.WriteLine($"** Using cache path: {cachePath}");
+            var searchPaths = new JArray
+            {
+                "https://symbols.nuget.org/download/symbols"
+            };
             var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
             var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetJustMyCode(false);
@@ -1111,9 +1118,13 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServerAddOtherSymbolServerAndStepAgain()
         {
-            string cachePath = System.IO.Path.GetTempPath();
-            var searchPaths = new JArray();
-            searchPaths.Add("https://symbols.nuget.org/download/symbols");
+            string cachePath = _env.CreateTempDirectory("symbols-cache");
+            _testOutput.WriteLine($"** Using cache path: {cachePath}");
+
+            var searchPaths = new JArray
+            {
+                "https://symbols.nuget.org/download/symbols"
+            };
             var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
             var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetJustMyCode(false);
@@ -1133,6 +1144,7 @@ namespace DebuggerTests
                     await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
                 }, times: 2
             );
+
             searchPaths.Add("https://msdl.microsoft.com/download/symbols");
             symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetSymbolOptions(symbolOptions);
@@ -1150,12 +1162,21 @@ namespace DebuggerTests
             );
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServerRemoveSymbolServerAndStepAgain()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("https://symbols.nuget.org/download/symbols", "")]
+        // Symbols are already loaded, so setting urls = [] won't affect it
+        [InlineData]
+        [InlineData("", "https://microsoft.com/non-existant/symbols")]
+        public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServerRemoveSymbolServerAndStepAgain(params string[] secondServers)
         {
-            string cachePath = System.IO.Path.GetTempPath();
-            var searchPaths = new JArray();
-            searchPaths.Add("https://symbols.nuget.org/download/symbols");
+            string cachePath = _env.CreateTempDirectory("symbols-cache");
+            _testOutput.WriteLine($"Using cachePath: {cachePath}");
+            var searchPaths = new JArray
+            {
+                "https://symbols.nuget.org/download/symbols",
+                "https://msdl.microsoft.com/download/bad-non-existant",
+                "https://msdl.microsoft.com/download/symbols"
+            };
             var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
             var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetJustMyCode(false);
@@ -1176,6 +1197,9 @@ namespace DebuggerTests
                 }, times: 2
             );
             searchPaths.Clear();
+            foreach (string secondServer in secondServers)
+                searchPaths.Add(secondServer);
+
             symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
             await SetSymbolOptions(symbolOptions);
 
