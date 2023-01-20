@@ -28,16 +28,18 @@ struct cotaskmem_deleter_t
 // C++ lifetime wrapper for CoTaskMemAlloc'd memory
 using cotaskmem_ptr = std::unique_ptr<void, cotaskmem_deleter_t>;
 
+template<typename T>
 struct malloc_deleter_t
 {
-    using pointer = void*;
-    void operator()(void* mem)
+    using pointer = T*;
+    void operator()(T* mem)
     {
-        ::free(mem);
+        ::free((void*)mem);
     }
 };
 
 // C++ lifetime wrapper for malloc'd memory
-using malloc_ptr = std::unique_ptr<void, malloc_deleter_t>;
+template<typename T>
+using malloc_ptr = std::unique_ptr<T, typename malloc_deleter_t<T>>;
 
 #endif // _SRC_INC_DNMD_HPP_

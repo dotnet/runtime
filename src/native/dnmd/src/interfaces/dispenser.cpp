@@ -60,7 +60,7 @@ namespace
             if (dwOpenFlags & ofTakeOwnership)
                 nowOwned.reset((void*)pData);
 
-            malloc_ptr copiedMem;
+            malloc_ptr<void> copiedMem;
             if (dwOpenFlags & ofCopyMemory)
             {
                 copiedMem.reset(::malloc(cbData));

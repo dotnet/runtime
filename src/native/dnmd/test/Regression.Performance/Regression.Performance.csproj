@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Content Include="$(NativeOutputPath)/*regperf*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(NativeOutputPath)/*dnmd_interfaces*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

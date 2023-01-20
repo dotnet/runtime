@@ -363,10 +363,10 @@ bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor);
 
 bool md_is_field_sig(uint8_t const* sig, size_t sig_len);
 
-// Get the equivalent MethodDefSig (II.23.2.1) from a MethodRefSig (II.23.2.2).
-// sig is a pointer to a MethodRefSig blob.
+// Create the equivalent MethodDefSig (II.23.2.1) from a MethodRefSig (II.23.2.2).
+// ref_sig is a pointer to a MethodRefSig blob.
 // If the return value is true, def_sig will be a pointer to malloc-d memory containing the MethodDefSig for the MethodRefSig.
-bool md_get_methoddefsig_from_methodrefsig(uint8_t const* sig, size_t ref_sig_len, uint8_t** def_sig, size_t* def_sig_len);
+bool md_create_methoddefsig_from_methodrefsig(uint8_t const* ref_sig, size_t ref_sig_len, uint8_t** def_sig, size_t* def_sig_len);
 
 #ifdef __cplusplus
 }

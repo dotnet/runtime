@@ -26,7 +26,7 @@ namespace pal
     class StringConvert
     {
         B* _ptr;
-        malloc_ptr _owner;
+        malloc_ptr<void> _owner;
         uint32_t _charLength;
         bool _converted;
         HRESULT ConvertWorker(A const* c, B* buffer, uint32_t& bufferLength);
