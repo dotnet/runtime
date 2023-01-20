@@ -6199,7 +6199,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #ifdef DEBUG
     if (opts.compGcChecks && (info.compRetType == TYP_REF))
     {
-        failTailCall("COMPlus_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, "
+        failTailCall("DOTNET_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, "
                      "invalidating tailcall opportunity");
         return nullptr;
     }
@@ -6249,6 +6249,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Localloc used");
         return nullptr;
     }
+
+#ifdef DEBUG
+    // For explicit tailcalls the importer will avoid inserting stress
+    // poisoning after them. However, implicit tailcalls are marked earlier and
+    // we must filter those out here if we ended up adding any poisoning IR
+    // after them.
+    if (isImplicitOrStressTailCall && compPoisoningAnyImplicitByrefs)
+    {
+        failTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
+        return nullptr;
+    }
+#endif
 
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)

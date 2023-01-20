@@ -26,7 +26,7 @@ namespace ILLink.Shared.TrimAnalysis
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
         public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
-            => new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin(GenericParameter.GenericParameter)) };
+            => new string[] { GenericParameter.GenericParameter.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(GenericParameter.GenericParameter) };
 
         public override SingleValue DeepCopy() => this; // This value is immutable
 

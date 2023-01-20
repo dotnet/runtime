@@ -346,7 +346,7 @@ mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 	ThreadContext *context = mono_jiterp_get_context();
 	gpointer mem;
 	if (len > 0) {
-		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
 		if (frame->imethod->init_locals)
 			memset (mem, 0, len);

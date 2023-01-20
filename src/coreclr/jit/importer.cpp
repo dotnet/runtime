@@ -5716,7 +5716,30 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Check legality only if an inline expansion is desirable.
     if (shouldExpandInline)
     {
-        if (isCastClass)
+        CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
+        if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
+            ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
+            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
+            (actualImplCls != NO_CLASS_HANDLE) && impIsClassExact(actualImplCls))
+        {
+            // if an interface has a single implementation on NativeAOT where we won't load new types,
+            // we can assume that our object is always of that implementation's type, e.g.:
+            //
+            // var case1 = obj is IMyInterface;
+            // var case2 = (IMyInterface)obj;
+            //
+            //   can be optimized to:
+            //
+            // var case1 = o is not null && o.GetType() == typeof(MyInterfaceImpl);
+            // var case2 = (o is null || o.GetType() == typeof(MyInterfaceImpl)) ? o : HELPER_CALL(o);
+            //
+            canExpandInline = true;
+            exactCls        = actualImplCls;
+
+            JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
+                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
+        }
+        else if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
@@ -10887,6 +10910,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     {
         assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
     }
+
+    if (!compIsForInlining() && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) == 0) &&
+        compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
+    {
+        impPoisonImplicitByrefsBeforeReturn();
+    }
 #endif // DEBUG
 
     GenTree*             op2       = nullptr;
@@ -11203,6 +11232,90 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
     return true;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// impPoisonImplicitByrefsBeforeReturn:
+//   Spill the stack and insert IR that poisons all implicit byrefs.
+//
+// Remarks:
+//   The memory pointed to by implicit byrefs is owned by the callee but
+//   usually exists on the caller's frame (or on the heap for some reflection
+//   invoke scenarios). This function helps catch situations where the caller
+//   reads from the memory after the invocation, for example due to a bug in
+//   the JIT's own last-use copy elision for implicit byrefs.
+//
+void Compiler::impPoisonImplicitByrefsBeforeReturn()
+{
+    bool spilled = false;
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        if (!lvaIsImplicitByRefLocal(lclNum))
+        {
+            continue;
+        }
+
+        compPoisoningAnyImplicitByrefs = true;
+
+        if (!spilled)
+        {
+            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+            {
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress poisoning byrefs before return"));
+            }
+
+            spilled = true;
+        }
+
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        // Be conservative about this local to ensure we do not eliminate the poisoning.
+        lvaSetVarAddrExposed(lclNum, AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS);
+
+        assert(varTypeIsStruct(dsc));
+        ClassLayout* layout = dsc->GetLayout();
+        assert(layout != nullptr);
+
+        auto poisonBlock = [this, lclNum](unsigned start, unsigned count) {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            GenTreeLclFld* lhs =
+                new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, TYP_STRUCT, lclNum, start, typGetBlkLayout(count));
+            lhs->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* asg = gtNewAssignNode(lhs, gtNewOperNode(GT_INIT_VAL, TYP_INT, gtNewIconNode(0xcd)));
+            impAppendTree(asg, CHECK_SPILL_NONE, DebugInfo());
+        };
+
+        unsigned startOffs = 0;
+        unsigned numSlots  = layout->GetSlotCount();
+        for (unsigned curSlot = 0; curSlot < numSlots; curSlot++)
+        {
+            unsigned  offs  = curSlot * TARGET_POINTER_SIZE;
+            var_types gcPtr = layout->GetGCPtrType(curSlot);
+            if (!varTypeIsGC(gcPtr))
+            {
+                continue;
+            }
+
+            poisonBlock(startOffs, offs - startOffs);
+
+            GenTree* gcField = gtNewLclFldNode(lclNum, gcPtr, offs);
+            gcField->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* zeroField = gtNewAssignNode(gcField, gtNewZeroConNode(gcPtr));
+            impAppendTree(zeroField, CHECK_SPILL_NONE, DebugInfo());
+
+            startOffs = offs + TARGET_POINTER_SIZE;
+        }
+
+        assert(startOffs <= lvaLclExactSize(lclNum));
+        poisonBlock(startOffs, lvaLclExactSize(lclNum) - startOffs);
+    }
+}
+#endif
 
 /*****************************************************************************
  *  Mark the block as unimported.
