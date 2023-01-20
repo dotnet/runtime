@@ -40,7 +40,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="">
-    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUN</DefineConstants>
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
