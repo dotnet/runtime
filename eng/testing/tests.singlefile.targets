@@ -2,8 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
-    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
-
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
@@ -18,9 +16,16 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -32,6 +37,10 @@
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
     <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="">
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUN</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
@@ -82,26 +91,17 @@
     </ItemGroup>
   </Target>
 
-  <!--
-    Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
-    This target is essentially an override hook which is called before `SetupOSSpecificProps` in
-    `Microsoft.NETCore.Native.Unix.targets`. Note that the input is `CppCompilerAndLinker`
-    and the output is `CppLinker`, because from `SetupOSSpecificProps` onwards, we only use `CppLinker`
-    (when alternative compiler, i.e. gcc, is not selected)
-  -->
-  <Target Name="LocateNativeCompiler"
-          Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
-          BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      </PropertyGroup>
+  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <Crossgen2ArtifactPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
+    </PropertyGroup>
 
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="true"
-            ConsoleToMsBuild="true"
-            StandardOutputImportance="Low">
-        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
-      </Exec>
+    <ItemGroup>
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
+      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
+      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

@@ -50,5 +50,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
     <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" Condition="'$(TargetOS)' == 'browser'" />
+    <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
+    <!-- This is actually a bug in the SDK and ought to be fixed there. -->
+    <PublishReadyToRunExclude Include="System.Diagnostics.FileVersionInfo.TestAssembly.dll" />
   </ItemGroup>
 </Project>
