@@ -268,7 +268,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     imm  = offs < 0 ? -offs - 8 : base + offs;
 
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
-    assert(offs >= 0);
+    // assert(offs >= 0);
     regNumber reg2 = offs < 0 ? tmpReg : reg3; // TODO R21 => tmpReg
     assert(reg2 != REG_NA && reg2 != REG_RA);
 

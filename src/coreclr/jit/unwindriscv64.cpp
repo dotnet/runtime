@@ -117,7 +117,21 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindNop()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("unwindNop: adding NOP\n");
+    }
+#endif
+
+    INDEBUG(pu->uwiAddingNOP = true);
+
+    // nop: 11100011: no unwind operation is required.
+    pu->AddCode(0xE3);
+
+    INDEBUG(pu->uwiAddingNOP = false);
 }
 
 void Compiler::unwindSaveReg(regNumber reg, int offset)
@@ -707,7 +721,15 @@ void Compiler::unwindEndEpilog()
 // for them.
 void Compiler::unwindPadding()
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+#if defined(FEATURE_CFI_SUPPORT)
+    if (generateCFIUnwindCodes())
+    {
+        return;
+    }
+#endif // FEATURE_CFI_SUPPORT
+
+    UnwindInfo* pu = &funCurrentFunc()->uwi;
+    GetEmitter()->emitUnwindNopPadding(pu->GetCurrentEmitterLocation(), this);
 }
 
 // Ask the VM to reserve space for the unwind information for the function and

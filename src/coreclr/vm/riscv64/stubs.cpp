@@ -1149,7 +1149,15 @@ void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndir
 
 void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    // Use direct call if possible.
+    if (pMD->HasStableEntryPoint())
+    {
+        EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetStableEntryPoint()), fTailCall, FALSE);
+    }
+    else
+    {
+        EmitCallLabel(NewExternalCodeLabel((LPVOID)pMD->GetAddrOfSlot()), fTailCall, TRUE);
+    }
 }
 
 

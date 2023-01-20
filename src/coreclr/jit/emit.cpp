@@ -3257,7 +3257,7 @@ void emitter::emitGenerateUnwindNop(instrDesc* id, void* context)
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     comp->unwindNop();
 #elif defined(TARGET_RISCV64)
-    NYI_RISCV64("Not used on RISCV64.");
+    comp->unwindNop();
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
 
