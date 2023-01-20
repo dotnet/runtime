@@ -1501,7 +1501,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             RunManagedStartup();
 
-            fprintf(stderr, "[CLAMP] RUN RunMain\n");
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
             Thread::CleanUpForManagedThreadInNative(pThread);
