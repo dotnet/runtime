@@ -360,17 +360,9 @@ public:
             return true;
         }
 
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
-
-        if (dsc->lvPromoted)
-        {
-            assert(!dsc->lvTracked);
-            GenTreeFlags allFieldsDying =
-                static_cast<GenTreeFlags>(((1 << dsc->lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
-            return (lcl->gtFlags & allFieldsDying) == allFieldsDying;
-        }
-
-        return (lcl->gtFlags & GTF_VAR_DEATH) != 0;
+        LclVarDsc*   dsc        = m_compiler->lvaGetDesc(lcl);
+        GenTreeFlags deathFlags = dsc->FullDeathFlags();
+        return (lcl->gtFlags & deathFlags) == deathFlags;
     }
 
 private:

@@ -4792,9 +4792,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
         if (varDsc->lvFieldLclStart != 0)
         {
             // Was promoted but isn't anymore. Check if all fields are dying.
-            int fieldCnt = lvaGetDesc(varDsc->lvFieldLclStart)->lvFieldCnt;
-            assert(fieldCnt <= 4);
-            GenTreeFlags allFieldsDying = static_cast<GenTreeFlags>(((1 << fieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+            GenTreeFlags allFieldsDying = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
             isLastUse                   = (lclNode->gtFlags & allFieldsDying) == allFieldsDying;
         }
         else
