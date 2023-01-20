@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			class BaseWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
 			{
-				public static void GetMethods()
+				public static void GetMethods ()
 				{
 					typeof (TPublicMethods).GetMethods ();
 				}
@@ -91,7 +91,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				// The method body in this case looks like:
 				//     BaseWithPublicMethods<TUnknown>.GetMethods ()
 				// The type instantiation needs to be validated and in this case it produces a warning.
-				// This is no different from the same code being part of a completely unrelate method/class.
+				// This is no different from the same code being part of a completely unrelated method/class.
 				// So the fact that this is in derived class has no impact on the validation in this case.
 				[ExpectedWarning ("IL2091")]
 				public static void GetDerivedMethods () => GetMethods ();
@@ -417,6 +417,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static MethodBody GetInstance () => null;
 
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // return type // NativeAOT_StorageSpaceType
 			static TypeWithPublicMethods<T> GetInstanceForTypeWithPublicMethods<T> () => null;
 
 			class TypeOf
@@ -555,6 +556,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // NativeAOT_StorageSpaceType
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // local variable // NativeAOT_StorageSpaceType
 				static void InstanceMethodMismatch<TUnknown> ()
 				{
 					TypeWithPublicMethods<TUnknown> instance = GetInstanceForTypeWithPublicMethods<TUnknown> ();
@@ -607,6 +609,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				// The local variable
 				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // NativeAOT_StorageSpaceType
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // access to the field // NativeAOT_StorageSpaceType
 				static void InstanceFieldMismatch<TUnknown> ()
 				{
 					TypeWithPublicMethods<TUnknown> instance = GetInstanceForTypeWithPublicMethods<TUnknown> ();
