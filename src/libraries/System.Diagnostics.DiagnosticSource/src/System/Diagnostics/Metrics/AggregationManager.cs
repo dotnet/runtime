@@ -312,6 +312,26 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
+            else if (genericDefType == typeof(UpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(ObservableUpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
             else
             {
                 return null;
