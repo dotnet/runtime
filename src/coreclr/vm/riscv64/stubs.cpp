@@ -1082,7 +1082,58 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    STANDARD_VM_CONTRACT;
+
+    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
+    {
+        _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
+        _ASSERTE(pEntry->srcofs & ShuffleEntry::REGMASK);
+        _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(!(pEntry->srcofs & ShuffleEntry::FPREGMASK));
+        _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
+        _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
+
+        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 4), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 4));
+    }
+
+    MetaSig msig(pSharedMD);
+    ArgIterator argit(&msig);
+
+    if (argit.HasParamType())
+    {
+        ArgLocDesc sInstArgLoc;
+        argit.GetParamTypeLoc(&sInstArgLoc);
+        int regHidden = sInstArgLoc.m_idxGenReg;
+        _ASSERTE(regHidden != -1);
+        regHidden += 10;//NOTE: RISCV64 should start at a0=10;
+
+        if (extraArg == NULL)
+        {
+            if (pSharedMD->RequiresInstMethodTableArg())
+            {
+                // Unboxing stub case
+                // Fill param arg with methodtable of this pointer
+                // ld regHidden, a0, 0
+                EmitLoadStoreRegImm(eLOAD, IntReg(regHidden), IntReg(10), 0);
+            }
+        }
+        else
+        {
+            EmitMovConstant(IntReg(regHidden), (UINT64)extraArg);
+        }
+    }
+
+    if (extraArg == NULL)
+    {
+        // Unboxing stub case
+        // Address of the value type is address of the boxed instance plus sizeof(MethodDesc*).
+        //  addi a0, a0, sizeof(MethodDesc*)
+        EmitAddImm(IntReg(10), IntReg(10), sizeof(MethodDesc*));
+    }
+
+    // Tail call the real target.
+    EmitCallManagedMethod(pSharedMD, TRUE /* tail call */);
+    SetTargetMethod(pSharedMD);
 }
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
