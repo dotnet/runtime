@@ -160,8 +160,8 @@ namespace Wasm.Build.Tests
             // Use wasm-console.log to get the xharness output for non-browser cases
             (string testCommand, string xharnessArgs, bool useWasmConsoleOutput) = host switch
             {
-                RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
-                RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
+                RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace --engine-arg=--experimental-wasm-simd", true),
+                RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace --engine-arg=--experimental-wasm-simd", true),
                 _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
             };
 
