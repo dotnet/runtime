@@ -7562,8 +7562,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BRFALSE_S:
 
                 /* Pop the comparand (now there's a neat term) from the stack */
+                // TODO: we might want to only perform gtFoldExprConst here for TP
+                op1 = gtFoldExpr(impPopStack().val);
 
-                op1  = impPopStack().val;
                 type = op1->TypeGet();
 
                 // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
@@ -7684,8 +7685,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto CMP_2_OPs;
 
             CMP_2_OPs:
-                op2 = impPopStack().val;
-                op1 = impPopStack().val;
+                // TODO: we might want to only perform gtFoldExprConst here for TP
+                op2 = gtFoldExpr(impPopStack().val);
+                op1 = gtFoldExpr(impPopStack().val);
 
                 // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
                 // it so that downstream optimizations don't have to.
