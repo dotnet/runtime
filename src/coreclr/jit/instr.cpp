@@ -1563,7 +1563,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
     else
     {
-        ins = INS_ld; // default ld_d.
+        ins = INS_ld; // default ld.
     }
 #else
     NYI("ins_Load");

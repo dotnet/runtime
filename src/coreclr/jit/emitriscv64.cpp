@@ -929,7 +929,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     //
     // else:  3-ins:
     //   lui  tmp, dst-hi-20bits
-    //   ori  tmp, tmp, dst-lo-12bits
+    //   addi tmp, tmp, dst-lo-12bits
     //   lui  reg, 0xff << 12
     //   slli reg, reg, 32
     //   add  reg, tmp, reg
@@ -2358,7 +2358,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 code = emitInsCode(INS_lui);
                 code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
-                code |= ((code_t)(imm >> 12) & 0xfffff) << 12;
+                code |= ((code_t)((imm + 0x800) >> 12) & 0xfffff) << 12;
 
                 *(code_t*)dstRW = code;
                 dstRW += 4;

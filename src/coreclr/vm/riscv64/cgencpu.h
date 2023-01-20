@@ -246,10 +246,10 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     // jalr  r0, ra, 0
     // nop    //padding.
 
-    pCode[0] = 0x00000097; //auipc ra,0
-    pCode[1] = 0x0100b083; //ld    ra,ra,16
-    pCode[2] = 0x00008067; //jalr  x0,ra,0
-    pCode[3] = 0x00000003; //padding nop. Also used for isJump.
+    pCode[0] = 0x00000097; // auipc ra, 0
+    pCode[1] = 0x0100b083; // ld    ra, 16(ra)
+    pCode[2] = 0x00008067; // jalr  x0, ra, 0
+    pCode[3] = 0x00000013; // padding nop. Also used for isJump.
 
     // Ensure that the updated instructions get updated in the I-Cache
     ClrFlushInstructionCache(pBufferRX, 16);

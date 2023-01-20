@@ -101,15 +101,15 @@ class BranchInstructionFormat : public InstructionFormat
                 if ((dataOffset < -(0x80000000L)) || (dataOffset > 0x7fffffff))
                     COMPlusThrow(kNotSupportedException);
 
-                UINT32 imm12 = (UINT32)(0xFFF & dataOffset);
+                UINT16 imm12 = (UINT16)(0xFFF & dataOffset);
                 //auipc  t1, dataOffset[31:12]
                 //ld  t1, t1, dataOffset[11:0]
                 //ld  t1, t1, 0
                 //jalr  x0/1, t1,0
 
-                *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12);// auipc t1, dataOffset[31:12]
+                *(DWORD*)pOutBufferRW = 0x00000317 | (((dataOffset + 0x800) >> 12) << 12); // auipc t1, dataOffset[31:12]
                 *(DWORD*)(pOutBufferRW + 4) = 0x00033303 | (imm12 << 20); // ld  t1, t1, dataOffset[11:0]
-                *(DWORD*)(pOutBufferRW + 8) = 0x00033303; // ld  t1, t1, 0
+                *(DWORD*)(pOutBufferRW + 8) = 0x00033303; // ld  t1, 0(t1)
                 if (IsCall(variationCode))
                 {
                     *(DWORD*)(pOutBufferRW + 12) = 0x000300e7; // jalr  ra, t1, 0
