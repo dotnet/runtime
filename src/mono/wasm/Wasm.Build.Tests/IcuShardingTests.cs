@@ -122,6 +122,7 @@ public class IcuShardingTests : BuildTestBase
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                            GlobalizationMode: GlobalizationMode.PredefinedIcu,
                             PredefinedIcudt: shardName));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
@@ -150,7 +151,7 @@ public class IcuShardingTests : BuildTestBase
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                            HasIcudt: !invariant));
+                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
 
@@ -181,6 +182,7 @@ public class IcuShardingTests : BuildTestBase
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                            GlobalizationMode: hasCustomIcu ? GlobalizationMode.PredefinedIcu : GlobalizationMode.FullIcu,
                             PredefinedIcudt: hasCustomIcu ? customIcuPath : ""));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);

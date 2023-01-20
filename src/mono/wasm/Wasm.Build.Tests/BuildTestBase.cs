@@ -424,7 +424,7 @@ namespace Wasm.Build.Tests
                                          options.MainJS ?? "test-main.js",
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
-                                         options.HasIcudt,
+                                         options.GlobalizationMode,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
                                          options.PredefinedIcudt ?? "");
                 }
@@ -618,7 +618,7 @@ namespace Wasm.Build.Tests
                                                    string mainJS,
                                                    bool hasV8Script,
                                                    string targetFramework,
-                                                   bool hasIcudt = true,
+                                                   GlobalizationMode globalizationMode = GlobalizationMode.FullIcu,
                                                    bool dotnetWasmFromRuntimePack = true,
                                                    string predefinedIcudt = "")
         {
@@ -633,10 +633,22 @@ namespace Wasm.Build.Tests
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            if (!string.IsNullOrEmpty(predefinedIcudt))
-                AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
-            else
-                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
+            switch (globalizationMode)
+            {
+                case GlobalizationMode.Invariant:
+                    AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: false);
+                    break;
+                case GlobalizationMode.FullIcu:
+                    AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: true);
+                    break;
+                case GlobalizationMode.PredefinedIcu:
+                    if (string.IsNullOrEmpty(predefinedIcudt))
+                        throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+                    AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                    break;
+                case GlobalizationMode.AutomaticIcu:
+                    throw new ArgumentException($"Running WBT in GlobalizationMode=AutomaticIcu is not allowed. In this mode icu loading depends on the locale of environment where the test is running and no check if globalization data was loaded is performed.");
+            }
 
             string managedDir = Path.Combine(bundleDir, "managed");
             AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
@@ -1091,23 +1103,31 @@ namespace Wasm.Build.Tests
 
     public record BuildProjectOptions
     (
-        Action? InitProject               = null,
-        bool?   DotnetWasmFromRuntimePack = null,
-        bool    HasIcudt                  = true,
-        bool    UseCache                  = true,
-        bool    ExpectSuccess             = true,
-        bool    AssertAppBundle           = true,
-        bool    CreateProject             = true,
-        bool    Publish                   = true,
-        bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
-        string? Verbosity                 = null,
-        string? Label                     = null,
-        string? TargetFramework           = null,
-        string? MainJS                    = null,
-        string? PredefinedIcudt           = null,
+        Action?             InitProject               = null,
+        bool?               DotnetWasmFromRuntimePack = null,
+        GlobalizationMode   GlobalizationMode         = GlobalizationMode.FullIcu,
+        bool                UseCache                  = true,
+        bool                ExpectSuccess             = true,
+        bool                AssertAppBundle           = true,
+        bool                CreateProject             = true,
+        bool                Publish                   = true,
+        bool                BuildOnlyAfterPublish     = true,
+        bool                HasV8Script               = true,
+        string?             Verbosity                 = null,
+        string?             Label                     = null,
+        string?             TargetFramework           = null,
+        string?             MainJS                    = null,
+        string?             PredefinedIcudt           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
+
+    public enum GlobalizationMode
+    {
+        Invariant,       // no icu
+        FullIcu,         // full icu data: icudt.dat is loaded
+        AutomaticIcu,    // icu loaded based on the current locale
+        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+    };
 
     public record BlazorBuildOptions
     (
