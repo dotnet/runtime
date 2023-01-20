@@ -106,6 +106,9 @@
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(EnableAggressiveTrimming)' != 'true'"
+           Text="EnableAggressiveTrimming=true is required for AOT'ing assemblies." />
+
     <!-- When Building -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       <!-- build AOT, only if explicitly requested -->
