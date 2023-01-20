@@ -2974,6 +2974,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
     }
 
+    // If this is an inlinee, we're done checking.
+    if (compIsForInlining())
+    {
+        return;
+    }
+
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
     // so we mark info.compThisArg as lvAddrTaken to ensure that it is not enregistered. Otherwise, it should
     // not be address-taken.  This variable determines if the address-taken-ness of "thisArg" is "OK".
