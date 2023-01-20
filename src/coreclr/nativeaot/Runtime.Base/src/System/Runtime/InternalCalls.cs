@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 
+#pragma warning disable SYSLIB1054 // Use LibraryImport instead of DllImport
+
 namespace System.Runtime
 {
     internal enum DispatchCellType

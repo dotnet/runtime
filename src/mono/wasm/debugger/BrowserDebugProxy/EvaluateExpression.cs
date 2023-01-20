@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class ExpressionEvaluator
+    internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -33,9 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
+        private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+            [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
+            private static partial Regex RegexForReplaceVarName();
+
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -111,7 +113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -128,7 +130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -144,7 +146,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }

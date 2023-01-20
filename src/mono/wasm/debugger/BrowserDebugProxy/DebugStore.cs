@@ -1285,9 +1285,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
         }
     }
-    internal sealed class SourceFile
+    internal sealed partial class SourceFile
     {
-        private static readonly Regex regexForEscapeFileName = new(@"([:/])", RegexOptions.Compiled);
+        [GeneratedRegex(@"([:/])")]
+        private static partial Regex RegexForEscapeFileName();
+
         private Dictionary<int, MethodInfo> methods;
         private AssemblyInfo assembly;
         private Document doc;
@@ -1327,7 +1329,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in regexForEscapeFileName.Split(path))
+            foreach (var part in RegexForEscapeFileName().Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);
