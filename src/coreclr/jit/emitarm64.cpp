@@ -5068,6 +5068,7 @@ void emitter::emitIns_R_R_I(
     emitAttr  elemsize   = EA_UNKNOWN;
     insFormat fmt        = IF_NONE;
     bool      isLdSt     = false;
+    bool      isLdrStr   = false;
     bool      isSIMD     = false;
     bool      isAddSub   = false;
     bool      setFlags   = false;
@@ -5529,6 +5530,7 @@ void emitter::emitIns_R_R_I(
             unscaledOp = false;
             scale      = NaturalScale_helper(size);
             isLdSt     = true;
+            isLdrStr   = true;
             break;
 
         case INS_ldur:
@@ -5683,18 +5685,8 @@ void emitter::emitIns_R_R_I(
             }
         }
 
-        // Is the ldr/str even necessary?
-        // For volatile load/store, there will be memory barrier instruction before/after the load/store
-        // and in such case, IsRedundantLdStr() returns false, because the method just checks for load/store
-        // pair next to each other.
-        if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
-        {
-            return;
-        }
-
-        // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
-        // emit the second instruction.
-        if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
+        // Try to optimize a load/store with an alternative instruction.
+        if (isLdrStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
         {
             return;
         }
@@ -7563,10 +7555,11 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    emitAttr  size  = EA_SIZE(attr);
-    insFormat fmt   = IF_NONE;
-    int       disp  = 0;
-    unsigned  scale = 0;
+    emitAttr  size     = EA_SIZE(attr);
+    insFormat fmt      = IF_NONE;
+    int       disp     = 0;
+    unsigned  scale    = 0;
+    bool      isLdrStr = false;
 
     assert(offs >= 0);
 
@@ -7594,6 +7587,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_ldr:
             assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
             scale = genLog2(EA_SIZE_IN_BYTES(size));
+            isLdrStr = true;
             break;
 
         case INS_lea:
@@ -7685,19 +7679,10 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
     }
 
-    // Is the ldr/str even necessary?
-    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
-    {
-        return;
-    }
-
     assert(fmt != IF_NONE);
 
-    // This handles LDR duplicate instructions
-
-    // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
-    // emit the second instruction.
-    if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
+    // Try to optimize a load/store with an alternative instruction.
+    if (isLdrStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -7828,6 +7813,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     int       disp          = 0;
     unsigned  scale         = 0;
     bool      isVectorStore = false;
+    bool      isStr         = false;
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -7856,6 +7842,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 scale         = NaturalScale_helper(size);
                 isVectorStore = true;
             }
+            isStr = true;
             break;
 
         default:
@@ -7925,17 +7912,10 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         fmt = IF_LS_3A;
     }
 
-    // Is the ldr/str even necessary?
-    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
-    {
-        return;
-    }
-
     assert(fmt != IF_NONE);
 
-    // If we have replaced an LDR or STR instruction with an LDP or STP then we do not want to carry on to
-    // emit the second instruction.
-    if (TryReplaceLdrStrWithPairInstr(ins, attr, reg1, reg2, imm, size, fmt))
+    // Try to optimize a store with an alternative instruction.
+    if (isStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
         return;
     }
@@ -16121,20 +16101,15 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 //
 // Return Value:
 //    true if previous instruction already has desired value in register/memory location.
-
+//
+// Notes:
+//    For volatile load/store, there will be memory barrier instruction before/after the load/store
+//    and in such case, this method returns false, because the method just checks for load/store
+//    pair next to each other.
+//
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (!emitCanPeepholeLastIns())
-    {
-        return false;
-    }
-
     if ((ins != INS_ldr) && (ins != INS_str))
     {
         return false;
@@ -16198,9 +16173,8 @@ bool emitter::IsRedundantLdStr(
 }
 
 //-----------------------------------------------------------------------------------
-// TryReplaceLdrStrWithPairInstr: Potentially, overwrite a previously-emitted
-//                                "ldr" or "str" instruction with an "ldp" or
-//                                "stp" instruction.
+// ReplaceLdrStrWithPairInstr: Potentially, overwrite a previously-emitted "ldr" or "str"
+//                             instruction with an "ldp" or "stp" instruction.
 //
 // Arguments:
 //     ins      - The instruction code
@@ -16212,25 +16186,15 @@ bool emitter::IsRedundantLdStr(
 //     fmt      - Instruction format
 //
 // Return Value:
-//    "true" if the previous instruction HAS been overwritten.
+//    "true" if the previous instruction has been overwritten.
 //
-bool emitter::TryReplaceLdrStrWithPairInstr(
+bool emitter::ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    if (!emitCanPeepholeLastIns())
-    {
-        return false;
-    }
-
     // Register 2 needs conversion to unencoded value.
     reg2 = encodingZRtoSP(reg2);
 
-    RegisterOrder optimizationOrder = IsOptimizableLdrStr(ins, reg1, reg2, imm, size, fmt);
+    RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
     if (optimizationOrder != eRO_none)
     {
@@ -16268,7 +16232,6 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
             emitIns_R_R_R_I(optIns, reg1Attr, reg1, oldReg1, reg2, imm * size, INS_OPTS_NONE, oldReg1Attr);
         }
 
-        // And now return true, to indicate that the second instruction descriptor is no longer to be emitted.
         return true;
     }
 
@@ -16276,8 +16239,8 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
 }
 
 //-----------------------------------------------------------------------------------
-// IsOptimizableLdrStr: Check if it is possible to optimize two "ldr" or "str"
-//                      instructions into a single "ldp" or "stp" instruction.
+// IsOptimizableLdrStrWithPair: Check if it is possible to optimize two "ldr" or "str"
+//                              instructions into a single "ldp" or "stp" instruction.
 //
 // Examples:            ldr     w1, [x20, #0x10]
 //                      ldr     w2, [x20, #0x14]    =>  ldp     w1, w2, [x20, #0x10]
@@ -16298,7 +16261,7 @@ bool emitter::TryReplaceLdrStrWithPairInstr(
 //    eRO_ascending  - Registers can be loaded/ stored into ascending store locations
 //    eRO_descending - Registers can be loaded/ stored into decending store locations.
 //
-emitter::RegisterOrder emitter::IsOptimizableLdrStr(
+emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
     RegisterOrder optimisationOrder = eRO_none;

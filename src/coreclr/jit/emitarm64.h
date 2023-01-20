@@ -123,11 +123,40 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+
+// Methods to optimize a Ldr or Str with an alternative instruction.
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
-bool TryReplaceLdrStrWithPairInstr(
-    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
-RegisterOrder IsOptimizableLdrStr(
+RegisterOrder IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplaceLdrStrWithPairInstr(
+    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+
+// Try to optimize a Ldr or Str with an alternative instruction.
+inline bool OptimizeLdrStr(
+    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    assert(ins == INS_ldr || ins == INS_str);
+
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    // Is the ldr/str even necessary?
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
+    if ((emitLastIns->idIns() == ins) && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 /************************************************************************
 *
 * This union is used to encode/decode the special ARM64 immediate values
