@@ -215,6 +215,7 @@
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
       <_WasmPropertyNames Include="WasmEmitSymbolMap" />
+      <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
 
       <_WasmPropertiesToPass
         Include="$(%(_WasmPropertyNames.Identity))"
