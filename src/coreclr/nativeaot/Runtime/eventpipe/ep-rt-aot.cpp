@@ -34,7 +34,7 @@ ep_rt_aot_walk_managed_stack_for_thread (
     ep_rt_thread_handle_t thread,
     EventPipeStackContents *stack_contents)
 {
-    __debugbreak();
+    PalDebugBreak();
     return false;
 }
 
