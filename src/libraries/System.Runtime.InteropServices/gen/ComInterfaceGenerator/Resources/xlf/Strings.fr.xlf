@@ -112,6 +112,21 @@
         <target state="translated">Utilisation de « VirtualMethodIndexAttribute » non valide</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
+        <source>All methods must be delcared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
+        <target state="new">All methods must be delcared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
+        <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
+        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
+        <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
+        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Pour les types qui ne sont pas pris en charge par les P/Invok générés par la source, le P/Invoke résultant se base sur le runtime sous-jacent pour marshaler le type spécifié.</target>

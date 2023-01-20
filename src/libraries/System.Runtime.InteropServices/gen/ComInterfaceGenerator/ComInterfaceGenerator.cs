@@ -87,8 +87,14 @@ namespace Microsoft.Interop
 
                         if (locationInAttributeSyntax is null)
                         {
-                            // TODO: Report that this method is not supported.
-                            methods.Add((null!, (IMethodSymbol)member, 0, member.CreateDiagnostic(null!)));
+                            methods.Add((
+                                null!,
+                                (IMethodSymbol)member,
+                                0,
+                                member.CreateDiagnostic(
+                                    GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
+                                    member.ToDisplayString(),
+                                    data.Symbol.ToDisplayString())));
                         }
                         else
                         {
@@ -176,75 +182,6 @@ namespace Microsoft.Interop
                 .Select(static (vtable, ct) => GeneratePopulateVTableMethod(vtable));
 
             context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
-        }
-
-        private static VirtualMethodIndexCompilationData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
-        {
-            // Found the attribute, but it has an error so report the error.
-            // This is most likely an issue with targeting an incorrect TFM.
-            if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
-            {
-                return null;
-            }
-
-            var namedArguments = ImmutableDictionary.CreateRange(attrData.NamedArguments);
-
-            if (attrData.ConstructorArguments.Length == 0 || attrData.ConstructorArguments[0].Value is not int)
-            {
-                return null;
-            }
-
-            MarshalDirection direction = MarshalDirection.Bidirectional;
-            bool implicitThis = true;
-            bool exceptionMarshallingDefined = false;
-            ExceptionMarshalling exceptionMarshalling = ExceptionMarshalling.Custom;
-            INamedTypeSymbol? exceptionMarshallingCustomType = null;
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.Direction), out TypedConstant directionValue))
-            {
-                // TypedConstant's Value property only contains primitive values.
-                if (directionValue.Value is not int)
-                {
-                    return null;
-                }
-                // A boxed primitive can be unboxed to an enum with the same underlying type.
-                direction = (MarshalDirection)directionValue.Value!;
-            }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ImplicitThisParameter), out TypedConstant implicitThisValue))
-            {
-                if (implicitThisValue.Value is not bool)
-                {
-                    return null;
-                }
-                implicitThis = (bool)implicitThisValue.Value!;
-            }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ExceptionMarshalling), out TypedConstant exceptionMarshallingValue))
-            {
-                exceptionMarshallingDefined = true;
-                // TypedConstant's Value property only contains primitive values.
-                if (exceptionMarshallingValue.Value is not int)
-                {
-                    return null;
-                }
-                // A boxed primitive can be unboxed to an enum with the same underlying type.
-                exceptionMarshalling = (ExceptionMarshalling)exceptionMarshallingValue.Value!;
-            }
-            if (namedArguments.TryGetValue(nameof(VirtualMethodIndexCompilationData.ExceptionMarshallingCustomType), out TypedConstant exceptionMarshallingCustomTypeValue))
-            {
-                if (exceptionMarshallingCustomTypeValue.Value is not INamedTypeSymbol)
-                {
-                    return null;
-                }
-                exceptionMarshallingCustomType = (INamedTypeSymbol)exceptionMarshallingCustomTypeValue.Value;
-            }
-
-            return new VirtualMethodIndexCompilationData((int)attrData.ConstructorArguments[0].Value).WithValuesFromNamedArguments(namedArguments) with
-            {
-                Direction = direction,
-                ImplicitThisParameter = implicitThis,
-                ExceptionMarshallingDefined = exceptionMarshallingDefined,
-                ExceptionMarshalling = exceptionMarshalling,
-                ExceptionMarshallingCustomType = exceptionMarshallingCustomType,
-            };
         }
 
         private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, CancellationToken ct)

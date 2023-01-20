@@ -112,6 +112,21 @@
         <target state="translated">'VirtualMethodIndexAttribute' 使用方式無效</target>
         <note />
       </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
+        <source>All methods must be delcared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
+        <target state="new">All methods must be delcared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
+        <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
+        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
+        <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
+        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">對於來源產生的 P/Invokes 不支援的類型，產生的 P/Invoke 將依賴基礎運行時間來封送指定的類型。</target>

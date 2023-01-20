@@ -207,4 +207,13 @@
   <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
     <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
   </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceDescription" xml:space="preserve">
+    <value>All methods must be delcared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceMessage" xml:space="preserve">
+    <value>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
+    <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
+  </data>
 </root>
