@@ -23,11 +23,18 @@ export class WasmBuilder {
     inFunction!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
     functionTypeCount!: number;
-    functionTypes!: { [name: string] : [number, { [name: string]: WasmValtype }, WasmValtype, string] };
+    functionTypes!: { [name: string] : [
+        index: number,
+        parameters: { [name: string]: WasmValtype },
+        returnType: WasmValtype,
+        signature: string
+    ] };
     functionTypesByShape!: { [shape: string] : number };
     functionTypesByIndex: Array<any> = [];
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [number, number, string] };
+    importedFunctions!: { [name: string] : [
+        index: number, typeIndex: number, unknown: string
+    ] };
     importsToEmit!: Array<[string, string, number, number]>;
     argumentCount!: number;
     activeBlocks!: number;
@@ -229,10 +236,10 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    generateImportSection () {
+    generateImportSection (importFunctionTable? : boolean) {
         // Import section
         this.beginSection(2);
-        this.appendULeb(1 + this.importsToEmit.length + this.constantSlots.length);
+        this.appendULeb((importFunctionTable ? 2 : 1) + this.importsToEmit.length + this.constantSlots.length);
 
         for (let i = 0; i < this.importsToEmit.length; i++) {
             const tup = this.importsToEmit[i];
@@ -248,6 +255,15 @@ export class WasmBuilder {
             this.appendU8(0x03); // global
             this.appendU8(WasmValtype.i32); // all constants are pointers right now
             this.appendU8(0x00); // constant
+        }
+
+        if (importFunctionTable) {
+            this.appendName("f");
+            this.appendName("f");
+            this.appendU8(0x01); // table
+            this.appendU8(0x70); // funcref
+            this.appendU8(0x00); // no maximum
+            this.appendLeb(1); // minimum size
         }
 
         this.appendName("m");
@@ -650,6 +666,7 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
+    punchThroughJitCallsCompiled: 0,
     failures: 0,
     bytesGenerated: 0
 };
@@ -901,6 +918,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Punch through gsharedvt wrappers when compiling jitcall wrappers if possible
+    punchThrough: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
@@ -924,6 +943,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
+    "punchThrough": "jiterpreter-punch-through",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",

@@ -101,6 +101,10 @@
 #include "mono/metadata/icall-signatures.h"
 #include "mono/utils/mono-tls-inline.h"
 
+#if HOST_BROWSER
+#include <emscripten.h>
+#endif
+
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
 MonoMethodDesc *mono_stats_method_desc;
@@ -601,6 +605,9 @@ break_count (void)
  * Runtime debugging tool, use if (debug_count ()) <x> else <y> to do <x> the first COUNT times, then do <y> afterwards.
  * Set a breakpoint in break_count () to break the last time <x> is done.
  */
+#if HOST_BROWSER
+EMSCRIPTEN_KEEPALIVE
+#endif
 G_GNUC_UNUSED gboolean
 mono_debug_count (void)
 {

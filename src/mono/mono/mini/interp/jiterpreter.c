@@ -956,6 +956,12 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 	return mono_object_hash_internal (obj);
 }
 
+EMSCRIPTEN_KEEPALIVE MonoType **
+mono_jiterp_get_signature_params (MonoMethodSignature *sig)
+{
+	return sig->params;
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
 #endif
