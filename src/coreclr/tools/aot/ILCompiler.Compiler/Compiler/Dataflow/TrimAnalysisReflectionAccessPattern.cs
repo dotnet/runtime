@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using ILCompiler.Logging;
-using ILLink.Shared.TrimAnalysis;
 using Internal.TypeSystem;
 
 #nullable enable
@@ -29,11 +28,11 @@ namespace ILCompiler.Dataflow
             switch (Entity)
             {
                 case MethodDesc method:
-                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, method, new MethodOrigin(Origin.MemberDefinition as MethodDesc));
+                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, method);
                     break;
 
                 case FieldDesc field:
-                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, field, new MethodOrigin(Origin.MemberDefinition as MethodDesc));
+                    reflectionMarker.CheckAndWarnOnReflectionAccess(Origin, field);
                     break;
 
                 default:

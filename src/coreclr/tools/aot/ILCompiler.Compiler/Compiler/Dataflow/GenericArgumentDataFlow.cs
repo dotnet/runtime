@@ -26,7 +26,7 @@ namespace ILCompiler.Dataflow
                 origin,
                 !logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
                 logger);
-            var reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlow: false, enabled: true);
+            var reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, type);
 
@@ -80,7 +80,7 @@ namespace ILCompiler.Dataflow
                     var genericParameterValue = reflectionMarker.Annotations.GetGenericParameterValue(genericParameter);
                     Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
                     MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(instantiation[i]);
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, new GenericParameterOrigin(genericParameter));
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter.GetDisplayName());
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
             }
