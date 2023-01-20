@@ -7562,8 +7562,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BRFALSE_S:
 
                 /* Pop the comparand (now there's a neat term) from the stack */
-                op1 = impPopStack().val;
-                op1 = opts.OptimizationEnabled() ? gtFoldExpr(op1) : op1;
+                op1 = gtFoldExpr(impPopStack().val);
 
                 type = op1->TypeGet();
 
