@@ -420,7 +420,7 @@ std::string ConvertToUtf8(const WCHAR* str)
     if (len == 0)
         return{};
 
-    std::vector<char> buf(len);
-    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), -1, nullptr, nullptr);
+    std::vector<char> buf(len + 1);
+    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
     return std::string{ buf.data() };
 }
