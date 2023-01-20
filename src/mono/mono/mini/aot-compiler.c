@@ -6149,7 +6149,7 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 	char **scope_import;
 	guint32 scope_token;
 	char *module_ref_basename;
-	char **module_ref_basename_without_extension;
+	char *module_ref_basename_extension;
 
 	if (g_hash_table_lookup_extended (acfg->method_to_pinvoke_import, method, NULL, (gpointer *)&scope_import) && scope_import) {
 		if (module)
@@ -6171,20 +6171,27 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 	scope_import = (char **) g_malloc0 (2 * sizeof (char *));
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 	module_ref_basename = g_path_get_basename (mono_metadata_string_heap (image, scope_token));
-	module_ref_basename_without_extension = g_strsplit (module_ref_basename, ".", -1);
-	g_assert (!module_ref_basename_without_extension [1] || !module_ref_basename_without_extension [2]);
-	scope_import[0] = g_strdup_printf ("%s", module_ref_basename_without_extension [0]);
-	scope_import[1] = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+	module_ref_basename_extension = strrchr (module_ref_basename, '.');
+	if (module_ref_basename_extension) {
+		const char **suffixes = mono_dl_get_so_suffixes ();
+		for (int i = 0; suffixes [i] && suffixes [i][0] != '\0'; i++) {
+			if (!strcmp (module_ref_basename_extension, suffixes [i])) {
+				*module_ref_basename_extension= '\0';
+				break;
+			}
+		}
+	}
+
+	scope_import [0] = module_ref_basename;
+	scope_import [1] = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
 
 	g_hash_table_insert (acfg->method_to_pinvoke_import, method, scope_import);
 
 	if (module)
-		*module = scope_import[0];
+		*module = scope_import [0];
 	if (entrypoint)
-		*entrypoint = scope_import[1];
+		*entrypoint = scope_import [1];
 
-	g_strfreev (module_ref_basename_without_extension);
-	g_free (module_ref_basename);
 	return TRUE;
 }
 #else
