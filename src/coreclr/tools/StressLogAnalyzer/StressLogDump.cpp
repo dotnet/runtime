@@ -181,7 +181,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     MethodDescData.Request(g_sos,(CLRDATA_ADDRESS)arg);
 
                                     static WCHAR wszNameBuffer[1024]; // should be large enough
-                                    static char szNameBuffer[ARRAY_SIZE(wszNameBuffer) * 3];
+                                    static char szNameBuffer[(ARRAY_SIZE(wszNameBuffer) * 3) + 1];
                                     if (g_sos->GetMethodDescName(arg, ARRAY_SIZE(wszNameBuffer), wszNameBuffer, NULL) == S_OK)
                                     {
                                         WideCharToMultiByte(CP_UTF8, 0, wszNameBuffer, -1, szNameBuffer, -1, NULL, NULL);

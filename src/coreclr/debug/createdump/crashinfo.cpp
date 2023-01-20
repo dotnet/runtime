@@ -943,7 +943,7 @@ ConvertString(const WCHAR* str)
         return{};
 
     ArrayHolder<char> buffer = new char[len + 1];
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, -1, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, len + 1, nullptr, nullptr);
     return std::string{ buffer };
 }
 

@@ -94,14 +94,21 @@ private:
 class MappedFileStream : public ReadStream {
 public:
     MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
+        : m_fileNameUtf8(NULL)
+        , m_hFile(INVALID_HANDLE_VALUE)
+        , m_FileSize(0)
+        , m_hMapFile(NULL)
     {
-        m_hFile = INVALID_HANDLE_VALUE;
-        m_hMapFile = NULL;
         m_pStart = open(wFileName);
         m_pCurr = m_pStart;
         m_pEnd = m_pStart + m_FileSize;
-        clear_name();
-        WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,fileNameUtf8,MAX_FILENAME_LENGTH*4,NULL,NULL);
+
+        if (IsValid())
+        {
+            int len = WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,NULL,0,NULL,NULL);
+            m_fileNameUtf8 = new char[len+1];
+            WszWideCharToMultiByte(CP_UTF8,0,wFileName,-1,m_fileNameUtf8,len+1,NULL,NULL);
+        }
     }
     ~MappedFileStream()
     {
@@ -118,6 +125,9 @@ public:
             m_hFile = INVALID_HANDLE_VALUE;
             m_FileSize = 0;
         }
+
+        if (m_fileNameUtf8 != NULL)
+            delete [] m_fileNameUtf8;
     }
     unsigned getAll(_Out_ char** pbuff)
     {
@@ -141,12 +151,13 @@ public:
 
     const char* name()
     {
-       return fileNameUtf8;
+       return m_fileNameUtf8;
     }
 
     void clear_name()
     {
-        memset(fileNameUtf8,0,MAX_FILENAME_LENGTH*4);
+        if (m_fileNameUtf8 != NULL)
+            m_fileNameUtf8[0] = '\0';
     }
 
     BOOL IsValid()
@@ -187,7 +198,7 @@ private:
         return (m_hFile == INVALID_HANDLE_VALUE) ? NULL : map_file();
     }
 
-	char	fileNameUtf8[MAX_FILENAME_LENGTH*4]; // FileName (for error reporting)
+    char*	m_fileNameUtf8; // FileName (for error reporting)
     HANDLE  m_hFile;                 // File we are reading from
     DWORD   m_FileSize;
     HANDLE  m_hMapFile;
