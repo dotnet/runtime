@@ -1510,7 +1510,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprUnaryOp BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
+        private ExprOperator BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
         {
             NullableType type = uofs.GetType() as NullableType;
             Debug.Assert(arg?.Type != null);
@@ -1603,7 +1603,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Handles standard increment and decrement operators.
         */
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprMulti BindIncOp(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
+        private Expr BindIncOp(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
         {
             Debug.Assert(ek == ExpressionKind.Add || ek == ExpressionKind.Subtract);
 
@@ -1822,7 +1822,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
             Handles string concatenation.
         */
-        private static ExprConcat BindStrBinOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private static Expr BindStrBinOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.Add);
             Debug.Assert(arg1.Type.IsPredefType(PredefinedType.PT_STRING) || arg2.Type.IsPredefType(PredefinedType.PT_STRING));
@@ -1863,7 +1863,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprBinOp BindBoolBitwiseOp(ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2)
+        private ExprOperator BindBoolBitwiseOp(ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2)
         {
             Debug.Assert(ek == ExpressionKind.BitwiseAnd || ek == ExpressionKind.BitwiseOr);
             Debug.Assert(expr1.Type.IsPredefType(PredefinedType.PT_BOOL) || expr1.Type is NullableType expNubType1 && expNubType1.UnderlyingType.IsPredefType(PredefinedType.PT_BOOL));
@@ -1966,7 +1966,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Handles delegate binary operators.
         */
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private static ExprBinOp BindDelBinOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
+        private static Expr BindDelBinOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.Add || ek == ExpressionKind.Subtract || ek == ExpressionKind.Eq || ek == ExpressionKind.NotEq);
             Debug.Assert(arg1.Type == arg2.Type && (arg1.Type.IsDelegateType || arg1.Type.IsPredefType(PredefinedType.PT_DELEGATE)));
@@ -2327,7 +2327,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprUserLogicalOp BindUserBoolOp(ExpressionKind kind, ExprCall pCall)
+        private Expr BindUserBoolOp(ExpressionKind kind, ExprCall pCall)
         {
             Debug.Assert(pCall != null);
             Debug.Assert(pCall.MethWithInst.Meth() != null);

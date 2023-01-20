@@ -615,7 +615,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprProperty CreateProperty(
+        private Expr CreateProperty(
             SymWithType swt,
             Expr callingObject,
             BindingFlag flags)
@@ -718,7 +718,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private ExprCall BindCall(
+        private ExprWithArgs BindCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             Expr callingObject,
             ArgumentObject[] arguments,
