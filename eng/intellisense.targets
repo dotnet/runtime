@@ -29,7 +29,7 @@
   </Target>
 
   <Target Name="CopyDocumentationFileToXmlDocDir"
-          AfterTargets="CoreCompile"
+          AfterTargets="CopyFilesToOutputDirectory"
           Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
           DependsOnTargets="ChangeDocumentationFileForPackaging">
     <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
