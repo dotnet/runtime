@@ -1,13 +1,22 @@
 <Project>
 
   <PropertyGroup>
-      <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
-    <IntellisensePackageFolderName Condition="'$(IsPackable)' == '' or '$(IsPackable)' == 'false'">net</IntellisensePackageFolderName>
-    <IntellisensePackageFolderName Condition="'$(IsPackable)' == 'true'">dotnet-plat-ext</IntellisensePackageFolderName>
-    <LibIntellisenseDocumentationFilePath Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', '$(MSBuildProjectName)', '$(LibrariesConfiguration)', '$(NetCoreAppCurrent)', '$(MSBuildProjectName).xml'))</LibIntellisenseDocumentationFilePath>
-    <LibIntellisenseDocumentationFilePath Condition="'$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false'">$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', '$(IntellisensePackageFolderName)', '1033', '$(AssemblyName).xml'))</LibIntellisenseDocumentationFilePath>
-    <UseIntellisenseDocumentationFile Condition="'$(UseIntellisenseDocumentationFile)' == '' and Exists('$(LibIntellisenseDocumentationFilePath)')">true</UseIntellisenseDocumentationFile>
+    <XmlDocFileRoot>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</XmlDocFileRoot>
   </PropertyGroup>
+
+  <!-- If the project is not generating its own documentation yet, retrieve it from the dotnet-api-docs nuget package. -->
+  <Choose>
+    <When Condition="('$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false') and Exists($([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'net', '1033', '$(AssemblyName).xml')))">
+      <PropertyGroup>
+        <IntellisenseFilePath>$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'net', '1033', '$(AssemblyName).xml')</IntellisenseFilePath>
+      </PropertyGroup>
+    </When>
+    <When Condition="('$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false') and Exists($([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml')))">
+      <PropertyGroup>
+        <IntellisenseFilePath Condition="">$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml')</IntellisenseFilePath>
+      </PropertyGroup>
+    </When>
+  </Choose>
 
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <Target Name="ChangeDocumentationFileForPackaging"
@@ -15,7 +24,7 @@
           Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
     <ItemGroup>
       <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
-      <DocumentationProjectOutputGroupOutput Include="$(LibIntellisenseDocumentationFilePath)" />
+      <DocumentationProjectOutputGroupOutput Include="$(IntellisenseFilePath)" />
     </ItemGroup>
   </Target>
 
