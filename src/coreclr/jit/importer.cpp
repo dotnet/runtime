@@ -3953,7 +3953,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 // SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
 // for TYP_SIMD32 we need to check AVX support on XARCH
 #ifdef TARGET_XARCH
-                    bool hwAccelerated = (simdType != TYP_SIMD32) || compExactlyDependsOn(InstructionSet_AVX);
+                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
 #else
                     bool hwAccelerated = true;
 #endif
