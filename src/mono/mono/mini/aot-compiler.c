@@ -6183,7 +6183,6 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 static gboolean
 is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	gboolean direct_pinvoke_specified = FALSE;
 	const char *module_name, *sym = NULL;
 	GHashTable *val;
 
@@ -6195,12 +6194,12 @@ is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method
 
 	if (get_pinvoke_import (acfg, method, &module_name, &sym) && g_hash_table_lookup_extended (acfg->direct_pinvokes, module_name, NULL, (gpointer *)&val)) {
 		if (!val)
-			direct_pinvoke_specified = TRUE;
-		else
-			direct_pinvoke_specified = g_hash_table_contains (val, sym);
+			return TRUE;
+
+		return g_hash_table_contains (val, sym);
 	}
 
-	return direct_pinvoke_specified;
+	return FALSE;
 }
 
 /*
