@@ -775,7 +775,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
             LclVarDsc* lclVarDsc = compiler->lvaGetDesc(varScope->vsdVarNum);
 
             // Only report locals that were referenced, if we're not doing debug codegen
-            if (compiler->opts.compDbgCode || (lclVarDsc->lvRefCnt() > 0))
+            if (compiler->opts.DbgCode() || (lclVarDsc->lvRefCnt() > 0))
             {
                 // brace-matching editor workaround for following line: (
                 JITDUMP("Scope info: opening scope, LVnum=%u [%03X..%03X)\n", varScope->vsdLVnum, varScope->vsdLifeBeg,

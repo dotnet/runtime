@@ -3285,7 +3285,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     // If there is nothing next, that means the result is thrown away, so this value is not live.
     // However, for minopts or debuggable code, we keep it live to support managed return value debugging.
-    if ((call->gtNext == nullptr) && !compiler->opts.MinOpts() && !compiler->opts.compDbgCode)
+    if ((call->gtNext == nullptr) && !compiler->opts.MinOpts() && !compiler->opts.DbgCode())
     {
         gcInfo.gcMarkRegSetNpt(RBM_INTRET);
     }

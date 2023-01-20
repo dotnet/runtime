@@ -52,7 +52,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -320,7 +320,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         JITDUMP("Method compiled with debug codegen, no removal.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -657,7 +657,7 @@ PhaseStatus Compiler::fgCloneFinally()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         JITDUMP("Method compiled with debug codegen, no cloning.\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -1657,7 +1657,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         JITDUMP("Method compiled with debug codegen, no merging.\n");
         return PhaseStatus::MODIFIED_NOTHING;

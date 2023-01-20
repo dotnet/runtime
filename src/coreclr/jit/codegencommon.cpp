@@ -1799,7 +1799,7 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; EnC code\n");
         }
-        else if (compiler->opts.compDbgCode)
+        else if (compiler->opts.DbgCode())
         {
             printf("; debuggable code\n");
         }
@@ -4588,7 +4588,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // or when in debug code
 
             noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
-                         compiler->info.compInitMem || compiler->opts.compDbgCode);
+                         compiler->info.compInitMem || compiler->opts.DbgCode());
 
             if (!varDsc->lvOnFrame)
             {
@@ -6918,7 +6918,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
         if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
         {
-            noway_assert(!compiler->opts.compDbgCode);
+            noway_assert(!compiler->opts.DbgCode());
             return;
         }
 
@@ -7198,7 +7198,7 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 
 void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
 {
-    if (!compiler->opts.compDbgCode)
+    if (!compiler->opts.DbgCode())
     {
         return;
     }
@@ -7343,7 +7343,7 @@ void CodeGen::genIPmappingGen()
     //different source lines.  As a result, we have all sorts of latent problems with how we emit debug
     //info, but very few actual ones.  Whenever someone wants to tackle that problem in general, turn this
     //assert back on.
-    if (compiler->opts.compDbgCode)
+    if (compiler->opts.DbgCode())
     {
         //Assert that the first instruction of every basic block with more than one incoming edge has a
         //different sequence point from each incoming block.

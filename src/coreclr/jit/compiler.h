@@ -9191,39 +9191,61 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
+    private:
         bool compMinOpts;
         bool compMinOptsIsSet;
+        bool compDbgCode;             // Generate debugger-friendly code?
+        bool compOptimizationEnabled; // A cached, composite value
+
 #ifdef DEBUG
         mutable bool compMinOptsIsUsed;
+#endif // !DEBUG
 
+        void SetOptimizationEnabled()
+        {
+            // We want to be careful with the `compMinOptsIsSet` and `compMinOptsIsUsed` values.
+            // Caching the value shouldn't touch these. However, using this value should have the
+            // same asserts as using `MinOpts()`.
+            compOptimizationEnabled = !compMinOpts && !compDbgCode;
+        }
+
+    public:
+        void InitializeMinOpts()
+        {
+            INDEBUG(compMinOptsIsUsed = false);
+            compMinOptsIsSet = false;
+        }
+
+#ifdef DEBUG
         bool MinOpts() const
         {
             assert(compMinOptsIsSet);
             compMinOptsIsUsed = true;
             return compMinOpts;
         }
-        bool IsMinOptsSet() const
-        {
-            return compMinOptsIsSet;
-        }
 #else  // !DEBUG
         bool MinOpts() const
         {
             return compMinOpts;
         }
+#endif // !DEBUG
+
         bool IsMinOptsSet() const
         {
             return compMinOptsIsSet;
         }
-#endif // !DEBUG
 
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            assert(compMinOptsIsSet);
+            INDEBUG(compMinOptsIsUsed = true);
+            return !compOptimizationEnabled;
         }
         bool OptimizationEnabled() const
         {
-            return !OptimizationDisabled();
+            assert(compMinOptsIsSet);
+            INDEBUG(compMinOptsIsUsed = true);
+            return compOptimizationEnabled;
         }
 
         void SetMinOpts(bool val)
@@ -9232,6 +9254,20 @@ public:
             assert(!compMinOptsIsSet || (compMinOpts == val));
             compMinOpts      = val;
             compMinOptsIsSet = true;
+
+            SetOptimizationEnabled(); // Update compOptimizationEnabled
+        }
+
+        bool DbgCode() const
+        {
+            return compDbgCode;
+        }
+
+        void SetDbgCode(bool val)
+        {
+            compDbgCode = val;
+
+            SetOptimizationEnabled(); // Update compOptimizationEnabled
         }
 
         // true if the CLFLG_* for an optimization is set.
@@ -9325,7 +9361,6 @@ public:
         }
 
         bool compScopeInfo; // Generate the LocalVar info ?
-        bool compDbgCode;   // Generate debugger-friendly code?
         bool compDbgInfo;   // Gather debugging info?
         bool compDbgEnC;
 
@@ -9932,7 +9967,7 @@ public:
         if (opts.IsOSR())
             return false;
 #endif
-        return !info.compInitMem && opts.compDbgCode;
+        return !info.compInitMem && opts.DbgCode();
     }
 
     // Returns true if the jit supports having patchpoints in this method.

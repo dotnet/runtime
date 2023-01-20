@@ -1914,10 +1914,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compRationalIRForm = false;
 
 #ifdef DEBUG
-    compCodeGenDone        = false;
-    opts.compMinOptsIsUsed = false;
+    compCodeGenDone = false;
 #endif
-    opts.compMinOptsIsSet = false;
+
+    opts.InitializeMinOpts();
 
     // Used by fgFindJumpTargets for inlining heuristics.
     opts.instrCount = 0;
@@ -2428,7 +2428,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     //-------------------------------------------------------------------------
 
-    opts.compDbgCode = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE);
+    opts.SetDbgCode(jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE));
     opts.compDbgInfo = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO);
     opts.compDbgEnC  = jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC);
 
@@ -2487,7 +2487,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns
-    opts.compDbgCode = false;
+    opts.SetDbgCode(false);
     opts.compDbgInfo = false;
     opts.compDbgEnC  = false;
 #endif
@@ -3199,8 +3199,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (opts.compProcedureSplitting)
     {
-        // Note that opts.compdbgCode is true under ngen for checked assemblies!
-        opts.compProcedureSplitting = !opts.compDbgCode || enableFakeSplitting;
+        // Note that opts.DbgCode() is true under ngen for checked assemblies!
+        opts.compProcedureSplitting = !opts.DbgCode() || enableFakeSplitting;
 
 #ifdef DEBUG
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
@@ -3289,7 +3289,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                    : (opts.compCodeOpt == SMALL_CODE) ? "SMALL_CODE"
                                                       : (opts.compCodeOpt == FAST_CODE) ? "FAST_CODE" : "UNKNOWN_CODE");
 
-        printf("OPTIONS: compDbgCode = %s\n", dspBool(opts.compDbgCode));
+        printf("OPTIONS: compDbgCode = %s\n", dspBool(opts.DbgCode()));
         printf("OPTIONS: compDbgInfo = %s\n", dspBool(opts.compDbgInfo));
         printf("OPTIONS: compDbgEnC  = %s\n", dspBool(opts.compDbgEnC));
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
@@ -3555,12 +3555,12 @@ void Compiler::compInitDebuggingInfo()
 
     compInitVarScopeMap();
 
-    if (opts.compScopeInfo || opts.compDbgCode)
+    if (opts.compScopeInfo || opts.DbgCode())
     {
         compInitScopeLists();
     }
 
-    if (opts.compDbgCode && (info.compVarScopesCount > 0))
+    if (opts.DbgCode() && (info.compVarScopesCount > 0))
     {
         /* Create a new empty basic block. fgExtendDbgLifetimes() may add
            initialization of variables which are in scope right from the
@@ -3858,7 +3858,7 @@ _SetMinOpts:
 
     // Notify the VM if MinOpts is being used when not requested
     if (theMinOptsValue && !compIsForInlining() && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-        !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.compDbgCode)
+        !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.DbgCode())
     {
         info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
         opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER1);
@@ -4110,9 +4110,9 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
 
-    if (!opts.compMinOptsIsSet)
+    if (!opts.IsMinOptsSet())
     {
-        // If 'compMinOptsIsSet' is not set, just return here. Otherwise, if this method is called
+        // If 'IsMinOptsSet()' is not true, just return here. Otherwise, if this method is called
         // by the assertAbort(), we would recursively call assert while trying to get MinOpts()
         // and eventually stackoverflow.
         return "Optimization-Level-Not-Yet-Set";
@@ -4164,7 +4164,7 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
             return "MinOpts";
         }
     }
-    else if (opts.compDbgCode)
+    else if (opts.DbgCode())
     {
         return "Debug";
     }

@@ -458,7 +458,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
     }
 #endif // DEBUG
 
-    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
+    if (opts.DbgCode() && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
     {
         /* TODO: For debuggable code, should we remove significant
            statement boundaries. Or should we leave a GT_NO_OP in its place? */
@@ -546,7 +546,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
 
 bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
 {
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         return false;
     }

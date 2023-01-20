@@ -7478,7 +7478,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
     // codegen will pass DebugInfo() to emitter, which will cause emitter
     // not to emit IP mapping entry.
-    if (opts.compDbgCode && opts.compDbgInfo && di.IsValid())
+    if (opts.DbgCode() && opts.compDbgInfo && di.IsValid())
     {
         // Managed Retval - IL offset of the call.  This offset is used to emit a
         // CALL_INSTRUCTION type sequence point while emitting corresponding native call.

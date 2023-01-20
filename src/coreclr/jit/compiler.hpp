@@ -1983,7 +1983,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         if (info.compXcptnsCount > 0)
             return true;
 
-        if (opts.compDbgCode)
+        if (opts.DbgCode())
             return true;
 
         if (lvaGenericsContextInUse)

@@ -453,7 +453,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 bool Compiler::fgCanSwitchToOptimized()
 {
     bool result = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) &&
-                  !opts.compDbgCode && !compIsForInlining();
+                  !opts.DbgCode() && !compIsForInlining();
     if (result)
     {
         // Ensure that it would be safe to change the opt level
@@ -2303,7 +2303,7 @@ private:
 
         // Do not look for mergeable constant returns in debug codegen as
         // we may lose track of sequence points.
-        if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.compDbgCode)
+        if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.DbgCode())
         {
             // Check to see if this is a constant return so that we can search
             // for and/or create a constant return block for it.
@@ -2695,7 +2695,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = nullptr;
     CORINFO_JUST_MY_CODE_HANDLE  dbgHandle  = nullptr;
-    if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
+    if (opts.DbgCode() && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB))
     {
         dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
     }

@@ -968,7 +968,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // conservative, but I want to avoid as much special-case debug-only code
         // as possible, so leveraging the GTF_CALL flag is the easiest.
         //
-        if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.compDbgCode)
+        if (!treatLikeCall && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) && comp->opts.DbgCode())
         {
             exceptionFlags = comp->gtCollectExceptions(argx);
             if ((exceptionFlags & (ExceptionSetFlags::IndexOutOfRangeException |
@@ -4297,7 +4297,7 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
         delay = false;
     }
 
-    if (!opts.compDbgCode)
+    if (!opts.DbgCode())
     {
         if (!delay && !compIsForInlining())
         {
@@ -13614,7 +13614,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 
         // The rest of block has been removed and we will always throw an exception.
         //
-        // For compDbgCode, we prepend an empty BB as the firstBB, it is BBJ_NONE.
+        // For DbgCode(), we prepend an empty BB as the firstBB, it is BBJ_NONE.
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || ((fgFirstBB->bbFlags & BBF_INTERNAL) == 0))
         {
@@ -14074,7 +14074,7 @@ void Compiler::fgSetOptions()
     }
 #endif
 
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         assert(!codeGen->isGCTypeFixed());
         SetInterruptible(true); // debugging is easier this way ...

@@ -2040,7 +2040,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
 
 void Compiler::impSpillStackEnsure(bool spillLeaves)
 {
-    assert(!spillLeaves || opts.compDbgCode);
+    assert(!spillLeaves || opts.DbgCode());
 
     for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
     {
@@ -2447,7 +2447,7 @@ void Compiler::impNoteLastILoffs()
 
 void Compiler::impNoteBranchOffs()
 {
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         impAppendTree(gtNewNothingNode(), CHECK_SPILL_NONE, impCurStmtDI);
     }
@@ -6379,7 +6379,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 assert(nxtStmtOffs == info.compStmtOffsets[nxtStmtIndex]);
 
-                if (verCurrentState.esStackDepth != 0 && opts.compDbgCode)
+                if (verCurrentState.esStackDepth != 0 && opts.DbgCode())
                 {
                     /* We need to provide accurate IP-mapping at this point.
                        So spill anything on the stack so that it will form
@@ -6390,7 +6390,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Have we reported debug info for any tree?
 
-                if (impCurStmtDI.IsValid() && opts.compDbgCode)
+                if (impCurStmtDI.IsValid() && opts.DbgCode())
                 {
                     GenTree* placeHolder = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
                     impAppendTree(placeHolder, CHECK_SPILL_NONE, impCurStmtDI);
@@ -6454,7 +6454,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     impCurStmtOffsSet(opcodeOffs);
                 }
-                else if (opts.compDbgCode)
+                else if (opts.DbgCode())
                 {
                     impSpillStackEnsure(true);
                     impCurStmtOffsSet(opcodeOffs);
@@ -6462,7 +6462,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
             else if ((info.compStmtOffsetsImplicit & ICorDebugInfo::NOP_BOUNDARIES) && (prevOpcode == CEE_NOP))
             {
-                if (opts.compDbgCode)
+                if (opts.DbgCode())
                 {
                     impSpillStackEnsure(true);
                 }
@@ -6816,7 +6816,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->gtOper == GT_LCL_VAR && lclNum == op1->AsLclVarCommon()->GetLclNum())
                 {
-                    if (opts.compDbgCode)
+                    if (opts.DbgCode())
                     {
                         op1 = gtNewNothingNode();
                         goto SPILL_APPEND;
@@ -7624,8 +7624,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if ((op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
                 {
                     /* gtFoldExpr() should prevent this as we don't want to make any blocks
-                       unreachable under compDbgCode */
-                    assert(!opts.compDbgCode);
+                       unreachable under DbgCode() */
+                    assert(!opts.DbgCode());
 
                     BBjumpKinds foldedJumpKind = (BBjumpKinds)(op1->AsIntCon()->gtIconVal ? BBJ_ALWAYS : BBJ_NONE);
                     assertImp((block->bbJumpKind == BBJ_COND)            // normal case
@@ -7655,7 +7655,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* GT_JTRUE is handled specially for non-empty stacks. See 'addStmt'
                    in impImportBlock(block). For correct line numbers, spill stack. */
 
-                if (opts.compDbgCode && impCurStmtDI.IsValid())
+                if (opts.DbgCode() && impCurStmtDI.IsValid())
                 {
                     impSpillStackEnsure(true);
                 }
@@ -8143,7 +8143,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Does the value have any side effects? */
 
-                if ((op1->gtFlags & GTF_SIDE_EFFECT) || opts.compDbgCode)
+                if ((op1->gtFlags & GTF_SIDE_EFFECT) || opts.DbgCode())
                 {
                     // Since we are throwing away the value, just normalize
                     // it to its address.  This is more efficient.
@@ -10700,7 +10700,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto SPILL_APPEND;
 
             case CEE_NOP:
-                if (opts.compDbgCode)
+                if (opts.DbgCode())
                 {
                     op1 = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
                     goto SPILL_APPEND;

@@ -4391,7 +4391,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
 bool Compiler::impCanPInvokeInline()
 {
-    return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (compCodeOpt() != SMALL_CODE) &&
+    return getInlinePInvokeEnabled() && (!opts.DbgCode()) && (compCodeOpt() != SMALL_CODE) &&
            (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
         ;
 }
@@ -5317,7 +5317,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
 
     // Don't inline if not optimizing root method
-    if (opts.compDbgCode)
+    if (opts.DbgCode())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
         return;

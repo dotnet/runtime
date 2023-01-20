@@ -849,7 +849,7 @@ void Compiler::fgExtendDbgLifetimes()
     }
 #endif // DEBUG
 
-    noway_assert(opts.compDbgCode && (info.compVarScopesCount > 0));
+    noway_assert(opts.DbgCode() && (info.compVarScopesCount > 0));
 
     /*-------------------------------------------------------------------------
      *   Extend the lifetimes over the entire reported scope of the variable.
@@ -871,7 +871,7 @@ void Compiler::fgExtendDbgLifetimes()
 
     fgLiveVarAnalysis(true);
 
-    /* For compDbgCode, we prepend an empty BB which will hold the
+    /* For DbgCode(), we prepend an empty BB which will hold the
        initializations of variables which are in scope at IL offset 0 (but
        not initialized by the IL code). Since they will currently be
        marked as live on entry to fgFirstBB, unmark the liveness so that
@@ -1418,7 +1418,7 @@ class LiveVarAnalysis
                     /* Only update BBF_INTERNAL blocks as they may be
                        syntactically out of sequence. */
 
-                    noway_assert(m_compiler->opts.compDbgCode && (m_compiler->info.compVarScopesCount > 0));
+                    noway_assert(m_compiler->opts.DbgCode() && (m_compiler->info.compVarScopesCount > 0));
 
                     if (!(block->bbFlags & BBF_INTERNAL))
                     {
@@ -2651,7 +2651,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
      * reported scope, so that it will be visible over the entire scope
      */
 
-    if (opts.compDbgCode && (info.compVarScopesCount > 0))
+    if (opts.DbgCode() && (info.compVarScopesCount > 0))
     {
         fgExtendDbgLifetimes();
     }

@@ -333,7 +333,7 @@ void Compiler::raMarkStkVars()
                an issue as fgExtendDbgLifetimes() adds an initialization and
                variables in scope will not have a zero ref-cnt.
              */
-            if (opts.compDbgCode && !varDsc->lvIsParam && varDsc->lvTracked)
+            if (opts.DbgCode() && !varDsc->lvIsParam && varDsc->lvTracked)
             {
                 for (unsigned scopeNum = 0; scopeNum < info.compVarScopesCount; scopeNum++)
                 {
@@ -347,7 +347,7 @@ void Compiler::raMarkStkVars()
               So we set lvMustInit and verify it has a nonzero ref-cnt.
              */
 
-            if (opts.compDbgCode && !stkFixedArgInVarArgs && lclNum < info.compLocalsCount)
+            if (opts.DbgCode() && !stkFixedArgInVarArgs && lclNum < info.compLocalsCount)
             {
                 if (varDsc->lvRefCnt() == 0)
                 {

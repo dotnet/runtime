@@ -2280,7 +2280,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                     const bool notStruct    = !varTypeIsStruct(lvaGetDesc(varNum));
                     const bool notLastInstr = (codeAddr < codeEndp - sz);
-                    const bool notDebugCode = !opts.compDbgCode;
+                    const bool notDebugCode = !opts.DbgCode();
 
                     if (notStruct && notLastInstr && notDebugCode && impILConsumesAddr(codeAddr + sz))
                     {
@@ -2809,7 +2809,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
     // Keep track of where we are in the scope lists, as we will also
     // create blocks at scope boundaries.
-    if (opts.compDbgCode && (info.compVarScopesCount > 0))
+    if (opts.DbgCode() && (info.compVarScopesCount > 0))
     {
         compResetScopeLists();
 
@@ -3186,7 +3186,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
         bool foundScope = false;
 
-        if (opts.compDbgCode && (info.compVarScopesCount > 0))
+        if (opts.DbgCode() && (info.compVarScopesCount > 0))
         {
             while (compGetNextEnterScope(nxtBBoffs))
             {
@@ -6888,5 +6888,5 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 //    true if 'throw' helper block should be created.
 bool Compiler::fgUseThrowHelperBlocks()
 {
-    return !opts.compDbgCode;
+    return !opts.DbgCode();
 }

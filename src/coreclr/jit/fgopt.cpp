@@ -4761,7 +4761,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 //
 bool Compiler::fgReorderBlocks(bool useProfile)
 {
-    noway_assert(opts.compDbgCode == false);
+    noway_assert(!opts.DbgCode());
 
 #if defined(FEATURE_EH_FUNCLETS)
     assert(fgFuncletsCreated);
