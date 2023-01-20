@@ -93,9 +93,10 @@ namespace System
             }
         }
 
-#pragma warning disable CA1859
+#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
         private static void ValidateElementType(Type elementType)
         {
+            Test (9);
             while (elementType.IsArray)
             {
                 elementType = elementType.GetElementType()!;
