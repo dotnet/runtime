@@ -6115,6 +6115,27 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 #ifdef MONO_ARCH_AOT_SUPPORTED
+//---------------------------------------------------------------------------------------
+//
+// get_pinvoke_import:
+//
+// Returns whether or not module and entrypoint pinvoke information could be grabbed
+// from the MonoMethod. It populates module and entrypoint if they are not NULL. A
+// hash table is populated with key value pairs corresponding to the MonoMethod and
+// module entrypoint string array to serve as a fast path cache. The module and
+// entrypoint string data are owned by the hash table.
+//
+// Arguments:
+//  * acfg - the MonoAotCompiler instance
+//  * method - the MonoMethod to grab pinvoke scope and import information from
+//  ** module - the pointer to the module name string (owned by the hashtable)
+//  ** entrypoint - the pointer to the entrypoint name string (owned by the hashtable)
+//
+// Return Value:
+//  gboolean corresponding to whether or not module and entrypoint pinvoke information
+//  could be grabbed from the provided MonoMethod.
+//
+
 static gboolean
 get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **module, const char **entrypoint)
 {
@@ -8682,59 +8703,59 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->depfile = g_strdup (arg + strlen ("depfile="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
-			printf ("    asmonly\n");
-			printf ("    bind-to-runtime-version\n");
-			printf ("    bitcode\n");
-			printf ("    data-outfile=\n");
-			printf ("    direct-icalls\n");
-			printf ("    direct-pinvokes=\n");
-			printf ("    direct-pinvoke-lists=\n");
-			printf ("    direct-pinvoke\n");
-			printf ("    dwarfdebug\n");
-			printf ("    full\n");
-			printf ("    hybrid\n");
-			printf ("    info\n");
-			printf ("    keep-temps\n");
-			printf ("    llvm\n");
-			printf ("    llvmonly\n");
-			printf ("    llvm-outfile=\n");
-			printf ("    llvm-path=\n");
-			printf ("    msym-dir=\n");
-			printf ("    mtriple\n");
-			printf ("    nimt-trampolines=\n");
-			printf ("    nodebug\n");
-			printf ("    no-direct-calls\n");
-			printf ("    no-write-symbols\n");
-			printf ("    nrgctx-trampolines=\n");
-			printf ("    nrgctx-fetch-trampolines=\n");
-			printf ("    ngsharedvt-trampolines=\n");
-			printf ("    nftnptr-arg-trampolines=\n");
-			printf ("    nunbox-arbitrary-trampolines=\n");
-			printf ("    ntrampolines=\n");
-			printf ("    outfile=\n");
-			printf ("    profile=\n");
-			printf ("    profile-only\n");
-			printf ("    mibc-profile=\n");
-			printf ("    print-skipped-methods\n");
-			printf ("    readonly-value=\n");
-			printf ("    save-temps\n");
-			printf ("    soft-debug\n");
-			printf ("    static\n");
-			printf ("    stats\n");
-			printf ("    temp-path=\n");
-			printf ("    tool-prefix=\n");
-			printf ("    threads=\n");
-			printf ("    write-symbols\n");
-			printf ("    verbose\n");
-			printf ("    allow-errors\n");
-			printf ("    no-opt\n");
-			printf ("    llvmopts=\n");
-			printf ("    llvmllc=\n");
-			printf ("    clangxx=\n");
-			printf ("    depfile=\n");
-			printf ("    mcpu=\n");
-			printf ("    mattr=\n");
-			printf ("    help/?\n");
+			printf ("    asmonly                              - \n");
+			printf ("    bind-to-runtime-version              - \n");
+			printf ("    bitcode                              - \n");
+			printf ("    data-outfile=<string>                - \n");
+			printf ("    direct-icalls                        - \n");
+			printf ("    direct-pinvokes=<string>             - Specific direct pinvokes to generate direct calls for an entire 'module' or specific 'module!entrypoint' separated by semi-colons. Incompatible with 'direct-pinvoke' option.\n");
+			printf ("    direct-pinvoke-lists=<string>        - Files containing specific direct pinvokes to generate direct calls for an entire 'module' or specific 'module!entrypoint' on separate lines. Incompatible with 'direct-pinvoke' option.\n");
+			printf ("    direct-pinvoke                       - Generate direct calls for all direct pinvokes encountered in the managed assembly.\n");
+			printf ("    dwarfdebug                           - \n");
+			printf ("    full                                 - \n");
+			printf ("    hybrid                               - \n");
+			printf ("    info                                 - \n");
+			printf ("    keep-temps                           - \n");
+			printf ("    llvm                                 - \n");
+			printf ("    llvmonly                             - \n");
+			printf ("    llvm-outfile=<string>                - \n");
+			printf ("    llvm-path=<string>                   - \n");
+			printf ("    msym-dir=<string>                    - \n");
+			printf ("    mtriple                              - \n");
+			printf ("    nimt-trampolines=<value>             - \n");
+			printf ("    nodebug                              - \n");
+			printf ("    no-direct-calls                      - \n");
+			printf ("    no-write-symbols                     - \n");
+			printf ("    nrgctx-trampolines=<value>           - \n");
+			printf ("    nrgctx-fetch-trampolines=<value>     - \n");
+			printf ("    ngsharedvt-trampolines=<value>       - \n");
+			printf ("    nftnptr-arg-trampolines=<value>      - \n");
+			printf ("    nunbox-arbitrary-trampolines=<value> - \n");
+			printf ("    ntrampolines=<value>                 - \n");
+			printf ("    outfile=<string>                     - \n");
+			printf ("    profile=<string>                     - \n");
+			printf ("    profile-only                         - \n");
+			printf ("    mibc-profile=<string>                - \n");
+			printf ("    print-skipped-methods                - \n");
+			printf ("    readonly-value=<value>               - \n");
+			printf ("    save-temps                           - \n");
+			printf ("    soft-debug                           - \n");
+			printf ("    static                               - \n");
+			printf ("    stats                                - \n");
+			printf ("    temp-path=<string>                   - \n");
+			printf ("    tool-prefix=<value>                  - \n");
+			printf ("    threads=<value>                      - \n");
+			printf ("    write-symbols                        - \n");
+			printf ("    verbose                              - \n");
+			printf ("    allow-errors                         - \n");
+			printf ("    no-opt                               - \n");
+			printf ("    llvmopts=<value>                     - \n");
+			printf ("    llvmllc=<value>                      - \n");
+			printf ("    clangxx=<value>                      - \n");
+			printf ("    depfile=<value>                      - \n");
+			printf ("    mcpu=<value>                         - \n");
+			printf ("    mattr=<value>                        - \n");
+			printf ("    help/?                                 \n");
 			exit (0);
 		} else {
 			fprintf (stderr, "AOT : Unknown argument '%s'.\n", arg);
