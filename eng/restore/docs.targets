@@ -1,7 +1,0 @@
-<Project>
-
-  <ItemGroup>
-    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
-  </ItemGroup>
-
-</Project>

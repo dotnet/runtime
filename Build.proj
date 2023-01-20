@@ -10,7 +10,10 @@
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
 
   <!-- Upfront restore hooks -->
-  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" />
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+  </ItemGroup>
+  
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
 
   <Target Name="BuildLocalTasks"
