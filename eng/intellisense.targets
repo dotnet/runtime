@@ -30,7 +30,7 @@
 
   <Target Name="CopyDocumentationFileToXmlDocDir"
           AfterTargets="CoreCompile"
-          Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
           DependsOnTargets="ChangeDocumentationFileForPackaging">
     <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
           DestinationFolder="$(XmlDocDir)"
