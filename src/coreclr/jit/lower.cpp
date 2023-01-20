@@ -3448,7 +3448,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #if FEATURE_MULTIREG_RET
         if (comp->compMethodReturnsMultiRegRetType() && retVal->OperIs(GT_LCL_VAR))
         {
-            CheckMultiRegLclVar(retVal->AsLclVar(), &comp->compRetTypeDesc);
+            CheckMultiRegLclVar(retVal->AsLclVar(), retVal->GetMultiRegCount(comp));
         }
 #endif // FEATURE_MULTIREG_RET
 #ifdef DEBUG
@@ -3533,13 +3533,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
     if (srcIsMultiReg)
     {
-        const ReturnTypeDesc* retTypeDesc = nullptr;
-        if (src->OperIs(GT_CALL))
-        {
-            retTypeDesc = src->AsCall()->GetReturnTypeDesc();
-        }
-        
-        CheckMultiRegLclVar(lclStore->AsLclVar(), retTypeDesc);
+        CheckMultiRegLclVar(lclStore->AsLclVar(), src->GetMultiRegCount(comp));
     }
 
     const var_types lclRegType = varDsc->GetRegisterType(lclStore);
@@ -6890,15 +6884,9 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
 //
 // Arguments:
 //   lclNode     - the GT_LCL_VAR or GT_STORE_LCL_VAR node.
-//   retTypeDesc - a return type descriptor either for a call source of a store of
-//                 the local, or for the GT_RETURN consumer of the local.
+//   registerCount - register count of source of a store.
 //
-// Notes:
-//   If retTypeDesc is non-null, this method will check that the fields are compatible.
-//   Otherwise, it will only check that the lclVar is independently promoted
-//   (i.e. it is marked lvPromoted and not lvDoNotEnregister).
-//
-bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc)
+bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 {
     bool canEnregisterAsMultiReg  = false;
     bool canEnregisterAsSingleReg = false;
@@ -6919,19 +6907,9 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
         // so we can tolerate mismatches of integer size.
         if (comp->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
-            // If we have no retTypeDesc, we only care that it is independently promoted.
-            if (retTypeDesc == nullptr)
+            if (registerCount == varDsc->lvFieldCnt)
             {
                 canEnregisterAsMultiReg = true;
-            }
-            else
-            {
-                unsigned regCount = retTypeDesc->GetReturnRegCount();
-
-                if (regCount == varDsc->lvFieldCnt)
-                {
-                    canEnregisterAsMultiReg = true;
-                }
             }
         }
     }

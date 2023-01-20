@@ -339,7 +339,7 @@ private:
 #endif
 
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
+    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
