@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -15,9 +16,13 @@ namespace Microsoft.Extensions.Logging
     internal sealed class LogValuesFormatter
     {
         private const string NullValue = "(null)";
-        private static readonly char[] FormatDelimiters = {',', ':'};
-        private readonly string _format;
+        private static readonly char[] FormatDelimiters = { ',', ':' };
         private readonly List<string> _valueNames = new List<string>();
+#if NET8_0_OR_GREATER
+        private readonly CompositeFormat _format;
+#else
+        private readonly string _format;
+#endif
 
         // NOTE: If this assembly ever builds for netcoreapp, the below code should change to:
         // - Be annotated as [SkipLocalsInit] to avoid zero'ing the stackalloc'd char span
@@ -39,7 +44,12 @@ namespace Microsoft.Extensions.Logging
                 if (scanIndex == 0 && openBraceIndex == endIndex)
                 {
                     // No holes found.
-                    _format = format;
+                    _format =
+#if NET8_0_OR_GREATER
+                        CompositeFormat.Parse(format);
+#else
+                        format;
+#endif
                     return;
                 }
 
@@ -64,7 +74,12 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            _format = vsb.ToString();
+            _format =
+#if NET8_0_OR_GREATER
+                CompositeFormat.Parse(vsb.ToString());
+#else
+                vsb.ToString();
+#endif
         }
 
         public string OriginalFormat { get; private set; }
@@ -167,23 +182,53 @@ namespace Microsoft.Extensions.Logging
 
         internal string Format()
         {
+#if NET8_0_OR_GREATER
+            return _format.Format;
+#else
             return _format;
+#endif
         }
 
-        internal string Format(object? arg0)
+#if NET8_0_OR_GREATER
+        internal string Format<TArg0>(TArg0 arg0)
         {
-            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0));
+            object? arg0String = null;
+            return
+                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0) :
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String);
         }
 
-        internal string Format(object? arg0, object? arg1)
+        internal string Format<TArg0, TArg1>(TArg0 arg0, TArg1 arg1)
         {
-            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1));
+            object? arg0String = null, arg1String = null;
+            return
+                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
+                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1) :
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1);
         }
 
-        internal string Format(object? arg0, object? arg1, object? arg2)
+        internal string Format<TArg0, TArg1, TArg2>(TArg0 arg0, TArg1 arg1, TArg2 arg2)
         {
-            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1), FormatArgument(arg2));
+            object? arg0String = null, arg1String = null, arg2String = null;
+            return
+                !TryFormatArgumentIfNullOrEnumerable(arg0, ref arg0String) &&
+                !TryFormatArgumentIfNullOrEnumerable(arg1, ref arg1String) &&
+                !TryFormatArgumentIfNullOrEnumerable(arg2, ref arg2String) ?
+                string.Format(CultureInfo.InvariantCulture, _format, arg0, arg1, arg2) :
+                string.Format(CultureInfo.InvariantCulture, _format, arg0String ?? arg0, arg1String ?? arg1, arg2String ?? arg2);
         }
+#else
+        internal string Format(object? arg0) =>
+            string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0));
+
+        internal string Format(object? arg0, object? arg1) =>
+            string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1));
+
+        internal string Format(object? arg0, object? arg1, object? arg2) =>
+            string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1), FormatArgument(arg2));
+#endif
 
         public KeyValuePair<string, object?> GetValue(object?[] values, int index)
         {
@@ -212,21 +257,22 @@ namespace Microsoft.Extensions.Logging
             return valueArray;
         }
 
-        private object FormatArgument(object? value)
+        private static object FormatArgument(object? value)
+        {
+            object? stringValue = null;
+            return TryFormatArgumentIfNullOrEnumerable(value, ref stringValue) ? stringValue : value!;
+        }
+
+        private static bool TryFormatArgumentIfNullOrEnumerable(object? value, [NotNullWhen(true)] ref object? stringValue)
         {
             if (value == null)
             {
-                return NullValue;
+                stringValue = NullValue;
+                return true;
             }
 
-            // since 'string' implements IEnumerable, special case it
-            if (value is string)
-            {
-                return value;
-            }
-
-            // if the value implements IEnumerable, build a comma separated string.
-            if (value is IEnumerable enumerable)
+            // if the value implements IEnumerable but isn't itself a string, build a comma separated string.
+            if (value is not string && value is IEnumerable enumerable)
             {
                 var vsb = new ValueStringBuilder(stackalloc char[256]);
                 bool first = true;
@@ -240,11 +286,11 @@ namespace Microsoft.Extensions.Logging
                     vsb.Append(e != null ? e.ToString() : NullValue);
                     first = false;
                 }
-                return vsb.ToString();
+                stringValue = vsb.ToString();
+                return true;
             }
 
-            return value;
+            return false;
         }
-
     }
 }
