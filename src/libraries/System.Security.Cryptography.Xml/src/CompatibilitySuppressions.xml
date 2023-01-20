@@ -3,9 +3,7 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
     <!-- Type must be public in implementation for serialization to work but we don't want to expose it publicly in the contract as it isn't public on .NET Framework. -->
-    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
-    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
   </Suppression>
 </Suppressions>
