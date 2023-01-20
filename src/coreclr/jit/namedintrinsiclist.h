@@ -108,16 +108,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,
 
-    // These are used by HWIntrinsics but are defined more generally
-    // to allow dead code optimization and handle the recursion case
-
-    NI_IsSupported_True,
-    NI_IsSupported_False,
-    NI_IsSupported_Dynamic,
-    NI_IsSupported_Type,
-    NI_Throw_PlatformNotSupportedException,
-    NI_Vector_GetCount,
-
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
     NI_System_Threading_Interlocked_CompareExchange,
@@ -157,6 +147,28 @@ enum NamedIntrinsic : unsigned short
     NI_SIMD_UpperSave,
 #endif // FEATURE_SIMD
 
+    //
+    // Special Import Intrinsics
+    //
+
+    NI_SPECIAL_IMPORT_START,
+
+    // These are used by HWIntrinsics but are defined more generally
+    // to allow dead code optimization and handle the recursion case
+
+    NI_IsSupported_True,
+    NI_IsSupported_False,
+    NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
+    NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
+
+    NI_SPECIAL_IMPORT_END,
+
+    //
+    // System.Runtime.CompilerServices.Unsafe Intrinsics
+    //
+
     NI_SRCS_UNSAFE_START,
 
     NI_SRCS_UNSAFE_Add,
@@ -186,6 +198,10 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_WriteUnaligned,
 
     NI_SRCS_UNSAFE_END,
+
+    //
+    // Primitive Intrinsics
+    //
 
     NI_PRIMITIVE_START,
 

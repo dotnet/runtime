@@ -2345,152 +2345,199 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // We specially support the following on all platforms to allow for dead
     // code optimization and to more generally support recursive intrinsics.
 
-    if (isIntrinsic)
+    if (isIntrinsic && (ni > NI_SPECIAL_IMPORT_START) && (ni < NI_PRIMITIVE_END))
     {
-        if (ni == NI_IsSupported_True)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(true);
-        }
+        static_assert_no_msg(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
+        static_assert_no_msg(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
+        static_assert_no_msg(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
 
-        if (ni == NI_IsSupported_False)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(false);
-        }
+        static_assert_no_msg((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
+        static_assert_no_msg((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
 
-        if (ni == NI_IsSupported_Type)
+        if (ni < NI_SPECIAL_IMPORT_END)
         {
-            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
-            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+            assert(ni > NI_SPECIAL_IMPORT_START);
 
-            switch (simdBaseJitType)
+            switch (ni)
             {
-                case CORINFO_TYPE_BYTE:
-                case CORINFO_TYPE_UBYTE:
-                case CORINFO_TYPE_SHORT:
-                case CORINFO_TYPE_USHORT:
-                case CORINFO_TYPE_INT:
-                case CORINFO_TYPE_UINT:
-                case CORINFO_TYPE_LONG:
-                case CORINFO_TYPE_ULONG:
-                case CORINFO_TYPE_FLOAT:
-                case CORINFO_TYPE_DOUBLE:
-                case CORINFO_TYPE_NATIVEINT:
-                case CORINFO_TYPE_NATIVEUINT:
+                case NI_IsSupported_True:
                 {
+                    assert(sig->numArgs == 0);
                     return gtNewIconNode(true);
                 }
 
-                default:
+                case NI_IsSupported_False:
                 {
+                    assert(sig->numArgs == 0);
                     return gtNewIconNode(false);
                 }
-            }
-        }
 
-        if (ni == NI_Vector_GetCount)
-        {
-            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
-            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-            unsigned             simdSize        = info.compCompHnd->getClassSize(clsHnd);
-
-            switch (simdBaseJitType)
-            {
-                case CORINFO_TYPE_BYTE:
-                case CORINFO_TYPE_UBYTE:
-                case CORINFO_TYPE_SHORT:
-                case CORINFO_TYPE_USHORT:
-                case CORINFO_TYPE_INT:
-                case CORINFO_TYPE_UINT:
-                case CORINFO_TYPE_LONG:
-                case CORINFO_TYPE_ULONG:
-                case CORINFO_TYPE_FLOAT:
-                case CORINFO_TYPE_DOUBLE:
-                case CORINFO_TYPE_NATIVEINT:
-                case CORINFO_TYPE_NATIVEUINT:
+                case NI_IsSupported_Dynamic:
                 {
-                    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-                    unsigned       elementSize  = genTypeSize(simdBaseType);
-                    GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
+                    break;
+                }
+
+                case NI_IsSupported_Type:
+                {
+                    CORINFO_CLASS_HANDLE typeArgHnd;
+                    CorInfoType          simdBaseJitType;
+
+                    typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                    simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    switch (simdBaseJitType)
+                    {
+                        case CORINFO_TYPE_BYTE:
+                        case CORINFO_TYPE_UBYTE:
+                        case CORINFO_TYPE_SHORT:
+                        case CORINFO_TYPE_USHORT:
+                        case CORINFO_TYPE_INT:
+                        case CORINFO_TYPE_UINT:
+                        case CORINFO_TYPE_LONG:
+                        case CORINFO_TYPE_ULONG:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
+                        case CORINFO_TYPE_NATIVEINT:
+                        case CORINFO_TYPE_NATIVEUINT:
+                        {
+                            return gtNewIconNode(true);
+                        }
+
+                        default:
+                        {
+                            return gtNewIconNode(false);
+                        }
+                    }
+                }
+
+                case NI_Throw_PlatformNotSupportedException:
+                {
+                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                        mustExpand);
+                }
+
+                case NI_Vector_GetCount:
+                {
+                    CORINFO_CLASS_HANDLE typeArgHnd;
+                    CorInfoType          simdBaseJitType;
+                    unsigned             simdSize;
+
+                    typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                    simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+                    simdSize        = info.compCompHnd->getClassSize(clsHnd);
+
+                    switch (simdBaseJitType)
+                    {
+                        case CORINFO_TYPE_BYTE:
+                        case CORINFO_TYPE_UBYTE:
+                        case CORINFO_TYPE_SHORT:
+                        case CORINFO_TYPE_USHORT:
+                        case CORINFO_TYPE_INT:
+                        case CORINFO_TYPE_UINT:
+                        case CORINFO_TYPE_LONG:
+                        case CORINFO_TYPE_ULONG:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
+                        case CORINFO_TYPE_NATIVEINT:
+                        case CORINFO_TYPE_NATIVEUINT:
+                        {
+                            var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+                            unsigned       elementSize  = genTypeSize(simdBaseType);
+                            GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
 
 #if defined(FEATURE_SIMD)
-                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
 #endif // FEATURE_SIMD
 
-                    return countNode;
+                            return countNode;
+                        }
+
+                        default:
+                        {
+                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                                mustExpand);
+                        }
+                    }
                 }
 
                 default:
                 {
-                    ni = NI_Throw_PlatformNotSupportedException;
-                    break;
+                    unreached();
                 }
             }
         }
-
-        if (ni == NI_Throw_PlatformNotSupportedException)
+        else if (ni < NI_SRCS_UNSAFE_END)
         {
-            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-        }
-
-        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
-        {
+            assert(ni > NI_SRCS_UNSAFE_START);
             assert(!mustExpand);
             return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
         }
-
-        if ((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END))
+        else
         {
+            assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
             assert(!mustExpand);
             return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig);
         }
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
     {
-        if (!isIntrinsic)
+        static_assert_no_msg(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
+        static_assert_no_msg(NI_SIMD_AS_HWINTRINSIC_START < NI_SIMD_AS_HWINTRINSIC_END);
+
+        static_assert_no_msg((NI_HW_INTRINSIC_END + 1) == NI_SIMD_AS_HWINTRINSIC_START);
+
+        if (ni < NI_HW_INTRINSIC_END)
         {
+            assert(ni > NI_HW_INTRINSIC_START);
+
+            if (!isIntrinsic)
+            {
 #if defined(TARGET_XARCH)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+                // We can't guarantee that all overloads for the xplat intrinsics can be
+                // handled by the AltJit, so limit only the platform specific intrinsics
+                assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
 
-            if (ni < NI_Vector256_Xor)
+                if (ni < NI_Vector256_Xor)
 #elif defined(TARGET_ARM64)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
+                // We can't guarantee that all overloads for the xplat intrinsics can be
+                // handled by the AltJit, so limit only the platform specific intrinsics
+                assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
 
-            if (ni < NI_Vector128_Xor)
+                if (ni < NI_Vector128_Xor)
 #else
 #error Unsupported platform
 #endif
+                {
+                    // Several of the NI_Vector64/128/256 APIs do not have
+                    // all overloads as intrinsic today so they will assert
+                    return nullptr;
+                }
+            }
+
+            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+
+            if (mustExpand && (hwintrinsic == nullptr))
             {
-                // Several of the NI_Vector64/128/256 APIs do not have
-                // all overloads as intrinsic today so they will assert
-                return nullptr;
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+            }
+
+            return hwintrinsic;
+        }
+        else
+        {
+            assert((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END));
+
+            if (isIntrinsic)
+            {
+                // These intrinsics aren't defined recursively and so they will never be mustExpand
+                // Instead, they provide software fallbacks that will be executed instead.
+
+                assert(!mustExpand);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
         }
-
-        GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
-
-        if (mustExpand && (hwintrinsic == nullptr))
-        {
-            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
-        }
-
-        return hwintrinsic;
-    }
-
-    if (isIntrinsic && (ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
-    {
-        // These intrinsics aren't defined recursively and so they will never be mustExpand
-        // Instead, they provide software fallbacks that will be executed instead.
-
-        assert(!mustExpand);
-        return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -4510,6 +4557,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1  = impPopStack().val;
             uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
 
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
             if (op1->IsIntegralConst())
             {
                 if (varTypeIsLong(baseType))
@@ -4523,15 +4579,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
-            }
-
-            // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-            if (cns2 == 0)
-            {
-                // No rotation is a nop
-                return op1;
             }
 
             op2->AsIntConCommon()->SetIconValue(cns2);
@@ -4559,6 +4606,15 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1  = impPopStack().val;
             uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
 
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
             if (op1->IsIntegralConst())
             {
                 if (varTypeIsLong(baseType))
@@ -4572,15 +4628,6 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                     result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
                 }
                 break;
-            }
-
-            // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-            if (cns2 == 0)
-            {
-                // No rotation is a nop
-                return op1;
             }
 
             op2->AsIntConCommon()->SetIconValue(cns2);
@@ -7526,344 +7573,404 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (namespaceName[0] == '\0')
         {
-            if (strcmp(className, "Activator") == 0)
+            switch (className[0])
             {
-                if (strcmp(methodName, "AllocatorOf") == 0)
-                {
-                    result = NI_System_Activator_AllocatorOf;
-                }
-                else if (strcmp(methodName, "DefaultConstructorOf") == 0)
-                {
-                    result = NI_System_Activator_DefaultConstructorOf;
-                }
-            }
-            else if (strcmp(className, "Array") == 0)
-            {
-                if (strcmp(methodName, "Clone") == 0)
-                {
-                    result = NI_System_Array_Clone;
-                }
-                else if (strcmp(methodName, "GetLength") == 0)
-                {
-                    result = NI_System_Array_GetLength;
-                }
-                else if (strcmp(methodName, "GetLowerBound") == 0)
-                {
-                    result = NI_System_Array_GetLowerBound;
-                }
-                else if (strcmp(methodName, "GetUpperBound") == 0)
-                {
-                    result = NI_System_Array_GetUpperBound;
-                }
-            }
-            else if (strcmp(className, "BitConverter") == 0)
-            {
-                if (strcmp(methodName, "DoubleToInt64Bits") == 0)
-                {
-                    result = NI_System_BitConverter_DoubleToInt64Bits;
-                }
-                else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
-                {
-                    result = NI_System_BitConverter_DoubleToInt64Bits;
-                }
-                else if (strcmp(methodName, "Int32BitsToSingle") == 0)
-                {
-                    result = NI_System_BitConverter_Int32BitsToSingle;
-                }
-                else if (strcmp(methodName, "Int64BitsToDouble") == 0)
-                {
-                    result = NI_System_BitConverter_Int64BitsToDouble;
-                }
-                else if (strcmp(methodName, "SingleToInt32Bits") == 0)
-                {
-                    result = NI_System_BitConverter_SingleToInt32Bits;
-                }
-                else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
-                {
-                    result = NI_System_BitConverter_SingleToInt32Bits;
-                }
-                else if (strcmp(methodName, "UInt32BitsToSingle") == 0)
-                {
-                    result = NI_System_BitConverter_Int32BitsToSingle;
-                }
-                else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
-                {
-                    result = NI_System_BitConverter_Int64BitsToDouble;
-                }
-            }
-            else if (strcmp(className, "Enum") == 0)
-            {
-                if (strcmp(methodName, "HasFlag") == 0)
-                {
-                    result = NI_System_Enum_HasFlag;
-                }
-            }
-            else if (strcmp(className, "EETypePtr") == 0)
-            {
-                if (strcmp(methodName, "EETypePtrOf") == 0)
-                {
-                    result = NI_System_EETypePtr_EETypePtrOf;
-                }
-            }
-            else if (strcmp(className, "GC") == 0)
-            {
-                if (strcmp(methodName, "KeepAlive") == 0)
-                {
-                    result = NI_System_GC_KeepAlive;
-                }
-            }
-            else if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
-                     (strcmp(className, "IntPtr") == 0))
-            {
-                result = lookupPrimitiveNamedIntrinsic(method, methodName);
-            }
-            else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
-            {
-                if (strcmp(methodName, "Abs") == 0)
-                {
-                    result = NI_System_Math_Abs;
-                }
-                else if (strcmp(methodName, "Acos") == 0)
-                {
-                    result = NI_System_Math_Acos;
-                }
-                else if (strcmp(methodName, "Acosh") == 0)
-                {
-                    result = NI_System_Math_Acosh;
-                }
-                else if (strcmp(methodName, "Asin") == 0)
-                {
-                    result = NI_System_Math_Asin;
-                }
-                else if (strcmp(methodName, "Asinh") == 0)
-                {
-                    result = NI_System_Math_Asinh;
-                }
-                else if (strcmp(methodName, "Atan") == 0)
-                {
-                    result = NI_System_Math_Atan;
-                }
-                else if (strcmp(methodName, "Atanh") == 0)
-                {
-                    result = NI_System_Math_Atanh;
-                }
-                else if (strcmp(methodName, "Atan2") == 0)
-                {
-                    result = NI_System_Math_Atan2;
-                }
-                else if (strcmp(methodName, "Cbrt") == 0)
-                {
-                    result = NI_System_Math_Cbrt;
-                }
-                else if (strcmp(methodName, "Ceiling") == 0)
-                {
-                    result = NI_System_Math_Ceiling;
-                }
-                else if (strcmp(methodName, "Cos") == 0)
-                {
-                    result = NI_System_Math_Cos;
-                }
-                else if (strcmp(methodName, "Cosh") == 0)
-                {
-                    result = NI_System_Math_Cosh;
-                }
-                else if (strcmp(methodName, "Exp") == 0)
-                {
-                    result = NI_System_Math_Exp;
-                }
-                else if (strcmp(methodName, "Floor") == 0)
-                {
-                    result = NI_System_Math_Floor;
-                }
-                else if (strcmp(methodName, "FMod") == 0)
-                {
-                    result = NI_System_Math_FMod;
-                }
-                else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-                {
-                    result = NI_System_Math_FusedMultiplyAdd;
-                }
-                else if (strcmp(methodName, "ILogB") == 0)
-                {
-                    result = NI_System_Math_ILogB;
-                }
-                else if (strcmp(methodName, "Log") == 0)
-                {
-                    result = NI_System_Math_Log;
-                }
-                else if (strcmp(methodName, "Log2") == 0)
-                {
-                    result = NI_System_Math_Log2;
-                }
-                else if (strcmp(methodName, "Log10") == 0)
-                {
-                    result = NI_System_Math_Log10;
-                }
-                else if (strcmp(methodName, "Max") == 0)
-                {
-                    result = NI_System_Math_Max;
-                }
-                else if (strcmp(methodName, "Min") == 0)
-                {
-                    result = NI_System_Math_Min;
-                }
-                else if (strcmp(methodName, "Pow") == 0)
-                {
-                    result = NI_System_Math_Pow;
-                }
-                else if (strcmp(methodName, "Round") == 0)
-                {
-                    result = NI_System_Math_Round;
-                }
-                else if (strcmp(methodName, "Sin") == 0)
-                {
-                    result = NI_System_Math_Sin;
-                }
-                else if (strcmp(methodName, "Sinh") == 0)
-                {
-                    result = NI_System_Math_Sinh;
-                }
-                else if (strcmp(methodName, "Sqrt") == 0)
-                {
-                    result = NI_System_Math_Sqrt;
-                }
-                else if (strcmp(methodName, "Tan") == 0)
-                {
-                    result = NI_System_Math_Tan;
-                }
-                else if (strcmp(methodName, "Tanh") == 0)
-                {
-                    result = NI_System_Math_Tanh;
-                }
-                else if (strcmp(methodName, "Truncate") == 0)
-                {
-                    result = NI_System_Math_Truncate;
-                }
-            }
-            else if (strcmp(className, "MemoryExtensions") == 0)
-            {
-                if (strcmp(methodName, "AsSpan") == 0)
-                {
-                    result = NI_System_MemoryExtensions_AsSpan;
-                }
-                else if (strcmp(methodName, "Equals") == 0)
-                {
-                    result = NI_System_MemoryExtensions_Equals;
-                }
-                else if (strcmp(methodName, "SequenceEqual") == 0)
-                {
-                    result = NI_System_MemoryExtensions_SequenceEqual;
-                }
-                else if (strcmp(methodName, "StartsWith") == 0)
-                {
-                    result = NI_System_MemoryExtensions_StartsWith;
-                }
-            }
-            else if (strcmp(className, "Object") == 0)
-            {
-                if (strcmp(methodName, "GetType") == 0)
-                {
-                    result = NI_System_Object_GetType;
-                }
-                else if (strcmp(methodName, "MemberwiseClone") == 0)
-                {
-                    result = NI_System_Object_MemberwiseClone;
-                }
-            }
-            else if (strcmp(className, "ReadOnlySpan`1") == 0)
-            {
-                if (strcmp(methodName, "get_Item") == 0)
-                {
-                    result = NI_System_ReadOnlySpan_get_Item;
-                }
-            }
-            else if (strcmp(className, "RuntimeType") == 0)
-            {
-                if (strcmp(methodName, "get_IsActualEnum") == 0)
-                {
-                    result = NI_System_Type_get_IsEnum;
-                }
-            }
-            else if (strcmp(className, "RuntimeTypeHandle") == 0)
-            {
-                if (strcmp(methodName, "GetValueInternal") == 0)
-                {
-                    result = NI_System_RuntimeTypeHandle_GetValueInternal;
-                }
-            }
-            else if (strcmp(className, "Span`1") == 0)
-            {
-                if (strcmp(methodName, "get_Item") == 0)
-                {
-                    result = NI_System_Span_get_Item;
-                }
-            }
-            else if (strcmp(className, "String") == 0)
-            {
-                if (strcmp(methodName, "Equals") == 0)
-                {
-                    result = NI_System_String_Equals;
-                }
-                else if (strcmp(methodName, "get_Chars") == 0)
-                {
-                    result = NI_System_String_get_Chars;
-                }
-                else if (strcmp(methodName, "get_Length") == 0)
-                {
-                    result = NI_System_String_get_Length;
-                }
-                else if (strcmp(methodName, "op_Implicit") == 0)
-                {
-                    result = NI_System_String_op_Implicit;
-                }
-                else if (strcmp(methodName, "StartsWith") == 0)
-                {
-                    result = NI_System_String_StartsWith;
-                }
-            }
-            else if (strcmp(className, "Type") == 0)
-            {
-                if (strcmp(methodName, "get_IsEnum") == 0)
-                {
-                    result = NI_System_Type_get_IsEnum;
-                }
-                else if (strcmp(methodName, "get_IsValueType") == 0)
-                {
-                    result = NI_System_Type_get_IsValueType;
-                }
-                else if (strcmp(methodName, "get_IsByRefLike") == 0)
-                {
-                    result = NI_System_Type_get_IsByRefLike;
-                }
-                else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
-                {
-                    result = NI_System_Type_GetEnumUnderlyingType;
-                }
-                else if (strcmp(methodName, "GetTypeFromHandle") == 0)
-                {
-                    result = NI_System_Type_GetTypeFromHandle;
-                }
-                else if (strcmp(methodName, "IsAssignableFrom") == 0)
-                {
-                    result = NI_System_Type_IsAssignableFrom;
-                }
-                else if (strcmp(methodName, "IsAssignableTo") == 0)
-                {
-                    result = NI_System_Type_IsAssignableTo;
-                }
-                else if (strcmp(methodName, "op_Equality") == 0)
-                {
-                    result = NI_System_Type_op_Equality;
-                }
-                else if (strcmp(methodName, "op_Inequality") == 0)
-                {
-                    result = NI_System_Type_op_Inequality;
-                }
-            }
-            else if ((strcmp(className, "UInt32") == 0) || (strcmp(className, "UInt64") == 0) ||
-                     (strcmp(className, "UIntPtr") == 0))
-            {
-                result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                case 'A':
+                {
+                    if (strcmp(className, "Activator") == 0)
+                    {
+                        if (strcmp(methodName, "AllocatorOf") == 0)
+                        {
+                            result = NI_System_Activator_AllocatorOf;
+                        }
+                        else if (strcmp(methodName, "DefaultConstructorOf") == 0)
+                        {
+                            result = NI_System_Activator_DefaultConstructorOf;
+                        }
+                    }
+                    else if (strcmp(className, "Array") == 0)
+                    {
+                        if (strcmp(methodName, "Clone") == 0)
+                        {
+                            result = NI_System_Array_Clone;
+                        }
+                        else if (strcmp(methodName, "GetLength") == 0)
+                        {
+                            result = NI_System_Array_GetLength;
+                        }
+                        else if (strcmp(methodName, "GetLowerBound") == 0)
+                        {
+                            result = NI_System_Array_GetLowerBound;
+                        }
+                        else if (strcmp(methodName, "GetUpperBound") == 0)
+                        {
+                            result = NI_System_Array_GetUpperBound;
+                        }
+                    }
+                    break;
+                }
+
+                case 'B':
+                {
+                    if (strcmp(className, "BitConverter") == 0)
+                    {
+                        if (strcmp(methodName, "DoubleToInt64Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_DoubleToInt64Bits;
+                        }
+                        else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_DoubleToInt64Bits;
+                        }
+                        else if (strcmp(methodName, "Int32BitsToSingle") == 0)
+                        {
+                            result = NI_System_BitConverter_Int32BitsToSingle;
+                        }
+                        else if (strcmp(methodName, "Int64BitsToDouble") == 0)
+                        {
+                            result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                        else if (strcmp(methodName, "SingleToInt32Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_SingleToInt32Bits;
+                        }
+                        else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_SingleToInt32Bits;
+                        }
+                        else if (strcmp(methodName, "UInt32BitsToSingle") == 0)
+                        {
+                            result = NI_System_BitConverter_Int32BitsToSingle;
+                        }
+                        else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
+                        {
+                            result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    break;
+                }
+
+                case 'E':
+                {
+                    if (strcmp(className, "Enum") == 0)
+                    {
+                        if (strcmp(methodName, "HasFlag") == 0)
+                        {
+                            result = NI_System_Enum_HasFlag;
+                        }
+                    }
+                    else if (strcmp(className, "EETypePtr") == 0)
+                    {
+                        if (strcmp(methodName, "EETypePtrOf") == 0)
+                        {
+                            result = NI_System_EETypePtr_EETypePtrOf;
+                        }
+                    }
+                    break;
+                }
+
+                case 'G':
+                {
+                    if (strcmp(className, "GC") == 0)
+                    {
+                        if (strcmp(methodName, "KeepAlive") == 0)
+                        {
+                            result = NI_System_GC_KeepAlive;
+                        }
+                    }
+                    break;
+                }
+
+                case 'I':
+                {
+                    if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
+                        (strcmp(className, "IntPtr") == 0))
+                    {
+                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
+                case 'M':
+                {
+                    if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
+                    {
+                        if (strcmp(methodName, "Abs") == 0)
+                        {
+                            result = NI_System_Math_Abs;
+                        }
+                        else if (strcmp(methodName, "Acos") == 0)
+                        {
+                            result = NI_System_Math_Acos;
+                        }
+                        else if (strcmp(methodName, "Acosh") == 0)
+                        {
+                            result = NI_System_Math_Acosh;
+                        }
+                        else if (strcmp(methodName, "Asin") == 0)
+                        {
+                            result = NI_System_Math_Asin;
+                        }
+                        else if (strcmp(methodName, "Asinh") == 0)
+                        {
+                            result = NI_System_Math_Asinh;
+                        }
+                        else if (strcmp(methodName, "Atan") == 0)
+                        {
+                            result = NI_System_Math_Atan;
+                        }
+                        else if (strcmp(methodName, "Atanh") == 0)
+                        {
+                            result = NI_System_Math_Atanh;
+                        }
+                        else if (strcmp(methodName, "Atan2") == 0)
+                        {
+                            result = NI_System_Math_Atan2;
+                        }
+                        else if (strcmp(methodName, "Cbrt") == 0)
+                        {
+                            result = NI_System_Math_Cbrt;
+                        }
+                        else if (strcmp(methodName, "Ceiling") == 0)
+                        {
+                            result = NI_System_Math_Ceiling;
+                        }
+                        else if (strcmp(methodName, "Cos") == 0)
+                        {
+                            result = NI_System_Math_Cos;
+                        }
+                        else if (strcmp(methodName, "Cosh") == 0)
+                        {
+                            result = NI_System_Math_Cosh;
+                        }
+                        else if (strcmp(methodName, "Exp") == 0)
+                        {
+                            result = NI_System_Math_Exp;
+                        }
+                        else if (strcmp(methodName, "Floor") == 0)
+                        {
+                            result = NI_System_Math_Floor;
+                        }
+                        else if (strcmp(methodName, "FMod") == 0)
+                        {
+                            result = NI_System_Math_FMod;
+                        }
+                        else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+                        {
+                            result = NI_System_Math_FusedMultiplyAdd;
+                        }
+                        else if (strcmp(methodName, "ILogB") == 0)
+                        {
+                            result = NI_System_Math_ILogB;
+                        }
+                        else if (strcmp(methodName, "Log") == 0)
+                        {
+                            result = NI_System_Math_Log;
+                        }
+                        else if (strcmp(methodName, "Log2") == 0)
+                        {
+                            result = NI_System_Math_Log2;
+                        }
+                        else if (strcmp(methodName, "Log10") == 0)
+                        {
+                            result = NI_System_Math_Log10;
+                        }
+                        else if (strcmp(methodName, "Max") == 0)
+                        {
+                            result = NI_System_Math_Max;
+                        }
+                        else if (strcmp(methodName, "Min") == 0)
+                        {
+                            result = NI_System_Math_Min;
+                        }
+                        else if (strcmp(methodName, "Pow") == 0)
+                        {
+                            result = NI_System_Math_Pow;
+                        }
+                        else if (strcmp(methodName, "Round") == 0)
+                        {
+                            result = NI_System_Math_Round;
+                        }
+                        else if (strcmp(methodName, "Sin") == 0)
+                        {
+                            result = NI_System_Math_Sin;
+                        }
+                        else if (strcmp(methodName, "Sinh") == 0)
+                        {
+                            result = NI_System_Math_Sinh;
+                        }
+                        else if (strcmp(methodName, "Sqrt") == 0)
+                        {
+                            result = NI_System_Math_Sqrt;
+                        }
+                        else if (strcmp(methodName, "Tan") == 0)
+                        {
+                            result = NI_System_Math_Tan;
+                        }
+                        else if (strcmp(methodName, "Tanh") == 0)
+                        {
+                            result = NI_System_Math_Tanh;
+                        }
+                        else if (strcmp(methodName, "Truncate") == 0)
+                        {
+                            result = NI_System_Math_Truncate;
+                        }
+                    }
+                    else if (strcmp(className, "MemoryExtensions") == 0)
+                    {
+                        if (strcmp(methodName, "AsSpan") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_AsSpan;
+                        }
+                        else if (strcmp(methodName, "Equals") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_Equals;
+                        }
+                        else if (strcmp(methodName, "SequenceEqual") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_SequenceEqual;
+                        }
+                        else if (strcmp(methodName, "StartsWith") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_StartsWith;
+                        }
+                    }
+                    break;
+                }
+
+                case 'O':
+                {
+                    if (strcmp(className, "Object") == 0)
+                    {
+                        if (strcmp(methodName, "GetType") == 0)
+                        {
+                            result = NI_System_Object_GetType;
+                        }
+                        else if (strcmp(methodName, "MemberwiseClone") == 0)
+                        {
+                            result = NI_System_Object_MemberwiseClone;
+                        }
+                    }
+                    break;
+                }
+
+                case 'R':
+                {
+                    if (strcmp(className, "ReadOnlySpan`1") == 0)
+                    {
+                        if (strcmp(methodName, "get_Item") == 0)
+                        {
+                            result = NI_System_ReadOnlySpan_get_Item;
+                        }
+                    }
+                    else if (strcmp(className, "RuntimeType") == 0)
+                    {
+                        if (strcmp(methodName, "get_IsActualEnum") == 0)
+                        {
+                            result = NI_System_Type_get_IsEnum;
+                        }
+                    }
+                    else if (strcmp(className, "RuntimeTypeHandle") == 0)
+                    {
+                        if (strcmp(methodName, "GetValueInternal") == 0)
+                        {
+                            result = NI_System_RuntimeTypeHandle_GetValueInternal;
+                        }
+                    }
+                    break;
+                }
+
+                case 'S':
+                {
+                    if (strcmp(className, "Span`1") == 0)
+                    {
+                        if (strcmp(methodName, "get_Item") == 0)
+                        {
+                            result = NI_System_Span_get_Item;
+                        }
+                    }
+                    else if (strcmp(className, "String") == 0)
+                    {
+                        if (strcmp(methodName, "Equals") == 0)
+                        {
+                            result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "get_Chars") == 0)
+                        {
+                            result = NI_System_String_get_Chars;
+                        }
+                        else if (strcmp(methodName, "get_Length") == 0)
+                        {
+                            result = NI_System_String_get_Length;
+                        }
+                        else if (strcmp(methodName, "op_Implicit") == 0)
+                        {
+                            result = NI_System_String_op_Implicit;
+                        }
+                        else if (strcmp(methodName, "StartsWith") == 0)
+                        {
+                            result = NI_System_String_StartsWith;
+                        }
+                    }
+                    break;
+                }
+
+                case 'T':
+                {
+                    if (strcmp(className, "Type") == 0)
+                    {
+                        if (strcmp(methodName, "get_IsEnum") == 0)
+                        {
+                            result = NI_System_Type_get_IsEnum;
+                        }
+                        else if (strcmp(methodName, "get_IsValueType") == 0)
+                        {
+                            result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsByRefLike") == 0)
+                        {
+                            result = NI_System_Type_get_IsByRefLike;
+                        }
+                        else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
+                        {
+                            result = NI_System_Type_GetEnumUnderlyingType;
+                        }
+                        else if (strcmp(methodName, "GetTypeFromHandle") == 0)
+                        {
+                            result = NI_System_Type_GetTypeFromHandle;
+                        }
+                        else if (strcmp(methodName, "IsAssignableFrom") == 0)
+                        {
+                            result = NI_System_Type_IsAssignableFrom;
+                        }
+                        else if (strcmp(methodName, "IsAssignableTo") == 0)
+                        {
+                            result = NI_System_Type_IsAssignableTo;
+                        }
+                        else if (strcmp(methodName, "op_Equality") == 0)
+                        {
+                            result = NI_System_Type_op_Equality;
+                        }
+                        else if (strcmp(methodName, "op_Inequality") == 0)
+                        {
+                            result = NI_System_Type_op_Inequality;
+                        }
+                    }
+                    break;
+                }
+
+                case 'U':
+                {
+                    if ((strcmp(className, "UInt32") == 0) || (strcmp(className, "UInt64") == 0) ||
+                        (strcmp(className, "UIntPtr") == 0))
+                    {
+                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
+                default:
+                    break;
             }
         }
         else if (namespaceName[0] == '.')
