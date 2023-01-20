@@ -3080,6 +3080,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	gboolean compile_aot = (flags & JIT_FLAG_AOT) ? 1 : 0;
 	gboolean full_aot = (flags & JIT_FLAG_FULL_AOT) ? 1 : 0;
 	gboolean disable_direct_icalls = (flags & JIT_FLAG_NO_DIRECT_ICALLS) ? 1 : 0;
+	gboolean skip_codegen = (flags & JIT_FLAG_SKIP_CODEGEN) ? 1 : 0;
 	gboolean gsharedvt_method = FALSE;
 	gboolean interp_entry_only = FALSE;
 #ifdef ENABLE_LLVM
@@ -3521,6 +3522,27 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	cfg->stat_basic_blocks += cfg->num_bblocks;
+
+	if (skip_codegen) {
+		/* Collect patches */
+		for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			for (MonoInst *ins = bb->code; ins; ins = ins->next) {
+				if (MONO_IS_CALL (ins)) {
+					MonoCallInst *call = (MonoCallInst*)ins;
+
+					if (ins->flags & MONO_INST_HAS_METHOD)
+						mono_add_patch_info (cfg, 0, MONO_PATCH_INFO_METHOD, call->method);
+				} else if (ins->opcode == OP_AOTCONST) {
+					MonoJumpInfoType ji_type = ins->inst_c1;
+					gpointer ji_data = ins->inst_p0;
+
+					mono_add_patch_info (cfg, 0, ji_type, ji_data);
+				}
+			}
+		}
+
+		return cfg;
+	}
 
 	if (COMPILE_LLVM (cfg)) {
 		MonoInst *ins;

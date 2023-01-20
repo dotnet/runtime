@@ -12996,11 +12996,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
 
-	/* Delete previous module */
-	g_hash_table_destroy (module->plt_entries);
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
 	memset (module, 0, sizeof (aot_module));
 
 	module->lmodule = LLVMModuleCreateWithName ("aot");
@@ -13139,6 +13134,16 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		LLVMSetLinkage (module->sentinel_exception, LLVMExternalLinkage);
 		mono_llvm_set_is_constant (module->sentinel_exception);
 	}
+}
+
+void
+mono_llvm_free_aot_module (void)
+{
+	MonoLLVMModule *module = &aot_module;
+
+	g_hash_table_destroy (module->plt_entries);
+	if (module->lmodule)
+		LLVMDisposeModule (module->lmodule);
 }
 
 void

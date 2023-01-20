@@ -1269,6 +1269,8 @@ typedef enum {
 	JIT_FLAG_SELF_INIT = (1 << 11),
 	/* Assume code memory is exec only */
 	JIT_FLAG_CODE_EXEC_ONLY = (1 << 12),
+	/* Stop before code generation */
+	JIT_FLAG_SKIP_CODEGEN = (1 << 13),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */

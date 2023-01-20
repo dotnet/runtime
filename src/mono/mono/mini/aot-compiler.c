@@ -9138,6 +9138,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags = (JitFlags)(flags | JIT_FLAG_SELF_INIT);
 	if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY)
 		flags = (JitFlags)(flags | JIT_FLAG_CODE_EXEC_ONLY);
+	if (acfg->dedup_collect_only)
+		/* Just collecting instances, no need to generate code */
+		flags = (JitFlags)(flags | JIT_FLAG_SKIP_CODEGEN);
 
 	jit_time_start = mono_time_track_start ();
 	cfg = mini_method_compile (method, acfg->jit_opts, flags, 0, index);
@@ -13744,7 +13747,13 @@ got_info_free (GotInfo *info)
 static void
 acfg_free (MonoAotCompile *acfg)
 {
-	mono_img_writer_destroy (acfg->w);
+#ifdef ENABLE_LLVM
+	if (acfg->aot_opts.llvm)
+		mono_llvm_free_aot_module ();
+#endif
+
+	if (acfg->w)
+		mono_img_writer_destroy (acfg->w);
 	for (guint32 i = 0; i < acfg->nmethods; ++i)
 		if (acfg->cfgs [i])
 			mono_destroy_compile (acfg->cfgs [i]);
@@ -14441,9 +14450,11 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	dedup_skip_methods (acfg);
 
-	if (acfg->dedup_collect_only)
+	if (acfg->dedup_collect_only) {
 		/* We only collected methods from this assembly */
+		acfg_free (acfg);
 		return 0;
+	}
 
 	current_acfg = NULL;
 
