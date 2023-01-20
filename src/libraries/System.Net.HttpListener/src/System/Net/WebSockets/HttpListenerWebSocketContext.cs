@@ -86,7 +86,8 @@ namespace System.Net.WebSockets
 
         public override WebSocket WebSocket => _webSocket;
 
-        private static GenericPrincipal? CopyPrincipal(IPrincipal user)
+#pragma warning disable CA1859
+        private static IPrincipal? CopyPrincipal(IPrincipal user)
         {
             if (user != null)
             {
@@ -113,5 +114,6 @@ namespace System.Net.WebSockets
 
             return null;
         }
+#pragma warning disable CA1859
     }
 }
