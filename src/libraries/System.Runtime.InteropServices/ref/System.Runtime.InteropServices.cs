@@ -552,8 +552,8 @@ namespace System.Runtime.InteropServices
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
-        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown) { throw null; }
-        public static unsafe bool TryGetObject(IntPtr unknown, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? obj) { throw null; }
+        public static unsafe bool TryGetComInstance(object obj, out System.IntPtr unknown) { throw null; }
+        public static unsafe bool TryGetObject(System.IntPtr unknown, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? obj) { throw null; }
         public struct ComInterfaceEntry
         {
             public System.Guid IID;

@@ -46,8 +46,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown);
-            return true;
+            return Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown) == 0;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -651,7 +650,15 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                // No need to cache NativeObjectWrapper for unique instances. They are not cached.
+                NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                    externalComObject,
+                    null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
+                    retValue);
+                if (!s_rcwTable.TryAdd(retValue, wrapper))
+                {
+                    wrapper.Release();
+                    throw new NotSupportedException();
+                }
                 return true;
             }
 
@@ -667,7 +674,11 @@ namespace System.Runtime.InteropServices
                         externalComObject,
                         this,
                         retValue);
-                    s_rcwTable.Add(retValue, wrapper);
+                    if (!s_rcwTable.TryAdd(retValue, wrapper))
+                    {
+                        wrapper.Release();
+                        throw new NotSupportedException();
+                    }
                     _rcwCache.Add(externalComObject, wrapper._proxyHandle);
                 }
             }

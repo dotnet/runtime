@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
     public abstract partial class ComWrappers
     {
         /// <summary>
-        /// Given a managed object, determine if it is a ComWrappers created
+        /// Given a managed object, determine if it is a <see cref="ComWrappers" />-created
         /// managed wrapper and if so, return the wrapped unmanaged pointer.
         /// </summary>
         /// <param name="obj">A managed wrapper</param>
@@ -34,10 +34,10 @@ namespace System.Runtime.InteropServices
         /// <returns>True if the wrapper was resolved to an external COM object, otherwise false.</returns>
         /// <remarks>
         /// If a COM object is returned, the caller is expected to call Release() on the object.
-        /// This can be done through an API like Marshal.Release(). Since this API is required to interact
-        /// directly with the external COM object, QueryInterface(), it is important for the caller to
-        /// understand the COM object may have apartment affinity and therefore if the current thread is not
-        /// in the correct apartment or the COM object is not a proxy this call may fail.
+        /// This can be done through an API like <see cref="Marshal.Release(IntPtr)"/>.
+        /// Since this API is required to interact directly with the external COM object, QueryInterface(),
+        /// it is important for the caller to understand the COM object may have apartment affinity and therefore
+        /// if the current thread is not in the correct apartment or the COM object is not a proxy this call may fail.
         /// </remarks>
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
         {
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices
         private static partial bool TryGetComInstanceInternal(ObjectHandleOnStack wrapperMaybe, out IntPtr externalComObject);
 
         /// <summary>
-        /// Given a COM object, determine if it is a ComWrappers created
+        /// Given a COM object, determine if it is a <see cref="ComWrappers" />-created
         /// unmanaged wrapper and if so, return the wrapped managed object.
         /// </summary>
         /// <param name="unknown">An unmanaged wrapper</param>

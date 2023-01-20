@@ -94,7 +94,12 @@ namespace ComWrappersTests.Common
 
         public static IntPtr CreateTrackerObject()
         {
-            return CreateTrackerObject(IntPtr.Zero, out IntPtr _);
+            IntPtr result = CreateTrackerObject(IntPtr.Zero, out IntPtr inner);
+            if (inner != IntPtr.Zero)
+            {
+                Marshal.Release(inner);
+            }
+            return result;
         }
 
         public static IntPtr CreateTrackerObject(IntPtr outer, out IntPtr inner)

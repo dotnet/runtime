@@ -253,6 +253,9 @@ namespace ComWrappersTests
             Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, ref IID_IUnknown, out IntPtr unmanagedObjIUnknown));
             var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
 
+            // Also allocate a unique instance to validate looking from an uncached instance
+            var unmanagedWrapperUnique = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.UniqueInstance);
+
             // Verify TryGetObject
             Assert.True(ComWrappers.TryGetObject(managedWrapper, out object managedObjOther));
             Assert.Equal(managedObj, managedObjOther);
@@ -263,8 +266,11 @@ namespace ComWrappersTests
             // Verify TryGetComInstance
             Assert.False(ComWrappers.TryGetComInstance(managedObj, out IntPtr _));
             Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out IntPtr unmanagedObjOther));
+            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapperUnique, out IntPtr unmanagedObjOtherUnique));
             Assert.Equal(unmanagedObjIUnknown, unmanagedObjOther);
+            Assert.Equal(unmanagedObjIUnknown, unmanagedObjOtherUnique);
             Marshal.Release(unmanagedObjOther);
+            Marshal.Release(unmanagedObjOtherUnique);
 
             // Release unmanaged resources
             int count = Marshal.Release(managedWrapper);
