@@ -5492,7 +5492,8 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Calling inlinee's compiler to inline the method.
     //
 
-    unsigned startVars = lvaCount;
+    unsigned const startVars     = lvaCount;
+    unsigned const startBBNumMax = fgBBNumMax;
 
 #ifdef DEBUG
     if (verbose)
@@ -5518,8 +5519,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 
     if (result->IsFailure())
     {
-        // Undo some changes made in anticipation of inlining...
-
+        // Undo some changes made during the inlining attempt.
         // Zero out the used locals
         memset((void*)(lvaTable + startVars), 0, (lvaCount - startVars) * sizeof(*lvaTable));
         for (unsigned i = startVars; i < lvaCount; i++)
@@ -5527,7 +5527,16 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
             new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
         }
 
-        lvaCount = startVars;
+        // Reset local var count and max bb num
+        lvaCount   = startVars;
+        fgBBNumMax = startBBNumMax;
+
+#ifdef DEBUG
+        for (BasicBlock* block : Blocks())
+        {
+            assert(block->bbNum <= fgBBNumMax);
+        }
+#endif
     }
 }
 
