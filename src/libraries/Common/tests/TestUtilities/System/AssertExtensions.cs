@@ -504,9 +504,21 @@ namespace System
         /// </summary>
         public static void Equal(string expected, string actual)
         {
-            if (!expected.Equals(actual))
+            try
             {
-                throw new AssertActualExpectedException(expected, actual, "Provided strings were not equal!");
+                Assert.Equal(expected, actual);
+            }
+            catch (Exception e)
+            {
+                throw new XunitException(
+                    e.Message + Environment.NewLine +
+                    Environment.NewLine +
+                    "Expected:" + Environment.NewLine +
+                    expected + Environment.NewLine +
+                    Environment.NewLine +
+                    "Actual:" + Environment.NewLine +
+                    actual + Environment.NewLine +
+                    Environment.NewLine);
             }
         }
 
