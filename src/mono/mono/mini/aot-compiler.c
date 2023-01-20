@@ -5208,9 +5208,9 @@ MONO_RESTORE_WARNING
 				for (j = 0; j < decoded_args->named_args_num; ++j) {
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
-						slen = mono_metadata_decode_value (named, &named);
+						slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
 						export_name = (char *)g_malloc (slen + 1);
-						memcpy (export_name, named, slen);
+						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
 						export_name [slen] = 0;
 					}
 				}
@@ -5222,7 +5222,7 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
-					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+					g_string_append_printf (export_symbols, "%s\n", export_name);
 				}
 			}
 
@@ -7224,7 +7224,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	code = cfg->native_code;
 	header = cfg->header;
 
-	if (!acfg->aot_opts.nodebug) {
+	if (!acfg->aot_opts.nodebug && !acfg->aot_opts.llvm_only) {
 		mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
 	} else {
 		debug_info = NULL;
@@ -7245,7 +7245,6 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	use_unwind_ops = cfg->unwind_ops != NULL;
 
 	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points_size ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0) | (jinfo->has_arch_eh_info ? 128 : 0);
-
 	encode_value (flags, p, &p);
 
 	if (use_unwind_ops) {
@@ -7279,7 +7278,9 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	}
 
 	/* Exception table */
-	if (cfg->compile_llvm) {
+	if (cfg->llvm_only) {
+		/* Unused */
+	} else if (cfg->compile_llvm) {
 		/*
 		 * When using LLVM, we can't emit some data, like pc offsets, this reg/offset etc.,
 		 * since the information is only available to llc. Instead, we let llc save the data
@@ -7470,8 +7471,10 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	g_assert (p - buf < buf_size);
 
 	/* Emit info */
-	/* The GC Map requires 4 byte alignment */
-	cfg->ex_info_offset = add_to_blob_aligned (acfg, buf, GPTRDIFF_TO_UINT32 (p - buf), cfg->gc_map ? 4 : 1);
+	if (!cfg->llvm_only) {
+		/* The GC Map requires 4 byte alignment */
+		cfg->ex_info_offset = add_to_blob_aligned (acfg, buf, GPTRDIFF_TO_UINT32 (p - buf), cfg->gc_map ? 4 : 1);
+	}
 	g_free (buf);
 }
 
@@ -10799,6 +10802,7 @@ mono_aot_method_hash (MonoMethod *method)
 	guint32 a, b, c;
 	MonoGenericInst *class_ginst = NULL;
 	MonoGenericInst *ginst = NULL;
+	WrapperInfo *info = NULL;
 
 	/* Similar to the hash in mono_method_get_imt_slot () */
 
@@ -10813,11 +10817,20 @@ mono_aot_method_hash (MonoMethod *method)
 	hashes_start = (guint32 *)g_malloc0 (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
 
+	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
+		info = mono_marshal_get_wrapper_info (method);
+
 	/* Some wrappers are assigned to random classes */
-	if (!method->wrapper_type)
+	if (!method->wrapper_type) {
 		klass = method->klass;
-	else
+	} else {
 		klass = mono_defaults.object_class;
+
+		if (method->wrapper_type == MONO_WRAPPER_OTHER &&
+			(info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE || info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR)) {
+			klass = method->klass;
+		}
+	}
 
 	if (!method->wrapper_type) {
 		char *full_name;
@@ -10839,6 +10852,12 @@ mono_aot_method_hash (MonoMethod *method)
 		hashes [2] = mono_marshal_get_wrapper_info (method)->d.icall.jit_icall_id;
 	else
 		hashes [2] = mono_metadata_str_hash (method->name);
+
+	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+		if (info && (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG))
+			sig = info->d.gsharedvt.sig;
+	}
+
 	hashes [3] = method->wrapper_type;
 	hashes [4] = mono_aot_type_hash (sig->ret);
 	hindex = 5;
@@ -10853,7 +10872,8 @@ mono_aot_method_hash (MonoMethod *method)
 		for (guint i = 0; i < ginst->type_argc; ++i)
 			hashes [hindex ++] = mono_aot_type_hash (ginst->type_argv [i]);
 	}
-	g_assert (hindex == hashes_count);
+	g_assert (hindex <= hashes_count);
+	hashes_count = hindex;
 
 	/* Setup internal state */
 	a = b = c = 0xdeadbeef + (((guint32)hashes_count)<<2);
@@ -10937,6 +10957,17 @@ typedef struct HashEntry {
 	struct HashEntry *next;
 } HashEntry;
 
+static inline void
+encode_uint_len (guint32 val, int len, guint8 *buf, guint8 **endbuf)
+{
+	if (len == 2) {
+		g_assert (val < 65536);
+		encode_int16 (val, buf, endbuf);
+	} else {
+		encode_int ((gint32)val, buf, endbuf);
+	}
+}
+
 /*
  * emit_extra_methods:
  *
@@ -10952,6 +10983,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 	GPtrArray *table;
 	HashEntry *entry, *new_entry;
 	int nmethods, max_chain_length;
+	guint32 max_method_index;
 	int *chain_lengths;
 
 	info_offsets = g_new0 (guint32, acfg->extra_methods->len);
@@ -10990,6 +11022,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		g_ptr_array_add (table, NULL);
 	chain_lengths = g_new0 (int, table_size);
 	max_chain_length = 0;
+	max_method_index = 0;
 	for (guint i = 0; i < acfg->extra_methods->len; ++i) {
 		MonoMethod *method = (MonoMethod *)g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, method);
@@ -11006,6 +11039,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 		chain_lengths [hash] ++;
 		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
+		max_method_index = MAX (max_method_index, value);
 
 		new_entry = (HashEntry *)mono_mempool_alloc0 (acfg->mempool, sizeof (HashEntry));
 		new_entry->key = key;
@@ -11028,25 +11062,36 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 	//printf ("MAX: %d\n", max_chain_length);
 
-	buf_size = table->len * 12 + 4;
-	p = buf = (guint8 *)g_malloc (buf_size);
-	encode_int (table_size, p, &p);
+	int key_len = 4;
+	int value_len = max_method_index < 65536 ? 2 : 4;
+	int next_len = table->len < 65536 ? 2 : 4;
 
+	buf_size = table->len * 12 + 20;
+	p = buf = (guint8 *)g_malloc (buf_size);
+	/* Hash size */
+	encode_int (table_size, p, &p);
+	/* Number of rows */
+	encode_int (table->len, p, &p);
+	/* Column sizes */
+	encode_int (key_len, p, &p);
+	encode_int (value_len, p, &p);
+	encode_int (next_len, p, &p);
+	/* Data */
 	for (guint i = 0; i < table->len; ++i) {
 		entry = (HashEntry *)g_ptr_array_index (table, i);
-		if (entry == NULL) {
-			encode_int (0, p, &p);
-			encode_int (0, p, &p);
-			encode_int (0, p, &p);
-		} else {
-			//g_assert (entry->key > 0);
-			encode_int (entry->key, p, &p);
-			encode_int (entry->value, p, &p);
+
+		int key = 0;
+		int value = 0;
+		int next = 0;
+		if (entry != NULL) {
+			key = entry->key;
+			value = entry->value;
 			if (entry->next)
-				encode_int (entry->next->index, p, &p);
-			else
-				encode_int (0, p, &p);
+				next = entry->next->index;
 		}
+		encode_uint_len (key, key_len, p, &p);
+		encode_uint_len (value, value_len, p, &p);
+		encode_uint_len (next, next_len, p, &p);
 	}
 	g_assert (p - buf <= buf_size);
 
@@ -11145,7 +11190,12 @@ emit_exception_info (MonoAotCompile *acfg)
 		g_free (aot_file_path);
 	}
 
-	acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", MONO_AOT_TABLE_EX_INFO_OFFSETS, acfg->nmethods, 10, offsets);
+	if (mono_llvm_only) {
+		/* Unused */
+		emit_aot_data (acfg, MONO_AOT_TABLE_EX_INFO_OFFSETS, "ex_info_offsets", NULL, 0);
+	} else {
+		acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", MONO_AOT_TABLE_EX_INFO_OFFSETS, acfg->nmethods, 10, offsets);
+	}
 	g_free (offsets);
 }
 

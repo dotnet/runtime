@@ -27,9 +27,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
     <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
     <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">osx</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
@@ -214,7 +215,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(MibcFile->'--mibc:%(Identity)')" />
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
       <IlcArg Condition="$(TargetArchitecture) != ''" Include="--targetarch:$(TargetArchitecture)" />
-      <IlcArg Condition="$(TargetOS) != ''" Include="--targetos:$(TargetOS)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and '$(ControlFlowGuard)' != 'Guard'" Include="--dehydrate" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />

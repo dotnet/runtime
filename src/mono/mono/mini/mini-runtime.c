@@ -4729,6 +4729,8 @@ mini_init (const char *filename)
 
 	MONO_PROFILER_RAISE (runtime_initialized, ());
 
+	mono_runtime_run_startup_hooks ();
+
 	MONO_VES_INIT_END ();
 
 	return domain;

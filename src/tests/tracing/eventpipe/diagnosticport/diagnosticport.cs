@@ -415,7 +415,8 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     }
                     else
                     {
-                        string expectedName = Assembly.GetExecutingAssembly().GetName().Name;
+                        // Assembly has not been loaded yet, so the assembly file name is used
+                        string expectedName = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
                         Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
                             $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
                     }
