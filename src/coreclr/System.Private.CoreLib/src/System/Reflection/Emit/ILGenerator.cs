@@ -729,9 +729,9 @@ namespace System.Reflection.Emit
             // by cls.  The location of cls is recorded so that the token can be
             // patched if necessary when persisting the module to a PE.
 
-            ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
+            RuntimeModuleBuilder modBuilder = (RuntimeModuleBuilder)m_methodBuilder.Module;
             bool getGenericDefinition = (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition);
-            int tempVal = modBuilder.GetTypeToken(cls!, getGenericDefinition);
+            int tempVal = modBuilder.GetTypeTokenInternal(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
             InternalEmit(opcode);

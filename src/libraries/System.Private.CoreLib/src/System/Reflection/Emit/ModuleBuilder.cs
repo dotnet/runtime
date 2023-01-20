@@ -90,9 +90,10 @@ namespace System.Reflection.Emit
         public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
             => SetCustomAttribute(customBuilder);
 
-        public abstract int GetTypeToken(Type type, bool getGenericDefinition = true);
+        public abstract int GetTypeToken(Type type);
         public abstract int GetFieldToken(FieldInfo field);
-        public abstract int GetConstructorToken(ConstructorInfo con);
+        public abstract int GetMethodToken(MethodInfo method);
+        public abstract int GetConstructorToken(ConstructorInfo contsuctor);
         public abstract int GetSignatureToken(SignatureHelper sigHelper);
         public abstract int GetStringConstant(string str);
     }

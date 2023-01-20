@@ -480,7 +480,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        internal static int GetMethodToken(MethodInfo method)
+        public override int GetMethodToken(MethodInfo method)
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -535,7 +535,7 @@ namespace System.Reflection.Emit
             return GetToken(str);
         }
 
-        public override int GetTypeToken(Type type, bool getGenericDefinition = true)
+        public override int GetTypeToken(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)

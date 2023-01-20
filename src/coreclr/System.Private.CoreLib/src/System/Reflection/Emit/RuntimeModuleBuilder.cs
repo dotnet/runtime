@@ -898,7 +898,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override int GetTypeToken(Type type, bool getGenericDefinition = true)
+        public override int GetTypeToken(Type type)
         {
             return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
@@ -952,7 +952,7 @@ namespace System.Reflection.Emit
             return GetTypeRefNested(type, refedModule);
         }
 
-        internal int GetMethodToken(MethodInfo method)
+        public override int GetMethodToken(MethodInfo method)
         {
             lock (SyncRoot)
             {

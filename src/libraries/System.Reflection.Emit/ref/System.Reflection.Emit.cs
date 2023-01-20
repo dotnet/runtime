@@ -384,6 +384,7 @@ namespace System.Reflection.Emit
         public abstract System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes);
         public override bool Equals(object? obj) { throw null; }
         public abstract System.Reflection.MethodInfo GetArrayMethod(System.Type arrayClass, string methodName, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes);
+        public abstract int GetConstructorToken(ConstructorInfo contsuctor);
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
@@ -391,11 +392,13 @@ namespace System.Reflection.Emit
         public override System.Reflection.FieldInfo? GetField(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Fields might be removed")]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingFlags) { throw null; }
+        public abstract int GetFieldToken(FieldInfo field);
         public override int GetHashCode() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Methods might be removed")]
         protected override System.Reflection.MethodInfo? GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Methods might be removed")]
         public override System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingFlags) { throw null; }
+        public abstract int GetMethodToken(MethodInfo method);
         public override void GetPEKind(out System.Reflection.PortableExecutableKinds peKind, out System.Reflection.ImageFileMachine machine) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type? GetType(string className) { throw null; }
@@ -405,6 +408,9 @@ namespace System.Reflection.Emit
         public override System.Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type[] GetTypes() { throw null; }
+        public abstract int GetTypeToken(Type type);
+        public abstract int GetSignatureToken(SignatureHelper sigHelper);
+        public abstract int GetStringConstant(string str);
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
         public override bool IsResource() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimming changes metadata tokens")]
@@ -421,11 +427,6 @@ namespace System.Reflection.Emit
         public override System.Type ResolveType(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public abstract void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public abstract void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
-        public abstract int GetTypeToken(Type type, bool getGenericDefinition = true);
-        public abstract int GetFieldToken(FieldInfo field);
-        public abstract int GetConstructorToken(ConstructorInfo con);
-        public abstract int GetSignatureToken(SignatureHelper sigHelper);
-        public abstract int GetStringConstant(string str);
     }
     public abstract partial class PropertyBuilder : System.Reflection.PropertyInfo
     {
