@@ -10191,7 +10191,7 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
  * Function first removes the call from an array of active calls. If a match is found,
  * the call is removed from the array by moving the last entry into its place. Otherwise, it is a call without arguments.
  *
- * If there are active calls, the call is push onto the stack with an array of other active calls on which the call in question depends.
+ * If there are active calls, the call in question is push onto the stack as a deferred call. The call contains a list of other active calls on which the it depends.
  * Otherwise, function starts resolving the call in question and deferred calls from the stack.
  *
  * For each call, function computes the base offset, the offset of each call argument starting from a base offset, and stores the computed call offset into a InterpInst.
