@@ -4467,21 +4467,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
-    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
-    // local variable allocation on the stack.
-    ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
-
-    if (compObjectStackAllocation() && opts.OptimizationEnabled())
-    {
-        objectAllocator.EnableObjectStackAllocation();
-    }
-
-    objectAllocator.Run();
-
-    // Add any internal blocks/trees we may need
-    //
-    DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
-
     // Compute bbNum, bbRefs and bbPreds
     //
     // This is the first time full (not cheap) preds will be computed.
@@ -4499,6 +4484,21 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
+    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
+    // local variable allocation on the stack.
+    ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
+
+    if (compObjectStackAllocation() && opts.OptimizationEnabled())
+    {
+        objectAllocator.EnableObjectStackAllocation();
+    }
+
+    objectAllocator.Run();
+
+    // Add any internal blocks/trees we may need
+    //
+    DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
 
     // Remove empty try regions
     //
