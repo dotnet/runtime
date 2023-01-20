@@ -1219,7 +1219,8 @@ store_local (TransformData *td, int local)
 }
 
 static void
-init_last_ins_call (TransformData *td) {
+init_last_ins_call (TransformData *td)
+{
 	td->last_ins->flags |= INTERP_INST_FLAG_CALL;
 	td->last_ins->info.call_info = (InterpCallInfo*)mono_mempool_alloc (td->mempool, sizeof (InterpCallInfo));
 	td->last_ins->info.call_info->call_args = NULL;
@@ -10190,13 +10191,12 @@ add_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
  * Function first removes the call from an array of active calls. If a match is found,
  * the call is removed from the array by moving the last entry into its place. Otherwise, it is a call without arguments.
  *
- * Call is push onto the stack with an array of other active calls that need to be resolved first.
+ * If there are active calls, the call is push onto the stack with an array of other active calls on which the call in question depends.
+ * Otherwise, function starts resolving the call in question and deferred calls from the stack.
  *
- * If there are no other active calls, function retrieves calls from the stack and resolves them, including the current call and all deferred calls.
- *
- * For each call, function computes the call offset of each call argument starting from a base offset, and stores the computed call offset into a InterpInst.
+ * For each call, function computes the base offset, the offset of each call argument starting from a base offset, and stores the computed call offset into a InterpInst.
  * The base offset is computed as max offset of all call offsets on which the call depends.
- * Stack ensures that all call offsets on which the call depends are calculated before the call resolution.
+ * Stack ensures that all call offsets on which the call depends are calculated before the call in question, by deferring calls from the last to the first one.
  */
 static void
 end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
@@ -10223,6 +10223,8 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 		InterpInst *deferred_call = call;
 		while (deferred_call) {
 			// `base_offset` is a relative offset (to the start of the call args stack) where the args for this call reside.
+			// The deps for a call represent the list of active calls at the moment when the call ends. This means that all deps for a call end after the call in question.
+			// Given we iterate over the list of deferred calls from the last to the first one to end, all deps of a call are guaranteed to have been processed at this point.
 			int base_offset = 0;
 			for (GSList *list = deferred_call->info.call_info->call_deps; list; list = list->next) {
 				int call_offset = ((InterpInst*)list->data)->info.call_info->call_offset;
