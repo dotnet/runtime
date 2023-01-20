@@ -317,15 +317,6 @@ namespace System
             // Restore to using % and / when the JIT is able to eliminate one of the idivs.
             // In the meantime, a * and - is measurably faster than an extra /.
 
-            // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                (int quotient, result) = X86Base.DivRem((uint)a, a >> 31, b);
-                return quotient;
-            }
-#endif
-
             int div = a / b;
             result = a - (div * b);
             return div;
@@ -334,13 +325,6 @@ namespace System
         public static long DivRem(long a, long b, out long result)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.X64.IsSupported)
-            {
-                (long quotient, result) = X86Base.X64.DivRem((ulong)a, a >> 63, b);
-                return quotient;
-            }
-#endif
 
             long div = a / b;
             result = a - (div * b);
@@ -357,14 +341,6 @@ namespace System
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                int dividend = left;
-                (int q, int r) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
-                return ((sbyte)q, (sbyte)r);
-            }
-#endif
 
             sbyte quotient = (sbyte)(left / right);
             return (quotient, (sbyte)(left - (quotient * right)));
@@ -379,13 +355,6 @@ namespace System
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                (uint q, uint r) = X86Base.DivRem(left, 0u, right);
-                return ((byte)q, (byte)r);
-            }
-#endif
 
             byte quotient = (byte)(left / right);
             return (quotient, (byte)(left - (quotient * right)));
@@ -400,14 +369,6 @@ namespace System
         public static (short Quotient, short Remainder) DivRem(short left, short right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                int dividend = left;
-                (int q, int r) = X86Base.DivRem((uint)dividend, dividend >> 31, right);
-                return ((short)q, (short)r);
-            }
-#endif
 
             short quotient = (short)(left / right);
             return (quotient, (short)(left - (quotient * right)));
@@ -423,13 +384,6 @@ namespace System
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                (uint q, uint r) = X86Base.DivRem(left, 0u, right);
-                return ((ushort)q, (ushort)r);
-            }
-#endif
 
             ushort quotient = (ushort)(left / right);
             return (quotient, (ushort)(left - (quotient * right)));
@@ -444,12 +398,6 @@ namespace System
         public static (int Quotient, int Remainder) DivRem(int left, int right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                return X86Base.DivRem((uint)left, left >> 31, right);
-            }
-#endif
 
             int quotient = left / right;
             return (quotient, left - (quotient * right));
@@ -465,12 +413,6 @@ namespace System
         public static (uint Quotient, uint Remainder) DivRem(uint left, uint right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                return X86Base.DivRem(left, 0u, right);
-            }
-#endif
 
             uint quotient = left / right;
             return (quotient, left - (quotient * right));
@@ -485,12 +427,6 @@ namespace System
         public static (long Quotient, long Remainder) DivRem(long left, long right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.X64.IsSupported)
-            {
-                return X86Base.X64.DivRem((ulong)left, left >> 63, right);
-            }
-#endif
 
             long quotient = left / right;
             return (quotient, left - (quotient * right));
@@ -506,12 +442,6 @@ namespace System
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.X64.IsSupported)
-            {
-                return X86Base.X64.DivRem(left, 0ul, right);
-            }
-#endif
 
             ulong quotient = left / right;
             return (quotient, left - (quotient * right));
@@ -526,12 +456,6 @@ namespace System
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                return X86Base.DivRem((nuint)left, left >> (IntPtr.Size * 8 - 1), right);
-            }
-#endif  // !MONO
 
             nint quotient = left / right;
             return (quotient, left - (quotient * right));
@@ -547,12 +471,6 @@ namespace System
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right)
         {
             // TODO: implement DivRem intrinsic for Mono
-#if !MONO
-            if (X86Base.IsSupported)
-            {
-                return X86Base.DivRem(left, (nuint)0, right);
-            }
-#endif
 
             nuint quotient = left / right;
             return (quotient, left - (quotient * right));

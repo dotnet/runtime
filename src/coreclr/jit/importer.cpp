@@ -10855,7 +10855,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
-    // The following is to exclude the fields of the local to have SSA.
+    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
     varDsc->lvIsMultiRegRet = true;
 
     GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);

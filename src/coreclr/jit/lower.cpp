@@ -3538,6 +3538,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             retTypeDesc = src->AsCall()->GetReturnTypeDesc();
         }
+        
         CheckMultiRegLclVar(lclStore->AsLclVar(), retTypeDesc);
     }
 
@@ -6899,22 +6900,29 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
 //
 bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc)
 {
-    bool canEnregister = false;
+    bool canEnregisterAsMultiReg  = false;
+    bool canEnregisterAsSingleReg = false;
 
 #if FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNode->GetLclNum());
+    if (varDsc->lvDoNotEnregister)
+    {
+        assert(!lclNode->IsMultiReg());
+        return false;
+    }
+
     if ((comp->lvaEnregMultiRegVars) && varDsc->lvPromoted)
     {
         // We can enregister if we have a promoted struct and all the fields' types match the ABI requirements.
         // Note that we don't promote structs with explicit layout, so we don't need to check field offsets, and
         // if we have multiple types packed into a single register, we won't have matching reg and field counts,
         // so we can tolerate mismatches of integer size.
-        if (varDsc->lvPromoted && (comp->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
+        if (comp->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
             // If we have no retTypeDesc, we only care that it is independently promoted.
             if (retTypeDesc == nullptr)
             {
-                canEnregister = true;
+                canEnregisterAsMultiReg = true;
             }
             else
             {
@@ -6922,38 +6930,36 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
 
                 if (regCount == varDsc->lvFieldCnt)
                 {
-                    canEnregister = true;
+                    canEnregisterAsMultiReg = true;
                 }
             }
         }
     }
-#ifdef TARGET_XARCH
     else
     {
-        // For local stores on XARCH we only handle mismatched src/dest register count for calls of SIMD type.
-        // If the source was another lclVar similarly promoted, we would have broken it into multiple stores.
+        canEnregisterAsSingleReg = varTypeIsSIMD(lclNode);
+#ifdef TARGET_XARCH
         if (lclNode->OperIs(GT_STORE_LCL_VAR) && varTypeIsStruct(lclNode->Data()) && !lclNode->Data()->OperIs(GT_CALL))
         {
-            canEnregister = false;
+            canEnregisterAsSingleReg = false;
         }
-    }
 #endif // TARGET_XARCH
+    }
 
-    if (canEnregister)
+    if (canEnregisterAsSingleReg || canEnregisterAsMultiReg)
     {
-        lclNode->SetMultiReg();
+        if (canEnregisterAsMultiReg)
+        {
+            lclNode->SetMultiReg();
+        }
     }
     else
     {
-        lclNode->ClearMultiReg();
-        if (!varDsc->lvDoNotEnregister)
-        {
-            comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
+        comp->lvaSetVarDoNotEnregister(lclNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::BlockOp));
     }
-#endif
+#endif // FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
 
-    return canEnregister;
+    return canEnregisterAsSingleReg || canEnregisterAsMultiReg;
 }
 
 //------------------------------------------------------------------------

@@ -7306,7 +7306,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 else if (supportsRegOptional)
                                 {
-                                    op3->SetRegOptional();
+                                    MakeSrcRegOptional(node, op3);
                                 }
                                 break;
                             }
