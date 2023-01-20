@@ -101,7 +101,7 @@ namespace System.Net.NetworkInformation
         internal static int ParseRawIntFile(string filePath)
         {
             int ret;
-            if (!int.TryParse(ReadAllText(filePath).Trim(), out ret))
+            if (!int.TryParse(ReadAllText(filePath).AsSpan().Trim(), out ret))
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }

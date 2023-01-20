@@ -4393,7 +4393,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
+            var continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)

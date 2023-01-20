@@ -239,25 +239,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 regMaskTP LinearScan::allRegs(RegisterType rt)
 {
     assert((rt != TYP_UNDEF) && (rt != TYP_STRUCT));
-    if (rt == TYP_FLOAT)
-    {
-        return availableFloatRegs;
-    }
-    else if (rt == TYP_DOUBLE)
-    {
-        return availableDoubleRegs;
-    }
-#ifdef FEATURE_SIMD
-    // TODO-Cleanup: Add an RBM_ALLSIMD
-    else if (varTypeIsSIMD(rt))
-    {
-        return availableDoubleRegs;
-    }
-#endif // FEATURE_SIMD
-    else
-    {
-        return availableIntRegs;
-    }
+    return *availableRegs[rt];
 }
 
 regMaskTP LinearScan::allByteRegs()
@@ -382,7 +364,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
 {
     if (compiler->compFloatingPointUsed)
     {
-        return allRegs(TYP_FLOAT);
+        return availableFloatRegs;
     }
     else
     {
@@ -688,6 +670,30 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
+
+    for (unsigned int i = 0; i < TYP_COUNT; i++)
+    {
+        var_types thisType = (var_types)genActualTypes[i];
+        if (thisType == TYP_FLOAT)
+        {
+            availableRegs[i] = &availableFloatRegs;
+        }
+        else if (thisType == TYP_DOUBLE)
+        {
+            availableRegs[i] = &availableDoubleRegs;
+        }
+#ifdef FEATURE_SIMD
+        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
+        {
+            availableRegs[i] = &availableDoubleRegs;
+        }
+#endif
+        else
+        {
+            availableRegs[i] = &availableIntRegs;
+        }
+    }
+
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -1326,7 +1332,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-#ifdef USING_VARIABLE_LIVE_RANGE
             BasicBlock* prevReportedBlock = bb->bbPrev;
             if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
             {
@@ -1345,7 +1350,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
                 // "getInVarToRegMap"
                 compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
-#endif // USING_VARIABLE_LIVE_RANGE
         }
         else if (newRegNum != REG_STK)
         {

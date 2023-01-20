@@ -11,6 +11,7 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetSecurity_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'android'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseAppleCrypto>
     <UseManagedNtlm Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseManagedNtlm>
@@ -102,7 +103,7 @@
              Link="Common\System\Net\SecurityStatusPal.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->
@@ -382,6 +383,7 @@
     <Compile Include="System\Net\Security\Pal.Android\SafeDeleteSslContext.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SslProtocolsValidation.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Android.cs" />
+    <Compile Include="System\Net\Security\SslStream.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.Android.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Android.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />

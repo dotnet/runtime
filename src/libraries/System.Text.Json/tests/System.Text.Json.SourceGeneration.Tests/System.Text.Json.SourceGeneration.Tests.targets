@@ -16,6 +16,9 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,6 +60,7 @@
     <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="..\Common\SampleTestData.OrderPayload.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
+    <Compile Include="..\Common\UnmappedMemberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.cs" />
@@ -95,9 +99,15 @@
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
+    <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="TestClasses.CustomConverters.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RoslynSupportsRequiredAttributes)' == 'true'">
+   <Compile Include="..\Common\RequiredKeywordTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\RequiredKeywordTests.cs" /> 
+   <Compile Include="Serialization\RequiredKeywordTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

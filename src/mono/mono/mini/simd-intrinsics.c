@@ -309,9 +309,6 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
 						ins->inst_c0 = OP_FDIV;
 						return ins;
-					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
-						instc0 = OP_FDIV;
-						break;
 					} else {
 						return NULL;
 					}
@@ -339,9 +336,6 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
 						ins->inst_c0 = OP_FMUL;
 						return ins;
-					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
-						instc0 = OP_FMUL;
-						break;
 					} else {
 						return NULL;
 					}
@@ -682,7 +676,7 @@ is_intrinsics_vector_type (MonoType *vector_type)
 	if (vector_type->type != MONO_TYPE_GENERICINST) return FALSE;
 	MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
 	const char *name = m_class_get_name (klass);
-	return !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1");
+	return !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1") || !strcmp (name, "Vector512`1");
 }
 
 static MonoType*
@@ -697,7 +691,8 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector`1") ||
 		!strcmp (m_class_get_name (klass), "Vector64`1") ||
 		!strcmp (m_class_get_name (klass), "Vector128`1") ||
-		!strcmp (m_class_get_name (klass), "Vector256`1"));
+		!strcmp (m_class_get_name (klass), "Vector256`1") ||
+		!strcmp (m_class_get_name (klass), "Vector512`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
 }
@@ -4381,6 +4376,8 @@ emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 	switch (id) {
 		case SN_LeadingZeroCount:
 		case SN_TrailingZeroCount: {
+			if (!MONO_TYPE_IS_PRIMITIVE (fsig->params [0]))
+				return NULL;
 			return emit_wasm_zero_count(cfg, fsig, args, cmethod->klass, id, arg0_type);
 		}
 	}

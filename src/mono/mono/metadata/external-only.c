@@ -14,7 +14,6 @@
 #include "class-internals.h"
 #include "domain-internals.h"
 #include "mono-hash-internals.h"
-#include "mono-config-internals.h"
 #include "object-internals.h"
 #include "class-init.h"
 #include <mono/metadata/assembly.h>
