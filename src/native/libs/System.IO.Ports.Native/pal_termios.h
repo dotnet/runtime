@@ -4,6 +4,8 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 
+int SystemIoPortsNative_Termios2SetSpeed(int fd, int speed);
+
 PALEXPORT int32_t SystemIoPortsNative_TermiosGetSignal(intptr_t fd, int32_t signal);
 PALEXPORT int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t fd, int32_t signal, int32_t set);
 PALEXPORT int32_t SystemIoPortsNative_TermiosGetAllSignals(intptr_t fd);
