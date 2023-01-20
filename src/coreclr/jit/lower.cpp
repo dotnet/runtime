@@ -3448,7 +3448,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 #if FEATURE_MULTIREG_RET
         if (comp->compMethodReturnsMultiRegRetType() && retVal->OperIs(GT_LCL_VAR))
         {
-            CheckMultiRegLclVar(retVal->AsLclVar(), retVal->GetMultiRegCount(comp));
+            CheckMultiRegLclVar(retVal->AsLclVar(), comp->compRetTypeDesc.GetReturnRegCount());
         }
 #endif // FEATURE_MULTIREG_RET
 #ifdef DEBUG
@@ -6883,8 +6883,8 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
 //                                remain a multi-reg.
 //
 // Arguments:
-//   lclNode     - the GT_LCL_VAR or GT_STORE_LCL_VAR node.
-//   registerCount - register count of source of a store.
+//   lclNode       - the GT_LCL_VAR or GT_STORE_LCL_VAR node.
+//   registerCount - use register count for uses; source register count for stores.
 //
 bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 {
