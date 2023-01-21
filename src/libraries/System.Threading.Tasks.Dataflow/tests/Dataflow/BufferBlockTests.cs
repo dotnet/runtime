@@ -341,7 +341,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var buffer = new BufferBlock<int>(new DataflowBlockOptions() { CancellationToken = cts.Token });
             buffer.Post(1);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => buffer.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, buffer.Completion);
             Assert.Equal(expected: 0, actual: buffer.Count);
 
             cts = new CancellationTokenSource();
@@ -419,8 +419,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceled()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var bb = new BufferBlock<int>(
-                new DataflowBlockOptions { CancellationToken = new CancellationToken(canceled: true) });
+                new DataflowBlockOptions { CancellationToken = cts.Token });
 
             int ignoredValue;
             IList<int> ignoredValues;
@@ -438,8 +441,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(bb.TryReceiveAll(out ignoredValues));
             Assert.False(bb.TryReceive(out ignoredValue));
 
-            Assert.NotNull(bb.Completion);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
             bb.Complete(); // just make sure it doesn't throw
         }
 
@@ -465,7 +467,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 else
                 {
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                    await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
                 }
 
                 await Task.WhenAll(sends);
