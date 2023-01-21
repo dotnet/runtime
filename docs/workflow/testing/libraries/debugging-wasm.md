@@ -22,7 +22,7 @@ You may need to close all Chrome instances. Then, start the browser with debuggi
 
 `chrome --remote-debugging-port=9222 <APP_URL>`
 
-Now you can choose an IDE to start debugging.
+Now you can choose an IDE to start debugging. Remember that the tests wait only till the debugger gets attached. Once it does, they start running. You may want to set breakpoints first, before attaching the debugger, e.g. setting one in `src\libraries\Common\tests\WasmTestRunner\WasmTestRunner.cs` on the first line of `Main()` will prevent any test to be run before you get prepared.
 
 ## Debug with Chrome DevTools
 Open `chrome://inspect/#devices` in a new tab in the browser you started. Select `Configure`:
@@ -37,7 +37,7 @@ New remote targets will be displayed, select the address you opened in the other
 
 ![image](https://user-images.githubusercontent.com/32700855/201863048-6a4fe20b-a215-435d-b594-47750fcb2872.png)
 
-A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. It can take some time to load the files. When the IDE is ready the tests will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory. There you can browse through libraries file tree and open the source code. It can take some time to load the files. When the IDE is ready the tests will start running. You cannot set a breakpoints in Chrome DevTools before the files get loaded, so you might want to use the first run for setting the initial breakpoint in `WasmTestRunner.cs` and then rerun the app. DevTools will stop on the previously set breakpoint and you will have time to set breakpoints in the libs you want to debug and click Resume.
 
 ## Debug with VS Code
 
@@ -51,5 +51,7 @@ Add following configuration to your `.vscode/launch.json`:
             "port": <PROXY'S_PORT>
         }
 ```
-Run the configuration and be patient, it can take some time. Wait till VS Code will get stopped in the beginning of `Main` of `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
+Set at least one breakpoint in the libraries, you can do it initially in `WasmTestRunner.cs`.
+
+Run the configuration and be patient, it can take some time. Wait till VS Code will get stopped in `WasmTestRunner`. Set breakpoints in the libs you want to debug and click Resume.
 ![image](https://user-images.githubusercontent.com/32700855/201894003-fc5394ad-9848-4d07-a132-f687ecd17c50.png)
