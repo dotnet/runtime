@@ -2271,7 +2271,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		} else {
 			ioffset = 0;
 		}
-
+		
 		if (info->method->is_generic == 0 && mono_class_is_ginst (info->method->klass)) {
 			slot = mono_method_get_vtable_slot (((MonoMethodInflated*)(info->method))->declaring);
 		} else {
