@@ -96,8 +96,15 @@ public class LibraryBuilderTask : AppBuilderTask
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
-            aotSources.AppendLine(compiledAssembly.AssemblerFile);
-            aotObjects.AppendLine($"    {compiledAssembly.LlvmObjectFile}");
+            if (!string.IsNullOrEmpty(compiledAssembly.AssemblerFile))
+            {
+                aotSources.AppendLine(compiledAssembly.AssemblerFile);
+            }
+
+            if (!string.IsNullOrEmpty(compiledAssembly.LlvmObjectFile))
+            {
+                aotObjects.AppendLine($"    {compiledAssembly.LlvmObjectFile}");
+            }
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
@@ -118,9 +125,16 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void GatherLinkerArgs(StringBuilder linkerArgs)
     {
+        string libForceLoad = "";
+
+        if (TargetOS != "android")
+        {
+            libForceLoad = "-force_load ";
+        }
+
         foreach (ITaskItem item in RuntimeLibraries)
         {
-            linkerArgs.AppendLine($"    \"-force_load {item.ItemSpec}\"");
+            linkerArgs.AppendLine($"    \"{libForceLoad}{item.ItemSpec}\"");
         }
 
         foreach (ITaskItem item in ExtraLinkerArguments)
