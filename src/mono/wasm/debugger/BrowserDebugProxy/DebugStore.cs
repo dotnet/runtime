@@ -1761,7 +1761,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             if (symbolStore == null)
                 return;
-            monoProxy.SendLog(id, "** ReloadAllPDBsFromSymbolServersAndSendSources: Loading symbols from symbol servers.", token);
+            monoProxy.SendLog(id, "Loading symbols from symbol servers.", token);
             foreach (var asm in assemblies.Where(asm => asm.pdbMetadataReader == null))
             {
                 asm.TriedToLoadSymbolsOnDemand = false; //force to load again because added another symbol server
