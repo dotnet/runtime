@@ -1005,7 +1005,7 @@ public:
     //
     // Returns:
     //    A bit mask that has GTF_VAR_FIELD_DEATH0 to GTF_VAR_FIELD_DEATH3 set,
-    //    depending on how many field this promoted local has.
+    //    depending on how many fields this promoted local has.
     //
     // Remarks:
     //    Only usable for promoted locals.
