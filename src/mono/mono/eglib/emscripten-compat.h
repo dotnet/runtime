@@ -1,7 +1,7 @@
 #ifndef __EMSCRIPTEN_COMPAT_H
 #define __EMSCRIPTEN_COMPAT_H
 
-#if defined __EMSCRIPTEN__ || defined TARGET_WASM
+#ifdef EMSCRIPTEN
 	#include <stdlib.h>
 	#include <math.h>
 	#include <stdarg.h>

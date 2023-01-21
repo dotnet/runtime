@@ -128,7 +128,7 @@
       <_EmccLinkFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccLinkFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccLinkFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
+      <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['FS','out','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_DefaultExportedFunctions)" Condition="'$(_DefaultExportedFunctions)' != ''" />
       <_EmccLinkFlags Include="--source-map-base http://example.com" />
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
