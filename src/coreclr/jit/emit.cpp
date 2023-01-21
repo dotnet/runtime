@@ -4192,7 +4192,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
 
         if (flag == GTF_ICON_STATIC_ADDR_PTR)
         {
-            printf("%s static fld addr", commentPrefix);
+            printf("%s static base addr cell", commentPrefix);
             return;
         }
     }
