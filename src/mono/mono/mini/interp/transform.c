@@ -10228,9 +10228,9 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 			// Given we iterate over the list of deferred calls from the last to the first one to end, all deps of a call are guaranteed to have been processed at this point.
 			int base_offset = 0;
 			for (GSList *list = deferred_call->info.call_info->call_deps; list; list = list->next) {
-				int call_offset = ((InterpInst*)list->data)->info.call_info->call_offset;
-				if (call_offset > base_offset)
-					base_offset = call_offset;
+				int end_offset = ((InterpInst*)list->data)->info.call_info->call_end_offset;
+				if (end_offset > base_offset)
+					base_offset = end_offset;
 			}
 			// Compute to offset of each call argument
 			int *call_args = deferred_call->info.call_info->call_args;
@@ -10256,7 +10256,7 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 
 				deferred_call->info.call_info->call_args = call_args;
 			}
-			deferred_call->info.call_info->call_offset = base_offset;
+			deferred_call->info.call_info->call_end_offset = base_offset;
 
 			if (ac->deferred_calls) {
 				deferred_call = (InterpInst*) ac->deferred_calls->data;

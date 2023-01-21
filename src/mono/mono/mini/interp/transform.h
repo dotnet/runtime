@@ -150,8 +150,8 @@ struct _InterpCallInfo {
 	union {
 		// Array of call dependencies that need to be resolved before
 		GSList *call_deps;
-		// Stack call offset with call arguments
-		int call_offset;
+		// Stack end offset of call arguments
+		int call_end_offset;
 	};
 };
 
