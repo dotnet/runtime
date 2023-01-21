@@ -4242,13 +4242,13 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             assert(innerFldSeq != nullptr);
 
             size_t fldAddr = (size_t)pFieldInfo->fieldLookup.addr;
-            if (pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE)
+            if (pFieldInfo->fieldLookup.accessType == IAT_VALUE)
             {
                 op1 = gtNewIconHandleNode(fldAddr, GTF_ICON_STATIC_HDL);
             }
             else
             {
-                assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_PVALUE);
+                assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
                 op1 = gtNewIndOfIconHandleNode(TYP_BYREF, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
