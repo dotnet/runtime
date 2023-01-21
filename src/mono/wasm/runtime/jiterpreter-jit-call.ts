@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -12,7 +11,7 @@ import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, shortNameBase, getOptions, getRawCwrap
+    recordFailure, shortNameBase, getOptions
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -41,8 +40,8 @@ struct _JitCallInfo {
 */
 
 const offsetOfAddr = 0,
-    offsetOfExtraArg = 4,
-    offsetOfWrapper = 8,
+    // offsetOfExtraArg = 4,
+    // offsetOfWrapper = 8,
     offsetOfSig = 12,
     offsetOfArgInfo = 16,
     offsetOfRetMt = 24,
@@ -79,8 +78,8 @@ const offsetOfSigRet = 0,
 
 const maxJitQueueLength = 6,
     maxSharedQueueLength = 12,
-    flushParamThreshold = 7,
-    sizeOfStackval = 8;
+    flushParamThreshold = 7;
+    // sizeOfStackval = 8;
 
 let trampBuilder : WasmBuilder;
 let fnTable : WebAssembly.Table;
@@ -309,7 +308,6 @@ export function mono_jiterp_do_jit_call_indirect (
             if (typeof (impl) !== "function")
                 throw new Error("Did not find exported do_jit_call handler");
 
-            // console.log("registering wasm jit call dispatcher");
             // We successfully instantiated it so we can register it as the new do_jit_call handler
             const result = addWasmFunctionPointer(impl);
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
@@ -322,7 +320,6 @@ export function mono_jiterp_do_jit_call_indirect (
     }
 
     if (failed) {
-        // console.log("registering JS jit call dispatcher");
         try {
             const result = Module.addFunction(do_jit_call_indirect_js, "viii");
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
@@ -457,7 +454,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
-        builder.generateImportSection(true);
+        builder.generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -515,8 +512,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         const traceInstance = new WebAssembly.Instance(traceModule, {
             i: imports,
             c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-            f: { f: fnTable },
+            m: { h: (<any>Module).asm.memory }
         });
 
         for (let i = 0; i < jitQueue.length; i++) {
@@ -599,6 +595,9 @@ export function mono_interp_flush_jitcall_queue () : void {
     }
 }
 
+// To perform wrapper punch-through we have to emulate the semantics of generated wrappers
+// Wrappers are generated in CIL, so we work in CIL as well and reuse some of the generator
+
 // Only the subset of CIL opcodes used by the wrapper generator in mini-generic-sharing.c
 const enum CilOpcodes {
     NOP = 0,
@@ -680,32 +679,6 @@ const wasmOpcodeFromCilOpcode = {
     [CilOpcodes.STIND_I]:   WasmOpcode.i32_store,
 };
 
-/*
-const cilOpcodeNames = {
-    [CilOpcodes.LDIND_I1]: "ldind_i1",
-    [CilOpcodes.LDIND_U1]: "ldind_u1",
-    [CilOpcodes.LDIND_I2]: "ldind_i2",
-    [CilOpcodes.LDIND_U2]: "ldind_u2",
-    [CilOpcodes.LDIND_I4]: "ldind_i4",
-    [CilOpcodes.LDIND_U4]: "ldind_u4",
-    [CilOpcodes.LDIND_I8]: "ldind_i8",
-    [CilOpcodes.LDIND_I]: "ldind_i",
-    [CilOpcodes.LDIND_R4]: "ldind_r4",
-    [CilOpcodes.LDIND_R8]: "ldind_r8",
-    [CilOpcodes.LDIND_REF]: "ldind_ref",
-    [CilOpcodes.STIND_REF]: "stind_ref",
-    [CilOpcodes.STIND_I1]: "stind_i1",
-    [CilOpcodes.STIND_I2]: "stind_i2",
-    [CilOpcodes.STIND_I4]: "stind_i4",
-    [CilOpcodes.STIND_I8]: "stind_i8",
-    [CilOpcodes.STIND_R4]: "stind_r4",
-    [CilOpcodes.STIND_R8]: "stind_r8",
-    [CilOpcodes.STIND_I]:  "stind_i",
-    [CilOpcodes.LDOBJ]: "ldobj",
-    [CilOpcodes.STOBJ]: "stobj",
-};
-*/
-
 function type_to_ldind (type: MonoType) : CilOpcodes {
     /*
         if (m_type_is_byref (sig->params [i])) {
@@ -766,7 +739,6 @@ function generate_wasm_body (
     if (info.hasReturnValue && !info.enablePunchThrough)
         builder.local("ret_sp");
 
-    // console.log(`info.paramCount==${info.paramCount} info.signatureParamTypes.length=${info.signatureParamTypes.length}`);
     for (let i = 0; i < info.paramCount; i++) {
         // FIXME: STACK_ADD_BYTES does alignment, but we probably don't need to?
         const svalOffset = info.argOffsets[stack_index + i];
@@ -778,10 +750,6 @@ function generate_wasm_body (
             //  which is 'p' where pointers live
             append_ldloc(builder, svalOffset, WasmOpcode.i32_load);
         } else {
-            /*
-            if (info.enablePunchThrough)
-                console.log(`load &p[${i}]`);
-            */
             // pass the address of the stackval data union
             append_ldloca(builder, svalOffset);
         }
@@ -816,7 +784,6 @@ function generate_wasm_body (
 
                 // FIXME: LDOBJ is not implemented
                 // TODO: Optimize ldloca->this into a single load-with-offset
-                // console.log("perform memory read");
                 builder.appendU8(loadWasmOp);
                 builder.appendMemarg(0, 0);
             }

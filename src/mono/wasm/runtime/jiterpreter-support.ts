@@ -236,10 +236,10 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    generateImportSection (importFunctionTable? : boolean) {
+    generateImportSection () {
         // Import section
         this.beginSection(2);
-        this.appendULeb((importFunctionTable ? 2 : 1) + this.importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(1 + this.importsToEmit.length + this.constantSlots.length);
 
         for (let i = 0; i < this.importsToEmit.length; i++) {
             const tup = this.importsToEmit[i];
@@ -255,15 +255,6 @@ export class WasmBuilder {
             this.appendU8(0x03); // global
             this.appendU8(WasmValtype.i32); // all constants are pointers right now
             this.appendU8(0x00); // constant
-        }
-
-        if (importFunctionTable) {
-            this.appendName("f");
-            this.appendName("f");
-            this.appendU8(0x01); // table
-            this.appendU8(0x70); // funcref
-            this.appendU8(0x00); // no maximum
-            this.appendLeb(1); // minimum size
         }
 
         this.appendName("m");
