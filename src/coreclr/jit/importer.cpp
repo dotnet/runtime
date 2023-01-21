@@ -4238,13 +4238,21 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         case CORINFO_FIELD_STATIC_RELOCATABLE:
         {
 #ifdef FEATURE_READYTORUN
-            assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
             assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
             assert(innerFldSeq != nullptr);
 
-            GenTree* baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
-            GenTree* offset   = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
-            op1               = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, offset);
+            size_t fldAddr = (size_t)pFieldInfo->fieldLookup.addr;
+            if (pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE)
+            {
+                op1 = gtNewIconHandleNode(fldAddr, GTF_ICON_STATIC_HDL);
+            }
+            else
+            {
+                assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_PVALUE);
+                op1 = gtNewIndOfIconHandleNode(TYP_BYREF, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+            }
+            GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
 #else
             unreached();
 #endif // FEATURE_READYTORUN
