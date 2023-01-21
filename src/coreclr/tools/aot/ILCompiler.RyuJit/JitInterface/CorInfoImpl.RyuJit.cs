@@ -2147,14 +2147,13 @@ namespace Internal.JitInterface
                         ISymbolNode baseAddress;
                         if (field.HasGCStaticBase)
                         {
-                            pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
                             baseAddress = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
                         }
                         else
                         {
-                            pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
                             baseAddress = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
                         }
+                        pResult->fieldLookup.accessType = baseAddress.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddress);
                     }
                     else
