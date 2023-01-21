@@ -82,7 +82,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             ConcurrentBag<ITaskItem> outputItems = new();
             try
             {
-                List<(string, string)> filesToCompile = new();
+                List<(string, string, long)> filesToCompile = new();
                 foreach (ITaskItem srcItem in SourceFiles)
                 {
                     string srcFile = srcItem.ItemSpec;
@@ -100,9 +100,11 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     else
                     {
                         Log.LogMessage(MessageImportance.Low, $"Compiling {srcFile} because {reason}.");
-                        filesToCompile.Add((srcFile, objFile));
+                        filesToCompile.Add((srcFile, objFile, new FileInfo(srcFile).Length));
                     }
                 }
+
+                filesToCompile.Sort((a, b) => b.Item3.CompareTo(a.Item3));
 
                 _numCompiled = SourceFiles.Length - filesToCompile.Count;
                 if (_numCompiled == _totalFiles)
@@ -160,7 +162,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                 new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
                                                 (toCompile, state) =>
                 {
-                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2, toCompile.Item3))
                         state.Stop();
                 });
 
@@ -183,7 +185,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
             OutputFiles = outputItems.ToArray();
             return !Log.HasLoggedErrors;
 
-            bool ProcessSourceFile(string srcFile, string objFile)
+            bool ProcessSourceFile(string srcFile, string objFile, long size)
             {
                 string tmpObjFile = Path.GetTempFileName();
                 try
@@ -221,7 +223,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     outputItems.Add(CreateOutputItemFor(srcFile, objFile));
 
                     int count = Interlocked.Increment(ref _numCompiled);
-                    Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
+                    Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s] [size: {size/1024}KB]");
 
                     return !Log.HasLoggedErrors;
                 }
