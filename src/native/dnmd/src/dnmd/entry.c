@@ -8,6 +8,66 @@
 // Defined in II.24.2.1
 #define METADATA_SIG 0x424A5342
 
+static mdcxt_t* allocate_full_context(mdcxt_t* cxt)
+{
+    // The intent here is to call the allocator once.
+    // Therefore we compute the full size and then call
+    // malloc a single time. The following needs to be
+    // done:
+    //  1. Compute total amount of needed memory:
+    //     - sizeof(mdcxt_t)
+    //     - table count
+    //     - column count for each table
+    //  2. Copy supplied mdcxt_t to the newly allocated one
+    //  3. Determine table array offset
+    //  4. Set table pointer in mdcxt_t
+    //  5. Determine column details array offsets
+    //  6. Set column details array in each table
+    //  7. Return the newly allocated context
+
+    uint32_t table_col_sizes[MDTABLE_MAX_COUNT];
+    uint32_t total_col_size = 0;
+    for (mdtable_id_t id = mdtid_First; id < mdtid_End; ++id)
+    {
+        table_col_sizes[id] = sizeof(mdtcol_t) * get_table_column_count(id);
+        total_col_size += table_col_sizes[id];
+    }
+
+    // Ensure all sections of the allocation are pointer aligned.
+    size_t cxt_mem = align_to(sizeof(mdcxt_t), sizeof(void*));
+    size_t tables_mem = MDTABLE_MAX_COUNT * align_to(sizeof(mdtable_t), sizeof(void*));
+    size_t col_mem = align_to(total_col_size, sizeof(void*));
+
+    size_t total_mem = cxt_mem + tables_mem + col_mem;
+    uint8_t* mem = (uint8_t*)malloc(total_mem);
+    if (mem == NULL)
+        return NULL;
+
+    // Copy passed in state
+    mdcxt_t* pcxt = (mdcxt_t*)mem;
+    mem += cxt_mem;
+    memcpy(pcxt, cxt, sizeof(*cxt));
+
+    // Zero out the remaining memory
+    memset(mem, 0, total_mem - cxt_mem);
+
+    // Update the tables pointer to offset in allocation
+    assert(pcxt->tables == NULL);
+    pcxt->tables = (mdtable_t*)mem;
+    mem += tables_mem;
+
+    // Update each table's column array
+    for (mdtable_id_t id = mdtid_First; id < mdtid_End; ++id)
+    {
+        pcxt->tables[id].column_details = (mdtcol_t*)mem;
+        uint32_t size = table_col_sizes[id];
+        mem += size;
+    }
+
+    assert(mem <= (uint8_t*)(pcxt + total_mem));
+    return pcxt;
+}
+
 bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
 {
     if (data == NULL || handle == NULL)
@@ -123,11 +183,10 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
     cxt.data.size = data_len;
     // Allocate and initialize a context
 
-    mdcxt_t* pcxt = (mdcxt_t*)malloc(sizeof(mdcxt_t));
+    mdcxt_t* pcxt = allocate_full_context(&cxt);
     if (pcxt == NULL)
         return false;
 
-    memcpy(pcxt, &cxt, sizeof(cxt));
 #ifdef DEBUG
     memset(&cxt, 0xcc, sizeof(cxt));
 #endif //DEBUG

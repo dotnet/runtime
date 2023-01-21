@@ -27,7 +27,7 @@ typedef struct _mdcdata_t
 } mdcdata_t;
 
 // II.24.2.6 - 64 is the maximum value
-#define MDTABLE_MAX_COUNT ((size_t)mdtid_Last)
+#define MDTABLE_MAX_COUNT ((size_t)mdtid_End)
 static_assert(MDTABLE_MAX_COUNT <= 64, "Specification sets max table count to 64");
 
 #define MDTABLE_MAX_COLUMN_COUNT 9
@@ -82,7 +82,7 @@ typedef enum
 #define InsertCodedIndex(s) ((s << 24) & mdtc_cimask)
 #define ExtractCodedIndex(s) ((s & mdtc_cimask) >> 24)
 
-// Foward declare.
+// Forward declare.
 struct _mdcxt_t;
 
 typedef struct _mdtable_t
@@ -94,7 +94,7 @@ typedef struct _mdtable_t
     bool is_sorted;
     uint8_t table_id;
     struct _mdcxt_t* cxt; // Non-null is indication of complete initialization
-    mdtcol_t column_details[MDTABLE_MAX_COLUMN_COUNT];
+    mdtcol_t* column_details;
 } mdtable_t;
 
 typedef mdcdata_t mdstream_t;
@@ -122,7 +122,7 @@ typedef struct _mdcxt_t
 
     // Metadata tables - II.22
     uint8_t heap_sizes; // 1 = "#Strings", 2 = "#GUID", 4 = "#Blob"
-    mdtable_t tables[MDTABLE_MAX_COUNT];
+    mdtable_t* tables;
 } mdcxt_t;
 
 // Extract a context from the mdhandle_t.
@@ -207,6 +207,9 @@ extern coded_index_entry const coded_index_map[mdci_Count];
 // Manipulators for coded indices - II.24.2.6
 bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index);
 bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* table_id, uint32_t* table_row);
+
+// Get the column count for a table.
+uint8_t get_table_column_count(mdtable_id_t id);
 
 // Initialize the supplied table details
 bool initialize_table_details(

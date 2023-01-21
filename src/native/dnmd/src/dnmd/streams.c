@@ -206,12 +206,16 @@ bool initialize_tables(mdcxt_t* cxt)
 
 #ifdef DNMD_PORTABLE_PDB
     md_pdb_t pdb;
-    if (cxt->pdb.size != 0 && !try_get_pdb(cxt, &pdb))
+    if (try_get_pdb(cxt, &pdb))
+    {
+        // Merge in the PDB reference row counts
+        for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+            row_counts[i] += pdb.type_system_table_rows[i];
+    }
+    else if (cxt->pdb.size != 0)
+    {
         return false;
-
-    // Merge in the PDB reference row counts
-    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
-        row_counts[i] += pdb.type_system_table_rows[i];
+    }
 #endif // DNMD_PORTABLE_PDB
 
     mdtable_t* table;
