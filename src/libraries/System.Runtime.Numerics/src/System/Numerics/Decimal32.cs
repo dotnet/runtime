@@ -26,7 +26,9 @@ namespace System.Numerics
 
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands; // TODO is this correct?
 
+        //
         // Constants for manipulating the private bit-representation
+        //
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
@@ -168,43 +170,11 @@ namespace System.Numerics
                 private const uint PiBits = 0; // TODO
                 private const uint TauBits = 0; // TODO*/
 
-        // Well-defined and commonly used values
-
-        public static Decimal32 MaxValue => new Decimal32(MaxValueBits);                    //  9.999999E90
-
-        public static Decimal32 MinValue => new Decimal32(MinValueBits);                    // -9.999999E90
-
-        public static Decimal32 Epsilon => new Decimal32(EpsilonBits);                      //  1E-101
-
-        public static Decimal32 NaN => new Decimal32(QNanBits);                             //  0.0 / 0.0
-
-        public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityBits);    // -1.0 / 0.0
-
-        public static Decimal32 NegativeZero => new Decimal32(NegativeZeroBits);            // -0E-101
-
-        public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityBits);    //  1.0 / 0.0
-
-        public static Decimal32 NegativeOne => new Decimal32(NegativeOneBits);              // -1E0
-
-        public static Decimal32 E => throw new NotImplementedException();
-
-        public static Decimal32 Pi => throw new NotImplementedException();
-
-        public static Decimal32 Tau => throw new NotImplementedException();
-
-        public static Decimal32 One => new Decimal32(PositiveOneBits);                      //  1E0
-
-        public static int Radix => 10;
-
-        public static Decimal32 Zero => new Decimal32(PositiveZeroBits);                    // -0E-101
-
-        public static Decimal32 AdditiveIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on addition
-
-        public static Decimal32 MultiplicativeIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on multiplication
-
         internal readonly uint _value; // TODO: Single places this at the top, Half places it here. Also, Single has this as private, Half has it as internal. What do we want?
 
-        // Private Constructors
+        //
+        // Internal Constructors and Decoders
+        //
 
         internal Decimal32(uint value)
         {
@@ -322,87 +292,6 @@ namespace System.Numerics
             return value._value & ~SignMask;
         }
 
-        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
-        public static Decimal32 Abs(Decimal32 value)
-        {
-            return new Decimal32(value._value & ~SignMask);
-        }
-
-        public static Decimal32 Acos(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Acosh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 AcosPi(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Asin(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Asinh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 AsinPi(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Atan(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Atan2(Decimal32 y, Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Atan2Pi(Decimal32 y, Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Atanh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 AtanPi(Decimal32 x) => throw new NotImplementedException();
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
-        public static Decimal32 BitDecrement(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 BitIncrement(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Cbrt(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Cos(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Cosh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 CosPi(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Exp(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Exp10(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Exp2(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => throw new NotImplementedException();
-        public static Decimal32 Hypot(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 Ieee754Remainder(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static int ILogB(Decimal32 x) => throw new NotImplementedException();
-        public static bool IsCanonical(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsComplexNumber(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsEvenInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsFinite(Decimal32 value)
-        {
-            return StripSign(value) < PositiveInfinityBits;
-        }
-        public static bool IsImaginaryNumber(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsInfinity(Decimal32 value)
-        {
-            return (value._value & ClassificationMask) == InfinityMask;
-        }
-        public static bool IsInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsNaN(Decimal32 value)
-        {
-            return (value._value & ClassificationMask) == NaNMask;
-        }
-        public static bool IsNegative(Decimal32 value)
-        {
-            return (int)(value._value) < 0;
-        }
-        public static bool IsNegativeInfinity(Decimal32 value)
-        {
-            return IsInfinity(value) && IsNegative(value);
-        }
-        public static bool IsNormal(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsOddInteger(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsPositive(Decimal32 value)
-        {
-            return (int)(value._value) >= 0;
-        }
-        public static bool IsPositiveInfinity(Decimal32 value)
-        {
-            return IsInfinity(value) && IsPositive(value);
-        }
-        public static bool IsRealNumber(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsSubnormal(Decimal32 value) => throw new NotImplementedException();
-        public static bool IsZero(Decimal32 value)
-        {
-            return value.Significand == 0;
-        }
-        public static Decimal32 Log(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Log(Decimal32 x, Decimal32 newBase) => throw new NotImplementedException();
-        public static Decimal32 Log10(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Log2(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 MaxMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 MaxMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 MinMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-        public static Decimal32 MinMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
-
         //
         // Parsing (INumberBase, IParsable, ISpanParsable)
         //
@@ -514,34 +403,550 @@ namespace System.Numerics
             return IeeeDecimalNumber.TryParseDecimal32(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+        //
+        // Misc. Methods (IComparable, IEquatable)
+        //
+
+        /// <summary>
+        /// Compares this object to another object, returning an integer that indicates the relationship.
+        /// </summary>
+        /// <returns>A value less than zero if this is less than <paramref name="obj"/>, zero if this is equal to <paramref name="obj"/>, or a value greater than zero if this is greater than <paramref name="obj"/>.</returns>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="obj"/> is not of type <see cref="Decimal32"/>.</exception>
+        public int CompareTo(object? obj) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Compares this object to another object, returning an integer that indicates the relationship.
+        /// </summary>
+        /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
+        public int CompareTo(Decimal32 other) => throw new NotImplementedException();
+
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="obj"/>.
+        /// </summary>
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            return (obj is Decimal32 other) && Equals(other);
+        }
+
+        /// <summary>
+        /// Returns a value that indicates whether this instance is equal to a specified <paramref name="other"/> value.
+        /// </summary>
+        public bool Equals(Decimal32 other)
+        {
+            return this == other
+                || (IsNaN(this) && IsNaN(other));
+        }
+
+        /// <summary>
+        /// Serves as the default hash function.
+        /// </summary>
+        public override int GetHashCode()
+        {
+            // TODO we know that NaNs and Zeros should hash the same. Should values of the same cohort have the same hash?
+            throw new NotImplementedException();
+        }
+
+        //
+        // Formatting (IFormattable, ISpanFormattable)
+        //
+
+        /// <summary>
+        /// Returns a string representation of the current value.
+        /// </summary>
+        public override string ToString()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/>.
+        /// </summary>
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns a string representation of the current value with the specified <paramref name="provider"/>.
+        /// </summary>
+        public string ToString(IFormatProvider? provider)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Returns a string representation of the current value using the specified <paramref name="format"/> and <paramref name="provider"/>.
+        /// </summary>
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) // TODO the interface calls this second param "formatProvider". Which do we want?
+        {
+            // Temporary Formatting for debugging
+            if (IsNaN(this))
+            {
+                return "NaN";
+            }
+            else if (IsPositiveInfinity(this))
+            {
+                return "Infinity";
+            }
+            else if (IsNegativeInfinity(this))
+            {
+                return "-Infinity";
+            }
+
+            return (IsPositive(this) ? "" : "-") + Significand.ToString() + "E" + Exponent.ToString();
+        }
+
+        /// <summary>
+        /// Tries to format the value of the current Decimal32 instance into the provided span of characters.
+        /// </summary>
+        /// <param name="destination">When this method returns, this instance's value formatted as a span of characters.</param>
+        /// <param name="charsWritten">When this method returns, the number of characters that were written in <paramref name="destination"/>.</param>
+        /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="destination"/>.</param>
+        /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination"/>.</param>
+        /// <returns></returns>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        //
+        // Explicit Convert To Decimal32 TODO
+        //
+
+        //
+        // Explicit Convert From Decimal32 TODO
+        //
+
+        //
+        // Implicit Convert To Decimal32 TODO
+        //
+
+        //
+        // Implicit Convert From Decimal32 TODO
+        //
+
+        //
+        // IAdditionOperators
+        //
+
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        public static Decimal32 operator +(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // IAdditiveIdentity
+        //
+
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Decimal32 IAdditiveIdentity<Decimal32, Decimal32>.AdditiveIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on addition
+
+
+        //
+        // IComparisonOperators
+        //
+
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        public static bool operator <(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        public static bool operator >(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        public static bool operator <=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        public static bool operator >=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // IDecimalFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="IDecimalFloatingPointIeee754{TSelf}.Quantize(TSelf, TSelf)" />
         public static Decimal32 Quantize(Decimal32 x, Decimal32 y)
         {
             throw new NotImplementedException();
         }
+
+        /// <inheritdoc cref="IDecimalFloatingPointIeee754{TSelf}.Quantum(TSelf)" />
         public static Decimal32 Quantum(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 RootN(Decimal32 x, int n) => throw new NotImplementedException();
-        public static Decimal32 Round(Decimal32 x, int digits, MidpointRounding mode) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IDecimalFloatingPointIeee754{TSelf}.SameQuantum(TSelf, TSelf)" />
         public static bool SameQuantum(Decimal32 x, Decimal32 y)
         {
             return x.Exponent == y.Exponent
                 || (IsInfinity(x) && IsInfinity(y))
                 || (IsNaN(x) && IsNaN(y));
         }
+
+        //
+        // IDecrementOperators
+        //
+
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        public static Decimal32 operator --(Decimal32 value) => throw new NotImplementedException();
+
+        //
+        // IDivisionOperators
+        //
+
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        public static Decimal32 operator /(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // IEqualityOperators
+        //
+
+        // Fast access for 10^n where n is 0:(Precision - 1)
+        private static readonly uint[] s_powers10 = new uint[] {
+                1,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000
+        };
+
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        public static bool operator ==(Decimal32 left, Decimal32 right) // TODO we can probably do this faster
+        {
+            if (IsNaN(left) || IsNaN(right))
+            {
+                // IEEE defines that NaN is not equal to anything, including itself.
+                return false;
+            }
+
+            if (IsZero(left) && IsZero(right))
+            {
+                // IEEE defines that positive and negative zero are equivalent.
+                return true;
+            }
+
+            bool sameSign = IsPositive(left) == IsPositive(right);
+
+            if (IsInfinity(left) || IsInfinity(right))
+            {
+                if (IsInfinity(left) && IsInfinity(right) && sameSign)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            // IEEE defines that two values of the same cohort are numerically equivalent
+
+            uint leftSignificand = left.Significand;
+            uint rightSignificand = right.Significand;
+            sbyte leftQ = left.Exponent;
+            sbyte rightQ = right.Exponent;
+            int diffQ = leftQ - rightQ;
+
+            bool sameNumericalValue = false;
+            if (int.Abs(diffQ) < Precision) // If diffQ is >= Precision, the non-zero finite values have exponents too far apart for them to possibly be equal
+            {
+                try
+                {
+                    if (diffQ < 0)
+                    {
+                        // leftQ is smaller than rightQ, scale leftSignificand
+                        leftSignificand = checked(leftSignificand * s_powers10[int.Abs(diffQ)]);
+                    }
+                    else
+                    {
+                        // rightQ is smaller than (or equal to) leftQ, scale rightSignificand
+                        rightSignificand = checked(rightSignificand * s_powers10[diffQ]);
+                    }
+                }
+                catch
+                {
+                    // multiplication overflowed, return false
+                    return false;
+                }
+
+                if (leftSignificand == rightSignificand)
+                {
+                    sameNumericalValue = true;
+                }
+            }
+
+            return sameNumericalValue && sameSign;
+        }
+
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        public static bool operator !=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // IExponentialFunctions
+        //
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        public static Decimal32 Exp(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static Decimal32 ExpM1(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static Decimal32 Exp2(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static Decimal32 Exp2M1(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static Decimal32 Exp10(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static Decimal32 Exp10M1(Decimal32 x) => throw new NotImplementedException();
+
+        //
+        // IFloatingPoint
+        //
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        public static Decimal32 Ceiling(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        public static Decimal32 Floor(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        public static Decimal32 Round(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
+        public static Decimal32 Round(Decimal32 x, int digits) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, MidpointRounding)" />
+        public static Decimal32 Round(Decimal32 x, MidpointRounding mode) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int, MidpointRounding)" />
+        public static Decimal32 Round(Decimal32 x, int digits, MidpointRounding mode) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        public static Decimal32 Truncate(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Decimal32>.GetExponentByteCount() => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
+        int IFloatingPoint<Decimal32>.GetExponentShortestBitLength() => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Decimal32>.GetSignificandBitLength() => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Decimal32>.GetSignificandByteCount() => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Decimal32>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+
+        //
+        // IFloatingPointConstants
+        //
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.E" />
+        public static Decimal32 E => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Pi" />
+        public static Decimal32 Pi => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointConstants{TSelf}.Tau" />
+        public static Decimal32 Tau => throw new NotImplementedException();
+
+        //
+        // IFloatingPointIeee754
+        //
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Epsilon" />
+        public static Decimal32 Epsilon => new Decimal32(EpsilonBits);                      //  1E-101
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NaN" />
+        public static Decimal32 NaN => new Decimal32(QNanBits);                             //  0.0 / 0.0
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeInfinity" />
+        public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityBits);    // -1.0 / 0.0
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.NegativeZero" />
+        public static Decimal32 NegativeZero => new Decimal32(NegativeZeroBits);            // -0E-101
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />
+        public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityBits);    //  1.0 / 0.0
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        public static Decimal32 Atan2(Decimal32 y, Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
+        public static Decimal32 Atan2Pi(Decimal32 y, Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
+        public static Decimal32 BitDecrement(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
+        public static Decimal32 BitIncrement(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        public static Decimal32 FusedMultiplyAdd(Decimal32 left, Decimal32 right, Decimal32 addend) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
+        public static Decimal32 Ieee754Remainder(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
+        public static int ILogB(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal32 ReciprocalEstimate(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal32 ReciprocalSqrtEstimate(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
         public static Decimal32 ScaleB(Decimal32 x, int n) => throw new NotImplementedException();
-        public static Decimal32 Sin(Decimal32 x) => throw new NotImplementedException();
-        public static (Decimal32 Sin, Decimal32 Cos) SinCos(Decimal32 x) => throw new NotImplementedException();
-        public static (Decimal32 SinPi, Decimal32 CosPi) SinCosPi(Decimal32 x) => throw new NotImplementedException();
+
+        // /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Compound(TSelf, TSelf)" />
+        // public static Decimal32 Compound(Half x, Decimal32 n) => throw new NotImplementedException();
+
+        //
+        // IHyperbolicFunctions
+        //
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        public static Decimal32 Acosh(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        public static Decimal32 Asinh(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        public static Decimal32 Atanh(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        public static Decimal32 Cosh(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
         public static Decimal32 Sinh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 SinPi(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Sqrt(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 Tan(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
         public static Decimal32 Tanh(Decimal32 x) => throw new NotImplementedException();
-        public static Decimal32 TanPi(Decimal32 x) => throw new NotImplementedException();
+
+        //
+        // IIncrementOperators
+        //
+
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        public static Decimal32 operator ++(Decimal32 value) => throw new NotImplementedException();
+
+        //
+        // ILogarithmicFunctions
+        //
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        public static Decimal32 Log(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
+        public static Decimal32 Log(Decimal32 x, Decimal32 newBase) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        public static Decimal32 Log10(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static Decimal32 LogP1(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2(TSelf)" />
+        public static Decimal32 Log2(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static Decimal32 Log2P1(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static Decimal32 Log10P1(Decimal32 x) => throw new NotImplementedException();
+
+        //
+        // IMinMaxValue
+        //
+
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
+        public static Decimal32 MaxValue => new Decimal32(MaxValueBits);                    //  9.999999E90
+
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
+        public static Decimal32 MinValue => new Decimal32(MinValueBits);                    // -9.999999E90
+
+        //
+        // IModulusOperators
+        //
+
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        public static Decimal32 operator %(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        public static Decimal32 MultiplicativeIdentity => new Decimal32(PositiveZeroBits); // TODO make sure this is a zero such that the quantum of any other value is preserved on multiplication
+
+        //
+        // IMultiplyOperators
+        //
+
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        public static Decimal32 operator *(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // INumber
+        //
+
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static Decimal32 Clamp(Decimal32 value, Decimal32 min, Decimal32 max) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static Decimal32 CopySign(Decimal32 value, Decimal32 sign) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static Decimal32 Max(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static Decimal32 MaxNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static Decimal32 Min(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static Decimal32 MinNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(Decimal32 value) => throw new NotImplementedException();
+
+
+        //
+        // INumberBase (well defined/commonly used values)
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        public static Decimal32 One => new Decimal32(PositiveOneBits);                      //  1E0
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<Decimal32>.Radix => 10; // TODO this should be exposed implicitly as it is required by IEEE
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        public static Decimal32 Zero => new Decimal32(PositiveZeroBits);                    // -0E-101
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static Decimal32 Abs(Decimal32 value)
+        {
+            return new Decimal32(value._value & ~SignMask);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Decimal32 CreateChecked<TOther>(TOther value) // TODO these are copy-pastes of the DIM. Do we still want them?
+        public static Decimal32 CreateChecked<TOther>(TOther value)
             where TOther : INumberBase<TOther>
         {
             Decimal32 result;
@@ -595,6 +1000,98 @@ namespace System.Numerics
 
             return result;
         }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<Decimal32>.IsCanonical(Decimal32 value) => throw new NotImplementedException(); // TODO this should be exposed implicitly as it is required by IEEE
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<Decimal32>.IsComplexNumber(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        public static bool IsFinite(Decimal32 value)
+        {
+            return StripSign(value) < PositiveInfinityBits;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<Decimal32>.IsImaginaryNumber(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        public static bool IsInfinity(Decimal32 value)
+        {
+            return (value._value & ClassificationMask) == InfinityMask;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        public static bool IsInteger(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        public static bool IsNaN(Decimal32 value)
+        {
+            return (value._value & ClassificationMask) == NaNMask;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(Decimal32 value)
+        {
+            return (int)(value._value) < 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        public static bool IsNegativeInfinity(Decimal32 value)
+        {
+            return IsInfinity(value) && IsNegative(value);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        public static bool IsNormal(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(Decimal32 value)
+        {
+            return (int)(value._value) >= 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        public static bool IsPositiveInfinity(Decimal32 value)
+        {
+            return IsInfinity(value) && IsPositive(value);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        public static bool IsRealNumber(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        public static bool IsSubnormal(Decimal32 value) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<Decimal32>.IsZero(Decimal32 value) // TODO this should be exposed implicitly as it is required by IEEE (see private function below)
+        {
+            return value.Significand == 0;
+        }
+
+        private static bool IsZero(Decimal32 value)
+        {
+            return value.Significand == 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Decimal32 MaxMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static Decimal32 MaxMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Decimal32 MinMagnitude(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static Decimal32 MinMagnitudeNumber(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1096,150 +1593,102 @@ namespace System.Numerics
             }
         }
 
-        public int CompareTo(Decimal32 other) => throw new NotImplementedException();
-        public int CompareTo(object? obj) => throw new NotImplementedException();
-        public bool Equals(Decimal32 other)
-        {
-            return this == other
-                || (IsNaN(this) && IsNaN(other));
-        }
-        public int GetExponentByteCount() => throw new NotImplementedException();
-        public int GetExponentShortestBitLength() => throw new NotImplementedException();
-        public int GetSignificandBitLength() => throw new NotImplementedException();
-        public int GetSignificandByteCount() => throw new NotImplementedException();
-        public TypeCode GetTypeCode() => throw new NotImplementedException();
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) => throw new NotImplementedException();
-        public bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-        public bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-        public bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
-        public bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException();
+        //
+        // IPowerFunctions
+        //
 
-        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
-        public static Decimal32 operator +(Decimal32 value) => value;
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static Decimal32 Pow(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
 
-        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        public static Decimal32 operator +(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static Decimal32 Cbrt(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static Decimal32 Hypot(Decimal32 x, Decimal32 y) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static Decimal32 RootN(Decimal32 x, int n) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static Decimal32 Sqrt(Decimal32 x) => throw new NotImplementedException();
+
+        //
+        // ISignedNumber
+        //
+
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        public static Decimal32 NegativeOne => new Decimal32(NegativeOneBits);              // -1E0
+
+        //
+        // ISubtractionOperators
+        //
+
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        public static Decimal32 operator -(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
+
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static Decimal32 Acos(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static Decimal32 AcosPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static Decimal32 Asin(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static Decimal32 AsinPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static Decimal32 Atan(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static Decimal32 AtanPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static Decimal32 Cos(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static Decimal32 CosPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static Decimal32 Sin(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (Decimal32 Sin, Decimal32 Cos) SinCos(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (Decimal32 SinPi, Decimal32 CosPi) SinCosPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static Decimal32 SinPi(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static Decimal32 Tan(Decimal32 x) => throw new NotImplementedException();
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static Decimal32 TanPi(Decimal32 x) => throw new NotImplementedException();
+
+        //
+        // IUnaryNegationOperators
+        //
 
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         public static Decimal32 operator -(Decimal32 value) => Negate(value);
-        public static Decimal32 operator -(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static Decimal32 operator ++(Decimal32 value) => throw new NotImplementedException();
-        public static Decimal32 operator --(Decimal32 value) => throw new NotImplementedException();
-        public static Decimal32 operator *(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static Decimal32 operator /(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static Decimal32 operator %(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
 
-        // Fast access for 10^n where n is 0:(Precision - 1)
-        private static readonly uint[] s_powers10 = new uint[] {
-                1,
-                10,
-                100,
-                1000,
-                10000,
-                100000,
-                1000000
-            };
+        //
+        // IUnaryPlusOperators
+        //
 
-        public static bool operator ==(Decimal32 left, Decimal32 right) // TODO we can probably do this faster
-        {
-            if (IsNaN(left) || IsNaN(right))
-            {
-                // IEEE defines that NaN is not equal to anything, including itself.
-                return false;
-            }
-
-            if (IsZero(left) && IsZero(right))
-            {
-                // IEEE defines that positive and negative zero are equivalent.
-                return true;
-            }
-
-            bool sameSign = IsPositive(left) == IsPositive(right);
-
-            if (IsInfinity(left) || IsInfinity(right))
-            {
-                if (IsInfinity(left) && IsInfinity(right) && sameSign)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            // IEEE defines that two values of the same cohort are numerically equivalent
-
-            uint leftSignificand = left.Significand;
-            uint rightSignificand = right.Significand;
-            sbyte leftQ = left.Exponent;
-            sbyte rightQ = right.Exponent;
-            int diffQ = leftQ - rightQ;
-
-            bool sameNumericalValue = false;
-            if (int.Abs(diffQ) < Precision) // If diffQ is >= Precision, the non-zero finite values have exponents too far apart for them to possibly be equal
-            {
-                try
-                {
-                    if (diffQ < 0)
-                    {
-                        // leftQ is smaller than rightQ, scale leftSignificand
-                        leftSignificand = checked(leftSignificand * s_powers10[int.Abs(diffQ)]);
-                    }
-                    else
-                    {
-                        // rightQ is smaller than (or equal to) leftQ, scale rightSignificand
-                        rightSignificand = checked(rightSignificand * s_powers10[diffQ]);
-                    }
-                }
-                catch
-                {
-                    // multiplication overflowed, return false
-                    return false;
-                }
-
-                if (leftSignificand == rightSignificand)
-                {
-                    sameNumericalValue = true;
-                }
-            }
-
-            return sameNumericalValue && sameSign;
-        }
-        public static bool operator !=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static bool operator <(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static bool operator >(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static bool operator <=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-        public static bool operator >=(Decimal32 left, Decimal32 right) => throw new NotImplementedException();
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return obj is Decimal32 && Equals((Decimal32)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            throw new NotImplementedException();
-        }
-
-        public string ToString(string? format, IFormatProvider? formatProvider)
-        {
-            // Temporary Formatting for debugging
-            if (IsNaN(this))
-            {
-                return "NaN";
-            }
-            else if (IsPositiveInfinity(this))
-            {
-                return "Infinity";
-            }
-            else if (IsNegativeInfinity(this))
-            {
-                return "-Infinity";
-            }
-
-            return (IsPositive(this) ? "" : "-") + Significand.ToString() + "E" + Exponent.ToString();
-        }
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static Decimal32 operator +(Decimal32 value) => value;
 
         // IEEE 754 specifies NaNs to be propagated
         internal static Decimal32 Negate(Decimal32 value)
