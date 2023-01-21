@@ -246,23 +246,14 @@ namespace System.Buffers
                         uint mask = result.ExtractMostSignificantBits();
                         do
                         {
-                            int charPos = BitOperations.TrailingZeroCount(mask);
-
-                            ref char candidatePos = ref Unsafe.Add(ref cur, charPos);
+                            ref char candidatePos = ref Unsafe.Add(ref cur, BitOperations.TrailingZeroCount(mask));
 
                             if (Contains(values, candidatePos))
                             {
                                 return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref candidatePos) / sizeof(char));
                             }
 
-                            if (Bmi1.IsSupported)
-                            {
-                                mask = Bmi1.ResetLowestSetBit(mask);
-                            }
-                            else
-                            {
-                                mask &= ~(uint)(1 << charPos);
-                            }
+                            mask = BitOperations.ResetLowestSetBit(mask);
                         }
                         while (mask != 0);
                     }
