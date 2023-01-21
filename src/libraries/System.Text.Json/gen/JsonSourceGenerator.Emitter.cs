@@ -667,6 +667,19 @@ namespace {@namespace}
 
                 List<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecList!;
 
+                if (typeGenerationSpec.CtorParamGenSpecArray != null)
+                {
+                    properties = properties
+                        .Where(prop => prop.DefaultIgnoreCondition != JsonIgnoreCondition.Always ||
+                                       typeGenerationSpec.CtorParamGenSpecArray.Any(
+                                           ctorPara => prop.ClrName.Equals(ctorPara.ParameterInfo.Name, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+                }
+                else
+                {
+                    properties = properties.Where(prop => prop.DefaultIgnoreCondition != JsonIgnoreCondition.Always).ToList();
+                }
+
                 int propCount = properties.Count;
 
                 string propertyArrayInstantiationValue = propCount == 0
