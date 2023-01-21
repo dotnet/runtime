@@ -1,9 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
@@ -72,7 +75,34 @@ namespace System.Buffers
         internal static bool Contains(ref uint charMap, ReadOnlySpan<char> values, int ch) =>
             IsCharBitSet(ref charMap, (byte)ch) &&
             IsCharBitSet(ref charMap, (byte)(ch >> 8)) &&
-            values.Contains((char)ch);
+            Contains(values, (char)ch);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Contains(ReadOnlySpan<char> values, char ch) =>
+            SpanHelpers.NonPackedContainsValueType(
+                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
+                (short)ch,
+                values.Length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<uint> ContainsMaskAvx2(Vector256<uint> charMap, ref char searchSpace)
+        {
+            Debug.Assert(Avx2.IsSupported);
+            Vector256<uint> source = Avx2.ConvertToVector256Int32(Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref searchSpace))).AsUInt32();
+            Vector256<uint> resultLow = IsCharBitNotSetAvx2(charMap, source & Vector256.Create(255u));
+            Vector256<uint> resultHigh = IsCharBitNotSetAvx2(charMap, Vector256.ShiftRightLogical(source, 8));
+            return ~(resultLow | resultHigh);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<uint> IsCharBitNotSetAvx2(Vector256<uint> charMap, Vector256<uint> values)
+        {
+            Debug.Assert(Avx2.IsSupported);
+            Vector256<uint> index = values & Vector256.Create((uint)IndexMask);
+            Vector256<uint> bitPositions = Avx2.ShiftLeftLogicalVariable(Vector256<uint>.One, Vector256.ShiftRightLogical(values, IndexShift));
+            Vector256<uint> bitMask = Avx2.PermuteVar8x32(charMap, index);
+            return Vector256.Equals(bitMask & bitPositions, Vector256<uint>.Zero);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ShouldUseSimpleLoop(int searchSpaceLength, int valuesLength)
@@ -200,6 +230,47 @@ namespace System.Buffers
         {
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
+
+            if (Avx2.IsSupported && typeof(TNegator) == typeof(IndexOfAnyAsciiSearcher.DontNegate) && searchSpaceLength >= Vector128<short>.Count)
+            {
+                Vector256<uint> charMap256 = Vector256.LoadUnsafe(ref charMap);
+
+                ref char oneVectorAwayFromEnd = ref Unsafe.Subtract(ref searchSpaceEnd, Vector128<short>.Count);
+
+                do
+                {
+                    Vector256<uint> result = ContainsMaskAvx2(charMap256, ref cur);
+
+                    if (result != Vector256<uint>.Zero)
+                    {
+                        uint mask = result.ExtractMostSignificantBits();
+                        do
+                        {
+                            int charPos = BitOperations.TrailingZeroCount(mask);
+
+                            ref char candidatePos = ref Unsafe.Add(ref cur, charPos);
+
+                            if (Contains(values, candidatePos))
+                            {
+                                return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref candidatePos) / sizeof(char));
+                            }
+
+                            if (Bmi1.IsSupported)
+                            {
+                                mask = Bmi1.ResetLowestSetBit(mask);
+                            }
+                            else
+                            {
+                                mask &= ~(uint)(1 << charPos);
+                            }
+                        }
+                        while (mask != 0);
+                    }
+
+                    cur = ref Unsafe.Add(ref cur, Vector128<short>.Count);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref cur, ref oneVectorAwayFromEnd));
+            }
 
             while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
