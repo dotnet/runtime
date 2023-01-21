@@ -4786,12 +4786,20 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     // can still know whether the use of the implicit byref local is a last
     // use, and whether we can omit a copy when passed as an argument (the
     // common reason why promotion is undone).
+    //
+    // We skip this propagation for the fields of the promoted local. Those are
+    // going to be transformed into accesses off of the parent and we cannot
+    // know here if this is going to be the last use of the parent local (this
+    // would require tracking a full life set on the side, which we do not do
+    // in morph).
+    //
     bool isLastUse = false;
-    if (!varDsc->lvPromoted)
+    if ((newLclNum == lclNum) && !varDsc->lvPromoted)
     {
         if (varDsc->lvFieldLclStart != 0)
         {
-            // Was promoted but isn't anymore. Check if all fields are dying.
+            // Reference to whole implicit byref parameter that was promoted
+            // but isn't anymore. Check if all fields are dying.
             GenTreeFlags allFieldsDying = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
             isLastUse                   = (lclNode->gtFlags & allFieldsDying) == allFieldsDying;
         }

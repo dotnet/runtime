@@ -1012,7 +1012,7 @@ public:
     //
     GenTreeFlags AllFieldDeathFlags() const
     {
-        assert(lvPromoted && (lvFieldCnt <= 4));
+        assert(lvPromoted && (lvFieldCnt > 0) && (lvFieldCnt <= 4));
         GenTreeFlags flags = static_cast<GenTreeFlags>(((1 << lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
         assert((flags & ~GTF_VAR_DEATH_MASK) == 0);
         return flags;
