@@ -11957,7 +11957,12 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
                     break;
-
+                case NI_SIMD_UpperRestore:
+                    printf(" simd_upperRestr");
+                    break;
+                case NI_SIMD_UpperSave:
+                    printf(" simd_upperSave");
+                    break;
                 default:
                     unreached();
             }

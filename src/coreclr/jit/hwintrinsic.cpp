@@ -1146,6 +1146,30 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     if (op1->TypeGet() == TYP_STRUCT)
                     {
                         unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
+
+                        GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                        int               offset    = 0;
+                        for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+                        {
+                            unsigned   lclNum    = lvaGrabTemp(true DEBUGARG("VectorTableLookup"));
+                            LclVarDsc* fldVarDsc = lvaGetDesc(lclNum);
+
+                            CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, fieldId);
+                            CORINFO_CLASS_HANDLE innerFieldClsHnd;
+                            JITtype2varType(
+                                info.compCompHnd->getFieldType(fieldHandle, &innerFieldClsHnd,
+                                                               info.compCompHnd->getFieldClass(fieldHandle)));
+
+                            lvaSetStruct(lclNum, innerFieldClsHnd, true);
+
+                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, fldVarDsc->TypeGet(), offset);
+                            //fldNode->forceEnregister = true;
+                            fieldList->AddField(this, fldNode, offset, fldVarDsc->TypeGet());
+
+                            offset += fldVarDsc->lvSize();
+                        }
+                        op1 = fieldList;
+
                         switch (fieldCount)
                         {
                             case 1:
@@ -1172,11 +1196,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         }
 
                         retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-
-                        // The `op1` although is used as parameter in SIMD intrinsic, we like to independently promotion all
-                        // the fields of it so they can enregistered and get consecutive registers.
-                        op1->AsLclVar()->SetMultiRegUse();
-                        lvaGetDesc(op1->AsLclVar())->lvUsedInSIMDIntrinsic = false;
                     }
                     else
                     {

@@ -1641,6 +1641,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+        else if (tree->OperIsFieldList())
+        {
+            for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+            {
+                GenTree* fieldNode = use.GetNode();
+                genConsumeReg(fieldNode);
+            }
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {

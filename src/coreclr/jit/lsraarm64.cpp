@@ -1045,17 +1045,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 case NI_AdvSimd_VectorTableLookup_2:
                 case NI_AdvSimd_Arm64_VectorTableLookup_2:
-                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 2);
+                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 2);
                     regCount = 2;
                     break;
                 case NI_AdvSimd_VectorTableLookup_3:
                 case NI_AdvSimd_Arm64_VectorTableLookup_3:
-                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 3);
+                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 3);
                     regCount = 3;
                     break;
                 case NI_AdvSimd_VectorTableLookup_4:
                 case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                    assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 4);
+                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 4);
                     regCount = 4;
                     break;
                 default:
@@ -1069,13 +1069,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
             else
             {
-                assert(intrin.op1->OperIs(GT_LCL_VAR));
-
                 RefPosition* lastRefPos = nullptr;
                 // consecutive registers
-                for (int regIdx = 0; regIdx < regCount; regIdx++)
+
+                int regCount = 0;
+                for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
                 {
-                    RefPosition* currRefPos = BuildUse(intrin.op1, RBM_NONE, regIdx, /* needsConsecutive */ true);
+                        RefPosition* currRefPos =
+                            BuildUse(use.GetNode(), RBM_NONE, 0, /* needsConsecutive */ true);
                     if (lastRefPos == nullptr)
                     {
                         currRefPos->regCount = regCount;
@@ -1090,8 +1091,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
                     }
                     lastRefPos = currRefPos;
+                    regCount++;
                 }
                 srcCount += regCount;
+#ifdef DEBUG
+                switch (regCount)
+                {
+                    case 2:
+                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_2) ||
+                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2));
+                        break;
+                    case 3:
+                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_3) ||
+                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_3));
+                        break;
+                    case 4:
+                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_4) ||
+                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_4));
+                        break;
+                    default:
+                        assert(!"Unexpected register count for VectorTableLookup");
+                        break;
+                }
+#endif // DEBUG
             }
         }
     }

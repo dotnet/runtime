@@ -510,18 +510,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_VectorTableLookup_3:
             case NI_AdvSimd_VectorTableLookup_4:
             case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                if (intrin.op1->IsCopyOrReload())
+            {
+
+                if (!intrin.op1->OperIsFieldList())
+                {
+                    assert(!"Expect the first operand of VectorTableLookup to be FIELD_LIST");
+                }
+
+                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                GenTree*    firstField = fieldList->Uses().GetHead()->GetNode();
+
+                if (firstField->IsCopyOrReload())
                 {
                     // If value is copied in a register to satisfy the consecutive-register
                     // requirement, make sure to get the source's register because these
                     // instruction encoding takes only the 1st register and infer the rest
                     // from that.
-                    GenTree* op1 = intrin.op1->AsCopyOrReload()->gtGetOp1();
+                    GenTree* op1 = firstField->AsCopyOrReload()->gtGetOp1();
                     assert(!op1->IsCopyOrReload());
                     op1Reg = op1->GetRegNum();
                 }
+                else
+                {
+                    assert(firstField->OperIsLocalField());
+                    op1Reg = firstField->GetRegNum();
+                }
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
+            }
 
             case NI_AdvSimd_BitwiseSelect:
                 // Even though BitwiseSelect is an RMW intrinsic per se, we don't want to mark it as such
