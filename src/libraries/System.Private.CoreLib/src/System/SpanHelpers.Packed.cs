@@ -827,7 +827,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
-            uint notEqualsElements = FixUpPackedVector256Mask(equals.ExtractMostSignificantBits());
+            uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
             return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
@@ -849,7 +849,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
         {
-            uint notEqualsElements = FixUpPackedVector256Mask(equals.ExtractMostSignificantBits());
+            uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
             int offsetInVector = BitOperations.TrailingZeroCount(notEqualsElements);
             if (offsetInVector >= Vector256<short>.Count)
             {
@@ -861,16 +861,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint FixUpPackedVector256Mask(uint mask)
+        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);
             // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
             // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
             // We want to swap the X and Y bits
             // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
-            const uint CorrectPositionsMask = 0xFF0000FF;
-
-            return (mask & CorrectPositionsMask) | BinaryPrimitives.ReverseEndianness(mask & ~CorrectPositionsMask);
+            return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
         }
     }
 }
