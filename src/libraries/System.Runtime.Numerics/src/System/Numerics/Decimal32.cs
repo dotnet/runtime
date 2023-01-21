@@ -287,6 +287,12 @@ namespace System.Numerics
             return significand;
         }
 
+        // IEEE 754 specifies NaNs to be propagated
+        internal static Decimal32 Negate(Decimal32 value)
+        {
+            return IsNaN(value) ? value : new Decimal32((ushort)(value._value ^ SignMask));
+        }
+
         private static uint StripSign(Decimal32 value)
         {
             return value._value & ~SignMask;
@@ -1689,11 +1695,5 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Decimal32 operator +(Decimal32 value) => value;
-
-        // IEEE 754 specifies NaNs to be propagated
-        internal static Decimal32 Negate(Decimal32 value)
-        {
-            return IsNaN(value) ? value : new Decimal32((ushort)(value._value ^ SignMask));
-        }
     }
 }
