@@ -7349,10 +7349,9 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    // bool useNullCheck = !ind->Addr()->isContained();
     bool useNullCheck = !addr->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH

@@ -16050,10 +16050,11 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                     Append(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        if (m_compiler->fgAddrCouldBeNull(node->AsUnOp()->gtGetOp1()))
+                        // Check for a guaranteed non-faulting IND, and create a NOP node instead of a NULLCHECK in that
+                        // case.
+                        if (m_compiler->fgAddrCouldBeNull(node->AsBlk()->Addr()))
                         {
                             JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                            // It would change a non-faulting ind to a non-faulting nullcheck.
                             m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                         }
                         else

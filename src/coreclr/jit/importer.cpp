@@ -8251,7 +8251,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                if (fgAddrCouldBeNull(op1->AsUnOp()->gtGetOp1()))
+                                if (fgAddrCouldBeNull(op1->gtGetOp1()))
                                 {
                                     gtChangeOperToNullCheck(op1, block);
                                 }
