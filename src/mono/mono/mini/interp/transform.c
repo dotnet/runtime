@@ -10256,7 +10256,7 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 
 				deferred_call->info.call_info->call_args = call_args;
 			}
-			deferred_call->info.call_info->call_end_offset = base_offset;
+			deferred_call->info.call_info->call_end_offset = ALIGN_TO (base_offset, MINT_STACK_ALIGNMENT);
 
 			if (ac->deferred_calls) {
 				deferred_call = (InterpInst*) ac->deferred_calls->data;
