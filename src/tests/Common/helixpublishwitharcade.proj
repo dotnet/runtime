@@ -161,6 +161,7 @@
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'browser'">browser-wasm</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'android'">android-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iossimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'ios'">ios-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -551,7 +552,7 @@
     <ZipDirectory
       Condition="'@(LegacyPayloads)' != ''"
       SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
-      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
+      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />  
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
@@ -588,7 +589,7 @@
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
-    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsiOSSimulator)' == 'true'">none</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsiOSSimulator)' == 'true' or '$(TargetsiOS)' == 'true'">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
