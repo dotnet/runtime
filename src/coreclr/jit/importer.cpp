@@ -3942,6 +3942,31 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             uint8_t buffer[MaxStructSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
             {
+#ifdef FEATURE_SIMD
+                // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
+                int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
+                if (simdWidth > 0)
+                {
+                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    var_types simdType = getSIMDTypeForSize(simdWidth);
+
+// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
+// for TYP_SIMD32 we need to check AVX support on XARCH
+#ifdef TARGET_XARCH
+                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
+#else
+                    bool hwAccelerated = true;
+#endif
+
+                    if (hwAccelerated)
+                    {
+                        GenTreeVecCon* vec = gtNewVconNode(simdType);
+                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        return vec;
+                    }
+                }
+#endif
+
                 for (unsigned i = 0; i < totalSize; i++)
                 {
                     if (buffer[i] != 0)
