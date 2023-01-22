@@ -2141,6 +2141,13 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
+                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType) && !field.HasGCStaticBase)
+                    {
+                        fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
+                        ISymbolNode baseAddress = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                        pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                        pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddress);
+                    }
                     else
                     {
                         if (field.HasGCStaticBase)
@@ -2152,17 +2159,6 @@ namespace Internal.JitInterface
                         {
                             pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
                             helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
-
-                        //
-                        // Currently, we only do this optimization for regular statics, but it
-                        // looks like it may be permissible to do this optimization for
-                        // thread statics as well.
-                        //
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
-                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
                         }
                     }
 

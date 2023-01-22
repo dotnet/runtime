@@ -4235,6 +4235,22 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             break;
         }
 
+        case CORINFO_FIELD_STATIC_RELOCATABLE:
+        {
+#ifdef FEATURE_READYTORUN
+            assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE);
+            assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+            assert(innerFldSeq != nullptr);
+
+            GenTree* baseAddr = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
+            GenTree* offset   = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            op1               = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, offset);
+#else
+            unreached();
+#endif // FEATURE_READYTORUN
+        }
+        break;
+
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN
@@ -7562,8 +7578,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BRFALSE_S:
 
                 /* Pop the comparand (now there's a neat term) from the stack */
+                op1 = gtFoldExpr(impPopStack().val);
 
-                op1  = impPopStack().val;
                 type = op1->TypeGet();
 
                 // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
@@ -9260,6 +9276,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -9510,6 +9527,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
