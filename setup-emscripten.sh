@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DO_SOURCE=false
 USE_SYSTEM=false
 SYSTEM_EMSCRIPTEN_DIR="${SYSTEM_EMSDK_PATH:-"/usr/share/emscripten"}"
 EMSDK_DIR="${EMSDK_PATH:-"$HOME/.dotnet-emsdk"}"
@@ -33,6 +34,10 @@ show_help() {
 parse_args() {
     if [[ $1 == *"--system-emscripten"* ]] || [[ $1 == *"--system"* ]] || [[ $1 == *"-s"* ]]; then
         USE_SYSTEM=true
+    fi
+
+    if [[ $1 == *"--set-config"* ]] || [[ $1 == *"-c"* ]]; then
+        DO_SOURCE=true
     fi
 
     if [[ $1 == *"--help"* ]] || [[ $1 == *"-h"* ]]; then
@@ -96,15 +101,36 @@ create_shim() {
 }
 
 create_env() {
+    NODE_PATH="$(which node)"
+    JAVA_PATH="$(which java)"
+
     if [[ ! -f "$EMSDK_DIR/emsdk_env.sh" ]]; then
         echo "Creating emsdk_env.sh..."
 
         echo "#!/bin/bash" > "$EMSDK_DIR/emsdk_env.sh"
+
         echo "export PATH=\"\$PATH:$EMSDK_DIR/bin\"" >> "$EMSDK_DIR/emsdk_env.sh"
+
+        echo "export EMSDK_BASH=1" >> "$EMSDK_DIR/emsdk_env.sh"
         echo "export EMSDK_PATH=\"$EMSDK_DIR\"" >> "$EMSDK_DIR/emsdk_env.sh"
+        echo "export EMSCRIPTEN_ROOT=\"$EMSCRIPTEN_DIR\"" >> "$EMSDK_DIR/emsdk_env.sh"
+
+        echo "export NODE_JS=\"$NODE_PATH\"" >> "$EMSDK_DIR/emsdk_env.sh"
+        echo "export JAVA=\"$JAVA_PATH\"" >> "$EMSDK_DIR/emsdk_env.sh"
 
         echo "Done! Try running \"source $EMSDK_DIR/emsdk_env.sh\"!"
         echo "+ Tip: Add \"source $EMSDK_DIR/emsdk_env.sh\" to your \".bashrc\" file!"
+    fi
+
+    if [[ $DO_SOURCE == true ]]; then
+        echo "Source flag is set! Adding variables to the environment..."
+
+        export EMSDK_BASH=1
+        export EMSDK_PATH="$EMSDK_DIR"
+        export EMSCRIPTEN_ROOT="$EMSCRIPTEN_DIR"
+
+        export NODE_JS="$NODE_PATH"
+        export JAVA="$JAVA_PATH"
     fi
 }
 
@@ -144,7 +170,9 @@ run() {
     install_emscripten
     create_emsdk
 
-    exit 0
+    if [[ $DO_SOURCE != true ]]; then
+        exit 0
+    fi
 }
 
 run "$@"

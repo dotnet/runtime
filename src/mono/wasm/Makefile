@@ -32,7 +32,7 @@ all: build-all
 EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
 #EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
-EMCC=emcc
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)

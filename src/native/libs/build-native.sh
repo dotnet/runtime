@@ -48,6 +48,7 @@ if [[ "$__TargetArch" == wasm ]]; then
         echo "Error: You need to set the EMSDK_PATH environment variable pointing to the emscripten SDK root."
         exit 1
     fi
+
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
