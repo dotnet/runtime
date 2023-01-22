@@ -31,15 +31,15 @@ namespace System.Collections.Frozen
             _ignoreCase = ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal static LengthBucketsFrozenSet? TryCreateLengthBucketsFrozenSet(HashSet<string> source, IEqualityComparer<string> comparer)
+        internal static LengthBucketsFrozenSet? CreateLengthBucketsFrozenSetIfAppropriate(string[] entries, IEqualityComparer<string> comparer)
         {
-            Debug.Assert(source.Count != 0);
+            Debug.Assert(entries.Length != 0);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
 
             // Iterate through all of the inputs, bucketing them based on the length of the string.
             var groupedByLength = new Dictionary<int, List<string>>();
             int minLength = int.MaxValue, maxLength = int.MinValue;
-            foreach (string s in source)
+            foreach (string s in entries)
             {
                 Debug.Assert(s is not null, "This implementation should not be used with null source values.");
 
@@ -67,7 +67,6 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-            string[] items = new string[source.Count];
             var lengthBuckets = new KeyValuePair<string, int>[maxLength - minLength + 1][];
 
             // Iterate through each bucket, filling the items array, and creating a lookup array such that
@@ -81,14 +80,14 @@ namespace System.Collections.Frozen
                 foreach (string value in group.Value)
                 {
                     length[i] = new KeyValuePair<string, int>(value, index);
-                    items[index] = value;
+                    entries[index] = value;
 
                     i++;
                     index++;
                 }
             }
 
-            return new LengthBucketsFrozenSet(items, lengthBuckets, minLength, comparer);
+            return new LengthBucketsFrozenSet(entries, lengthBuckets, minLength, comparer);
         }
 
         /// <inheritdoc />
