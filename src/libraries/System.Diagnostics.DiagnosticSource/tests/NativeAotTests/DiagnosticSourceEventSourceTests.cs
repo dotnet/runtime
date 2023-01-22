@@ -44,6 +44,9 @@ internal class Program
 
     public static int Main()
     {
+        // Remove this check after fixing https://github.com/dotnet/runtime/issues/80999
+        if(!OperatingSystem.IsWindows())
+            return 100;
         DiagnosticSource diagnosticSource = new DiagnosticListener("TestDiagnosticListener");
         using (var listener = new TestEventListener())
         {

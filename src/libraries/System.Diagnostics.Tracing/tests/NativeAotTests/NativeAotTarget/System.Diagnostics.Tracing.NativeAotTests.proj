@@ -1,0 +1,10 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="SimpleEventSourceTest.cs"
+                               EnabledProperties="EventSourceSupport;EnableNativeEventPipe" />                               
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>
