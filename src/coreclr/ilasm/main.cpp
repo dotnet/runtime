@@ -728,7 +728,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         }
                         if(pIn)
                         {
-                            pIn->set_namew(NULL);
+                            pIn->clear_name();
                             delete pIn;
                         }
                     } // end for(iFile)
@@ -793,7 +793,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                             if (pAsm->m_fStdMapping == FALSE)
                                                 pParser->msg(", with REFERENCE mapping");
 
-                                            pParser->msg(" --> '%S.*'\n", wzNewOutputFilename);
+                                            MAKE_UTF8PTR_FROMWIDE(newOutputFilenameUtf8, wzNewOutputFilename);
+                                            pParser->msg(" --> '%s.*'\n", newOutputFilenameUtf8);
                                         }
                                         exitval = 0;
                                         pIn = new MappedFileStream(wzInputFilename);
@@ -816,7 +817,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                         } // end if ((!pIn) || !(pIn->IsValid())) -- else
                                         if(pIn)
                                         {
-                                            pIn->set_namew(NULL);
+                                            pIn->clear_name();
                                             delete pIn;
                                         }
                                     } // end for(iFile)
