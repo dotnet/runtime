@@ -9892,8 +9892,8 @@ DONE_MORPHING_CHILDREN:
 
             break;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         case GT_DIV:
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #ifdef TARGET_LOONGARCH64
         case GT_MOD:
 #endif
@@ -9912,7 +9912,10 @@ DONE_MORPHING_CHILDREN:
                 }
             }
             break;
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
         case GT_UDIV:
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
@@ -9925,21 +9928,18 @@ DONE_MORPHING_CHILDREN:
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
-#if defined(TARGET_XARCH)
-        case GT_DIV:
-        case GT_UDIV:
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            tree = fgOptimizeCommutativeArithmetic(tree->AsOp());
+
+            // If there was an overflown right shift, then we return 0.
+            // We don't want the constant node to be going any further
+            // so return it right away.
+            if (tree != nullptr && tree->IsIntegralConst())
             {
-                GenTree* optimizedTree = fgOptimizeDivision(tree->AsOp());
-                if (optimizedTree != nullptr)
-                {
-                    tree = optimizedTree;
-                    if (tree->IsIntegralConst())
-                        return tree;
-                }
+                return tree;
             }
+
             break;
-#endif
+
         case GT_ADD:
 
         CM_OVF_OP:
@@ -11066,7 +11066,7 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         GenTree* chOp2 = op1->gtGetOp2();
 
         // If there is a division by zero
-        if (chOp2->IsIntegralConst(0))
+        if (chOp1->IsIntegralConst(0) || chOp2->IsIntegralConst(0))
             return nullptr;
 
         IntegralRange boundRange = IntegralRange::ForNode(op2, this);
@@ -11078,7 +11078,7 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
         // Make sure it is not folded into overflow
         // If it is going to overflow, then result of such a division
         // is 0
-        if ((upperBound / child_val) < root_val)
+        if ((upperBound == child_val) || (upperBound == root_val))
         {
             if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
             {
@@ -11118,48 +11118,52 @@ GenTree* Compiler::fgOptimizeDivision(GenTreeOp* div)
 //
 GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_XOR, GT_AND));
+    assert(tree->OperIs(GT_ADD, GT_MUL, GT_OR, GT_XOR, GT_AND, GT_DIV, GT_UDIV));
     assert(!tree->gtOverflowEx());
 
-    // Commute constants to the right.
-    if (tree->gtGetOp1()->OperIsConst() && !tree->gtGetOp1()->TypeIs(TYP_REF))
+    if (!tree->OperIs(GT_DIV, GT_UDIV))
     {
-        // TODO-Review: We used to assert here that "(!op2->OperIsConst() || !opts.OptEnabled(CLFLG_CONSTANTFOLD))".
-        // This may indicate a missed "remorph". Task is to re-enable this assertion and investigate.
-        std::swap(tree->gtOp1, tree->gtOp2);
-    }
-
-    if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
-    {
-        GenTree* rotationTree = fgRecognizeAndMorphBitwiseRotation(tree);
-        if (rotationTree != nullptr)
+        // Commute constants to the right.
+        if (tree->gtGetOp1()->OperIsConst() && !tree->gtGetOp1()->TypeIs(TYP_REF))
         {
-            return rotationTree;
+            // TODO-Review: We used to assert here that "(!op2->OperIsConst() || !opts.OptEnabled(CLFLG_CONSTANTFOLD))".
+            // This may indicate a missed "remorph". Task is to re-enable this assertion and investigate.
+            std::swap(tree->gtOp1, tree->gtOp2);
         }
-    }
 
-    if (fgGlobalMorph && tree->OperIs(GT_AND, GT_OR, GT_XOR))
-    {
-        GenTree* castTree = fgMorphCastedBitwiseOp(tree->AsOp());
-        if (castTree != nullptr)
+        if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
         {
-            return castTree;
-        }
-    }
-
-    if (varTypeIsIntegralOrI(tree))
-    {
-        genTreeOps oldTreeOper   = tree->OperGet();
-        GenTreeOp* optimizedTree = fgMorphCommutative(tree->AsOp());
-        if (optimizedTree != nullptr)
-        {
-            if (!optimizedTree->OperIs(oldTreeOper))
+            GenTree* rotationTree = fgRecognizeAndMorphBitwiseRotation(tree);
+            if (rotationTree != nullptr)
             {
-                // "optimizedTree" could end up being a COMMA.
-                return optimizedTree;
+                return rotationTree;
             }
+        }
 
-            tree = optimizedTree;
+        if (fgGlobalMorph && tree->OperIs(GT_AND, GT_OR, GT_XOR))
+        {
+            GenTree* castTree = fgMorphCastedBitwiseOp(tree->AsOp());
+            if (castTree != nullptr)
+            {
+                return castTree;
+            }
+        }
+
+        if (varTypeIsIntegralOrI(tree))
+        {
+            genTreeOps oldTreeOper   = tree->OperGet();
+            GenTreeOp* optimizedTree = fgMorphCommutative(tree->AsOp());
+
+            if (optimizedTree != nullptr)
+            {
+                if (!optimizedTree->OperIs(oldTreeOper))
+                {
+                    // "optimizedTree" could end up being a COMMA.
+                    return optimizedTree;
+                }
+
+                tree = optimizedTree;
+            }
         }
     }
 
@@ -11181,6 +11185,10 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
         else if (tree->OperIs(GT_XOR))
         {
             optimizedTree = fgOptimizeBitwiseXor(tree);
+        }
+        else if (tree->OperIs(GT_DIV, GT_UDIV))
+        {
+            optimizedTree = fgOptimizeDivision(tree->AsOp());
         }
 
         if (optimizedTree != nullptr)
