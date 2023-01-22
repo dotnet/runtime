@@ -1648,19 +1648,18 @@ namespace System.Xml
 
         internal static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
         {
-            ReadOnlySpan<char> valueSpan = value ? "true" : "false";
+            string valueAsString = value ? "true" : "false";
 
-            charsWritten = valueSpan.Length;
-            return valueSpan.TryCopyTo(destination);
+            charsWritten = valueAsString.Length;
+            return valueAsString.TryCopyTo(destination);
         }
 
         internal static bool TryFormat(char value, Span<char> destination, out int charsWritten)
         {
-            charsWritten = -1;
+            charsWritten = 1;
             if (destination.Length < 1) return false;
 
             destination[0] = value;
-            charsWritten = 1;
             return true;
         }
 
