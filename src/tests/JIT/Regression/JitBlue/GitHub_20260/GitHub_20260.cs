@@ -9,7 +9,7 @@ namespace GitHub_20260
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {         
             // The jit will devirtualize the call to ToString and then undo the box.
             // Make sure that happens properly for vectors.

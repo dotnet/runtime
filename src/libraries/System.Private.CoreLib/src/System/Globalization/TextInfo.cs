@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
@@ -150,16 +151,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToLower(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: false);
@@ -207,7 +209,82 @@ namespace System.Globalization
             ChangeCaseCommon<TConversion>(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
         }
 
-        private unsafe void ChangeCaseCommon<TConversion>(ref char source, ref char destination, int charCount) where TConversion : struct
+        private unsafe void ChangeCaseCommon_Vector128<TConversion>(ref char source, ref char destination, int charCount)
+            where TConversion : struct
+        {
+            Debug.Assert(charCount >= Vector128<ushort>.Count);
+            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+            // JIT will treat this as a constant in release builds
+            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion);
+            nuint i = 0;
+            if (!IsAsciiCasingSameAsInvariant)
+            {
+                goto NON_ASCII;
+            }
+
+            ref ushort src = ref Unsafe.As<char, ushort>(ref source);
+            ref ushort dst = ref Unsafe.As<char, ushort>(ref destination);
+
+            nuint lengthU = (nuint)charCount;
+            nuint lengthToExamine = lengthU - (nuint)Vector128<ushort>.Count;
+            do
+            {
+                Vector128<ushort> vec = Vector128.LoadUnsafe(ref src, i);
+                if (!Utf16Utility.AllCharsInVector128AreAscii(vec))
+                {
+                    goto NON_ASCII;
+                }
+                vec = toUpper ?
+                    Utf16Utility.Vector128AsciiToUppercase(vec) :
+                    Utf16Utility.Vector128AsciiToLowercase(vec);
+                vec.StoreUnsafe(ref dst, i);
+
+                i += (nuint)Vector128<ushort>.Count;
+            } while (i <= lengthToExamine);
+
+            Debug.Assert(i <= lengthU);
+
+            // Handle trailing elements
+            if (i < lengthU)
+            {
+                nuint trailingElements = lengthU - (nuint)Vector128<ushort>.Count;
+                Vector128<ushort> vec = Vector128.LoadUnsafe(ref src, trailingElements);
+                if (!Utf16Utility.AllCharsInVector128AreAscii(vec))
+                {
+                    goto NON_ASCII;
+                }
+                vec = toUpper ?
+                    Utf16Utility.Vector128AsciiToUppercase(vec) :
+                    Utf16Utility.Vector128AsciiToLowercase(vec);
+                vec.StoreUnsafe(ref dst, trailingElements);
+            }
+            return;
+
+        NON_ASCII:
+            // We encountered non-ASCII data and therefore can't perform invariant case conversion;
+            // Fallback to ICU/NLS
+            ChangeCaseCommon_Scalar<TConversion>(
+                ref Unsafe.Add(ref source, i),
+                ref Unsafe.Add(ref destination, i),
+                charCount - (int)i);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe void ChangeCaseCommon<TConversion>(ref char source, ref char destination, int charCount)
+            where TConversion : struct
+        {
+            if (!Vector128.IsHardwareAccelerated || charCount < Vector128<ushort>.Count)
+            {
+                ChangeCaseCommon_Scalar<TConversion>(ref source, ref destination, charCount);
+            }
+            else
+            {
+                ChangeCaseCommon_Vector128<TConversion>(ref source, ref destination, charCount);
+            }
+        }
+
+        private unsafe void ChangeCaseCommon_Scalar<TConversion>(ref char source, ref char destination, int charCount) where TConversion : struct
         {
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
@@ -483,16 +560,17 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant)
-            {
-                return InvariantModeCasing.ToUpper(c);
-            }
-
             if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
+            }
+
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
             }
 
             return Invariant.ChangeCase(c, toUpper: true);

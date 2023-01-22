@@ -13,12 +13,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using JIT.HardwareIntrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse2
 {
     public static partial class Program
     {
-        private static void MoveMaskVector128SByte()
+        [Fact]
+        public static void MoveMaskVector128SByte()
         {
             var test = new SimdScalarUnaryOpConvertTest__MoveMaskVector128SByte();
 

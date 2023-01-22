@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
 {
     public static partial class Program
     {
-        private static void MultiplySubtractAddSingle()
+        [Fact]
+        public static void MultiplySubtractAddSingle()
         {
             var test = new AlternatingTernaryOpTest__MultiplySubtractAddSingle();
 
@@ -598,13 +600,13 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < RetElementCount; i += 2)
             {
-                if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[i] * secondOp[i]) + thirdOp[i], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
+                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i], secondOp[i], thirdOp[i]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i], 3)))
                 {
                     succeeded = false;
                     break;
                 }
 
-                if (BitConverter.SingleToInt32Bits(MathF.Round((firstOp[i + 1] * secondOp[i + 1]) - thirdOp[i + 1], 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
+                if (BitConverter.SingleToInt32Bits(MathF.Round(float.FusedMultiplyAdd(firstOp[i + 1], secondOp[i + 1], -thirdOp[i + 1]), 3)) != BitConverter.SingleToInt32Bits(MathF.Round(result[i + 1], 3)))
                 {
                     succeeded = false;
                     break;

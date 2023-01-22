@@ -40,11 +40,7 @@ namespace System.Net.WebSockets
                     if (currentState == validState)
                     {
                         // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
-                        if (isDisposed)
-                        {
-                            throw new ObjectDisposedException(nameof(WebSocket));
-                        }
-
+                        ObjectDisposedException.ThrowIf(isDisposed, typeof(WebSocket));
                         return;
                     }
                 }

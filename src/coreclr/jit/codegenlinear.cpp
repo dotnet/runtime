@@ -1781,7 +1781,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     }
 
     // If the op1 is already in the dstReg - nothing to do.
-    // Otherwise load the op1 (GT_ADDR) into the dstReg to copy the struct on the stack by value.
+    // Otherwise load the op1 (the address) into the dstReg to copy the struct on the stack by value.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_X86
@@ -1922,7 +1922,8 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
+            // This can go via helper which takes the size as a native uint.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, sizeReg, blockSize);
         }
         else
         {

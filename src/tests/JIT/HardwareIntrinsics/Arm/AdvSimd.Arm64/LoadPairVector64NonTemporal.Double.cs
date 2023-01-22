@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd.Arm64
 {
     public static partial class Program
     {
-        private static void LoadPairVector64NonTemporal_Double()
+        [Fact]
+        public static void LoadPairVector64NonTemporal_Double()
         {
             var test = new LoadPairVector64NonTemporal_Double();
 

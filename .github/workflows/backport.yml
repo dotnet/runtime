@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   backport:
+    if: ${{ contains(github.event.comment.body, '/backport to') }}
     uses: dotnet/arcade/.github/workflows/backport-base.yml@main
     with:
       pr_description_template: |

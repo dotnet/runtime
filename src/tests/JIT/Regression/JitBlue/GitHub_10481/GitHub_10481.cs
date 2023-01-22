@@ -90,7 +90,7 @@ namespace N
 
     static class C
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             if (Repro1.RunTest() != 100)
             {

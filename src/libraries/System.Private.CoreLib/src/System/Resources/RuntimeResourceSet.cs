@@ -270,10 +270,14 @@ namespace System.Resources
 
         private object? GetObject(string key, bool ignoreCase, bool isString)
         {
+#if RESOURCES_EXTENSIONS
             if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+#else
+            ArgumentNullException.ThrowIfNull(key);
+#endif
 
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;

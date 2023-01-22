@@ -2415,9 +2415,11 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
+        char        fieldNameBuffer[128];
+        const char* fieldName =
+            compiler->eeGetFieldName(pFieldInfo->fldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
         char buf[200];
-        sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum,
-                  compiler->eeGetFieldName(pFieldInfo->fldHnd), pFieldInfo->fldOffset);
+        sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
         size_t len  = strlen(buf) + 1;
@@ -2777,10 +2779,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 
         case DoNotEnregisterReason::StoreBlkSrc:
             JITDUMP("the local is used as store block src\n");
-            break;
-
-        case DoNotEnregisterReason::OneAsgRetyping:
-            JITDUMP("OneAsg forbids enreg\n");
             break;
 
         case DoNotEnregisterReason::SwizzleArg:
@@ -4234,7 +4232,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     if (tree->OperIsLocalAddr())
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-        assert(varDsc->IsAddressExposed());
+        assert(varDsc->IsAddressExposed() || varDsc->IsHiddenBufferStructArg());
         varDsc->incRefCnts(weight, this);
         return;
     }
@@ -7830,7 +7828,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             CORINFO_CLASS_HANDLE typeHnd = parentvarDsc->GetStructHnd();
             CORINFO_FIELD_HANDLE fldHnd  = info.compCompHnd->getFieldInClass(typeHnd, varDsc->lvFldOrdinal);
 
-            printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, eeGetFieldName(fldHnd), varDsc->lvFldOffset);
+            char buffer[128];
+            printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, eeGetFieldName(fldHnd, false, buffer, sizeof(buffer)),
+                   varDsc->lvFldOffset);
 
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
             switch (promotionType)
@@ -8226,14 +8226,6 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     {
         lcl = tree->AsLclVarCommon();
     }
-    else if (tree->OperIs(GT_ADDR))
-    {
-        GenTree* const addr = tree->AsOp()->gtOp1;
-        if (addr->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            lcl = addr->AsLclVarCommon();
-        }
-    }
 
     if (lcl == nullptr)
     {
@@ -8376,16 +8368,6 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         {
             tree->ChangeOper(GT_LCL_FLD_ADDR);
             tree->AsLclFld()->SetLclOffs(padding);
-        }
-        else
-        {
-            noway_assert(tree->OperIs(GT_ADDR));
-            GenTree* paddingTree = pComp->gtNewIconNode(padding);
-            GenTree* newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
-
-            *pTree = newAddr;
-
-            lcl->gtType = TYP_BLK;
         }
     }
 

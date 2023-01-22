@@ -404,15 +404,15 @@ namespace System.Reflection.Runtime.General
 
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        public sealed override EnumInfo GetEnumInfo(Type type)
+        public sealed override EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
         {
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
 
-            EnumInfo? info = runtimeType.GenericCache as EnumInfo;
+            EnumInfo<TUnderlyingValue>? info = runtimeType.GenericCache as EnumInfo<TUnderlyingValue>;
             if (info != null)
                 return info;
 
-            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle);
+            info = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo<TUnderlyingValue>(runtimeType.TypeHandle);
             runtimeType.GenericCache = info;
             return info;
         }

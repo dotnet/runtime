@@ -4389,6 +4389,20 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         newBlock->bbJumpSwt->bbsHasDominantCase = false;
 
+        if (fgStmtListThreaded)
+        {
+            // The switch tree has been modified.
+            JITDUMP("Rethreading " FMT_STMT "\n", switchStmt->GetID());
+            gtSetStmtInfo(switchStmt);
+            fgSetStmtSeq(switchStmt);
+
+            // fgNewStmtFromTree() already threaded the tree, but calling fgMakeMultiUse() might have
+            // added new nodes if a COMMA was introduced.
+            JITDUMP("Rethreading " FMT_STMT "\n", jmpStmt->GetID());
+            gtSetStmtInfo(jmpStmt);
+            fgSetStmtSeq(jmpStmt);
+        }
+
         modified = true;
     }
 
@@ -4776,9 +4790,6 @@ bool Compiler::fgReorderBlocks(bool useProfile)
     //
     if (fgIsUsingProfileWeights())
     {
-        //
-        // Note that this is currently not yet implemented
-        //
         optimizedSwitches = fgOptimizeSwitchJumps();
         if (optimizedSwitches)
         {

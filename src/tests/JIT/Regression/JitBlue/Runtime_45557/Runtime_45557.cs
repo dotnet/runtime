@@ -79,7 +79,7 @@ namespace Runtime_45557
 
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             ObjectBinderSnapshot o = ObjectBinder.GetSnapshot();
             Console.WriteLine($"Test output: {o.SomeValue}");

@@ -6,7 +6,7 @@ using System;
 
 internal class BasicMath
 {
-    public static int Main(String[] Args)
+    public static int Main()
     {
         int ec = 0;
         int x = 10;

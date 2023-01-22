@@ -29,7 +29,7 @@
 //-------------------------
 // Entry point - Main
 //-------------------------
-.method static int32 Main(class [mscorlib]System.String[])
+.method static int32 Main()
 {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00

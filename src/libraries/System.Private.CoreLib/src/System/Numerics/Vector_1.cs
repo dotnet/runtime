@@ -142,14 +142,16 @@ namespace System.Numerics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public static int Count
+        public static unsafe int Count
         {
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-                return Unsafe.SizeOf<Vector<T>>() / Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+                return sizeof(Vector<T>) / sizeof(T);
+#pragma warning restore 8500
             }
         }
 
@@ -476,12 +478,12 @@ namespace System.Numerics
         {
             for (int index = 0; index < Count; index++)
             {
-                if (Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
+                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
                 {
-                    return false;
+                    return true;
                 }
             }
-            return true;
+            return false;
         }
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>

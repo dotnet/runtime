@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class DSACng : DSA
     {
-        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(DSACng));
+        private CngAlgorithmCore _core = new CngAlgorithmCore(typeof(DSACng));
 
         /// <summary>
         ///     Creates a new DSACng object that will use the specified key. The key's

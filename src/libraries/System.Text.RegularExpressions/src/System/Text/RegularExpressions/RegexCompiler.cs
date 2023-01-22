@@ -1757,7 +1757,7 @@ namespace System.Text.RegularExpressions
                 Label body = DefineLabel();
                 Label charactersMatched = DefineLabel();
                 LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
-                LocalBuilder currentCharacter = _ilg!.DeclareLocal(typeof(char));
+                LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
 
                 // for (int i = 0; ...)
                 Ldc(0);
@@ -4543,8 +4543,13 @@ namespace System.Text.RegularExpressions
 
                 bool isAtomic = analysis.IsAtomicByAncestor(node);
                 LocalBuilder? startingStackpos = null;
-                if (isAtomic)
+                if (isAtomic || minIterations > 1)
                 {
+                    // If the loop is atomic, constructs will need to backtrack around it, and as such any backtracking
+                    // state pushed by the loop should be removed prior to exiting the loop.  Similarly, if the loop has
+                    // a minimum iteration count greater than 1, we might end up with at least one successful iteration
+                    // only to find we can't iterate further, and will need to clear any pushed state from the backtracking
+                    // stack.  For both cases, we need to store the starting stack index so it can be reset to that position.
                     startingStackpos = DeclareInt32();
                     Ldloc(stackpos);
                     Stloc(startingStackpos);
@@ -4732,7 +4737,6 @@ namespace System.Text.RegularExpressions
                 }
                 EmitUncaptureUntilPopped();
 
-
                 // If there's a required minimum iteration count, validate now that we've processed enough iterations.
                 if (minIterations > 0)
                 {
@@ -4751,7 +4755,7 @@ namespace System.Text.RegularExpressions
                         // since the only value that wouldn't meet that is 0.
                         if (minIterations > 1)
                         {
-                            // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                            // if (iterationCount < minIterations) goto doneLabel;
                             Ldloc(iterationCount);
                             Ldc(minIterations);
                             BltFar(doneLabel);
@@ -4761,10 +4765,36 @@ namespace System.Text.RegularExpressions
                     {
                         // The child doesn't backtrack, which means there's no other way the matched iterations could
                         // match differently, so if we haven't already greedily processed enough iterations, fail the loop.
-                        // if (iterationCount < minIterations) goto doneLabel/originalDoneLabel;
+                        // if (iterationCount < minIterations)
+                        // {
+                        //    if (iterationCount != 0) stackpos = startingStackpos;
+                        //    goto originalDoneLabel;
+                        // }
+
+                        Label enoughIterations = DefineLabel();
                         Ldloc(iterationCount);
                         Ldc(minIterations);
-                        BltFar(originalDoneLabel);
+                        Bge(enoughIterations);
+
+                        // If the minimum iterations is 1, then since we're only here if there are fewer, there must be 0
+                        // iterations, in which case there's nothing to reset.  If, however, the minimum iteration count is
+                        // greater than 1, we need to check if there was at least one successful iteration, in which case
+                        // any backtracking state still set needs to be reset; otherwise, constructs earlier in the sequence
+                        // trying to pop their own state will erroneously pop this state instead.
+                        if (minIterations > 1)
+                        {
+                            Debug.Assert(startingStackpos is not null);
+
+                            Ldloc(iterationCount);
+                            Ldc(0);
+                            BeqFar(originalDoneLabel);
+
+                            Ldloc(startingStackpos);
+                            Stloc(stackpos);
+                        }
+                        BrFar(originalDoneLabel);
+
+                        MarkLabel(enoughIterations);
                     }
                 }
 
@@ -4818,10 +4848,14 @@ namespace System.Text.RegularExpressions
                     if (analysis.IsInLoop(node))
                     {
                         // Store the loop's state
-                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0));
+                        EmitStackResizeIfNeeded(1 + (startingPos is not null ? 1 : 0) + (startingStackpos is not null ? 1 : 0));
                         if (startingPos is not null)
                         {
                             EmitStackPush(() => Ldloc(startingPos));
+                        }
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPush(() => Ldloc(startingStackpos));
                         }
                         EmitStackPush(() => Ldloc(iterationCount));
 
@@ -4838,9 +4872,15 @@ namespace System.Text.RegularExpressions
                         EmitTimeoutCheckIfNeeded();
 
                         // iterationCount = base.runstack[--runstack];
+                        // startingStackpos = base.runstack[--runstack];
                         // startingPos = base.runstack[--runstack];
                         EmitStackPop();
                         Stloc(iterationCount);
+                        if (startingStackpos is not null)
+                        {
+                            EmitStackPop();
+                            Stloc(startingStackpos);
+                        }
                         if (startingPos is not null)
                         {
                             EmitStackPop();
@@ -5481,11 +5521,67 @@ namespace System.Text.RegularExpressions
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);
 
-            // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
+            // Next, handle sets where the high - low + 1 range is <= 32.  In that case, we can emit
+            // a branchless lookup in a uint that does not rely on loading any objects (e.g. the string-based
+            // lookup we use later).  This nicely handles common sets like [\t\r\n ].
+            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 32)
+            {
+                // Create the 32-bit value with 1s at indices corresponding to every character in the set,
+                // where the bit is computed to be the char value minus the lower bound starting from
+                // most significant bit downwards.
+                uint bitmap = 0;
+                bool negatedClass = RegexCharClass.IsNegated(charClass);
+                for (int i = analysis.LowerBoundInclusiveIfOnlyRanges; i < analysis.UpperBoundExclusiveIfOnlyRanges; i++)
+                {
+                    if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
+                    {
+                        bitmap |= 1u << (31 - (i - analysis.LowerBoundInclusiveIfOnlyRanges));
+                    }
+                }
+
+                // To determine whether a character is in the set, we subtract the lowest char; this subtraction happens before
+                // the result is zero-extended to uint, meaning that `charMinusLow` will always have upper 16 bits equal to 0.
+                // We then left shift the constant with this offset, and apply a bitmask that has the highest bit set (the sign bit)
+                // if and only if `ch` is in the [low, low + 32) range. Then we only need to check whether this final result is
+                // less than 0: this will only be the case if both `charMinusLow` was in fact the index of a set bit in the constant,
+                // and also `ch` was in the allowed range (this ensures that false positive bit shifts are ignored).
+
+                // uint charMinusLow = (ushort)(ch - lowInclusive);
+                LocalBuilder charMinusLow = _ilg!.DeclareLocal(typeof(uint));
+                Ldloc(tempLocal);
+                Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
+                Sub();
+                _ilg.Emit(OpCodes.Conv_U2);
+                Stloc(charMinusLow);
+
+                // uint shift = bitmap << (short)charMinusLow;
+                _ilg.Emit(OpCodes.Ldc_I4, bitmap);
+                Ldloc(charMinusLow);
+                _ilg.Emit(OpCodes.Conv_I2);
+                Ldc(31);
+                And();
+                Shl();
+
+                // uint mask = charMinusLow - 32;
+                Ldloc(charMinusLow);
+                Ldc(32);
+                _ilg.Emit(OpCodes.Conv_I4);
+                Sub();
+
+                // (int)(shift & mask) < 0 // or >= for a negated character class
+                And();
+                Ldc(0);
+                _ilg.Emit(OpCodes.Conv_I4);
+                _ilg.Emit(OpCodes.Clt);
+                NegateIf(negatedClass);
+
+                return;
+            }
+
+            // Next, handle sets where the high - low + 1 range is <= 64.  As with the 32-bit case above, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
-            // lookup we use later).  This nicely handles sets made up of a subset of ASCII letters, for example.
-            // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
-            // when compared to the subsequent fallbacks.
+            // lookup we use later).  We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is
+            // a deoptimization when compared to the subsequent fallbacks.
             if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
             {
                 // Create the 64-bit value with 1s at indices corresponding to every character in the set,
@@ -5497,7 +5593,7 @@ namespace System.Text.RegularExpressions
                 {
                     if (RegexCharClass.CharInClass((char)i, charClass) ^ negatedClass)
                     {
-                        bitmap |= (1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges)));
+                        bitmap |= 1ul << (63 - (i - analysis.LowerBoundInclusiveIfOnlyRanges));
                     }
                 }
 
@@ -5515,13 +5611,13 @@ namespace System.Text.RegularExpressions
                 Ldloc(tempLocal);
                 Ldc(analysis.LowerBoundInclusiveIfOnlyRanges);
                 Sub();
-                _ilg!.Emit(OpCodes.Conv_U8);
+                _ilg.Emit(OpCodes.Conv_U8);
                 Stloc(charMinusLow);
 
                 // ulong shift = bitmap << (int)charMinusLow;
                 LdcI8((long)bitmap);
                 Ldloc(charMinusLow);
-                _ilg!.Emit(OpCodes.Conv_I4);
+                _ilg.Emit(OpCodes.Conv_I4);
                 Ldc(63);
                 And();
                 Shl();
@@ -5529,14 +5625,14 @@ namespace System.Text.RegularExpressions
                 // ulong mask = charMinusLow - 64;
                 Ldloc(charMinusLow);
                 Ldc(64);
-                _ilg!.Emit(OpCodes.Conv_I8);
+                _ilg.Emit(OpCodes.Conv_I8);
                 Sub();
 
                 // (long)(shift & mask) < 0 // or >= for a negated character class
                 And();
                 Ldc(0);
-                _ilg!.Emit(OpCodes.Conv_I8);
-                _ilg!.Emit(OpCodes.Clt);
+                _ilg.Emit(OpCodes.Conv_I8);
+                _ilg.Emit(OpCodes.Clt);
                 NegateIf(negatedClass);
 
                 return;

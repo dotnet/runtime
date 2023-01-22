@@ -5,7 +5,7 @@ using System;
 
 public class Bug
 {
-    public static int Main(String[] arguments)
+    public static int Main()
     {
         double d1 = 0;
         d1 = -d1;

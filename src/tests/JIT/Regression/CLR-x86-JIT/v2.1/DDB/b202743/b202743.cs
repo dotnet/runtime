@@ -8,7 +8,7 @@ namespace GCHangCSharp
 {
     internal class Program
     {
-        private static int Main(string[] args)
+        private static int Main()
         {
             TestClass t = new TestClass();
             List<TestClass.LongStruct> x = t.Test();

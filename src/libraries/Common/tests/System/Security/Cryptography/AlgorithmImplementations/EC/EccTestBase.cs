@@ -249,6 +249,18 @@ namespace System.Security.Cryptography.Tests
                 }
             }
         }
+
+        internal static string InvertStringCase(string str)
+        {
+            return string.Create(str.Length, str, static (destination, str) =>
+            {
+                for (int i = 0; i < str.Length; i++)
+                {
+                    char c = str[i];
+                    destination[i] = char.IsAsciiLetter(c) ? (char)(c ^ 0b0100000) : c;
+                }
+            });
+        }
 #endif
     }
 }

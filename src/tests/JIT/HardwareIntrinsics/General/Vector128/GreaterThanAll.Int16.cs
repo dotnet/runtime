@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector128
 {
     public static partial class Program
     {
-        private static void GreaterThanAllInt16()
+        [Fact]
+        public static void GreaterThanAllInt16()
         {
             var test = new VectorBooleanBinaryOpTest__GreaterThanAllInt16();
 

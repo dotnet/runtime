@@ -15,7 +15,6 @@
     .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
 }
 
-.module Test_HndIndex_10_Plain.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

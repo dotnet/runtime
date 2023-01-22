@@ -26,7 +26,7 @@ struct test
         int6 = i;
         int7 = i;
     }
-    public static int Main(String[] args)
+    public static int Main()
     {
         test t = new test();
 

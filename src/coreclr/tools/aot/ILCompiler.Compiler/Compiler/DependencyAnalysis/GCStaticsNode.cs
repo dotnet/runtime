@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     public class GCStaticsNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly MetadataType _type;
-        private readonly TypePreinit.PreinitializationInfo _preinitializationInfo;
+        private readonly GCStaticsPreInitDataNode _preinitializationInfo;
 
         public GCStaticsNode(MetadataType type, PreinitializationManager preinitManager)
         {
@@ -21,7 +21,10 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
 
             if (preinitManager.IsPreinitialized(type))
-                _preinitializationInfo = preinitManager.GetPreinitializationInfo(_type);
+            {
+                var info = preinitManager.GetPreinitializationInfo(_type);
+                _preinitializationInfo = new GCStaticsPreInitDataNode(info);
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -43,12 +46,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             GCPointerMap map = GCPointerMap.FromStaticLayout(_type);
             return factory.GCStaticEEType(map);
-        }
-
-        public GCStaticsPreInitDataNode NewPreInitDataNode()
-        {
-            Debug.Assert(_preinitializationInfo != null && _preinitializationInfo.IsPreinitialized);
-            return new GCStaticsPreInitDataNode(_preinitializationInfo);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -79,19 +76,37 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
+            // Even though we're only generating 32-bit relocs here (if SupportsRelativePointers),
+            // align the blob at pointer boundary since at runtime we're going to write a pointer in here.
             builder.RequireInitialPointerAlignment();
 
             int delta = GCStaticRegionConstants.Uninitialized;
 
             // Set the flag that indicates next pointer following MethodTable is the preinit data
-            bool isPreinitialized = _preinitializationInfo != null && _preinitializationInfo.IsPreinitialized;
+            bool isPreinitialized = _preinitializationInfo != null;
             if (isPreinitialized)
                 delta |= GCStaticRegionConstants.HasPreInitializedData;
 
-            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
+            if (factory.Target.SupportsRelativePointers)
+                builder.EmitReloc(GetGCStaticEETypeNode(factory), RelocType.IMAGE_REL_BASED_RELPTR32, delta);
+            else
+                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
             if (isPreinitialized)
-                builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
+            {
+                if (factory.Target.SupportsRelativePointers)
+                    builder.EmitReloc(_preinitializationInfo, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    builder.EmitPointerReloc(_preinitializationInfo);
+            }
+            else if (factory.Target.SupportsRelativePointers && factory.Target.PointerSize == 8)
+            {
+                // At runtime, we replace the EEType pointer with a full pointer to the data on the GC
+                // heap. If the EEType pointer was 32-bit relative, and we don't have a 32-bit relative
+                // pointer to the preinit data following it, and the pointer size on the target
+                // machine is 8, we need to emit additional 4 bytes to make room for the full pointer.
+                builder.EmitZeros(4);
+            }
 
             builder.AddSymbol(this);
 

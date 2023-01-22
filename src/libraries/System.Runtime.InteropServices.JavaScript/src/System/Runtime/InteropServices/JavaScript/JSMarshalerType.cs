@@ -440,7 +440,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 || underlying == MarshalerType.IntPtr
                 || underlying == MarshalerType.Double
                 || underlying == MarshalerType.Single
-                || underlying == MarshalerType.Single
                 || underlying == MarshalerType.Char
                 || underlying == MarshalerType.DateTime
                 || underlying == MarshalerType.DateTimeOffset

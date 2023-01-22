@@ -38,7 +38,7 @@ class Program
         }
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         for(int i = 0; i < s.Length; i++) s[i] = new byte[2];
 

@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector64_1
 {
     public static partial class Program
     {
-        private static void op_BitwiseOrByte()
+        [Fact]
+        public static void op_BitwiseOrByte()
         {
             var test = new VectorBinaryOpTest__op_BitwiseOrByte();
 

@@ -18,12 +18,6 @@
     <RuntimeIlcPackageName>runtime.$(OSIdentifier)-$(TargetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
 
     <OSHostArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</OSHostArch>
-    <!-- OSArchitecture does not report the true OS architecture for x86 and x64 processes running on Windows ARM64. -->
-    <!-- The following condition checks those cases. -->
-    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('Windows')) and
-        $([System.Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE', EnvironmentVariableTarget.Machine)) == 'ARM64'">arm64</OSHostArch>
-
-    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('osx')) and '$(CrossBuild)' == 'true'">x64</OSHostArch>
 
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
     <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
@@ -48,7 +42,8 @@
   <!-- Generate a warning if the non-SDK path is used  -->
   <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''  and '$(NeedNativePublishSupportForSDK6)' != 'true'" 
       BeforeTargets="ImportRuntimeIlcPackageTarget">
-    <Warning Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
+    <Warning Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
+             Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->

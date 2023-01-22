@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly H{}
-.module Hennessy.EXE
+.assembly 'b55875'{}
 .namespace H
 {
   .class public H

@@ -4,10 +4,13 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class CompareVectorWithZero
 {
-    public static int Main()
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
+    [Fact]
+    public static void Test()
     {
         Test(Vector128.Create(0));
         Test(Vector128.Create(0.0f));
@@ -53,7 +56,6 @@ public class CompareVectorWithZero
         TestReversed(Vector128.Create(0, 0, 0, -1, 0, 0, 0, -1));
         TestReversed(Vector64.Create(0, 0, 0, 1, 0, 0, 0, 1));
         TestReversed(Vector64.Create(0, 0, 0, -1, 0, 0, 0, -1));
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

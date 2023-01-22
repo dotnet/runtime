@@ -35,7 +35,7 @@ class X
         return E(ref test.x, i);
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         float v0 = P(0);
         float v1 = P(1);

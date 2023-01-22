@@ -31,6 +31,9 @@
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
+  <ItemGroup>
+    <_MonoComponent Include="marshal-ilgen" />
+  </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
 
@@ -277,7 +280,7 @@
 
     <PropertyGroup>
       <_HasMscorlib Condition="'%(_WasmAssembliesInternal.FileName)%(_WasmAssembliesInternal.Extension)' == 'mscorlib.dll'">true</_HasMscorlib>
-      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net7.0\mscorlib.dll</_MscorlibPath>
+      <_MscorlibPath Condition="'$(_HasMscorlib)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidDir)lib\net8.0\mscorlib.dll</_MscorlibPath>
     </PropertyGroup>
 
     <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
@@ -549,7 +552,7 @@
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
 
       <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)" />
-      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net7.0" />
+      <_WasmAOTSearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net8.0" />
     </ItemGroup>
 
     <ItemGroup>

@@ -296,9 +296,6 @@
   <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
     <value>String contains invalid Unicode code points.</value>
   </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
-  </data>
   <data name="CantStartAsUser" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to start a process as a user.</value>
   </data>

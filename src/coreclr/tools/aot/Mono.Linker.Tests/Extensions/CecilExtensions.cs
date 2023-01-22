@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -310,6 +311,7 @@ namespace Mono.Linker.Tests.Extensions
 					break;
 				}
 
+				type = type.GetElementType ();
 				if (type.DeclaringType is not TypeReference declaringType)
 					break;
 

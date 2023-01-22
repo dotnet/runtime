@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Ssse3_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -40,8 +41,9 @@
     <Compile Include="Sign.SByte.cs" />
     <Compile Include="Sign.Int16.cs" />
     <Compile Include="Sign.Int32.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="Program.Ssse3.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
 </Project>

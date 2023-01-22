@@ -59,7 +59,7 @@ class Program
         return a - b * c;
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         var result = 100;
 

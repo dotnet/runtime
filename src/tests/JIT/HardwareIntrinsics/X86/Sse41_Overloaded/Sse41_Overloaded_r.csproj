@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse41_Overloaded_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -16,8 +17,8 @@
     <Compile Include="RoundToNegativeInfinityScalar.Single.cs" />
     <Compile Include="RoundToPositiveInfinityScalar.Double.cs" />
     <Compile Include="RoundToPositiveInfinityScalar.Single.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="Program.Sse41_Overloaded.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
 </Project>

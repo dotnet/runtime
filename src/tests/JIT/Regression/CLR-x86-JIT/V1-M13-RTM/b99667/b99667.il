@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly simple {}
+.assembly 'b99667' {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {

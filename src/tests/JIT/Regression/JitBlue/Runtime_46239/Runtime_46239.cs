@@ -151,7 +151,7 @@ namespace Runtime_46239
 
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
 
             if (test<S1>() != 100)

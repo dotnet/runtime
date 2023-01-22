@@ -45,6 +45,7 @@ internal class Program
         TestGCInteraction.Run();
         TestDuplicatedFields.Run();
         TestInstanceDelegate.Run();
+        TestStringFields.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -910,6 +911,37 @@ class TestInstanceDelegate
         Assert.AreEqual(42, ClassWithInstanceDelegate.Instance1());
         Assert.AreEqual(123, ClassWithInstanceDelegate.Instance2());
         Assert.AreSame(ClassWithInstanceDelegate.Target, ClassWithInstanceDelegate.Instance2.Target);
+    }
+}
+
+class TestStringFields
+{
+    class ClassAccessingLength
+    {
+        public static int Length = "Hello".Length;
+    }
+
+    class ClassAccessingNull
+    {
+        public static int Length;
+        static ClassAccessingNull()
+        {
+            string myNull = null;
+            try
+            {
+                Length = myNull.Length;
+            }
+            catch (Exception) { }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassAccessingLength));
+        Assert.AreEqual(5, ClassAccessingLength.Length);
+
+        Assert.IsLazyInitialized(typeof(ClassAccessingNull));
+        Assert.AreEqual(0, ClassAccessingNull.Length);
     }
 }
 

@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._Sha1
 {
     public static partial class Program
     {
-        private static void FixedRotate_Vector64_UInt32()
+        [Fact]
+        public static void FixedRotate_Vector64_UInt32()
         {
             var test = new SecureHashUnaryOpTest__FixedRotate_Vector64_UInt32();
 

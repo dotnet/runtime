@@ -257,7 +257,7 @@ namespace System.Text
         {
             // JIT turns the below into constants
 
-            uint SizeOfVector128 = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128 = (uint)sizeof(Vector128<byte>);
             nuint MaskOfAllBitsInVector128 = (nuint)(SizeOfVector128 - 1);
 
             Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Sse2 or AdvSimd64 required.");
@@ -776,7 +776,7 @@ namespace System.Text
 
             // JIT turns the below into constants
 
-            uint SizeOfVector128InBytes = (uint)Unsafe.SizeOf<Vector128<byte>>();
+            uint SizeOfVector128InBytes = (uint)sizeof(Vector128<byte>);
             uint SizeOfVector128InChars = SizeOfVector128InBytes / sizeof(char);
 
             Debug.Assert(Sse2.IsSupported || AdvSimd.Arm64.IsSupported, "Should've been checked by caller.");
@@ -1187,7 +1187,7 @@ namespace System.Text
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
                 // Only bother vectorizing if we have enough data to do so.
                 if (elementCount >= 2 * SizeOfVector)
@@ -1421,7 +1421,7 @@ namespace System.Text
             }
             else
             {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0x7F80
+                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
                 Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
                 // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
                 return zeroIsAscii != Vector128<ushort>.Zero;
@@ -1635,7 +1635,7 @@ namespace System.Text
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+                uint SizeOfVector = (uint)sizeof(Vector<byte>); // JIT will make this a const
 
                 // Only bother vectorizing if we have enough data to do so.
                 if (elementCount >= SizeOfVector)

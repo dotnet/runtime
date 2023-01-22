@@ -21,6 +21,11 @@ namespace System.Net.Http.Headers
 
         internal const string BytesUnit = "bytes";
 
+        // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        //      ; token except ( "*" / "'" / "%" )
+        private static readonly IndexOfAnyValues<byte> s_rfc5987AttrBytes =
+            IndexOfAnyValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
@@ -76,36 +81,45 @@ namespace System.Net.Http.Headers
         // encoding'lang'PercentEncodedSpecials
         internal static string Encode5987(string input)
         {
-            // Encode a string using RFC 5987 encoding.
-            // encoding'lang'PercentEncodedSpecials
             var builder = new ValueStringBuilder(stackalloc char[256]);
             byte[] utf8bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(input.Length));
             int utf8length = Encoding.UTF8.GetBytes(input, 0, input.Length, utf8bytes, 0);
 
             builder.Append("utf-8\'\'");
-            for (int i = 0; i < utf8length; i++)
+
+            ReadOnlySpan<byte> utf8 = utf8bytes.AsSpan(0, utf8length);
+            do
             {
-                byte utf8byte = utf8bytes[i];
-
-                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-                //      ; token except ( "*" / "'" / "%" )
-                if (utf8byte > 0x7F) // Encodes as multiple utf-8 bytes
+                int length = utf8.IndexOfAnyExcept(s_rfc5987AttrBytes);
+                if (length < 0)
                 {
-                    AddHexEscaped(utf8byte, ref builder);
-                }
-                else if (!HttpRuleParser.IsTokenChar((char)utf8byte) || utf8byte == '*' || utf8byte == '\'' || utf8byte == '%')
-                {
-                    // ASCII - Only one encoded byte.
-                    AddHexEscaped(utf8byte, ref builder);
-                }
-                else
-                {
-                    builder.Append((char)utf8byte);
+                    length = utf8.Length;
                 }
 
+                Encoding.ASCII.GetChars(utf8.Slice(0, length), builder.AppendSpan(length));
+
+                utf8 = utf8.Slice(length);
+
+                if (utf8.IsEmpty)
+                {
+                    break;
+                }
+
+                length = utf8.IndexOfAny(s_rfc5987AttrBytes);
+                if (length < 0)
+                {
+                    length = utf8.Length;
+                }
+
+                foreach (byte b in utf8.Slice(0, length))
+                {
+                    AddHexEscaped(b, ref builder);
+                }
+
+                utf8 = utf8.Slice(length);
             }
+            while (!utf8.IsEmpty);
 
-            Array.Clear(utf8bytes, 0, utf8length);
             ArrayPool<byte>.Shared.Return(utf8bytes);
 
             return builder.ToString();

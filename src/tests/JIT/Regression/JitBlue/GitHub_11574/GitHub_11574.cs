@@ -20,7 +20,7 @@ class Program
         return (actual == expected) ? rv : 0;
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         Init();
 

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
+    <FeatureWasmThreads Condition="'$(TargetOS)' == 'Browser' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
     <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
 
@@ -29,6 +29,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />

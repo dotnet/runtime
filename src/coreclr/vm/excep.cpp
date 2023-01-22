@@ -5102,7 +5102,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
         if (!message.IsEmpty())
         {
-            NPrintToStdErrW(message, message.GetCount());
+            PrintToStdErrW(message);
         }
 
         PrintToStdErrA("\n");

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+
+  <!-- This project exists solely to restore ilasm for use in the test
+  project. -->
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+  </PropertyGroup>
+
+  <Target Name="CopyILAsmTool" DependsOnTargets="ResolveIlasmToolPaths" Condition="'$(MonoBuild)' == ''">
+    <PropertyGroup>
+      <IlasmFileName Condition=" '$(OS)' != 'Windows_NT' ">ilasm</IlasmFileName>
+      <IlasmFileName Condition=" '$(OS)' == 'Windows_NT' ">ilasm.exe</IlasmFileName>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_IlasmDir)\$(IlasmFileName)" DestinationFolder="$(ArtifactsDir)tools\ilasm" />
+  </Target>
+</Project>

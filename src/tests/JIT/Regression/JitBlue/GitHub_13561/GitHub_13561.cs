@@ -53,7 +53,7 @@ internal static class Program
         return result;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         return GetCustomAttribute<Attribute>(new PropertyInfo()) != null ? 100 : -1;
     }

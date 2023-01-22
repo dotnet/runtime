@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256_1
 {
     public static partial class Program
     {
-        private static void AsUInt32()
+        [Fact]
+        public static void AsUInt32()
         {
             var test = new VectorAs__AsUInt32();
 

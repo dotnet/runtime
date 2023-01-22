@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse2
 {
     public static partial class Program
     {
-        private static void CompareOrderedDouble()
+        [Fact]
+        public static void CompareOrderedDouble()
         {
             var test = new SimpleBinaryOpTest__CompareOrderedDouble();
 

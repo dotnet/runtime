@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Fma_Vector128
 {
     public static partial class Program
     {
-        private static void MultiplySubtractNegatedDouble()
+        [Fact]
+        public static void MultiplySubtractNegatedDouble()
         {
             var test = new SimpleTernaryOpTest__MultiplySubtractNegatedDouble();
 
@@ -596,7 +598,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             bool succeeded = true;
 
-            if (BitConverter.DoubleToInt64Bits(Math.Round(-(firstOp[0] * secondOp[0]) - thirdOp[0], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[0], 9)))
+            if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(-firstOp[0], secondOp[0], -thirdOp[0]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[0], 9)))
             {
                 succeeded = false;
             }
@@ -604,7 +606,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (BitConverter.DoubleToInt64Bits(Math.Round(-(firstOp[i] * secondOp[i]) - thirdOp[i], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i], 9)))
+                    if (BitConverter.DoubleToInt64Bits(Math.Round(double.FusedMultiplyAdd(-firstOp[i], secondOp[i], -thirdOp[i]), 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i], 9)))
                     {
                         succeeded = false;
                         break;

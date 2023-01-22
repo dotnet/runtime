@@ -10,7 +10,7 @@
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
-          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
+          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'Browser'" />
 
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
     <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>

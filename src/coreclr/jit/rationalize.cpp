@@ -53,9 +53,6 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-    indir->gtFlags &= ~GTF_IND_ASG_LHS;
-
     if (varTypeIsSIMD(indir))
     {
         if (indir->OperIs(GT_BLK, GT_OBJ))
@@ -482,56 +479,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     }
 }
 
-void Rationalizer::RewriteAddress(LIR::Use& use)
-{
-    assert(use.IsInitialized());
-
-    GenTreeUnOp* address = use.Def()->AsUnOp();
-    assert(address->OperGet() == GT_ADDR);
-
-    GenTree*   location   = address->gtGetOp1();
-    genTreeOps locationOp = location->OperGet();
-
-    if (location->IsLocal())
-    {
-// We are changing the child from GT_LCL_VAR TO GT_LCL_VAR_ADDR.
-// Therefore gtType of the child needs to be changed to a TYP_BYREF
-#ifdef DEBUG
-        if (locationOp == GT_LCL_VAR)
-        {
-            JITDUMP("Rewriting GT_ADDR(GT_LCL_VAR) to GT_LCL_VAR_ADDR:\n");
-        }
-        else
-        {
-            assert(locationOp == GT_LCL_FLD);
-            JITDUMP("Rewriting GT_ADDR(GT_LCL_FLD) to GT_LCL_FLD_ADDR:\n");
-        }
-#endif // DEBUG
-
-        location->SetOper(addrForm(locationOp));
-        location->gtType = TYP_BYREF;
-        copyFlags(location, address, GTF_ALL_EFFECT);
-
-        use.ReplaceWith(location);
-        BlockRange().Remove(address);
-    }
-    else if (location->OperIsIndir())
-    {
-        use.ReplaceWith(location->gtGetOp1());
-        BlockRange().Remove(location);
-        BlockRange().Remove(address);
-
-        JITDUMP("Rewriting GT_ADDR(GT_IND(X)) to X:\n");
-    }
-    else
-    {
-        unreached();
-    }
-
-    DISPTREERANGE(BlockRange(), use.Def());
-    JITDUMP("\n");
-}
-
 Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parentStack)
 {
     assert(useEdge != nullptr);
@@ -559,10 +506,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
-        case GT_ADDR:
-            RewriteAddress(use);
-            break;
-
         case GT_IND:
         case GT_BLK:
         case GT_OBJ:
@@ -574,8 +517,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
             {
-                if (!arg.GetEarlyNode()->IsValue())
+                if (arg.GetLateNode() != nullptr)
                 {
+                    if (arg.GetEarlyNode()->IsValue())
+                    {
+                        arg.GetEarlyNode()->SetUnusedValue();
+                    }
                     arg.SetEarlyNode(nullptr);
                 }
             }

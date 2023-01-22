@@ -15,6 +15,7 @@ namespace System.IO
 
         public DirectoryInfo(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
             Init(originalPath: path,
                   fullPath: Path.GetFullPath(path),
                   isNormalized: true);
@@ -27,8 +28,6 @@ namespace System.IO
 
         private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            ArgumentNullException.ThrowIfNull(originalPath);
-
             OriginalPath = originalPath;
 
             fullPath ??= originalPath;

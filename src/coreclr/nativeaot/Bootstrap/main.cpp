@@ -112,6 +112,11 @@ extern "C" void OnFirstChanceException();
 extern "C" void OnUnhandledException();
 extern "C" void IDynamicCastableIsInterfaceImplemented();
 extern "C" void IDynamicCastableGetInterfaceImplementation();
+#ifdef FEATURE_OBJCMARSHAL
+extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
+extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
+extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+#endif
 
 typedef void(*pfn)();
 
@@ -126,6 +131,15 @@ static const pfn c_classlibFunctions[] = {
     &OnUnhandledException,
     &IDynamicCastableIsInterfaceImplemented,
     &IDynamicCastableGetInterfaceImplementation,
+#ifdef FEATURE_OBJCMARSHAL
+    &ObjectiveCMarshalTryGetTaggedMemory,
+    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
+    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+#else
+    nullptr,
+    nullptr,
+    nullptr,
+#endif
 };
 
 #ifndef _countof

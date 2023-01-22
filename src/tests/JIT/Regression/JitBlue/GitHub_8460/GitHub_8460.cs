@@ -15,7 +15,7 @@ namespace bug
         // 'test' instruction incorrectly, because shift
         // operations on xarch don't modify flags if the
         // shift count is zero.
-        static int Main(string[] args)
+        static int Main()
         {
             // Absolute bits
             int bitCount = 0;

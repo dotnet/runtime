@@ -79,7 +79,7 @@ jobs:
                 make -C src/mono/wasi provision-deps all &&
                 make -C src/mono/wasi/sample/console run
               name: build_wasi
-              displayName: Build Wasi, and run a sample
+              displayName: Build WASI, and run a sample
 
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)

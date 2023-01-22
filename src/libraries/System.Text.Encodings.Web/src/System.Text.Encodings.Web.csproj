@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-Browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-Browser;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-Browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS3011: Only CLS-compliant members can be abstract -->
     <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->

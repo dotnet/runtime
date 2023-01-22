@@ -73,7 +73,7 @@ public class RandomTwister64
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int i;
         int countZero = 0;

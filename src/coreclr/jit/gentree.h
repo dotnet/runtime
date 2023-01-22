@@ -270,9 +270,10 @@ class FieldSeq
 public:
     enum class FieldKind : uintptr_t
     {
-        Instance     = 0, // An instance field.
-        SimpleStatic = 1, // Simple static field - the handle represents a unique location.
-        SharedStatic = 2, // Static field on a shared generic type: "Class<__Canon>.StaticField".
+        Instance                 = 0, // An instance field.
+        SimpleStatic             = 1, // Simple static field - the handle represents a unique location.
+        SimpleStaticKnownAddress = 2, // Simple static field - the handle represents a known location.
+        SharedStatic             = 3, // Static field on a shared generic type: "Class<__Canon>.StaticField".
     };
 
 private:
@@ -310,7 +311,8 @@ public:
 
     bool IsStaticField() const
     {
-        return (GetKind() == FieldKind::SimpleStatic) || (GetKind() == FieldKind::SharedStatic);
+        return (GetKind() == FieldKind::SimpleStatic) || (GetKind() == FieldKind::SharedStatic) ||
+               (GetKind() == FieldKind::SimpleStaticKnownAddress);
     }
 
     bool IsSharedStaticField() const
@@ -489,33 +491,29 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
+    GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
+    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
-    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
-    GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile semantics (this is a nop on X86)
+    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
+    GTF_IND_VOLATILE            = 0x40000000, // GT_IND -- the load or store must use volatile semantics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
-                                              // Same as GTF_ARRLEN_NONFAULTING.
-    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND   -- the target is on the heap
-    GTF_IND_TLS_REF             = 0x08000000, // GT_IND   -- the target is accessed via TLS
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
-                                              //             assignment; don't evaluate it independently.
-    GTF_IND_REQ_ADDR_IN_REG     = GTF_IND_ASG_LHS, // GT_IND  -- requires its addr operand to be evaluated
-                                              // into a register. This flag is useful in cases where it
-                                              // is required to generate register indirect addressing mode.
-                                              // One such case is virtual stub calls on xarch.  This is only
-                                              // valid in the backend, where GTF_IND_ASG_LHS is not necessary
-                                              // (all such indirections will be lowered to GT_STOREIND).
-    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND   -- the load or store is unaligned (we assume worst case
-                                              //             alignment of 1 byte)
-    GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
-    GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
+    GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND -- the target is on the heap
+    GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
+                                              //           This flag is useful in cases where it is required to generate register
+                                              //           indirect addressing mode. One such case is virtual stub calls on xarch.
+    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
+                                              //           assignment; don't evaluate it independently.
+    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND -- the load or store is unaligned (we assume worst case
+                                              //           alignment of 1 byte)
+    GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
+    GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
@@ -1506,15 +1504,6 @@ public:
         return OperIsSimple(gtOper);
     }
 
-#ifdef FEATURE_SIMD
-    bool isCommutativeSIMDIntrinsic();
-#else  // !
-    bool isCommutativeSIMDIntrinsic()
-    {
-        return false;
-    }
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
@@ -1543,8 +1532,7 @@ public:
 
     bool OperIsCommutative()
     {
-        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
-               (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
+        return OperIsCommutative(gtOper) || (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
     }
 
     static bool OperMayOverflow(genTreeOps gtOper)
@@ -1566,7 +1554,9 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
+                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)
@@ -1743,6 +1733,7 @@ public:
             case GT_RETFILT:
             case GT_NOP:
             case GT_FIELD:
+            case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
                 return gtType == TYP_VOID;
@@ -2210,6 +2201,12 @@ public:
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
         return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+    }
+
+    template <typename... T>
+    bool IsIconHandle(GenTreeFlags handleType, T... rest) const
+    {
+        return IsIconHandle(handleType) || IsIconHandle(rest...);
     }
 
     // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
@@ -4032,8 +4029,8 @@ struct GenTreeField : public GenTreeUnOp
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+    GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTreeUnOp(oper, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
@@ -4056,12 +4053,24 @@ struct GenTreeField : public GenTreeUnOp
     // True if this field is a volatile memory operation.
     bool IsVolatile() const
     {
+        assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
 
     bool IsInstance() const
     {
         return GetFldObj() != nullptr;
+    }
+
+    bool IsStatic() const
+    {
+        return !IsInstance();
+    }
+
+    bool IsTlsStatic() const
+    {
+        assert(((gtFlags & GTF_FLD_TLS) == 0) || IsStatic());
+        return (gtFlags & GTF_FLD_TLS) != 0;
     }
 
     bool IsOffsetKnown() const
@@ -7023,8 +7032,7 @@ struct GenTreeIndir : public GenTreeOp
 
     void SetAddr(GenTree* addr)
     {
-        assert(addr != nullptr);
-        assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
+        assert(varTypeIsI(addr));
         gtOp1 = addr;
     }
 
@@ -7141,29 +7149,25 @@ public:
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, nullptr)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
     }
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeIndir(oper, type, addr, data)
-        , m_layout(layout)
-        , gtBlkOpKind(BlkOpKindInvalid)
-#ifndef JIT32_GCENCODER
-        , gtBlkOpGcUnsafe(false)
-#endif
     {
-        assert(OperIsBlk(oper));
-        assert((layout != nullptr) || OperIs(GT_STORE_DYN_BLK));
-        gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
-        gtFlags |= (data->gtFlags & GTF_ALL_EFFECT);
+        Initialize(layout);
+    }
+
+    void Initialize(ClassLayout* layout)
+    {
+        assert(OperIsBlk(OperGet()) && ((layout != nullptr) || OperIs(GT_STORE_DYN_BLK)));
+
+        m_layout    = layout;
+        gtBlkOpKind = BlkOpKindInvalid;
+#ifndef JIT32_GCENCODER
+        gtBlkOpGcUnsafe = false;
+#endif
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8702,7 +8706,6 @@ inline bool GenTree::IsVectorCreate() const
     {
         switch (AsSIMD()->GetSIMDIntrinsicId())
         {
-            case SIMDIntrinsicInit:
             case SIMDIntrinsicInitN:
                 return true;
 

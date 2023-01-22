@@ -41,7 +41,7 @@ namespace N
             }
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             Sum = 0;
             SumNFourteens(7);  // Now Sum = 14 * 7 = 98 (and Two = 2)

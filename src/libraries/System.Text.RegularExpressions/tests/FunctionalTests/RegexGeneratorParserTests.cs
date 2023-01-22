@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
@@ -438,22 +439,28 @@ namespace System.Text.RegularExpressions.Tests
             ", compile: true));
         }
 
+        public static IEnumerable<object[]> Valid_ClassWithNamespace_ConfigurationOptions_MemberData() =>
+            from pattern in new[] { "", "ab", "ab*c|de*?f|(ghi){1,3}", "\\\\w\\\\W\\\\b\\\\B\\\\d\\\\D\\\\s\\\\S" }
+            from options in new[] { RegexOptions.None, RegexOptions.IgnoreCase, RegexOptions.ECMAScript, RegexOptions.RightToLeft }
+            from allowUnsafe in new[] { false, true }
+            from checkOverflow in new[] { false, true }
+            select new object[] { pattern, options, allowUnsafe, checkOverflow };
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Valid_ClassWithNamespace(bool allowUnsafe)
+        [MemberData(nameof(Valid_ClassWithNamespace_ConfigurationOptions_MemberData))]
+        public async Task Valid_ClassWithNamespace_ConfigurationOptions(string pattern, RegexOptions options, bool allowUnsafe, bool checkOverflow)
         {
-            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
                 using System.Text.RegularExpressions;
                 namespace A
-                {
+                {{
                     partial class C
-                    {
-                        [GeneratedRegex(""ab"")]
+                    {{
+                        [GeneratedRegex(""{pattern}"", RegexOptions.{options})]
                         private static partial Regex Valid();
-                    }
-                }
-            ", compile: true, allowUnsafe: allowUnsafe));
+                    }}
+                }}
+            ", compile: true, allowUnsafe: allowUnsafe, checkOverflow: checkOverflow));
         }
 
         [Fact]

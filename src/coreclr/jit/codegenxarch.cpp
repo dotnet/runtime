@@ -1304,6 +1304,55 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
+//
+// Arguments:
+//    select - the node
+//
+void CodeGen::genCodeForSelect(GenTreeOp* select)
+{
+#ifdef TARGET_X86
+    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
+#else
+    assert(select->OperIs(GT_SELECT));
+#endif
+
+    regNumber dstReg = select->GetRegNum();
+    if (select->OperIs(GT_SELECT))
+    {
+        genConsumeReg(select->AsConditional()->gtCond);
+    }
+
+    genConsumeOperands(select);
+
+    instruction cmovKind = INS_cmovne;
+    GenTree*    trueVal  = select->gtOp1;
+    GenTree*    falseVal = select->gtOp2;
+
+    // If the 'true' operand was allocated the same register as the target
+    // register then flip it to the false value so we can skip a reg-reg mov.
+    if (trueVal->isUsedFromReg() && (trueVal->GetRegNum() == dstReg))
+    {
+        std::swap(trueVal, falseVal);
+        cmovKind = INS_cmove;
+    }
+
+    if (select->OperIs(GT_SELECT))
+    {
+        // TODO-CQ: Support contained relops here.
+        assert(select->AsConditional()->gtCond->isUsedFromReg());
+
+        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
+        GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+    }
+
+    inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
+    inst_RV_TT(cmovKind, emitTypeSize(select), dstReg, trueVal);
+
+    genProduceReg(select);
+}
+
+//------------------------------------------------------------------------
 // genCodeForBT: Generates code for a GT_BT node.
 //
 // Arguments:
@@ -1736,6 +1785,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SETCC:
             genCodeForSetcc(treeNode->AsCC());
             break;
+
+        case GT_SELECT:
+            genCodeForSelect(treeNode->AsConditional());
+            break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            genCodeForSelect(treeNode->AsOp());
+            break;
+#endif
 
         case GT_BT:
             genCodeForBT(treeNode->AsOp());
@@ -4005,7 +4064,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
-    assert((size == EA_4BYTE) || (size == EA_PTRSIZE));
+    assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
 
@@ -4789,8 +4848,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_STORE_LCL_FLD));
 
     var_types targetType = tree->TypeGet();
-    GenTree*  op1        = tree->gtGetOp1();
-
     noway_assert(targetType != TYP_STRUCT);
 
 #ifdef FEATURE_SIMD
@@ -4802,6 +4859,11 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
 #endif // FEATURE_SIMD
 
+    GenTree*   op1       = tree->gtGetOp1();
+    regNumber  targetReg = tree->GetRegNum();
+    unsigned   lclNum    = tree->GetLclNum();
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
+
     assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1));
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
@@ -4809,19 +4871,14 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     if (op1->OperIs(GT_BITCAST) && op1->isContained())
     {
-        regNumber targetReg  = tree->GetRegNum();
         GenTree*  bitCastSrc = op1->gtGetOp1();
         var_types srcType    = bitCastSrc->TypeGet();
         noway_assert(!bitCastSrc->isContained());
 
         if (targetReg == REG_NA)
         {
-            unsigned   lclNum = tree->GetLclNum();
-            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-
             GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                       emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, tree->GetLclOffs());
-            varDsc->SetRegNum(REG_STK);
         }
         else
         {
@@ -4834,7 +4891,15 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
 
     // Updating variable liveness after instruction was emitted
-    genUpdateLife(tree);
+    if (targetReg != REG_NA)
+    {
+        genProduceReg(tree);
+    }
+    else
+    {
+        genUpdateLife(tree);
+        varDsc->SetRegNum(REG_STK);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4906,8 +4971,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             {
                 emit->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                   emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
-                genUpdateLife(lclNode);
-                varDsc->SetRegNum(REG_STK);
             }
             else
             {
@@ -4919,7 +4982,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             // stack store
             emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
                                   emitTypeSize(targetType), lclNode);
-            varDsc->SetRegNum(REG_STK);
         }
         else
         {
@@ -4956,9 +5018,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                                 emitTypeSize(targetType));
             }
         }
+        // Updating variable liveness after instruction was emitted
         if (targetReg != REG_NA)
         {
             genProduceReg(lclNode);
+        }
+        else
+        {
+            genUpdateLife(lclNode);
+            varDsc->SetRegNum(REG_STK);
         }
     }
 }
@@ -6459,7 +6527,8 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
     {
-        if ((condition.GetCode() == GenCondition::FNEU) && (op1->GetRegNum() == op2->GetRegNum()))
+        if ((condition.GetCode() == GenCondition::FNEU) && op1->isUsedFromReg() && op2->isUsedFromReg() &&
+            (op1->GetRegNum() == op2->GetRegNum()))
         {
             // For floating point, `x != x` is a common way of
             // checking for NaN. So, in the case where both

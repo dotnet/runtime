@@ -20,7 +20,7 @@ class B
         return a20;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         B b = new B();
         int v = b.X(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,

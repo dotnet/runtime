@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd.Arm64
 {
     public static partial class Program
     {
-        private static void AddPairwiseScalar_Vector128_Int64()
+        [Fact]
+        public static void AddPairwiseScalar_Vector128_Int64()
         {
             var test = new SimpleUnaryOpTest__AddPairwiseScalar_Vector128_Int64();
 

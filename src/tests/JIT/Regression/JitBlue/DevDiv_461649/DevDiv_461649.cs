@@ -18,7 +18,7 @@ namespace XSLTest
         // The jit performs an optimization transforming the tail call into a loop.
         // The bug was that the local was only zero-initialized for the first iteration of the loop.
 
-        static int Main(string[] args)
+        static int Main()
         {
             string inputXml = "Input.xml";
             string inputXsl = "Transform.xsl";

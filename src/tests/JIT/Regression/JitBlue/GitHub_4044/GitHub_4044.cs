@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 class C
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int error = Test1();
         error += Test2();

@@ -293,12 +293,6 @@ CorInfoType interceptor_ICJI::asCorInfoType(
     return original_ICorJitInfo->asCorInfoType(cls);
 }
 
-const char* interceptor_ICJI::getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->getClassName(cls);
-}
-
 const char* interceptor_ICJI::getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName)
@@ -313,15 +307,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
 }
 
-int interceptor_ICJI::appendClassName(
-          char16_t** ppBuf,
-          int* pnBufLen,
+size_t interceptor_ICJI::printClassName(
           CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    return original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    return original_ICorJitInfo->printClassName(cls, buffer, bufferSize, pRequiredBufferSize);
 }
 
 bool interceptor_ICJI::isValueClass(
@@ -491,6 +483,14 @@ bool interceptor_ICJI::isObjectImmutable(
     return original_ICorJitInfo->isObjectImmutable(objPtr);
 }
 
+bool interceptor_ICJI::getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value)
+{
+    return original_ICorJitInfo->getStringChar(strObj, index, value);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {
@@ -513,12 +513,6 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
           CORINFO_LOOKUP* pLookup)
 {
     original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
-}
-
-const char* interceptor_ICJI::getHelperName(
-          CorInfoHelpFunc helpFunc)
-{
-    return original_ICorJitInfo->getHelperName(helpFunc);
 }
 
 CorInfoInitClassResult interceptor_ICJI::initClass(
@@ -595,6 +589,13 @@ bool interceptor_ICJI::isMoreSpecificType(
     return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
 }
 
+TypeCompareState interceptor_ICJI::isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType)
+{
+    return original_ICorJitInfo->isEnum(cls, underlyingType);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getParentType(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -647,11 +648,13 @@ CorInfoIsAccessAllowedResult interceptor_ICJI::canAccessClass(
     return original_ICorJitInfo->canAccessClass(pResolvedToken, callerHandle, pAccessHelper);
 }
 
-const char* interceptor_ICJI::getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName)
+size_t interceptor_ICJI::printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    return original_ICorJitInfo->getFieldName(ftn, moduleName);
+    return original_ICorJitInfo->printFieldName(field, buffer, bufferSize, pRequiredBufferSize);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getFieldClass(
@@ -847,11 +850,13 @@ mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
     return original_ICorJitInfo->getMethodDefFromMethod(hMethod);
 }
 
-const char* interceptor_ICJI::getMethodName(
+size_t interceptor_ICJI::printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName)
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize)
 {
-    return original_ICorJitInfo->getMethodName(ftn, moduleName);
+    return original_ICorJitInfo->printMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
 }
 
 const char* interceptor_ICJI::getMethodNameFromMetadata(
@@ -1053,20 +1058,14 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-void* interceptor_ICJI::getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
-}
-
 bool interceptor_ICJI::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
+          int valueOffset,
           bool ignoreMovableObjects)
 {
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, ignoreMovableObjects);
+    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

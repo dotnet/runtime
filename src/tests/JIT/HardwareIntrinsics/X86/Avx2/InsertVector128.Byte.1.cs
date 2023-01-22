@@ -15,12 +15,14 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using static System.Runtime.Intrinsics.X86.Sse;
 using static System.Runtime.Intrinsics.X86.Sse2;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx2
 {
     public static partial class Program
     {
-        private static void InsertVector128Byte1()
+        [Fact]
+        public static void InsertVector128Byte1()
         {
             var test = new InsertVector128Test__InsertVector128Byte1();
 

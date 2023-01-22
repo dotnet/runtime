@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Relative ptr]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    public partial class EETypeNode : ObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
+    public partial class EETypeNode : DehydratableObjectNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
         protected readonly TypeDesc _type;
         internal readonly EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public TypeDesc Type => _type;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.ReadOnlyDataSection;
@@ -561,7 +561,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
@@ -1134,11 +1134,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual void ComputeValueTypeFieldPadding()
         {
-            // All objects that can have appreciable which can be derived from size compute ValueTypeFieldPadding.
-            // Unfortunately, the name ValueTypeFieldPadding is now wrong to avoid integration conflicts.
-
-            // Interfaces, sealed types, and non-DefTypes cannot be derived from
-            if (_type.IsInterface || !_type.IsDefType || (_type.IsSealed() && !_type.IsValueType))
+            // Only valuetypes need to compute the padding.
+            if (!_type.IsValueType)
                 return;
 
             DefType defType = _type as DefType;
@@ -1154,22 +1151,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 int numInstanceFieldBytes = defType.InstanceByteCountUnaligned.AsInt;
 
-                // Check if we have a type derived from System.ValueType or System.Enum, but not System.Enum itself
-                if (defType.IsValueType)
-                {
-                    // Value types should have at least 1 byte of size
-                    Debug.Assert(numInstanceFieldBytes >= 1);
+                // Value types should have at least 1 byte of size
+                Debug.Assert(numInstanceFieldBytes >= 1);
 
-                    // The size doesn't currently include the MethodTable pointer size.  We need to add this so that
-                    // the number of instance field bytes consistently represents the boxed size.
-                    numInstanceFieldBytes += _type.Context.Target.PointerSize;
-                }
+                // The size of value types doesn't include the MethodTable pointer.  We need to add this so that
+                // the number of instance field bytes consistently represents the boxed size.
+                numInstanceFieldBytes += _type.Context.Target.PointerSize;
 
                 // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
                 // to record the actual size of the fields of a type without any padding for GC heap allocation (since
                 // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
                 // types is effected by the unaligned base size). We don't want to store this information for all EETypes
-                // since it's only relevant for value types, and derivable types so it's added as an optional field. It's
+                // since it's only relevant for value types, so it's added as an optional field. It's
                 // also enough to simply store the size of the padding (between 0 and 4 or 8 bytes for 32-bit and 0 and 8 or 16 bytes
                 // for 64-bit) which cuts down our storage requirements.
 

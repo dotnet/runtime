@@ -8,7 +8,7 @@
 }
 
 
-.assembly Hello{}
+.assembly 'b101147'{}
 .assembly extern mscorlib{}
 .method public static int32 main()
 {

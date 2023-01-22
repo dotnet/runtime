@@ -115,7 +115,10 @@ ValueNumFuncDef(GetsharedGcstaticBase, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcstaticBase, 2, false, true, true)
 ValueNumFuncDef(GetsharedGcstaticBaseNoctor, 1, false, true, true)
 ValueNumFuncDef(GetsharedNongcstaticBaseNoctor, 1, false, true, true)
-ValueNumFuncDef(ReadyToRunStaticBase, 1, false, true, true)
+ValueNumFuncDef(ReadyToRunStaticBaseGC, 1, false, true, true)
+ValueNumFuncDef(ReadyToRunStaticBaseNonGC, 1, false, true, true)
+ValueNumFuncDef(ReadyToRunStaticBaseThread, 1, false, true, true)
+ValueNumFuncDef(ReadyToRunStaticBaseThreadNonGC, 1, false, true, true)
 ValueNumFuncDef(ReadyToRunGenericStaticBase, 2, false, true, true)
 ValueNumFuncDef(GetsharedGcstaticBaseDynamicclass, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcstaticBaseDynamicclass, 2, false, true, true)
@@ -166,7 +169,7 @@ ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to
 #endif
 
 #define SIMD_INTRINSIC(m, i, id, n, r, argCount, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) \
-ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD intrinsic  (Consider isCommutativeSIMDIntrinsic)
+ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD intrinsic
 #include "simdintrinsiclist.h"
 #define VNF_SIMD_FIRST VNF_SIMD_None
 

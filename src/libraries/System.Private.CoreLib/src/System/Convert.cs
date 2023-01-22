@@ -2314,12 +2314,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(inArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToBase64String(new ReadOnlySpan<byte>(inArray, offset, length), options);
         }
@@ -2371,19 +2368,15 @@ namespace System
             ArgumentNullException.ThrowIfNull(inArray);
             ArgumentNullException.ThrowIfNull(outArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offsetIn < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
-            if (offsetOut < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offsetIn);
+            ArgumentOutOfRangeException.ThrowIfNegative(offsetOut);
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
 
             int inArrayLength = inArray.Length;
 
-            if (offsetIn > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
             if (inArrayLength == 0)
                 return 0;
@@ -2395,8 +2388,7 @@ namespace System
             bool insertLineBreaks = options == Base64FormattingOptions.InsertLineBreaks;
             int charLengthRequired = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
-            if (offsetOut > outArrayLength - charLengthRequired)
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetOut, outArrayLength - charLengthRequired);
 
             if (Vector128.IsHardwareAccelerated && !insertLineBreaks && length >= Base64VectorizationLengthThreshold)
             {
@@ -2783,15 +2775,9 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length)
         {
             ArgumentNullException.ThrowIfNull(inArray);
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-
-            if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             if (inArray.Length == 0)
             {
@@ -2980,12 +2966,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(inArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToHexString(new ReadOnlySpan<byte>(inArray, offset, length));
         }
@@ -3000,8 +2983,7 @@ namespace System
         {
             if (bytes.Length == 0)
                 return string.Empty;
-            if (bytes.Length > int.MaxValue / 2)
-                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_InputTooLarge);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }

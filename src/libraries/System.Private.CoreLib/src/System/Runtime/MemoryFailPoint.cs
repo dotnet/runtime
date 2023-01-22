@@ -139,8 +139,7 @@ namespace System.Runtime
         // is somehow incorrect.
         public MemoryFailPoint(int sizeInMegabytes)
         {
-            if (sizeInMegabytes <= 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeInMegabytes), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeInMegabytes);
 
             ulong size = ((ulong)sizeInMegabytes) << 20;
             _reservedMemory = size;

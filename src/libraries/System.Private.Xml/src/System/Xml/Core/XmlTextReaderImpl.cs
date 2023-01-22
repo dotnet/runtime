@@ -1596,18 +1596,9 @@ namespace System.Xml
         public override int ReadContentAsBase64(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // if not the first call to ReadContentAsBase64
             if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
@@ -1652,18 +1643,9 @@ namespace System.Xml
         public override int ReadContentAsBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // if not the first call to ReadContentAsBinHex
             if (_parsingFunction == ParsingFunction.InReadContentAsBinary)
@@ -1707,18 +1689,9 @@ namespace System.Xml
         public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // if not the first call to ReadContentAsBase64
             if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
@@ -1763,18 +1736,9 @@ namespace System.Xml
         public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // if not the first call to ReadContentAsBinHex
             if (_parsingFunction == ParsingFunction.InReadElementContentAsBinary)
@@ -1832,18 +1796,9 @@ namespace System.Xml
                 throw new InvalidOperationException(SR.Format(SR.Xml_InvalidReadValueChunk, _curNode.type));
             }
             ArgumentNullException.ThrowIfNull(buffer);
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             // first call of ReadValueChunk -> initialize incremental read state
             if (_parsingFunction != ParsingFunction.InReadValueChunk)

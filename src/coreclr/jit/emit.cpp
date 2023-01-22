@@ -1037,8 +1037,7 @@ void emitter::emitBegFN(bool hasFramePtr
                         ,
                         bool chkAlign
 #endif
-                        ,
-                        unsigned maxTmpSize)
+                        )
 {
     insGroup* ig;
 
@@ -1056,8 +1055,6 @@ void emitter::emitBegFN(bool hasFramePtr
     /* Record stack frame info (the temp size is just an estimate) */
 
     emitHasFramePtr = hasFramePtr;
-
-    emitMaxTmpSize = maxTmpSize;
 
 #ifdef DEBUG
     emitChkAlign = chkAlign;
@@ -3355,48 +3352,6 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
     }
 }
 
-/*****************************************************************************/
-#ifdef DEBUG
-/*****************************************************************************
- *
- *  Return a string with the name of the given class field (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFldName(CORINFO_FIELD_HANDLE fieldVal)
-{
-    if (emitComp->opts.varNames)
-    {
-        const char* memberName;
-        const char* className;
-
-        const int   TEMP_BUFFER_LEN = 1024;
-        static char buff[TEMP_BUFFER_LEN];
-
-        memberName = emitComp->eeGetFieldName(fieldVal, &className);
-
-        sprintf_s(buff, TEMP_BUFFER_LEN, "'<%s>.%s'", className, memberName);
-        return buff;
-    }
-    else
-    {
-        return "";
-    }
-}
-
-/*****************************************************************************
- *
- *  Return a string with the name of the given function (blank string (not
- *  NULL) is returned when the name isn't available).
- */
-
-const char* emitter::emitFncName(CORINFO_METHOD_HANDLE methHnd)
-{
-    return emitComp->eeGetMethodFullName(methHnd);
-}
-
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Be very careful, some instruction descriptors are allocated as "tiny" and
@@ -4100,24 +4055,23 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
 
     flag &= GTF_ICON_HDL_MASK;
 
+    char buffer[256];
+
     if (cookie != 0)
     {
         if (flag == GTF_ICON_FTN_ADDR)
         {
-            const char* className = nullptr;
-            const char* methName =
-                emitComp->eeGetMethodName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), &className);
-            printf("%s code for %s:%s", commentPrefix, className, methName);
+            const char* methName = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(cookie), true,
+                                                                 true, buffer, sizeof(buffer));
+            printf("%s code for %s", commentPrefix, methName);
             return;
         }
 
         if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
         {
-            const char* className = nullptr;
             const char* fieldName =
-                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), &className);
-            printf("%s %s for %s%s%s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", className,
-                   className != nullptr ? ":" : "", fieldName);
+                emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true, buffer, sizeof(buffer));
+            printf("%s %s for %s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", fieldName);
             return;
         }
     }
@@ -4154,7 +4108,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
+        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle), true, buffer, sizeof(buffer));
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {
@@ -4162,7 +4116,8 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     }
     else if (flag == GTF_ICON_METHOD_HDL)
     {
-        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
+        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle), true, true, buffer,
+                                            sizeof(buffer));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {

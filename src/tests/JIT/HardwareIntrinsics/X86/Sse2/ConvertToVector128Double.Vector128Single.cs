@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse2
 {
     public static partial class Program
     {
-        private static void ConvertToVector128DoubleVector128Single()
+        [Fact]
+        public static void ConvertToVector128DoubleVector128Single()
         {
             var test = new SimpleUnaryOpConvTest__ConvertToVector128DoubleVector128Single();
 

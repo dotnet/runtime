@@ -509,7 +509,7 @@ namespace PInvokeTests
 
         #endregion
 
-        public static int Main(string[] argv)
+        public static int Main()
         {
             bool retVal = true;
 

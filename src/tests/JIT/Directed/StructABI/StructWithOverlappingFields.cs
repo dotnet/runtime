@@ -118,7 +118,7 @@ namespace Opt_Error
             Debug.Assert(cse_val_2 == 52);
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             TestClass(2);
             TestStruct(2);

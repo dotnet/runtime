@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void ZeroExtendWideningUpper_Vector128_SByte()
+        [Fact]
+        public static void ZeroExtendWideningUpper_Vector128_SByte()
         {
             var test = new SimpleUnaryOpTest__ZeroExtendWideningUpper_Vector128_SByte();
 

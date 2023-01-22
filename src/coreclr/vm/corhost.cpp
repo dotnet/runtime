@@ -36,11 +36,13 @@
 #include "dwreport.h"
 #endif // !TARGET_UNIX
 
+#include "nativelibrary.h"
+
 #ifndef DACCESS_COMPILE
 
+#include <corehost/host_runtime_contract.h>
+
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
-extern void PrintToStdOutA(const char *pszString);
-extern void PrintToStdOutW(const WCHAR *pwzString);
 
 //***************************************************************************
 
@@ -580,22 +582,22 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     for (int i = 0; i < nProperties; i++)
     {
-        if (wcscmp(pPropertyNames[i], W("NATIVE_DLL_SEARCH_DIRECTORIES")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES)) == 0)
         {
             pwzNativeDllSearchDirectories = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
         {
             pwzTrustedPlatformAssemblies = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("PLATFORM_RESOURCE_ROOTS")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS)) == 0)
         {
             pwzPlatformResourceRoots = pPropertyValues[i];
         }
         else
-        if (wcscmp(pPropertyNames[i], W("APP_PATHS")) == 0)
+        if (wcscmp(pPropertyNames[i], _T(HOST_PROPERTY_APP_PATHS)) == 0)
         {
             pwzAppPaths = pPropertyValues[i];
         }
@@ -627,6 +629,24 @@ HRESULT CorHost2::CreateAppDomainWithManager(
             sPlatformResourceRoots,
             sAppPaths));
     }
+
+#if defined(TARGET_UNIX) && !defined(CORECLR_EMBEDDED)
+    // Check if the current code is executing in the single file host or in libcoreclr.so. The libSystem.Native is linked
+    // into the single file host, so we need to check only when this code is in libcoreclr.so.
+    // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
+    EX_TRY
+    {
+        NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
+    }
+    EX_HOOK
+    {
+        Exception *ex = GET_EXCEPTION();
+        SString err;
+        ex->GetMessage(err);
+        LogErrorToHost("Error message: %s", err.GetUTF8());
+    }
+    EX_END_HOOK;
+#endif // TARGET_UNIX && !CORECLR_EMBEDDED
 
     *pAppDomainID=DefaultADID;
 

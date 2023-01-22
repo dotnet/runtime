@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx1_Vector128
 {
     public static partial class Program
     {
-        private static void MaskStoreDouble()
+        [Fact]
+        public static void MaskStoreDouble()
         {
             var test = new StoreBinaryOpTest__MaskStoreDouble();
 

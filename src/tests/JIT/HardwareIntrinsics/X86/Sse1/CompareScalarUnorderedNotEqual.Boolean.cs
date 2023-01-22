@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse1
 {
     public static partial class Program
     {
-        private static void CompareScalarUnorderedNotEqualBoolean()
+        [Fact]
+        public static void CompareScalarUnorderedNotEqualBoolean()
         {
             var test = new BooleanBinaryOpTest__CompareScalarUnorderedNotEqualBoolean();
 

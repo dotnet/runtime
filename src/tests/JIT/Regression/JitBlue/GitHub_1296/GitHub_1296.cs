@@ -21,7 +21,7 @@ class Program
 
     static int Pass = 100;
     static int Fail = -1;
-    static int Main(string[] args)
+    static int Main()
     {
         // Entry point for our repro.
         // Pass in a bunch of integers.  The 5th parameter is a MyStruct, a value type of size 8.

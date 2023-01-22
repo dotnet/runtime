@@ -110,6 +110,8 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string DeclaringTypeRef { get; init; }
 
+        public Type DeclaringType { get; init; }
+
         /// <summary>
         /// Source code to instantiate design-time specified custom converter.
         /// </summary>

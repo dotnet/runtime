@@ -90,7 +90,7 @@ class Program
         return (int)(s.f1 + s.f2 + (int)s.f3 + s.f4);
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         int returnVal = Pass;
         MyStruct s = new MyStruct(1, 2, 3, 4);

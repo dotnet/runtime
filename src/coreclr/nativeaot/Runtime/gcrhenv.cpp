@@ -45,6 +45,7 @@
 #include "daccess.h"
 
 #include "GCMemoryHelpers.h"
+#include "interoplibinterface.h"
 
 #include "holder.h"
 #include "volatile.h"
@@ -575,34 +576,18 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
 }
 
-COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
-{
-    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
-    if (cbSrc != cbDest)
-        return;
-
-    ASSERT(pobjDest->get_EEType()->HasReferenceFields() == pobjSrc->get_EEType()->HasReferenceFields());
-
-    if (pobjDest->get_EEType()->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pobjDest, pobjSrc, cbDest);
-    }
-    else
-    {
-        memcpy(pobjDest, pobjSrc, cbDest);
-    }
-}
-
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
     ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
+    ASSERT(pObj1->get_EEType()->IsValueType());
+
     MethodTable * pEEType = pObj1->get_EEType();
     size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
 
+    // memcmp is ok in a COOP method as we are comparing structs which are typically small.
     FC_RETURN_BOOL(memcmp(pbFields1, pbFields2, cbFields) == 0);
 }
 
@@ -698,13 +683,25 @@ void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 
 void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (!is_concurrent)
+    {
+        ObjCMarshalNative::BeforeRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 // EE can perform post stack scanning action, while the user threads are still suspended
-void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* /*sc*/)
+void GCToEEInterface::AfterGcScanRoots(int condemned, int /*max_gen*/, ScanContext* sc)
 {
     // Invoke any registered callouts for the end of the mark phase.
     RestrictedCallouts::InvokeGcCallouts(GCRC_AfterMarkPhase, condemned);
+#ifdef FEATURE_OBJCMARSHAL
+    if (!sc->concurrent)
+    {
+        ObjCMarshalNative::AfterRefCountedHandleCallbacks();
+    }
+#endif
 }
 
 void GCToEEInterface::GcDone(int condemned)
@@ -715,6 +712,11 @@ void GCToEEInterface::GcDone(int condemned)
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    bool isReferenced = false;
+    if (ObjCMarshalNative::IsTrackedReference(pObject, &isReferenced))
+        return isReferenced;
+#endif // FEATURE_OBJCMARSHAL
     return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObject);
 }
 
@@ -1169,6 +1171,14 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
+#ifdef FEATURE_OBJCMARSHAL
+    if (obj->GetGCSafeMethodTable()->IsTrackedReferenceWithFinalizer())
+    {
+        ObjCMarshalNative::OnEnteredFinalizerQueue(obj);
+        return false;
+    }
+#endif
+
     if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
         return false;
 
@@ -1371,6 +1381,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 
     *value = uiValue;
     return true;
+}
+
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
 }
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)

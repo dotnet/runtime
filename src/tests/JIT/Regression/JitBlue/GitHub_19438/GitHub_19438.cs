@@ -63,7 +63,7 @@ namespace GitHub_19438
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             const int iterationCount = 10;
             const int itemCount = 1000000;

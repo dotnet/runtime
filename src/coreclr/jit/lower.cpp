@@ -294,10 +294,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerJTrue(node->AsOp());
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            ContainCheckSelect(node->AsOp());
+            break;
+#endif
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -2935,17 +2939,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
-                    GenTree* op1 = castOp->gtGetOp1();
-                    if ((op1 != nullptr) && !op1->IsCnsIntOrI())
-                    {
-                        op1->ClearContained();
-                    }
-
-                    GenTree* op2 = castOp->gtGetOp2();
-                    if ((op2 != nullptr) && !op2->IsCnsIntOrI())
-                    {
-                        op2->ClearContained();
-                    }
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;
@@ -3681,13 +3677,10 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-#ifndef JIT32_GCENCODER
-            objStore->gtBlkOpGcUnsafe = false;
-#endif
-            objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-            objStore->SetLayout(layout);
+            objStore->Initialize(layout);
             objStore->SetAddr(addr);
             objStore->SetData(src);
+
             BlockRange().InsertBefore(objStore, addr);
             LowerNode(objStore);
             return;
@@ -3777,12 +3770,26 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_BLK:
         case GT_OBJ:
-            retVal->ChangeOper(GT_IND);
-            FALLTHROUGH;
         case GT_IND:
+        {
+            // Spill to a local if sizes don't match so we can avoid the "load more than requested"
+            // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
+            {
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                comp->lvaSetStruct(tmpNum, comp->info.compMethodInfo->args.retTypeClass, false);
+
+                ReplaceWithLclVar(retValUse, tmpNum);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
+
+            retVal->ChangeOper(GT_IND);
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
             break;
+        }
 
         case GT_LCL_VAR:
             LowerRetSingleRegStructLclVar(ret);
@@ -6971,9 +6978,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_ADD:
@@ -7623,3 +7628,37 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
     ContainCheckSIMD(simdNode);
 }
 #endif // FEATURE_SIMD
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
+//
+//  Arguments:
+//    simdType        - The return type of SIMD node being created
+//    op1             - The value of the lowest element of the simd value
+//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdSize        - the size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The inserted CreateScalarUnsafe node
+//
+// Remarks:
+//    If the created node is a vector constant, op1 will be removed from the block range
+//
+GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
+                                                       GenTree*    op1,
+                                                       CorInfoType simdBaseJitType,
+                                                       unsigned    simdSize)
+{
+    assert(varTypeIsSIMD(simdType));
+
+    GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
+    BlockRange().InsertAfter(op1, result);
+
+    if (result->IsVectorConst())
+    {
+        BlockRange().Remove(op1);
+    }
+    return result;
+}
+#endif // FEATURE_HW_INTRINSICS

@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly a {}
+.assembly 'b74976' {}
 .class b {
 .method static int32 c() {
 .entrypoint

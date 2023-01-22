@@ -7577,16 +7577,16 @@ void LinearScan::addResolution(BasicBlock* block,
     if (insertionPoint == nullptr)
     {
         // We can't add resolution to a register at the bottom of a block that has an EHBoundaryOut,
-        // except in the case of the "EH Dummy" resolution from the stack.
-        assert((block->bbNum > bbNumMaxBeforeResolution) || (fromReg == REG_STK) ||
+        // except in the case of the "EH Dummy" resolution from the stack, in which case interval is writeThru.
+        assert((block->bbNum > bbNumMaxBeforeResolution) || (fromReg == REG_STK) || (interval->isWriteThru) ||
                !blockInfo[block->bbNum].hasEHBoundaryOut);
         insertionPointString = "bottom";
     }
     else
     {
         // We can't add resolution at the top of a block that has an EHBoundaryIn,
-        // except in the case of the "EH Dummy" resolution to the stack.
-        assert((block->bbNum > bbNumMaxBeforeResolution) || (toReg == REG_STK) ||
+        // except in the case of the "EH Dummy" resolution to the stack, in which case interval is writeThru.
+        assert((block->bbNum > bbNumMaxBeforeResolution) || (toReg == REG_STK) || (interval->isWriteThru) ||
                !blockInfo[block->bbNum].hasEHBoundaryIn);
         insertionPointString = "top";
     }
@@ -8354,8 +8354,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             // Do the reg to stack moves now
             addResolution(block, insertionPoint, interval, REG_STK,
                           fromReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
-                              DEBUG_ARG((interval->isWriteThru && (toReg == REG_STK)) ? "EH DUMMY"
-                                                                                      : resolveTypeName[resolveType]));
+                              DEBUG_ARG(interval->isWriteThru ? "EH DUMMY" : resolveTypeName[resolveType]));
         }
         else
         {

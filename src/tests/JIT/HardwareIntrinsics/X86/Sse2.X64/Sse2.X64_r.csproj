@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse2.X64_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -15,10 +16,10 @@
     <Compile Include="ConvertScalarToVector128Double.Double.cs" />
     <Compile Include="ConvertScalarToVector128Int64.Int64.cs" />
     <Compile Include="ConvertScalarToVector128UInt64.UInt64.cs" />
-    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\ScalarSimdUnOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\Program.cs" />
+    <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
     <Compile Include="Program.Sse2.X64.cs" />
+    <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

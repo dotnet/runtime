@@ -3,7 +3,6 @@
 
 
 
-.module 'b10939'
 // MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
 .assembly extern System.Console
@@ -11,7 +10,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'b10939'
+.assembly 'b30838'
 {
   
 }

@@ -10,7 +10,7 @@ namespace GitHub_20657
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
             var v1 = new Vector4();
             var v2 = Oops(v1);

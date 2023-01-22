@@ -95,8 +95,7 @@ struct ThreadBuffer
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    uint64_t                m_uPalThreadIdForLogging;               // @TODO: likely debug-only
-    EEThreadId              m_threadId;
+    EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
 #ifdef FEATURE_SUSPEND_REDIRECTION
@@ -192,7 +191,7 @@ public:
     gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
 
 #ifndef DACCESS_COMPILE
-    uint64_t              GetPalThreadIdForLogging();
+    uint64_t            GetPalThreadIdForLogging();
     bool                IsCurrentThread();
 
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);

@@ -28,7 +28,7 @@
 	jmp int32 bug::jumpee()
 }
 
-.method static int32 main(class System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack 20
 	call int32 bug::jumper()

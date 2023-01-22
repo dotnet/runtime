@@ -166,6 +166,7 @@ namespace System.Text.Json.SourceGeneration
                 [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                 out bool castingRequiredForProps)
         {
+            castingRequiredForProps = false;
             serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
             Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
 
@@ -198,6 +199,10 @@ namespace System.Text.Json.SourceGeneration
                     continue;
                 }
 
+                // Using properties from an interface hierarchy -- require explicit casting when
+                // getting properties in the fast path to account for possible diamond ambiguities.
+                castingRequiredForProps |= Type.IsInterface && propGenSpec.DeclaringType != Type;
+
                 string memberName = propGenSpec.ClrName!;
 
                 // The JsonPropertyNameAttribute or naming policy resulted in a collision.
@@ -210,32 +215,52 @@ namespace System.Text.Json.SourceGeneration
                         // Overwrite previously cached property since it has [JsonIgnore].
                         serializableProperties[propGenSpec.RuntimePropertyName] = propGenSpec;
                     }
-                    else if (
-                        // Does the current property have `JsonIgnoreAttribute`?
-                        propGenSpec.DefaultIgnoreCondition != JsonIgnoreCondition.Always &&
-                        // Is the current property hidden by the previously cached property
-                        // (with `new` keyword, or by overriding)?
-                        other.ClrName != memberName &&
-                        // Was a property with the same CLR name was ignored? That property hid the current property,
-                        // thus, if it was ignored, the current property should be ignored too.
-                        ignoredMembers?.ContainsKey(memberName) != true)
+                    else
                     {
-                        // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
-                        serializableProperties = null;
-                        castingRequiredForProps = false;
-                        return false;
+                        bool ignoreCurrentProperty;
+
+                        if (!Type.IsInterface)
+                        {
+                            ignoreCurrentProperty =
+                                // Does the current property have `JsonIgnoreAttribute`?
+                                propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
+                                // Is the current property hidden by the previously cached property
+                                // (with `new` keyword, or by overriding)?
+                                other.ClrName == memberName ||
+                                // Was a property with the same CLR name ignored? That property hid the current property,
+                                // thus, if it was ignored, the current property should be ignored too.
+                                ignoredMembers?.ContainsKey(memberName) == true;
+                        }
+                        else
+                        {
+                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
+                            // Conflicts like this are possible in two cases:
+                            // 1. Diamond ambiguity in property names, or
+                            // 2. Linear interface hierarchies that use properties with DIMs.
+                            //
+                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
+                            // adding support for DIMs in the future, however that would require adding more APIs
+                            // for the case of source gen.
+
+                            ignoreCurrentProperty = propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always;
+                        }
+
+                        if (!ignoreCurrentProperty)
+                        {
+                            // We have a conflict, emit a stub method that throws.
+                            goto ReturnFalse;
+                        }
                     }
-                    // Ignore the current property.
                 }
 
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
-                    (ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>()).Add(memberName, propGenSpec);
+                    (ignoredMembers ??= new()).Add(memberName, propGenSpec);
                 }
             }
 
             Debug.Assert(PropertyGenSpecList.Count >= serializableProperties.Count);
-            castingRequiredForProps = PropertyGenSpecList.Count > serializableProperties.Count;
+            castingRequiredForProps |= PropertyGenSpecList.Count > serializableProperties.Count;
             return true;
 
         ReturnFalse:

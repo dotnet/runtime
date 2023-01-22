@@ -936,7 +936,7 @@ class Program
         return result;
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         var result = 100;
 

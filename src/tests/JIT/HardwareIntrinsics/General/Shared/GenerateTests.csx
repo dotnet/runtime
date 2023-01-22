@@ -2154,36 +2154,74 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     var testListFileName = Path.Combine("..", groupName, $"Program.{groupName}.cs");
+    var debugProjectFileName = Path.Combine("..", groupName, $"{groupName}_r.csproj");
+    var releaseProjectFileName = Path.Combine("..", groupName, $"{groupName}_ro.csproj");
+
+    using var debugProjectFile = new StreamWriter(debugProjectFileName, append: false);
+    using var releaseProjectFile = new StreamWriter(releaseProjectFileName, append: false);
+
+        debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>");
+
+        releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>");
+
 
     using (var testListFile = new StreamWriter(testListFileName, append: false))
     {
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
+        testListFile.Write(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._");
+	testListFile.Write(groupName);
+    testListFile.WriteLine(@"
 {
     public static partial class Program
     {
         static Program()
-        {
-            TestList = new Dictionary<string, Action>() {");
-
+        {");
         foreach (var input in inputs)
         {
-            ProcessInput(testListFile, groupName, input);
+            ProcessInput(debugProjectFile, releaseProjectFile, testListFile, groupName, input);
         }
-
-        testListFile.WriteLine(@"            };
+        testListFile.WriteLine(@"
         }
     }
 }");
+
+        debugProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
+
+        releaseProjectFile.WriteLine($@"    <Compile Include=""Program.{groupName}.cs"" />
+    <Compile Include=""..\Shared\Program.cs"" />
+  </ItemGroup>
+</Project>");
+
     }
 }
 
-private static void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter releaseProjectFile, StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
 {
     var testName = "";
 
@@ -2191,48 +2229,47 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
     if (input.templateFileName == "VectorCreateElementTest.template")
     {
         testName = $"{input.templateData["Method"]}Element.{input.templateData["BaseType"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}Element{input.templateData["BaseType"]},");
     }
     else if (input.templateFileName == "VectorCreateVectorTest.template")
     {
         testName = $"{input.templateData["Method"]}Vector.{input.templateData["BaseType"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}Vector{input.templateData["BaseType"]},");
     }
     else if (input.templateFileName == "VectorGetAndWithElementTest.template")
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["BaseType"]}.{input.templateData["Imm"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["BaseType"]}{input.templateData["Imm"]},");
     }
     else if (input.templateFileName == "VectorNotSupportedTest.template")
     {
         testName = input.templateData["Name"];
-        testListFile.WriteLine($@"                [""{testName}""] = {testName},");
     }
     else if (input.templateData.ContainsKey("BaseType"))
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["BaseType"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["BaseType"]},");
     }
     else if ((input.templateFileName == "VectorNarrowTest.template") || (input.templateFileName == "VectorConvertToTest.template"))
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["Op1BaseType"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["Op1BaseType"]},");
     }
     else
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["RetBaseType"]}";
-        testListFile.WriteLine($@"                [""{testName}""] = {input.templateData["Method"]}{input.templateData["RetBaseType"]},");
     }
 
-    var testFileName = Path.Combine("..", groupName, $"{testName}.cs");
+    var fileName = $"{testName}.cs";
+
+    var testFileName = Path.Combine("..", groupName, fileName);
     var template = File.ReadAllText(input.templateFileName);
 
     foreach (var kvp in input.templateData)
     {
         template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
+    template = template.Replace("namespace JIT.HardwareIntrinsics.General", $"namespace JIT.HardwareIntrinsics.General._{groupName}");
 
     File.WriteAllText(testFileName, template);
+
+    debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
+    releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}"" />");
 }
 
 ProcessInputs("Vector64", Vector64Inputs);

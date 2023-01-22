@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib { auto }
 .assembly extern System.Console {auto}
-.assembly CpBlkBug { }
+.assembly 'GitHub_17969' { }
 
 .class private sequential ansi sealed MyStruct
        extends [mscorlib]System.ValueType

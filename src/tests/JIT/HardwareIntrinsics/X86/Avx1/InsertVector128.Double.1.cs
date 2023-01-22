@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx1
 {
     public static partial class Program
     {
-        private static void InsertVector128Double1()
+        [Fact]
+        public static void InsertVector128Double1()
         {
             var test = new ImmBinaryOpTest__InsertVector128Double1();
 

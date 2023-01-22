@@ -2,11 +2,6 @@
   <PropertyGroup>
     <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
-
-    <!-- Set OutDirName to change the BaseOutputPath and BaseIntermediateOutputPath properties to include the ref subfolder. -->
-    <_projectDirName>$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</_projectDirName>
-    <IsReferenceAssemblyProject Condition="'$(_projectDirName)' == 'ref'">true</IsReferenceAssemblyProject>
-    <OutDirName Condition="'$(IsReferenceAssemblyProject)' == 'true'">$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)ref</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
@@ -18,59 +13,13 @@
     <GeneratePlatformNotSupportedAssemblyHeaderFile>$(RepositoryEngineeringDir)LicenseHeader.txt</GeneratePlatformNotSupportedAssemblyHeaderFile>
   </PropertyGroup>
 
-  <!-- Define test projects and companions -->
-  <PropertyGroup Condition="$(MSBuildProjectFullPath.Contains('$([System.IO.Path]::DirectorySeparatorChar)tests$([System.IO.Path]::DirectorySeparatorChar)'))">
-    <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
-    <IsTrimmingTestProject Condition="$(MSBuildProjectName.EndsWith('.TrimmingTests'))">true</IsTrimmingTestProject>
-    <IsNativeAotTestProject Condition="$(MSBuildProjectName.EndsWith('.NativeAotTests'))">true</IsNativeAotTestProject>
-    <IsPublishedAppTestProject Condition="'$(IsTrimmingTestProject)' == 'true' or '$(IsNativeAotTestProject)' == 'true'">true</IsPublishedAppTestProject>
-    <IsTestSupportProject Condition="'$(IsTestProject)' != 'true' and '$(IsPublishedAppTestProject)' != 'true'">true</IsTestSupportProject>
-
-    <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
-    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">false</IsShipping>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Treat as a generator project if either the parent or the parent parent directory is named gen. -->
-    <IsGeneratorProject Condition="'$(_projectDirName)' == 'gen' or
-                                   $([System.IO.Path]::GetFileName('$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))')) == 'gen'">true</IsGeneratorProject>
-    <IsSourceProject Condition="'$(IsSourceProject)' == '' and
-                                '$(IsReferenceAssemblyProject)' != 'true' and
-                                '$(IsGeneratorProject)' != 'true' and
-                                '$(IsTestProject)' != 'true' and
-                                '$(IsPublishedAppTestProject)' != 'true' and
-                                '$(IsTestSupportProject)' != 'true' and
-                                '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
-                                '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
-  </PropertyGroup>
-
-  <!-- Warnings that should be disabled in our test projects. -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">
-    <!-- don't warn on usage of BinaryFormatter from test projects -->
-    <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
-    <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
-    <NoWarn>$(NoWarn);IL2121</NoWarn>
-    <!-- allow nullable annotated files to be incorporated into tests without warning -->
-    <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
-    <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
-    <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
-    <!-- To suppress warnings about resetting the assembly version.-->
-    <AssemblyVersion />
-    <!-- Enforce extended rules around API usages in analyzers and generators to ensure our generators follow best practices. -->
-    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Projects which are manually built. -->
     <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\**\*.csproj" />
   </ItemGroup>
 
   <Import Project="NetCoreAppLibrary.props" />
-  <Import Project="$(RepositoryEngineeringDir)referenceAssemblies.props" Condition="'$(IsReferenceAssemblyProject)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
+  <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.props" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
 
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->
@@ -80,6 +29,8 @@
     <!-- We can't generate an apphost without restoring the targeting pack. -->
     <UseAppHost>false</UseAppHost>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <!-- Libraries packages use the incremental servicing infrastructure. -->
+    <PackageUseIncrementalServicingVersion>true</PackageUseIncrementalServicingVersion>
   </PropertyGroup>
 
   <!-- Language configuration -->
@@ -141,8 +92,6 @@
     <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
-    <!-- FIXME: Using net7 workload here, since we are building the test projects with net7.0
-                right now. -->
     <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 

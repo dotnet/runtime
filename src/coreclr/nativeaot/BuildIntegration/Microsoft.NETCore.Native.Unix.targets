@@ -46,10 +46,10 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
-      <NativeLibrary Condition="$(NativeLib) == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
-      <NativeLibrary Condition="$(NativeLib) != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
+      <NativeLibrary Condition="'$(NativeLib)' == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
+      <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
-      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -69,10 +69,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(StaticICULinking)' == 'true'">
+    <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static'">
       <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Globalization.Native/build/libSystem.Globalization.Native.a"/>
       <DirectPInvoke Include="libSystem.Globalization.Native" />
-      <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -Wl,-Bdynamic" />
+      <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
+      <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
@@ -86,6 +88,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Globalization.Native/local_build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' == 'true'"/>
 
     <ItemGroup>
+      <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true'" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetOS)' != 'OSX' and '$(TargetTriple)' != ''" />

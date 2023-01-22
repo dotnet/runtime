@@ -12,12 +12,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._NotSupported
 {
     public static partial class Program
     {
-        private static void Vector64BooleanAsDouble()
+        [Fact]
+        public static void Vector64BooleanAsDouble()
         {
             bool succeeded = false;
 

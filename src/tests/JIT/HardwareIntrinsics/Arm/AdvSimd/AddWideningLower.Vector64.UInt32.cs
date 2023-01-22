@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void AddWideningLower_Vector64_UInt32()
+        [Fact]
+        public static void AddWideningLower_Vector64_UInt32()
         {
             var test = new SimpleBinaryOpTest__AddWideningLower_Vector64_UInt32();
 

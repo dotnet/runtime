@@ -1789,7 +1789,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = nullptr;
     info.compFullName   = nullptr;
 
-    info.compMethodName = eeGetMethodName(methodHnd, nullptr);
+    info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
     info.compPerfScore  = 0.0;
@@ -1968,6 +1968,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
+
+    m_preferredInitCctor = CORINFO_HELP_UNDEF;
 }
 
 /*****************************************************************************
@@ -4746,29 +4748,29 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
     {
-        bool doSsa           = true;
-        bool doEarlyProp     = true;
-        bool doValueNum      = true;
-        bool doLoopHoisting  = true;
-        bool doCopyProp      = true;
-        bool doBranchOpt     = true;
-        bool doCse           = true;
-        bool doAssertionProp = true;
-        bool doRangeAnalysis = true;
-        bool doIfConversion  = true;
-        int  iterations      = 1;
+        bool doSsa                     = true;
+        bool doEarlyProp               = true;
+        bool doValueNum                = true;
+        bool doLoopHoisting            = true;
+        bool doCopyProp                = true;
+        bool doBranchOpt               = true;
+        bool doCse                     = true;
+        bool doAssertionProp           = true;
+        bool doRangeAnalysis           = true;
+        bool doVNBasedDeadStoreRemoval = true;
+        int  iterations                = 1;
 
 #if defined(OPT_CONFIG)
-        doSsa           = (JitConfig.JitDoSsa() != 0);
-        doEarlyProp     = doSsa && (JitConfig.JitDoEarlyProp() != 0);
-        doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
-        doLoopHoisting  = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
-        doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
-        doBranchOpt     = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
-        doCse           = doValueNum;
-        doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
-        doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
-        doIfConversion  = doIfConversion && (JitConfig.JitDoIfConversion() != 0);
+        doSsa                     = (JitConfig.JitDoSsa() != 0);
+        doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
+        doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
+        doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
+        doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
+        doCse                     = doValueNum;
+        doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
+        doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
         if (opts.optRepeat)
         {
@@ -4850,18 +4852,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
             }
 
-            if (doIfConversion)
-            {
-                // If conversion
-                //
-                DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-            }
-
             if (doRangeAnalysis)
             {
                 // Bounds check elimination via range analysis
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
+            }
+
+            if (doVNBasedDeadStoreRemoval)
+            {
+                // Note: this invalidates SSA and value numbers on tree nodes.
+                //
+                DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
             if (fgModified)
@@ -4900,6 +4902,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
+
+        // If conversion
+        //
+        DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
         // Optimize block order
         //
@@ -8598,7 +8604,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%I64u,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -8609,9 +8615,9 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     comp->m_inlineStrategy->DumpCsvData(s_csvFile);
 
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
-    fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
-    fprintf(s_csvFile, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%I64u,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
+    fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
+    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9294,7 +9300,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         genTreeOps op = tree->OperGet();
         switch (op)
         {
-
             case GT_LCL_VAR:
             case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
@@ -9365,9 +9370,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_TGT_HEAP]");
                 }
-                if (tree->gtFlags & GTF_IND_TLS_REF)
+                if (tree->gtFlags & GTF_IND_REQ_ADDR_IN_REG)
                 {
-                    chars += printf("[IND_TLS_REF]");
+                    chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
                 if (tree->gtFlags & GTF_IND_ASG_LHS)
                 {
@@ -10089,10 +10094,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_storeBlkSrc++;
                 break;
 
-            case DoNotEnregisterReason::OneAsgRetyping:
-                m_oneAsgRetyping++;
-                break;
-
             case DoNotEnregisterReason::SwizzleArg:
                 m_swizzleArg++;
                 break;
@@ -10227,7 +10228,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
-    PRINT_STATS(m_oneAsgRetyping, notEnreg);
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);

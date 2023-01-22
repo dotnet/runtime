@@ -26,7 +26,7 @@ public struct Ptr<T> where T: class
 
 class Runtime_764
 {
-    private static int Main(string[] args)
+    private static int Main()
     {
         Ptr<string> ptr = new Ptr<string>("Hello, world");
         

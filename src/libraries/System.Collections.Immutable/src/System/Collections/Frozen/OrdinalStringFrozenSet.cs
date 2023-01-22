@@ -40,7 +40,7 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected override ImmutableArray<string> ItemsCore => new ImmutableArray<string>(_items);
+        private protected override string[] ItemsCore => _items;
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_items);

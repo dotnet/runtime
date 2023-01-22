@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Text.Unicode;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Globalization
 {
@@ -75,7 +76,62 @@ namespace System.Globalization
             return OrdinalCasing.CompareStringIgnoreCase(ref strA, lengthA, ref strB, lengthB);
         }
 
+        private static bool EqualsIgnoreCase_Vector128(ref char charA, ref char charB, int length)
+        {
+            Debug.Assert(length >= Vector128<ushort>.Count);
+            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+            nuint lengthU = (nuint)length;
+            nuint lengthToExamine = lengthU - (nuint)Vector128<ushort>.Count;
+            nuint i = 0;
+            Vector128<ushort> vec1;
+            Vector128<ushort> vec2;
+            do
+            {
+                vec1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                vec2 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+
+                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                if (!Utf16Utility.Vector128OrdinalIgnoreCaseAscii(vec1, vec2))
+                {
+                    return false;
+                }
+
+                i += (nuint)Vector128<ushort>.Count;
+            } while (i <= lengthToExamine);
+
+            // Use scalar path for trailing elements
+            return i == lengthU || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+
+        NON_ASCII:
+            if (Utf16Utility.AllCharsInVector128AreAscii(vec1) || Utf16Utility.AllCharsInVector128AreAscii(vec2))
+            {
+                // No need to use the fallback if one of the inputs is full-ASCII
+                return false;
+            }
+
+            // Fallback for Non-ASCII inputs
+            return CompareStringIgnoreCase(
+                ref Unsafe.Add(ref charA, i), (int)(lengthU - i),
+                ref Unsafe.Add(ref charB, i), (int)(lengthU - i)) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsIgnoreCase(ref char charA, ref char charB, int length)
+        {
+            if (!Vector128.IsHardwareAccelerated || length < Vector128<ushort>.Count)
+            {
+                return EqualsIgnoreCase_Scalar(ref charA, ref charB, length);
+            }
+
+            return EqualsIgnoreCase_Vector128(ref charA, ref charB, length);
+        }
+
+        internal static bool EqualsIgnoreCase_Scalar(ref char charA, ref char charB, int length)
         {
             IntPtr byteOffset = IntPtr.Zero;
 

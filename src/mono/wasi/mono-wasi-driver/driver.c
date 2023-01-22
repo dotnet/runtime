@@ -46,7 +46,6 @@ void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_ilgen_init (void);
-void mono_marshal_lightweight_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
 void mono_icall_table_init (void);

@@ -4,6 +4,8 @@
     },
     "Browser" : {
     },
+    "wasi" : {
+    },
     "Linux": {
       "#import": [
           "Unix"

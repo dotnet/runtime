@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void ShiftArithmeticRoundedSaturateScalar_Vector64_Int64()
+        [Fact]
+        public static void ShiftArithmeticRoundedSaturateScalar_Vector64_Int64()
         {
             var test = new SimpleBinaryOpTest__ShiftArithmeticRoundedSaturateScalar_Vector64_Int64();
 

@@ -63,7 +63,7 @@ typedef enum {
 #define MINT_IS_MOV(op) ((op) >= MINT_MOV_I4_I1 && (op) <= MINT_MOV_VT)
 #define MINT_IS_UNCONDITIONAL_BRANCH(op) ((op) >= MINT_BR && (op) <= MINT_CALL_HANDLER_S)
 #define MINT_IS_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BLT_UN_R8_S)
-#define MINT_IS_UNOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BRTRUE_R8_S)
+#define MINT_IS_UNOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BRTRUE_I8_S)
 #define MINT_IS_BINOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BEQ_I4 && (op) <= MINT_BLT_UN_R8_S)
 #define MINT_IS_SUPER_BRANCH(op) ((op) >= MINT_BRFALSE_I4_SP && (op) <= MINT_BLT_UN_I8_IMM_SP)
 #define MINT_IS_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_JIT_CALL)

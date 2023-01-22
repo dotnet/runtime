@@ -29,7 +29,7 @@ struct BigCopy
 
 static class Repro
 {
-    static int Main(string[] args)
+    static int Main()
     {
         BigCopy b1, b2, b3;
         b1.gc = "me";

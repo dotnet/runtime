@@ -1713,7 +1713,7 @@ namespace TestStructFields
             return 100;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             return Test();
         }

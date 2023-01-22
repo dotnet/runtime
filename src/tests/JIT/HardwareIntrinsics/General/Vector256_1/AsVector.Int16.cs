@@ -14,12 +14,14 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256_1
 {
     public static partial class Program
     {
-        private static void AsVectorInt16()
+        [Fact]
+        public static void AsVectorInt16()
         {
             var test = new VectorAs__AsVectorInt16();
 

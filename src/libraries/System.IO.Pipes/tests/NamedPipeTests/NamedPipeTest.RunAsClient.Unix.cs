@@ -19,10 +19,9 @@ namespace System.IO.Pipes.Tests
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe uint geteuid();
 
-        public static bool IsSuperUserAndRemoteExecutorSupported => geteuid() == 0 && RemoteExecutor.IsSupported;
+        public static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
-        [ConditionalFact(nameof(IsSuperUserAndRemoteExecutorSupported))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/0")]
         public void RunAsClient_Unix()
         {
@@ -38,7 +37,7 @@ namespace System.IO.Pipes.Tests
             using (var outbound = new NamedPipeServerStream(pipeName, PipeDirection.Out))
             using (var handle = RemoteExecutor.Invoke(new Action<string, string>(ClientConnectAsID), pipeName, pairIDString))
             {
-                // Connect as the unpriveleged user, but RunAsClient as the superuser
+                // Connect as the unprivileged user, but RunAsClient as the superuser
                 outbound.WaitForConnection();
                 Assert.NotEqual(-1, seteuid(0));
 

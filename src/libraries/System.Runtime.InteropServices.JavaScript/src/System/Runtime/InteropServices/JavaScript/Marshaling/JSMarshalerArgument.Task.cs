@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    object? result = JSHostImplementation.GetTaskResult(task);
+                    object? result = JSHostImplementation.GetTaskResultDynamic(task);
                     slot.JSHandle = CreateResolvedPromise(result, MarshalResult);
                     return;
                 }
@@ -161,7 +161,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
-                        object? result = JSHostImplementation.GetTaskResult(task);
+                        object? result = JSHostImplementation.GetTaskResultDynamic(task);
 
                         ResolvePromise(promise, result, MarshalResult);
                     }

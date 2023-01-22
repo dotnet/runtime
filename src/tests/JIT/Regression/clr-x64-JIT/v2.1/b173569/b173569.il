@@ -27,7 +27,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module ddb173569.exe
 // MVID: {0019E28F-AD1E-40AC-B6B2-5554D213CAAE}
 .imagebase 0x00400000
 .file alignment 0x00000200

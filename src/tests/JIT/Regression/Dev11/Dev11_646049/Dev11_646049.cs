@@ -12,7 +12,7 @@ class Test
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    static int Main(string[] args)
+    static int Main()
     {
         double expected = -4.54403989493052E+18;
         double value = -66876.654654;

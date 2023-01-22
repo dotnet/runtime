@@ -12,12 +12,15 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.General
+namespace JIT.HardwareIntrinsics.General._Vector256
 {
     public static partial class Program
     {
-        private static void DotSingle()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75791")]
+        [Fact]
+        public static void DotSingle()
         {
             var test = new VectorBinaryOpTest__DotSingle();
 

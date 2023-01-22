@@ -324,6 +324,17 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void CursorLeftFromLastColumn()
+        {
+            Console.CursorLeft = Console.BufferWidth - 1;
+            Console.Write("2");
+            Console.CursorLeft = 0;
+            Console.Write("1");
+            Console.WriteLine();
+            AssertUserExpectedResults("single line with '1' at the start and '2' at the end.");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
         public static void ResizeTest()
         {

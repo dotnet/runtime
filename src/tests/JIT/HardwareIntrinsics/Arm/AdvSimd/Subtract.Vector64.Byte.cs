@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void Subtract_Vector64_Byte()
+        [Fact]
+        public static void Subtract_Vector64_Byte()
         {
             var test = new SimpleBinaryOpTest__Subtract_Vector64_Byte();
 

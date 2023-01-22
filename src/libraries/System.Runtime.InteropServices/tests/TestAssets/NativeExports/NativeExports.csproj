@@ -1,12 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <AssemblyName>Microsoft.Interop.Tests.NativeExports</AssemblyName>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AssemblyName>Microsoft.Interop.Tests.NativeExports</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <DnneAddGeneratedBinaryToProject>true</DnneAddGeneratedBinaryToProject>
     <DnneGenRollForward>Major</DnneGenRollForward>
+    <!-- NativeExports should use the live built apphost. We need to define a dependency
+         to the apphost to make sure that it is built before this project invokes DNNE. -->
+    <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
@@ -14,6 +17,18 @@
       '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
       '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
+
+  <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
+       Issue: https://github.com/dotnet/runtime/issues/58109. -->
+  <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true'">
+    <KnownAppHostPack Include="Microsoft.NETCore.App"
+                      ExcludedRuntimeIdentifiers="android"
+                      AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
+                      AppHostPackVersion="7.0.0"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
+                      TargetFramework="$(NetCoreAppCurrent)"
+                      Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DNNE" Version="$(DNNEVersion)" />

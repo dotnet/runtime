@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Describes how a generic type instance is composed - the number of generic arguments, their types,
     /// and variance information.
     /// </summary>
-    public class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
+    public class GenericCompositionNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
         private GenericCompositionDetails _details;
 
@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.FoldableReadOnlyDataSection;
@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             bool hasVariance = _details.Variance != null;
 

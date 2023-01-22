@@ -204,7 +204,8 @@ namespace Internal.Cryptography
             if (aCurve.IsNamed)
             {
                 // On Windows we care about FriendlyName, on Unix we care about Value
-                return (aCurve.Oid.Value == bCurve.Oid.Value && aCurve.Oid.FriendlyName == bCurve.Oid.FriendlyName);
+                return aCurve.Oid.Value == bCurve.Oid.Value &&
+                    string.Equals(aCurve.Oid.FriendlyName, bCurve.Oid.FriendlyName, StringComparison.OrdinalIgnoreCase);
             }
 
             if (!aCurve.IsExplicit)

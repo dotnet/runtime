@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 static class GitHub_19674
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int returnVal = 100;
         try

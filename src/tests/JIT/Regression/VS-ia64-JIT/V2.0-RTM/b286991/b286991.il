@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib {}
-.assembly test {}
+.assembly 'b286991' {}
 
 .method public static int32 Main()
 {

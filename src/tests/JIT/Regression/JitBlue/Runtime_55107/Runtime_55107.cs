@@ -13,7 +13,7 @@ namespace Runtime_55107
         {
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             G g = new G();
 

@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib {}
 
-.assembly 'test' {
+.assembly 'b423755' {
 .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 )
 }
 

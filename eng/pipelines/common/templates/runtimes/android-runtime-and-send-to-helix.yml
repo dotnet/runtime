@@ -7,7 +7,6 @@ parameters:
   testGroup: ''
   liveLibrariesBuildConfig: ''
   helixQueues: ''
-  stagedBuild: false
   displayNameArgs: ''
   runtimeVariant: ''
   variables: {}

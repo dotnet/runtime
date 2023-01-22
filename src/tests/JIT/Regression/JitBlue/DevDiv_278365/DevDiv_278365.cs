@@ -31,7 +31,7 @@ internal class Program
         }        
     }
 	
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

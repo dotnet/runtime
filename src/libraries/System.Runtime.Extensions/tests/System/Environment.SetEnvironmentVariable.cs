@@ -160,7 +160,7 @@ namespace System.Tests
                 shouldCleanUp = false;
                 Assert.True(target == EnvironmentVariableTarget.Machine, "only machine target should have access issues");
                 Assert.True(PlatformDetection.IsWindows, "and it should be Windows");
-                Assert.False(PlatformDetection.IsWindowsAndElevated, "and we shouldn't be elevated");
+                Assert.False(PlatformDetection.IsPrivilegedProcess, "and we shouldn't be elevated");
             }
             finally
             {

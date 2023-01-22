@@ -9,12 +9,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bug222
+.assembly 'b90129'
 {
   
   
 }
-.module bug222.exe
 // MVID: {0AED659D-8C3D-40C8-B3EE-DFCFBE336622}
 
 

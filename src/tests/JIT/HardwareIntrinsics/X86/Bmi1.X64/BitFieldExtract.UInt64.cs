@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Bmi1.X64
 {
     public static partial class Program
     {
-        private static void BitFieldExtractUInt64()
+        [Fact]
+        public static void BitFieldExtractUInt64()
         {
             var test = new ScalarBinaryOpTest__BitFieldExtractUInt64();
 

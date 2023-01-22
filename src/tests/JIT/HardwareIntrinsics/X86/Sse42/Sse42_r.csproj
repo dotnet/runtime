@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Sse42_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -9,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompareGreaterThan.Int64.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="Program.Sse42.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

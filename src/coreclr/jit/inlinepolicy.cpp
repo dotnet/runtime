@@ -454,6 +454,10 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 // bail out, if necessary, during importation
                 break;
 
+            case InlineObservation::CALLSITE_INSIDE_THROW_BLOCK:
+                m_InsideThrowBlock = value;
+                break;
+
             default:
                 // Ignore the remainder for now
                 break;
@@ -485,7 +489,7 @@ bool DefaultPolicy::BudgetCheck() const
     // so it performs the actual check.
     //
     InlineStrategy* strategy   = m_RootCompiler->m_inlineStrategy;
-    const bool      overBudget = strategy->BudgetCheck(m_CodeSize);
+    const bool      overBudget = strategy->BudgetCheck(EstimatedTotalILSize());
 
     if (overBudget)
     {
@@ -573,6 +577,15 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
             assert(value != 0);
             m_CodeSize = static_cast<unsigned>(value);
 
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            unsigned maxCodeSize      = m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize();
+            if (m_InsideThrowBlock)
+            {
+                // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                alwaysInlineSize /= 2;
+                maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
+            }
+
             // Now that we know size and forceinline state,
             // update candidacy.
             if (m_IsForceInline)
@@ -580,12 +593,12 @@ void DefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            else if (m_CodeSize <= alwaysInlineSize)
             {
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_CodeSize <= m_RootCompiler->m_inlineStrategy->GetMaxInlineILSize())
+            else if (m_CodeSize <= maxCodeSize)
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -997,29 +1010,30 @@ int DefaultPolicy::CodeSizeEstimate()
 
 void DefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
 {
-    XATTR_R8(m_Multiplier);
-    XATTR_I4(m_CodeSize);
-    XATTR_I4(m_CallsiteFrequency);
-    XATTR_I4(m_CallsiteDepth);
-    XATTR_I4(m_InstructionCount);
-    XATTR_I4(m_LoadStoreCount);
-    XATTR_I4(m_ArgFeedsTest);
-    XATTR_I4(m_ArgFeedsConstantTest);
-    XATTR_I4(m_ArgFeedsRangeCheck);
-    XATTR_I4(m_ConstantArgFeedsConstantTest);
-    XATTR_I4(m_CalleeNativeSizeEstimate);
-    XATTR_I4(m_CallsiteNativeSizeEstimate);
-    XATTR_B(m_IsForceInline);
-    XATTR_B(m_IsForceInlineKnown);
-    XATTR_B(m_IsInstanceCtor);
-    XATTR_B(m_IsFromPromotableValueClass);
-    XATTR_B(m_HasSimd);
-    XATTR_B(m_LooksLikeWrapperMethod);
-    XATTR_B(m_MethodIsMostlyLoadStore);
-    XATTR_B(m_CallsiteIsInTryRegion);
-    XATTR_B(m_CallsiteIsInLoop);
-    XATTR_B(m_IsNoReturn);
-    XATTR_B(m_IsNoReturnKnown);
+    XATTR_R8(m_Multiplier)
+    XATTR_I4(m_CodeSize)
+    XATTR_I4(m_CallsiteFrequency)
+    XATTR_I4(m_CallsiteDepth)
+    XATTR_I4(m_InstructionCount)
+    XATTR_I4(m_LoadStoreCount)
+    XATTR_I4(m_ArgFeedsTest)
+    XATTR_I4(m_ArgFeedsConstantTest)
+    XATTR_I4(m_ArgFeedsRangeCheck)
+    XATTR_I4(m_ConstantArgFeedsConstantTest)
+    XATTR_I4(m_CalleeNativeSizeEstimate)
+    XATTR_I4(m_CallsiteNativeSizeEstimate)
+    XATTR_B(m_IsForceInline)
+    XATTR_B(m_IsForceInlineKnown)
+    XATTR_B(m_IsInstanceCtor)
+    XATTR_B(m_IsFromPromotableValueClass)
+    XATTR_B(m_HasSimd)
+    XATTR_B(m_LooksLikeWrapperMethod)
+    XATTR_B(m_MethodIsMostlyLoadStore)
+    XATTR_B(m_CallsiteIsInTryRegion)
+    XATTR_B(m_CallsiteIsInLoop)
+    XATTR_B(m_IsNoReturn)
+    XATTR_B(m_IsNoReturnKnown)
+    XATTR_B(m_InsideThrowBlock)
 }
 #endif
 
@@ -1351,12 +1365,20 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
             }
 
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                // Inline only small code in BBJ_THROW blocks, e.g. <= 8 bytes of IL
+                alwaysInlineSize /= 2;
+                maxCodeSize = min(alwaysInlineSize + 1, maxCodeSize);
+            }
+
             if (m_IsForceInline)
             {
                 // Candidate based on force inline
                 SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
             }
-            else if (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE)
+            else if (m_CodeSize <= alwaysInlineSize)
             {
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
@@ -1416,6 +1438,41 @@ void ExtendedDefaultPolicy::NoteDouble(InlineObservation obs, double value)
     // So far, CALLSITE_PROFILE_FREQUENCY is the only "double" property.
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
     m_ProfileFrequency = value;
+}
+
+//------------------------------------------------------------------------
+// EstimatedTotalILSize: Estimate final IL size to import.
+//    ExtendedDefaultPolicy has a better understanding on how many branches
+//    are foldable so we can roughly predict the final IL size the JIT will
+//    have to work with (all foldable branches will be eliminated early in the
+//    importer so they won't affect the time it takes to compile the callee)
+//
+// Return value:
+//    Estimated IL size to import
+
+unsigned ExtendedDefaultPolicy::EstimatedTotalILSize() const
+{
+    INT64 codeSize = (INT64)m_CodeSize;
+
+    // We assume each foldable branch reduces total IL size by 35 bytes, it's
+    // a pretty conservative guess, e.g. the following branch:
+    //
+    //  if (typeof(TKey) == typeof(byte))
+    //      return (byte)(object)left < (byte)(object)right;
+    //
+    // is recognized as foldable and removes 52 bytes of IL if TKey is not byte.
+    //
+    codeSize -= (INT64)m_FoldableBranch * 35;
+
+    // Foldable switches are usually able to fold more than foldable branches
+    //
+    codeSize -= (INT64)m_FoldableSwitch * 70;
+
+    // Assume we can't fold more than 70% of IL
+    //
+    codeSize = codeSize < (INT64)(m_CodeSize * 0.3) ? (INT64)(m_CodeSize * 0.3) : codeSize;
+
+    return (unsigned)codeSize;
 }
 
 //------------------------------------------------------------------------
@@ -1793,6 +1850,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_B(m_NonGenericCallsGeneric)
     XATTR_B(m_IsCallsiteInNoReturnRegion)
     XATTR_B(m_HasProfileWeights)
+    XATTR_B(m_InsideThrowBlock)
 }
 #endif
 

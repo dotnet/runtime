@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <NumberOfStripesToUseInStress>20</NumberOfStripesToUseInStress>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="Arm/**/*_ro.csproj" />
+    <MergedWrapperProjectReference Include="General/**/*_ro.csproj" />
+    <MergedWrapperProjectReference Include="X86/**/*_ro.csproj" />
+    <ProjectReference Include="@(MergedWrapperProjectReference)" />
+  </ItemGroup>
+</Project>

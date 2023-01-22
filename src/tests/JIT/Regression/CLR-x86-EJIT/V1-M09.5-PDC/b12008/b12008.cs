@@ -19,7 +19,7 @@ class Bug
         Func(ref str[0]);
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         (new Bug()).run();
         Console.WriteLine("Passed");

@@ -3,14 +3,9 @@
 
 
 using System;
-using System.Runtime;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 using Internal.NativeFormat;
@@ -385,43 +380,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             Debug.Assert(methodPointer != IntPtr.Zero && dictionaryPointer != IntPtr.Zero);
-
-#if FEATURE_UNIVERSAL_GENERICS
-            if (templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
-            {
-                // Check if we need to wrap the method pointer into a calling convention converter thunk
-                if (!TypeLoaderEnvironment.Instance.MethodSignatureHasVarsNeedingCallingConventionConverter(context, nameAndSignature.Signature))
-                {
-                    TypeSystemContextFactory.Recycle(context);
-                    return true;
-                }
-
-                RuntimeTypeHandle[] typeArgs = Array.Empty<RuntimeTypeHandle>();
-
-                if (RuntimeAugments.IsGenericType(targetTypeHandle))
-                {
-                    RuntimeAugments.GetGenericInstantiation(targetTypeHandle, out typeArgs);
-                }
-
-                // Create a CallingConventionConverter to call the method correctly
-                IntPtr thunkPtr = CallConverterThunk.MakeThunk(
-                    CallConverterThunk.ThunkKind.StandardToGenericInstantiating,
-                    methodPointer,
-                    nameAndSignature.Signature,
-                    dictionaryPointer,
-                    typeArgs,
-                    genericMethodArgumentHandles);
-
-                Debug.Assert(thunkPtr != IntPtr.Zero);
-
-                methodPointer = thunkPtr;
-                // Set dictionaryPointer to null so we don't make a fat function pointer around the whole thing.
-                dictionaryPointer = IntPtr.Zero;
-
-                // TODO! add a new call converter thunk that will pass the instantiating arg through and use a fat function pointer.
-                // should allow us to make fewer thunks.
-            }
-#endif
 
             TypeSystemContextFactory.Recycle(context);
             return true;

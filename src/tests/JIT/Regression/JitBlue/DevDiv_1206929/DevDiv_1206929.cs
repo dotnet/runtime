@@ -26,7 +26,7 @@ namespace ReadMemBytes
 
             return count;
         }
-        static unsafe int Main(string[] args)
+        static unsafe int Main()
         {
             byte* buffer = stackalloc byte[4];
             buffer[0] = 0;

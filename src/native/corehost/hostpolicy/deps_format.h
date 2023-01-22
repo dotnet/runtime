@@ -30,7 +30,7 @@ public:
         : m_file_exists(false)
         , m_valid(false)
     {
-        m_valid = load(is_framework_dependent, deps_path, graph == nullptr ? m_rid_fallback_graph : *graph);
+        load(is_framework_dependent, deps_path, graph == nullptr ? m_rid_fallback_graph : *graph);
     }
 
     const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type) const
@@ -62,11 +62,11 @@ public:
     }
 
 private:
-    bool load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
-    bool load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
-    bool load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
-    bool process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
-    bool process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets);
+    void load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
+    void load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
+    void load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
+    void process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
+    void process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets);
 
     void reconcile_libraries_with_targets(
         const pal::string_t& deps_path,
@@ -75,7 +75,7 @@ private:
         const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn);
 
     pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
-    bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);
+    void perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);
 
     std::vector<deps_entry_t> m_deps_entries[deps_entry_t::asset_types::count];
 

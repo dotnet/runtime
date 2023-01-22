@@ -53,7 +53,7 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 5. Set `Command=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`. This points to the folder where the built runtime binaries are present.
 6. Set `Command Arguments=<managed app you wish to run>` (e.g. HelloWorld.dll).
 7. Set `Working Directory=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`. This points to the folder containing CoreCLR binaries.
-8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `netcoreapp3.1` `net5.0`, `net6.0`, or `net7.0`. A few notes on this step:
+8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `net6.0`, `net7.0` or `net8.0`. A few notes on this step:
 
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
@@ -83,7 +83,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net7.0-windows-Debug-x64
+          // for example net8.0-windows-Debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],

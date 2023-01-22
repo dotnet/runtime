@@ -394,14 +394,16 @@ static const unsigned char __lookuptable_s[] = {
  /* 'u' */  0x08,
  /* 'v' */  0x00,
  /* 'w' */  0x07,
- /* 'x' */  0x08
+ /* 'x' */  0x08,
+ /* 'y' */  0x00,
+ /* 'z' */  0x57
 };
 //#endif  /* defined (_UNICODE) || defined (CPRFLAG) */
 
 #endif  /* FORMAT_VALIDATIONS */
 
 #define FIND_CHAR_CLASS(lookuptbl, c)      \
-        ((c) < _T(' ') || (c) > _T('x') ? \
+        ((c) < _T(' ') || (c) > _T('z') ? \
             CH_OTHER            \
             :               \
         (enum CHARTYPE)(lookuptbl[(c)-_T(' ')] & 0xF))
@@ -776,6 +778,7 @@ int __cdecl _output (
                 }
                 break;
 
+            case _T('z'):
             case _T('I'):
                 /*
                  * In order to handle the I, I32, and I64 size modifiers, we

@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._AdvSimd
 {
     public static partial class Program
     {
-        private static void ShiftRightLogicalNarrowingUpper_Vector128_Int32_1()
+        [Fact]
+        public static void ShiftRightLogicalNarrowingUpper_Vector128_Int32_1()
         {
             var test = new ImmBinaryOpTest__ShiftRightLogicalNarrowingUpper_Vector128_Int32_1();
 

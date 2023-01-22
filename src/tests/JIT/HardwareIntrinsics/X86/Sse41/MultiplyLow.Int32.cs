@@ -13,12 +13,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Sse41
 {
     public static partial class Program
     {
-        private static void MultiplyLowInt32()
+        [Fact]
+        public static void MultiplyLowInt32()
         {
             var test = new SimpleBinaryOpTest__MultiplyLowInt32();
 

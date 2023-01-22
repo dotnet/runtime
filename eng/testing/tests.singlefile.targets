@@ -6,7 +6,7 @@
 
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
 
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>

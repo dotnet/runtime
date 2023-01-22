@@ -2504,7 +2504,9 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     // Too many tests may time out in CI or various stress modes
-    const int MaxGroupSize = 100;
+    // -- Disable this splitting as it is no longer known to be useful, but specifying the group size as a very large number
+    //    Instead simply run fewer tests in GC stress mode
+    const int MaxGroupSize = 1000000;
 
     var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
 
@@ -2543,7 +2545,7 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
     {
         debugProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -2554,7 +2556,7 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
 
         releaseProjectFile.WriteLine(@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -2563,19 +2565,22 @@ private static void ProcessInputGroup(string groupName, int index, (string templ
   </PropertyGroup>
   <ItemGroup>");
 
-        testListFile.WriteLine(@"// Licensed to the .NET Foundation under one or more agreements.
+        testListFile.Write(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.Arm
+namespace JIT.HardwareIntrinsics.Arm._");
+	testListFile.Write(groupName);
+    testListFile.WriteLine(@"
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {");
+            JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
+");
 
         foreach (var input in inputs)
         {
@@ -2594,7 +2599,7 @@ namespace JIT.HardwareIntrinsics.Arm
   </ItemGroup>
 </Project>");
 
-        testListFile.WriteLine(@"            };
+        testListFile.WriteLine(@"
         }
     }
 }");
@@ -2610,8 +2615,6 @@ private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter rel
     debugProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
     releaseProjectFile.WriteLine($@"    <Compile Include=""{fileName}.cs"" />");
 
-    // Ex: ["Add.Vector128.Single"] = Add_Vector128_Single
-    testListFile.WriteLine($@"                [""{fileName}""] = {testName},");
 
     var testFileName = Path.Combine("..", groupName, $"{fileName}.cs");
     var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
@@ -2635,6 +2638,7 @@ private static void ProcessInput(StreamWriter debugProjectFile, StreamWriter rel
     {
         template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
     }
+    template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{groupName}");
 
     File.WriteAllText(testFileName, template);
 }

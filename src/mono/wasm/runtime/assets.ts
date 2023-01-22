@@ -432,7 +432,7 @@ export async function instantiate_wasm_asset(
     pendingAsset: AssetEntryInternal,
     wasmModuleImports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback,
-) {
+): Promise<void> {
     mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
     const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
