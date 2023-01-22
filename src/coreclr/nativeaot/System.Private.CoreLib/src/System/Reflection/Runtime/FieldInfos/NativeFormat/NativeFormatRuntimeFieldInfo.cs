@@ -139,7 +139,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, Array.Empty<CustomAttributeData>(), raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()
