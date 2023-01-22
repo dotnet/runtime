@@ -4325,6 +4325,7 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
+    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
