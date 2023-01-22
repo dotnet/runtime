@@ -1473,6 +1473,7 @@ UnwindOutOfCurrentManagedFrame:
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
             InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
+            m_dwFlags |= UnwoundReversePInvoke;
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
     }
