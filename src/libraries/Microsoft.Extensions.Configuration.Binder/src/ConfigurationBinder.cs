@@ -530,33 +530,29 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
+            Type factoryType = typeof(DictionaryInterfaceFactory<,>).MakeGenericType(keyType, valueType);
+            DictionaryInterfaceFactory factory = (DictionaryInterfaceFactory)Activator.CreateInstance(factoryType)!;
 
-            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
-            PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
-            PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
+            object dictionary = factory.Copy(source);
 
-            object dictionary = Activator.CreateInstance(genericType)!;
-
-            var orig = source as IEnumerable;
-            object?[] arguments = new object?[2];
-
-            if (orig != null)
-            {
-                foreach (object? item in orig)
-                {
-                    object? k = keyMethod.GetMethod!.Invoke(item, null);
-                    object? v = valueMethod.GetMethod!.Invoke(item, null);
-                    arguments[0] = k;
-                    arguments[1] = v;
-                    addMethod.Invoke(dictionary, arguments);
-                }
-            }
-
-            BindDictionary(dictionary, genericType, config, options);
+            BindDictionary(dictionary, dictionary.GetType(), config, options);
 
             return dictionary;
+        }
+
+        private abstract class DictionaryInterfaceFactory
+        {
+            public abstract object Copy(object? source);
+        }
+
+        private sealed class DictionaryInterfaceFactory<TKey, TValue>
+            : DictionaryInterfaceFactory
+            where TKey : notnull
+        {
+            public override object Copy(object? source)
+                => source != null
+                    ? new Dictionary<TKey, TValue>((IDictionary<TKey, TValue>)source)
+                    : new Dictionary<TKey, TValue>();
         }
 
         // Binds and potentially overwrites a dictionary object.
@@ -747,21 +743,9 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            Type genericType = typeof(HashSet<>).MakeGenericType(keyType);
-            object instance = Activator.CreateInstance(genericType)!;
-
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
-
-            object?[] arguments = new object?[1];
-
-            if (source != null)
-            {
-                foreach (object? item in source)
-                {
-                    arguments[0] = item;
-                    addMethod.Invoke(instance, arguments);
-                }
-            }
+            Type factoryType = typeof(SetInterfaceFactory<>).MakeGenericType(keyType);
+            SetInterfaceFactory factory = (SetInterfaceFactory) Activator.CreateInstance(factoryType)!;
+            object instance = factory.Copy(source);
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -775,9 +759,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (itemBindingPoint.HasNewValue)
                     {
-                        arguments[0] = itemBindingPoint.Value;
-
-                        addMethod.Invoke(instance, arguments);
+                        factory.AddElement(instance, itemBindingPoint.Value);
                     }
                 }
                 catch (Exception ex)
@@ -791,6 +773,40 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return instance;
+        }
+
+        private abstract class SetInterfaceFactory
+        {
+            public abstract object Copy(IEnumerable? source);
+
+            public abstract void AddElement(object instance, object? value);
+        }
+
+        private sealed class SetInterfaceFactory<T>
+            : SetInterfaceFactory
+        {
+            public override object Copy(IEnumerable? source)
+                => source switch
+                {
+                    null => new HashSet<T>(),
+                    IEnumerable<T> collection => new HashSet<T>(collection),
+                    _ => CopyFromNonGeneric(source)
+                };
+
+            private static object CopyFromNonGeneric(IEnumerable source)
+            {
+                HashSet<T> result = new HashSet<T>();
+                foreach (T item in source)
+                {
+                    result.Add(item);
+                }
+                return result;
+            }
+
+            public override void AddElement(object instance, object? value)
+            {
+                ((HashSet<T>)instance).Add((T)value!);
+            }
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
