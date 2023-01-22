@@ -81,7 +81,9 @@ public:
                     bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                          uint32_t        flags,
                           REGDISPLAY *    pRegisterSet,                 // in/out
+                          bool *          pFoundReversePInvoke,         // out
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,

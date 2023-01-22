@@ -535,7 +535,9 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 }
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
+                                      uint32_t        flags,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
+                                      bool * pFoundReversePInvoke,                  // out
                                       PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
@@ -547,10 +549,13 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    *pFoundReversePInvoke = (unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0;
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
-    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0 &&
+         (flags & USFF_UsePreviousTransitionFrame) != 0)
     {
         // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->mainRuntimeFunction == pNativeMethodInfo->runtimeFunction);
