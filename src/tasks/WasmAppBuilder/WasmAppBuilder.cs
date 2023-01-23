@@ -198,7 +198,8 @@ public class WasmAppBuilder : Task
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.ChangeExtension(assembly, ".webcil");
-                FileCopyChecked(tmpWebcil, Path.Combine(asmRootPath, Path.GetFileName(finalWebcil)), "Assemblies");
+                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                    _fileWrites.Add(finalWebcil);
             }
             else
             {
@@ -284,7 +285,8 @@ public class WasmAppBuilder : Task
                     var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
                     webcilWriter.ConvertToWebcil();
                     var finalWebcil = Path.ChangeExtension(name, ".webcil");
-                    FileCopyChecked(tmpWebcil, Path.Combine(directory, finalWebcil), "SatelliteAssemblies");
+                    if (Utils.CopyIfDifferent (tmpWebcil, finalWebcil, useHash: true))
+                        _fileWrites.Add (finalWebcil);
                     config.Assets.Add(new SatelliteAssemblyEntry(finalWebcil, culture));
                 }
                 else
