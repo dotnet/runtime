@@ -83,6 +83,7 @@ namespace System
             }
 #pragma warning restore CA1822
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public byte* GetDigitsPointer()
             {
                 // This is safe to do since we are a ref struct
