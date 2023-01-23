@@ -17,8 +17,9 @@ public class XUnitLogChecker
     {
         if (args.Count() < 2)
         {
-            Console.WriteLine("The path to the log file and the name of the wrapper"
-                              + " are required for an accurate check and fixing.");
+            Console.WriteLine("[XUnitLogChecker]: The path to the log file and"
+                              + " the name of the wrapper are required for an"
+                              + " accurate check and fixing.");
             return -1;
         }
 
@@ -30,17 +31,18 @@ public class XUnitLogChecker
 
         string tempLogPath = Path.Combine(resultsDir, tempLogName);
         string finalLogPath = Path.Combine(resultsDir, finalLogName);
-        
+
         if (File.Exists(finalLogPath))
         {
-            Console.WriteLine($"Item '{wrapperName}' did complete successfully!");
+            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
+                              + " complete successfully!");
             return 0;
         }
 
         if (!File.Exists(tempLogPath))
         {
-            Console.WriteLine("No logs were found. Something went very wrong"
-                              + " with this item...");
+            Console.WriteLine("[XUnitLogChecker]: No logs were found. Something"
+                              + " went very wrong with this item...");
             return -2;
         }
 
@@ -117,7 +119,7 @@ public class XUnitLogChecker
 
         if (tags.Count == 0)
         {
-            Console.WriteLine($"\nXUnit log file '{xFile}' was A-OK!\n");
+            Console.WriteLine($"[XUnitLogChecker]: XUnit log file '{xFile}' was A-OK!");
         }
 
         // Write the closings for all the lone opened tags we found.
@@ -133,7 +135,7 @@ public class XUnitLogChecker
                 xsw.WriteLine($"</{tag}>");
         }
 
-        Console.WriteLine("\nXUnit log file has been fixed!\n");
+        Console.WriteLine("[XUnitLogChecker]: XUnit log file has been fixed!");
     }
 }
 
