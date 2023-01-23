@@ -27,7 +27,7 @@ namespace System.Reflection.Emit
 
         // Define literal for enum
 
-        public override FieldBuilder DefineLiteral(string literalName, object? literalValue)
+        protected override FieldBuilder DefineLiteralCore(string literalName, object? literalValue)
         {
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public override TypeInfo CreateTypeInfo()
+        protected override TypeInfo CreateTypeInfoCore()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
 
 
         // return the underlying field for the enum
-        public override FieldBuilder UnderlyingField => m_underlyingField;
+        protected override FieldBuilder UnderlyingFieldCore => m_underlyingField;
 
         public override string Name => m_typeBuilder.Name;
 
@@ -275,13 +275,13 @@ namespace System.Reflection.Emit
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_typeBuilder.SetCustomAttribute(con, binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             m_typeBuilder.SetCustomAttribute(customBuilder);
         }
@@ -316,13 +316,13 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
-        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
-        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             string s = GetRankString(rank);

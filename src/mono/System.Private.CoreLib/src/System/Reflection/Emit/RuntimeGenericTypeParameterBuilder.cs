@@ -61,17 +61,17 @@ namespace System.Reflection.Emit
             this.index = index;
         }
 
-        public override void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
+        protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             this.base_type = baseTypeConstraint ?? typeof(object);
         }
 
-        public override void SetInterfaceConstraints(params Type[]? interfaceConstraints)
+        protected override void SetInterfaceConstraintsCore(params Type[]? interfaceConstraints)
         {
             this.iface_constraints = interfaceConstraints;
         }
 
-        public override void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
+        protected override void SetGenericParameterAttributesCore(GenericParameterAttributes genericParameterAttributes)
         {
             this.attrs = genericParameterAttributes;
         }
@@ -424,10 +424,8 @@ namespace System.Reflection.Emit
             get { return mbuilder; }
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -443,9 +441,9 @@ namespace System.Reflection.Emit
         }
 
         // FIXME: "unverified implementation"
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         private static Exception not_supported()

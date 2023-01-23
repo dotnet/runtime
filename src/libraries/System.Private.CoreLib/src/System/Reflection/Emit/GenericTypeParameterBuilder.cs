@@ -7,18 +7,33 @@ namespace System.Reflection.Emit
 {
     public abstract partial class GenericTypeParameterBuilder : TypeInfo
     {
-        protected GenericTypeParameterBuilder()
+        private protected GenericTypeParameterBuilder()
         {
         }
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute) => SetCustomAttribute(con, binaryAttribute);
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute) => SetCustomAttributeCore(con, binaryAttribute);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder) => SetCustomAttribute(customBuilder);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
 
-        public virtual void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint) => SetBaseTypeConstraint(baseTypeConstraint);
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
-        public virtual void SetInterfaceConstraints(params Type[]? interfaceConstraints) => SetInterfaceConstraints(interfaceConstraints);
+            SetCustomAttributeCore(customBuilder);
+        }
 
-        public virtual void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes) => SetGenericParameterAttributes(genericParameterAttributes);
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint) => SetBaseTypeConstraintCore(baseTypeConstraint);
+
+        protected abstract void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint);
+
+        public void SetInterfaceConstraints(params Type[]? interfaceConstraints) => SetInterfaceConstraintsCore(interfaceConstraints);
+
+        protected abstract void SetInterfaceConstraintsCore(params Type[]? interfaceConstraints);
+
+        public void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes) => SetGenericParameterAttributesCore(genericParameterAttributes);
+
+        protected abstract void SetGenericParameterAttributesCore(GenericParameterAttributes genericParameterAttributes);
     }
 }

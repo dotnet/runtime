@@ -289,7 +289,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
-                    int token = m_module!.GetTypeToken(t);
+                    int token = m_module!.GetMetadataToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -311,7 +311,7 @@ namespace System.Reflection.Emit
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
-                    int token = m_module!.GetTypeToken(t);
+                    int token = m_module!.GetMetadataToken(t);
                     Debug.Assert(!MetadataToken.IsNullToken(token));
                     AddToken(token);
                 }
@@ -355,7 +355,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tkType = m_module!.GetTypeToken(clsArgument);
+                    tkType = m_module!.GetMetadataToken(clsArgument);
                 }
 
                 if (clsArgument.IsValueType)
@@ -378,7 +378,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tkType = m_module!.GetTypeToken(clsArgument);
+                    tkType = m_module!.GetMetadataToken(clsArgument);
                 }
 
                 if (clsArgument.IsValueType)
@@ -452,11 +452,11 @@ namespace System.Reflection.Emit
                 }
                 else if (clsArgument.IsValueType)
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_VALUETYPE);
+                    InternalAddTypeToken(m_module.GetMetadataToken(clsArgument), CorElementType.ELEMENT_TYPE_VALUETYPE);
                 }
                 else
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_CLASS);
+                    InternalAddTypeToken(m_module.GetMetadataToken(clsArgument), CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
         }

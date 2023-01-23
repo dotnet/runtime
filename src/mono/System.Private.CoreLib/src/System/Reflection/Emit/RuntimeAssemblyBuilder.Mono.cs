@@ -264,12 +264,8 @@ namespace System.Reflection.Emit
             get { return base.ReflectionOnly; }
         }
 
-        public override ModuleBuilder DefineDynamicModule(string name)
+        protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
-
             if (manifest_module_used)
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             manifest_module_used = true;
@@ -285,10 +281,8 @@ namespace System.Reflection.Emit
             return DefineDynamicAssembly(name, access, assemblyAttributes);
         }
 
-        public override ModuleBuilder? GetDynamicModule(string name)
+        protected override ModuleBuilder? GetDynamicModuleCore(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
             if (modules != null)
                 for (int i = 0; i < modules.Length; ++i)
                     if (modules[i].name == name)
@@ -299,10 +293,8 @@ namespace System.Reflection.Emit
 
         public override bool IsCollectible => access == (uint)AssemblyBuilderAccess.RunAndCollect;
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -319,12 +311,9 @@ namespace System.Reflection.Emit
             UpdateNativeCustomAttributes(this);
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/

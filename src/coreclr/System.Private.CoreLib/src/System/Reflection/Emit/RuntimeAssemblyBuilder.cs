@@ -181,32 +181,21 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        public override ModuleBuilder DefineDynamicModule(string name)
+        protected override ModuleBuilder DefineDynamicModuleCore(string _)
         {
             lock (SyncRoot)
             {
-                return DefineDynamicModuleInternalNoLock(name);
+                // Create the dynamic module- only one ModuleBuilder per AssemblyBuilder can be created.
+                if (_isManifestModuleUsedAsDefinedModule)
+                {
+                    throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
+                }
+
+                // We are reusing manifest module as user-defined dynamic module
+                _isManifestModuleUsedAsDefinedModule = true;
+
+                return _manifestModuleBuilder;
             }
-        }
-
-        private ModuleBuilder DefineDynamicModuleInternalNoLock(string name)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            if (name[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
-            }
-
-            // Create the dynamic module- only one ModuleBuilder per AssemblyBuilder can be created.
-            if (_isManifestModuleUsedAsDefinedModule)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
-            }
-
-            // We are reusing manifest module as user-defined dynamic module
-            _isManifestModuleUsedAsDefinedModule = true;
-
-            return _manifestModuleBuilder;
         }
 
         #endregion
@@ -277,10 +266,8 @@ namespace System.Reflection.Emit
 
         /// <param name="name">The name of module for the look up.</param>
         /// <returns>Dynamic module with the specified name.</returns>
-        public override ModuleBuilder? GetDynamicModule(string name)
+        protected override ModuleBuilder? GetDynamicModuleCore(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
             if (_isManifestModuleUsedAsDefinedModule)
             {
                 if (RuntimeModuleBuilder.ManifestModuleName == name)
@@ -294,17 +281,14 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             lock (SyncRoot)
             {
                 RuntimeTypeBuilder.DefineCustomAttribute(
                     _manifestModuleBuilder,     // pass in the in-memory assembly module
                     AssemblyDefToken,
-                    _manifestModuleBuilder.GetConstructorToken(con),
+                    _manifestModuleBuilder.GetMetadataToken(con),
                     binaryAttribute);
             }
         }
@@ -312,10 +296,8 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);

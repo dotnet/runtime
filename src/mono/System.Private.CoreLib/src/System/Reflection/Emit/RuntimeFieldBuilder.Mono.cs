@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
             return PackingSize.Size1;
         }
 
-        public override void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             RejectIfCreated();
 
@@ -174,11 +174,9 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             RejectIfCreated();
-
-            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
@@ -221,13 +219,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             RejectIfCreated();
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public override void SetOffset(int iOffset)
+        protected override void SetOffsetCore(int iOffset)
         {
             RejectIfCreated();
             if (iOffset < 0)

@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Members
-        public override ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
+        protected override ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // Theoretically we shouldn't allow iSequence to be 0 because in reflection ctors don't have
             // return parameters. But we'll allow it for backward compatibility with V2. The attributes
@@ -133,15 +133,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.DefineParameter(iSequence, attributes, strParamName);
         }
 
-        public override ILGenerator GetILGenerator()
-        {
-            if (m_isDefaultConstructor)
-                throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
-
-            return m_methodBuilder.GetILGenerator();
-        }
-
-        public override ILGenerator GetILGenerator(int streamSize)
+        protected override ILGenerator GetILGeneratorCore(int streamSize)
         {
             if (m_isDefaultConstructor)
                 throw new InvalidOperationException(SR.InvalidOperation_DefaultConstructorILGen);
@@ -165,22 +157,22 @@ namespace System.Reflection.Emit
             return m_methodBuilder.ReturnType;
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_methodBuilder.SetCustomAttribute(con, binaryAttribute);
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             m_methodBuilder.SetCustomAttribute(customBuilder);
         }
 
-        public override void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             m_methodBuilder.SetImplementationFlags(attributes);
         }
 
-        public override bool InitLocals
+        protected override bool InitLocalsCore
         {
             get => m_methodBuilder.InitLocals;
             set => m_methodBuilder.InitLocals = value;

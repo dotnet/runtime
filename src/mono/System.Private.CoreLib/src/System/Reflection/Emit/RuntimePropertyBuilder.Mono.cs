@@ -109,7 +109,7 @@ namespace System.Reflection.Emit
             get { return typeb; }
         }
 
-        public override void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             typeb.check_not_created();
@@ -153,15 +153,14 @@ namespace System.Reflection.Emit
         {
             throw not_supported();
         }
-        public override void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             typeb.check_not_created();
             def_value = defaultValue;
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
             typeb.check_not_created();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
@@ -184,19 +183,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public override void SetGetMethod(MethodBuilder mdBuilder)
+        protected override void SetGetMethodCore(MethodBuilder mdBuilder)
         {
             typeb.check_not_created();
             ArgumentNullException.ThrowIfNull(mdBuilder);
             get_method = mdBuilder;
         }
 
-        public override void SetSetMethod(MethodBuilder mdBuilder)
+        protected override void SetSetMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             set_method = mdBuilder;

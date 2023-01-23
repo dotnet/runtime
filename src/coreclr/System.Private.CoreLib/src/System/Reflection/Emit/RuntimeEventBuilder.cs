@@ -58,47 +58,42 @@ namespace System.Reflection.Emit
                 mdBuilder.MetadataToken);
         }
 
-        public override void SetAddOnMethod(MethodBuilder mdBuilder)
+        protected override void SetAddOnMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.AddOn);
         }
 
-        public override void SetRemoveOnMethod(MethodBuilder mdBuilder)
+        protected override void SetRemoveOnMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.RemoveOn);
         }
 
-        public override void SetRaiseMethod(MethodBuilder mdBuilder)
+        protected override void SetRaiseMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Fire);
         }
 
-        public override void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             m_type.ThrowIfCreated();
 
             RuntimeTypeBuilder.DefineCustomAttribute(
                 m_module,
                 m_evToken,
-                m_module.GetConstructorToken(con),
+                m_module.GetMetadataToken(con),
                 binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             m_type.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_module, m_evToken);
         }

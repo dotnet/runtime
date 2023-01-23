@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Set the default value of the Property
         /// </summary>
-        public override void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             m_containingType.ThrowIfCreated();
 
@@ -79,43 +79,38 @@ namespace System.Reflection.Emit
                 mdBuilder.MetadataToken);
         }
 
-        public override void SetGetMethod(MethodBuilder mdBuilder)
+        protected override void SetGetMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Getter);
             m_getMethod = mdBuilder;
         }
 
-        public override void SetSetMethod(MethodBuilder mdBuilder)
+        protected override void SetSetMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Setter);
             m_setMethod = mdBuilder;
         }
 
-        public override void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             m_containingType.ThrowIfCreated();
             RuntimeTypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
                 m_tkProperty,
-                m_moduleBuilder.GetConstructorToken(con),
+                m_moduleBuilder.GetMetadataToken(con),
                 binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             m_containingType.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_moduleBuilder, m_tkProperty);
         }

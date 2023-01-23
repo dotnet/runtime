@@ -514,13 +514,8 @@ namespace System.Reflection.Emit
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
-        public override GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
-
             if (m_inst != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
@@ -541,7 +536,7 @@ namespace System.Reflection.Emit
         internal void ThrowIfGeneric() { if (IsGenericMethod && !IsGenericMethodDefinition) throw new InvalidOperationException(); }
         #endregion
 
-        #region Public Members
+        #region Private Members
         private int GetToken()
         {
             // We used to always "tokenize" a MethodBuilder when it is constructed. After change list 709498
@@ -611,18 +606,10 @@ namespace System.Reflection.Emit
 
             return m_token;
         }
+        #endregion
 
-        public override void SetParameters(params Type[] parameterTypes)
-        {
-            SetSignature(null, null, null, parameterTypes, null, null);
-        }
-
-        public override void SetReturnType(Type? returnType)
-        {
-            SetSignature(returnType, null, null, null, null, null);
-        }
-
-        public override void SetSignature(
+        #region Protected Members Overrides
+        protected override void SetSignatureCore(
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -650,10 +637,8 @@ namespace System.Reflection.Emit
             m_parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
         }
 
-        public override ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(position);
-
             ThrowIfGeneric();
             m_containingType.ThrowIfCreated();
 
@@ -664,10 +649,9 @@ namespace System.Reflection.Emit
             return new ParameterBuilder(this, position, attributes, strParamName);
         }
 
-        public override void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             ThrowIfGeneric();
-
             m_containingType.ThrowIfCreated();
 
             m_dwMethodImplFlags = attributes;
@@ -678,15 +662,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
-        public override ILGenerator GetILGenerator()
-        {
-            ThrowIfGeneric();
-            ThrowIfShouldNotHaveBody();
-
-            return m_ilGenerator ??= new ILGenerator(this);
-        }
-
-        public override ILGenerator GetILGenerator(int size)
+        protected override ILGenerator GetILGeneratorCore(int size)
         {
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
@@ -707,7 +683,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool InitLocals
+        protected override bool InitLocalsCore
         {
             // Property is set to true if user wishes to have zero initialized stack frame for this method. Default to false.
             get { ThrowIfGeneric(); return m_fInitLocals; }
@@ -719,27 +695,20 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             ThrowIfGeneric();
-
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
-                m_module.GetConstructorToken(con),
+                m_module.GetMetadataToken(con),
                 binaryAttribute);
 
             if (IsKnownCA(con))
                 ParseCA(con);
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             ThrowIfGeneric();
-
             customBuilder.CreateCustomAttribute(m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))

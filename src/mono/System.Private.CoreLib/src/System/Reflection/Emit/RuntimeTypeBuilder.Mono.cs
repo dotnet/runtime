@@ -359,12 +359,12 @@ namespace System.Reflection.Emit
             get { return nspace; }
         }
 
-        public override PackingSize PackingSize
+        protected override PackingSize PackingSizeCore
         {
             get { return packing_size; }
         }
 
-        public override int Size
+        protected override int SizeCore
         {
             get { return class_size; }
         }
@@ -374,10 +374,8 @@ namespace System.Reflection.Emit
             get { return nesting_type; }
         }
 
-        public override void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            ArgumentNullException.ThrowIfNull(interfaceType);
-
             check_not_created();
 
             if (interfaces != null)
@@ -482,7 +480,7 @@ namespace System.Reflection.Emit
             return created!.GetCustomAttributes(attributeType, inherit);
         }
 
-        private TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces,
+        protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces,
                               PackingSize packSize, int typeSize)
         {
             // Visibility must be NestedXXX
@@ -519,18 +517,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-        {
-            return DefineNestedType(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
-        }
-
-        public override TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize,
-                                         int typeSize)
-        {
-            return DefineNestedType(name, attr, parent, null, packSize, typeSize);
-        }
-
-        public override ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
             check_not_created();
             if (IsInterface && (attributes & MethodAttributes.Static) == 0)
@@ -555,7 +542,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
-        public override ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
+        protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes)
         {
             Type parent_type, old_parent_type;
 
@@ -613,9 +600,8 @@ namespace System.Reflection.Emit
             num_methods++;
         }
 
-        public override MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            check_name(nameof(name), name);
             check_not_created();
             if (IsInterface && (
                 !((attributes & MethodAttributes.Abstract) != 0) ||
@@ -635,7 +621,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public override MethodBuilder DefinePInvokeMethod(
+        protected override MethodBuilder DefinePInvokeMethodCore(
                         string name,
                         string dllName,
                         string entryName, MethodAttributes attributes,
@@ -649,9 +635,6 @@ namespace System.Reflection.Emit
                         CallingConvention nativeCallConv,
                         CharSet nativeCharSet)
         {
-            check_name(nameof(name), name);
-            check_name(nameof(dllName), dllName);
-            check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
                 throw new ArgumentException(SR.Argument_BadPInvokeMethod);
             if (IsInterface)
@@ -678,10 +661,8 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-            ArgumentNullException.ThrowIfNull(methodInfoBody);
-            ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
                 throw new ArgumentException("method body must belong to this type");
@@ -692,7 +673,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
+        protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             check_name(nameof(fieldName), fieldName);
             if (type == typeof(void))
@@ -727,9 +708,8 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            check_name(nameof(name), name);
             if (parameterTypes != null)
                 foreach (Type param in parameterTypes)
                     if (param == null)
@@ -750,7 +730,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override ConstructorBuilder DefineTypeInitializer()
+        protected override ConstructorBuilder DefineTypeInitializerCore()
         {
             return DefineConstructor(MethodAttributes.Public |
                 MethodAttributes.Static | MethodAttributes.SpecialName |
@@ -799,7 +779,7 @@ namespace System.Reflection.Emit
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public override TypeInfo CreateTypeInfo()
+        protected override TypeInfo CreateTypeInfoCore()
         {
             /* handle nesting_type */
             if (createTypeCalled)
@@ -1428,10 +1408,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.StructLayoutAttribute")
             {
@@ -1551,14 +1529,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public override EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
+        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
         {
-            check_name(nameof(name), name);
             ArgumentNullException.ThrowIfNull(eventtype);
             check_not_created();
 
@@ -1578,16 +1555,14 @@ namespace System.Reflection.Emit
             return res;
         }
 
-        public override FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
         {
-            ArgumentNullException.ThrowIfNull(data);
-
             RuntimeFieldBuilder res = (RuntimeFieldBuilder)DefineUninitializedData(name, data.Length, attributes);
             res.SetRVAData(data);
             return res;
         }
 
-        public override FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if ((size <= 0) || (size > 0x3f0000))
@@ -1599,7 +1574,7 @@ namespace System.Reflection.Emit
             Type? datablobtype = pmodule.GetRegisteredType(fullname.NestedName(ident));
             if (datablobtype == null)
             {
-                TypeBuilder tb = DefineNestedType(typeName,
+                TypeBuilder tb = DefineNestedTypeCore(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
                                                    typeof(ValueType), null, RuntimeFieldBuilder.RVADataPackingSize(size), size);
                 tb.CreateType();
@@ -1612,7 +1587,7 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't analyze ResolveUserType but it's an identity function")]
-        public override void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
+        protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             check_not_created();
 
@@ -1735,7 +1710,7 @@ namespace System.Reflection.Emit
                 return c.IsAssignableFrom(parent);
         }
 
-        public override bool IsCreated()
+        protected override bool IsCreatedCore()
         {
             return is_created;
         }
@@ -1807,12 +1782,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
-
             generic_params = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
             {

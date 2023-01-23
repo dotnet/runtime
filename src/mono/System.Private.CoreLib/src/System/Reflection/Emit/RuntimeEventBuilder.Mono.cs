@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
             return typeb.get_next_table_index(table, count);
         }
 
-        public override void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
@@ -87,28 +87,27 @@ namespace System.Reflection.Emit
             other_methods[other_methods.Length - 1] = mdBuilder;
         }
 
-        public override void SetAddOnMethod(MethodBuilder mdBuilder)
+        protected override void SetAddOnMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             add_method = mdBuilder;
         }
-        public override void SetRaiseMethod(MethodBuilder mdBuilder)
+        protected override void SetRaiseMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             raise_method = mdBuilder;
         }
-        public override void SetRemoveOnMethod(MethodBuilder mdBuilder)
+        protected override void SetRemoveOnMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             remove_method = mdBuilder;
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
             RejectIfCreated();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
@@ -130,11 +129,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         private void RejectIfCreated()

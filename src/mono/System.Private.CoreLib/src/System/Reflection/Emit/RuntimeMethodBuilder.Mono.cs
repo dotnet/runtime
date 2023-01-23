@@ -120,7 +120,7 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(); }
         }
 
-        public override bool InitLocals
+        protected override bool InitLocalsCore
         {
             get { return init_locals; }
             set { init_locals = value; }
@@ -310,12 +310,7 @@ namespace System.Reflection.Emit
                 throw NotSupported();
         }
 
-        public override ILGenerator GetILGenerator()
-        {
-            return GetILGenerator(64);
-        }
-
-        public override ILGenerator GetILGenerator(int size)
+        protected override ILGenerator GetILGeneratorCore(int size)
         {
             if (((iattrs & MethodImplAttributes.CodeTypeMask) !=
                  MethodImplAttributes.IL) ||
@@ -328,7 +323,7 @@ namespace System.Reflection.Emit
             return ilgen;
         }
 
-        public override ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string strParamName)
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
             RejectIfCreated();
 
@@ -387,10 +382,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             switch (customBuilder.Ctor.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
@@ -475,14 +468,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public override void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             RejectIfCreated();
             iattrs = attributes;
@@ -591,11 +582,8 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        public override GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
             type.check_not_created();
             generic_params = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
@@ -609,12 +597,7 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
-        public override void SetReturnType(Type? returnType)
-        {
-            rtype = returnType;
-        }
-
-        public override void SetParameters(params Type[]? parameterTypes)
+        protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             if (parameterTypes != null)
             {
@@ -625,16 +608,12 @@ namespace System.Reflection.Emit
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
-        }
 
-        public override void SetSignature(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            SetReturnType(returnType);
-            SetParameters(parameterTypes);
-            this.returnModReq = returnTypeRequiredCustomModifiers;
-            this.returnModOpt = returnTypeOptionalCustomModifiers;
-            this.paramModReq = parameterTypeRequiredCustomModifiers;
-            this.paramModOpt = parameterTypeOptionalCustomModifiers;
+            rtype = returnType;
+            returnModReq = returnTypeRequiredCustomModifiers;
+            returnModOpt = returnTypeOptionalCustomModifiers;
+            paramModReq = parameterTypeRequiredCustomModifiers;
+            paramModOpt = parameterTypeOptionalCustomModifiers;
         }
 
         public override Module Module

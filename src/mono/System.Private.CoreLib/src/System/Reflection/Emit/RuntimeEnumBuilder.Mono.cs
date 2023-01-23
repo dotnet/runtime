@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override FieldBuilder UnderlyingField
+        protected override FieldBuilder UnderlyingFieldCore
         {
             get
             {
@@ -193,7 +193,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public override TypeInfo CreateTypeInfo()
+        protected override TypeInfo CreateTypeInfoCore()
         {
             return _tb.CreateTypeInfo();
         }
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void setup_enum_type(Type t);
 
-        public override FieldBuilder DefineLiteral(string literalName, object? literalValue)
+        protected override FieldBuilder DefineLiteralCore(string literalName, object? literalValue)
         {
             Type fieldType = this;
             FieldBuilder fieldBuilder = _tb.DefineField(literalName,
@@ -448,14 +448,14 @@ namespace System.Reflection.Emit
             return new PointerType(this);
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             _tb.SetCustomAttribute(customBuilder);
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         internal override bool IsUserType

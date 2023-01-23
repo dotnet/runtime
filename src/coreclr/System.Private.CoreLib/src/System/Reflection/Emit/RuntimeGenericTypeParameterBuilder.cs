@@ -214,28 +214,28 @@ namespace System.Reflection.Emit
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
         #endregion
 
-        #region Public Members
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        #region Protected Members Overrides
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             m_type.SetGenParamCustomAttribute(customBuilder);
         }
 
-        public override void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
+        protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             m_type.SetParent(baseTypeConstraint);
         }
 
-        public override void SetInterfaceConstraints(params Type[]? interfaceConstraints)
+        protected override void SetInterfaceConstraintsCore(params Type[]? interfaceConstraints)
         {
             m_type.SetInterfaces(interfaceConstraints);
         }
 
-        public override void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
+        protected override void SetGenericParameterAttributesCore(GenericParameterAttributes genericParameterAttributes)
         {
             m_type.SetGenParamAttributes(genericParameterAttributes);
         }

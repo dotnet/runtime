@@ -131,8 +131,8 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region Public Members
-        public override void SetOffset(int iOffset)
+        #region Protected Members Overrides
+        protected override void SetOffsetCore(int iOffset)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
         }
 
-        public override void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -154,23 +154,18 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
 
             m_typeBuilder.ThrowIfCreated();
 
             RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
-                m_fieldTok, moduleBuilder.GetConstructorToken(con), binaryAttribute);
+                m_fieldTok, moduleBuilder.GetMetadataToken(con), binaryAttribute);
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             m_typeBuilder.ThrowIfCreated();
 
             customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_typeBuilder.Module, m_fieldTok);

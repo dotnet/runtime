@@ -8,17 +8,21 @@ namespace System.Reflection.Emit
 {
     public abstract class ModuleBuilder : Module
     {
-        protected ModuleBuilder()
+        private protected ModuleBuilder()
         {
         }
 
         // The following virtual methods are abstract in reference assembly. We keep them as virtual to maintain backward compatibility.
 
-        public virtual void CreateGlobalFunctions()
-            => CreateGlobalFunctions();
+        public void CreateGlobalFunctions()
+            => CreateGlobalFunctionsCore();
 
-        public virtual EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
-            => DefineEnum(name, visibility, underlyingType);
+        protected abstract void CreateGlobalFunctionsCore();
+
+        public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
+            => DefineEnumCore(name, visibility, underlyingType);
+
+        protected abstract EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType);
 
         public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, Type? returnType, Type[]? parameterTypes)
             => DefineGlobalMethod(name, attributes, CallingConventions.Standard, returnType, null, null, parameterTypes, null, null);
@@ -27,15 +31,25 @@ namespace System.Reflection.Emit
             Type? returnType, Type[]? parameterTypes)
                 => DefineGlobalMethod(name, attributes, callingConvention, returnType, null, null, parameterTypes, null, null);
 
-        public virtual MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers,
             Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
-                => DefineGlobalMethod(name, attributes, callingConvention,
-                    returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
-                    parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-        public virtual FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
-            => DefineInitializedData(name, data, attributes);
+            return DefineGlobalMethodCore(name, attributes, callingConvention,
+                   returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
+                   parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
+        }
+
+        protected abstract MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
+            Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers,
+            Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers);
+
+        public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+            => DefineInitializedDataCore(name, data, attributes);
+
+        protected abstract FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes);
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName,
@@ -45,11 +59,16 @@ namespace System.Reflection.Emit
                     returnType, parameterTypes, nativeCallConv, nativeCharSet);
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public virtual MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName,
+        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName,
             MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-                => DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention,
+                => DefinePInvokeMethodCore(name, dllName, entryName, attributes, callingConvention,
                     returnType, parameterTypes, nativeCallConv, nativeCharSet);
+
+        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
+        protected abstract MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName,
+            MethodAttributes attributes, CallingConventions callingConvention,
+            Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet);
 
         public TypeBuilder DefineType(string name)
             => DefineType(name, TypeAttributes.NotPublic, null, null);
@@ -61,9 +80,9 @@ namespace System.Reflection.Emit
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
                 => DefineType(name, attr, parent, null);
 
-        public virtual TypeBuilder DefineType(string name, TypeAttributes attr,
+        public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-                => DefineType(name, attr, parent, interfaces);
+                => DefineTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
 
         public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typesize)
@@ -73,28 +92,54 @@ namespace System.Reflection.Emit
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packsize)
                 => DefineType(name, attr, parent, packsize, TypeBuilder.UnspecifiedTypeSize);
 
-        public virtual TypeBuilder DefineType(string name, TypeAttributes attr,
+        public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
-                => DefineType(name, attr, parent, packingSize, typesize);
+                => DefineTypeCore(name, attr, parent, null, packingSize, typesize);
 
-        public virtual FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
-            => DefineUninitializedData(name, size, attributes);
+        protected abstract TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize);
 
-        public virtual MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention,
+        public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+            => DefineUninitializedDataCore(name, size, attributes);
+
+        protected abstract FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes);
+
+        public MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
-                => GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes);
+        {
+            ArgumentNullException.ThrowIfNull(arrayClass);
+            ArgumentException.ThrowIfNullOrEmpty(methodName);
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+            return GetArrayMethodCore(arrayClass, methodName, callingConvention, returnType, parameterTypes);
+        }
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        protected abstract MethodInfo GetArrayMethodCore(Type arrayClass, string methodName,
+            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes);
 
-        public abstract int GetTypeToken(Type type);
-        public abstract int GetFieldToken(FieldInfo field);
-        public abstract int GetMethodToken(MethodInfo method);
-        public abstract int GetConstructorToken(ConstructorInfo contsuctor);
-        public abstract int GetSignatureToken(SignatureHelper sigHelper);
-        public abstract int GetStringConstant(string str);
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            SetCustomAttributeCore(customBuilder);
+        }
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public abstract int GetMetadataToken(Type type);
+        public abstract int GetMetadataToken(FieldInfo field);
+        public abstract int GetMetadataToken(MethodInfo method);
+        public abstract int GetMetadataToken(ConstructorInfo contsuctor);
+        public abstract int GetMetadataToken(SignatureHelper sigHelper);
+        public abstract int GetMetadataToken(string str);
     }
 }

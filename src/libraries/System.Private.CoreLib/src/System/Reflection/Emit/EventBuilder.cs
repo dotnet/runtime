@@ -5,26 +5,47 @@ namespace System.Reflection.Emit
 {
     public abstract class EventBuilder
     {
-        protected EventBuilder()
+        private protected EventBuilder()
         {
         }
 
-        public virtual void AddOtherMethod(MethodBuilder mdBuilder)
-            => AddOtherMethod(mdBuilder);
+        public void AddOtherMethod(MethodBuilder mdBuilder)
+            => AddOtherMethodCore(mdBuilder);
 
-        public virtual void SetAddOnMethod(MethodBuilder mdBuilder)
-            => SetAddOnMethod(mdBuilder);
+        protected abstract void AddOtherMethodCore(MethodBuilder mdBuilder);
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        public void SetAddOnMethod(MethodBuilder mdBuilder)
+            => SetAddOnMethodCore(mdBuilder);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        protected abstract void SetAddOnMethodCore(MethodBuilder mdBuilder);
 
-        public virtual void SetRaiseMethod(MethodBuilder mdBuilder)
-            => SetRaiseMethod(mdBuilder);
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-        public virtual void SetRemoveOnMethod(MethodBuilder mdBuilder)
-            => SetRemoveOnMethod(mdBuilder);
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            SetCustomAttributeCore(customBuilder);
+        }
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetRaiseMethod(MethodBuilder mdBuilder)
+            => SetRaiseMethodCore(mdBuilder);
+
+        protected abstract void SetRaiseMethodCore(MethodBuilder mdBuilder);
+
+        public void SetRemoveOnMethod(MethodBuilder mdBuilder)
+            => SetRemoveOnMethodCore(mdBuilder);
+
+        protected abstract void SetRemoveOnMethodCore(MethodBuilder mdBuilder);
     }
 }

@@ -5,26 +5,46 @@ namespace System.Reflection.Emit
 {
     public abstract class PropertyBuilder : PropertyInfo
     {
-        protected PropertyBuilder()
+        private protected PropertyBuilder()
         {
         }
 
-        public virtual void AddOtherMethod(MethodBuilder mdBuilder)
-            => AddOtherMethod(mdBuilder);
+        public void AddOtherMethod(MethodBuilder mdBuilder)
+            => AddOtherMethodCore(mdBuilder);
 
-        public virtual void SetConstant(object defaultValue)
-            => SetConstant(defaultValue);
+        protected abstract void AddOtherMethodCore(MethodBuilder mdBuilder);
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        public void SetConstant(object? defaultValue)
+            => SetConstantCore(defaultValue);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        protected abstract void SetConstantCore(object? defaultValue);
 
-        public virtual void SetGetMethod(MethodBuilder mdBuilder)
-            => SetGetMethod(mdBuilder);
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-        public virtual void SetSetMethod(MethodBuilder mdBuilder)
-            => SetSetMethod(mdBuilder);
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+            SetCustomAttributeCore(customBuilder);
+        }
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetGetMethod(MethodBuilder mdBuilder)
+            => SetGetMethodCore(mdBuilder);
+
+        protected abstract void SetGetMethodCore(MethodBuilder mdBuilder);
+
+        public void SetSetMethod(MethodBuilder mdBuilder)
+            => SetSetMethodCore(mdBuilder);
+
+        protected abstract void SetSetMethodCore(MethodBuilder mdBuilder);
     }
 }

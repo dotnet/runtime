@@ -5,20 +5,37 @@ namespace System.Reflection.Emit
 {
     public abstract class FieldBuilder : FieldInfo
     {
-        protected FieldBuilder()
+        private protected FieldBuilder()
         {
         }
 
-        public virtual void SetConstant(object? defaultValue)
-            => SetConstant(defaultValue);
+        public void SetConstant(object? defaultValue)
+            => SetConstantCore(defaultValue);
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        protected abstract void SetConstantCore(object? defaultValue);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-        public virtual void SetOffset(int iOffset)
-            => SetOffset(iOffset);
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            SetCustomAttributeCore(customBuilder);
+        }
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetOffset(int iOffset)
+            => SetOffsetCore(iOffset);
+
+        protected abstract void SetOffsetCore(int iOffset);
     }
 }

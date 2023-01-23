@@ -7,28 +7,39 @@ namespace System.Reflection.Emit
 {
     public abstract partial class EnumBuilder : TypeInfo
     {
-        protected EnumBuilder()
+        private protected EnumBuilder()
         {
         }
 
-        public virtual FieldBuilder UnderlyingField
-            => UnderlyingField;
+        public FieldBuilder UnderlyingField
+            => UnderlyingFieldCore;
+
+        protected abstract FieldBuilder UnderlyingFieldCore { get; }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type CreateType()
-            => CreateTypeInfo();
+            => CreateTypeInfoCore();
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public virtual TypeInfo CreateTypeInfo()
-            => CreateTypeInfo();
+        public TypeInfo CreateTypeInfo()
+            => CreateTypeInfoCore();
 
-        public virtual FieldBuilder DefineLiteral(string literalName, object literalValue)
-            => DefineLiteral(literalName, literalValue);
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        protected abstract TypeInfo CreateTypeInfoCore();
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        public FieldBuilder DefineLiteral(string literalName, object? literalValue)
+            => DefineLiteralCore(literalName, literalValue);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        protected abstract FieldBuilder DefineLiteralCore(string literalName, object? literalValue);
+
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+            => SetCustomAttributeCore(con, binaryAttribute);
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+            => SetCustomAttributeCore(customBuilder);
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
     }
 }

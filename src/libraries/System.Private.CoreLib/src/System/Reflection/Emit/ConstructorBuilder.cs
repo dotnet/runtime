@@ -5,32 +5,44 @@ namespace System.Reflection.Emit
 {
     public abstract class ConstructorBuilder : ConstructorInfo
     {
-        protected ConstructorBuilder()
+        private protected ConstructorBuilder()
         {
         }
 
-        public virtual bool InitLocals
+        public bool InitLocals
         {
-            get => InitLocals;
-            set { var _this = this; _this.InitLocals = value; }
+            get => InitLocalsCore;
+            set { InitLocalsCore = value; }
         }
 
-        public virtual ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string strParamName)
-            => DefineParameter(iSequence, attributes, strParamName);
+        protected abstract bool InitLocalsCore { get; set; }
 
-        public virtual ILGenerator GetILGenerator()
-            => GetILGenerator();
+        public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string strParamName)
+            => DefineParameterCore(iSequence, attributes, strParamName);
 
-        public virtual ILGenerator GetILGenerator(int streamSize)
-            => GetILGenerator(streamSize);
+        protected abstract ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string strParamName);
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        public ILGenerator GetILGenerator()
+            => GetILGeneratorCore(64);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        public ILGenerator GetILGenerator(int streamSize)
+            => GetILGeneratorCore(streamSize);
 
-        public virtual void SetImplementationFlags(MethodImplAttributes attributes)
-            => SetImplementationFlags(attributes);
+        protected abstract ILGenerator GetILGeneratorCore(int streamSize);
+
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+            => SetCustomAttributeCore(con, binaryAttribute);
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+            => SetCustomAttributeCore(customBuilder);
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetImplementationFlags(MethodImplAttributes attributes)
+            => SetImplementationFlagsCore(attributes);
+
+        protected abstract void SetImplementationFlagsCore(MethodImplAttributes attributes);
     }
 }

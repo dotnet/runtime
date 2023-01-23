@@ -120,7 +120,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void CreateGlobalFunctions()
+        protected override void CreateGlobalFunctionsCore()
         {
             if (global_type_created)
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
@@ -131,7 +131,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
         {
             ArgumentNullException.ThrowIfNull(data);
 
@@ -142,7 +142,7 @@ namespace System.Reflection.Emit
             return fb;
         }
 
-        public override FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
         {
             return DefineDataImpl(name, size, attributes & ~FieldAttributes.ReservedMask);
         }
@@ -200,9 +200,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
+        protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
         {
-            ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException(SR.Argument_GlobalMembersMustBeStatic);
             if (global_type_created)
@@ -215,7 +214,7 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public override MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
@@ -274,22 +273,17 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        public override TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
+        protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            return DefineType(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
+            return DefineType(name, attr, parent, interfaces, packingSize, typesize);
         }
 
-        public override TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
-        {
-            return DefineType(name, attr, parent, null, packingSize, typesize);
-        }
-
-        public override MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             return new MonoArrayMethod(arrayClass, methodName, callingConvention, returnType!, parameterTypes!); // FIXME: nulls should be allowed
         }
 
-        public override EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
+        protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
         {
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
@@ -432,9 +426,8 @@ namespace System.Reflection.Emit
             return index;
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -449,9 +442,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
         /*
                 internal ISymbolDocumentWriter? DefineDocument (string url, Guid language, Guid languageVendor, Guid documentType)
@@ -480,7 +473,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        public override int GetMethodToken(MethodInfo method)
+        public override int GetMetadataToken(MethodInfo method)
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -489,17 +482,17 @@ namespace System.Reflection.Emit
 
         internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
-            return GetMethodToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
+            return GetMetadataToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
         }
 
-        public override int GetConstructorToken(ConstructorInfo con)
+        public override int GetMetadataToken(ConstructorInfo con)
         {
             ArgumentNullException.ThrowIfNull(con);
 
             return con.MetadataToken;
         }
 
-        public override int GetFieldToken(FieldInfo field)
+        public override int GetMetadataToken(FieldInfo field)
         {
             ArgumentNullException.ThrowIfNull(field);
 
@@ -523,19 +516,19 @@ namespace System.Reflection.Emit
             throw new NotImplementedException();
         }
 
-        public override int GetSignatureToken(SignatureHelper sigHelper)
+        public override int GetMetadataToken(SignatureHelper sigHelper)
         {
             ArgumentNullException.ThrowIfNull(sigHelper);
             return GetToken(sigHelper);
         }
 
-        public override int GetStringConstant(string str)
+        public override int GetMetadataToken(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
             return GetToken(str);
         }
 
-        public override int GetTypeToken(Type type)
+        public override int GetMetadataToken(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
@@ -547,7 +540,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         internal int GetTypeToken(string name)
         {
-            return GetTypeToken(GetType(name)!);
+            return GetMetadataToken(GetType(name)!);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

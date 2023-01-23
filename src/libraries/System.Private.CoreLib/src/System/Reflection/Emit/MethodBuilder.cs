@@ -7,46 +7,82 @@ namespace System.Reflection.Emit
 {
     public abstract class MethodBuilder : MethodInfo
     {
-        protected MethodBuilder()
+        private protected MethodBuilder()
         {
         }
 
-        public virtual bool InitLocals
+        public bool InitLocals
         {
-            get => InitLocals;
-            set { var _this = this; _this.InitLocals = value; }
+            get => InitLocalsCore;
+            set { InitLocalsCore = value; }
         }
 
-        public virtual GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
-            => DefineGenericParameters(names);
+        protected abstract bool InitLocalsCore { get; set; }
 
-        public virtual ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string strParamName)
-            => DefineParameter(position, attributes, strParamName);
+        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        {
+            ArgumentNullException.ThrowIfNull(names);
 
-        public virtual ILGenerator GetILGenerator()
-            => GetILGenerator();
+            if (names.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
-        public virtual ILGenerator GetILGenerator(int size)
-            => GetILGenerator(size);
+            return DefineGenericParametersCore(names);
+        }
 
-        public virtual void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttribute(con, binaryAttribute);
+        protected abstract GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names);
 
-        public virtual void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttribute(customBuilder);
+        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(position);
 
-        public virtual void SetImplementationFlags(MethodImplAttributes attributes)
-            => SetImplementationFlags(attributes);
+            return DefineParameterCore(position, attributes, strParamName);
+        }
 
-        public virtual void SetParameters(params Type[] parameterTypes)
-            => SetParameters(parameterTypes);
+        protected abstract ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName);
 
-        public virtual void SetReturnType(Type returnType)
-            => SetReturnType(returnType);
+        public ILGenerator GetILGenerator()
+            => GetILGenerator(64);
 
-        public virtual void SetSignature(Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers,
-            Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
-                => SetSignature(returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                    parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
+        public ILGenerator GetILGenerator(int size)
+            => GetILGeneratorCore(size);
+
+        protected abstract ILGenerator GetILGeneratorCore(int size);
+
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            SetCustomAttributeCore(customBuilder);
+        }
+
+        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+
+        public void SetImplementationFlags(MethodImplAttributes attributes) => SetImplementationFlagsCore(attributes);
+
+        protected abstract void SetImplementationFlagsCore(MethodImplAttributes attributes);
+
+        public void SetParameters(params Type[] parameterTypes)
+            => SetSignature(null, null, null, parameterTypes, null, null);
+
+        public void SetReturnType(Type? returnType)
+            => SetSignature(returnType, null, null, null, null, null);
+
+        public void SetSignature(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
+            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
+            => SetSignatureCore(returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
+                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
+
+        protected abstract void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
+            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers);
     }
 }

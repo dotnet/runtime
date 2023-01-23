@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override bool InitLocals
+        protected override bool InitLocalsCore
         {
             get
             {
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
+        protected override ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // The 0th ParameterBuilder does not correspond to an
             // actual parameter, but .NETFramework lets you define
@@ -241,12 +241,7 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        public override ILGenerator GetILGenerator()
-        {
-            return GetILGenerator(64);
-        }
-
-        public override ILGenerator GetILGenerator(int streamSize)
+        protected override ILGenerator GetILGeneratorCore(int streamSize)
         {
             if (finished)
                 throw new InvalidOperationException();
@@ -258,7 +253,7 @@ namespace System.Reflection.Emit
             return ilgen;
         }
 
-        public override void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -286,15 +281,15 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public override void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             if (type.is_created)
                 throw not_after_created();
