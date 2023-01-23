@@ -6918,8 +6918,8 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     if (srcReg != REG_NA)
     {
 #ifdef TARGET_AMD64
-        if (cast->usedForIndexing)
-        {
+        // if (cast->usedForIndexing)
+        // {
             GenTree* leaOper = cast->gtNext;
             if (leaOper != nullptr && leaOper->OperIs(GT_LEA))
             {
@@ -6939,9 +6939,9 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                     }
                 }
             }
+        // }
 #endif
 
-        }
         emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
     }
     else
