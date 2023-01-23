@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Ecma335
         private int _stringHeapCapacity = 4 * 1024;
 
         // #Blob heap
-        private readonly Dictionary<ImmutableArray<byte>, BlobHandle> _blobs = new Dictionary<ImmutableArray<byte>, BlobHandle>(1024, ByteSequenceComparer.Instance);
+        private readonly BlobDictionary<BlobHandle> _blobs = new BlobDictionary<BlobHandle>(1024);
         private readonly int _blobHeapStartOffset;
         private int _blobHeapSize;
 
@@ -118,7 +118,7 @@ namespace System.Reflection.Metadata.Ecma335
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
 
-            _blobs.Add(ImmutableArray<byte>.Empty, default(BlobHandle));
+            _blobs.GetOrAdd(ImmutableArray<byte>.Empty, default, out _);
             _blobHeapSize = 1;
 
             // When EnC delta is applied #US, #String and #Blob heaps are appended.
@@ -210,8 +210,19 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            // TODO: avoid making a copy if the blob exists in the index
-            return GetOrAddBlob(ImmutableArray.Create(value));
+            return GetOrAddBlob(new ReadOnlySpan<byte>(value));
+        }
+
+        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value)
+        {
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
+            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle, out bool exists);
+            if (!exists)
+            {
+                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
+            }
+
+            return handle;
         }
 
         /// <summary>
@@ -227,12 +238,10 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            BlobHandle handle;
-            if (!_blobs.TryGetValue(value, out handle))
+            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
+            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle, out bool exists);
+            if (!exists)
             {
-                handle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
-                _blobs.Add(value, handle);
-
                 _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
             }
 
@@ -611,8 +620,8 @@ namespace System.Reflection.Metadata.Ecma335
             int startOffset = _blobHeapStartOffset;
             foreach (var entry in _blobs)
             {
-                int heapOffset = entry.Value.GetHeapOffset();
-                var blob = entry.Key;
+                int heapOffset = entry.Value.Value.GetHeapOffset();
+                var blob = entry.Value.Key;
 
                 writer.Offset = (heapOffset == 0) ? 0 : heapOffset - startOffset;
                 writer.WriteCompressedInteger(blob.Length);
