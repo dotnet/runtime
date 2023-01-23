@@ -17,6 +17,8 @@
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <!-- Workaround for possible SDK issue - see https://github.com/dotnet/linker/issues/3190 -->
+    <IncludeProjectsNotInAssetsFileInDepsFile>true</IncludeProjectsNotInAssetsFileInDepsFile>
   </PropertyGroup>
 
   <ItemGroup>

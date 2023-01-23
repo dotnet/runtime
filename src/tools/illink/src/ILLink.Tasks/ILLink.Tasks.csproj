@@ -22,6 +22,8 @@
     <Nullable>disable</Nullable>
     <!-- Targets don't match the package id. This is intentional. -->
     <NoWarn>$(NoWarn);NU5129</NoWarn>
+    <!-- Workaround for possible SDK issue - see https://github.com/dotnet/linker/issues/3190 -->
+    <IncludeProjectsNotInAssetsFileInDepsFile>true</IncludeProjectsNotInAssetsFileInDepsFile>
   </PropertyGroup>
 
   <ItemGroup>

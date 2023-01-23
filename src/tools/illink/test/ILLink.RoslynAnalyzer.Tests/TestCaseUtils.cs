@@ -26,9 +26,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 		new ReferenceAssemblies (
-				"net7.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "7.0.0-preview.5.22301.12"),
-				Path.Combine ("ref", "net7.0"))
+				"net8.0",
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-alpha.1.23060.19"),
+				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_net6Refs;

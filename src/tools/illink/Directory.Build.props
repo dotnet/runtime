@@ -1,14 +1,17 @@
 <Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="eng/Analyzers.props" />
+
   <PropertyGroup>
     <!-- Don't produce ref assemblies by default. -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
     <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
     <!-- The TFM for the product (linker, task,.. not analyzer, which is netstandard) -->
-    <NetCoreAppToolCurrent>net7.0</NetCoreAppToolCurrent>
+    <NetCoreAppToolCurrent>$(NetCurrent)</NetCoreAppToolCurrent>
     <!-- The TFM for all the tests - intentionally different since tests may depend on new framework APIs in order to validate
          linker interaction with them, linker itself doesn't need the new framework typically. -->
-    <NetCoreAppTestsCurrent>net7.0</NetCoreAppTestsCurrent>
+    <NetCoreAppTestsCurrent>$(NetCurrent)</NetCoreAppTestsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
     <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
@@ -18,9 +21,6 @@
     <PublishWindowsPdb>false</PublishWindowsPdb>
     <RunApiCompat>false</RunApiCompat>
   </PropertyGroup>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-  <Import Project="eng/Analyzers.props" />
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
