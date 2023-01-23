@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions
                 return null;
             }
 
-#if REGEXGENERATOR
+#if !NET
             return StringExtensions.Create(nodeChildren.Count, nodeChildren, static (span, nodeChildren) =>
 #else
             return string.Create(nodeChildren.Count, nodeChildren, static (span, nodeChildren) =>
@@ -174,7 +174,7 @@ namespace System.Text.RegularExpressions
 
                 result[currentVertex] = new TrieNodeWithLinks()
                 {
-#if DEBUG || REGEXGENERATOR
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
                     Path = node.Path,
 #endif
                     Children = children,
@@ -273,7 +273,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal readonly struct TrieNodeWithLinks
     {
-#if DEBUG || REGEXGENERATOR
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
         // We need it for easier inspection while debugging, and for the source generator's comments.
         public string Path { get; init; }
 #endif

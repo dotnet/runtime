@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions
 
         public TrieBuilder(RegexNode regexNode)
         {
-#if !REGEXGENERATOR
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
             if ((regexNode.Options & RegexOptions.Compiled) == 0)
             {
                 _nodeLimit /= 2;
@@ -194,7 +194,7 @@ namespace System.Text.RegularExpressions
                     Parent = nodeIndex,
                     AccessingCharacter = c,
                     Depth = node.Depth + 1,
-#if DEBUG || REGEXGENERATOR
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
                     Path = node.Path + c
 #endif
                 };

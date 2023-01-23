@@ -165,7 +165,7 @@ namespace System.Text.RegularExpressions
 
                 int matchCount = trie.GetMatchCount();
                 int minMatches =
-#if REGEXGENERATOR
+#if !SYSTEM_TEXT_REGULAREXPRESSIONS
                     5;
 #else
                 (nodeOptions & RegexOptions.Compiled) == 0 ? 2 : 5;

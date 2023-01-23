@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions
                 Parent = -1,
                 AccessingCharacter = '\0',
                 Depth = 0,
-#if DEBUG || REGEXGENERATOR
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
                 Path = ""
 #endif
             };
@@ -44,7 +44,7 @@ namespace System.Text.RegularExpressions
         public int ChildCount => Children.Count;
 #endif
 
-#if DEBUG || REGEXGENERATOR
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
         public string Path { get; init; } = "<unset>";
 
         public override string ToString() => Path;
