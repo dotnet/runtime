@@ -293,7 +293,7 @@ public class WasmAppBuilder : Task
                     else
                         Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
                     _fileWrites.Add(finalWebcil);
-                    config.Assets.Add(new SatelliteAssemblyEntry(finalWebcil, culture));
+                    config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), culture));
                 }
                 else
                 {
