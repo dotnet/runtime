@@ -8,7 +8,7 @@
 # In SslStress it's a thin utility to generate a runscript for running the app with the live-built testhost.
 # The main reason to use an equivalent solution in SslStress is consistency with HttpStress.
 
-version=7.0
+version=8.0
 repo_root=$(git rev-parse --show-toplevel)
 
 stress_configuration="Release"

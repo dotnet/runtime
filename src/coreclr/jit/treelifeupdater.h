@@ -20,7 +20,7 @@ private:
     void UpdateLifeVar(GenTree* tree, GenTreeLclVarCommon* lclVarTree);
     void UpdateLifeBit(VARSET_TP& set, LclVarDsc* dsc, bool isBorn, bool isDying);
     void StoreCurrentLifeForDump();
-    void DumpLifeDelta();
+    void DumpLifeDelta(GenTree* tree);
 
 private:
     Compiler* compiler;
