@@ -1832,5 +1832,25 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.UnInstantiatedIReadOnlyCollection.Count());
             Assert.Equal(new string[] { "r", "e" }, options.UnInstantiatedIReadOnlyCollection);
         }
+
+        [Fact]
+        public void TestMutatingDictionaryValues()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection()
+                .Build();
+
+            config["Key:0"] = "NewValue";
+            var dict = new Dictionary<string, string[]>() { { "Key", new[] { "InitialValue" } } };
+
+            Assert.Equal(1, dict["Key"].Length);
+            Assert.Equal("InitialValue", dict["Key"][0]);
+
+            // Binding will accumulate to the values inside the dictionary.
+            config.Bind(dict);
+            Assert.Equal(2, dict["Key"].Length);
+            Assert.Equal("InitialValue", dict["Key"][0]);
+            Assert.Equal("NewValue", dict["Key"][1]);
+        }
     }
 }
