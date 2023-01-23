@@ -66,7 +66,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private SafeHandle CreateWebSocketHandle()
+        private SafeWebSocketHandle CreateWebSocketHandle()
         {
             Debug.Assert(_properties != null, "'_properties' MUST NOT be NULL.");
             return WebSocketProtocolComponent.WebSocketCreateServerHandle(

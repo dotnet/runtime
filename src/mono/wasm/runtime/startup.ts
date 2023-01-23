@@ -22,7 +22,7 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
-import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download_with_retries, wait_for_all_assets } from "./assets";
+import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download, wait_for_all_assets } from "./assets";
 import { BINDING, MONO } from "./net6-legacy/imports";
 import { readSymbolMapFile } from "./logging";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
@@ -33,7 +33,8 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
 let isCustomStartup = false;
-export const afterConfigLoaded = createPromiseController<void>();
+export const dotnetReady = createPromiseController<any>();
+export const afterConfigLoaded = createPromiseController<MonoConfig>();
 export const afterInstantiateWasm = createPromiseController<void>();
 export const beforePreInit = createPromiseController<void>();
 export const afterPreInit = createPromiseController<void>();
@@ -72,15 +73,19 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==
-    module.ready = module.ready.then(async () => {
+
+    module.ready.then(async () => {
         // wait for previous stage
         await afterPostRun.promise;
         // startup end
         endMeasure(mark, MeasuredBlock.emscriptenStartup);
         // - here we resolve the promise returned by createDotnetRuntime export
-        return exportedAPI;
         // - any code after createDotnetRuntime is executed now
+        dotnetReady.promise_control.resolve(exportedAPI);
+    }).catch(err => {
+        dotnetReady.promise_control.reject(err);
     });
+    module.ready = dotnetReady.promise;
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = () => mono_on_abort;
@@ -152,6 +157,35 @@ function preInit(userPreInit: (() => void)[]) {
         afterPreInit.promise_control.resolve();
         Module.removeRunDependency("mono_pre_init");
     })();
+}
+
+async function preInitWorkerAsync() {
+    const mark = startMeasure();
+    try {
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
+        beforePreInit.promise_control.resolve();
+        mono_wasm_pre_init_essential();
+        await init_polyfills_async();
+        afterPreInit.promise_control.resolve();
+        endMeasure(mark, MeasuredBlock.preInitWorker);
+    } catch (err) {
+        _print_error("MONO_WASM: user preInitWorker() failed", err);
+        abort_startup(err, true);
+        throw err;
+    }
+}
+
+export function preRunWorker() {
+    const mark = startMeasure();
+    try {
+        bindings_init();
+        endMeasure(mark, MeasuredBlock.preRunWorker);
+    } catch (err) {
+        abort_startup(err, true);
+        throw err;
+    }
+    // signal next stage
+    afterPreRun.promise_control.resolve();
 }
 
 async function preRunAsync(userPreRun: (() => void)[]) {
@@ -235,6 +269,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
     if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
+    dotnetReady.promise_control.reject(reason);
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -410,10 +445,10 @@ async function instantiate_wasm_module(
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
         const assetToLoad = resolve_asset_path("dotnetwasm");
         // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
-        await start_asset_download_with_retries(assetToLoad, false);
+        await start_asset_download(assetToLoad);
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
-        instantiate_wasm_asset(assetToLoad, imports, successCallback);
+        await instantiate_wasm_asset(assetToLoad, imports, successCallback);
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
         afterInstantiateWasm.promise_control.resolve();
@@ -523,7 +558,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     configLoaded = true;
     if (!configFilePath) {
         normalize();
-        afterConfigLoaded.promise_control.resolve();
+        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
         return;
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
@@ -551,7 +586,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
                 throw err;
             }
         }
-        afterConfigLoaded.promise_control.resolve();
+        afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         abort_startup(errMessage, true);
@@ -616,22 +651,25 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 }
 
 /// Called when dotnet.worker.js receives an emscripten "load" event from the main thread.
+/// This method is comparable to configure_emscripten_startup function
 ///
 /// Notes:
 /// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
-/// 2. Emscripten does not run the preInit or preRun functions in the workers.
+/// 2. Emscripten does not run any event but preInit in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
-export async function mono_wasm_pthread_worker_init(): Promise<void> {
+export async function mono_wasm_pthread_worker_init(module: DotnetModule, exportedAPI: RuntimeAPI): Promise<DotnetModule> {
     console.debug("MONO_WASM: worker initializing essential C exports and APIs");
-    // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
-    init_c_exports();
-    // not initializing INTERNAL, MONO, or BINDING C wrappers here - those legacy APIs are not likely to be needed on pthread workers.
 
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
 
+    // this is the only event which is called on worker
+    module.preInit = [() => preInitWorkerAsync()];
+
+    await afterPreInit.promise;
+    return exportedAPI.Module;
 }
 
 /**

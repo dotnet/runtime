@@ -21,6 +21,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.NET.WebAssembly.Webcil;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -99,10 +100,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string urlRegex = request?["urlRegex"].Value<string>();
                 var regex = new Regex(urlRegex);
-                return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.DocUrl);
+                return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.FilePath);
             }
 
-            return sourceFile.Url.ToString() == url || sourceFile.DotNetUrl == url;
+            return sourceFile.Url.ToString() == url || sourceFile.DotNetUrlEscaped == url;
         }
 
         public bool TryResolve(SourceFile sourceFile)
@@ -117,7 +118,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             Assembly = sourceFile.AssemblyName;
-            File = sourceFile.DebuggerFileName;
+            File = sourceFile.FilePath;
             Line = line.Value;
             Column = column.Value;
             return true;
@@ -327,7 +328,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public SourceId SourceId => Source.SourceId;
 
-        public string SourceName => Source.DebuggerFileName;
+        public string SourceName => Source.FilePath;
 
         public string Name { get; }
         public MethodDebugInformation DebugInformation;
@@ -350,6 +351,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ParameterInfo[] _parametersInfo;
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
+        private readonly AsyncScopeDebugInformation[] _asyncScopes;
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -361,6 +363,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.TypeInfo = type;
             TypeInfo.Methods.Add(this);
             assembly.Methods[methodToken] = this;
+            _asyncScopes = Array.Empty<AsyncScopeDebugInformation>();
         }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -447,7 +450,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             if (pdbMetadataReader != null)
+            {
                 localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
+                byte[] scopeDebugInformation =
+                        (from cdiHandle in pdbMetadataReader.GetCustomDebugInformation(methodDefHandle)
+                        let cdi = pdbMetadataReader.GetCustomDebugInformation(cdiHandle)
+                        where pdbMetadataReader.GetGuid(cdi.Kind) == PortableCustomDebugInfoKinds.StateMachineHoistedLocalScopes
+                        select pdbMetadataReader.GetBlobBytes(cdi.Value)).FirstOrDefault();
+
+                if (scopeDebugInformation != null)
+                {
+                    _asyncScopes = new AsyncScopeDebugInformation[scopeDebugInformation.Length / 8];
+                    for (int i = 0; i < _asyncScopes.Length; i++)
+                    {
+                        int scopeOffset = BitConverter.ToInt32(scopeDebugInformation, i * 8);
+                        int scopeLen = BitConverter.ToInt32(scopeDebugInformation, (i * 8) + 4);
+                        _asyncScopes[i] = new AsyncScopeDebugInformation(scopeOffset, scopeOffset + scopeLen);
+                    }
+                }
+
+                _asyncScopes ??= Array.Empty<AsyncScopeDebugInformation>();
+            }
+        }
+
+        public bool ContainsAsyncScope(int oneBasedIdx, int offset)
+        {
+            int arrIdx = oneBasedIdx - 1;
+            return arrIdx >= 0 && arrIdx < _asyncScopes.Length &&
+                    offset >= _asyncScopes[arrIdx].StartOffset && offset <= _asyncScopes[arrIdx].EndOffset;
         }
 
         public ParameterInfo[] GetParametersInfo()
@@ -617,6 +647,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return loc.Source.Id;
             }
         }
+
+        private record struct AsyncScopeDebugInformation(int StartOffset, int EndOffset);
     }
 
     internal sealed class ParameterInfo
@@ -823,7 +855,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
         //The caller must keep the PEReader alive and undisposed throughout the lifetime of the metadata reader
-        internal PEReader peReader;
+        private readonly IDisposable peReaderOrWebcilReader;
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
         internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
@@ -836,36 +868,54 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
 
-        public AssemblyInfo(ILogger logger)
+        public static AssemblyInfo FromBytes(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        {
+            // First try to read it as a PE file, otherwise try it as a WebCIL file
+            using var asmStream = new MemoryStream(assembly);
+            try
+            {
+                var peReader = new PEReader(asmStream);
+                if (!peReader.HasMetadata)
+                    throw new BadImageFormatException();
+                return FromPEReader(monoProxy, sessionId, peReader, pdb, logger, token);
+            }
+            catch (BadImageFormatException)
+            {
+                // This is a WebAssembly file
+                asmStream.Seek(0, SeekOrigin.Begin);
+                var webcilReader = new WebcilReader(asmStream);
+                return FromWebcilReader(monoProxy, sessionId, webcilReader, pdb, logger, token);
+            }
+        }
+
+        public static AssemblyInfo WithoutDebugInfo(ILogger logger)
+        {
+            return new AssemblyInfo(logger);
+        }
+
+        private AssemblyInfo(ILogger logger)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
         }
 
-        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
+        private static AssemblyInfo FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
-            debugId = -1;
-            this.id = Interlocked.Increment(ref next_id);
-            this.logger = logger;
-            using var asmStream = new MemoryStream(assembly);
-            peReader = new PEReader(asmStream);
             var entries = peReader.ReadDebugDirectory();
+            CodeViewDebugDirectoryData? codeViewData = null;
             if (entries.Length > 0)
             {
                 var codeView = entries[0];
                 if (codeView.Type == DebugDirectoryEntryType.CodeView)
                 {
-                    CodeViewDebugDirectoryData codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
-                    PdbAge = codeViewData.Age;
-                    PdbGuid = codeViewData.Guid;
-                    PdbName = codeViewData.Path;
-                    CodeViewInformationAvailable = true;
+                    codeViewData = peReader.ReadCodeViewDebugDirectoryData(codeView);
                 }
             }
-            asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
-            var asmDef = asmMetadataReader.GetAssemblyDefinition();
-            Name = asmDef.GetAssemblyName().Name + ".dll";
+            var asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
+            string name = ReadAssemblyName(asmMetadataReader);
+
+            MetadataReader pdbMetadataReader = null;
             if (pdb != null)
             {
                 var pdbStream = new MemoryStream(pdb);
@@ -876,7 +926,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (BadImageFormatException)
                 {
-                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {Name} (use DebugType=Portable/Embedded)", token);
+                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {name} (use DebugType=Portable/Embedded)", token);
                 }
             }
             else
@@ -887,6 +937,74 @@ namespace Microsoft.WebAssembly.Diagnostics
                     pdbMetadataReader = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
                 }
             }
+
+            var assemblyInfo = new AssemblyInfo(peReader, name, asmMetadataReader, codeViewData, pdbMetadataReader, logger);
+            return assemblyInfo;
+        }
+
+        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        {
+            var entries = wcReader.ReadDebugDirectory();
+            CodeViewDebugDirectoryData? codeViewData = null;
+            if (entries.Length > 0)
+            {
+                var codeView = entries[0];
+                if (codeView.Type == DebugDirectoryEntryType.CodeView)
+                {
+                    codeViewData = wcReader.ReadCodeViewDebugDirectoryData(codeView);
+                }
+            }
+            var asmMetadataReader = wcReader.GetMetadataReader();
+            string name = ReadAssemblyName(asmMetadataReader);
+
+            MetadataReader pdbMetadataReader = null;
+            if (pdb != null)
+            {
+                var pdbStream = new MemoryStream(pdb);
+                try
+                {
+                    // MetadataReaderProvider.FromPortablePdbStream takes ownership of the stream
+                    pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
+                }
+                catch (BadImageFormatException)
+                {
+                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {name} (use DebugType=Portable/Embedded)", token);
+                }
+            }
+            else
+            {
+                var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+                if (embeddedPdbEntry.DataSize != 0)
+                {
+                    pdbMetadataReader = wcReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
+                }
+            }
+
+            var assemblyInfo = new AssemblyInfo(wcReader, name, asmMetadataReader, codeViewData, pdbMetadataReader, logger);
+            return assemblyInfo;
+        }
+
+        private static string ReadAssemblyName(MetadataReader asmMetadataReader)
+        {
+            var asmDef = asmMetadataReader.GetAssemblyDefinition();
+            return asmDef.GetAssemblyName().Name + ".dll";
+        }
+
+        private unsafe AssemblyInfo(IDisposable owningReader, string name, MetadataReader asmMetadataReader, CodeViewDebugDirectoryData? codeViewData, MetadataReader pdbMetadataReader, ILogger logger)
+            : this(logger)
+        {
+            peReaderOrWebcilReader = owningReader;
+            if (codeViewData != null)
+            {
+                PdbAge = codeViewData.Value.Age;
+                PdbGuid = codeViewData.Value.Guid;
+                PdbName = codeViewData.Value.Path;
+                CodeViewInformationAvailable = true;
+            }
+            this.asmMetadataReader = asmMetadataReader;
+            Name = name;
+            logger.LogTrace($"Info: loading AssemblyInfo with name {Name}");
+            this.pdbMetadataReader = pdbMetadataReader;
             Populate();
         }
 
@@ -904,14 +1022,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 debugId = id;
         }
 
-        public bool EnC(byte[] meta, byte[] pdb)
+        public bool EnC(MonoSDBHelper sdbAgent, byte[] meta, byte[] pdb)
         {
             var asmStream = new MemoryStream(meta);
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
             enCMetadataReader.Add(new (asmMetadataReader, pdbMetadataReader));
-            PopulateEnC(asmMetadataReader, pdbMetadataReader);
+            PopulateEnC(sdbAgent, asmMetadataReader, pdbMetadataReader);
             return true;
         }
         private static int GetTypeDefIdx(MetadataReader asmMetadataReaderParm, int number)
@@ -958,10 +1076,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return asmMetadataReaderLocal.GetString(MetadataTokens.StringHandle(strIdx));
         }
 
-        private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
+        private void PopulateEnC(MonoSDBHelper sdbAgent, MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             TypeInfo typeInfo = null;
             int methodIdxAsm = 1;
+            sdbAgent.ResetTypes(); // FIXME: only remove the cache for the affected type if fields or methods are added
+
             foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
             {
                 if (entry.Operation == EditAndContinueOperation.AddMethod ||
@@ -1167,14 +1287,26 @@ namespace Microsoft.WebAssembly.Diagnostics
     }
     internal sealed class SourceFile
     {
+        private static readonly Regex regexForEscapeFileName = new(@"([:/])", RegexOptions.Compiled);
         private Dictionary<int, MethodInfo> methods;
         private AssemblyInfo assembly;
         private Document doc;
         private DocumentHandle docHandle;
-        private string url;
         internal List<int> BreakableLines { get; }
 
-        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string url)
+        public string FilePath { get; init; }
+        public string FileUriEscaped { get; init; }
+        public string DotNetUrlEscaped { get; init; }
+
+        public Uri Url { get; init; }
+        public Uri SourceLinkUri { get; init; }
+
+        public int Id { get; }
+        public string AssemblyName => assembly.Name;
+        public SourceId SourceId => new SourceId(assembly.Id, this.Id);
+        public IEnumerable<MethodInfo> Methods => this.methods.Values;
+
+        internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, Uri sourceLinkUri, string documentName)
         {
             this.methods = new Dictionary<int, MethodInfo>();
             this.SourceLinkUri = sourceLinkUri;
@@ -1182,19 +1314,27 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.Id = id;
             this.doc = assembly.pdbMetadataReader.GetDocument(docHandle);
             this.docHandle = docHandle;
-            this.url = url;
-            this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
             this.BreakableLines = new List<int>();
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
+            this.FilePath = documentName;
+
+            string escapedDocumentName = EscapePathForUri(documentName.Replace("\\", "/"));
+            this.FileUriEscaped = $"file://{(OperatingSystem.IsWindows() ? "/" : "")}{escapedDocumentName}";
+            this.DotNetUrlEscaped = $"dotnet://{assembly.Name}/{escapedDocumentName}";
+            this.Url = new Uri(File.Exists(documentName) ? FileUriEscaped : DotNetUrlEscaped, UriKind.Absolute);
+        }
+
+        private static string EscapePathForUri(string path)
+        {
+            var builder = new StringBuilder();
+            foreach (var part in regexForEscapeFileName.Split(path))
             {
-                this.Url = this.SourceUri.ToString();
+                if (part == ":" || part == "/")
+                    builder.Append(part);
+                else
+                    builder.Append(Uri.EscapeDataString(part));
             }
-            else
-            {
-                this.Url = DotNetUrl;
-            }
+            return builder.ToString();
         }
 
         internal void AddMethod(MethodInfo mi)
@@ -1205,20 +1345,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public string DebuggerFileName { get; }
-        public string Url { get; }
-        public int Id { get; }
-        public string AssemblyName => assembly.Name;
-        public string DotNetUrl => $"dotnet://{assembly.Name}/{DebuggerFileName}";
-
-        public SourceId SourceId => new SourceId(assembly.Id, this.Id);
-        public Uri SourceLinkUri { get; }
-        public Uri SourceUri { get; }
-
-        public IEnumerable<MethodInfo> Methods => this.methods.Values;
-
-        public string DocUrl => url;
-
         public (int startLine, int startColumn, int endLine, int endColumn) GetExtents()
         {
             MethodInfo start = Methods.OrderBy(m => m.StartLocation.Line).ThenBy(m => m.StartLocation.Column).First();
@@ -1226,14 +1352,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return (start.StartLocation.Line, start.StartLocation.Column, end.EndLocation.Line, end.EndLocation.Column);
         }
 
-        private async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
+        private static async Task<MemoryStream> GetDataAsync(Uri uri, CancellationToken token)
         {
             var mem = new MemoryStream();
             try
             {
                 if (uri.IsFile && File.Exists(uri.LocalPath))
                 {
-                    using (FileStream file = File.Open(SourceUri.LocalPath, FileMode.Open))
+                    using (FileStream file = File.Open(uri.LocalPath, FileMode.Open))
                     {
                         await file.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -1307,7 +1433,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            foreach (Uri url in new[] { SourceUri, SourceLinkUri })
+            foreach (Uri url in new[] { new Uri(FileUriEscaped), SourceLinkUri })
             {
                 MemoryStream mem = await GetDataAsync(url, token).ConfigureAwait(false);
                 if (mem != null && mem.Length > 0 && (!checkHash || CheckPdbHash(ComputePdbHash(mem))))
@@ -1325,11 +1451,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new
             {
                 scriptId = SourceId.ToString(),
-                url = Url,
+                url = Url.OriginalString,
                 executionContextId,
                 executionContextAuxData,
                 //hash:  should be the v8 hash algo, managed implementation is pending
-                dotNetUrl = DotNetUrl,
+                dotNetUrl = DotNetUrlEscaped
             };
         }
     }
@@ -1351,9 +1477,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             public string Url { get; set; }
             public Task<byte[][]> Data { get; set; }
         }
-        public static IEnumerable<MethodInfo> EnC(AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public static IEnumerable<MethodInfo> EnC(MonoSDBHelper sdbAgent, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
-            asm.EnC(meta_data, pdb_data);
+            asm.EnC(sdbAgent, meta_data, pdb_data);
             return GetEnCMethods(asm);
         }
 
@@ -1371,7 +1497,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AssemblyInfo assembly;
             try
             {
-                assembly = new AssemblyInfo(monoProxy, id, assembly_data, pdb_data, logger, token);
+                assembly = AssemblyInfo.FromBytes(monoProxy, id, assembly_data, pdb_data, logger, token);
             }
             catch (Exception e)
             {
@@ -1465,7 +1591,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;
                     }
-                    assembly = new AssemblyInfo(monoProxy, id, bytes[0], bytes[1], logger, token);
+                    assembly = AssemblyInfo.FromBytes(monoProxy, id, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)
                 {
@@ -1581,7 +1707,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             request.TryResolve(this);
 
             AssemblyInfo asm = assemblies.FirstOrDefault(a => a.Name.Equals(request.Assembly, StringComparison.OrdinalIgnoreCase));
-            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.DebuggerFileName.Equals(request.File, StringComparison.OrdinalIgnoreCase));
+            SourceFile sourceFile = asm?.Sources?.SingleOrDefault(s => s.FilePath.Equals(request.File, StringComparison.OrdinalIgnoreCase));
 
             if (sourceFile == null)
                 yield break;
@@ -1647,6 +1773,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url : "";
+        public string ToUrl(SourceLocation location) => location != null ? GetFileById(location.Id).Url.OriginalString : "";
     }
 }

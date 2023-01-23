@@ -705,6 +705,131 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Array_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            int[] items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Span<int>.Empty);
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void Shuffle_Array_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentNullException>("values", () => random.Shuffle((int[])null));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Span_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            Span<int> items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Array.Empty<int>());
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void GetItems_Span_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Array_Allocating_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems(new int[1], length: -1));
+            AssertExtensions.Throws<ArgumentNullException>("choices", () => random.GetItems((int[])null, length: 1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(Array.Empty<int>(), length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            int[] destination = new int[1];
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Array_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            byte[] items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Span_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            Span<byte> buffer = stackalloc byte[7];
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
+        }
+
         private static Random Create(bool derived, bool seeded, int seed = 42) =>
             (derived, seeded) switch
             {

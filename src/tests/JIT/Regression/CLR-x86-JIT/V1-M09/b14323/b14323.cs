@@ -7,7 +7,7 @@ using System;
 
 namespace DefaultNamespace
 {
-    internal class AppStarter
+    public class AppStarter
     {
         public static int Main()
         {

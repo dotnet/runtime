@@ -15,10 +15,7 @@ namespace ILLink.RoslynAnalyzer
 		public static bool DoesMemberRequire (this ISymbol member, string requiresAttribute, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData)
 		{
 			requiresAttributeData = null;
-			if (member.IsStaticConstructor ())
-				return false;
-
-			if (member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
+			if (!member.IsStaticConstructor () && member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
 				return true;
 
 			// Also check the containing type
@@ -32,9 +29,9 @@ namespace ILLink.RoslynAnalyzer
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the Requires... attribute
 		/// </summary>
-		public static bool IsInRequiresScope (this ISymbol member, string requiresAttribute)
+		public static bool IsInRequiresScope (this ISymbol member, string attributeName, [NotNullWhen (true)] out AttributeData? requiresAttribute)
 		{
-			return member.IsInRequiresScope (requiresAttribute, true);
+			return member.IsInRequiresScope (attributeName, true, out requiresAttribute);
 		}
 
 		/// <summary>
@@ -46,41 +43,46 @@ namespace ILLink.RoslynAnalyzer
 		/// </param>
 		public static bool IsOverrideInRequiresScope (this ISymbol member, string requiresAttribute)
 		{
-			return member.IsInRequiresScope (requiresAttribute, false);
+			return member.IsInRequiresScope (requiresAttribute, false, out _);
 		}
 
-		private static bool IsInRequiresScope (this ISymbol member, string requiresAttribute, bool checkAssociatedSymbol)
+		private static bool IsInRequiresScope (this ISymbol member, string attributeName, bool checkAssociatedSymbol, [NotNullWhen (true)] out AttributeData? requiresAttribute)
 		{
 			// Requires attribute on a type does not silence warnings that originate
 			// from the type directly. We also only check the containing type for members
 			// below, not of nested types.
-			if (member is ITypeSymbol)
+			if (member is ITypeSymbol) {
+				requiresAttribute = null;
 				return false;
+			}
 
 			while (true) {
-				if (member.HasAttribute (requiresAttribute) && !member.IsStaticConstructor ())
+				if (member.TryGetAttribute (attributeName, out requiresAttribute) && !member.IsStaticConstructor ())
 					return true;
 				if (member.ContainingSymbol is not IMethodSymbol method)
 					break;
 				member = method;
 			}
 
-			if (member.ContainingType is ITypeSymbol containingType && containingType.HasAttribute (requiresAttribute))
+			if (member.ContainingType is ITypeSymbol containingType && containingType.TryGetAttribute (attributeName, out requiresAttribute))
 				return true;
 
 			// Only check associated symbol if not override or virtual method
-			if (checkAssociatedSymbol && member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (requiresAttribute))
+			if (checkAssociatedSymbol && member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute (attributeName, out requiresAttribute))
 				return true;
 
 			// When using instance fields suppress the warning if the constructor has already the Requires annotation
 			if (member is IFieldSymbol field && !field.IsStatic) {
 				foreach (var constructor in field.ContainingType.InstanceConstructors) {
-					if (!constructor.HasAttribute (requiresAttribute))
+					if (!constructor.TryGetAttribute (attributeName, out requiresAttribute)) {
+						requiresAttribute = null;
 						return false;
+					}
 				}
-				return true;
+				return requiresAttribute != null;
 			}
 
+			requiresAttribute = null;
 			return false;
 		}
 	}

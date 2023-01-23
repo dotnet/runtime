@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_1133
+public class GitHub_1133
 {
     static Guid s_dt;
 

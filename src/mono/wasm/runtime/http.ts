@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
+import { Module } from "./imports";
 import { MemoryViewType, Span } from "./marshal";
 import { mono_assert } from "./types";
 import { VoidPtr } from "./types/emscripten";
@@ -21,7 +22,12 @@ export function http_wasm_abort_request(abort_controller: AbortController): void
 export function http_wasm_abort_response(res: ResponseExtension): void {
     res.__abort_controller.abort();
     if (res.__reader) {
-        res.__reader.cancel();
+        res.__reader.cancel().catch((err) => {
+            if (err && err.name !== "AbortError") {
+                Module.printErr("MONO_WASM: Error in http_wasm_abort_response: " + err);
+            }
+            // otherwise, it's expected
+        });
     }
 }
 
@@ -100,49 +106,40 @@ export function http_wasm_get_response_bytes(res: ResponseExtension, view: Span)
     return bytes_read;
 }
 
-export async function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
+export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
-        if (!res.__chunk && res.body) {
-            res.__reader = res.body.getReader();
+        if (!res.__reader) {
+            res.__reader = res.body!.getReader();
+        }
+        if (!res.__chunk) {
             res.__chunk = await res.__reader.read();
             res.__source_offset = 0;
         }
-
-        let target_offset = 0;
-        let bytes_read = 0;
-        // loop until end of browser stream or end of C# buffer
-        while (res.__reader && res.__chunk && !res.__chunk.done) {
-            const remaining_source = res.__chunk.value.byteLength - res.__source_offset;
-            if (remaining_source === 0) {
-                res.__chunk = await res.__reader.read();
-                res.__source_offset = 0;
-                continue;// are we done yet
-            }
-
-            const remaining_target = view.byteLength - target_offset;
-            const bytes_copied = Math.min(remaining_source, remaining_target);
-            const source_view = res.__chunk.value.subarray(res.__source_offset, res.__source_offset + bytes_copied);
-
-            // copy available bytes
-            view.set(source_view, target_offset);
-            target_offset += bytes_copied;
-            bytes_read += bytes_copied;
-            res.__source_offset += bytes_copied;
-
-            if (target_offset == view.byteLength) {
-                return bytes_read;
-            }
+        if (res.__chunk.done) {
+            return 0;
         }
-        return bytes_read;
+
+        const remaining_source = res.__chunk.value.byteLength - res.__source_offset;
+        mono_assert(remaining_source > 0, "expected remaining_source to be greater than 0");
+
+        const bytes_copied = Math.min(remaining_source, view.byteLength);
+        const source_view = res.__chunk.value.subarray(res.__source_offset, res.__source_offset + bytes_copied);
+        view.set(source_view, 0);
+        res.__source_offset += bytes_copied;
+        if (remaining_source == bytes_copied) {
+            res.__chunk = undefined;
+        }
+
+        return bytes_copied;
     });
 }
 
 interface ResponseExtension extends Response {
     __buffer?: ArrayBuffer
     __reader?: ReadableStreamDefaultReader<Uint8Array>
-    __chunk?: ReadableStreamDefaultReadResult<Uint8Array>
+    __chunk?: ReadableStreamReadResult<Uint8Array>
     __source_offset: number
     __abort_controller: AbortController
     __headerNames: string[];

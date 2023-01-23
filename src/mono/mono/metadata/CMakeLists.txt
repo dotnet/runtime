@@ -78,6 +78,8 @@ set(metadata_common_sources
     icall-eventpipe.c
     image.c
     image-internals.h
+    webcil-loader.h
+    webcil-loader.c
     jit-info.h
     jit-info.c
     loader.c
@@ -107,6 +109,8 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
+    weak-hash.c
+    weak-hash.h
     mono-ptr-array.h
     monitor.h
     object.c

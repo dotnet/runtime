@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-internal class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool Test(ulong i)
@@ -26,7 +26,7 @@ internal class Program
         return res;
     }
 
-    private static int Main()
+    public static int Main()
     {
         bool res = Program.Test(0x8100000000000000);
 

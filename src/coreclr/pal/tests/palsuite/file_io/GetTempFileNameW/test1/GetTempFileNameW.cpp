@@ -106,8 +106,8 @@ PALTEST(file_io_GetTempFileNameW_test1_paltest_gettempfilenamew_test1, "file_io/
         WCHAR* wCurr = wTempString;
         memcpy(wCurr, wPath, wcslen(wPath) * sizeof(WCHAR));
         wCurr += wcslen(wPath);
-        wcscat(wCurr, W("\\"));
-        wCurr += wcslen(W("\\"));
+        wcscat(wCurr, W("/"));
+        wCurr += wcslen(W("/"));
         wcscat(wCurr, wPrefix);
         if (memcmp(wTempString, wReturnedName, wcslen(wTempString)*sizeof(WCHAR)) == 0)
         {

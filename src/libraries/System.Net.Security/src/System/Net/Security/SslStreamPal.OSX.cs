@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -29,6 +31,58 @@ namespace System.Net.Security
 
         public static void VerifyPackageInfo()
         {
+        }
+
+        public static SecurityStatusPal SelectApplicationProtocol(
+            SafeFreeCredentials? _,
+            SafeDeleteSslContext context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            ReadOnlySpan<byte> clientProtocols)
+        {
+            // Client did not provide ALPN or APLN is not needed
+            if (clientProtocols.Length == 0 ||
+                sslAuthenticationOptions.ApplicationProtocols == null || sslAuthenticationOptions.ApplicationProtocols.Count == 0)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+
+            // We do server side ALPN e.g. walk the intersect in server order
+            foreach (SslApplicationProtocol applicationProtcol in sslAuthenticationOptions.ApplicationProtocols)
+            {
+                ReadOnlySpan<byte> protocols = clientProtocols;
+
+                while (protocols.Length > 0)
+                {
+                    byte length = protocols[0];
+                    if (protocols.Length < length + 1)
+                    {
+                        break;
+                    }
+                    ReadOnlySpan<byte> protocol = protocols.Slice(1, length);
+                    if (protocol.SequenceCompareTo<byte>(applicationProtcol.Protocol.Span) == 0)
+                    {
+                        int osStatus = Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtcol);
+                        if (osStatus == 0)
+                        {
+                            context.SelectedApplicationProtocol = applicationProtcol;
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Info(context, $"Selected '{applicationProtcol}' ALPN");
+                        }
+                        else
+                        {
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Error(context, $"Failed to set ALPN: {osStatus}");
+                        }
+
+                        // We ignore failure and we will move on with ALPN
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                    }
+
+                    protocols = protocols.Slice(protocol.Length + 1);
+                }
+            }
+
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.ApplicationProtocolMismatch);
         }
 
 #pragma warning disable IDE0060
@@ -63,7 +117,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }
@@ -216,7 +270,7 @@ namespace System.Net.Security
             SafeDeleteSslContext securityContext,
             ref SslConnectionInfo connectionInfo)
         {
-            connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
+            connectionInfo.UpdateSslConnectionInfo(securityContext);
         }
 
         private static SecurityStatusPal HandshakeInternal(
@@ -243,12 +297,23 @@ namespace System.Net.Security
 
                 SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status = PerformHandshake(sslHandle);
-                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
+
+                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
+                    // this should happen only for clients
+                    Debug.Assert(clientCertificateSelectionCallback != null);
+
+                    // The callback also saves the selected cert in SslStream.LocalCertificate
                     X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
+
                     if (clientCertificate != null)
                     {
-                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        // build the cert context only if it was not provided by the user
+                        sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(clientCertificate);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null)
+                    {
                         SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
                     }
 
@@ -288,6 +353,8 @@ namespace System.Net.Security
                         break;
                     case PAL_TlsHandshakeState.ClientCertRequested:
                         return new SecurityStatusPal(SecurityStatusPalErrorCode.CredentialsNeeded);
+                    case PAL_TlsHandshakeState.ClientHelloReceived:
+                        return new SecurityStatusPal(SecurityStatusPalErrorCode.HandshakeStarted);
                     default:
                         return new SecurityStatusPal(
                             SecurityStatusPalErrorCode.InternalError,

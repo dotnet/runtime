@@ -4,11 +4,11 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     static bool flag;
 
-    static int Main()
+    public static int Main()
     {            
         flag = true;
         return Test();

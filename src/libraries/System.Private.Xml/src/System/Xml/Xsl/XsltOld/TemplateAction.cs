@@ -150,7 +150,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (expr.QueryTree != query)
             {
-                // query was splitted and we need create new TheQuery for this template
+                // query was split and we need create new TheQuery for this template
                 compiler.QueryStore[this.MatchKey] = new TheQuery(
                     new CompiledXpathExpr(query, expr.Expression, false),
                     theQuery._ScopeManager

@@ -405,25 +405,6 @@ BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
 HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
 MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
-License notice for Algorithm from Internet Draft document "UUIDs and GUIDs"
----------------------------------------------------------------------------
-
-Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
-Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
-Digital Equipment Corporation, Maynard, Mass.
-To anyone who acknowledges that this file is provided "AS IS"
-without any express or implied warranty: permission to use, copy,
-modify, and distribute this file for any purpose is hereby
-granted without fee, provided that the above copyright notices and
-this notice appears in all source code copies, and that none of
-the names of Open Software Foundation, Inc., Hewlett-Packard
-Company, or Digital Equipment Corporation be used in advertising
-or publicity pertaining to distribution of the software without
-specific, written prior permission.  Neither Open Software
-Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital Equipment
-Corporation makes any representations about the suitability of
-this software for any purpose.
-
 Copyright(C) The Internet Society 1997. All Rights Reserved.
 
 This document and translations of it may be copied and furnished to others,
@@ -708,7 +689,7 @@ License for fastmod (https://github.com/lemire/fastmod) and ibm-fpgen (https://g
 License for sse4-strstr (https://github.com/WojciechMula/sse4-strstr)
 --------------------------------------
 
-   Copyright (c) 2008-2016, Wojciech Muła
+   Copyright (c) 2008-2016, Wojciech Mula
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -1206,3 +1187,12 @@ As an exception, if, as a result of your compiling your source code, portions
 of this Software are embedded into a machine-executable object form of such
 source code, you may redistribute such embedded portions in such object form
 without including the above copyright and permission notices.
+
+
+License for MurmurHash3
+--------------------------------------
+
+https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+
+MurmurHash3 was written by Austin Appleby, and is placed in the public
+domain. The author hereby disclaims copyright to this source

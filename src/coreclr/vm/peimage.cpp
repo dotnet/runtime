@@ -141,7 +141,7 @@ ULONG PEImage::Release()
         result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %s\n", m_path.GetUTF8()));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
@@ -170,7 +170,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         MODE_ANY;
     }
     CONTRACT_CHECK_END;
-
+#ifdef TARGET_WINDOWS
     CCHECK_START
     {
         // This is not intended to be an exhaustive test, just to provide a sanity check
@@ -197,19 +197,19 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         while (i != path.End())
         {
             // Check for multiple slashes
-            if(*i != '\\')
+            if(*i != DIRECTORY_SEPARATOR_CHAR_A)
             {
 
                 // Check for . or ..
                 SString sParentDir(SString::Ascii, "..");
                 SString sCurrentDir(SString::Ascii, ".");
                 if ((path.Skip(i, sParentDir) || path.Skip(i, sCurrentDir))
-                    && (path.Match(i, '\\')))
+                    && (path.Match(i, DIRECTORY_SEPARATOR_CHAR_A)))
                 {
                     CCHECK_FAIL("Illegal . or ..");
                 }
 
-                if (!path.Find(i, '\\'))
+                if (!path.Find(i, DIRECTORY_SEPARATOR_CHAR_A))
                     break;
             }
 
@@ -217,6 +217,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         }
     }
     CCHECK_END;
+#endif // TARGET_WINDOWS
 
     CHECK_OK;
 }

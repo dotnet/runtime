@@ -764,16 +764,16 @@ namespace System.Diagnostics.Tracing
                 {
                     if (m_traits[i].StartsWith("ETW_", StringComparison.Ordinal))
                     {
-                        string etwTrait = m_traits[i].Substring(4);
+                        ReadOnlySpan<char> etwTrait = m_traits[i].AsSpan(4);
                         if (!byte.TryParse(etwTrait, out byte traitNum))
                         {
-                            if (etwTrait == "GROUP")
+                            if (etwTrait is "GROUP")
                             {
                                 traitNum = 1;
                             }
                             else
                             {
-                                throw new ArgumentException(SR.Format(SR.EventSource_UnknownEtwTrait, etwTrait), "traits");
+                                throw new ArgumentException(SR.Format(SR.EventSource_UnknownEtwTrait, etwTrait.ToString()), "traits");
                             }
                         }
                         string value = m_traits[i + 1];

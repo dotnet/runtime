@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -105,12 +106,93 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                    // the underlying FrozenHashtable's Int32 index as the keys themselves, avoiding the need to store the
-                    // same keys yet again.
-                    return typeof(TKey) == typeof(int) ?
-                        (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source) :
-                        new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+#if NET7_0_OR_GREATER
+                    static FrozenDictionary<TKey, TValue> PickIntegerDictionary<TInt>(Dictionary<TKey, TValue> source)
+                        where TInt : struct, IBinaryInteger<TInt>
+                    {
+                        TInt[] keys = (TInt[])(object)source.Keys.ToArray();
+                        TValue[] values = source.Values.ToArray();
+
+                        Array.Sort(keys, values);
+
+                        TInt min = keys[0];
+                        TInt max = keys[^1];
+                        ulong range = ulong.CreateTruncating(max - min);
+
+                        if (keys.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallIntegerFrozenDictionary<TInt, TValue>(keys, values);
+                        }
+                        else if (typeof(TInt) == typeof(int))
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                        }
+                        else
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new IntegerFrozenDictionary<TInt, TValue>((Dictionary<TInt, TValue>)(object)source);
+                        }
+                    }
+
+                    if (typeof(TKey) == typeof(int))
+                    {
+                        return PickIntegerDictionary<int>(source);
+                    }
+                    else if (typeof(TKey) == typeof(uint))
+                    {
+                        return PickIntegerDictionary<uint>(source);
+                    }
+                    else if (typeof(TKey) == typeof(long))
+                    {
+                        return PickIntegerDictionary<long>(source);
+                    }
+                    else if (typeof(TKey) == typeof(ulong))
+                    {
+                        return PickIntegerDictionary<ulong>(source);
+                    }
+                    else if (typeof(TKey) == typeof(short))
+                    {
+                        return PickIntegerDictionary<short>(source);
+                    }
+                    else if (typeof(TKey) == typeof(ushort))
+                    {
+                        return PickIntegerDictionary<ushort>(source);
+                    }
+                    else if (typeof(TKey) == typeof(byte))
+                    {
+                        return PickIntegerDictionary<byte>(source);
+                    }
+                    else if (typeof(TKey) == typeof(sbyte))
+                    {
+                        return PickIntegerDictionary<sbyte>(source);
+                    }
+
+#else
+
+                    if (typeof(TKey) == typeof(int))
+                    {
+                        int[] keys = (int[])(object)source.Keys.ToArray();
+                        TValue[] values = source.Values.ToArray();
+
+                        Array.Sort(keys, values);
+
+                        int min = keys[0];
+                        int max = keys[keys.Length - 1];
+                        int range = max - min + 1;
+
+                        if (keys.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallInt32FrozenDictionary<TValue>(keys, values);
+                        }
+                        else
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
+                        }
+                    }
+#endif
+                    else
+                    {
+                        return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
+                    }
                 }
             }
             else if (typeof(TKey) == typeof(string))
@@ -130,6 +212,12 @@ namespace System.Collections.Frozen
 
                     return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }
+            }
+
+            if (source.Count <= Constants.MaxItemsInSmallFrozenCollection)
+            {
+                // use the specialized dictionary for low item counts
+                return new SmallFrozenDictionary<TKey, TValue>(source, comparer);
             }
 
             // No special-cases apply. Use the default frozen dictionary.
@@ -169,10 +257,10 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the keys in the dictionary is unspecified, but it is the same order as the associated values returned by the <see cref="Values"/> property.
         /// </remarks>
-        public ImmutableArray<TKey> Keys => KeysCore;
+        public ImmutableArray<TKey> Keys => ImmutableArrayFactory.Create(KeysCore);
 
         /// <inheritdoc cref="Keys" />
-        private protected abstract ImmutableArray<TKey> KeysCore { get; }
+        private protected abstract TKey[] KeysCore { get; }
 
         /// <inheritdoc />
         ICollection<TKey> IDictionary<TKey, TValue>.Keys =>
@@ -191,10 +279,10 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the values in the dictionary is unspecified, but it is the same order as the associated keys returned by the <see cref="Keys"/> property.
         /// </remarks>
-        public ImmutableArray<TValue> Values => ValuesCore;
+        public ImmutableArray<TValue> Values => ImmutableArrayFactory.Create(ValuesCore);
 
         /// <inheritdoc cref="Values" />
-        private protected abstract ImmutableArray<TValue> ValuesCore { get; }
+        private protected abstract TValue[] ValuesCore { get; }
 
         ICollection<TValue> IDictionary<TKey, TValue>.Values =>
             Values is { Length: > 0 } values ? values : Array.Empty<TValue>();
@@ -230,8 +318,8 @@ namespace System.Collections.Frozen
                 ThrowHelper.ThrowIfDestinationTooSmall();
             }
 
-            TKey[] keys = Keys.array!;
-            TValue[] values = Values.array!;
+            TKey[] keys = KeysCore;
+            TValue[] values = ValuesCore;
             Debug.Assert(keys.Length == values.Length);
 
             for (int i = 0; i < keys.Length; i++)
@@ -283,7 +371,7 @@ namespace System.Collections.Frozen
             {
                 if (array is not object[] objects)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -295,7 +383,7 @@ namespace System.Collections.Frozen
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }

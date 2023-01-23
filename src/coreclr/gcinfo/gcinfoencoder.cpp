@@ -454,16 +454,6 @@ GcInfoEncoder::GcInfoEncoder(
     m_pAllocator = pJitAllocator;
     m_pNoMem = pNoMem;
 
-#ifdef _DEBUG
-    CORINFO_METHOD_HANDLE methodHandle = pMethodInfo->ftn;
-
-    // Get the name of the current method along with the enclosing class
-    // or module name.
-    m_MethodName =
-        pCorJitInfo->getMethodName(methodHandle, (const char **)&m_ModuleName);
-#endif
-
-
     m_SlotTableSize = m_SlotTableInitialSize;
     m_SlotTable = (GcSlotDesc*) m_pAllocator->Alloc( m_SlotTableSize*sizeof(GcSlotDesc) );
     m_NumSlots = 0;
@@ -991,14 +981,19 @@ void GcInfoEncoder::Build()
 {
 #ifdef _DEBUG
     _ASSERTE(m_IsSlotTableFrozen || m_NumSlots == 0);
-#endif
 
     _ASSERTE((1 << NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2) == NUM_NORM_CODE_OFFSETS_PER_CHUNK);
 
+    char methodName[256];
+    m_pCorJitInfo->printMethodName(m_pMethodInfo->ftn, methodName, sizeof(methodName));
+
+    char className[256];
+    m_pCorJitInfo->printClassName(m_pCorJitInfo->getMethodClass(m_pMethodInfo->ftn), className, sizeof(className));
+
     LOG((LF_GCINFO, LL_INFO100,
-         "Entering GcInfoEncoder::Build() for method %s[%s]\n",
-         m_MethodName, m_ModuleName
-         ));
+         "Entering GcInfoEncoder::Build() for method %s:%s\n",
+         className, methodName));
+#endif
 
 
     ///////////////////////////////////////////////////////////////////////

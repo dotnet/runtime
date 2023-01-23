@@ -188,6 +188,7 @@ clear_cached_object (MonoMemoryManager *mem_manager, gpointer o, MonoClass *klas
 
 	if (mono_conc_g_hash_table_lookup_extended (mem_manager->refobject_hash, &pe, &orig_pe, &orig_value)) {
 		mono_conc_g_hash_table_remove (mem_manager->refobject_hash, &pe);
+		// FIXME: These are mempool allocated, so they are not really freed
 		free_reflected_entry ((ReflectedEntry *)orig_pe);
 	}
 
@@ -216,9 +217,18 @@ mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
 static MonoReflectionAssemblyHandle
 assembly_object_construct (MonoClass *unused_klass, MonoAssembly *assembly, gpointer user_data, MonoError *error)
 {
+	MonoMemoryManager *mm = m_image_get_mem_manager (assembly->image);
+
 	error_init (error);
 	MonoReflectionAssemblyHandle res = MONO_HANDLE_CAST (MonoReflectionAssembly, mono_object_new_handle (mono_class_get_mono_assembly_class (), error));
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionAssembly, NULL_HANDLE));
+
+	if (mm->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (mm));
+		g_assert (loader_alloc);
+		MONO_HANDLE_SETRAW (res, m_keepalive, loader_alloc);
+	}
+
 	MONO_HANDLE_SETVAL (res, assembly, MonoAssembly*, assembly);
 	return res;
 }
@@ -478,9 +488,13 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 			return (MonoReflectionType *)vtable->type;
 	}
 
+	mono_mem_manager_init_reflection_hashes (memory_manager);
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
 	mono_mem_manager_lock (memory_manager);
-	res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (memory_manager->collectible)
+		res = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 	mono_mem_manager_unlock (memory_manager);
 	if (res)
 		goto leave;
@@ -498,11 +512,17 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto_if_nok (error, leave);
 
 		mono_mem_manager_lock (memory_manager);
-		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+		if (memory_manager->collectible)
+			cached = mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+		else
+			cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 		if (cached) {
 			res = cached;
 		} else {
-			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+			if (memory_manager->collectible)
+				mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+			else
+				mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 		}
 		mono_mem_manager_unlock (memory_manager);
 		goto leave;
@@ -539,13 +559,24 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	goto_if_nok (error, leave);
 
 	res->type = type;
+	if (memory_manager->collectible) {
+		MonoObject *loader_alloc = mono_gchandle_get_target_internal (mono_mem_manager_get_loader_alloc (memory_manager));
+		g_assert (loader_alloc);
+		MONO_OBJECT_SETREF_INTERNAL (res, m_keepalive, loader_alloc);
+	}
 
 	mono_mem_manager_lock (memory_manager);
-	cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (memory_manager->collectible)
+		cached = (MonoReflectionType *)mono_weak_hash_table_lookup (memory_manager->weak_type_hash, type);
+	else
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
 	if (cached) {
 		res = cached;
 	} else {
-		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (memory_manager->collectible)
+			mono_weak_hash_table_insert (memory_manager->weak_type_hash, type, res);
+		else
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
 			domain->typeof_void = (MonoObject*)res;
 	}
@@ -1254,7 +1285,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (image->raw_data && image->raw_data [1] != 'Z') ||
+		(image->raw_data && (image->raw_data [1] != 'Z' && image->raw_data [1] != 'b')) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return MONO_HANDLE_CAST (MonoReflectionMethodBody, NULL_HANDLE);
 
@@ -2502,7 +2533,8 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 	} else if (strcmp (klass_name, "RuntimePropertyInfo") == 0) {
 		MonoReflectionPropertyHandle p = MONO_HANDLE_CAST (MonoReflectionProperty, obj);
 
-		token = mono_class_get_property_token (MONO_HANDLE_GETVAL (p, property));
+		MonoProperty *prop = MONO_HANDLE_GETVAL (p, property);
+		token = mono_class_get_property_token (prop);
 	} else if (strcmp (klass_name, "RuntimeEventInfo") == 0) {
 		MonoReflectionMonoEventHandle p = MONO_HANDLE_CAST (MonoReflectionMonoEvent, obj);
 

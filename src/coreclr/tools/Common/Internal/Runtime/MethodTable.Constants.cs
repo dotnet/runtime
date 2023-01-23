@@ -88,6 +88,7 @@ namespace Internal.Runtime
     {
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
+        IsTrackedReferenceWithFinalizerFlag = 0x0004,
     }
 
     internal enum EETypeKind : uint
@@ -140,11 +141,7 @@ namespace Internal.Runtime
 
         // UNUSED2 = 0x00000040,
 
-        /// <summary>
-        /// This MethodTable was constructed from a universal canonical template, and has
-        /// its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        /// </summary>
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        // UNUSED = 0x00000080,
 
         /// <summary>
         /// This MethodTable represents a structure that is an HFA
@@ -171,10 +168,7 @@ namespace Internal.Runtime
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
 
-        /// <summary>
-        /// This MethodTable contains a pointer to dynamic module information
-        /// </summary>
-        HasDynamicModuleFlag = 0x00002000,
+        // UNUSED = 0x00002000,
 
         /// <summary>
         /// This MethodTable is an abstract class (but not an interface).
@@ -196,8 +190,6 @@ namespace Internal.Runtime
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
-        ETF_DynamicDispatchMap,
-        ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
         ETF_DynamicGcStatics,

@@ -203,10 +203,7 @@ namespace System.Globalization
         public CultureInfo(int culture, bool useUserOverride)
         {
             // We don't check for other invalid LCIDS here...
-            if (culture < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(culture);
 
             switch (culture)
             {
@@ -505,7 +502,7 @@ namespace System.Globalization
                                 parentName = "zh-Hant";
                             }
                         }
-                        else if (_name.Length > 8 && _name.AsSpan(2, 4).Equals("-Han", StringComparison.Ordinal) && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
+                        else if (_name.Length > 8 && _name.AsSpan(2, 4) is "-Han" && _name[7] == '-') // cultures like zh-Hant-* and zh-Hans-*
                         {
                             if (_name[6] == 't') // zh-Hant-*
                             {
@@ -1020,10 +1017,7 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(int culture)
         {
-            if (culture <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(culture);
 
             Dictionary<int, CultureInfo> lcidTable = CachedCulturesByLcid;
             CultureInfo? result;

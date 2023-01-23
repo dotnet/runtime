@@ -32,7 +32,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AnnotatedGenerics.Test ();
 			AnnotationOnGenerics.Test ();
 			AnnotationOnInteropMethod.Test ();
-			AccessThroughLdToken.Test ();
 		}
 
 		class AnnotatedField
@@ -128,6 +127,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedField).RequiresNonPublicNestedTypes ();
 			}
 
+			static void PotentialWriteAccess (ref Type type)
+			{
+			}
+
+			// https://github.com/dotnet/linker/issues/3172
+			[ExpectedWarning ("IL2110", nameof (AnnotatedField._annotatedField), ProducedBy = ProducedBy.Trimmer)]
+			static void LdToken ()
+			{
+				Expression<Action> a = () => PotentialWriteAccess (ref _annotatedField);
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -143,6 +153,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembersAll2 ();
 				DynamicallyAccessedMembersNestedTypes1 ();
 				DynamicallyAccessedMembersNestedTypes2 ();
+				LdToken ();
 			}
 		}
 
@@ -251,6 +262,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedMethodParameters).RequiresAll ();
 			}
 
+			// https://github.com/dotnet/linker/issues/3172
+			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2067", nameof (MethodWithSingleAnnotatedParameter), ProducedBy = ProducedBy.Analyzer)]
+			static void LdToken ()
+			{
+				Expression<Action<Type>> _ = (Type t) => MethodWithSingleAnnotatedParameter (t);
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -265,6 +284,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Ldvirtftn ();
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();
+				LdToken ();
 			}
 		}
 
@@ -363,6 +383,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Func<Type> ((new AnnotatedMethodReturnValue ()).VirtualMethodWithAnnotatedReturnValue);
 			}
 
+			static void LdTokenOnStatic ()
+			{
+				Expression<Action> _ = () => StaticMethodWithAnnotatedReturnValue ();
+			}
+
+			// https://github.com/dotnet/linker/issues/3172
+			[ExpectedWarning ("IL2111", nameof (VirtualMethodWithAnnotatedReturnValue), ProducedBy = ProducedBy.Trimmer)]
+			static void LdTokenOnVirtual ()
+			{
+				Expression<Action<AnnotatedMethodReturnValue>> _ = (a) => a.VirtualMethodWithAnnotatedReturnValue ();
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -380,6 +412,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				LdftnOnStatic ();
 				LdftnOnInstance ();
 				LdftnOnVirtual ();
+				LdTokenOnStatic ();
+				LdTokenOnVirtual ();
 			}
 		}
 
@@ -563,6 +597,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedProperty).RequiresNonPublicFields ();
 			}
 
+			// Action delegate is not handled correctly https://github.com/dotnet/linker/issues/2561
+			[ExpectedWarning ("IL2111", nameof (Property1WithAnnotation), ProducedBy = ProducedBy.Trimmer)]
+			static void LdToken ()
+			{
+				Expression<Func<Type>> _ = () => Property1WithAnnotation;
+			}
+
 			[UnconditionalSuppressMessage ("test", "IL2026")]
 			public static void Test ()
 			{
@@ -581,6 +622,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();
 				DynamicallyAccessedFields ();
+				LdToken ();
 			}
 		}
 
@@ -623,6 +665,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresAll ();
 			}
 
+			[ExpectedWarning ("IL2091", nameof (GenericWithAnnotation))]
+			static void LdToken<TUnknown> ()
+			{
+				Expression<Action> _ = () => GenericWithAnnotation<TUnknown> ();
+			}
+
 			public static void Test ()
 			{
 				ReflectionOnly ();
@@ -630,6 +678,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembers ();
 				InstantiateGeneric ();
 				DynamicallyAccessedMembersAll ();
+				LdToken<string> ();
 			}
 		}
 
@@ -693,6 +742,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotationOnGenerics).RequiresAll ();
 			}
 
+			// https://github.com/dotnet/linker/issues/3172
+			[ExpectedWarning ("IL2111", "GenericWithAnnotatedMethod", "AnnotatedMethod", ProducedBy = ProducedBy.Trimmer)]
+			static void LdToken ()
+			{
+				// Note that this should warn even though the code looks "Correct"
+				// That is because under the hood the expression tree create MethodInfo which is accessible by anything
+				// which gets the expression tree as input (so some queryable) and that could invoke the method
+				// with a different parameter value and thus violate the requirements.
+				Expression<Action> _ = () => GenericWithAnnotatedMethod<TestType>.AnnotatedMethod (typeof (TestType));
+			}
+
 			public static void Test ()
 			{
 				GenericTypeWithStaticMethodViaLdftn ();
@@ -702,6 +762,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				GenericMethodDynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();
+				LdToken ();
 			}
 		}
 
@@ -713,12 +774,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public Type _typeField;
 			}
 
-			// Analyzer doesnt take into account interop attributes https://github.com/dotnet/linker/issues/2562
+			// Analyzer doesn't take into account interop attributes https://github.com/dotnet/linker/issues/2562
 			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern ValueWithAnnotatedField GetValueWithAnnotatedField ();
 
-			// Analyzer doesnt take into account interop attributes https://github.com/dotnet/linker/issues/2562
+			// Analyzer doesn't take into account interop attributes https://github.com/dotnet/linker/issues/2562
 			[ExpectedWarning ("IL2110", nameof (ValueWithAnnotatedField._typeField), ProducedBy = ProducedBy.Trimmer)]
 			[DllImport ("nonexistent")]
 			static extern void AcceptValueWithAnnotatedField (ValueWithAnnotatedField value);
@@ -727,24 +788,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				GetValueWithAnnotatedField ();
 				AcceptValueWithAnnotatedField (default (ValueWithAnnotatedField));
-			}
-		}
-
-		class AccessThroughLdToken
-		{
-			public virtual Type PropertyWithLdToken {
-				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-				get {
-					return null;
-				}
-			}
-
-			// Action delegate is not handled correctly https://github.com/dotnet/linker/issues/2561
-			[ExpectedWarning ("IL2111", nameof (PropertyWithLdToken), ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2111", nameof (PropertyWithLdToken), ProducedBy = ProducedBy.Trimmer)]
-			public static void Test ()
-			{
-				Expression<Func<Type>> getter = () => (new AccessThroughLdToken ()).PropertyWithLdToken;
 			}
 		}
 

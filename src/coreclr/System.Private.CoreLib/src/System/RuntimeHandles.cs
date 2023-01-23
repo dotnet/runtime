@@ -124,7 +124,7 @@ namespace System
                     corElemType == CorElementType.ELEMENT_TYPE_OBJECT))
                 return false;
 
-            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+            if (type.IsConstructedGenericType)
                 return false;
 
             return true;
@@ -139,19 +139,6 @@ namespace System
         {
             CorElementType corElemType = GetCorElementType(type);
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
-        }
-
-        internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
-        {
-            CorElementType corElemType = GetCorElementType(type);
-            if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
-            {
-                elementType = GetElementType(type);
-                return true;
-            }
-
-            elementType = null;
-            return false;
         }
 
         internal static bool IsPointer(RuntimeType type)
@@ -681,27 +668,8 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
         internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInstantiation(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
-
-        internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
-        {
-            RuntimeType retType = type;
-
-            if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
-            {
-                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
-                GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
-            }
-
-            return retType;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericTypeDefinition(RuntimeType type);
+        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);
