@@ -3419,7 +3419,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 
             ArrayStack<GenTree*>* expected = seq.GetSequence();
 
-            bool success   = true;
+            bool success = true;
 
             if (expected->Height() > 0)
             {
@@ -3430,7 +3430,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                 success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
             }
 
-            int  nodeIndex = 0;
+            int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
                 success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
