@@ -4760,13 +4760,35 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         prevCond = GenCondition::NE;
     }
 
+    regNumber               targetReg = tree->GetRegNum();
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
+    regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
+
+    // When abs(op2 - op1) = 1, emit cinc instaed of csel. Lowering ensures op1 is the smaller constant.
+    if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && op2->isContained() && opcond->OperIsSimple() &&
+        !varTypeIsFloating(opcond->gtGetOp1()->TypeGet()))
+    {
+        assert(!varTypeIsFloating(opcond->gtGetOp2()->TypeGet()));
+        ssize_t diff = op1->AsIntCon()->IconValue() - op2->AsIntCon()->IconValue();
+        if (op1->TypeGet() == TYP_INT)
+        {
+            diff = (int)diff;
+        }
+
+        if (abs(diff) == 1)
+        {
+            assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
+            emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg1, JumpKindToInsCond(prevDesc.jumpKind1));
+            regSet.verifyRegUsed(targetReg);
+            genProduceReg(tree);
+            return;
+        }
+    }
+
     assert(!op1->isContained() || op1->IsIntegralConst(0));
     assert(!op2->isContained() || op2->IsIntegralConst(0));
 
-    regNumber               targetReg = tree->GetRegNum();
-    regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
-    regNumber               srcReg2   = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
-    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
+    regNumber srcReg2 = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
 
     emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
 

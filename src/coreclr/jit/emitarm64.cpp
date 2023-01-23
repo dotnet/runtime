@@ -444,7 +444,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_2D: // DR_2D   X..........nnnnn cccc..nnnnnmmmmm      Rd Rn    cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -7315,7 +7315,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
         case INS_cinv:
         case INS_cneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegisterOrZR(reg2));
             cfi.cond = cond;
             fmt      = IF_DR_2D;
             break;

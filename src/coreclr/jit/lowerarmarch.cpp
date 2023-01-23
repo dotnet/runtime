@@ -2495,6 +2495,42 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     {
         MakeSrcContained(node, op2);
     }
+
+    if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && cond->OperIsSimple() &&
+        !varTypeIsFloating(cond->gtGetOp1()->TypeGet()))
+    {
+        assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
+        ssize_t diff     = op1->AsIntCon()->IconValue() - op2->AsIntCon()->IconValue();
+        ssize_t maxValue = INT64_MAX;
+        ssize_t minValue = INT64_MIN;
+        if (op1->TypeGet() == TYP_INT)
+        {
+            diff     = (int)diff;
+            maxValue = INT32_MAX;
+            minValue = INT32_MIN;
+        }
+
+        if (abs(diff) == 1)
+        {
+            // When abs(op1 - op2) = 1, contain the larger op and emit cinc using the smaller op instead of csel with
+            // both the ops.
+            int op1Value = op1->AsIntCon()->IconValue();
+            int op2Value = op2->AsIntCon()->IconValue();
+            if (op1Value > op2Value || (op1Value == minValue && op2Value == maxValue))
+            {
+                MakeSrcContained(node, op1);
+                // Put smaller operand as op1 to simpilify checks in codegen
+                std::swap(node->gtOp1, node->gtOp2);
+            }
+            else
+            {
+                MakeSrcContained(node, op2);
+                // Reverse the condition so that op2 will be selected
+                GenTree* revCond = comp->gtReverseCond(cond);
+                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+            }
+        }
+    }
 #endif
 }
 
