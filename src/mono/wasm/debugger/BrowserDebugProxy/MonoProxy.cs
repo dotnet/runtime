@@ -18,7 +18,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class MonoProxy : DevToolsProxy
     {
-        private IList<string> urlSymbolServerList;
+        internal List<string> UrlSymbolServerList { get; private set; }
+        internal string CachePathSymbolServer { get; private set; }
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
@@ -32,9 +33,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected readonly ProxyOptions _options;
 
-        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
+        public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
         {
-            this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
+            UrlSymbolServerList = new List<string>();
             RuntimeId = runtimeId;
             _options = options;
             _defaultPauseOnExceptions = PauseOnExceptionsKind.Unset;
@@ -76,10 +77,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 type,
                 args = new JArray(JObject.FromObject(new
-                                {
-                                    type = "string",
-                                    value = message,
-                                })),
+                {
+                    type = "string",
+                    value = message,
+                })),
                 executionContextId = context.Id
             });
             SendEvent(sessionId, "Runtime.consoleAPICalled", o, token);
@@ -143,7 +144,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             bool? is_default = aux_data["isDefault"]?.Value<bool>();
                             if (is_default == true)
                             {
-                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper (this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
+                                await OnDefaultContext(sessionId, new ExecutionContext(new MonoSDBHelper(this, logger, sessionId), id, aux_data, _defaultPauseOnExceptions), token);
                             }
                         }
                         return true;
@@ -170,6 +171,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 {
                                     await RuntimeReady(sessionId, token);
                                     await SendResume(sessionId, token);
+                                    if (!JustMyCode)
+                                        await ReloadSymbolsFromSymbolServer(sessionId, GetContext(sessionId), token);
                                     return true;
                                 }
                             case "mono_wasm_fire_debugger_agent_message":
@@ -240,7 +243,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (!contexts.TryGetValue(id, out ExecutionContext context) && !s_executionContextIndependentCDPCommandNames.Contains(method))
             {
-                if  (method == "Debugger.setPauseOnExceptions")
+                if (method == "Debugger.setPauseOnExceptions")
                 {
                     string state = args["state"].Value<string>();
                     var pauseOnException = GetPauseOnExceptionsStatusFromString(state);
@@ -505,11 +508,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             switch (property.Key)
                             {
                                 case "JustMyCodeStepping":
-                                    SetJustMyCode(id, (bool) property.Value, token);
-                                break;
+                                    await SetJustMyCode(id, (bool)property.Value, context, token);
+                                    break;
                                 default:
                                     logger.LogDebug($"DotnetDebugger.setDebuggerProperty failed for {property.Key} with value {property.Value}");
-                                break;
+                                    break;
                             }
                         }
                         return true;
@@ -534,11 +537,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, Result.Err("ApplyUpdate failed."), token);
                         return true;
                     }
-                case "DotnetDebugger.addSymbolServerUrl":
+                case "DotnetDebugger.setSymbolOptions":
                     {
-                        string url = args["url"]?.Value<string>();
-                        if (!string.IsNullOrEmpty(url) && !urlSymbolServerList.Contains(url))
-                            urlSymbolServerList.Add(url);
+                        SendResponse(id, Result.OkFromObject(new { }), token);
+                        CachePathSymbolServer = args["symbolOptions"]?["cachePath"]?.Value<string>();
+                        var urls = args["symbolOptions"]?["searchPaths"]?.Value<JArray>();
+                        if (urls == null)
+                            return true;
+                        UrlSymbolServerList.Clear();
+                        UrlSymbolServerList.AddRange(urls.Values<string>());
+                        if (!JustMyCode)
+                        {
+                            if (!await IsRuntimeAlreadyReadyAlready(id, token))
+                                return true;
+                            return await ReloadSymbolsFromSymbolServer(id, context, token);
+                        }
                         return true;
                     }
                 case "DotnetDebugger.getMethodLocation":
@@ -578,6 +591,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
         }
 
+        private async Task<bool> ReloadSymbolsFromSymbolServer(SessionId id, ExecutionContext context, CancellationToken token)
+        {
+            DebugStore store = await LoadStore(id, true, token);
+            store.UpdateSymbolStore(UrlSymbolServerList, CachePathSymbolServer);
+            await store.ReloadAllPDBsFromSymbolServersAndSendSources(this, id, context, token);
+            return true;
+        }
+
         private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
         {
             var context = GetContext(id);
@@ -590,8 +611,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return applyUpdates;
         }
 
-        private void SetJustMyCode(MessageId id, bool isEnabled, CancellationToken token)
+        private async Task SetJustMyCode(MessageId id, bool isEnabled, ExecutionContext context, CancellationToken token)
         {
+            if (JustMyCode != isEnabled && isEnabled == false)
+            {
+                JustMyCode = isEnabled;
+                if (await IsRuntimeAlreadyReadyAlready(id, token))
+                    await ReloadSymbolsFromSymbolServer(id, context, token);
+            }
             JustMyCode = isEnabled;
             SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
@@ -886,7 +913,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int j, MethodInfoWithDebugInformation method, CancellationToken token)
+        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, MethodInfoWithDebugInformation method, CancellationToken token)
         {
             var shouldReturn = await SkipMethod(
                     isSkippable: context.IsSkippingHiddenMethod,
@@ -904,7 +931,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (shouldReturn)
                 return true;
 
-            if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
+            if (frameNumber != 0)
+                return false;
+
+            if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
             {
                 if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                 {
@@ -927,6 +957,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     if (event_kind == EventKind.Breakpoint)
                         context.IsResumedAfterBp = true;
+                }
+            }
+            else
+            {
+                if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode == true && !method.Info.hasDebugInformation)
+                {
+                    if (event_kind == EventKind.Step)
+                        context.IsSkippingHiddenMethod = true;
+                    if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                        return true;
                 }
             }
             return false;
@@ -1130,49 +1170,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             return false;
-        }
-
-        internal async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
-        {
-            ExecutionContext context = GetContext(sessionId);
-            if (urlSymbolServerList.Count == 0)
-                return null;
-            if (asm.TriedToLoadSymbolsOnDemand || !asm.CodeViewInformationAvailable)
-                return null;
-            asm.TriedToLoadSymbolsOnDemand = true;
-            var pdbName = Path.GetFileName(asm.PdbName);
-
-            foreach (string urlSymbolServer in urlSymbolServerList)
-            {
-                string downloadURL = $"{urlSymbolServer}/{pdbName}/{asm.PdbGuid.ToString("N").ToUpperInvariant() + asm.PdbAge}/{pdbName}";
-
-                try
-                {
-                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
-                        continue;
-                    }
-
-                    using Stream streamToReadFrom = await response.Content.ReadAsStreamAsync(token);
-                    asm.UpdatePdbInformation(streamToReadFrom);
-                    foreach (SourceFile source in asm.Sources)
-                    {
-                        var scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
-                        await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-                    }
-                    return asm.GetMethodByToken(method_token);
-                }
-                catch (Exception e)
-                {
-                    Log("info", $"Unable to load symbols on demand exception: {e} url:{downloadURL} assembly: {asm.Name}");
-                }
-                break;
-            }
-
-            Log("info", $"Unable to load symbols on demand assembly: {asm.Name}");
-            return null;
         }
 
         protected void OnDefaultContextUpdate(SessionId sessionId, ExecutionContext context)
@@ -1575,7 +1572,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var comparer = new SourceLocation.LocationComparer();
             // if column is specified the frontend wants the exact matches
-            // and will clear the bp if it isn't close enoug
+            // and will clear the bp if it isn't close enough
             var bpLocations = store.FindBreakpointLocations(req, ifNoneFoundThenFindNext);
             IEnumerable<IGrouping<SourceId, SourceLocation>> locations = bpLocations.Distinct(comparer)
                 .OrderBy(l => l.Column)
