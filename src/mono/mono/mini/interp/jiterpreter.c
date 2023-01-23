@@ -962,6 +962,28 @@ mono_jiterp_get_signature_params (MonoMethodSignature *sig)
 	return sig->params;
 }
 
+#define DUMMY_BYREF 0xFFFF
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_ldind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return DUMMY_BYREF;
+	return mono_type_to_ldind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_stind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return 0;
+	return mono_type_to_stind (type);
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
 #endif

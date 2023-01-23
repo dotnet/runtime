@@ -140,10 +140,10 @@ class TrampolineInfo {
         this.result = 0;
 
         this.wasmNativeReturnType = this.signatureReturnType && this.hasReturnValue
-            ? (wasmTypeFromCilOpcode as any)[cwraps.mono_type_to_stind(this.signatureReturnType)]
+            ? (wasmTypeFromCilOpcode as any)[cwraps.mono_jiterp_type_to_stind(this.signatureReturnType)]
             : WasmValtype.void;
         this.wasmNativeSignature = this.signatureParamTypes.map(
-            monoType => (wasmTypeFromCilOpcode as any)[type_to_ldind(monoType)]
+            monoType => (wasmTypeFromCilOpcode as any)[cwraps.mono_jiterp_type_to_ldind(monoType)]
         );
         this.enableDirect = getOptions().directJitCalls &&
             !this.noWrapper &&
@@ -679,19 +679,6 @@ const wasmOpcodeFromCilOpcode = {
     [CilOpcodes.STIND_I]:   WasmOpcode.i32_store,
 };
 
-function type_to_ldind (type: MonoType) : CilOpcodes {
-    /*
-        if (m_type_is_byref (sig->params [i])) {
-            mono_mb_emit_ldarg (mb, args_start + i);
-        } else {
-            ldind_op = mono_type_to_ldind (sig->params [i]);
-    */
-    if (cwraps.mono_jiterp_type_is_byref (type))
-        return CilOpcodes.DUMMY_BYREF;
-    else
-        return cwraps.mono_type_to_ldind (type);
-}
-
 function append_ldloc (builder: WasmBuilder, offsetBytes: number, opcode: WasmOpcode) {
     builder.local("sp");
     builder.appendU8(opcode);
@@ -756,7 +743,7 @@ function generate_wasm_body (
 
         if (info.enableDirect) {
             // The wrapper call convention is byref for all args. Now we convert it to the native calling convention
-            const loadCilOp = type_to_ldind(info.signatureParamTypes[i]);
+            const loadCilOp = cwraps.mono_jiterp_type_to_ldind(info.signatureParamTypes[i]);
             mono_assert(loadCilOp, () => `No load opcode for ${info.signatureParamTypes[i]}`);
 
             // We already performed a ldarg up above, so now we have the address that would've been passed to the wrapper
@@ -832,7 +819,7 @@ function generate_wasm_body (
 
     // The stack should now contain [ret_sp, retval], so write retval through the return address
     if (info.hasReturnValue && info.enableDirect) {
-        const storeCilOp = cwraps.mono_type_to_stind(info.signatureReturnType);
+        const storeCilOp = cwraps.mono_jiterp_type_to_stind(info.signatureReturnType);
         const storeWasmOp = (wasmOpcodeFromCilOpcode as any)[storeCilOp];
         if (!storeWasmOp) {
             console.error(`No wasm store op for return type ${info.signatureReturnType} cil opcode ${storeCilOp}`);

@@ -75,10 +75,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "icall-decl.h"
 #include "icall-signatures.h"
 
-#ifdef HOST_BROWSER
-#include <emscripten.h>
-#endif
-
 static void
 mono_string_utf16len_to_builder (MonoStringBuilderHandle sb, const gunichar2 *text, gsize len, MonoError *error);
 
@@ -1229,9 +1225,6 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 	return MONO_HANDLE_NEW (MonoString, s);
 }
 
-#ifdef HOST_BROWSER
-EMSCRIPTEN_KEEPALIVE
-#endif
 guint8
 mono_type_to_ldind (MonoType *type)
 {
@@ -1289,9 +1282,6 @@ handle_enum:
 	return -1;
 }
 
-#ifdef HOST_BROWSER
-EMSCRIPTEN_KEEPALIVE
-#endif
 guint8
 mono_type_to_stind (MonoType *type)
 {
@@ -3240,7 +3230,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
 	return mono_component_marshal_ilgen()->emit_marshal_ilgen(m, argnum, t, spec, conv_arg, conv_arg_type, action, get_marshal_cb());
-}
+} 
 
 static void
 mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gboolean *skip_gc_trans /*out*/)
