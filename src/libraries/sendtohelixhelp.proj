@@ -125,8 +125,8 @@
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_WORKITEM_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
+    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_WORKITEM_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
 
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
     <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
