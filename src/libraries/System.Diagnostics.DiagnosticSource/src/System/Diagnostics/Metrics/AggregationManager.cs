@@ -275,7 +275,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: true) : null;
                     }
                 };
             }

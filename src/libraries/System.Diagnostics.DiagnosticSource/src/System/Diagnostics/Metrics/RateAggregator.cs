@@ -8,7 +8,7 @@ namespace System.Diagnostics.Metrics
         private double _sum;
         private bool _isMonotonic;
 
-        public RateSumAggregator(bool isMonotonic = true)
+        public RateSumAggregator(bool isMonotonic)
         {
             _isMonotonic = isMonotonic;
         }
