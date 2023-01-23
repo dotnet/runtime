@@ -568,21 +568,31 @@ namespace System.Threading.Tasks.Dataflow.Tests
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
         }
 
-        [Fact]
-        public async Task SynchronousWaitForCompletionDoesNotDeadlock()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task TestSynchronousWaitForCompletionDoesNotDeadlock()
         {
-            // XUnit sets a SynchronizationContext because of async void methods, which seems to prevent this issue from surfacing
-            // since we don't need it, there is no need to restore it afterwards
-            SynchronizationContext.SetSynchronizationContext(null);
+            SynchronizationContext origContext = SynchronizationContext.Current;
+            try
+            {
+                // Avoid xunit synchronization context which impacts scheduling and the outcome of this test
+                SynchronizationContext.SetSynchronizationContext(null);
 
-            var block1 = new BufferBlock<int>();
-            var block2 = new BufferBlock<int>();
-            block1.LinkTo(block2, new() { PropagateCompletion = true });
-            block1.Post(1);
-            block1.Complete();
-            await block1.Completion;
-            block2.TryReceiveAll(out var _);
-            Assert.True(block2.Completion.Wait(500));
+                var block1 = new BufferBlock<int>();
+                var block2 = new BufferBlock<int>();
+                block1.LinkTo(block2, new DataflowLinkOptions { PropagateCompletion = true });
+
+                block1.Post(1);
+                block1.Complete();
+                await block1.Completion;
+
+                Assert.True(block2.TryReceive(out int value), "Value should have been received");
+                Assert.Equal(1, value);
+                Assert.True(block2.Completion.Wait(30_000), "Synchronous wait should have completed within timeout period");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(origContext);
+            }
         }
     }
 }
