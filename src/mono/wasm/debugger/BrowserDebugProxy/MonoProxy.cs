@@ -913,7 +913,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int j, MethodInfoWithDebugInformation method, CancellationToken token)
+        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, MethodInfoWithDebugInformation method, CancellationToken token)
         {
             var shouldReturn = await SkipMethod(
                     isSkippable: context.IsSkippingHiddenMethod,
@@ -931,42 +931,42 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (shouldReturn)
                 return true;
 
-            if (j == 0)
+            if (frameNumber != 0)
+                return false;
+
+            if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
             {
-                if (method?.Info?.DebuggerAttrInfo?.DoAttributesAffectCallStack(JustMyCode) == true)
+                if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                 {
-                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
-                    {
-                        if (event_kind == EventKind.Step)
-                            context.IsSkippingHiddenMethod = true;
-                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                            return true;
-                    }
-                    if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
-                    {
-                        if (event_kind == EventKind.Step ||
-                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
-                        {
-                            if (context.IsResumedAfterBp)
-                                context.IsResumedAfterBp = false;
-                            else if (event_kind != EventKind.UserBreak)
-                                context.IsSteppingThroughMethod = true;
-                            if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                                return true;
-                        }
-                        if (event_kind == EventKind.Breakpoint)
-                            context.IsResumedAfterBp = true;
-                    }
+                    if (event_kind == EventKind.Step)
+                        context.IsSkippingHiddenMethod = true;
+                    if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                        return true;
                 }
-                else
+                if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
                 {
-                    if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode == true && !method.Info.hasDebugInformation)
+                    if (event_kind == EventKind.Step ||
+                    (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
                     {
-                        if (event_kind == EventKind.Step)
-                            context.IsSkippingHiddenMethod = true;
+                        if (context.IsResumedAfterBp)
+                            context.IsResumedAfterBp = false;
+                        else if (event_kind != EventKind.UserBreak)
+                            context.IsSteppingThroughMethod = true;
                         if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
                             return true;
                     }
+                    if (event_kind == EventKind.Breakpoint)
+                        context.IsResumedAfterBp = true;
+                }
+            }
+            else
+            {
+                if (!JustMyCode && method?.Info?.DebuggerAttrInfo?.HasNonUserCode == true && !method.Info.hasDebugInformation)
+                {
+                    if (event_kind == EventKind.Step)
+                        context.IsSkippingHiddenMethod = true;
+                    if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                        return true;
                 }
             }
             return false;
