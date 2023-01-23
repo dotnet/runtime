@@ -197,7 +197,7 @@ public class WasmAppBuilder : Task
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(assembly, ".webcil"));
+                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     _fileWrites.Add(finalWebcil);
             }
