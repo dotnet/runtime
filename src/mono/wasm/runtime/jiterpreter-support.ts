@@ -657,7 +657,7 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
-    punchThroughJitCallsCompiled: 0,
+    directJitCallsCompiled: 0,
     failures: 0,
     bytesGenerated: 0
 };
@@ -909,8 +909,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
-    // Punch through gsharedvt wrappers when compiling jitcall wrappers if possible
-    punchThrough: boolean;
+    // Unwrap gsharedvt wrappers when compiling jitcalls if possible
+    directJitCalls: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
@@ -934,7 +934,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
-    "punchThrough": "jiterpreter-punch-through",
+    "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",

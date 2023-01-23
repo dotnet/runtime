@@ -110,7 +110,7 @@ class TrampolineInfo {
     signatureReturnType: MonoType;
     wasmNativeReturnType: WasmValtype;
     wasmNativeSignature: WasmValtype[];
-    enablePunchThrough: boolean;
+    enableDirect: boolean;
 
     constructor (
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
@@ -145,7 +145,7 @@ class TrampolineInfo {
         this.wasmNativeSignature = this.signatureParamTypes.map(
             monoType => (wasmTypeFromCilOpcode as any)[type_to_ldind(monoType)]
         );
-        this.enablePunchThrough = getOptions().punchThrough &&
+        this.enableDirect = getOptions().directJitCalls &&
             !this.noWrapper &&
             this.wasmNativeReturnType &&
             (
@@ -153,10 +153,10 @@ class TrampolineInfo {
                 this.wasmNativeSignature.every(vt => vt)
             );
 
-        if (this.enablePunchThrough && !cwraps.mono_debug_count())
-            this.enablePunchThrough = false;
+        if (this.enableDirect && !cwraps.mono_debug_count())
+            this.enableDirect = false;
 
-        if (this.enablePunchThrough)
+        if (this.enableDirect)
             this.target = this.addr;
 
         let suffix = this.target.toString(16);
@@ -172,7 +172,7 @@ class TrampolineInfo {
 
         // FIXME: Without doing this we occasionally get name collisions while jitting.
         const disambiguate = nextDisambiguateIndex++;
-        this.name = `${this.enablePunchThrough ? "jcp" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
+        this.name = `${this.enableDirect ? "jcp" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
     }
 }
 
@@ -423,7 +423,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             const actualParamCount = (info.hasThisReference ? 1 : 0) + (info.hasReturnValue ? 1 : 0) + info.paramCount;
             const sig : any = {};
 
-            if (info.enablePunchThrough) {
+            if (info.enableDirect) {
                 if (info.hasThisReference)
                     sig["this"] = WasmValtype.i32;
 
@@ -438,7 +438,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             }
 
             builder.defineType(
-                info.name, sig, info.enablePunchThrough ? info.wasmNativeReturnType : WasmValtype.void
+                info.name, sig, info.enableDirect ? info.wasmNativeReturnType : WasmValtype.void
             );
 
             const callTarget = getWasmTableEntry(info.target);
@@ -531,8 +531,8 @@ export function mono_interp_flush_jitcall_queue () : void {
             for (let j = 0; j < info.queue.length; j++)
                 cwraps.mono_jiterp_register_jit_call_thunk(<any>info.queue[j], idx);
 
-            if (info.enablePunchThrough)
-                counters.punchThroughJitCallsCompiled++;
+            if (info.enableDirect)
+                counters.directJitCallsCompiled++;
             counters.jitCallsCompiled++;
             info.queue.length = 0;
             rejected = false;
@@ -595,7 +595,7 @@ export function mono_interp_flush_jitcall_queue () : void {
     }
 }
 
-// To perform wrapper punch-through we have to emulate the semantics of generated wrappers
+// To perform direct jit calls we have to emulate the semantics of generated AOT wrappers
 // Wrappers are generated in CIL, so we work in CIL as well and reuse some of the generator
 
 // Only the subset of CIL opcodes used by the wrapper generator in mini-generic-sharing.c
@@ -629,7 +629,7 @@ const enum CilOpcodes {
 }
 
 // Maps a CIL ld/st opcode to the wasm type that will represent it
-// We intentionally leave some opcodes out in order to disable punchthrough
+// We intentionally leave some opcodes out in order to disable direct calls
 //  for wrappers that use that opcode.
 const wasmTypeFromCilOpcode = {
     [CilOpcodes.DUMMY_BYREF]: WasmValtype.i32,
@@ -715,15 +715,15 @@ function generate_wasm_body (
         builder.block(WasmValtype.void, WasmOpcode.try_);
 
     // Wrapper signature: [thisptr], [&retval], &arg0, ..., &funcdef
-    // Desired stack layout for punch-through: [&retval], [thisptr], arg0, ..., &rgctx
+    // Desired stack layout for direct calls: [&retval], [thisptr], arg0, ..., &rgctx
 
     /*
         if (sig->ret->type != MONO_TYPE_VOID)
             // Load return address
             mono_mb_emit_ldarg (mb, sig->hasthis ? 1 : 0);
     */
-    // The return address comes first for punch through so we can write into it after the call
-    if (info.hasReturnValue && info.enablePunchThrough)
+    // The return address comes first for direct calls so we can write into it after the call
+    if (info.hasReturnValue && info.enableDirect)
         builder.local("ret_sp");
 
     /*
@@ -735,8 +735,8 @@ function generate_wasm_body (
         stack_index++;
     }
 
-    // Non punchthrough passes the return address as the first post-this argument
-    if (info.hasReturnValue && !info.enablePunchThrough)
+    // Indirect passes the return address as the first post-this argument
+    if (info.hasReturnValue && !info.enableDirect)
         builder.local("ret_sp");
 
     for (let i = 0; i < info.paramCount; i++) {
@@ -754,7 +754,7 @@ function generate_wasm_body (
             append_ldloca(builder, svalOffset);
         }
 
-        if (info.enablePunchThrough) {
+        if (info.enableDirect) {
             // The wrapper call convention is byref for all args. Now we convert it to the native calling convention
             const loadCilOp = type_to_ldind(info.signatureParamTypes[i]);
             mono_assert(loadCilOp, () => `No load opcode for ${info.signatureParamTypes[i]}`);
@@ -799,7 +799,7 @@ function generate_wasm_body (
     */
 
     builder.local("ftndesc");
-    if (info.enablePunchThrough || info.noWrapper) {
+    if (info.enableDirect || info.noWrapper) {
         // Native calling convention wants an rgctx, not a ftndesc. The rgctx
         //  lives at offset 4 in the ftndesc, after the call target
         builder.appendU8(WasmOpcode.i32_load);
@@ -831,7 +831,7 @@ function generate_wasm_body (
     */
 
     // The stack should now contain [ret_sp, retval], so write retval through the return address
-    if (info.hasReturnValue && info.enablePunchThrough) {
+    if (info.hasReturnValue && info.enableDirect) {
         const storeCilOp = cwraps.mono_type_to_stind(info.signatureReturnType);
         const storeWasmOp = (wasmOpcodeFromCilOpcode as any)[storeCilOp];
         if (!storeWasmOp) {

@@ -95,7 +95,7 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
@@ -106,9 +106,9 @@ DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the
 // Use runtime imports for pointer constants
 // Currently reduces performance significantly :(
 DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use runtime imports for pointer constants")
-// When compiling a jit_call wrapper, punch through sharedvt wrappers if possible by inlining their
+// When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
-DEFINE_BOOL(jiterpreter_wrapper_punch_through, "jiterpreter-punch-through", TRUE, "Punch through gsharedvt wrappers when compiling JIT call wrappers")
+DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
 DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 10, "Reject traces shorter than this number of meaningful opcodes")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
