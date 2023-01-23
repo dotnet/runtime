@@ -18,6 +18,8 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class ComInterfaceGenerator : IIncrementalGenerator
     {
+        private sealed record ComInterfaceContext(int MethodStartIndex, Guid InterfaceId);
+
         public static class StepNames
         {
             public const string CalculateStubInformation = nameof(CalculateStubInformation);
@@ -34,17 +36,17 @@ namespace Microsoft.Interop
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Get all methods with the [GeneratedComInterface] attribute.
-            var attributedMethods = context.SyntaxProvider
+            var attributedInterfaces = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComInterfaceAttribute,
                     static (node, ct) => node is InterfaceDeclarationSyntax,
-                    static (context, ct) => context.TargetSymbol is INamedTypeSymbol methodSymbol
-                        ? new { Syntax = (InterfaceDeclarationSyntax)context.TargetNode, Symbol = methodSymbol }
+                    static (context, ct) => context.TargetSymbol is INamedTypeSymbol interfaceSymbol
+                        ? new { Syntax = (InterfaceDeclarationSyntax)context.TargetNode, Symbol = interfaceSymbol }
                         : null)
                 .Where(
                     static modelData => modelData is not null);
 
-            var interfacesWithDiagnostics = attributedMethods.Select(static (data, ct) =>
+            var interfacesWithDiagnostics = attributedInterfaces.Select(static (data, ct) =>
             {
                 Diagnostic? diagnostic = GetDiagnosticIfInvalidTypeForGeneration(data.Syntax, data.Symbol);
                 return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
@@ -54,20 +56,32 @@ namespace Microsoft.Interop
             var interfacesToGenerate = interfacesWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidTypeDiagnostics = interfacesWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
+            var interfaceContexts = interfacesToGenerate.Select((data, ct) =>
+            {
+                // Start at offset 3 as 0-2 are IUnknown.
+                // TODO: Calculate starting offset based on base types.
+                // TODO: Extract IID from source.
+                return new ComInterfaceContext(3, Guid.Empty);
+            });
+
             context.RegisterSourceOutput(invalidTypeDiagnostics, static (context, invalidMethod) =>
             {
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
 
+            // Zip the incremental interface context back with the symbols and syntax for the interface
+            // to calculate the methods to generate.
+            // The generator infrastructure preserves ordering of the tables once Select statements are in use,
+            // so we can rely on the order matching here.
             var methodsWithDiagnostics = interfacesToGenerate
+                .Zip(interfaceContexts)
                 .SelectMany(static (data, ct) =>
             {
-                ContainingSyntaxContext containingSyntax = new(data.Syntax);
-                Location interfaceLocation = data.Syntax.GetLocation();
+                ContainingSyntaxContext containingSyntax = new(data.Left.Syntax);
+                Location interfaceLocation = data.Left.Syntax.GetLocation();
                 var methods = ImmutableArray.CreateBuilder<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)>();
-                // Start at offset 3 as 0-2 are IUnknown.
-                int methodVtableOffset = 3;
-                foreach (var member in data.Symbol.GetMembers())
+                int methodVtableOffset = data.Right.MethodStartIndex;
+                foreach (var member in data.Left.Symbol.GetMembers())
                 {
                     if (member.Kind == SymbolKind.Method && !member.IsStatic)
                     {
@@ -94,11 +108,11 @@ namespace Microsoft.Interop
                                 member.CreateDiagnostic(
                                     GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
                                     member.ToDisplayString(),
-                                    data.Symbol.ToDisplayString())));
+                                    data.Left.Symbol.ToDisplayString())));
                         }
                         else
                         {
-                            var syntax = (MethodDeclarationSyntax)data.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
+                            var syntax = (MethodDeclarationSyntax)data.Left.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
                             var method = (IMethodSymbol)member;
                             Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(syntax, method);
                             methods.Add((syntax, method, diagnostic is not null ? methodVtableOffset++ : 0, diagnostic));
@@ -133,7 +147,7 @@ namespace Microsoft.Interop
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
-            // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
+            // Generate the code for the managed-to-unmanaged stubs and the diagnostics from code-generation.
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
@@ -304,16 +318,19 @@ namespace Microsoft.Interop
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute))))));
         }
 
-        private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
-        {
-            const string vtableParameter = "vtable";
-            ContainingSyntaxContext containingSyntax = vtableMethods.Key.AddContainingSyntax(NativeTypeContainingSyntax);
-            MethodDeclarationSyntax populateVtableMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)),
+        private const string VTableParameterName = "vtable";
+        private static readonly MethodDeclarationSyntax ManagedVirtualMethodTableImplementationSyntaxTemplate =
+            MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)),
                 "PopulateUnmanagedVirtualMethodTable")
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
                 .AddParameterListParameters(
-                    Parameter(Identifier(vtableParameter))
+                    Parameter(Identifier(VTableParameterName))
                     .WithType(GenericName(TypeNames.System_Span).AddTypeArgumentListArguments(IdentifierName("nint"))));
+
+        private static MemberDeclarationSyntax GeneratePopulateVTableMethod(IGrouping<ContainingSyntaxContext, IncrementalMethodStubGenerationContext> vtableMethods)
+        {
+            ContainingSyntaxContext containingSyntax = vtableMethods.Key.AddContainingSyntax(NativeTypeContainingSyntax);
+            MethodDeclarationSyntax populateVtableMethod = ManagedVirtualMethodTableImplementationSyntaxTemplate;
 
             foreach (var method in vtableMethods)
             {
@@ -324,7 +341,7 @@ namespace Microsoft.Interop
                     ExpressionStatement(
                         AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                             ElementAccessExpression(
-                                IdentifierName(vtableParameter))
+                                IdentifierName(VTableParameterName))
                             .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
                             CastExpression(IdentifierName("nint"),
                                 CastExpression(functionPointerType,

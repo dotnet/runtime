@@ -203,6 +203,14 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | *_`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator.* |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
+|  __`SYSLIB1092`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1093`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1094`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1095`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1096`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1097`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1098`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
+|  __`SYSLIB1099`__ | *_`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator.* |
 
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
