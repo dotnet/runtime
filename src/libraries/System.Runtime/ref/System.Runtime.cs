@@ -12471,6 +12471,12 @@ namespace System.Runtime.CompilerServices
     {
         public IsByRefLikeAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple = false)]
+    public sealed partial class InlineArrayAttribute : System.Attribute
+    {
+        public InlineArrayAttribute (int length) { }
+        public int Length { get { throw null; } }
+    }
     public static partial class IsConst
     {
     }
