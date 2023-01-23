@@ -9615,6 +9615,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
 
+                    case GTF_ICON_STATIC_ADDR_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
+                        break;
+
                     default:
                         assert(!"a forgotten handle flag");
                         break;

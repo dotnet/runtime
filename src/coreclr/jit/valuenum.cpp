@@ -5360,6 +5360,7 @@ GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
         case GTF_ICON_CIDMID_HDL:
         case GTF_ICON_TLS_HDL:
         case GTF_ICON_STATIC_BOX_PTR:
+        case GTF_ICON_STATIC_ADDR_PTR:
             return GTF_ICON_CONST_PTR;
         case GTF_ICON_STATIC_HDL:
         case GTF_ICON_GLOBAL_PTR:

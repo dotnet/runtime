@@ -11434,6 +11434,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_BOX_PTR:
                             printf(" static box ptr");
                             break;
+                        case GTF_ICON_STATIC_ADDR_PTR:
+                            printf(" static base addr cell");
+                            break;
                         default:
                             printf(" UNKNOWN");
                             break;
