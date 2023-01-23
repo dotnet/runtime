@@ -1383,9 +1383,7 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 		call_args [2] = -1;
 		td->last_ins->info.call_info->call_args = call_args;
 	} else {
-		// Unoptimized code needs every call to have a dreg for offset allocation,
-		// even if call is void
-		td->last_ins->dreg = td->sp [0].local;
+		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
 }
 
@@ -1402,6 +1400,8 @@ interp_generate_void_throw (TransformData *td, MonoJitICallId icall_id)
 		push_simple_type (td, STACK_TYPE_I4);
 		td->sp--;
 		td->last_ins->dreg = td->sp [0].local;
+	} else {
+		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
 }
 
@@ -1429,9 +1429,7 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 		call_args [1] = -1;
 		td->last_ins->info.call_info->call_args = call_args;
 	} else {
-		// Unoptimized code needs every call to have a dreg for offset allocation,
-		// even if call is void
-		td->last_ins->dreg = td->sp [0].local;
+		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
 }
 
@@ -2007,6 +2005,8 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 			td->last_ins->data [1] = GINT_TO_UINT16 (size);
 			init_last_ins_call (td);
 			td->last_ins->info.call_info->call_args = call_args;
+			if (!td->optimized)
+				td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 		}
 	} else {
 		interp_add_ins (td, MINT_LDELEMA_TC);
@@ -2019,6 +2019,8 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 		td->last_ins->data [0] = get_data_item_index (td, check_class);
 		init_last_ins_call (td);
 		td->last_ins->info.call_info->call_args = call_args;
+		if (!td->optimized)
+			td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	}
 
 	push_simple_type (td, STACK_TYPE_MP);
@@ -3463,10 +3465,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				int *call_args = create_call_args (td, num_args);
 				td->last_ins->info.call_info->call_args = call_args;
 			} else {
-				// Dummy dreg
-				push_simple_type (td, STACK_TYPE_I4);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-				td->sp--;
+				// Execution stack is empty once the args are pop'ed
+				td->last_ins->info.call_info->call_offset = 0;
 			}
 
 			int in_offset = GPTRDIFF_TO_INT (td->ip - td->il_code);
@@ -3523,6 +3523,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
 	guint32 params_stack_size = get_stack_size (td->sp, num_args);
+	// Used only by unoptimized code
+	int param_offset = get_tos_offset (td);
 
 	int *call_args = create_call_args (td, num_args);
 
@@ -3676,15 +3678,19 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
 		td->last_ins->info.call_info->call_args = call_args;
 		if (!td->optimized) {
-			int call_dreg = td->last_ins->dreg;
-			int call_offset = td->locals [call_dreg].stack_offset;
-			if ((call_offset % MINT_STACK_ALIGNMENT) != 0) {
-				InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
-				interp_ins_set_dreg (align_ins, call_dreg);
-				align_ins->data [0] = params_stack_size;
+			if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
+				td->last_ins->info.call_info->call_offset = param_offset;
+			} else {
+				int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
+				td->last_ins->info.call_info->call_offset = new_param_offset;
+				if (params_stack_size) {
+					InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
+					align_ins->data [0] = param_offset;
+					align_ins->data [1] = params_stack_size;
+				}
 				if (calli) {
 					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
-					int offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT) - call_offset;
+					int offset = new_param_offset - param_offset;
 					td->locals [fp_sreg].stack_offset += offset;
 				}
 			}
@@ -5961,10 +5967,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_NEWOBJ_ARRAY);
 				td->last_ins->data [0] = get_data_item_index (td, m->klass);
 				td->last_ins->data [1] = csignature->param_count;
+				init_last_ins_call (td);
+				if (!td->optimized)
+					td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 				push_type (td, stack_type [ret_mt], klass);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				init_last_ins_call (td);
 				td->last_ins->info.call_info->call_args = call_args;
 			} else if (klass == mono_defaults.string_class) {
 				if (!td->optimized) {
@@ -6670,10 +6678,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				call_args [0] = td->sp [0].local;
 				call_args [1] = td->sp [1].local;
 				call_args [2] = -1;
+				init_last_ins_call (td);
+				if (!td->optimized)
+					td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 				push_simple_type (td, STACK_TYPE_MP);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, klass);
-				init_last_ins_call (td);
 				td->last_ins->info.call_info->call_args = call_args;
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			} else {
@@ -7312,15 +7322,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					for (int i = 0; i < info->sig->param_count; i++)
 						call_args [i] = td->sp [i].local;
 					call_args [info->sig->param_count] = -1;
+					int param_offset = get_tos_offset (td);
+
 					if (!MONO_TYPE_IS_VOID (info->sig->ret)) {
 						mt = mint_type (info->sig->ret);
 						push_simple_type (td, stack_type [mt]);
 						dreg = td->sp [-1].local;
-					} else if (!td->optimized) {
-						// Dummy dreg
-						push_simple_type (td, stack_type [STACK_TYPE_I4]);
-						dreg = td->sp [-1].local;
-						td->sp--;
 					}
 
 					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
@@ -7342,6 +7349,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
 						init_last_ins_call (td);
 						td->last_ins->info.call_info->call_args = call_args;
+						if (!td->optimized)
+							td->last_ins->info.call_info->call_offset = param_offset;
 					}
 					break;
 				}
@@ -8067,8 +8076,10 @@ compute_native_offset_estimates (TransformData *td)
 		}
 	}
 
-	if (!td->optimized)
+	if (!td->optimized) {
 		td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
+		td->param_area_offset = td->total_locals_size;
+	}
 	return noe;
 }
 
@@ -8300,6 +8311,11 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		int num_vars = mono_interp_oplen [opcode] - 1;
 		for (int i = 0; i < num_vars; i++)
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->data [i]));
+	} else if (opcode == MINT_CALL_ALIGN_STACK) {
+		g_assert (!td->optimized);
+		// ins->data [0] represents the stack offset of the call args (within the execution stack)
+		*ip++ = GINT_TO_UINT16 (td->param_area_offset + ins->data [0]);
+		*ip++ = GINT_TO_UINT16 (ins->data [1]);
 	} else {
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));
@@ -8307,16 +8323,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		if (mono_interp_op_sregs [opcode]) {
 			for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
 				if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
-					int offset;
-					// In the unoptimized case the return and the start of the param area are always at the
-					// same offset. Use the dreg offset so we don't need to rely on existing call_args.
-					if (td->optimized)
-						offset = get_local_offset (td, ins->info.call_info->call_args [0]);
-					else if (opcode == MINT_NEWOBJ_ARRAY || opcode == MINT_LDELEMA_TC || opcode == MINT_LDELEMA)
-						// no alignment required since this is not a real call
-						offset = get_local_offset (td, ins->dreg);
-					else
-						offset = ALIGN_TO (get_local_offset (td, ins->dreg), MINT_STACK_ALIGNMENT);
+					int offset = td->param_area_offset + ins->info.call_info->call_offset;
 					*ip++ = GINT_TO_UINT16 (offset);
 				} else {
 					*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->sregs [i]));
@@ -10232,6 +10239,7 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 				if (end_offset > base_offset)
 					base_offset = end_offset;
 			}
+			deferred_call->info.call_info->call_offset = base_offset;
 			// Compute to offset of each call argument
 			int *call_args = deferred_call->info.call_info->call_args;
 			if (call_args && (*call_args != -1)) {
@@ -10241,20 +10249,6 @@ end_active_call (TransformData *td, ActiveCalls *ac, InterpInst *call)
 					call_args++;
 					var = *call_args;
 				}
-			} else {
-				// This call has no argument. Allocate a dummy one so when we resolve the
-				// offset for MINT_CALL_ARGS_SREG during compacted instruction emit, we can
-				// always use the offset of the first var in the call_args array
-				int new_var = create_interp_local (td, mono_get_int_type ());
-				td->locals [new_var].call = deferred_call;
-				td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;
-				alloc_var_offset (td, new_var, &base_offset);
-
-				call_args = (int*)mono_mempool_alloc (td->mempool, 3 * sizeof (int));
-				call_args [0] = new_var;
-				call_args [1] = -1;
-
-				deferred_call->info.call_info->call_args = call_args;
 			}
 			deferred_call->info.call_info->call_end_offset = ALIGN_TO (base_offset, MINT_STACK_ALIGNMENT);
 
@@ -10744,7 +10738,7 @@ retry:
 	g_assert (!td->optimized || !td->max_stack_size);
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
 	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
-	rtm->locals_size = td->optimized ? td->param_area_offset : td->total_locals_size;
+	rtm->locals_size = td->param_area_offset;
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
