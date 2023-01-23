@@ -326,7 +326,7 @@
     <value>External component has thrown an exception.</value>
   </data>
   <data name="Arg_EnC" xml:space="preserve">
-  <value>EnC: Expected a primitive, valuetype, class or interface field.</value>
+    <value>EnC: Expected a primitive, valuetype, class or interface field.</value>
   </data>
   <data name="Arg_FieldAccessException" xml:space="preserve">
     <value>Attempted to access a field that is not accessible by the caller.</value>
@@ -356,7 +356,7 @@
     <value>One of the identified items was in an invalid format.</value>
   </data>
   <data name= "Arg_GenericArgumentsAfterArrayOrPointerType" xml:space="preserve">
-  <value>Generic arguments after array spec or pointer type.</value>
+    <value>Generic arguments after array spec or pointer type.</value>
   </data>
   <data name="Arg_GenericParameter" xml:space="preserve">
     <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
@@ -847,7 +847,7 @@
     <value>Array or pointer types are not valid.</value>
   </data>
   <data name="Argument_ArrayParsingError" xml:space="preserve">
-      <value>Error parsing array spec.</value>
+    <value>Error parsing array spec.</value>
   </data>
   <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
     <value>Attribute names must be unique.</value>
@@ -1157,6 +1157,7 @@
   </data>
   <data name="Argument_MultiDimensionalArrayCannotBeBound" xml:space="preserve">
     <value>Invalid array spec, multi-dimensional array cannot be bound.</value>
+  </data>
   <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
@@ -1618,7 +1619,7 @@
     <value>Local passed in does not belong to this ILGenerator.</value>
   </data>
   <data name="Argument_UnmatchedSquareBracketWhileParsingGenericArgAssemblyName" xml:space="preserve">
-  <value>Unmatched ']' while parsing generic argument assembly name</value>
+    <value>Unmatched ']' while parsing generic argument assembly name</value>
   </data>
   <data name="Argument_UnmatchingSymScope" xml:space="preserve">
     <value>Non-matching symbol scope.</value>
@@ -2948,7 +2949,7 @@
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
   </data>
   <data name="NotSupported_ContainsStackPtr" xml:space="preserve">
-  <value>An element type cannot contain a stack pointer.</value>
+    <value>An element type cannot contain a stack pointer.</value>
   </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>
