@@ -8578,12 +8578,13 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         ValueNum op1vn = op1->gtVNPair.GetLiberal();
         ValueNum op2vn = op2->gtVNPair.GetLiberal();
 
-        if (op1->gtVNPair.BothEqual() && !vnStore->IsVNHandle(op1vn) && varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
+        if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) &&
+            varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (op2->gtVNPair.BothEqual() && !vnStore->IsVNHandle(op2vn) &&
+        else if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
                  varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
