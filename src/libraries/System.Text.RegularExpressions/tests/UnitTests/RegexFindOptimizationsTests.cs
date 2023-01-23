@@ -142,13 +142,13 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [InlineData(@"january|february|march|april|may|june|july|august|september|october|november|december", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 12, 69)]
-        [InlineData(@"a{20}|b|c|d|e|f", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 6, 18)]
-        [InlineData(@"(abc|defg){1,2}\z", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 2, 8)]
-        [InlineData(@"ab|cd|ef|gh", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 9)]
-        public void LeadingMultiString(string pattern, RegexOptions options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
+        [InlineData(@"january|february|march|april|may|june|july|august|september|october|november|december", 0, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 12, 69)]
+        [InlineData(@"a{20}|b|c|d|e|f", 0, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 6, 18)]
+        [InlineData(@"(abc|defg){1,2}\z", 0, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 2, 8)]
+        [InlineData(@"ab|cd|ef|gh", 0, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 9)]
+        public void LeadingMultiString(string pattern, int options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
         {
-            RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
             Assert.Equal((FindNextStartingPositionMode)expectedMode, opts.FindMode);
             MultiStringMatcher prefixMatcher = opts.PrefixMatcher;
             Assert.NotNull(prefixMatcher);
