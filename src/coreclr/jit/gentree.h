@@ -1971,9 +1971,8 @@ public:
         return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
     }
 
-    // Determine if this tree represents the value of an entire implicit byref parameter,
-    // and if so return the tree for the parameter.
-    GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
+    GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
+    GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
