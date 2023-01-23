@@ -5,7 +5,7 @@ import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module } from "./imports";
 import {
-    getU8, getU16, getI32, getU32, setU32_unchecked
+    getU8, getI32, getU32, setU32_unchecked
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
@@ -49,34 +49,6 @@ const offsetOfAddr = 0,
     offsetOfRetMt = 24,
     offsetOfNoWrapper = 28,
     JIT_ARG_BYVAL = 0;
-
-/*
-struct _MonoMethodSignature {
-	MonoType     *ret; // 0
-#ifdef MONO_SMALL_CONFIG // HACK: assuming this isn't true, since we have test cases with more than 255 parameters.
-	guint8        param_count;
-	gint8         sentinelpos;
-	unsigned int  generic_param_count : 5;
-#else
-	guint16       param_count; // 4
-	gint16        sentinelpos; // 6
-	unsigned int  generic_param_count : 16; // 8
-#endif
-    // everything after here is located in the phantom zone due to compiler layout freedom so we use a cwraps to find it
-	unsigned int  call_convention     : 6;
-	unsigned int  hasthis             : 1;
-	unsigned int  explicit_this       : 1;
-	unsigned int  pinvoke             : 1;
-	unsigned int  is_inflated         : 1;
-	unsigned int  has_type_parameters : 1;
-	unsigned int  suppress_gc_transition : 1;
-	unsigned int  marshalling_disabled : 1;
-	MonoType     *params [MONO_ZERO_LEN_ARRAY];
-};
-*/
-
-const offsetOfSigRet = 0,
-    offsetOfSigParamCount = 4;
 
 const maxJitQueueLength = 6,
     maxSharedQueueLength = 12,
@@ -128,8 +100,8 @@ class TrampolineInfo {
         this.catchExceptions = catch_exceptions;
         this.argOffsets = new Array(param_count);
         this.signature = <any>getU32(<any>cinfo + offsetOfSig);
-        this.signatureReturnType = <any>getU32(<any>this.signature + offsetOfSigRet);
-        this.signatureParamCount = getU16(<any>this.signature + offsetOfSigParamCount);
+        this.signatureReturnType = cwraps.mono_jiterp_get_signature_return_type(this.signature);
+        this.signatureParamCount = cwraps.mono_jiterp_get_signature_param_count(this.signature);
         this.noWrapper = getU8(<any>cinfo + offsetOfNoWrapper) !== 0;
         const ptr = cwraps.mono_jiterp_get_signature_params(this.signature);
         this.signatureParamTypes = new Array(this.signatureParamCount);
