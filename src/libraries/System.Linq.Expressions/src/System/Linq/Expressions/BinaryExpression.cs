@@ -155,7 +155,7 @@ namespace System.Linq.Expressions
             };
         }
 
-        private BinaryExpression ReduceVariable()
+        private Expression ReduceVariable()
         {
             // v (op)= r
             // ... is reduced into ...
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        private BlockExpression ReduceIndex()
+        private Expression ReduceIndex()
         {
             // left[a0, a1, ... aN] (op)= r
             //
@@ -597,7 +597,7 @@ namespace System.Linq.Expressions
 
         #endregion
 
-        private static MethodBinaryExpression? GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
+        private static BinaryExpression? GetUserDefinedBinaryOperator(ExpressionType binaryType, string name, Expression left, Expression right, bool liftToNull)
         {
             // try exact match first
             MethodInfo? method = GetUserDefinedBinaryOperator(binaryType, left.Type, right.Type, name);
@@ -626,7 +626,7 @@ namespace System.Linq.Expressions
             return null;
         }
 
-        private static MethodBinaryExpression GetMethodBasedBinaryOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, bool liftToNull)
+        private static BinaryExpression GetMethodBasedBinaryOperator(ExpressionType binaryType, Expression left, Expression right, MethodInfo method, bool liftToNull)
         {
             System.Diagnostics.Debug.Assert(method != null);
             ValidateOperator(method);

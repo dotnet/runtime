@@ -221,7 +221,7 @@ namespace System.Linq.Expressions
             }
         }
 
-        private BlockExpression ReduceIndex()
+        private Expression ReduceIndex()
         {
             // left[a0, a1, ... aN] (op)
             //

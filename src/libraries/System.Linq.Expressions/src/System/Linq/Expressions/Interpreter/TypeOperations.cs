@@ -615,7 +615,7 @@ namespace System.Linq.Expressions.Interpreter
                 );
             }
 
-            private static RuntimeOps.MergedRuntimeVariables MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
+            private static IRuntimeVariables MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, int[] indexes)
             {
                 return new RuntimeOps.MergedRuntimeVariables(first, second, indexes);
             }

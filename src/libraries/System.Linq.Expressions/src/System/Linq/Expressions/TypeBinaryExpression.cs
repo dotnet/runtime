@@ -102,7 +102,7 @@ namespace System.Linq.Expressions
         }
 
         // Helper that is used when re-eval of LHS is safe.
-        private BinaryExpression ByValParameterTypeEqual(ParameterExpression value)
+        private Expression ByValParameterTypeEqual(ParameterExpression value)
         {
             Expression getType = Expression.Call(value, Object_GetType);
 
@@ -135,7 +135,7 @@ namespace System.Linq.Expressions
             );
         }
 
-        private ConstantExpression ReduceConstantTypeEqual()
+        private Expression ReduceConstantTypeEqual()
         {
             ConstantExpression? ce = Expression as ConstantExpression;
             //TypeEqual(null, T) always returns false.

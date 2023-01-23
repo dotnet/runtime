@@ -1024,8 +1024,7 @@ namespace System.Linq.Expressions
             return BlockCore(type, variableList, expressionList);
         }
 
-#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6452
-        private static ScopeExpression BlockCore(Type? type, ReadOnlyCollection<ParameterExpression> variables, ReadOnlyCollection<Expression> expressions)
+        private static BlockExpression BlockCore(Type? type, ReadOnlyCollection<ParameterExpression> variables, ReadOnlyCollection<Expression> expressions)
         {
             ValidateVariables(variables, nameof(variables));
 
@@ -1062,7 +1061,6 @@ namespace System.Linq.Expressions
                 _ => new ScopeN(variables, expressions),
             };
         }
-#pragma warning restore CA1859
 
         // Checks that all variables are non-null, not byref, and unique.
         internal static void ValidateVariables(ReadOnlyCollection<ParameterExpression> varList, string collectionName)

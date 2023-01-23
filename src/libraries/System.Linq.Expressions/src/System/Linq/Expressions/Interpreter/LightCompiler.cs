@@ -2199,7 +2199,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private ArrayByRefUpdater CompileArrayIndexAddress(Expression array, Expression index, int argumentIndex)
+        private ByRefUpdater CompileArrayIndexAddress(Expression array, Expression index, int argumentIndex)
         {
             LocalDefinition left = _locals.DefineLocal(Expression.Parameter(array.Type, nameof(array)), _instructions.Count);
             LocalDefinition right = _locals.DefineLocal(Expression.Parameter(index.Type, nameof(index)), _instructions.Count);
@@ -2353,7 +2353,7 @@ namespace System.Linq.Expressions.Interpreter
             return null;
         }
 
-        private IndexMethodByRefUpdater CompileMultiDimArrayAccess(Expression array, IArgumentProvider arguments, int index)
+        private ByRefUpdater CompileMultiDimArrayAccess(Expression array, IArgumentProvider arguments, int index)
         {
             Compile(array);
             LocalDefinition objTmp = _locals.DefineLocal(Expression.Parameter(array.Type), _instructions.Count);
