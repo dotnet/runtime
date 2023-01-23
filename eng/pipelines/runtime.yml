@@ -373,7 +373,6 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          buildAndRunWasi: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
@@ -462,6 +461,14 @@ extends:
           platforms:
             - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          alwaysRun: true
+          scenarios:
+            - normal
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
