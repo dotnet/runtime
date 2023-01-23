@@ -20,6 +20,8 @@ const trace = 0;
 const
     // Dumps all compiled wrappers
     dumpWrappers = false,
+    // Compiled wrappers will have the full name of the target method instead of the short
+    //  disambiguated name. This adds overhead for jit calls that never get compiled
     useFullNames = false;
 
 /*
@@ -152,9 +154,6 @@ class TrampolineInfo {
                 (this.wasmNativeSignature.length === 0) ||
                 this.wasmNativeSignature.every(vt => vt)
             );
-
-        if (this.enableDirect && !cwraps.mono_debug_count())
-            this.enableDirect = false;
 
         if (this.enableDirect)
             this.target = this.addr;
