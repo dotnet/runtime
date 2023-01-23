@@ -22,7 +22,7 @@ namespace System.Reflection.TypeLoading
 
     /// <summary>
     /// Another layer of base types. For NetCore, these base types are all but empty. For NetStandard, these base types add the NetCore apis to NetStandard
-    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area. For <=7.0 of NetCore
+    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area. For pre-8.0 of NetCore
     //  these add new members that were introduced in 8.0.
     ///
     /// On NetStandard (and pre-2.2 NetCore), the TypeInfo constructor is not exposed so we cannot derive directly from TypeInfo.

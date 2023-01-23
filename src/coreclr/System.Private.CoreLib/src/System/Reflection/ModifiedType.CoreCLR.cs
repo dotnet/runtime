@@ -1,34 +1,45 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Reflection
 {
     internal partial class ModifiedType
     {
-        private Signature? _signature;
+        private Signature? _signature; // CoreClr-specific class.
 
         /// <summary>
         /// Called from FieldInfo, PropertyInfo and ParameterInfo to create a modified type tree.
         /// </summary>
-        public static ModifiedType Create(Type unmodifiedType, Type[] requiredModifiers, Type[] optionalModifiers, Signature? signature, int rootSignatureParameterIndex)
+        public static ModifiedType Create(
+            Type unmodifiedType,
+            object rootFieldParameterOrProperty,
+            Signature? signature,
+            int rootSignatureParameterIndex)
         {
+            Debug.Assert(
+                rootFieldParameterOrProperty is FieldInfo ||
+                rootFieldParameterOrProperty is ParameterInfo ||
+                rootFieldParameterOrProperty is PropertyInfo);
+
             ModifiedType modifiedType;
 
             if (unmodifiedType.IsFunctionPointer)
             {
-                modifiedType = new ModifiedFunctionPointerType(unmodifiedType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex);
+                modifiedType = new ModifiedFunctionPointerType(unmodifiedType, rootFieldParameterOrProperty, rootSignatureParameterIndex);
             }
             else if (unmodifiedType.HasElementType)
             {
-                modifiedType = new ModifiedContainerType(unmodifiedType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex);
+                modifiedType = new ModifiedContainerType(unmodifiedType, rootFieldParameterOrProperty, rootSignatureParameterIndex);
             }
             else if (unmodifiedType.IsGenericType)
             {
-                modifiedType = new ModifiedGenericType(unmodifiedType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex);
+                modifiedType = new ModifiedGenericType(unmodifiedType, rootFieldParameterOrProperty, rootSignatureParameterIndex);
             }
             else
             {
-                modifiedType = new ModifiedStandaloneType(unmodifiedType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex);
+                modifiedType = new ModifiedStandaloneType(unmodifiedType, rootFieldParameterOrProperty, rootSignatureParameterIndex);
             }
 
             modifiedType._signature = signature;
@@ -37,15 +48,14 @@ namespace System.Reflection
 
         public Signature? GetSignature() => Root._signature;
 
-        private Type[] GetCustomModifiers(bool required)
+        private Type[] GetCustomModifiersFromSignature(bool required)
         {
-            if (_nestedSignatureParameterIndex >= 0)
+            Debug.Assert(_nestedSignatureParameterIndex >= 0);
+
+            Signature? signature = GetSignature();
+            if (signature != null)
             {
-                Signature? signature = GetSignature();
-                if (signature != null)
-                {
-                    return signature.GetCustomModifiers(RootSignatureParameterIndex, required, _nestedSignatureIndex, _nestedSignatureParameterIndex) ?? EmptyTypes;
-                }
+                return signature.GetCustomModifiers(RootSignatureParameterIndex, required, _nestedSignatureIndex, _nestedSignatureParameterIndex) ?? EmptyTypes;
             }
 
             return EmptyTypes;

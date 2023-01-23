@@ -444,8 +444,7 @@ namespace System.Reflection
         {
             return ModifiedType.Create(
                 unmodifiedType: ParameterType,
-                GetRequiredCustomModifiers(),
-                GetOptionalCustomModifiers(),
+                this,
                 m_signature,
                 rootSignatureParameterIndex: PositionImpl + 1);
         }

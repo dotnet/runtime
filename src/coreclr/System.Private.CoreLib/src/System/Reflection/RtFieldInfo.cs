@@ -269,12 +269,10 @@ namespace System.Reflection
 
         public override Type GetModifiedFieldType()
         {
-            Signature sig = GetSignature();
             return ModifiedType.Create(
                 FieldType,
-                sig.GetCustomModifiers(1, true),
-                sig.GetCustomModifiers(1, false),
-                sig,
+                this,
+                GetSignature(),
                 rootSignatureParameterIndex: 1);
         }
         #endregion

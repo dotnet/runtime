@@ -12,6 +12,7 @@ namespace System.Reflection
     internal abstract partial class ModifiedType : TypeDelegator
     {
         private readonly ModifiedType? _root;
+        private object? _rootFieldParameterOrProperty;
 
         // These 3 fields, in order, determine the lookup hierarchy for custom modifiers.
         // The native tree traveral must match the managed semantics in order to indexes to match up.
@@ -19,21 +20,16 @@ namespace System.Reflection
         private readonly int _nestedSignatureIndex;
         private readonly int _nestedSignatureParameterIndex;
 
-        protected Type[]? _requiredModifiers;
-        protected Type[]? _optionalModifiers;
-
         /// <summary>
         /// Create a root node.
         /// </summary>
         protected ModifiedType(
             Type unmodifiedType,
-            Type[]? requiredModifiers,
-            Type[]? optionalModifiers,
+            object rootFieldParameterOrProperty,
             int rootSignatureParameterIndex) : base(unmodifiedType)
         {
             _root = this;
-            _requiredModifiers = requiredModifiers;
-            _optionalModifiers = optionalModifiers;
+            _rootFieldParameterOrProperty = rootFieldParameterOrProperty;
             _rootSignatureParameterIndex = rootSignatureParameterIndex;
             _nestedSignatureParameterIndex = -1;
         }
@@ -122,14 +118,48 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            _requiredModifiers ??= GetCustomModifiers(required: true);
-            return CloneArray(_requiredModifiers);
+            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers etc.
+            return GetCustomModifiers(required: true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            _optionalModifiers ??= GetCustomModifiers(required: false);
-            return CloneArray(_optionalModifiers);
+            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers etc.
+            return GetCustomModifiers(required: false);
+        }
+
+        private Type[] GetCustomModifiers(bool required)
+        {
+            Type[] modifiers = EmptyTypes;
+
+            if (_nestedSignatureParameterIndex >= 0)
+            {
+                modifiers = GetCustomModifiersFromSignature(required);
+            }
+            else if (ReferenceEquals(this, Root))
+            {
+                object? obj = _rootFieldParameterOrProperty;
+                Debug.Assert(obj is not null);
+
+                if (obj is FieldInfo fieldInfo)
+                {
+                    modifiers = required ? fieldInfo.GetRequiredCustomModifiers() : fieldInfo.GetOptionalCustomModifiers();
+                }
+                else if (obj is ParameterInfo parameterInfo)
+                {
+                    modifiers = required ? parameterInfo.GetRequiredCustomModifiers() : parameterInfo.GetOptionalCustomModifiers();
+                }
+                else if (obj is PropertyInfo propertyInfo)
+                {
+                    modifiers = required ? propertyInfo.GetRequiredCustomModifiers() : propertyInfo.GetOptionalCustomModifiers();
+                }
+                else
+                {
+                    Debug.Assert(false);
+                }
+            }
+
+            return modifiers;
         }
 
         // TypeDelegator doesn't forward these the way we want:

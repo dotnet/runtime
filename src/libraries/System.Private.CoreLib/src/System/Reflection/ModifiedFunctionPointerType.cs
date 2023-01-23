@@ -20,10 +20,9 @@ namespace System.Reflection
         /// </summary>
         public ModifiedFunctionPointerType(
             Type functionPointerType,
-            Type[] requiredModifiers,
-            Type[] optionalModifiers,
+            object rootFieldParameterOrProperty,
             int rootSignatureParameterIndex)
-            : base(functionPointerType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex)
+            : base(functionPointerType, rootFieldParameterOrProperty, rootSignatureParameterIndex)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
             _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), this, nestedSignatureIndex: 0, nestedSignatureParameterIndex: 0);

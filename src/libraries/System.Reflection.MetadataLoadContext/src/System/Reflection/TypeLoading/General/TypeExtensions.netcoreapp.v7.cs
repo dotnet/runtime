@@ -18,7 +18,7 @@ namespace System.Reflection.TypeLoading
 
     /// <summary>
     /// Another layer of base types.
-    /// For <= 7.0 of NetCore, these base types add newer NetCore apis.
+    /// For pre-8.0 of NetCore, these base types add newer NetCore apis.
     /// </summary>
     internal abstract class LeveledTypeInfo : TypeInfo
     {

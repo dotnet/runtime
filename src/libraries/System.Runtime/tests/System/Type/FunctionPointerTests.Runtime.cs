@@ -7,8 +7,8 @@ namespace System.Tests.Types
 {
     // These are runtime-specific tests not shared with MetadataLoadContext.
     // Using arrays in the manner below allows for use of the "is" keyword.
-    // The use of 'object' will call into the runtime to compare but using a strongly-typed variable
-    // causes C# to hard-code the result.
+    // The use of 'object' will call into the runtime to compare but using a strongly-typed
+    // function pointer without 'object' causes C# to hard-code the result.
     public partial class FunctionPointerTests
     {
         [Fact]

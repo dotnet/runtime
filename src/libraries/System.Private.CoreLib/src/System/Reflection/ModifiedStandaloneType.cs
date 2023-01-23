@@ -10,10 +10,9 @@ namespace System.Reflection
         /// </summary>
         public ModifiedStandaloneType(
             Type delegatingType,
-            Type[] requiredModifiers,
-            Type[] optionalModifiers,
+            object rootFieldParameterOrProperty,
             int rootSignatureParameterIndex)
-            : base(delegatingType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex) { }
+            : base(delegatingType, rootFieldParameterOrProperty, rootSignatureParameterIndex) { }
 
         /// <summary>
         /// Create a child node.

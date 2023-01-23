@@ -14,10 +14,9 @@ namespace System.Reflection
         /// </summary>
         public ModifiedGenericType(
             Type genericType,
-            Type[] requiredModifiers,
-            Type[] optionalModifiers,
+            object rootFieldParameterOrProperty,
             int rootSignatureParameterIndex)
-            : base(genericType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex)
+            : base(genericType, rootFieldParameterOrProperty, rootSignatureParameterIndex)
         {
             Debug.Assert(genericType.IsGenericType);
             // To support modifiers on generic types, pass nestedSignatureIndex:0.

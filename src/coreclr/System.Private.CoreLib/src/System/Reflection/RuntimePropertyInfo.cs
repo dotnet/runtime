@@ -209,8 +209,7 @@ namespace System.Reflection
         {
             return ModifiedType.Create(
                 PropertyType,
-                GetRequiredCustomModifiers(),
-                GetOptionalCustomModifiers(),
+                this,
                 Signature,
                 rootSignatureParameterIndex: 0);
         }

@@ -52,7 +52,8 @@ namespace System.Tests.Types
             }
         }
 
-
+        // NOTE: commented out due to compiler issue on NativeAOT:
+        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -74,7 +75,10 @@ namespace System.Tests.Types
             Type paramType = nestedFcnPtr.GetFunctionPointerParameterTypes()[0];
             Assert.False(IsModifiedType(paramType));
         }
+        */
 
+        // NOTE: commented out due to compiler issue on NativeAOT
+        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -98,6 +102,7 @@ namespace System.Tests.Types
 
             Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
         }
+        */
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -383,9 +388,10 @@ namespace System.Tests.Types
             public static volatile int* _volatileIntPointer;
             public static volatile delegate* unmanaged[Cdecl]<bool, void> _volatileFcnPtr;
 
-            // Although function pointers can't be used in generics directly, they can be undirectly
+            // Although function pointers can't be used in generics directly, they can be used indirectly
             // through an array or pointer.
-            public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
+            // NOTE: commented out due to compiler issue on NativeAOT:
+            // public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
 
             public static int** _ptr_ptr_int;
             public static int*[] _array_ptr_int;
