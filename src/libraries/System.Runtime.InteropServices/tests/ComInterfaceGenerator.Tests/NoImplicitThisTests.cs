@@ -40,7 +40,7 @@ namespace ComInterfaceGenerator.Tests
                 public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type)
                 {
                     Assert.Equal(typeof(IStaticMethodTable), type);
-                    return new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableLength<IStaticMethodTable>()));
+                    return new VirtualMethodTableInfo((void*)null, (void**)_vtableStart);
                 }
             }
 
