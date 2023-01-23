@@ -20,7 +20,8 @@ namespace System.Reflection
             : base(genericType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex)
         {
             Debug.Assert(genericType.IsGenericType);
-            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), this, nestedSignatureIndex: 0);
+            // To support modifiers on generic types, pass nestedSignatureIndex:0.
+            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), this, nestedSignatureIndex: -1);
         }
 
         /// <summary>
@@ -34,11 +35,11 @@ namespace System.Reflection
             : base(genericType, root, nestedSignatureIndex, nestedSignatureParameterIndex)
         {
             Debug.Assert(genericType.IsGenericType);
-            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), root, nestedSignatureIndex + 1);
+            // To support modifiers on generic types, pass nestedSignatureIndex+1 here.
+            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), root, nestedSignatureIndex);
         }
 
         public override Type[] GetGenericArguments() => CloneArray<Type>(_argumentTypes);
-        public override bool IsGenericType => true;
 
         private static ModifiedType[] CreateArguments(Type[] argumentTypes, ModifiedType root, int nestedSignatureIndex)
         {
@@ -46,7 +47,8 @@ namespace System.Reflection
             ModifiedType[] modifiedTypes = new ModifiedType[count];
             for (int i = 0; i < count; i++)
             {
-                modifiedTypes[i] = Create(argumentTypes[i], root, nestedSignatureIndex, nestedSignatureParameterIndex: i + 1);
+                // To support modifiers on generic types, pass an index value for nestedSignatureParameterIndex.
+                modifiedTypes[i] = Create(argumentTypes[i], root, nestedSignatureIndex, nestedSignatureParameterIndex: -1);
             }
 
             return modifiedTypes;

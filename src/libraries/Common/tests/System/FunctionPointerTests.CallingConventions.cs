@@ -89,7 +89,6 @@ namespace System.Tests.Types
             Assert.Equal(0, fcnPtr1.GetFunctionPointerCallingConventions().Length);
             Assert.Equal(0, fcnPtr2.GetFunctionPointerCallingConventions().Length);
 
-            // Assert.Same(fcnPtr1, fcnPtr2); NOT TRUE FOR MLC
             Assert.True(fcnPtr1.IsFunctionPointerEqual(fcnPtr2));
         }
 

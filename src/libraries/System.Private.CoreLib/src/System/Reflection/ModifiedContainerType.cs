@@ -22,7 +22,7 @@ namespace System.Reflection
             int rootSignatureParameterIndex) : base(containerType, requiredModifiers, optionalModifiers, rootSignatureParameterIndex)
         {
             Debug.Assert(containerType.HasElementType);
-            _elementModifiedType = Create(containerType.GetElementType()!, this, nestedSignatureIndex: 0, nestedSignatureParameterIndex: -1);
+            _elementModifiedType = Create(containerType.GetElementType()!, this, nestedSignatureIndex: -1, nestedSignatureParameterIndex: -1);
         }
 
         /// <summary>

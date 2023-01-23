@@ -142,7 +142,7 @@ public:
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-        if (m_kind == ELEMENT_TYPE_CLASS || m_kind == ELEMENT_TYPE_FNPTR)
+        if (m_kind == ELEMENT_TYPE_CLASS)
             return PTR_Module(u.asClass.m_pModule);
         else if (CorTypeInfo::IsModifier_NoThrow(m_kind) || m_kind == ELEMENT_TYPE_VALUETYPE)
             return GetElementType().GetModule();

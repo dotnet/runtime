@@ -867,7 +867,7 @@ MetaSig::SkipArg()
 //
 // Move to the specified signature in a type tree.
 HRESULT
-MetaSig::MoveToNewSignature(SigPointer start, INT32 index)
+MetaSig::MoveToSignature(SigPointer start, INT32 index)
 {
     CONTRACTL
     {
@@ -882,7 +882,7 @@ MetaSig::MoveToNewSignature(SigPointer start, INT32 index)
 
     m_pLastType = m_pWalk;
 
-    HRESULT hr = start.MoveToNewSignature(index);
+    HRESULT hr = start.MoveToSignature(index);
     if (FAILED(hr))
     {
         m_pWalk = m_pLastType;
@@ -895,6 +895,8 @@ MetaSig::MoveToNewSignature(SigPointer start, INT32 index)
     uint32_t cbSigSize;
     start.GetSignature(&pSig, &cbSigSize);
 
+    // To support modifiers on generic types, create a MetaSigKind::sigGeneric as pass
+    // that instead of sigMember for generic types.
     Init(pSig, cbSigSize, m_pModule, &typeContext, sigMember);
     return hr;
 }
@@ -1645,20 +1647,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             SigPointer psigModReread = psig;
             for (unsigned i = 0; i <= cArgs; i++)
             {
-                // A runtime function pointer should only have an unmanaged\managed status, and not
-                // the specific unmanaged CALLCONV_ value.
-                switch (uCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
-                {
-                    case IMAGE_CEE_CS_CALLCONV_C:
-                    case IMAGE_CEE_CS_CALLCONV_STDCALL:
-                    case IMAGE_CEE_CS_CALLCONV_THISCALL:
-                    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-                        // Strip the calling convention.
-                        uCallConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
-                        // Treat as unmanaged.
-                        uCallConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
-                }
-
                 // Lookup type handle.
                 retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
                                                                pTypeContext,
@@ -1683,13 +1671,21 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 break;
             }
 
+            // Only have an unmanaged\managed status, and not the unmanaged CALLCONV_ value.
+            switch (uCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
+            {
+                case IMAGE_CEE_CS_CALLCONV_C:
+                case IMAGE_CEE_CS_CALLCONV_STDCALL:
+                case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                    // Strip the calling convention.
+                    uCallConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
+                    // Normalize to unmanaged.
+                    uCallConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+            }
+
             // Find an existing function pointer or make a new one
-            thRet = ClassLoader::LoadFnptrTypeThrowing(
-                (BYTE) uCallConv,
-                cArgs,
-                retAndArgTypes,
-                fLoadTypes,
-                level);                
+            thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
 #else
             DacNotImpl();
             thRet = TypeHandle();

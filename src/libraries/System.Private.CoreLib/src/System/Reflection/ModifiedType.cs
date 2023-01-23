@@ -134,8 +134,9 @@ namespace System.Reflection
 
         // TypeDelegator doesn't forward these the way we want:
         public override Type UnderlyingSystemType => typeImpl; // We don't want to forward to typeImpl.UnderlyingSystemType.
-        public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
+        public override bool IsGenericType => typeImpl.IsGenericType;
         public override string ToString() => UnderlyingSystemType.ToString(); // Not forwarded.
+        public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
         public override bool Equals(Type? other) // Not forwarded.
         {
             if (other is ModifiedType otherModifiedType)

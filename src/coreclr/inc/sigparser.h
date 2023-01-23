@@ -724,7 +724,7 @@ class SigParser
 private:
 
         __checkReturn
-        HRESULT MoveToNewSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished);
+        HRESULT MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished);
 
 public:
 
@@ -732,7 +732,7 @@ public:
         // Move to the specified signature (immediately follows an ELEMENT_TYPE_FNPTR)
         //------------------------------------------------------------------------
         __checkReturn
-        HRESULT MoveToNewSignature(uint32_t indexToFind);
+        HRESULT MoveToSignature(uint32_t indexToFind);
 
         //------------------------------------------------------------------------
         // Return pointer

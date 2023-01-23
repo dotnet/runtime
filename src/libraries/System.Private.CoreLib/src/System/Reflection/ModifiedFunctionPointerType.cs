@@ -41,8 +41,8 @@ namespace System.Reflection
             : base(functionPointerType, root, nestedSignatureIndex, nestedSignatureParameterIndex)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
-            _parameterTypes = CreateParameters(functionPointerType.GetFunctionPointerParameterTypes(), root, nestedSignatureIndex + 1);
             _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), root, nestedSignatureIndex + 1, nestedSignatureParameterIndex: 0);
+            _parameterTypes = CreateParameters(functionPointerType.GetFunctionPointerParameterTypes(), root, nestedSignatureIndex + 1);
         }
 
         public override Type GetFunctionPointerReturnType() => _returnType;

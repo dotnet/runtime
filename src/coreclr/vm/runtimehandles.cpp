@@ -1871,7 +1871,7 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
 
         if (nestedSignatureIndex >= 0)
         {
-            sig.MoveToNewSignature(argument, nestedSignatureIndex);
+            sig.MoveToSignature(argument, nestedSignatureIndex);
 
             if (nestedSignatureParameterIndex == 0)
             {
@@ -1998,7 +1998,7 @@ FCIMPL3(FC_INT8_RET, SignatureNative::GetCallingConventionFromFunctionPointer,
                 argument = sig.GetArgProps();
             }
 
-            sig.MoveToNewSignature(argument, nestedSignatureIndex);
+            sig.MoveToSignature(argument, nestedSignatureIndex);
         }
 
         retVal = sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_MASK;

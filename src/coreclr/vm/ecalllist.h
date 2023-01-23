@@ -203,9 +203,9 @@ FCFuncStart(gMetaDataImport)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
-    FCFuncElement("GetSignature", SignatureNative::GetSignature)
-    FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
     FCFuncElement("GetCallingConventionFromFunctionPointer", SignatureNative::GetCallingConventionFromFunctionPointer)
+    FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
+    FCFuncElement("GetSignature", SignatureNative::GetSignature)
     FCFuncElement("CompareSig", SignatureNative::CompareSig)
 FCFuncEnd()
 

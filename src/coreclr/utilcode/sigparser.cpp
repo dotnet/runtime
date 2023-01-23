@@ -193,7 +193,7 @@ HRESULT SigParser::SkipSignature()
     return hr;
 }
 
-HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind)
+HRESULT SigParser::MoveToSignature(uint32_t indexToFind)
 {
     CONTRACTL
     {
@@ -206,7 +206,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind)
     CONTRACTL_END
 
     BOOL isFinished = FALSE;
-    HRESULT hr = MoveToNewSignature(indexToFind, 0, &isFinished);
+    HRESULT hr = MoveToSignature(indexToFind, 0, &isFinished);
     if (isFinished == FALSE)
     {
         return META_E_BAD_SIGNATURE;
@@ -215,7 +215,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind)
     return hr;
 }
 
-HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished)
+HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished)
 {
     CONTRACTL
     {
@@ -256,7 +256,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentInde
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
-                IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+                IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
 
                 if (*isFinished)
                     return S_OK;
@@ -300,12 +300,12 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentInde
                 IfFailRet(GetData(&fpArgCnt));
 
                 // Handle return type
-                IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+                IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
 
                 // Handle args
                 while (fpArgCnt--)
                 {
-                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
 
                     if (*isFinished)
                         return S_OK;
@@ -315,7 +315,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentInde
 
             case ELEMENT_TYPE_ARRAY:
                 {
-                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished)); // Element type
+                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished)); // Element type
                     if (*isFinished)
                         return S_OK;
 
@@ -350,14 +350,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentInde
                 break;
 
             case ELEMENT_TYPE_GENERICINST:
-                if (indexToFind == currentIndex)
-                {
-                     *isFinished = TRUE;
-                     return S_OK;
-                }
-
-                currentIndex++;
-
+                // To support modifiers on generics, apply similar logic here from the ELEMENT_TYPE_FNPTR case.
                 IfFailRet(SkipExactlyOne()); // Skip generic type
 
                 // Handle args
@@ -365,7 +358,7 @@ HRESULT SigParser::MoveToNewSignature(uint32_t indexToFind, uint32_t currentInde
                 IfFailRet(GetData(&argCnt));
                 while (argCnt--)
                 {
-                    IfFailRet(MoveToNewSignature(indexToFind, currentIndex, isFinished));
+                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
 
                     if (*isFinished)
                         return S_OK;
