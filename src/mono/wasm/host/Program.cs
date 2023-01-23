@@ -27,6 +27,7 @@ public class WasmAppHost
         RegisterHostHandler(WasmHost.Browser, BrowserHost.InvokeAsync);
         RegisterHostHandler(WasmHost.V8, JSEngineHost.InvokeAsync);
         RegisterHostHandler(WasmHost.NodeJS, JSEngineHost.InvokeAsync);
+        RegisterHostHandler(WasmHost.Wasmtime, WasiEngineHost.InvokeAsync);
 
         using CancellationTokenSource cts = new();
         ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
