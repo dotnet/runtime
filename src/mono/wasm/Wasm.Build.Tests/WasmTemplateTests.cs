@@ -343,7 +343,6 @@ namespace Wasm.Build.Tests
         {
             var data = new TheoryData<string, bool, bool>();
             data.Add("Debug", false, false);
-            data.Add("Debug", false, false);
             data.Add("Debug", false, true);
             data.Add("Release", false, false); // Release relinks by default
 

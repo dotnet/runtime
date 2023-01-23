@@ -50,6 +50,7 @@ namespace Wasm.Build.Tests
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
+        public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                             // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
@@ -71,6 +72,8 @@ namespace Wasm.Build.Tests
                 Console.WriteLine ("");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
+                if (UseWebcil)
+                    Console.WriteLine($"=============== Using .webcil ===============");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ("");
             }
@@ -335,6 +338,10 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
                 extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
+
+            if (UseWebcil) {
+                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+            }
             if (buildArgs.WasmIncludeFullIcuData)
                 extraProperties += $"\n<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>";
 
@@ -425,8 +432,9 @@ namespace Wasm.Build.Tests
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.GlobalizationMode,
+                                         options.PredefinedIcudt ?? "",
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
-                                         options.PredefinedIcudt ?? "");
+                                         UseWebcil);
                 }
 
                 if (options.UseCache)
@@ -489,7 +497,9 @@ namespace Wasm.Build.Tests
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
             if (runAnalyzers)
-                AddItemsPropertiesToProject("<RunAnalyzers>true</RunAnalyzers>");
+                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectfile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
             return projectfile;
         }
 
@@ -502,7 +512,10 @@ namespace Wasm.Build.Tests
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
-            return Path.Combine(_projectDir!, $"{id}.csproj");
+            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            return projectFile;
         }
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
@@ -553,6 +566,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
+                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
@@ -619,8 +633,9 @@ namespace Wasm.Build.Tests
                                                    bool hasV8Script,
                                                    string targetFramework,
                                                    GlobalizationMode globalizationMode = GlobalizationMode.FullIcu,
+                                                   string predefinedIcudt = "",
                                                    bool dotnetWasmFromRuntimePack = true,
-                                                   string predefinedIcudt = "")
+                                                   bool useWebcil = true)
         {
             AssertFilesExist(bundleDir, new []
             {
@@ -651,7 +666,9 @@ namespace Wasm.Build.Tests
             }
 
             string managedDir = Path.Combine(bundleDir, "managed");
-            AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
+            string bundledMainAppAssembly =
+                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+            AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
             if (is_debug)
@@ -1009,6 +1026,8 @@ namespace Wasm.Build.Tests
 
         public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
         {
+            if (!File.Exists(projectFile))
+                throw new Exception ($"{projectFile} does not exist");
             if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
 
@@ -1106,6 +1125,7 @@ namespace Wasm.Build.Tests
         Action?             InitProject               = null,
         bool?               DotnetWasmFromRuntimePack = null,
         GlobalizationMode   GlobalizationMode         = GlobalizationMode.FullIcu,
+        string?             PredefinedIcudt           = null,
         bool                UseCache                  = true,
         bool                ExpectSuccess             = true,
         bool                AssertAppBundle           = true,
@@ -1117,7 +1137,6 @@ namespace Wasm.Build.Tests
         string?             Label                     = null,
         string?             TargetFramework           = null,
         string?             MainJS                    = null,
-        string?             PredefinedIcudt           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
