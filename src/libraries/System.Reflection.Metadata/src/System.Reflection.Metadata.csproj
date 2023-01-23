@@ -23,6 +23,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"
              Link="Common\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="System\Reflection\Internal\Utilities\BlobDictionary.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PinnedObject.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
