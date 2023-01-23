@@ -2,6 +2,10 @@
   <UsingTask TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
+  <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+  </PropertyGroup>
+
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
   <Target Name="_AndroidCoreBuild" BeforeTargets="AndroidBuildApp" DependsOnTargets="$(AndroidBuildAppDependsOn)" />
@@ -122,7 +126,7 @@
 
   <Target
     Name="_AndroidGenerateAppBundle"
-    Condition="$(_SkipAndroidGenerateAppBundle) != 'true'"
+    Condition="$(AndroidGenerateAppBundle) == 'true'"
     DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
     <PropertyGroup>
