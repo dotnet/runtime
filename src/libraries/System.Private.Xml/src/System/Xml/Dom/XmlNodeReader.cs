@@ -355,10 +355,8 @@ namespace System.Xml
 
         private void CheckIndexCondition(int attributeIndex)
         {
-            if (attributeIndex < 0 || attributeIndex >= AttributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(attributeIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(attributeIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(attributeIndex, AttributeCount);
         }
 
         //8 functions below are the helper functions to deal with virtual attributes of XmlDeclaration nodes and DocumentType nodes.

@@ -1466,6 +1466,7 @@ private:
         m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
+public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
     //
@@ -1545,6 +1546,7 @@ private:
         }
     }
 
+private:
     //------------------------------------------------------------------------
     // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
     //
@@ -1659,6 +1661,17 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 #endif
 
             visitor.VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(this))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                visitor.UpdateEarlyRefCount(lclNum);
+            }
         }
     }
 

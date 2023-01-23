@@ -255,6 +255,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
+            {
+                IMethodNode entrypoint = MethodEntrypoint(method, unboxingStub: false);
+                return new TentativeMethodNode(entrypoint is TentativeMethodNode tentative ?
+                    tentative.RealBody : (IMethodBodyNode)entrypoint);
+            });
+
             _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
             {
                 return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
@@ -369,6 +376,11 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
+            {
+                return new DynamicDependencyAttributesOnEntityNode(entity);
             });
 
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
@@ -692,6 +704,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
+
+        public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
+        {
+            return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
+        }
+
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
 
         public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
@@ -847,6 +866,15 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrCreateValue(method);
+        }
+
+        protected NodeCache<MethodDesc, IMethodNode> _tentativeMethodEntrypoints;
+
+        public IMethodNode TentativeMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        {
+            // Didn't implement unboxing stubs for now. Would need to pass down the flag.
+            Debug.Assert(!unboxingStub);
+            return _tentativeMethodEntrypoints.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;

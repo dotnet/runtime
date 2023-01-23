@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -213,6 +214,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.EncryptionPolicy = encryptionPolicy;
             _sslAuthenticationOptions.CertValidationDelegate = userCertificateValidationCallback;
             _sslAuthenticationOptions.CertSelectionDelegate = userCertificateSelectionCallback;
+
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
+#endif
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
@@ -670,6 +675,9 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("freebsd")]
         public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();

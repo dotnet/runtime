@@ -172,16 +172,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void TypeInfoResolverCannotBeSetAfterAddingContext()
+        public static void TypeInfoResolverCanBeSetAfterAddingContext()
         {
             var options = new JsonSerializerOptions();
             Assert.False(options.IsReadOnly);
 
             options.AddContext<JsonContext>();
-            Assert.True(options.IsReadOnly);
+            Assert.False(options.IsReadOnly);
 
-            Assert.IsType<JsonContext>(options.TypeInfoResolver);
-            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = new DefaultJsonTypeInfoResolver());
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+            Assert.IsType<DefaultJsonTypeInfoResolver>(options.TypeInfoResolver);
         }
 
         [Fact]
@@ -194,19 +194,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WhenAddingContextTypeInfoResolverAsContextOptionsAreSameAsOptions()
+        public static void WhenAddingContextTypeInfoResolverAsContextOptionsAreNotSameAsOptions()
         {
             var options = new JsonSerializerOptions();
             options.AddContext<JsonContext>();
-            Assert.Same(options, (options.TypeInfoResolver as JsonContext).Options);
+            Assert.NotSame(options, (options.TypeInfoResolver as JsonContext).Options);
         }
 
         [Fact]
-        public static void WhenAddingContext_SettingResolverToNullThrowsInvalidOperationException()
+        public static void WhenAddingContext_CanSetResolverToNull()
         {
             var options = new JsonSerializerOptions();
             options.AddContext<JsonContext>();
-            Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = null);
+
+            options.TypeInfoResolver = null;
+            Assert.Null(options.TypeInfoResolver);
         }
 
         [Fact]

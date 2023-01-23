@@ -8,7 +8,7 @@ SHELL ["pwsh", "-Command"]
 WORKDIR /app
 COPY . .
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `
