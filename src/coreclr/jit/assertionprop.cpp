@@ -3278,12 +3278,12 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
     // and is used inside it - don't propagate.
 
     // TODO: Extend on more kinds of trees
-    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL) || !dest->IsLocal())
+    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL) || !dest->OperIs(GT_LCL_VAR))
     {
         return true;
     }
 
-    const GenTreeLclVarCommon* lcl = dest->AsLclVarCommon();
+    const GenTreeLclVar* lcl = dest->AsLclVar();
 
     gtPrepareCost(value);
 

@@ -8264,8 +8264,10 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 else if ((handleFlags == GTF_ICON_STATIC_HDL) && (cns->gtFieldSeq != nullptr) &&
                          (cns->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
                 {
+                    assert(cns->IconValue() == cns->gtFieldSeq->GetOffset());
+
                     // For now we're interested only in SimpleStaticKnownAddress
-                    vnStore->AddToFieldAddressToFieldSeqMap(cns->IconValue(), cns->gtFieldSeq);
+                    vnStore->AddToFieldAddressToFieldSeqMap(cns->gtVNPair.GetLiberal(), cns->gtFieldSeq);
                 }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
@@ -8576,13 +8578,12 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         ValueNum op1vn = op1->gtVNPair.GetLiberal();
         ValueNum op2vn = op2->gtVNPair.GetLiberal();
 
-        if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) &&
-            varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
+        if (op1->gtVNPair.BothEqual() && !vnStore->IsVNHandle(op1vn) && varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
+        else if (op2->gtVNPair.BothEqual() && !vnStore->IsVNHandle(op2vn) &&
                  varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
@@ -8597,15 +8598,17 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 
     // Base address is expected to be static field's address
     ValueNum treeVN = tree->gtVNPair.GetLiberal();
-    if (tree->gtVNPair.BothEqual() && vnStore->IsVNConstant(treeVN) && vnStore->IsVNHandle(treeVN) &&
+    if (tree->gtVNPair.BothEqual() && vnStore->IsVNHandle(treeVN) &&
         (vnStore->GetHandleFlags(treeVN) == GTF_ICON_STATIC_HDL))
     {
-        ssize_t   icon   = vnStore->CoercedConstantValue<ssize_t>(treeVN);
-        FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(icon);
+        FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(treeVN);
         if (fldSeq != nullptr)
         {
+            assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+            assert(fldSeq->GetOffset() == vnStore->CoercedConstantValue<ssize_t>(treeVN));
+
             *pFseq      = fldSeq;
-            *byteOffset = icon + val - fldSeq->GetOffset();
+            *byteOffset = val;
             return true;
         }
     }
@@ -9781,6 +9784,13 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   bool      srcIsUnsigned,    /* = false */
                                   bool      hasOverflowCheck) /* = false */
 {
+
+    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
+    {
+        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
+        return srcVN;
+    }
+
     // The resulting type after performing the cast is always widened to a supported IL stack size
     var_types resultType = genActualType(castToType);
 
@@ -9823,16 +9833,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     ValueNum srcLibVN = srcVNPair.GetLiberal();
     ValueNum srcConVN = srcVNPair.GetConservative();
 
-    ValueNum castLibVN;
-    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcLibVN))
-    {
-        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
-        castLibVN = srcLibVN;
-    }
-    else
-    {
-        castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
-    }
+    ValueNum castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
     ValueNum castConVN;
 
     if (srcVNPair.BothEqual())
@@ -9841,15 +9842,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     }
     else
     {
-        if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcConVN))
-        {
-            // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
-            castConVN = srcConVN;
-        }
-        else
-        {
-            castConVN = VNForCast(srcConVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
-        }
+        castConVN = VNForCast(srcConVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
     }
 
     return {castLibVN, castConVN};

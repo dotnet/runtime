@@ -463,12 +463,12 @@ public:
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
     }
 
-    void AddToFieldAddressToFieldSeqMap(ssize_t fldAddr, FieldSeq* fldSeq)
+    void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
     {
         m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
     }
 
-    FieldSeq* GetFieldSeqFromAddress(ssize_t fldAddr)
+    FieldSeq* GetFieldSeqFromAddress(ValueNum fldAddr)
     {
         FieldSeq* fldSeq;
         if (m_fieldAddressToFieldSeqMap.TryGetValue(fldAddr, &fldSeq))
@@ -1438,7 +1438,7 @@ private:
     typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
     EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
-    typedef SmallHashTable<ssize_t, FieldSeq*> FieldAddressToFieldSeqMap;
+    typedef SmallHashTable<ValueNum, FieldSeq*> FieldAddressToFieldSeqMap;
     FieldAddressToFieldSeqMap m_fieldAddressToFieldSeqMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
