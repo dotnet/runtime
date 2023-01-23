@@ -55,7 +55,7 @@ namespace Microsoft.Interop
             if (implicitThis)
             {
                 ImmutableArray<TypePositionInfo>.Builder newArgTypes = ImmutableArray.CreateBuilder<TypePositionInfo>(argTypes.Length + 1);
-                newArgTypes.Add(new TypePositionInfo(SpecialTypeInfo.IntPtr, NoMarshallingInfo.Instance)
+                newArgTypes.Add(new TypePositionInfo(new PointerTypeInfo("void*", "void*", false), NoMarshallingInfo.Instance)
                 {
                     InstanceIdentifier = NativeThisParameterIdentifier,
                     NativeIndex = 0
