@@ -8407,6 +8407,13 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             tree->gtFlags |= GTF_VAR_CLONED;
             copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
             assert(!copy->AsLclVarCommon()->HasSsaName() || ((copy->gtFlags & GTF_VAR_DEF) == 0));
+
+            if ((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) != 0)
+            {
+                // We should only see this on LCL_VAR today
+                assert(tree->gtOper == GT_LCL_VAR);
+                copy->gtFlags |= GTF_VAR_NEVER_NEGATIVE;
+            }
             break;
 
         default:
@@ -8433,6 +8440,11 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if ((tree->gtFlags & GTF_FLD_NEVER_NEGATIVE) != 0)
+                {
+                    copy->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                }
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
@@ -8575,6 +8587,11 @@ GenTree* Compiler::gtCloneExpr(
                     copy = gtNewLclvNode(tree->AsLclVar()->GetLclNum(),
                                          tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
+
+                    if ((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) != 0)
+                    {
+                        copy->gtFlags |= GTF_VAR_NEVER_NEGATIVE;
+                    }
                 }
                 goto DONE;
 
@@ -8592,6 +8609,9 @@ GenTree* Compiler::gtCloneExpr(
                         GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                                       tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
                     copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
+
+                    // We shouldn't see this on LCL_FLD today
+                    assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
                 }
                 goto DONE;
 
@@ -8628,13 +8648,25 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_LCL_VAR_ADDR:
+            {
                 copy = new (this, oper) GenTreeLclVar(oper, tree->TypeGet(), tree->AsLclVar()->GetLclNum());
+
+                // We shouldn't see this on LCL_VAR_ADDR today
+                assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
+
                 goto DONE;
+            }
 
             case GT_LCL_FLD_ADDR:
+            {
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
+
+                // We shouldn't see this on LCL_FLD_ADDR today
+                assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
+
                 goto DONE;
+            }
 
             default:
                 NO_WAY("Cloning of node not supported");
@@ -8772,6 +8804,11 @@ GenTree* Compiler::gtCloneExpr(
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if ((tree->gtFlags & GTF_FLD_NEVER_NEGATIVE) != 0)
+                {
+                    copy->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                }
                 break;
 
             case GT_BOX:
