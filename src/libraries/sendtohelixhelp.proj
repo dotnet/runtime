@@ -121,6 +121,11 @@
     <HelixPreCommand Include="printenv | grep COMPlus" />
   </ItemGroup>
 
+  <ItemGroup>
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
