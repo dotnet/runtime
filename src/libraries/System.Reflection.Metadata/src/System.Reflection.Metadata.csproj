@@ -46,7 +46,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Metadata\BlobWriterImpl.cs" />
     <Compile Include="System\Reflection\Metadata\BlobBuilder.cs" />
     <Compile Include="System\Reflection\Metadata\BlobBuilder.Enumerators.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\ByteSequenceComparer.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\DecimalUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EnumerableExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\CustomAttributeDecoder.cs" />

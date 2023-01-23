@@ -54,7 +54,7 @@ namespace System.Reflection.Metadata
         /// </summary>
         public bool ContentEquals(BlobWriter other)
         {
-            return Length == other.Length && ByteSequenceComparer.Equals(_buffer, _start, other._buffer, other._start, Length);
+            return Length == other.Length && _buffer.AsSpan(_start, Length).SequenceEqual(other._buffer.AsSpan(other._start, other.Length));
         }
 
         public int Offset
