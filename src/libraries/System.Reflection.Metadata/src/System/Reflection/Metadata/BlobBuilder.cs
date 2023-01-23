@@ -50,6 +50,7 @@ namespace System.Reflection.Metadata
         private bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
+        private Span<byte> Span => _buffer.AsSpan(0, Length);
 
         public BlobBuilder(int capacity = DefaultChunkSize)
         {
@@ -318,6 +319,33 @@ namespace System.Reflection.Metadata
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
+        internal bool TryWriteTo(Span<byte> scratchBuffer, out ReadOnlySpan<byte> buffer)
+        {
+            if (_nextOrPrevious == this)
+            {
+                // If the blob builder has one chunk, we can just return it and avoid copies.
+                buffer = Span;
+                return true;
+            }
+
+            int count = Count;
+            if (scratchBuffer.Length <= count)
+            {
+                int i = 0;
+                foreach (var chunk in GetChunks())
+                {
+                    chunk.Span.CopyTo(scratchBuffer.Slice(i));
+                    i += chunk.Length;
+                }
+
+                buffer = scratchBuffer.Slice(0, count);
+                return true;
+            }
+
+            buffer = default;
+            return false;
+        }
+
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public void WriteContentTo(Stream destination)
@@ -344,7 +372,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 
@@ -359,7 +387,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 

@@ -3,10 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection.Internal;
-using System.Runtime.CompilerServices;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -193,7 +191,11 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            // TODO: avoid making a copy if the blob exists in the index
+            if (value.TryWriteTo(stackalloc byte[256], out ReadOnlySpan<byte> buffer))
+            {
+                return GetOrAddBlob(buffer);
+            }
+
             return GetOrAddBlob(value.ToImmutableArray());
         }
 
@@ -276,6 +278,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddBlobUTF16(string value)
         {
+            if (value is null)
+            {
+                Throw.ArgumentNull(nameof(value));
+            }
+
+            if (BitConverter.IsLittleEndian)
+            {
+                return GetOrAddBlob(MemoryMarshal.AsBytes(value.AsSpan()));
+            }
+
             var builder = PooledBlobBuilder.GetInstance();
             builder.WriteUTF16(value);
             var handle = GetOrAddBlob(builder);
