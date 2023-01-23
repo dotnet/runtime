@@ -11434,6 +11434,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_BOX_PTR:
                             printf(" static box ptr");
                             break;
+                        case GTF_ICON_STATIC_ADDR_PTR:
+                            printf(" static base addr cell");
+                            break;
                         default:
                             printf(" UNKNOWN");
                             break;
@@ -11666,8 +11669,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
-                            tree->AsLclVar()->IsLastUse(index))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVar()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }

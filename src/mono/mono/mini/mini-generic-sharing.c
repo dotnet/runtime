@@ -1148,6 +1148,8 @@ static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_2, "Mono", "ValueTuple`2");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_3, "Mono", "ValueTuple`3");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_4, "Mono", "ValueTuple`4");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_5, "Mono", "ValueTuple`5");
+static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_6, "Mono", "ValueTuple`6");
+static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_7, "Mono", "ValueTuple`7");
 
 static MonoType*
 get_wrapper_shared_type (MonoType *t);
@@ -1187,7 +1189,6 @@ get_wrapper_shared_vtype (MonoType *t)
 	gpointer iter = NULL;
 	MonoClassField *field;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
 		MonoType *ftype = get_wrapper_shared_type_full (field->type, TRUE);
@@ -1213,11 +1214,11 @@ get_wrapper_shared_vtype (MonoType *t)
 		for (int i = 0; i < findex; ++i)
 			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
 	} else {
-		if (findex > 5)
+		if (findex > 7)
 			return NULL;
 	}
 #else
-	if (findex > 5)
+	if (findex > 7)
 		return NULL;
 #endif
 
@@ -1239,6 +1240,12 @@ get_wrapper_shared_vtype (MonoType *t)
 		break;
 	case 5:
 		tuple_class = mono_class_get_valuetuple_5_class ();
+		break;
+	case 6:
+		tuple_class = mono_class_get_valuetuple_6_class ();
+		break;
+	case 7:
+		tuple_class = mono_class_get_valuetuple_7_class ();
 		break;
 	default:
 		g_assert_not_reached ();

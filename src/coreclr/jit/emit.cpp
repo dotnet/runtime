@@ -4189,6 +4189,12 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             printf("%s %s for %s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", fieldName);
             return;
         }
+
+        if (flag == GTF_ICON_STATIC_ADDR_PTR)
+        {
+            printf("%s static base addr cell", commentPrefix);
+            return;
+        }
     }
 
     if (handle == 0)
