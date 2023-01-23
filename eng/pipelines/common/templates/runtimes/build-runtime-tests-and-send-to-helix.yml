@@ -26,7 +26,7 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) -test:$(Build.SourcesDirectory)/src/tests/baseservices/mono/runningmono.csproj
       displayName: Build Tests
 
   - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
