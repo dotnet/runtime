@@ -24,8 +24,6 @@
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' == 'linux' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -39,7 +37,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="">
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
@@ -93,12 +91,8 @@
 
   <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
           BeforeTargets="_PrepareForReadyToRunCompilation">
-    <PropertyGroup>
-      <Crossgen2ArtifactPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
-    </PropertyGroup>
-
     <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(CoreCLRCrossgen2Dir)')" />
       <Crossgen2Tool Remove="@(Crossgen2Tool)" />
       <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
     </ItemGroup>
@@ -108,5 +102,20 @@
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;ArchiveTests" />
+
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    </PropertyGroup>
+
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+    </Exec>
+  </Target>
 
 </Project>
