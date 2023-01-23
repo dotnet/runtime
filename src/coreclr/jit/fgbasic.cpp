@@ -169,10 +169,6 @@ void Compiler::fgInit()
     }
 #endif // DEBUG
 
-    if (!compIsForInlining())
-    {
-        m_promotedStructDeathVars = nullptr;
-    }
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
