@@ -199,7 +199,10 @@ public class WasmAppBuilder : Task
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
-                    _fileWrites.Add(finalWebcil);
+                    Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                _fileWrites.Add(finalWebcil);
             }
             else
             {
@@ -285,8 +288,11 @@ public class WasmAppBuilder : Task
                     var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
                     webcilWriter.ConvertToWebcil();
                     var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
-                    if (Utils.CopyIfDifferent (tmpWebcil, finalWebcil, useHash: true))
-                        _fileWrites.Add (finalWebcil);
+                    if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                    _fileWrites.Add(finalWebcil);
                     config.Assets.Add(new SatelliteAssemblyEntry(finalWebcil, culture));
                 }
                 else
