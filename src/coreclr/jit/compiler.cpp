@@ -4609,14 +4609,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     lvaRefCountState = RCS_EARLY;
 
-    // Figure out what locals are address-taken.
-    //
-    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
-
     if (opts.OptimizationEnabled())
     {
         fgNodeThreading = NodeThreading::AllLocals;
     }
+
+    // Figure out what locals are address-taken.
+    //
+    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.

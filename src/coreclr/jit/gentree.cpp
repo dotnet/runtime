@@ -562,7 +562,7 @@ void GenTree::DumpNodeSizes(FILE* fp)
 //
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
-    GenTree* first = m_stmt->GetRootNode()->gtNext;
+    GenTree* first = m_stmt->GetTreeList();
     assert((first == nullptr) || first->OperIsLocal() || first->OperIsLocalAddr());
     return iterator(static_cast<GenTreeLclVarCommon*>(first));
 }
@@ -580,8 +580,8 @@ GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
 {
     if (node->gtPrev == nullptr)
     {
-        assert(m_stmt->GetRootNode()->gtNext == node);
-        return &m_stmt->GetRootNode()->gtNext;
+        assert(m_stmt->GetTreeList() == node);
+        return m_stmt->GetTreeListPointer();
     }
     else
     {
@@ -603,8 +603,8 @@ GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
 {
     if (node->gtNext == nullptr)
     {
-        assert(m_stmt->GetRootNode()->gtPrev == node);
-        return &m_stmt->GetRootNode()->gtPrev;
+        assert(m_stmt->GetTreeListEnd() == node);
+        return m_stmt->GetTreeListEndPointer();
     }
     else
     {
