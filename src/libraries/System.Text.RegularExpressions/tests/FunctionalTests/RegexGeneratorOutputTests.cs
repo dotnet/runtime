@@ -21,20 +21,20 @@ namespace System.Text.RegularExpressions.Tests
         {
             string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
 
-            Console.OutputEncoding = Encoding.UTF8;
+            AssertExtensions.Equal(Normalize(expected), Normalize(actual));
 
-            expected = NormalizeWhiteSpace(expected);
-            actual = NormalizeWhiteSpace(actual);
-            AssertExtensions.Equal(expected, actual);
-
-            static string NormalizeWhiteSpace(string code)
+            static string Normalize(string code)
             {
+                string versionString = typeof(Generator.RegexGenerator).Assembly.GetName().Version?.ToString() ?? "";
+
                 var input = new StringReader(code);
                 var output = new StringBuilder();
 
                 string line;
                 while ((line = input.ReadLine()) != null)
                 {
+                    line = line.Replace("%VERSION%", versionString);
+
                     if (string.IsNullOrWhiteSpace(line))
                     {
                         line = "";
@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// ○ Match '/'.<br/>
                     /// </code>
                     /// </remarks>
-                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
 
@@ -101,7 +101,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Threading;
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
@@ -341,7 +341,7 @@ namespace System.Text.RegularExpressions.Tests
                     }
 
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
@@ -447,7 +447,7 @@ namespace System.Text.RegularExpressions.Tests
                     ///         ○ Match a character in the set [^&gt;\s] atomically at least once.<br/>
                     /// </code>
                     /// </remarks>
-                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
 
@@ -464,7 +464,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Threading;
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
@@ -732,7 +732,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
                     /// </code>
                     /// </remarks>
-                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
                 }
 
@@ -749,7 +749,7 @@ namespace System.Text.RegularExpressions.Tests
                     using System.Threading;
 
                     /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     [SkipLocalsInit]
                     file sealed class Valid_0 : Regex
                     {
@@ -855,7 +855,7 @@ namespace System.Text.RegularExpressions.Tests
                     }
 
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
