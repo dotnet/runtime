@@ -24,9 +24,9 @@ namespace Sample
         public JSInteropTask()
         {
             measurements = new Measurement[] {
-                new LegacyExportIntMeasurement(),
+                // new LegacyExportIntMeasurement(),
                 new JSExportIntMeasurement(),
-                new LegacyExportStringMeasurement(),
+                // new LegacyExportStringMeasurement(),
                 new JSExportStringMeasurement(),
                 new JSImportIntMeasurement(),
                 new JSImportStringMeasurement(),

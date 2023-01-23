@@ -70,10 +70,10 @@ class MainApp {
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
-        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
-        jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
-        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
-        jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
+        // legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
+        // jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
+        // legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
+        // jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
 
         setModuleImports("main.js", {
             Sample: {
