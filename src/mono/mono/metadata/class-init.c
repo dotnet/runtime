@@ -57,6 +57,7 @@ static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
+static gboolean class_has_inlinearray_attribute (MonoClass *klass);
 
 static
 GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
@@ -702,6 +703,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (m_class_is_valuetype (klass))
 		if (class_has_isbyreflike_attribute (klass))
 			klass->is_byreflike = 1;
+		if (class_has_inlinearray_attribute (klass))
+			printf("has_inlinearray");
 
 	mono_loader_unlock ();
 
@@ -805,6 +808,12 @@ static gboolean
 class_has_isbyreflike_attribute (MonoClass *klass)
 {
 	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE);
+}
+
+static gboolean
+class_has_inlinearray_attribute (MonoClass *klass)
+{
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE);
 }
 
 

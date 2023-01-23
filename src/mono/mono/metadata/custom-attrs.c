@@ -2845,6 +2845,8 @@ mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataC
 		klass = mono_class_get_generic_class (klass)->container_class;
 
 	guint32 idx = custom_attrs_idx_from_class (klass);
+	MonoError error;
+	MonoCustomAttrInfo *info= mono_custom_attrs_from_index_checked(image, idx, TRUE, &error);
 
 	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
