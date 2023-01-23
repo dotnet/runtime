@@ -1068,6 +1068,16 @@ extern "C" int32_t _stricmp(const char *string1, const char *string2)
     return strcasecmp(string1, string2);
 }
 
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // TODO: attempt to fill in SegCs and SegSs
+    return false;
+#else
+    return true;
+#endif
+}
+
 uint32_t g_RhNumberOfProcessors;
 
 REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
