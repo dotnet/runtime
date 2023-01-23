@@ -9296,6 +9296,11 @@ public:
         }
 #endif
 
+        bool IsTier0() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+        }
+
         bool IsInstrumented() const
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
