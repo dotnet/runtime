@@ -4249,7 +4249,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             else
             {
                 assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
-                op1 = gtNewIndOfIconHandleNode(TYP_BYREF, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
             op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
