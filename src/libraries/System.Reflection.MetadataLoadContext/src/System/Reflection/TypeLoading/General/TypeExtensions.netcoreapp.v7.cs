@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This file makes NetStandard Reflection's "subclassing" surface area look as much like NetCore as possible so the rest of the code can be written without #if's.
@@ -17,11 +17,20 @@ namespace System.Reflection.TypeLoading
     }
 
     /// <summary>
-    /// Another layer of base types. Empty for NetCore.
+    /// Another layer of base types.
+    /// For <= 7.0 of NetCore, these base types add newer NetCore apis.
     /// </summary>
     internal abstract class LeveledTypeInfo : TypeInfo
     {
         protected LeveledTypeInfo() : base() { }
+
+        public abstract bool IsFunctionPointer { get; }
+        public abstract bool IsUnmanagedFunctionPointer { get; }
+        public abstract Type[] GetFunctionPointerCallingConventions();
+        public abstract Type[] GetFunctionPointerParameterTypes();
+        public abstract Type GetFunctionPointerReturnType();
+        public abstract Type[] GetOptionalCustomModifiers();
+        public abstract Type[] GetRequiredCustomModifiers();
     }
 
     internal abstract class LeveledAssembly : Assembly
@@ -42,14 +51,17 @@ namespace System.Reflection.TypeLoading
 
     internal abstract class LeveledFieldInfo : FieldInfo
     {
+        public abstract Type GetModifiedFieldType();
     }
 
     internal abstract class LeveledParameterInfo : ParameterInfo
     {
+        public abstract Type GetModifiedParameterType();
     }
 
     internal abstract class LeveledPropertyInfo : PropertyInfo
     {
+        public abstract Type GetModifiedPropertyType();
     }
 
     internal abstract class LeveledCustomAttributeData : CustomAttributeData
