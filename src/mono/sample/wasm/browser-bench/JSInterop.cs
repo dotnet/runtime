@@ -43,7 +43,7 @@ namespace Sample
             public override int InitialSamples => 3;
             public override string Name => "LegacyExportInt";
             // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", "Wasm.Browser.Bench.Sample")]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
             public override void RunStep()
             {
                 ImportsExportsHelper.RunLegacyExportInt(10000);
@@ -66,7 +66,7 @@ namespace Sample
             public override string Name => "LegacyExportString";
 
             // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", "Wasm.Browser.Bench.Sample")]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
             public override void RunStep()
             {
                 ImportsExportsHelper.RunLegacyExportString(10000);
