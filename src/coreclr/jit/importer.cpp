@@ -3942,6 +3942,31 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             uint8_t buffer[MaxStructSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
             {
+#ifdef FEATURE_SIMD
+                // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
+                int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
+                if (simdWidth > 0)
+                {
+                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    var_types simdType = getSIMDTypeForSize(simdWidth);
+
+// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
+// for TYP_SIMD32 we need to check AVX support on XARCH
+#ifdef TARGET_XARCH
+                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
+#else
+                    bool hwAccelerated = true;
+#endif
+
+                    if (hwAccelerated)
+                    {
+                        GenTreeVecCon* vec = gtNewVconNode(simdType);
+                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        return vec;
+                    }
+                }
+#endif
+
                 for (unsigned i = 0; i < totalSize; i++)
                 {
                     if (buffer[i] != 0)
@@ -4234,6 +4259,30 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
             break;
         }
+
+        case CORINFO_FIELD_STATIC_RELOCATABLE:
+        {
+#ifdef FEATURE_READYTORUN
+            assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+            assert(innerFldSeq != nullptr);
+
+            size_t fldAddr = (size_t)pFieldInfo->fieldLookup.addr;
+            if (pFieldInfo->fieldLookup.accessType == IAT_VALUE)
+            {
+                op1 = gtNewIconHandleNode(fldAddr, GTF_ICON_STATIC_HDL);
+            }
+            else
+            {
+                assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+            }
+            GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
+#else
+            unreached();
+#endif // FEATURE_READYTORUN
+        }
+        break;
 
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
@@ -7562,8 +7611,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BRFALSE_S:
 
                 /* Pop the comparand (now there's a neat term) from the stack */
+                op1 = gtFoldExpr(impPopStack().val);
 
-                op1  = impPopStack().val;
                 type = op1->TypeGet();
 
                 // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
@@ -9260,6 +9309,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -9510,6 +9560,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;

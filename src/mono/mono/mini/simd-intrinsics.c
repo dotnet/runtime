@@ -4376,6 +4376,8 @@ emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 	switch (id) {
 		case SN_LeadingZeroCount:
 		case SN_TrailingZeroCount: {
+			if (!MONO_TYPE_IS_INT_32_64 (fsig->params [0]))
+				return NULL;
 			return emit_wasm_zero_count(cfg, fsig, args, cmethod->klass, id, arg0_type);
 		}
 	}
@@ -4396,6 +4398,8 @@ emit_wasm_supported_intrinsics (
 		switch (id) {
 			case SN_LeadingZeroCount:
 			case SN_TrailingZeroCount: {
+				if (!MONO_TYPE_IS_INT_32_64 (fsig->params [0]))
+					return NULL;
 				return emit_wasm_zero_count(cfg, fsig, args, klass, id, arg0_type);
 			}
 		}
