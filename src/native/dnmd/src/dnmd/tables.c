@@ -43,7 +43,8 @@ static mdtable_id_t const ResolutionScope[] = { mdtid_Module, mdtid_ModuleRef, m
 static mdtable_id_t const TypeOrMethodDef[] = { mdtid_TypeDef, mdtid_MethodDef };
 
 #ifdef DNMD_PORTABLE_PDB
-static mdtable_id_t const HasCustomDebugInformation[] = {
+static mdtable_id_t const HasCustomDebugInformation[] =
+{
     mdtid_MethodDef,
     mdtid_Field,
     mdtid_TypeRef,
@@ -74,7 +75,7 @@ static mdtable_id_t const HasCustomDebugInformation[] = {
 };
 #endif // DNMD_PORTABLE_PDB
 
-coded_index_entry const coded_index_map[] =
+static coded_index_entry const coded_index_map[] =
 {
     { TypeDefOrRef, ARRAY_SIZE(TypeDefOrRef), 2},
     { HasConstant, ARRAY_SIZE(HasConstant), 2},

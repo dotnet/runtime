@@ -291,7 +291,7 @@ static int32_t get_column_value_as_token_or_cursor(mdcursor_t* c, uint32_t col_i
             cursor[read_in] = create_cursor(table, table_row);
         }
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }
@@ -389,7 +389,7 @@ int32_t md_get_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
         if (!read_column_data(&qcxt, &constant[read_in]))
             return -1;
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }
@@ -417,7 +417,7 @@ int32_t md_get_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t 
         if (!try_get_string(qcxt.table->cxt, offset, &str[read_in]))
             return -1;
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }
@@ -446,7 +446,7 @@ int32_t md_get_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uin
         if (!try_get_user_string(qcxt.table->cxt, offset, &strings[read_in], &unused))
             return -1;
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }
@@ -474,7 +474,7 @@ int32_t md_get_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
         if (!try_get_blob(qcxt.table->cxt, offset, &blob[read_in], &blob_len[read_in]))
             return -1;
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }
@@ -502,7 +502,7 @@ int32_t md_get_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
         if (!try_get_guid(qcxt.table->cxt, idx, &guid[read_in]))
             return -1;
         read_in++;
-    } while (next_row(&qcxt));
+    } while (out_length > 1 && next_row(&qcxt));
 
     return read_in;
 }

@@ -47,12 +47,12 @@ static mdcxt_t* allocate_full_context(mdcxt_t* cxt)
     mdcxt_t* pcxt = (mdcxt_t*)mem;
     mem += cxt_mem;
     memcpy(pcxt, cxt, sizeof(*cxt));
+    assert(pcxt->tables == NULL);
 
     // Zero out the remaining memory
     memset(mem, 0, total_mem - cxt_mem);
 
     // Update the tables pointer to offset in allocation
-    assert(pcxt->tables == NULL);
     pcxt->tables = (mdtable_t*)mem;
     mem += tables_mem;
 

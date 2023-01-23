@@ -202,8 +202,6 @@ typedef struct _coded_index_entry
     uint8_t const bit_encoding_size;
 } coded_index_entry;
 
-extern coded_index_entry const coded_index_map[mdci_Count];
-
 // Manipulators for coded indices - II.24.2.6
 bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index);
 bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* table_id, uint32_t* table_row);
