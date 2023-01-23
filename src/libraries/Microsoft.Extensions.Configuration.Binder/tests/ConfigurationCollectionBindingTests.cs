@@ -1706,10 +1706,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ISet<string> InstantiatedISet { get; set; } = s_instantiatedISet;
             public bool IsSameInstantiatedISet() => object.ReferenceEquals(s_instantiatedISet, InstantiatedISet);
 
+#if NETCOREAPP
             private static IReadOnlySet<string> s_instantiatedIReadOnlySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = s_instantiatedIReadOnlySet;
             public bool IsSameInstantiatedIReadOnlySet() => object.ReferenceEquals(s_instantiatedIReadOnlySet, InstantiatedIReadOnlySet);
 
+            public IReadOnlySet<string> UnInstantiatedIReadOnlySet { get; set; }
+#endif
             private static ICollection<string> s_instantiatedICollection = new List<string> { "a", "b", "c" };
             public ICollection<string> InstantiatedICollection { get; set; } = s_instantiatedICollection;
             public bool IsSameInstantiatedICollection() => object.ReferenceEquals(s_instantiatedICollection, InstantiatedICollection);
@@ -1720,7 +1723,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public IReadOnlyCollection<string> UnInstantiatedIReadOnlyCollection { get; set; }
             public ICollection<string> UnInstantiatedICollection { get; set; }
-            public IReadOnlySet<string> UnInstantiatedIReadOnlySet { get; set; }
             public ISet<string> UnInstantiatedISet { get; set; }
             public IReadOnlyDictionary<string, string> UnInstantiatedIReadOnlyDictionary { get; set; }
             public IEnumerable<string> UnInstantiatedIEnumerable { get; set; }
@@ -1811,13 +1813,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(3, options.UnInstantiatedISet.Count());
             Assert.Equal(new string[] { "a", "A", "B" }, options.UnInstantiatedISet);
 
+#if NETCOREAPP
             Assert.Equal(2, options.InstantiatedIReadOnlySet.Count());
             Assert.Equal(new string[] { "a", "b" }, options.InstantiatedIReadOnlySet);
             Assert.True(options.IsSameInstantiatedIReadOnlySet());
 
             Assert.Equal(2, options.UnInstantiatedIReadOnlySet.Count());
             Assert.Equal(new string[] { "y", "z" }, options.UnInstantiatedIReadOnlySet);
-
+#endif
             Assert.Equal(4, options.InstantiatedICollection.Count());
             Assert.Equal(new string[] { "a", "b", "c", "d" }, options.InstantiatedICollection);
             Assert.True(options.IsSameInstantiatedICollection());
