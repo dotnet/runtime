@@ -42,7 +42,7 @@ namespace System.SpanTests
                 byte[] a = new byte[length];
 
                 ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
-                Assert.Equal(length, span.Count(0));
+                Assert.Equal(length, span.Count((byte)0));
             }
         }
         

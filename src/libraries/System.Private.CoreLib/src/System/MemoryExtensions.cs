@@ -3633,21 +3633,26 @@ namespace System
         /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
         public static int Count<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
         {
-            if (value.Length == 1)
+            switch (value.Length)
             {
-                return Count(span, value[0]);
+                case 0:
+                    return 0;
+
+                case 1:
+                    return Count(span, value[0]);
+
+                default:
+                    int count = 0;
+
+                    int pos;
+                    while ((pos = span.IndexOf(value)) >= 0)
+                    {
+                        span = span.Slice(pos + value.Length);
+                        count++;
+                    }
+
+                    return count;
             }
-
-            int count = 0;
-
-            int pos;
-            while ((pos = span.IndexOf(value)) >= 0)
-            {
-                span = span.Slice(pos + value.Length);
-                count++;
-            }
-
-            return count;
         }
 
         /// <summary>Writes the specified interpolated string to the character span.</summary>
