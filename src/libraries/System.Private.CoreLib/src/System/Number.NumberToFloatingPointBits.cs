@@ -140,7 +140,7 @@ namespace System
         /// Normalized 128 bits values for powers of 5^q for q in range [-342, 308]
         /// stored as 2 64-bits integers for convenience
         /// </summary>
-        private static readonly ulong[] s_Pow5128Table = {
+        private static ReadOnlySpan<ulong> Pow5128Table => new ulong[] {
             0xeef453d6923bd65a, 0x113faa2906a13b3f,
             0x9558b4661b6565f8, 0x4ac7ca59a424c507,
             0xbaaee17fa23ebf76, 0x5d79bcf00d2df649,
@@ -1647,13 +1647,13 @@ namespace System
             int index = 2 * (int)(q - -342);
             // For small values of q, e.g., q in [0,27], the answer is always exact because
             // Math.BigMul gives the exact answer.
-            ulong high = Math.BigMul(w, s_Pow5128Table[index], out ulong low);
+            ulong high = Math.BigMul(w, Pow5128Table[index], out ulong low);
             ulong precisionMask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
             if ((high & precisionMask) == precisionMask)
             {
                 // could further guard with  (lower + w < lower)
                 // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
-                ulong high2 = Math.BigMul(w, s_Pow5128Table[index + 1], out ulong _);
+                ulong high2 = Math.BigMul(w, Pow5128Table[index + 1], out ulong _);
                 low += high2;
                 if (high2 > low)
                 {

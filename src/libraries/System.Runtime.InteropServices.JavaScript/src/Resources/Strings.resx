@@ -121,7 +121,7 @@
     <value>Invalid argument: {0} can not be null.</value>
   </data>
   <data name="ArgumentCannotBeNullWithLength" xml:space="preserve">
-    <value>Invalid argument: {0} can not be null and must have a length</value>
+    <value>Invalid argument: {0} can not be null and must have a length.</value>
   </data>
   <data name="SystemRuntimeInteropServicesJavaScript_PlatformNotSupported" xml:space="preserve">
     <value>System.Runtime.InteropServices.JavaScript is not supported on this platform.</value>
@@ -134,5 +134,74 @@
   </data>
   <data name="UnableCastObjectToType" xml:space="preserve">
     <value>Unable to cast object of type {0} to type {1}.</value>
+  </data>
+  <data name="MissingManagedEntrypointHandle" xml:space="preserve">
+    <value>Managed entrypoint handle is not set.</value>
+  </data>
+  <data name="CannotResolveManagedEntrypointHandle" xml:space="preserve">
+    <value>Cannot resolve managed entrypoint handle.</value>
+  </data>
+  <data name="ReturnTypeNotSupportedForMain" xml:space="preserve">
+    <value>Return type '{0}' from main method in not supported.</value>
+  </data>
+  <data name="NullToManagedCallback" xml:space="preserve">
+    <value>ToManagedCallback is null.</value>
+  </data>
+  <data name="NullTaskCallback" xml:space="preserve">
+    <value>TaskCallback is null.</value>
+  </data>
+  <data name="EmptyProfileData" xml:space="preserve">
+    <value>Empty profile data.</value>
+  </data>
+  <data name="ErrorLegacySettingProperty" xml:space="preserve">
+    <value>Error setting {0} on (js-obj js '{1}'): {2}.</value>
+  </data>
+  <data name="ErrorResolvingFromGlobalThis" xml:space="preserve">
+    <value>Error resolving property {0} from globalThis.</value>
+  </data>
+  <data name="FailedToMarshalException" xml:space="preserve">
+    <value>Failed to marshal exception.</value>
+  </data>
+  <data name="FailedToMarshalTaskCallback" xml:space="preserve">
+    <value>Failed to marshal Task callback.</value>
+  </data>
+  <data name="InvalidInFlightCounter" xml:space="preserve">
+    <value>Invalid InFlightCounter for JSObject {0}, expected: {1}, actual: {2}.</value>
+  </data>
+  <data name="ToJSNotImplemented" xml:space="preserve">
+    <value>ToJS for {0} is not implemented.</value>
+  </data>
+  <data name="ToManagedNotImplemented" xml:space="preserve">
+    <value>ToManaged for {0} is not implemented.</value>
+  </data>
+  <data name="UnableToResolveHandleAsException" xml:space="preserve">
+    <value>Unable to resolve the handle as an Exception.</value>
+  </data>
+  <data name="UnsupportedArrayType" xml:space="preserve">
+    <value>Unsupported array type {0}. Only single-dimensional arrays with a zero lower bound can be marshaled to JS.</value>
+  </data>
+  <data name="UnsupportedElementType" xml:space="preserve">
+    <value>Unsupported element type {0}.</value>
+  </data>
+  <data name="UnsupportedEnumType" xml:space="preserve">
+    <value>Unsupported enum type {0}.</value>
+  </data>
+  <data name="UnsupportedLegacyMarshlerType" xml:space="preserve">
+    <value>Unsupported marshal type {0}.</value>
+  </data>
+  <data name="UnsupportedNullableType" xml:space="preserve">
+    <value>Unsupported nullable type {0}.</value>
+  </data>
+  <data name="UnsupportedTaskResultType" xml:space="preserve">
+    <value>Unsupported task result type {0}.</value>
+  </data>
+  <data name="UriConstructorMissing" xml:space="preserve">
+    <value>Constructor on type 'System.Uri' not found. Please consider to protect it's constructor from trimming.</value>
+  </data>
+  <data name="UriTypeMissing" xml:space="preserve">
+    <value>The type System.Uri could not be found. Please consider to protect the class and it's constructor from trimming.</value>
+  </data>
+  <data name="ValueOutOf52BitRange" xml:space="preserve">
+    <value>Overflow: value {0} is out of {1} {2} range.</value>
   </data>
 </root>

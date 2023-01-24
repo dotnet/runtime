@@ -23,7 +23,7 @@ if(HOST_SOLARIS)
 endif()
 
 if(HOST_WASI)
-  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
 endif()
 
 function(ac_check_headers)
@@ -85,11 +85,16 @@ ac_check_funcs (
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
 
-if (HOST_LINUX OR HOST_BROWSER)
+if (HOST_LINUX OR HOST_BROWSER OR HOST_WASI)
   # sysctl is deprecated on Linux and doesn't work on Browser
   set(HAVE_SYS_SYSCTL_H 0)
 else ()
   check_include_files("sys/types.h;sys/sysctl.h" HAVE_SYS_SYSCTL_H)
+endif()
+
+if (HOST_WASI)
+  # sysctl is deprecated on Linux and doesn't work on WASI
+  set(HAVE_GETRUSAGE 0)
 endif()
 
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
@@ -99,7 +104,9 @@ if(NOT HOST_DARWIN)
   ac_check_funcs (getentropy)
 endif()
 
-find_package(Threads)
+if(NOT DISABLE_THREADS)
+  find_package(Threads)
+endif()
 # Needed to find pthread_ symbols
 set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT}")
 
@@ -143,6 +150,8 @@ if (HOST_LINUX)
   set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 endif()
 
+check_symbol_exists(CPU_COUNT "sched.h" HAVE_GNU_CPU_COUNT)
+
 check_c_source_compiles(
   "
   #include <string.h>
@@ -154,17 +163,6 @@ check_c_source_compiles(
   }
   "
   HAVE_GNU_STRERROR_R)
-
-check_c_source_compiles(
-  "
-  #include <sched.h>
-  int main(void)
-  {
-    CPU_COUNT((void *) 0);
-    return 0;
-  }
-  "
-  HAVE_GNU_CPU_COUNT)
 
 if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)

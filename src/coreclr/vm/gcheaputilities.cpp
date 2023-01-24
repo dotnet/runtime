@@ -193,7 +193,10 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     if (!hMod)
     {
         HRESULT err = GetLastError();
-        LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
+#ifdef LOGGING
+        MAKE_UTF8PTR_FROMWIDE(standaloneGcLocationUtf8, standaloneGcLocation);
+        LOG((LF_GC, LL_FATALERROR, "Load of %s failed\n", standaloneGcLocationUtf8));
+#endif // LOGGING
         return __HRESULT_FROM_WIN32(err);
     }
 

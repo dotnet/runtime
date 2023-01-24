@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         double[] m_adField1 = null;
         static object[] s_axStatic1 = null;
@@ -26,7 +26,7 @@ namespace Test
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

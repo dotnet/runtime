@@ -8,7 +8,7 @@ public struct CC
     static sbyte m_su;
     static byte[] m_asi;
 
-    static int Main()
+    public static int Main()
     {
         try
         {

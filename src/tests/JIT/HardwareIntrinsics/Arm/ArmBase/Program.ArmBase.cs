@@ -11,8 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm._ArmBase
         static Program()
         {
             JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
-
-
         }
     }
 }

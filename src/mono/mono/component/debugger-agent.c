@@ -434,6 +434,17 @@ static gboolean buffer_replies;
 	tls = &debugger_wasm_thread;
 #endif
 
+#define GET_EXTRA_SPACE_FOR_REF_FIELDS(klass) \
+	extra_space_size = 0; \
+	extra_space = NULL; \
+	if (m_class_is_valuetype (klass)) { \
+		guint8 *p_int = p; \
+		extra_space_size = decode_value_compute_size (m_class_get_byval_arg (klass), 0, domain, p_int, &p_int, end, FALSE); \
+	} \
+	if (extra_space_size > 0) \
+		extra_space = g_alloca (extra_space_size);
+
+
 static void (*start_debugger_thread_func) (MonoError *error);
 static void (*suspend_vm_func) (void);
 static void (*suspend_current_func) (void);
@@ -5315,10 +5326,13 @@ obj_is_of_type (MonoObject *obj, MonoType *t)
 }
 
 static ErrorCode
-decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype);
+decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype, guint8 **extra_space, gboolean from_by_ref_value_type);
+
+static int 
+decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean from_by_ref_value_type);
 
 static ErrorCode
-decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype, guint8 **extra_space, gboolean from_by_ref_value_type)
 {
 	guint8 *addr = (guint8*)void_addr;
 	guint8 *buf = (guint8*)void_buf;
@@ -5352,7 +5366,9 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 			continue;
 		if (mono_field_is_deleted (f))
 			continue;
-		err = decode_value (f->type, domain, mono_vtype_get_field_addr (addr, f), buf, &buf, limit, check_field_datatype);
+		gboolean cur_field_in_extra_space = from_by_ref_value_type;
+  		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
+		err = decode_value (f->type, domain, mono_vtype_get_field_addr (addr, f), buf, &buf, limit, check_field_datatype, extra_space, members_in_extra_space);
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
@@ -5363,7 +5379,9 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 
 	return ERR_NONE;
 }
-static ErrorCode decode_fixed_size_array_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+
+static ErrorCode 
+decode_fixed_size_array_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
 {
 	ErrorCode err = ERR_NONE;
 	int fixedSizeLen = 1;
@@ -5416,10 +5434,182 @@ static ErrorCode decode_fixed_size_array_internal (MonoType *t, int type, MonoDo
 	*endbuf = buf;
 	return err;
 }
+
+static int
+decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean from_by_ref_value_type)
+{
+	int ret = 0;
+	guint8 *buf = (guint8*)void_buf;
+	MonoClass *klass;
+	MonoClassField *f;
+	int nfields;
+	gpointer iter = NULL;
+	MonoDomain *d;
+	ErrorCode err;
+
+	/* is_enum, ignored */
+	decode_byte (buf, &buf, limit);
+	if (CHECK_PROTOCOL_VERSION(2, 61))
+		decode_byte (buf, &buf, limit);
+	klass = decode_typeid (buf, &buf, limit, &d, &err);
+	if (err != ERR_NONE)
+		goto end;
+
+	if (t && klass != mono_class_from_mono_type_internal (t)) {
+		goto end;
+	}
+
+	nfields = decode_int (buf, &buf, limit);
+	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (f))
+			continue;
+		
+		gboolean cur_field_in_extra_space = from_by_ref_value_type;
+  		gboolean members_in_extra_space = cur_field_in_extra_space || m_type_is_byref (f->type) || m_class_is_byreflike (mono_class_from_mono_type_internal (f->type));
+		int field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
+		if (members_in_extra_space)
+			ret += field_size;
+		if (err != ERR_NONE)
+			return err;
+		nfields --;
+	}
+	g_assert (nfields == 0);
+
+end:
+	*endbuf = buf;
+
+	return ret;
+}
+
+static int 
+decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean from_by_ref_value_type)
+{
+	if (type == 0)
+		type = decode_byte (buf, &buf, limit);
+	int ret = 0;
+	ErrorCode err;
+	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
+		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
+		!(type == VALUE_TYPE_ID_FIXED_ARRAY) &&
+		!(t->type == MONO_TYPE_U && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
+		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
+		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		char *name = mono_type_full_name (t);
+		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
+		g_free (name);
+		goto end;
+	}
+	if (type == VALUE_TYPE_ID_FIXED_ARRAY && t->type != MONO_TYPE_VALUETYPE) {
+		//decode_fixed_size_array_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		goto end;
+	}
+	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		decode_int (buf, &buf, limit);
+		ret += sizeof(guint8);
+		break;
+	case MONO_TYPE_CHAR:
+		decode_int (buf, &buf, limit);
+		ret += sizeof(gunichar2);
+		break;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		decode_int (buf, &buf, limit);
+		ret += sizeof(guint16);
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:	
+		decode_int (buf, &buf, limit);
+		ret += sizeof(guint32);
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:	
+	case MONO_TYPE_R8:
+		decode_long (buf, &buf, limit);
+		ret += sizeof(guint64);
+		break;
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		decode_long (buf, &buf, limit);
+		ret += sizeof(gssize);
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			/* The client sends these as a valuetype */
+			goto handle_vtype;
+		} else {
+			goto handle_ref;
+		}
+		break;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		/* We send these as vtypes, so we get them back as such */
+		g_assert (type == MONO_TYPE_VALUETYPE);
+		/* Fall through */
+		handle_vtype:
+	case MONO_TYPE_VALUETYPE:
+		if (type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			/* Boxed vtype */
+			decode_objid (buf, &buf, limit);
+		} else {
+			ret += decode_vtype_compute_size (t, domain, buf, &buf, limit, from_by_ref_value_type);
+		}
+		break;
+	handle_ref:
+	default:
+		if (MONO_TYPE_IS_REFERENCE (t)) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+				ret += sizeof(MonoObject*);
+				decode_objid (buf, &buf, limit);
+			} else if (type == VALUE_TYPE_ID_NULL) {
+				ret += sizeof(MonoObject*);
+				if (CHECK_PROTOCOL_VERSION (2, 59)) {
+					decode_byte (buf, &buf, limit);
+					decode_int (buf, &buf, limit); //not used
+				}
+			} else if (type == MONO_TYPE_VALUETYPE) {
+				MonoDomain *d;
+				decode_byte (buf, &buf, limit);
+				if (CHECK_PROTOCOL_VERSION(2, 61))
+					decode_byte (buf, &buf, limit); //ignore is boxed
+				decode_typeid (buf, &buf, limit, &d, &err);
+				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
+			} else {
+				goto end;
+			}
+		} else if ((t->type == MONO_TYPE_GENERICINST) &&
+					mono_metadata_generic_class_is_valuetype (t->data.generic_class) &&
+					m_class_is_enumtype (t->data.generic_class->container_class)){
+			ret += decode_vtype_compute_size (t, domain, buf, &buf, limit, from_by_ref_value_type);
+		} else {
+			NOT_IMPLEMENTED;
+		}
+		break;
+	}
+end:
+	*endbuf = buf;
+	return ret;
+}
+
 static ErrorCode
-decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, guint8 *buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype, guint8 **extra_space, gboolean from_by_ref_value_type)
 {
 	ErrorCode err;
+
+	if (m_type_is_byref (t)) {
+		g_assert (extra_space != NULL && *extra_space != NULL);
+		*(guint8**)addr = *extra_space; //assign the extra_space allocated for byref fields to the addr
+		guint8 *buf_int = buf;
+		addr = *(guint8**)addr; //dereference the pointer as it's a byref field
+		*extra_space += decode_value_compute_size (t, type, domain, buf_int, &buf_int, limit, TRUE); //increment the extra_space used then it can use the correct address for the next byref field
+	}
 
 	if (type != t->type && !MONO_TYPE_IS_REFERENCE (t) &&
 		!(t->type == MONO_TYPE_I && type == MONO_TYPE_VALUETYPE) &&
@@ -5513,7 +5703,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 			}
 			memcpy (addr, mono_object_unbox_internal (obj), mono_class_value_size (obj->vtable->klass, NULL));
 		} else {
-			err = decode_vtype (t, domain, addr, buf, &buf, limit, check_field_datatype);
+			err = decode_vtype (t, domain, addr, buf, &buf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 			if (err != ERR_NONE)
 				return err;
 		}
@@ -5575,7 +5765,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				g_assert (vtype_buf);
 
 				buf = buf2;
-				err = decode_vtype (NULL, domain, vtype_buf, buf, &buf, limit, check_field_datatype);
+				err = decode_vtype (NULL, domain, vtype_buf, buf, &buf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 				if (err != ERR_NONE) {
 					g_free (vtype_buf);
 					return err;
@@ -5592,7 +5782,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		} else if ((t->type == MONO_TYPE_GENERICINST) &&
 					mono_metadata_generic_class_is_valuetype (t->data.generic_class) &&
 					m_class_is_enumtype (t->data.generic_class->container_class)){
-			err = decode_vtype (t, domain, addr, buf, &buf, limit, check_field_datatype);
+			err = decode_vtype (t, domain, addr, buf, &buf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 			if (err != ERR_NONE)
 				return err;
 		} else {
@@ -5608,7 +5798,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 }
 
 static ErrorCode
-decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype)
+decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void_buf, guint8 **endbuf, guint8 *limit, gboolean check_field_datatype, guint8 **extra_space, gboolean from_by_ref_value_type)
 {
 	guint8 *addr = (guint8*)void_addr;
 	guint8 *buf = (guint8*)void_buf;
@@ -5617,11 +5807,6 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	ErrorCode err;
 	int type = decode_byte (buf, &buf, limit);
 
-	if (m_type_is_byref (t)) {
-		*(guint8**)addr = (guint8 *)g_malloc (sizeof (void*)); //when the object will be deleted it will delete this memory allocated here together?
-		addr = *(guint8**)addr;
-	}
-
 	if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
 		MonoType *targ = t->data.generic_class->context.class_inst->type_argv [0];
 		guint8 *nullable_buf;
@@ -5629,7 +5814,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		/*
 		 * First try decoding it as a Nullable`1
 		 */
-		err = decode_value_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+		err = decode_value_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 		if (err == ERR_NONE)
 			return err;
 
@@ -5638,7 +5823,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		 */
 		if (targ->type == type) {
 			nullable_buf = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (targ)));
-			err = decode_value_internal (targ, type, domain, nullable_buf, buf, endbuf, limit, check_field_datatype);
+			err = decode_value_internal (targ, type, domain, nullable_buf, buf, endbuf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 			if (err != ERR_NONE) {
 				g_free (nullable_buf);
 				return err;
@@ -5659,7 +5844,7 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		}
 	}
 
-	return decode_value_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype);
+	return decode_value_internal (t, type, domain, addr, buf, endbuf, limit, check_field_datatype, extra_space, from_by_ref_value_type);
 }
 
 static void
@@ -6036,6 +6221,8 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 	MonoObject *this_arg, *res, *exc = NULL;
 	MonoDomain *domain;
 	guint8 *this_buf;
+	guint8 *extra_space = NULL;
+	int extra_space_size = 0;	
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	MonoLMFExt ext;
 #endif
@@ -6059,7 +6246,10 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 	sig = mono_method_signature_internal (m);
 
 	if (m_class_is_valuetype (m->klass))
-		this_buf = (guint8 *)g_alloca (mono_class_instance_size (m->klass));
+	{
+		int classSize = mono_class_instance_size (m->klass);
+		this_buf = (guint8 *)g_alloca (classSize);
+	}
 	else
 		this_buf = (guint8 *)g_alloca (sizeof (MonoObject*));
 
@@ -6085,13 +6275,14 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				memset (this_buf, 0, mono_class_instance_size (m->klass));
 				p = tmp_p;
 			} else {
-				err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE);
+				err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE, &extra_space, FALSE);
 				if (err != ERR_NONE)
 					return err;
 			}
 	} else {
 		if (!(m->flags & METHOD_ATTRIBUTE_STATIC) || (m->flags & METHOD_ATTRIBUTE_STATIC && !CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
-			err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE);
+			GET_EXTRA_SPACE_FOR_REF_FIELDS (m->klass);
+			err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE, &extra_space, FALSE);
 			if (err != ERR_NONE)
 				return err;
 		}
@@ -6157,8 +6348,10 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 	memset (arg_buf, 0, nargs * sizeof (gpointer));
 	args = (gpointer *)g_alloca (nargs * sizeof (gpointer));
 	for (i = 0; i < nargs; ++i) {
+		MonoClass *arg_class = mono_class_from_mono_type_internal (sig->params [i]);
 		if (MONO_TYPE_IS_REFERENCE (sig->params [i])) {
-			err = decode_value (sig->params [i], domain, (guint8*)&args [i], p, &p, end, TRUE);
+			GET_EXTRA_SPACE_FOR_REF_FIELDS (arg_class);
+			err = decode_value (sig->params [i], domain, (guint8*)&args [i], p, &p, end, TRUE, &extra_space, FALSE);
 			if (err != ERR_NONE)
 				break;
 			if (args [i] && ((MonoObject*)args [i])->vtable->domain != domain)
@@ -6170,9 +6363,9 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				args [i] = arg_buf [i];
 			}
 		} else {
-			MonoClass *arg_class = mono_class_from_mono_type_internal (sig->params [i]);
 			arg_buf [i] = (guint8 *)g_alloca (mono_class_instance_size (arg_class));
-			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end, TRUE);
+			GET_EXTRA_SPACE_FOR_REF_FIELDS (arg_class);
+			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end, TRUE, &extra_space, FALSE);
 			if (err != ERR_NONE)
 				break;
 			args [i] = arg_buf [i];
@@ -7504,7 +7697,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		o = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 
-		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE);
+		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end, TRUE, NULL, FALSE);
 		if (err != ERR_NONE)
 			return err;
 
@@ -8231,7 +8424,7 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 			}
 
 			val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
-			err = decode_value (f->type, domain, val, p, &p, end, TRUE);
+			err = decode_value (f->type, domain, val, p, &p, end, TRUE, NULL, FALSE);
 			if (err != ERR_NONE) {
 				g_free (val);
 				goto exit;
@@ -9476,7 +9669,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				val_buf = (guint8 *)g_alloca (sizeof (MonoObject*));
 			else
 				val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
-			err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE);
+			err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE, NULL, FALSE);
 			if (err != ERR_NONE)
 				return err;
 
@@ -9512,7 +9705,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		g_assert (MONO_TYPE_ISSTRUCT (t));
 
 		val_buf = (guint8 *)g_alloca (mono_class_instance_size (mono_class_from_mono_type_internal (t)));
-		err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE);
+		err = decode_value (t, frame->de.domain, val_buf, p, &p, end, TRUE, NULL, FALSE);
 		if (err != ERR_NONE)
 			return err;
 
@@ -9607,7 +9800,7 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		for (i = index; i < index + len; ++i) {
 			elem = (gpointer*)((char*)arr->vector + (i * esize));
 
-			decode_value (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), arr->obj.vtable->domain, (guint8 *)elem, p, &p, end, TRUE);
+			decode_value (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), arr->obj.vtable->domain, (guint8 *)elem, p, &p, end, TRUE, NULL, FALSE);
 		}
 		break;
 	default:
@@ -9892,7 +10085,7 @@ get_field_value:
 				}
 
 				val = (guint8 *)g_malloc (mono_class_instance_size (mono_class_from_mono_type_internal (f->type)));
-				err = decode_value (f->type, obj->vtable->domain, val, p, &p, end, TRUE);
+				err = decode_value (f->type, obj->vtable->domain, val, p, &p, end, TRUE, NULL, FALSE);
 				if (err != ERR_NONE) {
 					g_free (val);
 					goto exit;
@@ -9911,7 +10104,7 @@ get_field_value:
 				} else {
 					dest = (guint8*)obj + m_field_get_offset (f);
 				}
-				err = decode_value (f->type, obj->vtable->domain, dest, p, &p, end, TRUE);
+				err = decode_value (f->type, obj->vtable->domain, dest, p, &p, end, TRUE, NULL, FALSE);
 				if (err != ERR_NONE)
 					goto exit;
 			}

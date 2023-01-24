@@ -1662,7 +1662,7 @@ void Compiler::DumpSsaSummary()
 
         if (numDefs == 0)
         {
-            printf("V%02u: in SSA but no defs\n");
+            printf("V%02u: in SSA but no defs\n", lclNum);
         }
         else
         {
@@ -1723,10 +1723,9 @@ void Compiler::JitTestCheckSSA()
     {
         printf("\nJit Testing: SSA names.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node       = ki.Get();
         bool            nodeExists = testData->Lookup(node, &tlAndN);
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)

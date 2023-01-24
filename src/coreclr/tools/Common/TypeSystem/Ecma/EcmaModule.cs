@@ -8,6 +8,8 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
@@ -374,6 +376,26 @@ namespace Internal.TypeSystem.Ecma
             if (field == null)
                 ThrowHelper.ThrowBadImageFormatException($"field expected for handle {handle}");
             return field;
+        }
+
+        internal EcmaField GetField(FieldDefinitionHandle handle, EcmaType owningType)
+        {
+            if (!_resolvedTokens.TryGetValue(handle, out IEntityHandleObject result))
+            {
+                Debug.Assert(_metadataReader.GetFieldDefinition(handle).GetDeclaringType() == owningType.Handle);
+                result = _resolvedTokens.AddOrGetExisting(new EcmaField(owningType, handle));
+            }
+            return (EcmaField)result;
+        }
+
+        internal EcmaMethod GetMethod(MethodDefinitionHandle handle, EcmaType owningType)
+        {
+            if (!_resolvedTokens.TryGetValue(handle, out IEntityHandleObject result))
+            {
+                Debug.Assert(_metadataReader.GetMethodDefinition(handle).GetDeclaringType() == owningType.Handle);
+                result = _resolvedTokens.AddOrGetExisting(new EcmaMethod(owningType, handle));
+            }
+            return (EcmaMethod)result;
         }
 
         public object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)

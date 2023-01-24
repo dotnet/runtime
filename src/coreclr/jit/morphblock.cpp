@@ -1272,7 +1272,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
 
             // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
-            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG);
+            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
+
+            if (m_dstLclNode->IsLastUse(i))
+            {
+                dstFld->gtFlags |= GTF_VAR_DEATH;
+            }
 
             // Don't CSE the lhs of an assignment.
             dstFld->gtFlags |= GTF_DONT_CSE;
@@ -1593,7 +1598,16 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
     }
 
     tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
-    tree->SetIndirExceptionFlags(this);
+
+    if (tree->OperMayThrow(this))
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
     tree->gtFlags |= GTF_ASG;
 
     return tree;

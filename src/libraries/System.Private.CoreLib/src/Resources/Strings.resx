@@ -250,6 +250,9 @@
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
   </data>
+  <data name="Arg_ContainsNonAscii" xml:space="preserve">
+    <value>Text must not contain non-ASCII characters.</value>
+  </data>
   <data name="Arg_CreatInstAccess" xml:space="preserve">
     <value>Cannot specify both CreateInstance and another access type.</value>
   </data>
@@ -294,6 +297,9 @@
   </data>
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
+  </data>
+  <data name="Arg_EmptySpan" xml:space="preserve">
+    <value>Span may not be empty.</value>
   </data>
   <data name="Arg_EndOfStreamException" xml:space="preserve">
     <value>Attempted to read past the end of the stream.</value>

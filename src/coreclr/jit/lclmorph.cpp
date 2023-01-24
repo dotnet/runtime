@@ -3,6 +3,216 @@
 
 #include "jitpch.h"
 
+class LocalSequencer final : public GenTreeVisitor<LocalSequencer>
+{
+    GenTree* m_prevNode;
+
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true,
+    };
+
+    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
+    {
+    }
+
+    //-------------------------------------------------------------------
+    // Start: Start sequencing a statement. Must be called before other members
+    // are called for a specified statement.
+    //
+    // Arguments:
+    //     stmt - the statement
+    //
+    void Start(Statement* stmt)
+    {
+        // We use the root node as a 'sentinel' node that will keep the head
+        // and tail of the sequenced list.
+        GenTree* rootNode = stmt->GetRootNode();
+        rootNode->gtPrev  = nullptr;
+        rootNode->gtNext  = nullptr;
+        m_prevNode        = rootNode;
+    }
+
+    //-------------------------------------------------------------------
+    // Finish: Finish sequencing a statement. Should be called after sub nodes
+    // of the statement have been visited and sequenced.
+    //
+    // Arguments:
+    //     stmt - the statement
+    //
+    void Finish(Statement* stmt)
+    {
+        GenTree* rootNode = stmt->GetRootNode();
+
+        GenTree* firstNode = rootNode->gtNext;
+        GenTree* lastNode  = m_prevNode;
+
+        if (firstNode == nullptr)
+        {
+            lastNode = nullptr;
+        }
+        else
+        {
+            // In the rare case that the root node becomes part of the linked
+            // list (i.e. top level local) we get a circular linked list here.
+            if (firstNode == rootNode)
+            {
+                assert(firstNode == lastNode);
+                lastNode->gtNext = nullptr;
+            }
+            else
+            {
+                assert(lastNode->gtNext == nullptr);
+                assert(lastNode->OperIsLocal() || lastNode->OperIsLocalAddr());
+            }
+
+            firstNode->gtPrev = nullptr;
+        }
+
+        stmt->SetTreeList(firstNode);
+        stmt->SetTreeListEnd(lastNode);
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* node = *use;
+        if (node->OperIsLocal() || node->OperIsLocalAddr())
+        {
+            SequenceLocal(node->AsLclVarCommon());
+        }
+
+        if (node->OperIs(GT_ASG))
+        {
+            SequenceAssignment(node->AsOp());
+        }
+
+        if (node->IsCall())
+        {
+            SequenceCall(node->AsCall());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    //-------------------------------------------------------------------
+    // SequenceLocal: Add a local to the list.
+    //
+    // Arguments:
+    //     lcl - the local
+    //
+    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    {
+        lcl->gtPrev        = m_prevNode;
+        lcl->gtNext        = nullptr;
+        m_prevNode->gtNext = lcl;
+        m_prevNode         = lcl;
+    }
+
+    //-------------------------------------------------------------------
+    // SequenceAssignment: Post-process an assignment that may have a local on the LHS.
+    //
+    // Arguments:
+    //     asg - the assignment
+    //
+    // Remarks:
+    //     In execution order the LHS of an assignment is normally visited
+    //     before the RHS. However, for our purposes, we would like to see the
+    //     LHS local which is considered the def after the nodes on the RHS, so
+    //     this function corrects where that local appears in the list.
+    //
+    //     This is handled in later liveness by guaranteeing GTF_REVERSE_OPS is
+    //     set for assignments with tracked locals on the LHS.
+    //
+    void SequenceAssignment(GenTreeOp* asg)
+    {
+        if (asg->gtGetOp1()->OperIsLocal())
+        {
+            // Correct the point at which the definition of the local on the LHS appears.
+            MoveNodeToEnd(asg->gtGetOp1());
+        }
+    }
+
+    //-------------------------------------------------------------------
+    // SequenceCall: Post-process a call that may define a local.
+    //
+    // Arguments:
+    //     call - the call
+    //
+    // Remarks:
+    //     Like above, but calls may also define a local that we would like to
+    //     see after all other operands of the call have been evaluated.
+    //
+    void SequenceCall(GenTreeCall* call)
+    {
+        if (call->IsOptimizingRetBufAsLocal())
+        {
+            // Correct the point at which the definition of the retbuf local appears.
+            MoveNodeToEnd(m_compiler->gtCallGetDefinedRetBufLclAddr(call));
+        }
+    }
+
+    //-------------------------------------------------------------------
+    // Sequence: Fully sequence a statement.
+    //
+    // Arguments:
+    //     stmt - The statement
+    //
+    void Sequence(Statement* stmt)
+    {
+        Start(stmt);
+        WalkTree(stmt->GetRootNodePointer(), nullptr);
+        Finish(stmt);
+    }
+
+private:
+    //-------------------------------------------------------------------
+    // MoveNodeToEnd: Move a node from its current position in the linked list
+    // to the end.
+    //
+    // Arguments:
+    //     node - The node
+    //
+    void MoveNodeToEnd(GenTree* node)
+    {
+        if (node->gtNext == nullptr)
+        {
+            return;
+        }
+
+        assert(m_prevNode != node);
+
+        GenTree* prev = node->gtPrev;
+        GenTree* next = node->gtNext;
+
+        assert(prev != nullptr); // Should have sentinel always, even as the first local.
+        prev->gtNext = next;
+        next->gtPrev = prev;
+
+        m_prevNode->gtNext = node;
+        node->gtPrev       = m_prevNode;
+        node->gtNext       = nullptr;
+        m_prevNode         = node;
+    }
+};
+
+//-------------------------------------------------------------------
+// fgSequenceLocals: Sequence the locals in a statement.
+//
+// Arguments:
+//     stmt - The statement.
+//
+// Remarks:
+//     This is the locals-only (see fgNodeThreading) counterpart to fgSetStmtSeq.
+//
+void Compiler::fgSequenceLocals(Statement* stmt)
+{
+    assert(fgNodeThreading == NodeThreading::AllLocals);
+    LocalSequencer seq(this);
+    seq.Sequence(stmt);
+}
+
 class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 {
     // During tree traversal every GenTree node produces a "value" that represents:
@@ -265,6 +475,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
     ArrayStack<Value> m_valueStack;
     bool              m_stmtModified;
     bool              m_madeChanges;
+    LocalSequencer*   m_sequencer;
 
 public:
     enum
@@ -273,14 +484,15 @@ public:
         DoPostOrder       = true,
         ComputeStack      = true,
         DoLclVarsOnly     = false,
-        UseExecutionOrder = false,
+        UseExecutionOrder = true,
     };
 
-    LocalAddressVisitor(Compiler* comp)
+    LocalAddressVisitor(Compiler* comp, LocalSequencer* sequencer)
         : GenTreeVisitor<LocalAddressVisitor>(comp)
         , m_valueStack(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_stmtModified(false)
         , m_madeChanges(false)
+        , m_sequencer(sequencer)
     {
     }
 
@@ -300,6 +512,12 @@ public:
 #endif // DEBUG
 
         m_stmtModified = false;
+
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->Start(stmt);
+        }
+
         WalkTree(stmt->GetRootNodePointer(), nullptr);
 
         // We could have something a statement like IND(ADDR(LCL_VAR)) so we need to escape
@@ -320,6 +538,18 @@ public:
         PopValue();
         assert(m_valueStack.Empty());
         m_madeChanges |= m_stmtModified;
+
+        if (m_sequencer != nullptr)
+        {
+            if (m_stmtModified)
+            {
+                m_sequencer->Sequence(stmt);
+            }
+            else
+            {
+                m_sequencer->Finish(stmt);
+            }
+        }
 
 #ifdef DEBUG
         if (m_compiler->verbose)
@@ -400,24 +630,28 @@ public:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclVar());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_VAR_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclVar());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclFld());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_LCL_FLD_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
+                SequenceLocal(node->AsLclVarCommon());
                 break;
 
             case GT_ADD:
@@ -542,6 +776,26 @@ public:
                 }
                 break;
 
+            case GT_ASG:
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                assert(TopValue(0).Node() == node);
+
+                SequenceAssignment(node->AsOp());
+                break;
+
+            case GT_CALL:
+                while (TopValue(0).Node() != node)
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
+
+                SequenceCall(node->AsCall());
+                break;
+
             default:
                 while (TopValue(0).Node() != node)
                 {
@@ -609,6 +863,7 @@ private:
         unsigned   lclNum = val.LclNum();
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
+        GenTreeFlags defFlag            = GTF_EMPTY;
         GenTreeCall* callUser           = user->IsCall() ? user->AsCall() : nullptr;
         bool         hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer && (callUser != nullptr) &&
@@ -633,6 +888,13 @@ private:
                 m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
+                defFlag = GTF_VAR_DEF;
+
+                if ((val.Offset() != 0) ||
+                    (varDsc->lvExactSize != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                {
+                    defFlag |= GTF_VAR_USEASG;
+                }
             }
         }
 
@@ -657,6 +919,7 @@ private:
 #endif // TARGET_64BIT
 
         MorphLocalAddress(val.Node(), lclNum, val.Offset());
+        val.Node()->gtFlags |= defFlag;
 
         INDEBUG(val.Consume();)
     }
@@ -687,20 +950,21 @@ private:
         else
         {
             // Otherwise it must be accessed through some kind of indirection. Usually this is
-            // something like IND(ADDR(LCL_VAR)), global morph will change it to GT_LCL_VAR or
-            // GT_LCL_FLD so the lclvar does not need to be address exposed.
+            // something like IND(LCL_ADDR_VAR), which we will change to LCL_VAR or LCL_FLD so
+            // the lclvar does not need to be address exposed.
             //
             // However, it is possible for the indirection to be wider than the lclvar
             // (e.g. *(long*)&int32Var) or to have a field offset that pushes the indirection
-            // past the end of the lclvar memory location. In such cases morph doesn't do
-            // anything so the lclvar needs to be address exposed.
+            // past the end of the lclvar memory location. In such cases we cannot do anything
+            // so the lclvar needs to be address exposed.
             //
             // More importantly, if the lclvar is a promoted struct field then the parent lclvar
             // also needs to be address exposed so we get dependent struct promotion. Code like
             // *(long*)&int32Var has undefined behavior and it's practically useless but reading,
             // say, 2 consecutive Int32 struct fields as Int64 has more practical value.
 
-            LclVarDsc* varDsc    = m_compiler->lvaGetDesc(val.LclNum());
+            unsigned   lclNum    = val.LclNum();
+            LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
             unsigned   indirSize = GetIndirSize(node);
             bool       isWide;
 
@@ -719,24 +983,18 @@ private:
                 {
                     isWide = true;
                 }
-                else if (varDsc->TypeGet() == TYP_STRUCT)
-                {
-                    isWide = (endOffset.Value() > varDsc->lvExactSize);
-                }
                 else
                 {
-                    // For small int types use the real type size, not the stack slot size.
-                    // Morph does manage to transform `*(int*)&byteVar` into just byteVar where
-                    // the LCL_VAR node has type TYP_INT. But such code is simply bogus and
-                    // there's no reason to attempt to optimize it. It makes more sense to
-                    // mark the variable address exposed in such circumstances.
-                    //
-                    // Same for "small" SIMD types - SIMD8/12 have 8/12 bytes, even if the
-                    // stack location may have 16 bytes.
-                    //
-                    // For TYP_BLK variables the type size is 0 so they're always address
-                    // exposed.
-                    isWide = (endOffset.Value() > genTypeSize(varDsc->TypeGet()));
+                    isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
+
+                    if (varDsc->TypeGet() == TYP_BLK)
+                    {
+                        // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
+                        // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
+                        // variable ends up untracked and VN treats untracked-not-exposed locals more conservatively
+                        // than exposed ones.
+                        m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+                    }
                 }
             }
 
@@ -1214,6 +1472,7 @@ private:
         m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
+public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
     //
@@ -1293,6 +1552,7 @@ private:
         }
     }
 
+private:
     //------------------------------------------------------------------------
     // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
     //
@@ -1347,6 +1607,30 @@ private:
 
         return node->AsLclVar();
     }
+
+    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceLocal(lcl);
+        }
+    }
+
+    void SequenceAssignment(GenTreeOp* asg)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceAssignment(asg);
+        }
+    }
+
+    void SequenceCall(GenTreeCall* call)
+    {
+        if (m_sequencer != nullptr)
+        {
+            m_sequencer->SequenceCall(call);
+        }
+    }
 };
 
 //------------------------------------------------------------------------
@@ -1364,7 +1648,8 @@ private:
 PhaseStatus Compiler::fgMarkAddressExposedLocals()
 {
     bool                madeChanges = false;
-    LocalAddressVisitor visitor(this);
+    LocalSequencer      sequencer(this);
+    LocalAddressVisitor visitor(this, opts.OptimizationEnabled() ? &sequencer : nullptr);
 
     for (BasicBlock* const block : Blocks())
     {
@@ -1382,6 +1667,17 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 #endif
 
             visitor.VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(this))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                visitor.UpdateEarlyRefCount(lclNum);
+            }
         }
     }
 
@@ -1479,7 +1775,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     }
     else
     {
-        GenTree* copyBlkDst = createAddressNodeForSIMDInit(originalLHS, simdSize);
+        GenTree* copyBlkDst = CreateAddressNodeForSimdHWIntrinsicCreate(originalLHS, TYP_FLOAT, simdSize);
         dstNode             = gtNewOperNode(GT_IND, simdType, copyBlkDst);
     }
 

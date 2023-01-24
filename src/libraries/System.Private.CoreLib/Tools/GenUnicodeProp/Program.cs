@@ -175,7 +175,7 @@ namespace GenUnicodeProp
             PrintByteArray(tableName.Replace('1', '3'), file, levels[2]);
         }
 
-        private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file)
+        private static void PrintValueArray<T>(string tableName, Dictionary<T, byte> d, Func<T, byte[]> getBytesCallback, StreamWriter file) where T : notnull
         {
             Console.WriteLine("    ******************************** .");
 

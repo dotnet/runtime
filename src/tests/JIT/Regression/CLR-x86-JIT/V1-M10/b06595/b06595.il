@@ -12,10 +12,10 @@
 }
 
 
-.class ILGEN_939264028 {
+.class public ILGEN_939264028 {
  //(Sep 30 1999)14:45:45
  //  spew2 /L /d15
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	16
  .locals ( int32, int64, float32, float64, int32)
