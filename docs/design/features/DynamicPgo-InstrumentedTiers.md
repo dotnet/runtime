@@ -54,11 +54,11 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void CallDispose(IDisposable d) => d?.Dispose(); // virtual (interface) call, two branches because of "?"
+    static void CallDispose(IDisposable d) => d?.Dispose(); // virtual (interface) call
 }
 ```
 
-The method we'll be inspecting is `CallDispose`.
+The method we'll be inspecting is `CallDispose`. It has an unknown interface call + two branches (the `?` operator).
 
 # Case 1: `CallDispose` is initially prejitted (R2R)
 
@@ -94,9 +94,11 @@ G_M10906_IG05:              ;; offset=0014H
 ; ============================================================
 ```
 
-As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - that is a lot of additional size increase) and is optimized already. Call is not devirtualized yet as we don't have any profile for it.
+As we can see from the codegen: it's not instrumented (we never instrument R2R'd code - that is a lot of additional size increase) and is optimized already. The interface call is not devirtualized yet as we don't have any profile for it.
 
-### 2) `CallDispose` is invoked more than 30 times so VM "promotes" it to Tier1Instrumented for instrumentation:
+### 2) `CallDispose` is promoted to Tier1Instrumented
+
+ `CallDispose` is invoked more than 30 times so VM "promotes" it to Tier1Instrumented for instrumentation:
 ```asm
 ; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
@@ -134,15 +136,17 @@ G_M10906_IG05:              ;; offset=003BH
 ; ============================================================
 ```
 
-What we see here is: code is optimized, it has a helper call to record types of objects passed to that virtual call (`Dispose()`). 
-Also, there are two edge counters (`inc [reloc]`) to get a better understanding which branch is more popular.
+The code is optimized, it has a helper call to record types of objects passed to that virtual call (`Dispose()`). 
+Also, there are two edge counters (`inc [reloc]`) to get a better understanding which branch is more popular (where d is null or where it is not).
 It is worth noting that we had to instrument **optimized** code here to mitigate two issues:
-1) We don't want to see a significant performance degradation (even temporarily) after fast R2R
-2) Unoptimized code tends to spawn a lot of new unnecessary jit compilations because it doesn't inline code, even simple properties
+1) We don't want to see a significant performance degradation (even temporarily) after fast R2R.
+2) Unoptimized code tends to spawn a lot of new unnecessary jit compilations because it doesn't inline code, even simple getters/setters.
   
 As a downside, the profile is less accurate and it doesn't instrument inlinees.
 
-### 3) The new code version of `CallDispose` is also invoked >30 times leading to the final promotion to Tier1:
+### 3) `CallDispose` is promoted to Tier1
+
+The new code version of `CallDispose` is also invoked >30 times leading to the final promotion to Tier1:
 ```asm
 ; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
@@ -187,6 +191,8 @@ if (d is MyDisposableImpl)
 else
     d.Dispose(); // fallback, interface call in case if a new type is added/loaded and used here
 ```
+There are more things JIT can optimize with help of PGO, e.g. be more aggressive inlining methods on hot paths, etc.
+  
 Thus, R2R didn't lead to a missing oportunity to run Dynamic PGO here. To summarize what happened with `CallDispose` we can take a look at this part of the diagram:
 ```mermaid
 flowchart
@@ -203,7 +209,9 @@ flowchart
 
 # Case 2: `CallDispose` is not initially prejitted
 
-### 1) Since there is no R2R version for `CallDispose`, VM has to ask JIT to compile a Tier0 version of it as fast as it can:
+### 1) `CallDispose` is compiled to Tier0
+
+Since there is no R2R version for `CallDispose`, VM has to ask JIT to compile a Tier0 version of it as fast as it can (because it needs to execute it and there is no any code version of it available):
 ```asm
 ; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
@@ -236,7 +244,9 @@ G_M10906_IG04:              ;; offset=0027H
 
 The codegen is not optimized and doesn't have any instrumentation (to avoid spending time on it for methods which will never make it to Tier1 - as the practice shows: only 10-20% of methods make it to Tier1)
 
-### 2) `CallDispose` is invoked more than 30 times and that triggers promotion to Tier0Instrumented (when VM is busy serving other Tier0 requests):
+### 2) `CallDispose` is promoted to Tier0Instrumented
+
+`CallDispose` is invoked more than 30 times and that triggers promotion to Tier0Instrumented (when VM is busy serving other Tier0 requests):
 ```asm
 ; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
@@ -281,11 +291,13 @@ G_M10906_IG04:              ;; offset=005FH
 ```
 Now the whole method is compiled to Tier0 with instrumentation. No optimizations.
 We decided to promote hot Tier0 to Tier0Instrumented without optimizations for the following reasons:
-* We won't notice a big performance regression from going from Tier0 to Tier0Instrumented
+* We won't notice a big performance regression from transitioning from Tier0 to Tier0Instrumented
 * Tier0Instrumented is faster to compile
 * Its profile is more accurate - better performance for Tier1
 
-### 3) ``CallDispose` method is invoked more than 30 times again and this time it triggers the final promotion to the last tier - Tier1:
+### 3) ``CallDispose` is promoted to Tier1
+
+``CallDispose` method is invoked more than 30 times again and this time it triggers the final promotion to the last tier - Tier1:
 ```asm
 ; Assembly listing for method Program:CallDispose(System.IDisposable)
 ; Emitting BLENDED_CODE for X64 CPU with AVX - Windows
