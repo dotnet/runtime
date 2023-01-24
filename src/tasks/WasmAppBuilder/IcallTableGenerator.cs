@@ -34,7 +34,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string> Generate(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
+    public IEnumerable<string> Generate(string? runtimeIcallTableFile, IEnumerable<string> assemblies, string? outputPath)
     {
         _icalls.Clear();
         _signatures.Clear();

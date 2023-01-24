@@ -65,7 +65,7 @@ public class ManagedToNativeGenerator : Task
 
     private void ExecuteInternal()
     {
-        string[] managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
+        List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
 
         var pinvoke = new PInvokeTableGenerator(FixupSymbolName, Log);
         var icall = new IcallTableGenerator(FixupSymbolName, Log);
@@ -116,7 +116,7 @@ public class ManagedToNativeGenerator : Task
         return fixedName;
     }
 
-    private string[] FilterOutUnmanagedBinaries(string[] assemblies)
+    private List<string> FilterOutUnmanagedBinaries(string[] assemblies)
     {
         List<string> managedAssemblies = new(assemblies.Length);
         foreach (string asmPath in Assemblies)
@@ -141,7 +141,7 @@ public class ManagedToNativeGenerator : Task
             managedAssemblies.Add(asmPath);
         }
 
-        return managedAssemblies.ToArray();
+        return managedAssemblies;
     }
 
     private static bool IsManagedAssembly(string filePath)
