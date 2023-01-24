@@ -206,9 +206,61 @@ namespace System.Collections.Frozen
                     Dictionary<string, TValue> stringEntries = (Dictionary<string, TValue>)(object)source;
                     IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
-                    FrozenDictionary<string, TValue> frozenDictionary =
-                        LengthBucketsFrozenDictionary<TValue>.TryCreateLengthBucketsFrozenSet(stringEntries, stringComparer) ??
-                        (FrozenDictionary<string, TValue>)new OrdinalStringFrozenDictionary<TValue>(stringEntries, stringComparer);
+                    FrozenDictionary<string, TValue>? frozenDictionary = LengthBucketsFrozenDictionary<TValue>.CreateLengthBucketsFrozenDictionaryIfAppropriate(stringEntries, stringComparer);
+                    if (frozenDictionary is not null)
+                    {
+                        return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
+                    }
+
+                    var entries = (string[])(object)source.Keys.ToArray();
+
+                    KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), out KeyAnalyzer.AnalysisResults results);
+                    if (results.SubstringHashing)
+                    {
+                        if (results.RightJustifiedSubstring)
+                        {
+                            if (results.IgnoreCase)
+                            {
+                                frozenDictionary = results.AllAscii
+                                    ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                    : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                            }
+                            else
+                            {
+                                frozenDictionary = results.HashCount == 1
+                                    ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                    : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                            }
+                        }
+                        else
+                        {
+                            if (results.IgnoreCase)
+                            {
+                                frozenDictionary = results.AllAscii
+                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                    : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                            }
+                            else
+                            {
+                                    frozenDictionary = results.HashCount == 1
+                                        ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                        : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (results.IgnoreCase)
+                        {
+                            frozenDictionary = results.AllAscii
+                                ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff)
+                                : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                        }
+                        else
+                        {
+                            frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                        }
+                    }
 
                     return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                 }

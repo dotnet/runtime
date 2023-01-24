@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
-    // We define this rather than using IEqualityComparer<string>, since virtual dispatch is faster than interface dispatch
-    internal abstract class StringComparerBase : EqualityComparer<string>
+    internal static class Hashing
     {
         // TODO https://github.com/dotnet/runtime/issues/77679:
         // Replace these once non-randomized implementations are available.
 
-        protected static unsafe int GetHashCodeOrdinal(ReadOnlySpan<char> s)
+        public static unsafe int GetHashCodeOrdinal(ReadOnlySpan<char> s)
         {
             int length = s.Length;
             fixed (char* src = &MemoryMarshal.GetReference(s))
@@ -42,7 +40,7 @@ namespace System.Collections.Frozen
         }
 
         // useful if the string only contains ASCII characters
-        protected static unsafe int GetHashCodeOrdinalIgnoreCaseAscii(ReadOnlySpan<char> s)
+        public static unsafe int GetHashCodeOrdinalIgnoreCaseAscii(ReadOnlySpan<char> s)
         {
             int length = s.Length;
             fixed (char* src = &MemoryMarshal.GetReference(s))
@@ -75,7 +73,7 @@ namespace System.Collections.Frozen
             }
         }
 
-        protected static unsafe int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
+        public static unsafe int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
         {
             int length = s.Length;
 

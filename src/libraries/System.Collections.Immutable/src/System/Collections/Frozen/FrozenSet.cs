@@ -168,11 +168,64 @@ namespace System.Collections.Frozen
                         ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
                     {
                         HashSet<string> stringValues = (HashSet<string>)(object)uniqueValues;
+                        string[] entries = new string[stringValues.Count];
+                        stringValues.CopyTo(entries);
+
                         IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
-                        FrozenSet<string> frozenSet =
-                            LengthBucketsFrozenSet.TryCreateLengthBucketsFrozenSet(stringValues, stringComparer) ??
-                            (FrozenSet<string>)new OrdinalStringFrozenSet(stringValues, stringComparer);
+                        FrozenSet<string>? frozenSet = LengthBucketsFrozenSet.CreateLengthBucketsFrozenSetIfAppropriate(entries, stringComparer);
+                        if (frozenSet is not null)
+                        {
+                            return (FrozenSet<T>)(object)frozenSet;
+                        }
+
+                        KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), out KeyAnalyzer.AnalysisResults results);
+                        if (results.SubstringHashing)
+                        {
+                            if (results.RightJustifiedSubstring)
+                            {
+                                if (results.IgnoreCase)
+                                {
+                                    frozenSet = results.AllAscii
+                                        ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                        : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                                else
+                                {
+                                    frozenSet = results.HashCount == 1
+                                        ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                        : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                            }
+                            else
+                            {
+                                if (results.IgnoreCase)
+                                {
+                                    frozenSet = results.AllAscii
+                                        ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                        : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                                else
+                                {
+                                    frozenSet = results.HashCount == 1
+                                        ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                        : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (results.IgnoreCase)
+                            {
+                                frozenSet = results.AllAscii
+                                    ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff)
+                                    : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            }
+                            else
+                            {
+                                frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            }
+                        }
 
                         return (FrozenSet<T>)(object)frozenSet;
                     }
