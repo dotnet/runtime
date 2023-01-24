@@ -466,6 +466,7 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
+          shouldRunSmokeOnly: true
           alwaysRun: true
           scenarios:
             - normal
