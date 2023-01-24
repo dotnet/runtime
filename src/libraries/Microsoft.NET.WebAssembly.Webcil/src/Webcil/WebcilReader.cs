@@ -13,7 +13,7 @@ using System.Reflection.PortableExecutable;
 namespace Microsoft.NET.WebAssembly.Webcil;
 
 
-public sealed class WebcilReader : IDisposable
+public sealed partial class WebcilReader : IDisposable
 {
     // WISH:
     // This should be implemented in terms of System.Reflection.Internal.MemoryBlockProvider like the PEReader,
@@ -219,37 +219,11 @@ public sealed class WebcilReader : IDisposable
         return MakeCodeViewDebugDirectoryData(guid, age, path);
     }
 
-    private static string? ReadUtf8NullTerminated(BlobReader reader)
-    {
-        var mi = typeof(BlobReader).GetMethod("ReadUtf8NullTerminated", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (mi == null)
-        {
-            throw new InvalidOperationException("Could not find BlobReader.ReadUtf8NullTerminated");
-        }
-        return (string?)mi.Invoke(reader, null);
-    }
+    private static string? ReadUtf8NullTerminated(BlobReader reader) => Reflection.ReadUtf8NullTerminated(reader);
 
-    private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path)
-    {
-        var types = new Type[] { typeof(Guid), typeof(int), typeof(string) };
-        var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
-        if (mi == null)
-        {
-            throw new InvalidOperationException("Could not find CodeViewDebugDirectoryData constructor");
-        }
-        return (CodeViewDebugDirectoryData)mi.Invoke(new object[] { guid, age, path });
-    }
+    private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => Reflection.MakeCodeViewDebugDirectoryData(guid, age, path);
 
-    private static PdbChecksumDebugDirectoryData MakePdbChecksumDebugDirectoryData(string algorithmName, ImmutableArray<byte> checksum)
-    {
-        var types = new Type[] { typeof(string), typeof(ImmutableArray<byte>) };
-        var mi = typeof(PdbChecksumDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
-        if (mi == null)
-        {
-            throw new InvalidOperationException("Could not find PdbChecksumDebugDirectoryData constructor");
-        }
-        return (PdbChecksumDebugDirectoryData)mi.Invoke(new object[] { algorithmName, checksum });
-    }
+    private static PdbChecksumDebugDirectoryData MakePdbChecksumDebugDirectoryData(string algorithmName, ImmutableArray<byte> checksum) => Reflection.MakePdbChecksumDebugDirectoryData(algorithmName, checksum);
 
     public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
     {
