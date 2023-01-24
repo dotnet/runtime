@@ -24,15 +24,11 @@ else
 fi
 
 if [[ -z "$XHARNESS_COMMAND" ]]; then
-	if [[ "$SCENARIO" == "WasmTestOnBrowser" || "$SCENARIO" == "wasmtestonbrowser" ]]; then
-		XHARNESS_COMMAND="test-browser"
-	else
-		XHARNESS_COMMAND="test"
-	fi
+    XHARNESS_COMMAND="test"
 fi
 
 if [[ -z "$XHARNESS_ARGS" ]]; then
-	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
+	XHARNESS_ARGS="$ENGINE_ARGS"
 fi
 
 if [[ -n "$PREPEND_PATH" ]]; then
