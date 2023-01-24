@@ -139,5 +139,40 @@ namespace System.Formats.Tar.Tests
 
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
+
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        public void CreateEntryFromFileOwnedByNonExistentGroup()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                string groupName = Path.GetRandomFileName()[0..6];
+                int groupId = CreateGroup(groupName);
+
+                using TempDirectory root = new TempDirectory();
+
+                string fileName = "file.txt";
+                string filePath = Path.Join(root.Path, fileName);
+                File.Create(filePath).Dispose();
+
+                SetGroupAsOwnerOfFile(groupName, filePath);
+
+                DeleteGroup(groupName);
+
+                using MemoryStream archive = new MemoryStream();
+                using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+                {
+                    writer.WriteEntry(filePath, fileName); // Should not throw
+                }
+                archive.Seek(0, SeekOrigin.Begin);
+                
+                using (TarReader reader = new TarReader(archive, leaveOpen: false))
+                {
+                    UstarTarEntry entry = reader.GetNextEntry() as UstarTarEntry;
+                    Assert.NotNull(entry);
+                    Assert.Equal(entry.GroupName, string.Empty);
+                    Assert.Equal(groupId, entry.Gid);
+                }
+            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
     }
 }
