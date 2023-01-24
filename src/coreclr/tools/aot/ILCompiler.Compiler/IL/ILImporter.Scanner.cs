@@ -940,6 +940,9 @@ namespace Internal.IL
             else if (obj is MethodDesc)
             {
                 var method = (MethodDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
+
                 if (method.IsRuntimeDeterminedExactMethod)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, method), "ldtoken");
@@ -953,7 +956,9 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(obj is FieldDesc);
+                var field = (FieldDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
                 // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
@@ -971,7 +976,6 @@ namespace Internal.IL
                     }
                 }
 
-                var field = (FieldDesc)obj;
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.FieldHandle, field), "ldtoken");
