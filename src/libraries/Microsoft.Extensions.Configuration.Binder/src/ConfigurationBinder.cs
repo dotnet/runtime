@@ -315,12 +315,15 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
-                if (TypeIsASetInterface(type) && !bindingPoint.IsReadOnly)
+                if (TypeIsASetInterface(type))
                 {
-                    object? newValue = BindSet(type, bindingPoint.Value, config, options);
-                    if (newValue != null)
+                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
                     {
-                        bindingPoint.SetValue(newValue);
+                        object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
+                        if (!bindingPoint.IsReadOnly && newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
                     }
 
                     return;
@@ -530,6 +533,7 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
+            // addMethod can only be null if dictionaryType is IReadOnlyDictionary<TKey, TValue> rather than IDictionary<TKey, TValue>.
             MethodInfo? addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
             if (addMethod is null || source is null)
             {
@@ -740,7 +744,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
-        private static object? BindSet(Type type, object? source, IConfiguration config, BinderOptions options)
+        private static object? BindSet(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
         {
             Type elementType = type.GetGenericArguments()[0];
 
@@ -753,6 +757,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             object?[] arguments = new object?[1];
+            // addMethod can only be null if type is IReadOnlySet<T> rather than ISet<T>.
             MethodInfo? addMethod = type.GetMethod("Add", DeclaredOnlyLookup);
             if (addMethod is null || source is null)
             {
@@ -760,17 +765,16 @@ namespace Microsoft.Extensions.Configuration
                 object instance = Activator.CreateInstance(genericType)!;
                 addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup);
 
-                var orig = source as IEnumerable;
-                if (orig != null)
+                if (source != null)
                 {
-                    foreach (object? item in orig)
+                    foreach (object? item in source)
                     {
                         arguments[0] = item;
                         addMethod!.Invoke(instance, arguments);
                     }
                 }
 
-                source = instance;
+                source = (IEnumerable)instance;
             }
 
             Debug.Assert(source is not null);
