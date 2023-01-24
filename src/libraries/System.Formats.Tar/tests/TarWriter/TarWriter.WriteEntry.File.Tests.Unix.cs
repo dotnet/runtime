@@ -140,10 +140,13 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
-        public void CreateEntryFromFileOwnedByNonExistentGroup()
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateEntryFromFileOwnedByNonExistentGroup(TarEntryFormat f)
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke((string strFormat) =>
             {
                 using TempDirectory root = new TempDirectory();
 
@@ -164,7 +167,7 @@ namespace System.Formats.Tar.Tests
                 }
 
                 using MemoryStream archive = new MemoryStream();
-                using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
+                using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
                 {
                     writer.WriteEntry(filePath, fileName); // Should not throw
                 }
@@ -172,12 +175,13 @@ namespace System.Formats.Tar.Tests
                 
                 using (TarReader reader = new TarReader(archive, leaveOpen: false))
                 {
-                    UstarTarEntry entry = reader.GetNextEntry() as UstarTarEntry;
+                    PosixTarEntry entry = reader.GetNextEntry() as PosixTarEntry;
                     Assert.NotNull(entry);
                     Assert.Equal(entry.GroupName, string.Empty);
                     Assert.Equal(groupId, entry.Gid);
+                    Assert.Null(reader.GetNextEntry());
                 }
-            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
     }
 }
