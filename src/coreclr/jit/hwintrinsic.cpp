@@ -1153,13 +1153,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
                     op1 = impPopStack().val;
-                    assert(op1->OperIsLocal());
 
-                    LclVarDsc* op1VarDsc = lvaGetDesc(op1->AsLclVar());
-                    unsigned   lclNum    = lvaGetLclNum(op1VarDsc);
                     if (op1->TypeGet() == TYP_STRUCT)
                     {
-                        unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
+                        assert(op1->OperIsLocal());
+
+                        LclVarDsc* op1VarDsc  = lvaGetDesc(op1->AsLclVar());
+                        unsigned   lclNum     = lvaGetLclNum(op1VarDsc);
+                        unsigned   fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
 
                         GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
                         int               offset    = 0;
