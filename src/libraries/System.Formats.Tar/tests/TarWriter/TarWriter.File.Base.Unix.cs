@@ -21,7 +21,7 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                Interop.Sys.TryGetGroupName(status.Gid, out string gname);
+                Assert.True(Interop.Sys.TryGetGroupName(status.Gid, out string gname));
                 string uname = Interop.Sys.GetUserNameFromPasswd(status.Uid);
 
                 Assert.Equal(gname, posix.GroupName);
@@ -55,46 +55,25 @@ namespace System.Formats.Tar.Tests
 
         protected int CreateGroup(string groupName)
         {
-            int exitCode = Execute("groupadd", groupName, out string standardOutput, out string standardError);
-            if (exitCode != 0)
-            {
-                ThrowOnError(exitCode, "groupadd", groupName, standardError);
-            }
+            Execute("groupadd", groupName);
             return GetGroupId(groupName);
         }
 
         protected int GetGroupId(string groupName)
         {
-            int exitCode = Execute("getent", $"group {groupName}", out string standardOutput, out string standardError);
-            if (exitCode != 0)
-            {
-                ThrowOnError(exitCode, "getent", "group", standardError);
-            }
-
+            string standardOutput = Execute("getent", $"group {groupName}");
             string[] values = standardOutput.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
             return int.Parse(values[^1]);
         }
         
-        protected void SetGroupAsOwnerOfFile(string groupName, string filePath)
-        {
-            int exitCode = Execute("chgrp", $"{groupName} {filePath}", out string standardOutput, out string standardError);
-            if (exitCode != 0)
-            {
-                ThrowOnError(exitCode, "chgroup", $"{groupName} {filePath}", standardError);
-            }
-        }
+        protected void SetGroupAsOwnerOfFile(string groupName, string filePath) =>
+            Execute("chgrp", $"{groupName} {filePath}");
 
-        protected void DeleteGroup(string groupName)
-        {
-            int exitCode = Execute("groupdel", groupName, out string standardOutput, out string standardError);
-            if (exitCode != 0)
-            {
-                ThrowOnError(exitCode, "groupdel", groupName, standardError);
-            }
-        }
 
-        private int Execute(string command, string arguments, out string standardOutput, out string standardError)
+        protected void DeleteGroup(string groupName) =>
+            Execute("groupdel", groupName);
+
+        private string Execute(string command, string arguments)
         {
             using Process p = new Process();
 
@@ -103,17 +82,19 @@ namespace System.Formats.Tar.Tests
             p.StartInfo.Arguments = arguments;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.RedirectStandardError = true;
+
             p.Start();
             p.WaitForExit();
 
-            standardOutput = p.StandardOutput.ReadToEnd();
-            standardError = p.StandardError.ReadToEnd();
-            return p.ExitCode;
-        }
+            string standardOutput = p.StandardOutput.ReadToEnd();
+            string standardError = p.StandardError.ReadToEnd();
+            
+            if (p.ExitCode != 0)
+            {
+                throw new IOException($"Error '{p.ExitCode}' when executing '{command} {arguments}'. Message: {standardError}");
+            }
 
-        private void ThrowOnError(int code, string command, string arguments, string message)
-        {
-            throw new IOException($"Error '{code}' when executing '{command} {arguments}'. Message: {message}");
+            return standardOutput;
         }
     }
 }
