@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -18,18 +14,17 @@ public class WasmCalculateInitialHeapSize : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
-    [Required]
-    public string[] AOTDataSegments { get; set; } = Array.Empty<string>();
+    public string[] AOTDataSegmentSizes { get; set; } = Array.Empty<string>();
 
     [Output]
-    public long? InitialHeapSize { get; private set; }
+    public long InitialHeapSize { get; private set; }
 
     public override bool Execute()
     {
         long totalDllSize = 0;
         long totalDataSize = 0;
 
-        foreach (var asm in Assemblies)
+        foreach (string asm in Assemblies)
         {
             var info = new FileInfo(asm);
             if (!info.Exists)
@@ -40,13 +35,15 @@ public class WasmCalculateInitialHeapSize : Task
             totalDllSize += info.Length;
         }
 
-        // during non-AOT builds, AOTDataSegments is null
-        if (AOTDataSegments != null)
+        // during non-AOT builds, AOTDataSegmentSizes is empty
+        foreach (string segment in AOTDataSegmentSizes)
         {
-            foreach (var segment in AOTDataSegments)
+            if (!long.TryParse(segment, out long segmentSize))
             {
-                totalDataSize += long.Parse(segment);
+                Log.LogError($"Could not parse AOT Data segment size '{segment}");
+                return false;
             }
+            totalDataSize += segmentSize;
         }
 
         // this is arbitrary guess about memory overhead of the runtime, after the assemblies are loaded
