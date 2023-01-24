@@ -64,6 +64,7 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
+    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -168,10 +169,6 @@ void Compiler::fgInit()
     }
 #endif // DEBUG
 
-    if (!compIsForInlining())
-    {
-        m_promotedStructDeathVars = nullptr;
-    }
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
@@ -5352,50 +5349,33 @@ bool Compiler::fgRenumberBlocks()
     }
 #endif // DEBUG
 
-    bool        renumbered  = false;
-    bool        newMaxBBNum = false;
-    BasicBlock* block;
+    bool     renumbered  = false;
+    bool     newMaxBBNum = false;
+    unsigned num         = fgBBNumMin;
 
-    unsigned numStart = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : 0);
-    unsigned num;
-
-    for (block = fgFirstBB, num = numStart; block != nullptr; block = block->bbNext, num++)
+    for (BasicBlock* block : Blocks())
     {
         noway_assert((block->bbFlags & BBF_REMOVED) == 0);
 
         if (block->bbNum != num)
         {
-            renumbered = true;
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
-            }
-#endif // DEBUG
+            JITDUMP("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
+            renumbered   = true;
             block->bbNum = num;
         }
 
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - numStart + 1;
-            if (compIsForInlining())
+            fgBBcount = num - fgBBNumMin + 1;
+            if (fgBBNumMax != num)
             {
-                if (impInlineInfo->InlinerCompiler->fgBBNumMax != num)
-                {
-                    impInlineInfo->InlinerCompiler->fgBBNumMax = num;
-                    newMaxBBNum                                = true;
-                }
-            }
-            else
-            {
-                if (fgBBNumMax != num)
-                {
-                    fgBBNumMax  = num;
-                    newMaxBBNum = true;
-                }
+                fgBBNumMax  = num;
+                newMaxBBNum = true;
             }
         }
+
+        num++;
     }
 
     // If we renumbered, then we may need to reorder some pred lists.

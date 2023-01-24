@@ -35,7 +35,7 @@ namespace System.Collections.Frozen
             _ignoreCase = ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal static LengthBucketsFrozenDictionary<TValue>? TryCreateLengthBucketsFrozenSet(Dictionary<string, TValue> source, IEqualityComparer<string> comparer)
+        internal static LengthBucketsFrozenDictionary<TValue>? CreateLengthBucketsFrozenDictionaryIfAppropriate(Dictionary<string, TValue> source, IEqualityComparer<string> comparer)
         {
             Debug.Assert(source.Count != 0);
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);

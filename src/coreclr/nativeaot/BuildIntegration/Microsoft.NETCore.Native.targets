@@ -27,9 +27,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
     <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
     <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">osx</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
@@ -343,6 +344,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
       <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'osx'">true</_IgnoreLinkerWarnings>
+      <StripFlag Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
     </PropertyGroup>
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
@@ -363,10 +365,10 @@ The .NET Foundation licenses this file to you under the MIT license.
         &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'osx'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'osx' and '$(NativeLib)' != 'Static'"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
-        strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
+        strip -no_code_signature_warning $(StripFlag) &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"

@@ -46,7 +46,7 @@ size_t StressLog::reading_base_address;
 
 bool s_showAllMessages = false;
 BOOL g_bDacBroken;
-WCHAR g_mdName[1];
+char g_mdName[1];
 SYMBOLS* g_ExtSymbols;
 SOS* g_sos;
 
