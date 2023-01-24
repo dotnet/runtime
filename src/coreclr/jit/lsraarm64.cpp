@@ -28,14 +28,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
 {
     regMaskTP result = candidates & m_AvailableRegs;
-    if (!refPosition->needsConsecutive || (refPosition->multiRegIdx != 0))
+
+    if (!refPosition->needsConsecutive || (refPosition->regCount == 0))
     {
         return result;
     }
 
-    assert(refPosition->regCount != 0);
-
-    // If refPosition->multiRegIdx == 0, we need to make sure we check for all the
+    // If refPosition->regCount != 0, we need to make sure we check for all the
     // `regCount` available regs.
 
     result &= (m_AvailableRegs >> (refPosition->regCount - 1));
@@ -1038,24 +1037,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            int          regCount;
+            unsigned          regCount      = 0;
             RefPosition* useRefPos1    = nullptr;
             RefPosition* nextUseRefPos = nullptr;
             switch (intrin.id)
             {
                 case NI_AdvSimd_VectorTableLookup_2:
                 case NI_AdvSimd_Arm64_VectorTableLookup_2:
-                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 2);
                     regCount = 2;
                     break;
                 case NI_AdvSimd_VectorTableLookup_3:
                 case NI_AdvSimd_Arm64_VectorTableLookup_3:
-                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 3);
                     regCount = 3;
                     break;
                 case NI_AdvSimd_VectorTableLookup_4:
                 case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                    //assert(compiler->lvaGetDesc(intrin.op1->AsLclVar())->lvFieldCnt == 4);
                     regCount = 4;
                     break;
                 default:
@@ -1072,11 +1068,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 RefPosition* lastRefPos = nullptr;
                 // consecutive registers
 
-                int regCount = 0;
+                RefPosition* currRefPos = nullptr;
                 for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
                 {
-                        RefPosition* currRefPos =
-                            BuildUse(use.GetNode(), RBM_NONE, 0, /* needsConsecutive */ true);
+                    currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0, /* needsConsecutive */ true);
                     if (lastRefPos == nullptr)
                     {
                         currRefPos->regCount = regCount;
@@ -1091,29 +1086,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
                     }
                     lastRefPos = currRefPos;
-                    regCount++;
                 }
                 srcCount += regCount;
-#ifdef DEBUG
-                switch (regCount)
-                {
-                    case 2:
-                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_2) ||
-                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_2));
-                        break;
-                    case 3:
-                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_3) ||
-                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_3));
-                        break;
-                    case 4:
-                        assert((intrin.id == NI_AdvSimd_VectorTableLookup_4) ||
-                               (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup_4));
-                        break;
-                    default:
-                        assert(!"Unexpected register count for VectorTableLookup");
-                        break;
-                }
-#endif // DEBUG
             }
         }
     }

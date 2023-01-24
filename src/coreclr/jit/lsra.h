@@ -2287,7 +2287,7 @@ public:
     bool needsConsecutive;
 
     // How many consecutive registers does this and subsequent refPositions need
-    unsigned char regCount : 2;
+    unsigned char regCount : 3;
 #endif // TARGET_ARM64
 
     // Last Use - this may be true for multiple RefPositions in the same Interval

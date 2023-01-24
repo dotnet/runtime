@@ -2845,7 +2845,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
     refPosition->registerAssignment = foundRegBit;
 
 #ifdef TARGET_ARM64
-    if (refPosition->needsConsecutive && (refPosition->multiRegIdx == 0))
+    if (refPosition->needsConsecutive && (refPosition->regCount != 0))
     {
         setNextConsecutiveRegisterAssignment(refPosition, foundRegBit);
     }
@@ -5319,7 +5319,7 @@ void LinearScan::allocateRegisters()
                         assignedRegMask = REG_NA;
 
                         // This should never be the first refposition of the series.
-                        assert(currentRefPosition.multiRegIdx != 0);
+                        assert(currentRefPosition.regCount == 0);
                     }
 #endif
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;

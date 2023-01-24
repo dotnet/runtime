@@ -532,7 +532,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    assert(firstField->OperIsLocalField());
                     op1Reg = firstField->GetRegNum();
                 }
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);

@@ -1143,6 +1143,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
                 {
                     op1 = impPopStack().val;
+                    assert(op1->OperIsLocal());
+
+                    LclVarDsc* op1VarDsc = lvaGetDesc(op1->AsLclVar());
+                    unsigned   lclNum    = lvaGetLclNum(op1VarDsc);
                     if (op1->TypeGet() == TYP_STRUCT)
                     {
                         unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
@@ -1151,22 +1155,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         int               offset    = 0;
                         for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
                         {
-                            unsigned   lclNum    = lvaGrabTemp(true DEBUGARG("VectorTableLookup"));
-                            LclVarDsc* fldVarDsc = lvaGetDesc(lclNum);
+                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, TYP_SIMD16, offset);
+                            fieldList->AddField(this, fldNode, offset, TYP_SIMD16);
 
-                            CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sigReader.op1ClsHnd, fieldId);
-                            CORINFO_CLASS_HANDLE innerFieldClsHnd;
-                            JITtype2varType(
-                                info.compCompHnd->getFieldType(fieldHandle, &innerFieldClsHnd,
-                                                               info.compCompHnd->getFieldClass(fieldHandle)));
-
-                            lvaSetStruct(lclNum, innerFieldClsHnd, true);
-
-                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, fldVarDsc->TypeGet(), offset);
-                            //fldNode->forceEnregister = true;
-                            fieldList->AddField(this, fldNode, offset, fldVarDsc->TypeGet());
-
-                            offset += fldVarDsc->lvSize();
+                            offset += op1VarDsc->lvSize() / fieldCount;
                         }
                         op1 = fieldList;
 
