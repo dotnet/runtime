@@ -17,6 +17,7 @@
     <!--<NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>-->
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
