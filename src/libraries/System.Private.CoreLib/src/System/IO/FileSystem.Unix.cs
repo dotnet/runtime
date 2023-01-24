@@ -34,13 +34,17 @@ namespace System.IO
         {
             public long fileLength;
             public UnixFileMode filePermissions;
+            public long fileDev;
+            public long fileIno;
             public SafeFileHandle? src;
             public SafeFileHandle? dst;
 
-            public StartedCopyFileState(long fileLength, UnixFileMode filePermissions, SafeFileHandle src, SafeFileHandle dst)
+            public StartedCopyFileState(long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle dst)
             {
                 this.fileLength = fileLength;
                 this.filePermissions = filePermissions;
+                this.fileDev = fileDev;
+                this.fileIno = fileIno;
                 this.src = src;
                 this.dst = dst;
             }
@@ -61,7 +65,11 @@ namespace System.IO
             StartedCopyFileState startedCopyFile = default;
             try
             {
-                startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out startedCopyFile.fileLength, out startedCopyFile.filePermissions);
+                startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
+                startedCopyFile.fileLength = fileStatus.Size;
+                startedCopyFile.filePermissions = SafeFileHandle.FilePermissionsForStatus(fileStatus);
+                startedCopyFile.fileDev = fileStatus.Dev;
+                startedCopyFile.fileIno = fileStatus.Ino;
                 if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
             }
             catch
@@ -732,16 +740,6 @@ namespace System.IO
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            string? linkTarget = ResolveLinkTargetString(linkPath, returnFinalTarget, isDirectory);
-            if (linkTarget == null) return null;
-
-            return isDirectory ?
-                    new DirectoryInfo(linkTarget) :
-                    new FileInfo(linkTarget);
-        }
-
-        private static string? ResolveLinkTargetString(string linkPath, bool returnFinalTarget, bool isDirectory)
-        {
             ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
@@ -786,7 +784,9 @@ namespace System.IO
             Debug.Assert(sb.Length > 0);
             linkTarget = sb.ToString(); // ToString disposes
 
-            return linkTarget;
+            return isDirectory ?
+                    new DirectoryInfo(linkTarget) :
+                    new FileInfo(linkTarget);
 
             // In case of link target being relative:
             // Preserve the full path of the directory of the previous path
