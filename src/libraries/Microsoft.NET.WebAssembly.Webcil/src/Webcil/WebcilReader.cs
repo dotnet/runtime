@@ -332,7 +332,6 @@ public sealed class WebcilReader : IDisposable
                 return DecodePdbChecksumDebugDirectoryData(new BlobReader(p, buffer.Length));
             }
         }
-
     }
 
     private static PdbChecksumDebugDirectoryData DecodePdbChecksumDebugDirectoryData(BlobReader reader)
@@ -345,7 +344,6 @@ public sealed class WebcilReader : IDisposable
         }
 
         return MakePdbChecksumDebugDirectoryData(algorithmName, ImmutableArray.Create(checksum));
-
     }
 
     private long TranslateRVA(uint rva)
