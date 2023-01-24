@@ -835,8 +835,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            // Instantiated IReadOnlySet cannot get mutated.
-            Assert.Equal(0, options.InstantiatedIReadOnlySet.Count);
+            Assert.Equal(2, options.InstantiatedIReadOnlySet.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySet.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySet.ElementAt(1));
         }
 
         [Fact]
@@ -854,10 +855,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            // Instantiated IReadOnlySet doesn't get mutated.
-            Assert.Equal(2, options.InstantiatedIReadOnlySetWithSomeValues.Count);
+            Assert.Equal(4, options.InstantiatedIReadOnlySetWithSomeValues.Count);
             Assert.Equal("existing1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(0));
             Assert.Equal("existing2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(1));
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(2));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlySetWithSomeValues.ElementAt(3));
         }
 
         [Fact]
@@ -930,10 +932,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<Foo>()!;
 
-            // Readonly dictionary with instantiated value cannot get mutated by the configuration.
-            Assert.Equal(2, options.Items.Count);
+            Assert.Equal(4, options.Items.Count);
             Assert.Equal(1, options.Items["existing-item1"]);
             Assert.Equal(2, options.Items["existing-item2"]);
+            Assert.Equal(3, options.Items["item3"]);
+            Assert.Equal(4, options.Items["item4"]);
         }
 
         [Fact]
@@ -952,13 +955,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ConfigWithInstantiatedIReadOnlyDictionary>()!;
 
             // Readonly dictionary with instantiated value cannot be mutated by the configuration
-            Assert.Equal(2, options.Dictionary.Count);
+            Assert.Equal(3, options.Dictionary.Count);
 
             // does not overwrite original
             Assert.Equal(1, ConfigWithInstantiatedIReadOnlyDictionary._existingDictionary["existing-item1"]);
 
-            Assert.Equal(1, options.Dictionary["existing-item1"]);
+            Assert.Equal(666, options.Dictionary["existing-item1"]);
             Assert.Equal(2, options.Dictionary["existing-item2"]);
+            Assert.Equal(3, options.Dictionary["item3"]);
         }
 
         [Fact]
@@ -1023,10 +1027,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var resultingDictionary = options.InstantiatedReadOnlyDictionaryWithWithSomeValues;
 
-            // Readonly dictionary with instantiated value cannot be mutated by the configuration.
-            Assert.Equal(2, resultingDictionary.Count);
+            Assert.Equal(4, resultingDictionary.Count);
             Assert.Equal(1, resultingDictionary["existing-item1"]);
             Assert.Equal(2, resultingDictionary["existing-item2"]);
+            Assert.Equal(3, resultingDictionary["item3"]);
+            Assert.Equal(4, resultingDictionary["item4"]);
         }
 
         [Fact]
@@ -1371,8 +1376,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            // Instantiated readonly IEnumerable which cannot be mutated by the configuration
-            Assert.Equal(0, options.InstantiatedIEnumerable.Count());
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
         [Fact]
@@ -1450,9 +1456,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-
-            // Instantiated readonly collection which cannot be mutated by the configuration
-            Assert.Equal(0, options.InstantiatedIReadOnlyCollection.Count);
+            Assert.Equal(2, options.InstantiatedIReadOnlyCollection.Count);
+            Assert.Equal("Yo1", options.InstantiatedIReadOnlyCollection.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIReadOnlyCollection.ElementAt(1));
         }
 
         [Fact]
@@ -1471,8 +1477,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ComplexOptions>()!;
 
-            // Instantiated IEnumerable is a readonly collection which cannot be mutated by the configuration
-            Assert.Equal(0, options.InstantiatedIEnumerable.Count());
+            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal("Yo1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("Yo2", options.InstantiatedIEnumerable.ElementAt(1));
         }
 
         [Fact]

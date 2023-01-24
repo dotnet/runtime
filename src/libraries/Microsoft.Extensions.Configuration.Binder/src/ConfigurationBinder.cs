@@ -302,12 +302,10 @@ namespace Microsoft.Extensions.Configuration
 
             if (config != null && config.GetChildren().Any())
             {
-                // for arrays we concatenate on to what is already there, if we can
-                // for read-only list-like interfaces, we do the same only if the bindingPoint.Value is null.
-                bool isImmutableArrayCompatibleInterface = IsImmutableArrayCompatibleInterface(type);
-                if (type.IsArray || isImmutableArrayCompatibleInterface)
+                // for arrays and read-only list-like interfaces, we concatenate on to what is already there, if we can
+                if (type.IsArray || IsImmutableArrayCompatibleInterface(type))
                 {
-                    if (!bindingPoint.IsReadOnly && (!isImmutableArrayCompatibleInterface || bindingPoint.Value is null))
+                    if (!bindingPoint.IsReadOnly)
                     {
                         bindingPoint.SetValue(BindArray(type, (IEnumerable?)bindingPoint.Value, config, options));
                     }
@@ -533,17 +531,31 @@ namespace Microsoft.Extensions.Configuration
             }
 
             MethodInfo? addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
-            if (addMethod is null && source is not null)
-            {
-                // Instantiated IReadOnlyDictionary cannot be mutated by the configuration.
-                return null;
-            }
-
-            if (source is null)
+            if (addMethod is null || source is null)
             {
                 dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-                source = Activator.CreateInstance(dictionaryType);
-                addMethod ??= dictionaryType.GetMethod("Add", DeclaredOnlyLookup)!;
+                var dictionary = Activator.CreateInstance(dictionaryType);
+                addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+
+                var orig = source as IEnumerable;
+                if (orig is not null)
+                {
+                    Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
+                    PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
+                    PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
+                    object?[] arguments = new object?[2];
+
+                    foreach (object? item in orig)
+                    {
+                        object? k = keyMethod.GetMethod!.Invoke(item, null);
+                        object? v = valueMethod.GetMethod!.Invoke(item, null);
+                        arguments[0] = k;
+                        arguments[1] = v;
+                        addMethod!.Invoke(dictionary, arguments);
+                    }
+                }
+
+                source = dictionary;
             }
 
             Debug.Assert(source is not null);
@@ -740,24 +752,29 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
+            object?[] arguments = new object?[1];
             MethodInfo? addMethod = type.GetMethod("Add", DeclaredOnlyLookup);
-            if (addMethod is null && source is not null)
-            {
-                // It is readonly Set interface. We bind the readonly interfaces only when its value is not instantiated.
-                return null;
-            }
-
-            if (source is null)
+            if (addMethod is null || source is null)
             {
                 Type genericType = typeof(HashSet<>).MakeGenericType(elementType);
-                source = Activator.CreateInstance(genericType)!;
-                addMethod ??= genericType.GetMethod("Add", DeclaredOnlyLookup)!;
+                object instance = Activator.CreateInstance(genericType)!;
+                addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup);
+
+                var orig = source as IEnumerable;
+                if (orig != null)
+                {
+                    foreach (object? item in orig)
+                    {
+                        arguments[0] = item;
+                        addMethod!.Invoke(instance, arguments);
+                    }
+                }
+
+                source = instance;
             }
 
             Debug.Assert(source is not null);
             Debug.Assert(addMethod is not null);
-
-            object?[] arguments = new object?[1];
 
             foreach (IConfigurationSection section in config.GetChildren())
             {

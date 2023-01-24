@@ -1086,11 +1086,14 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var array = options.AlreadyInitializedIEnumerableInterface.ToArray();
 
-            // Instantiated readonly IEnumerable which cannot be mutated by the configuration
-            Assert.Equal(2, array.Length);
+            Assert.Equal(6, array.Length);
 
             Assert.Equal("This was here too", array[0]);
             Assert.Equal("Don't touch me!", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
+            Assert.Equal("val2", array[4]);
+            Assert.Equal("valx", array[5]);
 
             // the original list hasn't been touched
             Assert.Equal(2, options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.Count);
@@ -1129,11 +1132,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var array = options.AlreadyInitializedCustomListDerivedFromIEnumerable.ToArray();
 
-            // Instantiated IEnumerable is a readonly collection which cannot be mutated by the configuration
-            Assert.Equal(2, array.Length);
+            Assert.Equal(4, array.Length);
 
             Assert.Equal("Item1", array[0]);
             Assert.Equal("Item2", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
         }
 
         [Fact]
@@ -1158,11 +1162,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var array = options.AlreadyInitializedCustomListIndirectlyDerivedFromIEnumerable.ToArray();
 
-            // Instantiated readonly collection/IEnumerable which cannot be mutated by the configuration
-            Assert.Equal(2, array.Length);
+            Assert.Equal(4, array.Length);
 
             Assert.Equal("Item1", array[0]);
             Assert.Equal("Item2", array[1]);
+            Assert.Equal("val0", array[2]);
+            Assert.Equal("val1", array[3]);
         }
 
         [Fact]
@@ -1188,10 +1193,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             Assert.Equal(2, array.Length);
 
-            Assert.Equal("val_1", options.AlreadyInitializedDictionary["existing_key_1"]);
+            Assert.Equal("overridden!", options.AlreadyInitializedDictionary["existing_key_1"]);
             Assert.Equal("val_2", options.AlreadyInitializedDictionary["existing_key_2"]);
 
-            Assert.Equal(options.AlreadyInitializedDictionary, InitializedCollectionsOptions.ExistingDictionary);
+            Assert.NotEqual(options.AlreadyInitializedDictionary, InitializedCollectionsOptions.ExistingDictionary);
 
             Assert.Equal("val_1", InitializedCollectionsOptions.ExistingDictionary["existing_key_1"]);
             Assert.Equal("val_2", InitializedCollectionsOptions.ExistingDictionary["existing_key_2"]);
@@ -1767,10 +1772,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = new OptionsWithDifferentCollectionInterfaces();
             config.Bind(options);
 
-            Assert.Equal(2, options.InstantiatedIEnumerable.Count());
+            Assert.Equal(3, options.InstantiatedIEnumerable.Count());
             Assert.Equal("value1", options.InstantiatedIEnumerable.ElementAt(0));
             Assert.Equal("value2", options.InstantiatedIEnumerable.ElementAt(1));
-            Assert.True(options.IsSameInstantiatedIEnumerable());
+            Assert.Equal("value3", options.InstantiatedIEnumerable.ElementAt(2));
+            Assert.False(options.IsSameInstantiatedIEnumerable());
 
             Assert.Equal(1, options.UnInstantiatedIEnumerable.Count());
             Assert.Equal("value1", options.UnInstantiatedIEnumerable.ElementAt(0));
@@ -1784,10 +1790,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(1, options.UnInstantiatedIList.Count());
             Assert.Equal("value", options.UnInstantiatedIList[0]);
 
-            Assert.Equal(2, options.InstantiatedIReadOnlyList.Count());
+            Assert.Equal(3, options.InstantiatedIReadOnlyList.Count());
             Assert.Equal("value1", options.InstantiatedIReadOnlyList[0]);
             Assert.Equal("value2", options.InstantiatedIReadOnlyList[1]);
-            Assert.True(options.IsSameInstantiatedIReadOnlyList());
+            Assert.Equal("value3", options.InstantiatedIReadOnlyList[2]);
+            Assert.False(options.IsSameInstantiatedIReadOnlyList());
 
             Assert.Equal(1, options.UnInstantiatedIReadOnlyList.Count());
             Assert.Equal("value", options.UnInstantiatedIReadOnlyList[0]);
@@ -1797,10 +1804,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(new string[] { "value1", "value2", "value3" }, options.InstantiatedIDictionary.Values);
             Assert.True(options.IsSameInstantiatedIDictionary());
 
-            Assert.Equal(2, options.InstantiatedIReadOnlyDictionary.Count());
-            Assert.Equal(new string[] { "Key1", "Key2" }, options.InstantiatedIReadOnlyDictionary.Keys);
-            Assert.Equal(new string[] { "value1", "value2" }, options.InstantiatedIReadOnlyDictionary.Values);
-            Assert.True(options.IsSameInstantiatedIReadOnlyDictionary());
+            Assert.Equal(3, options.InstantiatedIReadOnlyDictionary.Count());
+            Assert.Equal(new string[] { "Key1", "Key2", "Key3" }, options.InstantiatedIReadOnlyDictionary.Keys);
+            Assert.Equal(new string[] { "value1", "value2", "value3" }, options.InstantiatedIReadOnlyDictionary.Values);
+            Assert.False(options.IsSameInstantiatedIReadOnlyDictionary());
 
             Assert.Equal(1, options.UnInstantiatedIReadOnlyDictionary.Count());
             Assert.Equal(new string[] { "Key" }, options.UnInstantiatedIReadOnlyDictionary.Keys);
@@ -1814,9 +1821,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(new string[] { "a", "A", "B" }, options.UnInstantiatedISet);
 
 #if NETCOREAPP
-            Assert.Equal(2, options.InstantiatedIReadOnlySet.Count());
-            Assert.Equal(new string[] { "a", "b" }, options.InstantiatedIReadOnlySet);
-            Assert.True(options.IsSameInstantiatedIReadOnlySet());
+            Assert.Equal(3, options.InstantiatedIReadOnlySet.Count());
+            Assert.Equal(new string[] { "a", "b", "Z" }, options.InstantiatedIReadOnlySet);
+            Assert.False(options.IsSameInstantiatedIReadOnlySet());
 
             Assert.Equal(2, options.UnInstantiatedIReadOnlySet.Count());
             Assert.Equal(new string[] { "y", "z" }, options.UnInstantiatedIReadOnlySet);
@@ -1828,9 +1835,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.UnInstantiatedICollection.Count());
             Assert.Equal(new string[] { "t", "a" }, options.UnInstantiatedICollection);
 
-            Assert.Equal(3, options.InstantiatedIReadOnlyCollection.Count());
-            Assert.Equal(new string[] { "a", "b", "c" }, options.InstantiatedIReadOnlyCollection);
-            Assert.True(options.IsSameInstantiatedIReadOnlyCollection());
+            Assert.Equal(4, options.InstantiatedIReadOnlyCollection.Count());
+            Assert.Equal(new string[] { "a", "b", "c", "d" }, options.InstantiatedIReadOnlyCollection);
+            Assert.False(options.IsSameInstantiatedIReadOnlyCollection());
 
             Assert.Equal(2, options.UnInstantiatedIReadOnlyCollection.Count());
             Assert.Equal(new string[] { "r", "e" }, options.UnInstantiatedIReadOnlyCollection);
