@@ -4,16 +4,17 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Internal;
 #if NET
 using System.Runtime.InteropServices;
 #endif
 
-namespace System.Reflection.Internal
+namespace System.Reflection.Metadata.Ecma335
 {
     [DebuggerDisplay("Count = {Count}")]
-    internal readonly struct BlobDictionary<TValue>
+    internal readonly struct BlobDictionary
     {
-        private readonly Dictionary<int, KeyValuePair<ImmutableArray<byte>, TValue>> _dictionary;
+        private readonly Dictionary<int, KeyValuePair<ImmutableArray<byte>, BlobHandle>> _dictionary;
 
         // A simple LCG. Constants taken from
         // https://github.com/imneme/pcg-c/blob/83252d9c23df9c82ecb42210afed61a7b42402d7/include/pcg_variants.h#L276-L284
@@ -21,7 +22,7 @@ namespace System.Reflection.Internal
             (int)((uint)dictionaryKey * 747796405 + 2891336453);
 
 #if NET
-        private unsafe ref KeyValuePair<ImmutableArray<byte>, TValue> GetValueRefOrAddDefault(ReadOnlySpan<byte> key, out bool exists)
+        private unsafe ref KeyValuePair<ImmutableArray<byte>, BlobHandle> GetValueRefOrAddDefault(ReadOnlySpan<byte> key, out bool exists)
         {
             int dictionaryKey = Hash.GetFNVHashCode(key);
             while (true)
@@ -39,7 +40,7 @@ namespace System.Reflection.Internal
             }
         }
 
-        private TValue GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, TValue value, out bool exists)
+        public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, BlobHandle value, out bool exists)
         {
             ref var entry = ref GetValueRefOrAddDefault(key, out exists);
             if (exists)
@@ -47,18 +48,24 @@ namespace System.Reflection.Internal
                 return entry.Value;
             }
 
+            // If we are given an immutable array, do not allocate a new one.
             if (immutableKey.IsDefault)
             {
                 immutableKey = key.ToImmutableArray();
             }
+            else
+            {
+                Debug.Assert(immutableKey.AsSpan().SequenceEqual(key));
+            }
+
             entry = new(immutableKey, value);
             return value;
         }
 #else
-        private TValue GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, TValue value, out bool exists)
+        public BlobHandle GetOrAdd(ReadOnlySpan<byte> key, ImmutableArray<byte> immutableKey, BlobHandle value, out bool exists)
         {
             int dictionarykey = Hash.GetFNVHashCode(key);
-            KeyValuePair<ImmutableArray<byte>, TValue> entry;
+            KeyValuePair<ImmutableArray<byte>, BlobHandle> entry;
             while (true)
             {
                 if (!(exists = _dictionary.TryGetValue(dictionarykey, out entry))
@@ -74,10 +81,16 @@ namespace System.Reflection.Internal
                 return entry.Value;
             }
 
+            // If we are given an immutable array, do not allocate a new one.
             if (immutableKey.IsDefault)
             {
                 immutableKey = key.ToImmutableArray();
             }
+            else
+            {
+                Debug.Assert(immutableKey.AsSpan().SequenceEqual(key));
+            }
+
             _dictionary.Add(dictionarykey, new(immutableKey, value));
             return value;
         }
@@ -90,14 +103,7 @@ namespace System.Reflection.Internal
 
         public int Count => _dictionary.Count;
 
-        public IEnumerator<KeyValuePair<int, KeyValuePair<ImmutableArray<byte>, TValue>>> GetEnumerator() =>
+        public Dictionary<int, KeyValuePair<ImmutableArray<byte>, BlobHandle>>.Enumerator GetEnumerator() =>
             _dictionary.GetEnumerator();
-
-        public TValue GetOrAdd(ReadOnlySpan<byte> key, TValue value, out bool exists) =>
-            GetOrAdd(key, default, value, out exists);
-
-        // If we are given an immutable array, do not allocate a new one.
-        public TValue GetOrAdd(ImmutableArray<byte> key, TValue value, out bool exists) =>
-            GetOrAdd(key.AsSpan(), key, value, out exists);
     }
 }

@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata.Ecma335
         private int _stringHeapCapacity = 4 * 1024;
 
         // #Blob heap
-        private readonly BlobDictionary<BlobHandle> _blobs = new BlobDictionary<BlobHandle>(1024);
+        private readonly BlobDictionary _blobs = new BlobDictionary(1024);
         private readonly int _blobHeapStartOffset;
         private int _blobHeapSize;
 
@@ -116,7 +116,7 @@ namespace System.Reflection.Metadata.Ecma335
             // beginning of the delta blob.
             _userStringBuilder.WriteByte(0);
 
-            _blobs.GetOrAdd(ImmutableArray<byte>.Empty, default, out _);
+            _blobs.GetOrAdd(ReadOnlySpan<byte>.Empty, ImmutableArray<byte>.Empty, default, out _);
             _blobHeapSize = 1;
 
             // When EnC delta is applied #US, #String and #Blob heaps are appended.
@@ -215,10 +215,10 @@ namespace System.Reflection.Metadata.Ecma335
             return GetOrAddBlob(new ReadOnlySpan<byte>(value));
         }
 
-        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value)
+        private BlobHandle GetOrAddBlob(ReadOnlySpan<byte> value, ImmutableArray<byte> immutableValue = default)
         {
             BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
-            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle, out bool exists);
+            BlobHandle handle = _blobs.GetOrAdd(value, immutableValue, nextHandle, out bool exists);
             if (!exists)
             {
                 _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
@@ -240,14 +240,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            BlobHandle nextHandle = BlobHandle.FromOffset(_blobHeapStartOffset + _blobHeapSize);
-            BlobHandle handle = _blobs.GetOrAdd(value, nextHandle, out bool exists);
-            if (!exists)
-            {
-                _blobHeapSize += BlobWriterImpl.GetCompressedIntegerSize(value.Length) + value.Length;
-            }
-
-            return handle;
+            return GetOrAddBlob(value.AsSpan(), value);
         }
 
         /// <summary>
