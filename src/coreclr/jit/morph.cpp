@@ -5929,6 +5929,9 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* call)
 //    True if the arg will be passed as an implicit byref pointing to a local
 //    on this function's frame; otherwise false.
 //
+// Remarks:
+//    The logic here runs before relevant nodes have been morphed.
+//
 bool Compiler::fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg)
 {
     if (!arg.AbiInfo.PassedByRef)
@@ -5964,10 +5967,23 @@ bool Compiler::fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg)
         return true;
     }
 
+    assert(!varDsc->lvIsStructField);
+
     JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
             dspTreeID(arg.GetNode()), lclNum);
 
-    if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+    GenTreeFlags deathFlags;
+    if (varDsc->lvFieldLclStart != 0)
+    {
+        // Undone promotion case.
+        deathFlags = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
+    }
+    else
+    {
+        deathFlags = GTF_VAR_DEATH;
+    }
+
+    if ((lcl->gtFlags & deathFlags) == deathFlags)
     {
         JITDUMP("... yes, arg is a last use\n");
         return false;
