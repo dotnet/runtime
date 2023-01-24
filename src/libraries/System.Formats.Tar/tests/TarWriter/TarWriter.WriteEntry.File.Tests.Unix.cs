@@ -145,18 +145,23 @@ namespace System.Formats.Tar.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                string groupName = Path.GetRandomFileName()[0..6];
-                int groupId = CreateGroup(groupName);
-
                 using TempDirectory root = new TempDirectory();
 
                 string fileName = "file.txt";
                 string filePath = Path.Join(root.Path, fileName);
                 File.Create(filePath).Dispose();
 
-                SetGroupAsOwnerOfFile(groupName, filePath);
+                string groupName = Path.GetRandomFileName()[0..6];
+                int groupId = CreateGroup(groupName);
 
-                DeleteGroup(groupName);
+                try
+                {
+                    SetGroupAsOwnerOfFile(groupName, filePath);
+                }
+                finally
+                {
+                    DeleteGroup(groupName);
+                }
 
                 using MemoryStream archive = new MemoryStream();
                 using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Ustar, leaveOpen: true))
