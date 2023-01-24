@@ -405,7 +405,7 @@ namespace System.Formats.Tar
 
         // Generates a recursive enumeration of the filesystem entries inside the specified source directory, while
         // making sure that directory symlinks do not get recursed.
-        private static IEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
+        private static FileSystemEnumerable<FileSystemInfo> GetFileSystemEnumerationForCreation(string sourceDirectoryName)
         {
             return new FileSystemEnumerable<FileSystemInfo>(
                 directory: sourceDirectoryName,

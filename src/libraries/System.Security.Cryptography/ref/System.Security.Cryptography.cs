@@ -1724,10 +1724,16 @@ namespace System.Security.Cryptography
         public virtual void GetBytes(byte[] data, int offset, int count) { }
         public static byte[] GetBytes(int count) { throw null; }
         public virtual void GetBytes(System.Span<byte> data) { }
+        public static string GetHexString(int stringLength, bool lowercase = false) { throw null; }
+        public static void GetHexString(System.Span<char> destination, bool lowercase = false) { }
         public static int GetInt32(int toExclusive) { throw null; }
         public static int GetInt32(int fromInclusive, int toExclusive) { throw null; }
+        public static T[] GetItems<T>(System.ReadOnlySpan<T> choices, int length) { throw null; }
+        public static void GetItems<T>(System.ReadOnlySpan<T> choices, System.Span<T> destination) { }
         public virtual void GetNonZeroBytes(byte[] data) { }
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
+        public static string GetString(System.ReadOnlySpan<char> choices, int length) { throw null; }
+        public static void Shuffle<T>(System.Span<T> values) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RC2 : System.Security.Cryptography.SymmetricAlgorithm

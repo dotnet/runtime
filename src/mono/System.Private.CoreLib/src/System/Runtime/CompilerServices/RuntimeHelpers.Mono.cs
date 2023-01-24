@@ -44,6 +44,22 @@ namespace System.Runtime.CompilerServices
             return InternalGetHashCode(o);
         }
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int InternalTryGetHashCode(object? o);
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        public static int TryGetHashCode(object? o)
+        {
+            return InternalTryGetHashCode(o);
+        }
+
         public static new bool Equals(object? o1, object? o2)
         {
             if (o1 == o2)
@@ -65,7 +81,7 @@ namespace System.Runtime.CompilerServices
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)
-                throw new ArgumentException("Handle is not initialized.", nameof(type));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(type.Value);
         }
@@ -115,7 +131,7 @@ namespace System.Runtime.CompilerServices
         public static void RunModuleConstructor(ModuleHandle module)
         {
             if (module == ModuleHandle.EmptyHandle)
-                throw new ArgumentException("Handle is not initialized.", nameof(module));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(module.Value);
         }

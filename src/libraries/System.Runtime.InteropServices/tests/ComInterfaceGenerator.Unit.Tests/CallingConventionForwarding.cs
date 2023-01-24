@@ -19,14 +19,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task NoSpecifiedCallConvForwardsDefault()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -46,14 +45,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task SuppressGCTransitionAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransitionAttribute]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -74,14 +72,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task EmptyUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -102,14 +99,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task SimpleUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -130,14 +126,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]
                     void Method();
@@ -164,14 +159,13 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeWithSuppressGCTransitionForwarded()
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    public static readonly NoCasting TypeKey = default;
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransition]
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
                     [VirtualMethodIndex(0)]

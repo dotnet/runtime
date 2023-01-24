@@ -148,7 +148,7 @@ public:
     }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();

@@ -240,13 +240,6 @@ private:
             *use          = inlineCandidate;
             m_madeChanges = true;
 
-            // TODO-Inlining: We should really only propagate BBF_COPY_PROPAGATE
-            // flags here. BBF_SPLIT_GAINED includes BBF_PROF_WEIGHT, and
-            // propagating that has the effect that inlining a tree from a hot
-            // block into a block without profile weights means we suddenly
-            // start to see the inliner block as hot and treat future inline
-            // candidates more aggressively.
-            //
             if (inlineeBB != nullptr)
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
@@ -391,7 +384,7 @@ private:
         }
 
         GenTree* dst = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src, /* isVolatile */ false, /* isCopyBlock */ true);
+        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src);
 
         // If inlinee was comma, new inlinee is (, , , lcl = inlinee).
         if (inlinee->OperIs(GT_COMMA))
@@ -1171,78 +1164,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // ======= Inserting inlinee's basic blocks ===============
     //
-
-    bottomBlock             = fgNewBBafter(topBlock->bbJumpKind, topBlock, true);
-    bottomBlock->bbRefs     = 1;
-    bottomBlock->bbJumpDest = topBlock->bbJumpDest;
-    bottomBlock->inheritWeight(topBlock);
-
-    topBlock->bbJumpKind = BBJ_NONE;
-
-    // Update block flags
-    {
-        const BasicBlockFlags originalFlags = topBlock->bbFlags;
-        noway_assert((originalFlags & BBF_SPLIT_NONEXIST) == 0);
-        topBlock->bbFlags &= ~(BBF_SPLIT_LOST);
-        bottomBlock->bbFlags |= originalFlags & BBF_SPLIT_GAINED;
-    }
-
-    // Split statements between topBlock and bottomBlock.
-    // First figure out bottomBlock_Begin
-    Statement* bottomBlock_Begin;
-    bottomBlock_Begin = stmtAfter->GetNextStmt();
-
-    if (topBlock->bbStmtList == nullptr)
-    {
-        // topBlock is empty before the split.
-        // In this case, both topBlock and bottomBlock should be empty
-        noway_assert(bottomBlock_Begin == nullptr);
-        topBlock->bbStmtList    = nullptr;
-        bottomBlock->bbStmtList = nullptr;
-    }
-    else if (topBlock->bbStmtList == bottomBlock_Begin)
-    {
-        noway_assert(bottomBlock_Begin != nullptr);
-
-        // topBlock contains at least one statement before the split.
-        // And the split is before the first statement.
-        // In this case, topBlock should be empty, and everything else should be moved to the bottomBlock.
-        bottomBlock->bbStmtList = topBlock->bbStmtList;
-        topBlock->bbStmtList    = nullptr;
-    }
-    else if (bottomBlock_Begin == nullptr)
-    {
-        noway_assert(topBlock->bbStmtList != nullptr);
-
-        // topBlock contains at least one statement before the split.
-        // And the split is at the end of the topBlock.
-        // In this case, everything should be kept in the topBlock, and the bottomBlock should be empty
-
-        bottomBlock->bbStmtList = nullptr;
-    }
-    else
-    {
-        noway_assert(topBlock->bbStmtList != nullptr);
-        noway_assert(bottomBlock_Begin != nullptr);
-
-        // This is the normal case where both blocks should contain at least one statement.
-        Statement* topBlock_Begin = topBlock->firstStmt();
-        noway_assert(topBlock_Begin != nullptr);
-        Statement* topBlock_End = bottomBlock_Begin->GetPrevStmt();
-        noway_assert(topBlock_End != nullptr);
-        Statement* bottomBlock_End = topBlock->lastStmt();
-        noway_assert(bottomBlock_End != nullptr);
-
-        // Break the linkage between 2 blocks.
-        topBlock_End->SetNextStmt(nullptr);
-
-        // Fix up all the pointers.
-        topBlock->bbStmtList = topBlock_Begin;
-        topBlock->bbStmtList->SetPrevStmt(topBlock_End);
-
-        bottomBlock->bbStmtList = bottomBlock_Begin;
-        bottomBlock->bbStmtList->SetPrevStmt(bottomBlock_End);
-    }
+    bottomBlock = fgSplitBlockAfterStatement(topBlock, stmtAfter);
 
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
@@ -1608,7 +1530,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                             GenTree* op2 = argNode->AsOp()->gtOp2;
                             if (op1->IsCall() &&
                                 ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                                op2->OperIs(GT_IND) && op2->gtGetOp1()->IsIconHandle() &&
+                                ((op2->gtFlags & GTF_EXCEPT) == 0))
                             {
                                 JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                         " actual arg [%06u] helper call [%06u]\n",
@@ -1750,10 +1673,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), // Dest
-                                          gtNewIconNode(0),              // Value
-                                          false,                         // isVolatile
-                                          false);                        // not copyBlock
+                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), gtNewIconNode(0));
 
                     newStmt = gtNewStmt(tree, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);

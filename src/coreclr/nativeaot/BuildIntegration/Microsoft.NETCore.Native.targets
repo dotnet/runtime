@@ -27,9 +27,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcFrameworkNativePath Condition="'$(IlcPath)' != '' and '$(IlcFrameworkNativePath)' == ''">$(IlcPath)\framework\</IlcFrameworkNativePath>
     <IlcFrameworkNativePath Condition="'$(IlcFrameworkNativePath)' == '' and '$(IlcFrameworkPath)' != ''">$(IlcFrameworkPath)</IlcFrameworkNativePath>
     <IlcMibcPath Condition="'$(IlcPath)' != '' and '$(IlcMibcPath)' == ''">$(IlcPath)\mibc\</IlcMibcPath>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">windows</TargetOS>
-    <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
@@ -67,22 +68,23 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' == 'windows'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' != 'windows'"></NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and $(NativeLib) == 'Shared'">.dll</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'OSX' and $(NativeLib) == 'Shared'">.dylib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX' and $(NativeLib) == 'Shared'">.so</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
-    <NativeSymbolExt Condition="'$(TargetOS)' == 'OSX'">.dwarf</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' == 'osx'">.dwarf</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(TargetOS)' == 'windows'">.pdb</NativeSymbolExt>
-    <NativeSymbolExt Condition="'$(TargetOS)' != 'OSX' and '$(TargetOS)' != 'windows'">.dbg</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' != 'osx' and '$(TargetOS)' != 'windows'">.dbg</NativeSymbolExt>
 
     <ExportsFileExt Condition="'$(TargetOS)' == 'windows'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(TargetOS)' != 'windows'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
-    <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
+    <IlcExportUnmanagedEntrypoints Condition="'$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
+    <ExportsFile Condition="$(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
 
@@ -214,6 +216,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateMetadataLog) == 'true'" Include="--metadatalog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).metadata.csv" />
       <IlcArg Condition="$(TargetArchitecture) != ''" Include="--targetarch:$(TargetArchitecture)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
+      <IlcArg Condition="$(IlcMultiModule) != 'true' and '$(IlcDehydrate)' != 'false' and '$(ControlFlowGuard)' != 'Guard'" Include="--dehydrate" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
       <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
@@ -223,7 +226,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(FullPath)')" />
       <IlcArg Include="@(TrimmerRootDescriptor->'--descriptor:%(FullPath)')" />
-      <IlcArg Condition="$(NativeLib) != ''" Include="--nativelib" />
+      <IlcArg Condition="'$(NativeLib)' != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--appcontextswitch:%(Identity)=%(Value)')" />
@@ -320,14 +323,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' == 'windows'" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(TargetOS)' == 'windows' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(TargetOS)' == 'windows' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
-      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(TargetOS)' == 'OSX' and $(ExportsFile) != ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(TargetOS)' == 'osx' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and $(ExportsFile) != ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'">
+    <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows'" />
@@ -340,7 +343,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- https://github.com/dotnet/runtimelab/issues/956 - we IgnoreStandardErrorWarningFormat on macOS because there's a lot of warnings -->
     <PropertyGroup>
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
-      <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'OSX'">true</_IgnoreLinkerWarnings>
+      <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'osx'">true</_IgnoreLinkerWarnings>
+      <StripFlag Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
     </PropertyGroup>
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
@@ -355,16 +359,16 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Shared'" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'OSX'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'"
       Command="
         &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'OSX'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' == 'osx' and '$(NativeLib)' != 'Static'"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
-        strip -no_code_signature_warning -S &quot;$(NativeBinary)&quot;" />
+        strip -no_code_signature_warning $(StripFlag) &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"

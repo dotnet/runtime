@@ -39,6 +39,8 @@ namespace DebuggerTests
 #endif
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
+        public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
+
         public const int FirefoxProxyPort = 6002;
 
         internal InspectorClient cli;
@@ -52,6 +54,7 @@ namespace DebuggerTests
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
         protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
         protected ITestOutputHelper _testOutput;
+        protected readonly TestEnvironment _env;
 
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
@@ -115,8 +118,16 @@ namespace DebuggerTests
             }
         }
 
+        public static string TempPath => Path.Combine(Path.GetTempPath(), "dbg-tests-tmp");
+        static DebuggerTestBase()
+        {
+            if (Directory.Exists(TempPath))
+                Directory.Delete(TempPath, recursive: true);
+        }
+
         public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
         {
+            _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
@@ -149,7 +160,11 @@ namespace DebuggerTests
             await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
-        public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
+        public virtual async Task DisposeAsync()
+        {
+            await insp.ShutdownAsync().ConfigureAwait(false);
+            _env.Dispose();
+        }
 
         public Task Ready() => startTask;
 
@@ -273,7 +288,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -1197,6 +1212,17 @@ namespace DebuggerTests
             }
         }
 
+        protected async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
+        {
+            foreach (var arg in args)
+            {
+                var (_, res) = await EvaluateOnCallFrame(call_frame_id, arg.expression, expect_ok: false);
+                if (arg.class_name != null)
+                    AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
+            }
+        }
+
+
         internal void AssertEqual(object expected, object actual, string label)
         {
             if (expected?.Equals(actual) == true)
@@ -1493,6 +1519,13 @@ namespace DebuggerTests
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+        }
+
+
+        internal async Task SetSymbolOptions(JObject param)
+        {
+            var res = await cli.SendCommand("DotnetDebugger.setSymbolOptions", param, token);
+            Assert.True(res.IsOk);
         }
 
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)

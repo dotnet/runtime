@@ -1590,9 +1590,10 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap sharedCriticalVarToRegMap;
 
-    PhasedVar<regMaskTP> availableIntRegs;
-    PhasedVar<regMaskTP> availableFloatRegs;
-    PhasedVar<regMaskTP> availableDoubleRegs;
+    PhasedVar<regMaskTP>  availableIntRegs;
+    PhasedVar<regMaskTP>  availableFloatRegs;
+    PhasedVar<regMaskTP>  availableDoubleRegs;
+    PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
@@ -1846,6 +1847,7 @@ private:
 #ifdef TARGET_XARCH
     int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates = RBM_NONE);
 #endif // !TARGET_XARCH
+    int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
@@ -1914,10 +1916,6 @@ private:
         toTree->gtFlags |= GTF_VAR_DEATH;
     }
 #endif // TARGET_X86
-
-#ifdef FEATURE_SIMD
-    int BuildSIMD(GenTreeSIMD* tree);
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);

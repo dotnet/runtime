@@ -82,6 +82,7 @@ bool emitInsIsVectorRightShift(instruction ins);
 bool emitInsIsVectorLong(instruction ins);
 bool emitInsIsVectorNarrow(instruction ins);
 bool emitInsIsVectorWide(instruction ins);
+bool emitInsDestIsOp2(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
@@ -115,7 +116,7 @@ bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t i
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(N,r,s) and referred to as 'bitmask immediate'
 */
 
@@ -141,7 +142,7 @@ static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that is listed as imm(i16,hw) and referred to as 'halfword immediate'
 */
 
@@ -192,7 +193,7 @@ static UINT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emit
 
 /************************************************************************
 *
-* This union is used to to encode/decode the special ARM64 immediate values
+* This union is used to encode/decode the special ARM64 immediate values
 * that are use for FMOV immediate and referred to as 'float 8-bit immediate'
 */
 
@@ -217,7 +218,7 @@ static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
 /************************************************************************
 *
-*  This union is used to to encode/decode the cond, nzcv and imm5 values for
+*  This union is used to encode/decode the cond, nzcv and imm5 values for
 *   instructions that use them in the small constant immediate field
 */
 
@@ -942,24 +943,24 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
 
 #if defined(FEATURE_SIMD)
 //-----------------------------------------------------------------------------------
-// emitStoreSIMD12ToLclOffset: store SIMD12 value from opReg to varNum+offset.
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
 //
 // Arguments:
-//     varNum - the variable on the stack to use as a base;
-//     offset - the offset from the varNum;
-//     opReg  - the src reg with SIMD12 value;
-//     tmpReg - a tmp reg to use for the write, can be general or float.
+//     varNum  - the variable on the stack to use as a base;
+//     offset  - the offset from the varNum;
+//     dataReg - the src reg with SIMD12 value;
+//     tmpReg  - a tmp reg to use for the write, can be general or float.
 //
-void emitStoreSIMD12ToLclOffset(unsigned varNum, unsigned offset, regNumber opReg, regNumber tmpReg)
+void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, regNumber tmpReg)
 {
     assert(varNum != BAD_VAR_NUM);
-    assert(isVectorRegister(opReg));
+    assert(isVectorRegister(dataReg));
 
     // store lower 8 bytes
-    emitIns_S_R(INS_str, EA_8BYTE, opReg, varNum, offset);
+    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
     // Extract upper 4-bytes from data
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, opReg, 2);
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
 
     // 4-byte write
     emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);

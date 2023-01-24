@@ -38,6 +38,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task IsAssignableFrom ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task ObjectGetTypeLibraryMode ()
 		{
 			return RunTest (allowMissingWarnings: true);

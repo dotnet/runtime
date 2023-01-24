@@ -5,11 +5,12 @@
 #define DEBUG
 
 using System;
-using System.Text;
-using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.IO;
 using System.Reflection;
+using System.Runtime;
+using System.Text;
 
 using Internal.Runtime.Augments;
 
@@ -64,13 +65,9 @@ namespace Internal.DeveloperExperience
                 return "<unknown>";
             }
 
-            StringBuilder sb = new StringBuilder();
-            string fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
-            int rva = (int)(ip.ToInt64() - moduleBase.ToInt64());
-            sb.Append(fileNameWithoutExtension);
-            sb.Append("!<BaseAddress>+0x");
-            sb.Append(rva.ToString("x"));
-            return sb.ToString();
+            ReadOnlySpan<char> fileNameWithoutExtension = Path.GetFileNameWithoutExtension(moduleFullFileName.AsSpan());
+            int rva = (int)(ip - moduleBase);
+            return $"{fileNameWithoutExtension}!<BaseAddress>+0x{rva:x}";
         }
 
         public virtual void TryGetSourceLineInfo(IntPtr ip, out string fileName, out int lineNumber, out int columnNumber)
@@ -120,28 +117,6 @@ namespace Internal.DeveloperExperience
             {
                 s_developerExperience = value;
             }
-        }
-
-        private static string GetFileNameWithoutExtension(string path)
-        {
-            path = GetFileName(path);
-            int i;
-            if ((i = path.LastIndexOf('.')) == -1)
-                return path; // No path extension found
-            else
-                return path.Substring(0, i);
-        }
-
-        private static string GetFileName(string path)
-        {
-            int length = path.Length;
-            for (int i = length; --i >= 0;)
-            {
-                char ch = path[i];
-                if (ch == '/' || ch == '\\' || ch == ':')
-                    return path.Substring(i + 1, length - i - 1);
-            }
-            return path;
         }
 
         private static DeveloperExperience s_developerExperience;

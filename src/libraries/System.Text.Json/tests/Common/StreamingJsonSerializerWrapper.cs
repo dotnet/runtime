@@ -16,15 +16,18 @@ namespace System.Text.Json.Serialization.Tests
         /// True if the serializer is streaming data synchronously.
         /// </summary>
         public abstract bool IsAsyncSerializer { get; }
+        public virtual bool ForceSmallBufferInOptions { get; } = false;
 
         public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null);
         public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null);
         public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context);
         public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo);
+        public abstract Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo);
         public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions? options = null);
         public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null);
         public abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context);
         public abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo);
+        public abstract Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo);
 
         public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
         {
@@ -54,6 +57,13 @@ namespace System.Text.Json.Serialization.Tests
             return utf8Stream.AsString();
         }
 
+        public override async Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo)
+        {
+            using var utf8Stream = new Utf8MemoryStream();
+            await SerializeWrapper(utf8Stream, value, jsonTypeInfo);
+            return utf8Stream.AsString();
+        }
+
         public override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
         {
             using var utf8Stream = new Utf8MemoryStream(json);
@@ -67,6 +77,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+        {
+            using var utf8Stream = new Utf8MemoryStream(json);
+            return await DeserializeWrapper(utf8Stream, jsonTypeInfo);
+        }
+
+        public override async Task<object> DeserializeWrapper(string json, JsonTypeInfo jsonTypeInfo)
         {
             using var utf8Stream = new Utf8MemoryStream(json);
             return await DeserializeWrapper(utf8Stream, jsonTypeInfo);

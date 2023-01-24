@@ -73,6 +73,23 @@ namespace System
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
 
+        private static volatile int s_isPrivilegedProcess = -1;
+        public static bool IsPrivilegedProcess
+        {
+            get
+            {
+                int p = s_isPrivilegedProcess;
+                if (p == -1)
+                {
+                    s_isPrivilegedProcess = p = AdminHelpers.IsProcessElevated() ? 1 : 0;
+                }
+
+                return p == 1;
+            }
+        }
+
+        public static bool IsNotPrivilegedProcess => !IsPrivilegedProcess;
+
         public static bool IsMarshalGetExceptionPointersSupported => !IsMonoRuntime && !IsNativeAot;
 
         private static readonly Lazy<bool> s_isCheckedRuntime = new Lazy<bool>(() => AssemblyConfigurationEquals("Checked"));
@@ -172,6 +189,8 @@ namespace System
 
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
+        public static bool IsRareEnumsSupported => !IsNativeAot;
+
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
@@ -239,7 +258,6 @@ namespace System
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
-        // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         // Android - Platform supports alpn from API level 29 and higher
         private static readonly Lazy<bool> s_supportsAlpn = new Lazy<bool>(GetAlpnSupport);
         private static bool GetAlpnSupport()
@@ -262,6 +280,11 @@ namespace System
             if (IsAndroid)
             {
                 return Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration();
+            }
+
+            if (IsOSX)
+            {
+                return true;
             }
 
             return false;
@@ -596,8 +619,7 @@ namespace System
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable(variableName);
-            return (val != null && val == "true");
+            return Environment.GetEnvironmentVariable(variableName) is "true";
         }
 
         private static string GetNodeJSPlatform()

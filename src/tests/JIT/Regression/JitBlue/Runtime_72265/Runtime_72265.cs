@@ -4,9 +4,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-unsafe class Runtime_72265
+public unsafe class Runtime_72265
 {
-    private static int Main()
+    public static int Main()
     {
         var unmanaged = ((delegate* unmanaged<StructWithIndex>)&GetStructUnmanaged)();
         var managed = GetStructManaged();

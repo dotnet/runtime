@@ -1,14 +1,14 @@
 import { defineConfig } from "rollup";
 import typescript from "@rollup/plugin-typescript";
-import { terser } from "rollup-plugin-terser";
+import terser from "@rollup/plugin-terser";
+import virtual from "@rollup/plugin-virtual";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
-import consts from "rollup-plugin-consts";
 import { createFilter } from "@rollup/pluginutils";
-import * as fast_glob from "fast-glob";
+import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
 
 const configuration = process.env.Configuration;
@@ -19,24 +19,10 @@ const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
     compress: {
-        defaults: false,// too agressive minification breaks subsequent emcc compilation
+        defaults: true,
+        passes: 2,
         drop_debugger: false,// we invoke debugger
         drop_console: false,// we log to console
-        unused: false,// this breaks stuff
-        // below are minification features which seems to work fine
-        collapse_vars: true,
-        conditionals: true,
-        computed_props: true,
-        properties: true,
-        dead_code: true,
-        if_return: true,
-        inline: true,
-        join_vars: true,
-        loops: true,
-        reduce_vars: true,
-        evaluate: true,
-        hoist_props: true,
-        sequences: true,
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
@@ -44,6 +30,9 @@ const terserConfig = {
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
+    format: {
+        wrap_iife: true
+    }
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
@@ -73,7 +62,29 @@ try {
     gitHash = "unknown";
 }
 
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript()];
+function consts(dict) {
+    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    /// and the virtual module always exports a single default binding (the const value).
+
+    let newDict = {};
+    for (const k in dict) {
+        const newKey = "consts:" + k;
+        const newVal = JSON.stringify(dict[k]);
+        newDict[newKey] = `export default ${newVal}`;
+    }
+    return virtual(newDict);
+}
+
+// set tsconfig.json options note exclude comes from tsconfig.json
+// (which gets it from tsconfig.shared.json) to exclude node_modules,
+// for example
+const typescriptConfigOptions = {
+    rootDirs: [".", "../../../../artifacts/bin/native/generated"],
+    include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
+};
+
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript(typescriptConfigOptions)];
 
 const externalDependencies = [
 ];
@@ -91,7 +102,8 @@ const iffeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins
+    plugins: outputCodePlugins,
+    onwarn: onwarn
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -304,4 +316,16 @@ function findWebWorkerInputs(basePath) {
         }
     }
     return results;
+}
+
+function onwarn(warning) {
+    if (warning.code === "CIRCULAR_DEPENDENCY") {
+        return;
+    }
+
+    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
+        return;
+    }
+
+    console.warn(`(!) ${warning.toString()}`);
 }

@@ -148,18 +148,23 @@ CrashInfo::EnumerateMemoryRegions()
         }
     }
 
-    // Now find all the modules and add them to the module list
-    for (const MemoryRegion& region : m_allMemoryRegions)
+    // Get the dylinker info and enumerate all the modules
+    struct task_dyld_info dyld_info;
+    mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+    kern_return_t result = ::task_info(Task(), TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+    if (result != KERN_SUCCESS)
     {
-        bool found;
-        if (!TryFindDyLinker(region.StartAddress(), region.Size(), &found)) {
-            return false;
-        }
-        if (found) {
-            break;
-        }
+        TRACE("EnumerateMemoryRegions: task_info(TASK_DYLD_INFO) FAILED %x %s\n", result, mach_error_string(result));
+        return false;
     }
-    TRACE("AllMemoryRegions %06llx native ModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
+
+    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
+    if (!EnumerateModules(dyld_info.all_image_info_addr))
+    {
+        return false;
+    }
+
+    TRACE("EnumerateMemoryRegions: cbAllMemoryRegions %06llx native cbModuleMappings %06llx\n", cbAllMemoryRegions / PAGE_SIZE, m_cbModuleMappings / PAGE_SIZE);
     return true;
 }
 
@@ -214,46 +219,6 @@ CrashInfo::InitializeOtherMappings()
         }
     }
     TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
-}
-
-bool
-CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found)
-{
-    bool result = true;
-    *found = false;
-
-    if (size > sizeof(mach_header_64))
-    {
-        mach_header_64 header;
-        size_t read = 0;
-        if (ReadProcessMemory((void*)address, &header, sizeof(mach_header_64), &read))
-        { 
-            if (header.magic == MH_MAGIC_64)
-            {
-                TRACE("TryFindDyLinker: found module header at %016llx %08llx ncmds %d sizeofcmds %08x type %02x\n",
-                    address,
-                    size,
-                    header.ncmds,
-                    header.sizeofcmds,
-                    header.filetype);
-
-                if (header.filetype == MH_DYLINKER)
-                {
-                    TRACE("TryFindDyLinker: found dylinker\n");
-                    *found = true;
-
-                    // Enumerate all the modules in dyld's image cache. VisitModule is called for every module found.
-                    result = EnumerateModules(address, &header);
-                }
-            }
-        }
-        else 
-        {
-            TRACE("TryFindDyLinker: ReadProcessMemory header at %p %d FAILED\n", address, read);
-        }
-    }
-
-    return result;
 }
 
 void CrashInfo::VisitModule(MachOModule& module)

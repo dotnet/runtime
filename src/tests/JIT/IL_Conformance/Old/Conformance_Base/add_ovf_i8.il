@@ -48,7 +48,7 @@ END:
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		5
 	ldc.i8		0x8000000000000000

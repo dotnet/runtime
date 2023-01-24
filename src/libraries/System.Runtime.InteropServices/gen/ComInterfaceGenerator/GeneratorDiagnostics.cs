@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -28,7 +27,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
             GetResourceString(nameof(SR.InvalidAttributedMethodSignatureMessage)),
             Category,
             DiagnosticSeverity.Error,
@@ -38,7 +37,7 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
             Category,
             DiagnosticSeverity.Error,
@@ -48,12 +47,22 @@ namespace Microsoft.Interop
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
-            GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
             GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidExceptionMarshallingConfiguration =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
+            GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationDescription)));
 
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
@@ -145,6 +154,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
 
+
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
@@ -163,6 +173,24 @@ namespace Microsoft.Interop
             _diagnostics.Add(
                 attributeData.CreateDiagnostic(
                     GeneratorDiagnostics.InvalidStringMarshallingConfiguration,
+                    methodName,
+                    detailsMessage));
+        }
+
+        /// <summary>
+        /// Report diagnostic for invalid configuration for string marshalling.
+        /// </summary>
+        /// <param name="attributeData">Attribute specifying the invalid configuration</param>
+        /// <param name="methodName">Name of the method</param>
+        /// <param name="detailsMessage">Specific reason the configuration is invalid</param>
+        public void ReportInvalidExceptionMarshallingConfiguration(
+            AttributeData attributeData,
+            string methodName,
+            string detailsMessage)
+        {
+            _diagnostics.Add(
+                attributeData.CreateDiagnostic(
+                    GeneratorDiagnostics.InvalidExceptionMarshallingConfiguration,
                     methodName,
                     detailsMessage));
         }

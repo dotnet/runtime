@@ -47,7 +47,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -381,12 +380,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
@@ -400,8 +393,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_NEG:
         case GT_NOT:
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
             assert(dstCount == 1);
             BuildDef(tree);
             break;
@@ -545,18 +537,6 @@ int LinearScan::BuildNode(GenTree* tree)
                 dstCount = tree->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
             }
             break;
-
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-            BuildDef(tree);
-        }
-        break;
 
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
@@ -793,10 +773,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_SELECT:
             assert(dstCount == 1);
-            srcCount = BuildOperandUses(tree->AsConditional()->gtCond);
-            srcCount += BuildOperandUses(tree->AsConditional()->gtOp1);
-            srcCount += BuildOperandUses(tree->AsConditional()->gtOp2);
-            BuildDef(tree, dstCandidates);
+            srcCount = BuildSelect(tree->AsConditional());
             break;
 
     } // end switch (tree->OperGet())
@@ -812,108 +789,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    int srcCount = 0;
-    // Only SIMDIntrinsicInit can be contained
-    if (simdTree->isContained())
-    {
-        assert(simdTree->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
-    }
-    int dstCount = simdTree->IsValue() ? 1 : 0;
-    assert(dstCount == 1);
-
-    bool buildUses = true;
-
-    switch (simdTree->GetSIMDIntrinsicId())
-    {
-        case SIMDIntrinsicInit:
-        case SIMDIntrinsicCast:
-            // No special handling required.
-            break;
-
-        case SIMDIntrinsicSub:
-        case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicEqual:
-            // No special handling required.
-            break;
-
-        case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->GetSimdBaseType();
-            srcCount           = (short)(simdTree->GetSimdSize() / genTypeSize(baseType));
-            assert(simdTree->GetOperandCount() == static_cast<size_t>(srcCount));
-            if (varTypeIsFloating(simdTree->GetSimdBaseType()))
-            {
-                // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-
-            for (GenTree* operand : simdTree->Operands())
-            {
-                assert(operand->TypeIs(baseType));
-                assert(!operand->isContained());
-
-                BuildUse(operand);
-            }
-
-            buildUses = false;
-            break;
-        }
-
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            break;
-
-        case SIMDIntrinsicInitArrayX:
-        case SIMDIntrinsicInitFixed:
-        case SIMDIntrinsicCopyToArray:
-        case SIMDIntrinsicCopyToArrayX:
-        case SIMDIntrinsicNone:
-        case SIMDIntrinsicHWAccel:
-        case SIMDIntrinsicInvalid:
-            assert(!"These intrinsics should not be seen during register allocation");
-            FALLTHROUGH;
-
-        default:
-            noway_assert(!"Unimplemented SIMD node type.");
-            unreached();
-    }
-    if (buildUses)
-    {
-        assert(srcCount == 0);
-        srcCount = BuildOperandUses(simdTree->Op(1));
-
-        if ((simdTree->GetOperandCount() == 2) && !simdTree->Op(2)->isContained())
-        {
-            srcCount += BuildOperandUses(simdTree->Op(2));
-        }
-    }
-    assert(internalCount <= MaxInternalCount);
-    buildInternalRegisterUses();
-    if (dstCount == 1)
-    {
-        BuildDef(simdTree);
-    }
-    else
-    {
-        assert(dstCount == 0);
-    }
-    return srcCount;
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -1058,17 +933,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
         bool simdRegToSimdRegMove = false;
 
-        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        switch (intrin.id)
         {
-            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-        }
-        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-        {
-            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-        }
-        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
-        {
-            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            {
+                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+                break;
+            }
+
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+                break;
+            }
+
+            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector3:
+            case NI_Vector128_GetLower:
+            {
+                simdRegToSimdRegMove = true;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,

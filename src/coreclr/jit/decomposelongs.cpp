@@ -246,6 +246,10 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             break;
 #endif // FEATURE_HW_INTRINSICS
 
+        case GT_SELECT:
+            nextNode = DecomposeSelect(use);
+            break;
+
         case GT_LOCKADD:
         case GT_XORR:
         case GT_XAND:
@@ -1505,6 +1509,50 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
 
         return FinalizeDecomposition(use, loResult, hiResult, hiResult);
     }
+}
+
+//------------------------------------------------------------------------
+// DecomposeSelect: Decompose 64-bit GT_SELECT into a 32-bit GT_SELECT and
+// 32-bit GT_SELECT_HI.
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
+{
+    GenTreeConditional* select = use.Def()->AsConditional();
+    GenTree*            op1    = select->gtOp1;
+    GenTree*            op2    = select->gtOp2;
+
+    assert(op1->OperIs(GT_LONG));
+    assert(op2->OperIs(GT_LONG));
+
+    GenTree* loOp1 = op1->gtGetOp1();
+    GenTree* hiOp1 = op1->gtGetOp2();
+
+    GenTree* loOp2 = op2->gtGetOp1();
+    GenTree* hiOp2 = op2->gtGetOp2();
+
+    select->gtType = TYP_INT;
+    select->gtOp1  = loOp1;
+    select->gtOp2  = loOp2;
+
+    Range().Remove(op1);
+    Range().Remove(op2);
+
+    // Normally GT_SELECT is responsible for evaluating the condition into
+    // flags, but for the "upper half" we treat the lower GT_SELECT similar to
+    // other flag producing nodes and reuse them. GT_SELECT_HI is the variant
+    // that uses existing flags and has no condition as part of it.
+    select->gtFlags |= GTF_SET_FLAGS;
+    GenTree* hiSelect = m_compiler->gtNewOperNode(GT_SELECT_HI, TYP_INT, hiOp1, hiOp2);
+
+    Range().InsertAfter(select, hiSelect);
+
+    return FinalizeDecomposition(use, select, hiSelect, hiSelect);
 }
 
 //------------------------------------------------------------------------

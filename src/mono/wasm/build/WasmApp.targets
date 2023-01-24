@@ -67,6 +67,7 @@
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
+      - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -87,7 +88,7 @@
   -->
 
   <PropertyGroup>
-    <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
+    <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 
@@ -108,13 +109,18 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
     <UseAppHost>false</UseAppHost>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
 
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
+
+    <!-- by default, don't package assemblies as webcil -->
+    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
   </PropertyGroup>
 
   <ItemGroup>
@@ -365,6 +371,7 @@
       DebugLevel="$(WasmDebugLevel)"
       IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      UseWebcil="$(WasmEnableWebcil)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         bool[] m_abDummyField1;
         bool[] m_abDummyField2;
@@ -24,7 +24,7 @@ namespace Test
                 Method1(af[(int)m_uStatic + (iLocal - m_iStatic)]);
         }
 
-        static int Main()
+        public static int Main()
         {
             try { Static1(); }
             catch (Exception) { }

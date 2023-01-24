@@ -10,7 +10,7 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		2
 .locals	(class ldind_ref)

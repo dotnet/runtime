@@ -17,7 +17,7 @@
         vararg valuetype MCCTest.VType3 Sum(float64, int32, int64, float32, int16, float64) cil managed preservesig {
     }
 
-    .method private static int32 Main(string[] args)
+    .method private static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

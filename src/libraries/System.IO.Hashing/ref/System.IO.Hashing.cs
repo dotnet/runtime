@@ -59,6 +59,19 @@ namespace System.IO.Hashing
         public bool TryGetCurrentHash(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public bool TryGetHashAndReset(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    public sealed partial class XxHash128 : System.IO.Hashing.NonCryptographicHashAlgorithm
+    {
+        public XxHash128() : base (default(int)) { }
+        public XxHash128(long seed) : base (default(int)) { }
+        public override void Append(System.ReadOnlySpan<byte> source) { }
+        protected override void GetCurrentHashCore(System.Span<byte> destination) { }
+        public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(byte[] source, long seed) { throw null; }
+        public static byte[] Hash(System.ReadOnlySpan<byte> source, long seed = (long)0) { throw null; }
+        public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, long seed = (long)0) { throw null; }
+        public override void Reset() { }
+        public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, long seed = (long)0) { throw null; }
+    }
     public sealed partial class XxHash3 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public XxHash3() : base (default(int)) { }

@@ -804,10 +804,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         private SessionId sessionId;
 
         internal readonly ILogger logger;
-        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncLocals = new(@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline); //<testCSharpScope>5__1 // works
+        private static readonly Regex regexForVBAsyncLocals = new(@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
+        private static readonly Regex regexForVBAsyncMethodName = new(@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
         private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
         private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
-        private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
+        private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled); // <ContinueWithStaticAsync>b__3_0
         public JObjectValueCreator ValueCreator { get; init; }
 
         public static int GetNewId() { return cmdId++; }
@@ -833,6 +835,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             ClearCache();
         }
 
+        public void ResetTypes() {
+            this.types = new ();
+        }
+
         public async Task<AssemblyInfo> GetAssemblyInfo(int assemblyId, CancellationToken token)
         {
             if (assemblies.TryGetValue(assemblyId, out AssemblyInfo asm))
@@ -849,7 +855,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    asm = new AssemblyInfo(logger);
+                    asm = AssemblyInfo.WithoutDebugInfo(logger);
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
@@ -883,19 +889,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             var method = asm.GetMethodByToken(methodToken);
-
-            if (method == null && !asm.HasSymbols)
-            {
-                try
-                {
-                    method = await proxy.LoadSymbolsOnDemand(asm, methodToken, sessionId, token);
-                }
-                catch (Exception e)
-                {
-                    logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name} exception: {e}");
-                    return null;
-                }
-            }
 
             string methodName = await GetMethodName(methodId, token);
             //get information from runtime
@@ -1199,7 +1192,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(assembly_id);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAssembly.GetLocation, commandParamsWriter, token);
-            return retDebuggerCmdReader.ReadString();
+            string result = retDebuggerCmdReader.ReadString();
+            if (result.EndsWith(".webcil")) {
+                /* don't leak .webcil names to the debugger - work in terms of the original .dlls */
+                string baseName = result.Substring(0, result.Length - 7);
+                result = baseName + ".dll";
+            }
+            return result;
         }
 
         public async Task<string> GetFullAssemblyName(int assemblyId, CancellationToken token)
@@ -1281,11 +1280,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (anonymousMethodId.LastIndexOf('_') >= 0)
                                 anonymousMethodId = klassName.Substring(klassName.LastIndexOf('_') + 1);
                         }
+                        else if (klassName.StartsWith("VB$"))
+                        {
+                            var match = regexForVBAsyncMethodName.Match(klassName);
+                            if (match.Success)
+                                ret = ret.Insert(0, match.Groups["methodName"].Value);
+                            else
+                                ret = ret.Insert(0, klassName);
+                        }
                         else
                         {
                             var matchOnClassName = regexForNestedLeftRightAngleBrackets.Match(klassName);
-                            if (matchOnClassName.Success && matchOnClassName.Groups[5].Captures.Count > 0)
-                                klassName = matchOnClassName.Groups[5].Captures[0].Value;
+                            if (matchOnClassName.Success && matchOnClassName.Groups["Close"].Captures.Count > 0)
+                                klassName = matchOnClassName.Groups["Close"].Captures[0].Value;
                             if (ret.Length > 0)
                                 ret = ret.Insert(0, ".");
                             ret = ret.Insert(0, klassName);
@@ -1293,11 +1300,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     var methodName = retDebuggerCmdReader.ReadString();
                     var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
-                    if (matchOnMethodName.Success && matchOnMethodName.Groups[5].Captures.Count > 0)
+                    if (matchOnMethodName.Success && matchOnMethodName.Groups["Close"].Captures.Count > 0)
                     {
                         if (isAnonymous && anonymousMethodId.Length == 0 && methodName.Contains("__"))
                             anonymousMethodId = methodName.Substring(methodName.IndexOf("__") + 2);
-                        methodName =  matchOnMethodName.Groups[5].Captures[0].Value;
+                        methodName =  matchOnMethodName.Groups["Close"].Captures[0].Value;
                         ret.Append($".{methodName}");
                     }
                     if (isAnonymous && anonymousMethodId.Length > 0)
@@ -1807,11 +1814,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return $"{returnType} {methodName} {parameters}";
         }
 
-        public async Task<JObject> InvokeMethod(ArraySegment<byte> argsBuffer, int methodId, CancellationToken token, string name = null)
+        public async Task<JObject> InvokeMethod(ArraySegment<byte> argsBuffer, int methodId, CancellationToken token, string name = null, bool isMethodStatic = false)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(methodId);
-            commandParamsWriter.Write(argsBuffer);
+            if (!isMethodStatic)
+                commandParamsWriter.Write(argsBuffer);
             commandParamsWriter.Write(0);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.InvokeMethod, commandParamsWriter, token);
             retDebuggerCmdReader.ReadByte(); //number of objects returned.
@@ -1961,7 +1969,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         fieldName.StartsWith ("<>8__", StringComparison.Ordinal);
         }
 
-        public async Task<JArray> GetHoistedLocalVariables(int objectId, IEnumerable<JToken> asyncLocals, CancellationToken token)
+        public async Task<JArray> GetHoistedLocalVariables(MethodInfoWithDebugInformation method, int objectId, IEnumerable<JToken> asyncLocals, int offset, CancellationToken token)
         {
             JArray asyncLocalsFull = new JArray();
             List<int> objectsAlreadyRead = new();
@@ -1972,7 +1980,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (fieldName.EndsWith("__this", StringComparison.Ordinal))
                 {
                     asyncLocal["name"] = "this";
-                    asyncLocalsFull.Add(asyncLocal);
                 }
                 else if (IsClosureReferenceField(fieldName)) //same code that has on debugger-libs
                 {
@@ -1982,10 +1989,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             var asyncProxyMembersFromObject = await MemberObjectsExplorer.GetObjectMemberValues(
                                 this, dotnetObjectId.Value, GetObjectCommandOptions.WithProperties, token);
-                            var hoistedLocalVariable = await GetHoistedLocalVariables(dotnetObjectId.Value, asyncProxyMembersFromObject.Flatten(), token);
+                            var hoistedLocalVariable = await GetHoistedLocalVariables(method, dotnetObjectId.Value, asyncProxyMembersFromObject.Flatten(), offset, token);
                             asyncLocalsFull = new JArray(asyncLocalsFull.Union(hoistedLocalVariable));
                         }
                     }
+                    continue;
                 }
                 else if (fieldName.StartsWith("<>", StringComparison.Ordinal)) //examples: <>t__builder, <>1__state
                 {
@@ -1995,18 +2003,37 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     var match = regexForAsyncLocals.Match(fieldName);
                     if (match.Success)
-                        asyncLocal["name"] = match.Groups[1].Value;
-                    asyncLocalsFull.Add(asyncLocal);
+                    {
+                        if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value), offset))
+                            continue;
+                        asyncLocal["name"] = match.Groups["varName"].Value;
+                    }
                 }
-                else
+                //VB language
+                else if (fieldName.StartsWith("$VB$Local_", StringComparison.Ordinal))
                 {
-                    asyncLocalsFull.Add(asyncLocal);
+                    asyncLocal["name"] = fieldName.Remove(0, 10);
                 }
+                else if (fieldName.StartsWith("$VB$ResumableLocal_", StringComparison.Ordinal))
+                {
+                    var match = regexForVBAsyncLocals.Match(fieldName);
+                    if (match.Success)
+                    {
+                        if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value) + 1, offset))
+                            continue;
+                        asyncLocal["name"] = match.Groups["varName"].Value;
+                    }
+                }
+                else if (fieldName.StartsWith("$"))
+                {
+                    continue;
+                }
+                asyncLocalsFull.Add(asyncLocal);
             }
             return asyncLocalsFull;
         }
 
-        public async Task<JArray> StackFrameGetValues(MethodInfoWithDebugInformation method, int thread_id, int frame_id, VarInfo[] varIds, CancellationToken token)
+        public async Task<JArray> StackFrameGetValues(MethodInfoWithDebugInformation method, int thread_id, int frame_id, VarInfo[] varIds, int offset, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write(thread_id);
@@ -2023,7 +2050,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
                 GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token, includeStatic: true);
-                var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
+                var asyncLocals = await GetHoistedLocalVariables(method, objectId, asyncProxyMembers.Flatten(), offset, token);
                 return asyncLocals;
             }
 

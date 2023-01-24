@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public static float[] m_afField3 = new float[7];
 
@@ -14,7 +14,7 @@ namespace Test
         public static float[] Static1(ref float param1) { return new float[7]; }
         public static double[] Static2(float param2) { return (new double[7]); }
 
-        static int Main()
+        public static int Main()
         {
             Method2(
                 __arglist(

@@ -169,6 +169,8 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property)
 {
+	if (G_UNLIKELY (m_property_is_from_update (property)))
+		return mono_metadata_update_get_property_idx (property);
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {
@@ -184,6 +186,8 @@ find_property_index (MonoClass *klass, MonoProperty *property)
 static guint32
 find_event_index (MonoClass *klass, MonoEvent *event)
 {
+	if (G_UNLIKELY (m_event_is_from_update (event)))
+		return mono_metadata_update_get_event_idx (event);
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {
@@ -360,7 +364,7 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =  t->data.klass;
+			MonoClass *k =	t->data.klass;
 
 			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
@@ -700,7 +704,7 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =  t->data.klass;
+			MonoClass *k =	t->data.klass;
 
 			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
@@ -2592,7 +2596,7 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 		goto_if_nok (error, leave);
-	} else  {
+	} else	{
 		MonoClass *cattr_data = try_get_cattr_data_class (error);
 		goto_if_nok (error, return_null);
 
@@ -2918,6 +2922,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		}
 	} else {
 		/* FIXME: metadata-update */
+		if (G_UNLIKELY (image->has_updates))
+			g_warning ("[WeakAttribute] ignored on fields added by hot reload in '%s'", image->name);
 
 		/* Memberref pointing to a typeref */
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];

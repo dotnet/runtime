@@ -4,12 +4,12 @@
 
 using System;
 
-class Repro
+public class Repro
 {
     static char c1 = (char)32768;
     static char c2 = (char)0;
 
-    static int Main()
+    public static int Main()
     {
         //This testcase ensures that we correctly generate character comparisons
 

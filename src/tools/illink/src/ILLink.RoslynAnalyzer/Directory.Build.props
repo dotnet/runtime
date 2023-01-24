@@ -1,0 +1,8 @@
+<Project>
+  <!-- This analyzer doesn't follow the convention for generator projects so we set the property manually. -->
+  <PropertyGroup>
+    <IsGeneratorProject>true</IsGeneratorProject>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props" />
+</Project>
