@@ -3713,7 +3713,6 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	MonoMethod *res;
 	GHashTable *cache;
 	gboolean found;
-	char *name;
 	MonoNativeWrapperFlags flags;
 
 	key.sig = sig;
@@ -3726,8 +3725,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	if ((res = mono_marshal_find_in_cache (cache, &key)))
 		return res;
 
-	name = g_strdup_printf ("wrapper_native_%p", func);
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	mb = mono_mb_new (mono_defaults.object_class, "Invoke", MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
 	flags = EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS;
