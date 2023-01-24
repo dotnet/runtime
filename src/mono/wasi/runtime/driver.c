@@ -85,7 +85,7 @@ static MonoDomain *root_domain;
 static void
 wasi_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	printf("[wasi_trace_logger] %s\n", message);
+	printf("[MONO] %s: %s\n", log_level, message);
 	if (fatal) {
 		// make it trap so we could see the stack trace
 		// (*(int*)(void*)-1)++;
