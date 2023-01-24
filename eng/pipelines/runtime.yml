@@ -466,6 +466,7 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
+          extraBuildArgs: /p:EnableAggressiveTrimming=true
           shouldRunSmokeOnly: true
           alwaysRun: true
           scenarios:
