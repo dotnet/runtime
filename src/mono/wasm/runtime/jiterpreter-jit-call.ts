@@ -60,7 +60,7 @@ let fnTable : WebAssembly.Table;
 let wasmEhSupported : boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
 const fnCache : Array<Function | undefined> = [];
-const targetCache : { [target: number] : TrampolineInfo } = {};
+const targetCache : { [addrAndRgctx: string] : TrampolineInfo } = {};
 const jitQueue : TrampolineInfo[] = [];
 
 class TrampolineInfo {
@@ -194,7 +194,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
     //  a queue inside the info object so that all the cinfos will get updated once a
     //  jit operation happens
-    const cacheKey = getU32(<any>cinfo + offsetOfAddr),
+    const cacheKey = `addr=${getU32(<any>cinfo + offsetOfAddr)};rgctx=${getU32(<any>cinfo + offsetOfExtraArg)}`,
         existing = targetCache[cacheKey];
     if (existing) {
         if (existing.result > 0)
