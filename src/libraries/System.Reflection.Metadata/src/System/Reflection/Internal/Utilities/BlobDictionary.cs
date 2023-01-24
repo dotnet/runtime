@@ -21,7 +21,7 @@ namespace System.Reflection.Internal
             (int)((uint)dictionaryKey * 747796405 + 2891336453);
 
 #if NET
-        private ref KeyValuePair<ImmutableArray<byte>, TValue> GetValueRefOrAddDefault(ReadOnlySpan<byte> key, out bool exists)
+        private unsafe ref KeyValuePair<ImmutableArray<byte>, TValue> GetValueRefOrAddDefault(ReadOnlySpan<byte> key, out bool exists)
         {
             int dictionaryKey = Hash.GetFNVHashCode(key);
             while (true)
@@ -29,7 +29,11 @@ namespace System.Reflection.Internal
                 ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_dictionary, dictionaryKey, out exists);
                 if (!exists || entry.Key.AsSpan().SequenceEqual(key))
                 {
+#pragma warning disable CS9082 // Local is returned by reference but was initialized to a value that cannot be returned by reference
+                    // In .NET 6 the assembly of GetValueRefOrAddDefault was compiled with earlier ref safety rules
+                    // and caused an error, which was turned into a warning because of unsafe and was suppressed.
                     return ref entry;
+#pragma warning restore CS9082
                 }
                 dictionaryKey = GetNextDictionaryKey(dictionaryKey);
             }
