@@ -1,50 +1,47 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Reflection
 {
     internal partial class ModifiedType
     {
-        private Signature? _signature; // Signature is a CoreClr-specific class.
-
         /// <summary>
         /// Called from FieldInfo, PropertyInfo and ParameterInfo to create a modified type tree.
         /// </summary>
-        public static ModifiedType Create(Type unmodifiedType, int rootSignatureParameterIndex, Signature? signature)
+        public static ModifiedType CreateRoot(
+            Type unmodifiedType,
+            object? signatureProvider,
+            int rootSignatureParameterIndex) => Create(
+                unmodifiedType,
+                signatureProvider,
+                rootSignatureParameterIndex,
+                nestedSignatureIndex: -1,
+                nestedSignatureParameterIndex: -1,
+                isRoot: true);
+
+        private Type[] GetCustomModifiers(bool required)
         {
-            ModifiedType modifiedType = Create(unmodifiedType, rootSignatureParameterIndex);
-            modifiedType._signature = signature;
-            return modifiedType;
-        }
-
-        public Signature? GetSignature() => Root._signature;
-
-        private Type[] GetCustomModifiersFromSignature(bool required)
-        {
-            Debug.Assert(_nestedSignatureParameterIndex >= 0);
-
-            Type[] modifiers;
+            Type[] modifiers = EmptyTypes;
             Signature? signature = GetSignature();
             if (signature is not null)
             {
-                if (ReferenceEquals(this, Root))
+                if (IsRoot)
                 {
-                    // For a root node, which is a Type (not a parameter), ask for the root-level modifiers.
+                    // For a root node, which is the original field\parameter\property Type, get the root-level modifiers.
                     modifiers = signature.GetCustomModifiers(RootSignatureParameterIndex, required);
                 }
-                else
+                else if (NestedSignatureParameterIndex >= 0)
                 {
-                    modifiers = signature.GetCustomModifiers(RootSignatureParameterIndex, required, _nestedSignatureIndex, _nestedSignatureParameterIndex);
+                    modifiers = signature.GetCustomModifiers(RootSignatureParameterIndex, required, NestedSignatureIndex, NestedSignatureParameterIndex);
                 }
-            }
-            else
-            {
-                modifiers = EmptyTypes;
             }
 
             return modifiers;
+        }
+
+        internal Signature? GetSignature()
+        {
+            return (Signature?)SignatureProvider; // Signature is a CoreClr-specific class.
         }
     }
 }

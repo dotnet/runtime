@@ -15,30 +15,43 @@ namespace System.Reflection
         private readonly ModifiedType _returnType;
         private Type[]? _callingConventions;
 
-        /// <summary>
-        /// Create a root node.
-        /// </summary>
-        public ModifiedFunctionPointerType(Type functionPointerType, int rootSignatureParameterIndex)
-            : base(functionPointerType, rootSignatureParameterIndex, nestedSignatureIndex: 0)
-        {
-            Debug.Assert(functionPointerType.IsFunctionPointer);
-            _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), this, nestedSignatureIndex: 0, nestedSignatureParameterIndex: 0);
-            _parameterTypes = CreateParameters(functionPointerType.GetFunctionPointerParameterTypes(), this, nestedSignatureIndex: 0);
-        }
-
-        /// <summary>
-        /// Create a child node.
-        /// </summary>
         public ModifiedFunctionPointerType(
             Type functionPointerType,
-            ModifiedType root,
+            object? signatureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParameterIndex)
-            : base(functionPointerType, root, nestedSignatureIndex + 1, nestedSignatureParameterIndex)
+            int nestedSignatureParameterIndex,
+            bool isRoot)
+            : base(
+                  functionPointerType,
+                  signatureProvider,
+                  rootSignatureParameterIndex,
+                  nestedSignatureIndex + 1,
+                  nestedSignatureParameterIndex,
+                  isRoot)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
-            _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), root, nestedSignatureIndex + 1, nestedSignatureParameterIndex: 0);
-            _parameterTypes = CreateParameters(functionPointerType.GetFunctionPointerParameterTypes(), root, nestedSignatureIndex + 1);
+            _returnType = Create(
+                functionPointerType.GetFunctionPointerReturnType(),
+                signatureProvider,
+                rootSignatureParameterIndex,
+                nestedSignatureIndex + 1,
+                nestedSignatureParameterIndex: 0);
+
+            Type[] parameters = functionPointerType.GetFunctionPointerParameterTypes();
+            int count = parameters.Length;
+            ModifiedType[] modifiedTypes = new ModifiedType[count];
+            for (int i = 0; i < count; i++)
+            {
+                modifiedTypes[i] = Create(
+                    parameters[i],
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex + 1,
+                    nestedSignatureParameterIndex: i + 1);
+            }
+
+            _parameterTypes = modifiedTypes;
         }
 
         public override Type GetFunctionPointerReturnType() => _returnType;
@@ -48,18 +61,6 @@ namespace System.Reflection
         {
             _callingConventions ??= CreateCallingConventions();
             return CloneArray(_callingConventions);
-        }
-
-        private static ModifiedType[] CreateParameters(Type[] parameterTypes, ModifiedType root, int nestedSignatureIndex)
-        {
-            int count = parameterTypes.Length;
-            ModifiedType[] modifiedTypes = new ModifiedType[count];
-            for (int i = 0; i < count; i++)
-            {
-                modifiedTypes[i] = Create(parameterTypes[i], root, nestedSignatureIndex, nestedSignatureParameterIndex: i + 1);
-            }
-
-            return modifiedTypes;
         }
 
         private Type[] CreateCallingConventions()

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Reflection
 {
     /// <summary>
@@ -11,133 +9,118 @@ namespace System.Reflection
     /// </summary>
     internal abstract partial class ModifiedType : TypeDelegator
     {
-        private readonly ModifiedType? _root;
+        private readonly object? _signatureProvider;
 
         // These 3 fields, in order, determine the lookup hierarchy for custom modifiers.
         // The native tree traveral must match the managed semantics in order for indexes to match up.
-        protected readonly int _rootSignatureParameterIndex;
+        private readonly int _rootSignatureParameterIndex;
         private readonly int _nestedSignatureIndex;
         private readonly int _nestedSignatureParameterIndex;
 
-        /// <summary>
-        /// Create a root node.
-        /// </summary>
-        protected ModifiedType(Type unmodifiedType, int rootSignatureParameterIndex, int nestedSignatureIndex = -1) : base(unmodifiedType)
-        {
-            _root = this;
-            _rootSignatureParameterIndex = rootSignatureParameterIndex;
-            _nestedSignatureIndex = nestedSignatureIndex;
-            _nestedSignatureParameterIndex = -1;
-        }
+        private bool _isRoot;
 
-        /// <summary>
-        /// Create a root node; called by a runtime-specific factory method.
-        /// </summary>
-        protected static ModifiedType Create(Type unmodifiedType, int rootSignatureParameterIndex)
-        {
-            ModifiedType modifiedType;
-
-            if (unmodifiedType.IsFunctionPointer)
-            {
-                modifiedType = new ModifiedFunctionPointerType(unmodifiedType, rootSignatureParameterIndex);
-            }
-            else if (unmodifiedType.HasElementType)
-            {
-                modifiedType = new ModifiedContainerType(unmodifiedType, rootSignatureParameterIndex);
-            }
-            else if (unmodifiedType.IsGenericType)
-            {
-                modifiedType = new ModifiedGenericType(unmodifiedType, rootSignatureParameterIndex);
-            }
-            else
-            {
-                modifiedType = new ModifiedStandaloneType(unmodifiedType, rootSignatureParameterIndex);
-            }
-
-            return modifiedType;
-        }
-
-        /// <summary>
-        /// Create a child node.
-        /// </summary>
         protected ModifiedType(
             Type unmodifiedType,
-            ModifiedType? root,
+            object? signatureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParameterIndex) : base(unmodifiedType)
+            int nestedSignatureParameterIndex,
+            bool isRoot) : base(unmodifiedType)
         {
-            _rootSignatureParameterIndex = -1;
-            _root = root;
+            _signatureProvider = signatureProvider;
+            _rootSignatureParameterIndex = rootSignatureParameterIndex;
             _nestedSignatureIndex = nestedSignatureIndex;
             _nestedSignatureParameterIndex = nestedSignatureParameterIndex;
+            _isRoot = isRoot;
         }
 
         /// <summary>
-        /// Factory to create a child node recursively.
+        /// Factory to create a node recursively based on the underlying, unmodified type.
         /// A type tree is formed due to arrays and pointers having an element type, function pointers
-        /// having a return type and parameter types and generic types having argument types.
+        /// having a return type and parameter types, and generic types having argument types.
         /// </summary>
-        public static ModifiedType Create(
+        protected static ModifiedType Create(
             Type unmodifiedType,
-            ModifiedType root,
+            object? signatureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParameterIndex)
+            int nestedSignatureParameterIndex,
+            bool isRoot = false)
         {
             ModifiedType modifiedType;
 
             if (unmodifiedType.IsFunctionPointer)
             {
-                modifiedType = new ModifiedFunctionPointerType(unmodifiedType, root, nestedSignatureIndex, nestedSignatureParameterIndex);
+                modifiedType = new ModifiedFunctionPointerType(
+                    unmodifiedType,
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex,
+                    nestedSignatureParameterIndex,
+                    isRoot);
             }
             else if (unmodifiedType.HasElementType)
             {
-                modifiedType = new ModifiedContainerType(unmodifiedType, root, nestedSignatureIndex, nestedSignatureParameterIndex);
+                modifiedType = new ModifiedContainerType(
+                    unmodifiedType,
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex,
+                    nestedSignatureParameterIndex,
+                    isRoot);
             }
             else if (unmodifiedType.IsGenericType)
             {
-                modifiedType = new ModifiedGenericType(unmodifiedType, root, nestedSignatureIndex, nestedSignatureParameterIndex);
+                modifiedType = new ModifiedGenericType(
+                    unmodifiedType,
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex,
+                    nestedSignatureParameterIndex,
+                    isRoot);
             }
             else
             {
-                modifiedType = new ModifiedStandaloneType(unmodifiedType, root, nestedSignatureIndex, nestedSignatureParameterIndex);
+                modifiedType = new ModifiedStandaloneType(
+                    unmodifiedType,
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex,
+                    nestedSignatureParameterIndex,
+                    isRoot);
             }
 
             return modifiedType;
         }
 
-        /// <summary>
-        /// The root signature's parameter index (0 for properties, 1 for fields, 0..n for methods).
-        /// A value of -1 means the value is not used because the node is not a root.
-        /// </summary>
-        protected int RootSignatureParameterIndex => Root._rootSignatureParameterIndex;
 
         /// <summary>
-        /// The nested signature's index into the recursive type tree.
-        /// A signature exists for function pointers and generic types.
+        /// The runtime-specific information to look up a signature, such as 'Signature' class or a type handle.
         /// </summary>
-        // For delegate*<void>[]: 0 for the function pointer since nested by the array
-        // For delegate*<delegate*<void>>: -1 for the outer (since not nested); 0 for the inner
-        // For delegate*<delegate*<void>>[]: 0 for the outer; 1 for the inner
+        protected object? SignatureProvider => _signatureProvider;
+
+        /// <summary>
+        /// Part 1 of 3 to determine the lookup hierarchy for custom modifiers.
+        /// Specifies the root signature's parameter index (0 for properties, 1 for fields, 0..n for methods).
+        /// </summary>
+        protected int RootSignatureParameterIndex => _rootSignatureParameterIndex;
+
+        /// <summary>
+        /// Part 2 of 3 to determine the lookup hierarchy for custom modifiers.
+        /// Specifies the nested signature's index into the recursive type tree which was the running count
+        /// for each signature node as it was created.
+        /// A value of -1 means the node is not nested under any signature.
+        /// </summary>
         protected int NestedSignatureIndex => _nestedSignatureIndex;
 
         /// <summary>
-        /// From a given signature from <see cref="NestedSignatureIndex"/>, which parameter index does
-        /// the node belong to. 0 for return; 1..n for parameters.
-        /// A value of -1 means the value is not used because the node is not a signature parameter.
-        /// /// </summary>
+        /// Part 3 of 3 to determine the lookup hierarchy for custom modifiers.
+        /// Specifies the parameter index from a given signature node. 0 for return; 1..n for parameters.
+        /// A value of -1 means the node is not a signature parameter.
+        /// </summary>
         protected int NestedSignatureParameterIndex => _nestedSignatureParameterIndex;
 
-        /// <summary>
-        /// The root node which contains the signature reference and _rootSignatureParameterIndex.
-        /// </summary>
-        public ModifiedType Root
-        {
-            get
-            {
-                Debug.Assert( _root != null );
-                return _root;
-            }
-        }
+        protected virtual bool IsRoot => _isRoot;
 
         public override Type[] GetRequiredCustomModifiers()
         {
@@ -149,18 +132,6 @@ namespace System.Reflection
         {
             // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
             return GetCustomModifiers(required: false);
-        }
-
-        private Type[] GetCustomModifiers(bool required)
-        {
-            // Modifiers only exist on the root (field\parameter\property) or on signature types
-            // which currently are just function pointers.
-            if (ReferenceEquals(this, Root) || _nestedSignatureParameterIndex >= 0)
-            {
-                return GetCustomModifiersFromSignature(required);
-            }
-
-            return EmptyTypes;
         }
 
         // TypeDelegator doesn't forward these the way we want:

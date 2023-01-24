@@ -16,9 +16,11 @@ namespace System.Reflection.Tests
             if (type == null)
                 return null;
 
+#if NET8_0_OR_GREATER
             // Function pointers don't support Type.GetType() so they can't be dynamically created.
             if (type.IsFunctionPointer)
                 throw new NotSupportedException("Function pointers don't support Project()");
+#endif
 
             Assembly assembly = type.Assembly;
             string location = assembly.Location;

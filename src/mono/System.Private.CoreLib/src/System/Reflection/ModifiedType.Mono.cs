@@ -6,7 +6,7 @@ namespace System.Reflection
     internal partial class ModifiedType
     {
 #pragma warning disable IDE0060
-        private Type[] GetCustomModifiersFromSignature(bool required) => throw new NotSupportedException();
+        private Type[] GetCustomModifiers(bool required) => throw new NotSupportedException();
 #pragma warning restore IDE0060
     }
 }

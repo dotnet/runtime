@@ -12,28 +12,28 @@ namespace System.Reflection
     {
         private readonly ModifiedType? _elementModifiedType;
 
-        /// <summary>
-        /// Create a root node.
-        /// </summary>
-        public ModifiedContainerType(Type containerType, int rootSignatureParameterIndex)
-            : base(containerType, rootSignatureParameterIndex)
-        {
-            Debug.Assert(containerType.HasElementType);
-            _elementModifiedType = Create(containerType.GetElementType()!, this, nestedSignatureIndex: -1, nestedSignatureParameterIndex: -1);
-        }
-
-        /// <summary>
-        /// Create a child node.
-        /// </summary>
         public ModifiedContainerType(
             Type containerType,
-            ModifiedType root,
+            object? signatureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParamterIndex)
-            : base(containerType, root, nestedSignatureIndex, nestedSignatureParamterIndex)
+            int nestedSignatureParameterIndex,
+            bool isRoot)
+            : base(
+                  containerType,
+                  signatureProvider,
+                  rootSignatureParameterIndex,
+                  nestedSignatureIndex,
+                  nestedSignatureParameterIndex,
+                  isRoot)
         {
             Debug.Assert(containerType.HasElementType);
-            _elementModifiedType = Create(containerType.GetElementType()!, root, nestedSignatureIndex, nestedSignatureParamterIndex);
+            _elementModifiedType = Create(
+                containerType.GetElementType()!,
+                signatureProvider,
+                rootSignatureParameterIndex,
+                nestedSignatureIndex,
+                nestedSignatureParameterIndex : -1);
         }
 
         public override Type? GetElementType() => _elementModifiedType;

@@ -9,45 +9,39 @@ namespace System.Reflection
     {
         private readonly ModifiedType[] _argumentTypes;
 
-        /// <summary>
-        /// Create a root node.
-        /// </summary>
-        public ModifiedGenericType(Type genericType, int rootSignatureParameterIndex)
-            : base(genericType, rootSignatureParameterIndex)
-        {
-            Debug.Assert(genericType.IsGenericType);
-            // To support modifiers on generic types, pass nestedSignatureIndex:0.
-            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), this, nestedSignatureIndex: -1);
-        }
-
-        /// <summary>
-        /// Create a child node.
-        /// </summary>
         public ModifiedGenericType(
             Type genericType,
-            ModifiedType root,
+            object? signatureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParameterIndex)
-            : base(genericType, root, nestedSignatureIndex, nestedSignatureParameterIndex)
+            int nestedSignatureParameterIndex,
+            bool isRoot)
+            : base(
+                  genericType,
+                  signatureProvider,
+                  rootSignatureParameterIndex,
+                  nestedSignatureIndex, // To support modifiers on generic types, pass nestedSignatureIndex+1
+                  nestedSignatureParameterIndex,
+                  isRoot)
         {
             Debug.Assert(genericType.IsGenericType);
-            // To support modifiers on generic types, pass nestedSignatureIndex+1 here.
-            _argumentTypes = CreateArguments(genericType.GetGenericArguments(), root, nestedSignatureIndex);
-        }
 
-        public override Type[] GetGenericArguments() => CloneArray<Type>(_argumentTypes);
-
-        private static ModifiedType[] CreateArguments(Type[] argumentTypes, ModifiedType root, int nestedSignatureIndex)
-        {
-            int count = argumentTypes.Length;
+            Type[] genericArguments = genericType.GetGenericArguments();
+            int count = genericArguments.Length;
             ModifiedType[] modifiedTypes = new ModifiedType[count];
             for (int i = 0; i < count; i++)
             {
-                // To support modifiers on generic types, pass an index value for nestedSignatureParameterIndex.
-                modifiedTypes[i] = Create(argumentTypes[i], root, nestedSignatureIndex, nestedSignatureParameterIndex: -1);
+                modifiedTypes[i] = Create(
+                    genericArguments[i],
+                    signatureProvider,
+                    rootSignatureParameterIndex,
+                    nestedSignatureIndex, // To support modifiers on generic types, pass nestedSignatureIndex+1
+                    nestedSignatureParameterIndex: -1); // To support modifiers on generic types, pass index value.
             }
 
-            return modifiedTypes;
+            _argumentTypes = modifiedTypes;
         }
+
+        public override Type[] GetGenericArguments() => CloneArray<Type>(_argumentTypes);
     }
 }

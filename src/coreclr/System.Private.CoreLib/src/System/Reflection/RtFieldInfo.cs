@@ -268,7 +268,7 @@ namespace System.Reflection
         internal Signature GetSignature() => new Signature(this, m_declaringType);
 
         public override Type GetModifiedFieldType() =>
-            ModifiedType.Create(FieldType, rootSignatureParameterIndex: 1, GetSignature());
+            ModifiedType.CreateRoot(FieldType, GetSignature(), rootSignatureParameterIndex: 1);
         #endregion
     }
 }

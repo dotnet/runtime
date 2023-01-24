@@ -5,20 +5,21 @@ namespace System.Reflection
 {
     internal sealed class ModifiedStandaloneType : ModifiedType
     {
-        /// <summary>
-        /// Create a root node.
-        /// </summary>
-        public ModifiedStandaloneType(Type delegatingType, int rootSignatureParameterIndex)
-            : base(delegatingType, rootSignatureParameterIndex) { }
-
-        /// <summary>
-        /// Create a child node.
-        /// </summary>
         public ModifiedStandaloneType(
             Type delegatingType,
-            ModifiedType? root,
+            object? signtureProvider,
+            int rootSignatureParameterIndex,
             int nestedSignatureIndex,
-            int nestedSignatureParameterIndex)
-            : base(delegatingType, root, nestedSignatureIndex, nestedSignatureParameterIndex) { }
+            int nestedSignatureParameterIndex,
+            bool isRoot)
+            : base(
+                  delegatingType,
+                  signtureProvider,
+                  rootSignatureParameterIndex,
+                  nestedSignatureIndex,
+                  nestedSignatureParameterIndex,
+                  isRoot)
+        {
+        }
     }
 }
