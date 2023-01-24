@@ -81,7 +81,7 @@ public class TestSummary
                                     ? SkipReason
                                     : "No Known Skip Reason");
 
-                testResultSb.AppendLine("]]</reason></test>");
+                testResultSb.AppendLine("]]></reason></test>");
             }
             else
             {
