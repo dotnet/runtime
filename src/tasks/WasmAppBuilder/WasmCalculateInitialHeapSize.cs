@@ -10,6 +10,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+namespace Microsoft.WebAssembly.Build.Tasks;
+
 /// <summary>estimate the total memory needed for the assemblies and AOT data segments.</summary>
 public class WasmCalculateInitialHeapSize : Task
 {
