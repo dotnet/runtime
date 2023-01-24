@@ -7684,6 +7684,12 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     // Try to optimize a load/store with an alternative instruction.
     if (isLdrStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
+        // Ensure local variables are tracked.
+        emitLastIns->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+        emitLastIns->idSetIsLclVar();
+#ifdef DEBUG
+        emitLastIns->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
         return;
     }
 
@@ -7917,6 +7923,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     // Try to optimize a store with an alternative instruction.
     if (isStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
     {
+        // Ensure local variables are tracked.
+        emitLastIns->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+        emitLastIns->idSetIsLclVar();
+#ifdef DEBUG
+        emitLastIns->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
         return;
     }
 
