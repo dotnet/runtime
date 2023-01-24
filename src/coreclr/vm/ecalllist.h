@@ -387,7 +387,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("Interrupt", ThreadNative::Interrupt)
     FCFuncElement("Join", ThreadNative::Join)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-    FCFuncElement("GetCurrentProcessorNumber", ThreadNative::GetCurrentProcessorNumber)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)

@@ -1,10 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Numerics;
 
 namespace System.Collections.Frozen
 {
@@ -60,12 +63,96 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    // In the specific case of Int32 keys, we can optimize further to reduce memory consumption by using
-                    // the underlying FrozenHashtable's Int32 index as the values themselves, avoiding the need to store the
-                    // same values yet again.
-                    return typeof(T) == typeof(int) ?
-                        (FrozenSet<T>)(object)new Int32FrozenSet((HashSet<int>)(object)uniqueValues) :
-                        new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+#if NET7_0_OR_GREATER
+                    static FrozenSet<T> PickIntegerSet<TInt>(HashSet<T> values)
+                        where TInt : struct, IBinaryInteger<TInt>
+                    {
+                        TInt[] items = (TInt[])(object)values.ToArray();
+                        Array.Sort(items);
+
+                        TInt min = items[0];
+                        TInt max = items[^1];
+                        ulong range = ulong.CreateTruncating(max - min);
+
+                        if ((range == (ulong)items.Length - 1) || (range <= int.MaxValue && (int)range / items.Length <= Constants.MaxSparsenessFactorInSparseRangeIntegerSet))
+                        {
+                            return (FrozenSet<T>)(object)new SparseRangeIntegerFrozenSet<TInt>(items);
+                        }
+                        else if (items.Length <= Constants.MaxItemsInSmallIntegerFrozenCollection)
+                        {
+                            return (FrozenSet<T>)(object)new SmallIntegerFrozenSet<TInt>(items);
+                        }
+                        else if (typeof(T) == typeof(int))
+                        {
+                            return (FrozenSet<T>)(object)new Int32FrozenSet((int[])(object)items);
+                        }
+                        else
+                        {
+                            return (FrozenSet<T>)(object)new IntegerFrozenSet<TInt>((HashSet<TInt>)(object)values);
+                        }
+                    }
+
+                    if (typeof(T) == typeof(int))
+                    {
+                        return PickIntegerSet<int>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(uint))
+                    {
+                        return PickIntegerSet<uint>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(long))
+                    {
+                        return PickIntegerSet<long>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(ulong))
+                    {
+                        return PickIntegerSet<ulong>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(short))
+                    {
+                        return PickIntegerSet<short>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(ushort))
+                    {
+                        return PickIntegerSet<ushort>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(byte))
+                    {
+                        return PickIntegerSet<byte>(uniqueValues);
+                    }
+                    else if (typeof(T) == typeof(sbyte))
+                    {
+                        return PickIntegerSet<sbyte>(uniqueValues);
+                    }
+
+#else
+                    if (typeof(T) == typeof(int))
+                    {
+                        int[] items = (int[])(object)uniqueValues.ToArray();
+                        Array.Sort(items);
+
+                        int min = items[0];
+                        int max = items[items.Length - 1];
+                        int range = max - min + 1;
+
+                        if ((range == items.Length) || (range / items.Length <= Constants.MaxSparsenessFactorInSparseRangeIntegerSet))
+                        {
+                            return (FrozenSet<T>)(object)new SparseRangeInt32FrozenSet(items);
+                        }
+                        else if (items.Length <= Constants.MaxItemsInSmallFrozenCollection)
+                        {
+                            return (FrozenSet<T>)(object)new SmallInt32FrozenSet(items);
+                        }
+                        else
+                        {
+                            return (FrozenSet<T>)(object)new Int32FrozenSet(items);
+                        }
+                    }
+#endif
+                    else
+                    {
+                        return new ValueTypeDefaultComparerFrozenSet<T>(uniqueValues);
+                    }
                 }
             }
             else if (typeof(T) == typeof(string))
@@ -81,15 +168,74 @@ namespace System.Collections.Frozen
                         ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
                     {
                         HashSet<string> stringValues = (HashSet<string>)(object)uniqueValues;
+                        string[] entries = new string[stringValues.Count];
+                        stringValues.CopyTo(entries);
+
                         IEqualityComparer<string> stringComparer = (IEqualityComparer<string>)(object)comparer;
 
-                        FrozenSet<string> frozenSet =
-                            LengthBucketsFrozenSet.TryCreateLengthBucketsFrozenSet(stringValues, stringComparer) ??
-                            (FrozenSet<string>)new OrdinalStringFrozenSet(stringValues, stringComparer);
+                        FrozenSet<string>? frozenSet = LengthBucketsFrozenSet.CreateLengthBucketsFrozenSetIfAppropriate(entries, stringComparer);
+                        if (frozenSet is not null)
+                        {
+                            return (FrozenSet<T>)(object)frozenSet;
+                        }
+
+                        KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), out KeyAnalyzer.AnalysisResults results);
+                        if (results.SubstringHashing)
+                        {
+                            if (results.RightJustifiedSubstring)
+                            {
+                                if (results.IgnoreCase)
+                                {
+                                    frozenSet = results.AllAscii
+                                        ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                        : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                                else
+                                {
+                                    frozenSet = results.HashCount == 1
+                                        ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                        : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                            }
+                            else
+                            {
+                                if (results.IgnoreCase)
+                                {
+                                    frozenSet = results.AllAscii
+                                        ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount)
+                                        : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                                else
+                                {
+                                    frozenSet = results.HashCount == 1
+                                        ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                        : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (results.IgnoreCase)
+                            {
+                                frozenSet = results.AllAscii
+                                    ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff)
+                                    : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            }
+                            else
+                            {
+                                frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff);
+                            }
+                        }
 
                         return (FrozenSet<T>)(object)frozenSet;
                     }
                 }
+            }
+
+            if (uniqueValues.Count <= Constants.MaxItemsInSmallFrozenCollection)
+            {
+                // use the specialized set for low item counts
+                return new SmallFrozenSet<T>(uniqueValues, comparer);
             }
 
             // No special-cases apply. Use the default frozen set.

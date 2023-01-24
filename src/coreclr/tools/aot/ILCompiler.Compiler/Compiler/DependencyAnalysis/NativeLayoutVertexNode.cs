@@ -256,15 +256,6 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
 
-            // TODO: this should not be needed - we no longer need to materialize RuntimeTypeHandles as part
-            // of the dispatch. Investigate getting rid of this.
-            // Variant generic virtual method calls at runtime might need to build the concrete version of the
-            // type we could be dispatching on to find the appropriate GVM entry.
-            if (_method.OwningType.HasVariance)
-            {
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific));
-            }
-
             foreach (TypeDesc instArg in canonMethod.Instantiation)
             {
                 dependencies.Add(factory.MaximallyConstructableType(instArg), "Type we need to look up for GVM dispatch");
@@ -706,8 +697,25 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override string GetName(NodeFactory factory) => "NativeLayoutTemplateMethodSignatureVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
+        private static bool NeedsEntrypoint(MethodDesc method)
+        {
+            Debug.Assert(method.HasInstantiation);
+
+            // Generic virtual methods need to store information about entrypoint in the template
+            if (method.IsVirtual)
+                return true;
+
+            // MethodImpls for static virtual methods need to store this too
+            // Unfortunately we can't test for "is this a MethodImpl?" here (the method could be a MethodImpl
+            // in a derived class but not in the current class).
+            if (method.Signature.IsStatic && !method.OwningType.IsInterface)
+                return true;
+
+            return false;
+        }
+
         public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | (method.IsVirtual ? MethodEntryFlags.SaveEntryPoint : 0))
+            : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | (NeedsEntrypoint(method) ? MethodEntryFlags.SaveEntryPoint : 0))
         {
         }
 
@@ -721,9 +729,8 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode GetMethodEntrypointNode(NodeFactory factory, out bool unboxingStub)
         {
-            // Only GVM templates need entry points.
-            Debug.Assert(_method.IsVirtual);
-            unboxingStub = _method.OwningType.IsValueType;
+            Debug.Assert(NeedsEntrypoint(_method));
+            unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
             IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
             // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
             // since it can't always be conveniently computed for a concrete method before looking up its template)

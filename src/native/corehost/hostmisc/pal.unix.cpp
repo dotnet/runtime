@@ -842,8 +842,13 @@ pal::string_t pal::get_current_os_rid_platform()
                     size_t pos = line.find(strVersionID);
                     if ((pos != std::string::npos) && (pos == 0))
                     {
-                        valVersionID.append(line.substr(11));
-                        fFoundVersion = true;
+                        pal::string_t version = line.substr(11);
+                        // check if version characters are valid (quotes are trimmed at a later stage)
+                        if (!version.empty() && version.find_first_not_of("0123456789.\"'") == std::string::npos)
+                        {
+                            valVersionID.append(version);
+                            fFoundVersion = true;
+                        }
                     }
                 }
 

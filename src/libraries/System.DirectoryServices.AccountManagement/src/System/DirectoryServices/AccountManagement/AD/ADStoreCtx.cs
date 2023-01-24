@@ -1019,7 +1019,7 @@ namespace System.DirectoryServices.AccountManagement
             return FindByDate(principalType, new string[] { "accountExpires" }, matchType, dt);
         }
 
-        private ResultSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
+        private ADEntriesSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
         {
             Debug.Assert(ldapAttributes != null);
             Debug.Assert(ldapAttributes.Length > 0);

@@ -14,6 +14,9 @@ if(HOST_WIN32 AND HOST_AMD64)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
 
     list(APPEND utils_win32_sources win64.asm)
+elseif(HOST_WASI)
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    enable_language(ASM)
 endif()
 
 set(utils_unix_sources
@@ -23,6 +26,8 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
+elseif(HOST_WASI)
+    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
@@ -84,8 +89,6 @@ set(utils_common_sources
     mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
-    mono-value-hash.h
-    mono-value-hash.c
     freebsd-dwarf.h
     dtrace.h
     mono-error.c

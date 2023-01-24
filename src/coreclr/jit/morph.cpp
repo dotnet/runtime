@@ -3943,11 +3943,19 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // If we're optimizing, see if we can avoid making a copy.
     //
-    // We don't need a copy if this is the last use of an implicit by-ref local.
+    // We don't need a copy if this is the last use of the local.
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
-        GenTreeLclVar* const lcl = argx->IsImplicitByrefParameterValue(this);
+        GenTree*             implicitByRefLclAddr;
+        GenTreeLclVarCommon* implicitByRefLcl =
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
+
+        GenTreeLclVarCommon* lcl = implicitByRefLcl;
+        if ((lcl == nullptr) && argx->OperIsLocal())
+        {
+            lcl = argx->AsLclVarCommon();
+        }
 
         if (lcl != nullptr)
         {
@@ -3955,9 +3963,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
             const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
 
-            // We don't have liveness so we rely on other indications of last use.
-            //
-            // We handle these cases:
+            // We generally use liveness to figure out if we can omit creating
+            // this copy. However, even without liveness (e.g. due to too many
+            // tracked locals), we also handle some other cases:
             //
             // * (must not copy) If the call is a tail call, the use is a last use.
             //   We must skip the copy if we have a fast tail call.
@@ -3970,14 +3978,46 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
             //
-            // fgMightHaveLoop() is expensive; check it last, only if necessary.
-            //
-            if (call->IsTailCall() ||                              //
-                ((totalAppearances == 1) && call->IsNoReturn()) || //
-                ((totalAppearances == 1) && !fgMightHaveLoop()))
+            bool omitCopy = call->IsTailCall();
+
+            if (!omitCopy && fgDidEarlyLiveness)
             {
-                arg->SetEarlyNode(lcl);
-                JITDUMP("did not need to make outgoing copy for last use of implicit byref V%2d\n", varNum);
+                omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+            }
+
+            if (!omitCopy && (totalAppearances == 1))
+            {
+                // fgMightHaveLoop() is expensive; check it last, only if necessary.
+                omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
+            }
+
+            if (omitCopy)
+            {
+                if (implicitByRefLcl != nullptr)
+                {
+                    arg->SetEarlyNode(implicitByRefLclAddr);
+                }
+                else
+                {
+                    uint16_t offs = lcl->GetLclOffs();
+                    if (offs == 0)
+                    {
+                        lcl->ChangeOper(GT_LCL_VAR_ADDR);
+                    }
+                    else
+                    {
+                        lcl->ChangeOper(GT_LCL_FLD_ADDR);
+                        lcl->AsLclFld()->SetLclOffs(offs);
+                    }
+
+                    lcl->gtType = TYP_I_IMPL;
+                    lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
+                    // Copy prop could allow creating another later use of lcl if there are live assertions about it.
+                    fgKillDependentAssertions(varNum DEBUGARG(lcl));
+                }
+
+                JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
                 return;
             }
         }
@@ -4385,7 +4425,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // do this here. Likewise for implicit byrefs.
 
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(&arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD) ||
+            gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_FIELD, GT_LCL_FLD) ||
             (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
@@ -4400,7 +4440,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 
         if (((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(&index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_FIELD, GT_LCL_FLD) ||
+            gtComplexityExceeds(index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_FIELD, GT_LCL_FLD) ||
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
@@ -4658,7 +4698,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* argNode;
     if (lclNode->TypeIs(TYP_STRUCT))
     {
-        argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
+        argNode = gtNewStructVal(lclNode->GetLayout(this), argAddr);
     }
     else
     {
@@ -4691,10 +4731,11 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
         return nullptr;
     }
 
-    unsigned   lclNum      = lclNode->GetLclNum();
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    unsigned   fieldOffset = 0;
-    unsigned   newLclNum   = BAD_VAR_NUM;
+    unsigned   lclNum         = lclNode->GetLclNum();
+    LclVarDsc* varDsc         = lvaGetDesc(lclNum);
+    unsigned   fieldOffset    = 0;
+    unsigned   newLclNum      = BAD_VAR_NUM;
+    bool       isStillLastUse = false;
 
     if (lvaIsImplicitByRefLocal(lclNum))
     {
@@ -4717,6 +4758,33 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
         }
 
         newLclNum = lclNum;
+
+        // As a special case, for implicit byref args where we undid promotion we
+        // can still know whether the use of the implicit byref local is a last
+        // use, and whether we can omit a copy when passed as an argument (the
+        // common reason why promotion is undone).
+        //
+        // We skip this propagation for the fields of the promoted local. Those are
+        // going to be transformed into accesses off of the parent and we cannot
+        // know here if this is going to be the last use of the parent local (this
+        // would require tracking a full life set on the side, which we do not do
+        // in morph).
+        //
+        if (!varDsc->lvPromoted)
+        {
+            if (varDsc->lvFieldLclStart != 0)
+            {
+                // Reference to whole implicit byref parameter that was promoted
+                // but isn't anymore. Check if all fields are dying.
+                GenTreeFlags allFieldsDying = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
+                isStillLastUse              = (lclNode->gtFlags & allFieldsDying) == allFieldsDying;
+            }
+            else
+            {
+                // Was never promoted, treated as single value.
+                isStillLastUse = (lclNode->gtFlags & GTF_VAR_DEATH) != 0;
+            }
+        }
     }
     else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
     {
@@ -4749,6 +4817,11 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
 
+    if (isStillLastUse)
+    {
+        lclNode->gtFlags |= GTF_VAR_DEATH;
+    }
+
     GenTree* addrNode = lclNode;
     if (offset != 0)
     {
@@ -4760,7 +4833,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         if (argNodeType == TYP_STRUCT)
         {
-            newArgNode = gtNewObjNode(argNodeLayout, addrNode);
+            newArgNode = gtNewStructVal(argNodeLayout, addrNode);
         }
         else
         {
@@ -5442,7 +5515,8 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Calling inlinee's compiler to inline the method.
     //
 
-    unsigned startVars = lvaCount;
+    unsigned const startVars     = lvaCount;
+    unsigned const startBBNumMax = fgBBNumMax;
 
 #ifdef DEBUG
     if (verbose)
@@ -5468,8 +5542,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 
     if (result->IsFailure())
     {
-        // Undo some changes made in anticipation of inlining...
-
+        // Undo some changes made during the inlining attempt.
         // Zero out the used locals
         memset((void*)(lvaTable + startVars), 0, (lvaCount - startVars) * sizeof(*lvaTable));
         for (unsigned i = startVars; i < lvaCount; i++)
@@ -5477,7 +5550,16 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
             new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
         }
 
-        lvaCount = startVars;
+        // Reset local var count and max bb num
+        lvaCount   = startVars;
+        fgBBNumMax = startBBNumMax;
+
+#ifdef DEBUG
+        for (BasicBlock* block : Blocks())
+        {
+            assert(block->bbNum <= fgBBNumMax);
+        }
+#endif
     }
 }
 
@@ -5840,8 +5922,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 // and so still be able to avoid a struct copy.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg is an implicit byref param.
-                    GenTreeLclVar* const lcl = arg.GetNode()->IsImplicitByrefParameterValue(this);
+                    // First, see if this is an arg off of an implicit byref param.
+                    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                     if (lcl != nullptr)
                     {
@@ -5913,7 +5995,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
                                     {
                                         GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetNode()->IsImplicitByrefParameterValue(this);
+                                            arg2.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                                         if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
@@ -6149,7 +6231,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #ifdef DEBUG
     if (opts.compGcChecks && (info.compRetType == TYP_REF))
     {
-        failTailCall("COMPlus_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, "
+        failTailCall("DOTNET_JitGCChecks or stress might have interposed a call to CORINFO_HELP_CHECK_OBJ, "
                      "invalidating tailcall opportunity");
         return nullptr;
     }
@@ -6199,6 +6281,18 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         failTailCall("Localloc used");
         return nullptr;
     }
+
+#ifdef DEBUG
+    // For explicit tailcalls the importer will avoid inserting stress
+    // poisoning after them. However, implicit tailcalls are marked earlier and
+    // we must filter those out here if we ended up adding any poisoning IR
+    // after them.
+    if (isImplicitOrStressTailCall && compPoisoningAnyImplicitByrefs)
+    {
+        failTailCall("STRESS_POISON_IMPLICIT_BYREFS has introduced IR after tailcall opportunity, invalidating");
+        return nullptr;
+    }
+#endif
 
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)
@@ -13530,8 +13624,11 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         // Have to re-do the evaluation order since for example some later code does not expect constants as op1
         gtSetStmtInfo(stmt);
 
-        // Have to re-link the nodes for this statement
-        fgSetStmtSeq(stmt);
+        // This may be called both when the nodes are linked and when they aren't.
+        if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            fgSetStmtSeq(stmt);
+        }
     }
 
 #ifdef DEBUG
@@ -14248,13 +14345,18 @@ void Compiler::fgPostExpandQmarkChecks()
 
 #endif // DEBUG
 
-/*****************************************************************************
- *
- *  Get the top level GT_QMARK node in a given "expr", return NULL if such a
- *  node is not present. If the top level GT_QMARK node is assigned to a
- *  GT_LCL_VAR, then return the lcl node in ppDst.
- *
- */
+//------------------------------------------------------------------------
+// fgGetTopLevelQmark:
+//    Get the top level GT_QMARK node in a given expression.
+//
+// Arguments:
+//    expr  - the tree, a root node that may contain a top level qmark.
+//    ppDst - [optional] if the top level GT_QMARK node is assigned ot a
+//            GT_LCL_VAR, then this is that local node. Otherwise nullptr.
+//
+// Returns:
+//    The GT_QMARK node, or nullptr if there is no top level qmark.
+//
 GenTree* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL */)
 {
     if (ppDst != nullptr)

@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Metadata
             Converter.ConfigureJsonTypeInfo(this, options);
         }
 
-        private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
+        private static JsonMetadataServicesConverter<T> GetConverter(JsonObjectInfoValues<T> objectInfo)
         {
 #pragma warning disable CS8714
             // The type cannot be used as type parameter in the generic type or method.
@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            JsonSerializerContext? context = Options.SerializerContext;
+            JsonSerializerContext? context = Options.TypeInfoResolver as JsonSerializerContext;
             JsonPropertyInfo[] array;
             if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
             {

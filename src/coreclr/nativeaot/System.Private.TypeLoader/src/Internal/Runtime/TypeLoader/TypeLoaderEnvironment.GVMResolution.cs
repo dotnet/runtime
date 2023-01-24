@@ -45,7 +45,7 @@ namespace Internal.Runtime.TypeLoader
             return "?";
         }
 
-        private static InstantiatedMethod GVMLookupForSlotWorker(DefType targetType, InstantiatedMethod slotMethod)
+        internal static InstantiatedMethod GVMLookupForSlotWorker(DefType targetType, InstantiatedMethod slotMethod)
         {
             InstantiatedMethod resolution = null;
 
@@ -63,11 +63,22 @@ namespace Internal.Runtime.TypeLoader
                     resolution = ResolveInterfaceGenericVirtualMethodSlot(currentType, slotMethod, lookForDefaultImplementations);
                     if (resolution != null)
                     {
-                        if (!resolution.OwningType.IsInterface)
-                            return GVMLookupForSlotWorker(currentType, resolution);
+                        // If this is a static virtual, we're done, nobody can override this.
+                        if (IsStaticMethodSignature(resolution.NameAndSignature))
+                        {
+                            Debug.Assert(IsStaticMethodSignature(slotMethod.NameAndSignature));
+                            break;
+                        }
 
-                        Debug.Assert(lookForDefaultImplementations);
-                        break;
+                        // If this is a default implementation, we're also done.
+                        if (resolution.OwningType.IsInterface)
+                        {
+                            Debug.Assert(lookForDefaultImplementations);
+                            break;
+                        }
+
+                        // Otherwise resolve to whatever implements the virtual method on the type.
+                        return GVMLookupForSlotWorker(currentType, resolution);
                     }
                 }
                 else
@@ -110,21 +121,10 @@ namespace Internal.Runtime.TypeLoader
 
         internal unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle type, RuntimeMethodHandle slot)
         {
-            RuntimeTypeHandle declaringTypeHandle;
-            MethodNameAndSignature nameAndSignature;
-            RuntimeTypeHandle[] genericMethodArgs;
-            if (!TryGetRuntimeMethodHandleComponents(slot, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs))
-            {
-                Debug.Assert(false);
-                return IntPtr.Zero;
-            }
-
             TypeSystemContext context = TypeSystemContextFactory.Create();
-
             DefType targetType = (DefType)context.ResolveRuntimeTypeHandle(type);
-            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            Instantiation methodInstantiation = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-            InstantiatedMethod slotMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, methodInstantiation, IntPtr.Zero, false);
+
+            InstantiatedMethod slotMethod = (InstantiatedMethod)GetMethodDescForRuntimeMethodHandle(context, slot);
 
             InstantiatedMethod result = GVMLookupForSlotWorker(targetType, slotMethod);
 

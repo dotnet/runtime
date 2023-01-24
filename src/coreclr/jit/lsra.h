@@ -1611,9 +1611,10 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap sharedCriticalVarToRegMap;
 
-    PhasedVar<regMaskTP> availableIntRegs;
-    PhasedVar<regMaskTP> availableFloatRegs;
-    PhasedVar<regMaskTP> availableDoubleRegs;
+    PhasedVar<regMaskTP>  availableIntRegs;
+    PhasedVar<regMaskTP>  availableFloatRegs;
+    PhasedVar<regMaskTP>  availableDoubleRegs;
+    PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding

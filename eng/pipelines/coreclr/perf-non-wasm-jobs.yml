@@ -9,7 +9,7 @@ jobs:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
-      - Linux_x64
+      - linux_x64
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -17,7 +17,7 @@ jobs:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
 
@@ -29,10 +29,10 @@ jobs:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
       platforms:
-      - Linux_x64
+      - linux_x64
       - windows_x64
       - windows_x86
-      - Linux_musl_x64
+      - linux_musl_x64
       jobParameters:
         testGroup: perf
 
@@ -43,7 +43,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AOT
@@ -65,7 +65,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Android_arm64
+      - android_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: AndroidMono
@@ -87,7 +87,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - iOS_arm64
+      - ios_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: iOSMono
@@ -109,7 +109,7 @@ jobs:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
-      - Linux_x64
+      - linux_x64
 
   # run mono and maui android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -118,10 +118,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - Windows_x64
+        - windows_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMono
@@ -138,10 +138,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - OSX_x64
+        - osx_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
@@ -158,10 +158,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - OSX_x64
+        - osx_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet7.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
@@ -179,10 +179,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - Windows_x64
+        - windows_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: AndroidMobileNet6
@@ -199,10 +199,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-        - OSX_x64
+        - osx_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_iOS_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMobileNet6
@@ -220,7 +220,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -237,7 +237,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -255,7 +255,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: aot
       platforms:
-      - Linux_x64
+      - linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -273,10 +273,10 @@ jobs:
       buildConfig: release
       runtimeFlavor: coreclr
       platforms:
-      - Linux_x64
+      - linux_x64
       - windows_x64
       - windows_x86
-      - Linux_musl_x64
+      - linux_musl_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -341,7 +341,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: coreclr
       platforms:
-      - Linux_x64
+      - linux_x64
       - windows_x64
       jobParameters:
         testGroup: perf
@@ -358,7 +358,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: coreclr
       platforms:
-      - Linux_x64
+      - linux_x64
       - windows_x64
       - windows_x86
       jobParameters:
@@ -377,14 +377,14 @@ jobs:
   #    buildConfig: release
   #    runtimeFlavor: mono
   #    platforms:
-  #    - Android_x86
-  #    - Android_x64
-  #    - Android_arm
-  #    - Android_arm64
-  #    - MacCatalyst_x64
-  #    - iOSSimulator_x64
-  #    - iOS_arm64
-  #    - iOS_arm
+  #    - android_x86
+  #    - android_x64
+  #    - android_arm
+  #    - android_arm64
+  #    - maccatalyst_x64
+  #    - iossimulator_x64
+  #    - ios_arm64
+  #    - ios_arm
   #    jobParameters:
   #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
   #      nameSuffix: Maui_Packs_Mono
@@ -400,18 +400,18 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - iOS_arm64
+      - ios_arm64
       jobParameters:
       # Uncomment to reenable package replacement for main
         #dependsOn:
-        #  - Build_Android_arm_release_Maui_Packs_Mono
-        #  - Build_Android_arm64_release_Maui_Packs_Mono
-        #  - Build_Android_x86_release_Maui_Packs_Mono
-        #  - Build_Android_x64_release_Maui_Packs_Mono
-        #  - Build_MacCatalyst_x64_release_Maui_Packs_Mono
-        #  - Build_iOSSimulator_x64_release_Maui_Packs_Mono
-        #  - Build_iOS_arm_release_Maui_Packs_Mono
-        #  - Build_iOS_arm64_release_Maui_Packs_Mono
+        #  - Build_android_arm_release_Maui_Packs_Mono
+        #  - Build_android_arm64_release_Maui_Packs_Mono
+        #  - Build_android_x86_release_Maui_Packs_Mono
+        #  - Build_android_x64_release_Maui_Packs_Mono
+        #  - Build_maccatalyst_x64_release_Maui_Packs_Mono
+        #  - Build_iossimulator_x64_release_Maui_Packs_Mono
+        #  - Build_ios_arm_release_Maui_Packs_Mono
+        #  - Build_ios_arm64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMauiNet7
         isOfficialBuild: false
@@ -434,7 +434,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - iOS_arm64
+      - ios_arm64
       jobParameters:
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMauiNet6

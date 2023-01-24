@@ -161,6 +161,11 @@ void Phase::PostPhase(PhaseStatus status)
         {
             comp->fgDebugCheckProfileWeights();
         }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LINKED_LOCALS) == PhaseChecks::CHECK_LINKED_LOCALS)
+        {
+            comp->fgDebugCheckLinkedLocals();
+        }
     }
 #endif // DEBUG
 

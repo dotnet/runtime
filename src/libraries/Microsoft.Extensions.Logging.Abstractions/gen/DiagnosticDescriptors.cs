@@ -183,5 +183,21 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor InvalidLoggingMethodParameterOut { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1024",
+            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterOutMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor ShouldntReuseEventNames { get; } = new DiagnosticDescriptor(
+            id: "SYSLIB1025",
+            title: new LocalizableResourceString(nameof(SR.ShouldntReuseEventNamesTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.ShouldntReuseEventNamesMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }
