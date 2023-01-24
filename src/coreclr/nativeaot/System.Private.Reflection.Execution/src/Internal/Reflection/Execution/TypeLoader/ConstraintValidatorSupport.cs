@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Runtime.General;
+
+using Internal.Reflection.Core.Execution;
 
 using Debug = global::System.Diagnostics.Debug;
 
@@ -287,11 +290,47 @@ namespace Internal.Reflection.Execution
             if (type.IsValueType)
                 return true;
 
-            foreach (var ctor in type.GetConstructors())
+            // Look for a public parameterless constructor. Avoid Type.GetConstructors() so that we don't
+            // bring ConstructorInfo support into apps that don't use reflection.
+
+            RuntimeTypeHandle typeHandle = type.TypeHandle;
+
+            QTypeDefinition qTypeDefinition;
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out qTypeDefinition))
             {
-                if (!ctor.IsStatic && ctor.IsPublic && ctor.GetParametersNoCopy().Length == 0)
-                    return true;
+                // Could be an array, reflection blocked type or something similar.
+                return false;
             }
+
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+            {
+                var reader = qTypeDefinition.NativeFormatReader;
+                foreach (var methodHandle in reader.GetTypeDefinition(qTypeDefinition.NativeFormatHandle).Methods)
+                {
+                    var method = reader.GetMethod(methodHandle);
+                    const MethodAttributes specialNameAttributes = MethodAttributes.RTSpecialName | MethodAttributes.SpecialName;
+                    if ((method.Flags & specialNameAttributes) == specialNameAttributes
+                        && (method.Flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public
+                        && (method.Flags & MethodAttributes.Static) == 0)
+                    {
+                        var sig = reader.GetMethodSignature(method.Signature);
+                        if (sig.Parameters.Count == 0 && method.Name.StringEquals(".ctor", reader))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+#if ECMA_METADATA_SUPPORT
+            if (qTypeDefinition.IsEcmaFormatMetadataBased)
+            {
+                 foreach (var ctor in type.GetConstructors())
+                    if (!ctor.IsStatic && ctor.IsPublic && ctor.GetParametersNoCopy().Length == 0)
+                        return true;
+            }
+#endif
+
             return false;
         }
 
