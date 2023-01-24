@@ -89,20 +89,13 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
-          BeforeTargets="_PrepareForReadyToRunCompilation">
-    <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(CoreCLRCrossgen2Dir)')" />
-      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
-      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="PublishTestAsSingleFile"
-          Condition="'$(IsCrossTargetingBuild)' != 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish;ArchiveTests" />
-
+  <!--
+    Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
+    This target is essentially an override hook which is called before `SetupOSSpecificProps` in
+    `Microsoft.NETCore.Native.Unix.targets`. Note that the input is `CppCompilerAndLinker`
+    and the output is `CppLinker`, because from `SetupOSSpecificProps` onwards, we only use `CppLinker`
+    (when alternative compiler, i.e. gcc, is not selected)
+  -->
   <Target Name="LocateNativeCompiler"
           Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
@@ -117,5 +110,19 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
     </Exec>
   </Target>
+
+  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(CoreCLRCrossgen2Dir)')" />
+      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
+      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTestAsSingleFile"
+          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;ArchiveTests" />
 
 </Project>
