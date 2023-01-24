@@ -360,14 +360,9 @@ public:
             return true;
         }
 
-        if ((lcl->gtFlags & GTF_VAR_DEATH) == 0)
-        {
-            return false;
-        }
-
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(lcl);
-        VARSET_TP* deadFields;
-        return !dsc->lvPromoted || !m_compiler->LookupPromotedStructDeathVars(lcl, &deadFields);
+        LclVarDsc*   dsc        = m_compiler->lvaGetDesc(lcl);
+        GenTreeFlags deathFlags = dsc->FullDeathFlags();
+        return (lcl->gtFlags & deathFlags) == deathFlags;
     }
 
 private:

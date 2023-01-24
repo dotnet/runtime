@@ -54,6 +54,7 @@ namespace DebuggerTests
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
         protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
         protected ITestOutputHelper _testOutput;
+        protected readonly TestEnvironment _env;
 
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
@@ -117,8 +118,16 @@ namespace DebuggerTests
             }
         }
 
+        public static string TempPath => Path.Combine(Path.GetTempPath(), "dbg-tests-tmp");
+        static DebuggerTestBase()
+        {
+            if (Directory.Exists(TempPath))
+                Directory.Delete(TempPath, recursive: true);
+        }
+
         public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
         {
+            _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
@@ -151,7 +160,11 @@ namespace DebuggerTests
             await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
-        public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
+        public virtual async Task DisposeAsync()
+        {
+            await insp.ShutdownAsync().ConfigureAwait(false);
+            _env.Dispose();
+        }
 
         public Task Ready() => startTask;
 
@@ -1506,6 +1519,13 @@ namespace DebuggerTests
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+        }
+
+
+        internal async Task SetSymbolOptions(JObject param)
+        {
+            var res = await cli.SendCommand("DotnetDebugger.setSymbolOptions", param, token);
+            Assert.True(res.IsOk);
         }
 
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)

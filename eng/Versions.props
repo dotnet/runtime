@@ -248,5 +248,9 @@
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+
+    <!-- BrowserDebugProxy libs -->
+    <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
+    <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
   </PropertyGroup>
 </Project>

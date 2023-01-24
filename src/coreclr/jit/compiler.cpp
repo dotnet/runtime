@@ -4609,14 +4609,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     lvaRefCountState = RCS_EARLY;
 
-    // Figure out what locals are address-taken.
-    //
-    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
-
     if (opts.OptimizationEnabled())
     {
         fgNodeThreading = NodeThreading::AllLocals;
     }
+
+    // Figure out what locals are address-taken.
+    //
+    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
@@ -4649,7 +4649,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
-        lvaRefCountState = RCS_INVALID;
+        lvaRefCountState       = RCS_INVALID;
+        fgLocalVarLivenessDone = false;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         if (fgNeedToAddFinallyTargetBits)
@@ -9346,9 +9347,31 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_CLONED]");
                 }
-                if (tree->gtFlags & GTF_VAR_DEATH)
+                if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
-                    chars += printf("[VAR_DEATH]");
+                    if (tree->gtFlags & GTF_VAR_DEATH)
+                    {
+                        chars += printf("[VAR_DEATH]");
+                    }
+                }
+                else
+                {
+                    if (tree->gtFlags & GTF_VAR_FIELD_DEATH0)
+                    {
+                        chars += printf("[VAR_FIELD_DEATH0]");
+                    }
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH1)
+                {
+                    chars += printf("[VAR_FIELD_DEATH1]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH2)
+                {
+                    chars += printf("[VAR_FIELD_DEATH2]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH3)
+                {
+                    chars += printf("[VAR_FIELD_DEATH3]");
                 }
                 if (tree->gtFlags & GTF_VAR_EXPLICIT_INIT)
                 {
@@ -9590,6 +9613,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STATIC_BOX_PTR:
 
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_ADDR_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
                         break;
 
                     default:

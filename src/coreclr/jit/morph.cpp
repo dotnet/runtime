@@ -3947,7 +3947,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
-        GenTreeLclVarCommon* implicitByRefLcl = argx->IsImplicitByrefParameterValue(this);
+        GenTree*             implicitByRefLclAddr;
+        GenTreeLclVarCommon* implicitByRefLcl =
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
@@ -3993,7 +3995,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 if (implicitByRefLcl != nullptr)
                 {
-                    arg->SetEarlyNode(lcl);
+                    arg->SetEarlyNode(implicitByRefLclAddr);
                 }
                 else
                 {
@@ -4729,10 +4731,11 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
         return nullptr;
     }
 
-    unsigned   lclNum      = lclNode->GetLclNum();
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    unsigned   fieldOffset = 0;
-    unsigned   newLclNum   = BAD_VAR_NUM;
+    unsigned   lclNum         = lclNode->GetLclNum();
+    LclVarDsc* varDsc         = lvaGetDesc(lclNum);
+    unsigned   fieldOffset    = 0;
+    unsigned   newLclNum      = BAD_VAR_NUM;
+    bool       isStillLastUse = false;
 
     if (lvaIsImplicitByRefLocal(lclNum))
     {
@@ -4755,6 +4758,33 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
         }
 
         newLclNum = lclNum;
+
+        // As a special case, for implicit byref args where we undid promotion we
+        // can still know whether the use of the implicit byref local is a last
+        // use, and whether we can omit a copy when passed as an argument (the
+        // common reason why promotion is undone).
+        //
+        // We skip this propagation for the fields of the promoted local. Those are
+        // going to be transformed into accesses off of the parent and we cannot
+        // know here if this is going to be the last use of the parent local (this
+        // would require tracking a full life set on the side, which we do not do
+        // in morph).
+        //
+        if (!varDsc->lvPromoted)
+        {
+            if (varDsc->lvFieldLclStart != 0)
+            {
+                // Reference to whole implicit byref parameter that was promoted
+                // but isn't anymore. Check if all fields are dying.
+                GenTreeFlags allFieldsDying = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
+                isStillLastUse              = (lclNode->gtFlags & allFieldsDying) == allFieldsDying;
+            }
+            else
+            {
+                // Was never promoted, treated as single value.
+                isStillLastUse = (lclNode->gtFlags & GTF_VAR_DEATH) != 0;
+            }
+        }
     }
     else if (varDsc->lvIsStructField && lvaIsImplicitByRefLocal(varDsc->lvParentLcl))
     {
@@ -4782,22 +4812,15 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter %s:\n", isAddress ? "address" : "reference");
     DISPTREE(lclNode);
 
-    // As a special case, for implicit byref args where we undid promotion we
-    // can often still know whether the use of the implicit byref local is a
-    // last use, and whether we can omit a copy when passed as an argument (the
-    // common reason why promotion is undone).
-    GenTreeFlags lastUse = GTF_EMPTY;
-    VARSET_TP*   deadFields;
-    if (((lclNode->gtFlags & GTF_VAR_DEATH) != 0) && !LookupPromotedStructDeathVars(lclNode, &deadFields))
-    {
-        lastUse = GTF_VAR_DEATH;
-    }
-
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
-    lclNode->gtFlags |= lastUse;
+
+    if (isStillLastUse)
+    {
+        lclNode->gtFlags |= GTF_VAR_DEATH;
+    }
 
     GenTree* addrNode = lclNode;
     if (offset != 0)
@@ -5899,8 +5922,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 // and so still be able to avoid a struct copy.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg is an implicit byref param.
-                    GenTreeLclVar* const lcl = arg.GetNode()->IsImplicitByrefParameterValue(this);
+                    // First, see if this is an arg off of an implicit byref param.
+                    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                     if (lcl != nullptr)
                     {
@@ -5972,7 +5995,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
                                     {
                                         GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetNode()->IsImplicitByrefParameterValue(this);
+                                            arg2.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                                         if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
