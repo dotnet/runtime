@@ -6445,7 +6445,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	gboolean direct_call, external_call;
 	guint32 got_slot;
 	const char *direct_call_target = 0;
-	const char *direct_pinvoke;
+	const char *direct_pinvoke = NULL;
 #endif
 
 	if (acfg->gas_line_numbers && method && debug_info) {
