@@ -19,6 +19,7 @@
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .mjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .cjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .webcil=application/octet-stream</_ServeMimeTypes>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"

@@ -1038,11 +1038,12 @@ namespace System.Buffers
         private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result);
             if (typeof(T) == typeof(short))
             {
-                mask = FixUpPackedVector256Mask(mask);
+                result = FixUpPackedVector256Result(result);
             }
+
+            uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = BitOperations.TrailingZeroCount(mask);
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
@@ -1053,11 +1054,12 @@ namespace System.Buffers
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result);
             if (typeof(T) == typeof(short))
             {
-                mask = FixUpPackedVector256Mask(mask);
+                result = FixUpPackedVector256Result(result);
             }
+
+            uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = BitOperations.TrailingZeroCount(mask);
             if (offsetInVector >= Vector256<short>.Count)
@@ -1074,11 +1076,12 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result);
             if (typeof(T) == typeof(short))
             {
-                mask = FixUpPackedVector256Mask(mask);
+                result = FixUpPackedVector256Result(result);
             }
+
+            uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
             return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
@@ -1088,11 +1091,12 @@ namespace System.Buffers
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector256<byte> result)
             where TNegator : struct, INegator
         {
-            uint mask = TNegator.ExtractMask(result);
             if (typeof(T) == typeof(short))
             {
-                mask = FixUpPackedVector256Mask(mask);
+                result = FixUpPackedVector256Result(result);
             }
+
+            uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
             if (offsetInVector < Vector256<short>.Count)
@@ -1105,16 +1109,14 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint FixUpPackedVector256Mask(uint mask)
+        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);
             // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
             // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
             // We want to swap the X and Y bits
             // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
-            const uint CorrectPositionsMask = 0xFF0000FF;
-
-            return (mask & CorrectPositionsMask) | BinaryPrimitives.ReverseEndianness(mask & ~CorrectPositionsMask);
+            return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
         }
 
         internal interface INegator

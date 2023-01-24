@@ -27,7 +27,6 @@ set(COMMON_RUNTIME_SOURCES
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
-    RWLock.cpp
     StackFrameIterator.cpp
     startup.cpp
     stressLog.cpp

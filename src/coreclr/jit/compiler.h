@@ -1000,6 +1000,36 @@ public:
         return regMask;
     }
 
+    //-----------------------------------------------------------------------------
+    // AllFieldDeathFlags: Get a bitset of flags that represents all fields dying.
+    //
+    // Returns:
+    //    A bit mask that has GTF_VAR_FIELD_DEATH0 to GTF_VAR_FIELD_DEATH3 set,
+    //    depending on how many fields this promoted local has.
+    //
+    // Remarks:
+    //    Only usable for promoted locals.
+    //
+    GenTreeFlags AllFieldDeathFlags() const
+    {
+        assert(lvPromoted && (lvFieldCnt > 0) && (lvFieldCnt <= 4));
+        GenTreeFlags flags = static_cast<GenTreeFlags>(((1 << lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+        assert((flags & ~GTF_VAR_DEATH_MASK) == 0);
+        return flags;
+    }
+
+    //-----------------------------------------------------------------------------
+    // FullDeathFlags: Get a bitset of flags that represents this local fully dying.
+    //
+    // Returns:
+    //    For promoted locals, this returns AllFieldDeathFlags(). Otherwise
+    //    returns GTF_VAR_DEATH.
+    //
+    GenTreeFlags FullDeathFlags() const
+    {
+        return lvPromoted ? AllFieldDeathFlags() : GTF_VAR_DEATH;
+    }
+
     unsigned short lvVarIndex; // variable tracking index
 
 private:
@@ -4325,6 +4355,7 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
+    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
@@ -8094,48 +8125,6 @@ public:
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
-
-    // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
-    // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
-    // table, one may assume that all the (tracked) field vars die at this GT_OBJ.  Otherwise,
-    // the node maps to a pointer to a VARSET_TP, containing set bits for each of the tracked field
-    // vars of the promoted struct local that go dead at the given node (the set bits are the bits
-    // for the tracked var indices of the field vars, as in a live var set).
-    //
-    // The map is allocated on demand so all map operations should use one of the following three
-    // wrapper methods.
-
-    NodeToVarsetPtrMap* m_promotedStructDeathVars;
-
-    NodeToVarsetPtrMap* GetPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars == nullptr)
-        {
-            m_promotedStructDeathVars = new (getAllocator()) NodeToVarsetPtrMap(getAllocator());
-        }
-        return m_promotedStructDeathVars;
-    }
-
-    void ClearPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            m_promotedStructDeathVars->RemoveAll();
-        }
-    }
-
-    bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
-    {
-        *bits       = nullptr;
-        bool result = false;
-
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            result = m_promotedStructDeathVars->Lookup(tree, bits);
-        }
-
-        return result;
-    }
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
