@@ -42,7 +42,7 @@ public:
 public:
     void HandleCallCountingForFirstCall(MethodDesc* pMethodDesc);
     bool TrySetCodeEntryPointAndRecordMethodForCallCounting(MethodDesc* pMethodDesc, PCODE codeEntryPoint);
-    void AsyncPromoteToTier1(NativeCodeVersion tier0NativeCodeVersion, bool *createTieringBackgroundWorkerRef);
+    void AsyncPromoteToTier1(NativeCodeVersion currentNativeCodeVersion, bool *createTieringBackgroundWorkerRef);
     static CORJIT_FLAGS GetJitFlags(PrepareCodeConfig *config);
 
 #if !defined(DACCESS_COMPILE) && defined(_DEBUG)

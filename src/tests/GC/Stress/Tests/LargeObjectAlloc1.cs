@@ -9,7 +9,7 @@
 using System;
 public class Test
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int loop = 0;
         byte[] junk;

@@ -21,13 +21,13 @@ namespace System.Composition.TypedParts.Discovery
     {
         private readonly TypeInfo _partType;
         private readonly AttributedModelProvider _attributeContext;
-        private readonly ICollection<DiscoveredExport> _exports = new List<DiscoveredExport>();
+        private readonly List<DiscoveredExport> _exports = new List<DiscoveredExport>();
         private readonly ActivationFeature[] _activationFeatures;
         private readonly Lazy<IDictionary<string, object>> _partMetadata;
 
         // This is unbounded so potentially a source of memory consumption,
         // but in reality unlikely to be a problem.
-        private readonly IList<Type[]> _appliedArguments = new List<Type[]>();
+        private readonly List<Type[]> _appliedArguments = new List<Type[]>();
 
         // Lazily initialised among potentially many exports
         private ConstructorInfo _constructor;
@@ -103,9 +103,7 @@ namespace System.Composition.TypedParts.Discovery
                     _constructor = GetConstructorInfoFromGenericType(_partType);
                 }
 
-                if (_constructor == null)
-                    _constructor = _partType.DeclaredConstructors
-                        .FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
+                _constructor ??= _partType.DeclaredConstructors.FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
 
                 if (_constructor == null)
                 {
@@ -163,7 +161,7 @@ namespace System.Composition.TypedParts.Discovery
             return constructor;
         }
 
-        public CompositeActivator GetActivator(DependencyAccessor definitionAccessor, IEnumerable<CompositionDependency> dependencies)
+        public CompositeActivator GetActivator(IEnumerable<CompositionDependency> dependencies)
         {
             if (_partActivator != null) return _partActivator;
 
@@ -212,9 +210,8 @@ namespace System.Composition.TypedParts.Discovery
             var partMetadata = new Dictionary<string, object>();
             foreach (var attr in _attributeContext.GetDeclaredAttributes(partType.AsType(), partType))
             {
-                if (attr is PartMetadataAttribute)
+                if (attr is PartMetadataAttribute ma)
                 {
-                    var ma = (PartMetadataAttribute)attr;
                     partMetadata.Add(ma.Name, ma.Value);
                 }
             }

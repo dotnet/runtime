@@ -34,55 +34,67 @@ namespace System.Security.Cryptography.Xml.Tests
             using (DSA dsa = DSA.Create())
             {
                 DSAKeyValue dsaKeyValue = new DSAKeyValue(dsa);
-                Assert.Equal(dsa, dsaKeyValue.Key);
+                Assert.Same(dsa, dsaKeyValue.Key);
             }
         }
 
         [Fact]
         public void Ctor_Dsa_Null()
         {
+#if NET
+            Assert.Throws<ArgumentNullException>("key", () => new DSAKeyValue(null));
+#else
             DSAKeyValue dsaKeyValue = new DSAKeyValue(null);
-
-            //From https://github.com/peterwurzinger:
-            //This assertion is incorrect, since the parameter value is stored unvalidated/unprocessed
-            //Assert.NotNull(dsaKeyValue.Key);
-
             Assert.Null(dsaKeyValue.Key);
+#endif
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
+        public static void KeyProperty_SetNull()
+        {
+            DSAKeyValue dsaKeyValue = new DSAKeyValue();
+#if NET
+            Assert.Throws<ArgumentNullException>("value", () => dsaKeyValue.Key = null);
+#else
+            dsaKeyValue.Key = null;
+            Assert.Null(dsaKeyValue.Key);
+#endif
+        }
+
+        [Fact]
         public void GetXml()
         {
-            DSAKeyValue dsa = new DSAKeyValue();
-            XmlElement xmlkey = dsa.GetXml();
+            using (DSA dsaKey = TestHelpers.GetWorkingDSA())
+            {
+                DSAKeyValue dsa = new DSAKeyValue(dsaKey);
+                XmlElement xmlkey = dsa.GetXml();
 
-            XmlNamespaceManager ns = new XmlNamespaceManager(xmlkey.OwnerDocument.NameTable);
-            ns.AddNamespace("schema", SignedXml.XmlDsigNamespaceUrl);
+                XmlNamespaceManager ns = new XmlNamespaceManager(xmlkey.OwnerDocument.NameTable);
+                ns.AddNamespace("schema", SignedXml.XmlDsigNamespaceUrl);
 
-            IEnumerable<XmlNode> elements =
-                new[] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter" }
-                .Select(elementName => xmlkey.SelectSingleNode($"/schema:DSAKeyValue/schema:{elementName}", ns))
-                .Where(element => element != null);
+                IEnumerable<XmlNode> elements =
+                    new[] { "P", "Q", "G", "Y", "J", "Seed", "PgenCounter" }
+                    .Select(elementName => xmlkey.SelectSingleNode($"/schema:DSAKeyValue/schema:{elementName}", ns))
+                    .Where(element => element != null);
 
-            //There MUST be existing elements
-            Assert.NotEmpty(elements);
+                //There MUST be existing elements
+                Assert.NotEmpty(elements);
 
-            //Existing elements MUST include a "Y"-Element
-            Assert.True(elements.SingleOrDefault(element => element.Name == "Y") != null);
+                //Existing elements MUST include a "Y"-Element
+                Assert.True(elements.SingleOrDefault(element => element.Name == "Y") != null);
 
-            //Existing elements MUST contain InnerText
-            Assert.True(elements.All(element => !string.IsNullOrEmpty(element.InnerText)));
+                //Existing elements MUST contain InnerText
+                Assert.True(elements.All(element => !string.IsNullOrEmpty(element.InnerText)));
 
-            //Existing elements MUST be convertible from BASE64
-            elements.Select(element => Convert.FromBase64String(element.InnerText));
+                //Existing elements MUST be convertible from BASE64
+                Assert.True(elements.All(element => Convert.FromBase64String(element.InnerText).Length > 0));
+            }
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
         public void GetXml_SameDsa()
         {
-            using (DSA dsa = DSA.Create())
+            using (DSA dsa = TestHelpers.GetWorkingDSA())
             {
                 DSAKeyValue dsaKeyValue1 = new DSAKeyValue(dsa);
                 DSAKeyValue dsaKeyValue2 = new DSAKeyValue(dsa);

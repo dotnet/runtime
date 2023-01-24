@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Compression.Tests
@@ -12,7 +13,6 @@ namespace System.IO.Compression.Tests
     public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
@@ -20,17 +20,14 @@ namespace System.IO.Compression.Tests
 
             using (var tempFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "testFolder")))
             {
-                foreach (string permission in testPermissions)
-                {
-                    CreateFile(tempFolder.Path, permission);
-                }
+                string[] expectedPermissions = CreateFiles(tempFolder.Path, testPermissions);
 
                 string archivePath = GetTestFilePath();
                 ZipFile.CreateFromDirectory(tempFolder.Path, archivePath);
 
                 using (ZipArchive archive = ZipFile.OpenRead(archivePath))
                 {
-                    Assert.Equal(5, archive.Entries.Count);
+                    Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
 
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
@@ -49,7 +46,7 @@ namespace System.IO.Compression.Tests
                 {
                     ZipFile.ExtractToDirectory(archivePath, extractFolder.Path);
 
-                    foreach (string permission in testPermissions)
+                    foreach (string permission in expectedPermissions)
                     {
                         string filename = Path.Combine(extractFolder.Path, permission + ".txt");
                         Assert.True(File.Exists(filename));
@@ -60,12 +57,21 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixCreateSetsPermissionsInExternalAttributesUMaskZero()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixCreateSetsPermissionsInExternalAttributes();
+            }).Dispose();
+        }
+
         [Fact]
         public void UnixExtractSetsFilePermissionsFromExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
             string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
-            byte[] contents = Encoding.UTF8.GetBytes("contents");
 
             string archivePath = GetTestFilePath();
             using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
@@ -76,7 +82,7 @@ namespace System.IO.Compression.Tests
                     ZipArchiveEntry entry = archive.CreateEntry(permission + ".txt");
                     entry.ExternalAttributes = Convert.ToInt32(permission, 8) << 16;
                     using Stream stream = entry.Open();
-                    stream.Write(contents);
+                    stream.Write("contents"u8);
                     stream.Flush();
                 }
             }
@@ -95,16 +101,54 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        private static void CreateFile(string folderPath, string permissions)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributesUMaskZero()
         {
-            string filename = Path.Combine(folderPath, $"{permissions}.txt");
-            File.WriteAllText(filename, "contents");
+            RemoteExecutor.Invoke(() =>
+            {
+                umask(0);
+                new ZipFile_Unix().UnixExtractSetsFilePermissionsFromExternalAttributes();
+            }).Dispose();
+        }
 
-            Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+        private static string[] CreateFiles(string folderPath, string[] testPermissions)
+        {
+            string[] expectedPermissions = new string[testPermissions.Length];
+
+            for (int i = 0; i < testPermissions.Length; i++)
+            {
+                string permissions =  testPermissions[i];
+                string filename = Path.Combine(folderPath, $"{permissions}.txt");
+                File.WriteAllText(filename, "contents");
+
+                File.SetUnixFileMode(filename, (UnixFileMode)Convert.ToInt32(permissions, 8));
+
+                // In some environments, the file mode may be modified by the OS.
+                // See the Rationale section of https://linux.die.net/man/3/chmod.
+
+                // To workaround this, read the file mode back, and if it has changed, update the file name
+                // since the name is used to compare the file mode.
+                Interop.Sys.FileStatus status;
+                Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+                string updatedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                if (updatedPermissions != permissions)
+                {
+                    string newFileName = Path.Combine(folderPath, $"{updatedPermissions}.txt");
+                    File.Move(filename, newFileName);
+
+                    permissions = updatedPermissions;
+                }
+
+                expectedPermissions[i] = permissions;
+            }
+
+            return expectedPermissions;
         }
 
         private static void EnsureFilePermissions(string filename, string permissions)
         {
+            permissions = GetExpectedPermissions(permissions);
+
             Interop.Sys.FileStatus status;
             Assert.Equal(0, Interop.Sys.Stat(filename, out status));
 
@@ -141,6 +185,7 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
         public async Task CanZipNamedPipe()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
@@ -177,26 +222,28 @@ namespace System.IO.Compression.Tests
 
         private static string GetExpectedPermissions(string expectedPermissions)
         {
-            if (string.IsNullOrEmpty(expectedPermissions))
+            using (var tempFolder = new TempDirectory())
             {
-                // Create a new file, and get its permissions to get the current system default permissions
-
-                using (var tempFolder = new TempDirectory())
+                string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
+                FileStreamOptions fileStreamOptions = new()
                 {
-                    string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
-                    File.WriteAllText(filename, "contents");
-
-                    Interop.Sys.FileStatus status;
-                    Assert.Equal(0, Interop.Sys.Stat(filename, out status));
-
-                    expectedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                    Access = FileAccess.Write,
+                    Mode = FileMode.CreateNew
+                };
+                if (expectedPermissions != null)
+                {
+                    fileStreamOptions.UnixCreateMode = (UnixFileMode)Convert.ToInt32(expectedPermissions, 8);
                 }
-            }
+                new FileStream(filename, fileStreamOptions).Dispose();
 
-            return expectedPermissions;
+                return Convert.ToString((int)File.GetUnixFileMode(filename), 8);
+            }
         }
 
         [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
+
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int umask(int umask);
     }
 }

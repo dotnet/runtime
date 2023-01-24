@@ -4,30 +4,30 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
+using System.Security;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
-using System.ComponentModel;
-using System.Security;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
-using System.Security.AccessControl;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessStartInfoTests : ProcessTestBase
+    public partial class ProcessStartInfoTests : ProcessTestBase
     {
         private const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
 
         private static bool IsAdmin_IsNotNano_RemoteExecutorIsSupported
-            => PlatformDetection.IsWindowsAndElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            => PlatformDetection.IsWindows && PlatformDetection.IsNotWindowsNanoServer
+            && PlatformDetection.IsPrivilegedProcess && RemoteExecutor.IsSupported;
 
         [Fact]
         public void TestEnvironmentProperty()
@@ -278,6 +278,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -301,6 +302,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -325,6 +327,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void ProcessStartInfoEnvironmentVariablesDoesNotThrowForCaseSensitiveDuplicates()
         {
             var caseSensitiveEnvVars = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -358,7 +361,7 @@ namespace System.Diagnostics.Tests
 
             // Environment Variables are case-insensitive on Windows.
             // But it's possible to start a process with duplicate case-sensitive env vars using CreateProcess API (see #42029)
-            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insenstive on Windows.
+            // To mimic this behaviour, we can't use Environment.SetEnvironmentVariable here as it's case-insensitive on Windows.
             // We also can't use p.StartInfo.Environment as it's comparer is set to OrdinalIgnoreCAse.
             // But we can overwrite it using reflection to mimic the CreateProcess behaviour and avoid having this test call CreateProcess directly.
             p.StartInfo.Environment
@@ -449,7 +452,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestWorkingDirectoryPropertyInChildProcess()
         {
-            string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
+            string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory;
             Assert.NotEqual(workingDirectory, Directory.GetCurrentDirectory());
             var psi = new ProcessStartInfo { WorkingDirectory = workingDirectory };
             RemoteExecutor.Invoke(wd =>
@@ -464,88 +467,60 @@ namespace System.Diagnostics.Tests
         [OuterLoop("Requires admin privileges")]
         public void TestUserCredentialsPropertiesOnWindows()
         {
-            const string username = "testForDotnetRuntime";
-            string password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(33)) + "_-As@!%*(1)4#2";
+            using Process longRunning = CreateProcessLong();
+            longRunning.StartInfo.LoadUserProfile = true;
 
-            uint removalResult = Interop.NetUserDel(null, username);
-            Assert.True(removalResult == Interop.ExitCodes.NERR_Success || removalResult == Interop.ExitCodes.NERR_UserNotFound);
+            using TestProcessState testAccountCleanup = CreateUserAndExecute(longRunning, Setup, Cleanup);
 
-            Interop.NetUserAdd(username, password);
+            string username = testAccountCleanup.ProcessAccountName.Split('\\').Last();
+            Assert.Equal(username, Helpers.GetProcessUserName(longRunning));
+            bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
+            Assert.True(isProfileLoaded);
 
-            bool hasStarted = false;
-            SafeProcessHandle handle = null;
-            Process p = null;
-
-            try
+            void Setup(string username, string workingDirectory)
             {
-                p = CreateProcessLong();
-
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, add: true);
-                }
-
-                p.StartInfo.LoadUserProfile = true;
-                p.StartInfo.UserName = username;
-                p.StartInfo.PasswordInClearText = password;
-
-                hasStarted = p.Start();
-
-                if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
-                {
-                    SecurityIdentifier sid;
-                    if (Interop.ProcessTokenToSid(handle, out sid))
-                    {
-                        string actualUserName = sid.Translate(typeof(NTAccount)).ToString();
-                        int indexOfDomain = actualUserName.IndexOf('\\');
-                        if (indexOfDomain != -1)
-                            actualUserName = actualUserName.Substring(indexOfDomain + 1);
-
-                        bool isProfileLoaded = GetNamesOfUserProfiles().Any(profile => profile.Equals(username));
-
-                        Assert.Equal(username, actualUserName);
-                        Assert.True(isProfileLoaded);
-                    }
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: true);
                 }
             }
-            finally
+
+            void Cleanup(string username, string workingDirectory)
             {
-                if (handle != null)
-                    handle.Dispose();
-
-                if (hasStarted)
-                {
-                    p.Kill();
-
-                    Assert.True(p.WaitForExit(WaitInMS));
-                }
-
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
-                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                    // remove the access
+                    SetAccessControl(username, longRunning.StartInfo.FileName, workingDirectory, add: false);
                 }
-
-                Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, bool add)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
-            FileSecurity accessControl = fileInfo.GetAccessControl();
-            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
+            fileInfo.SetAccessControl(fileSecurity);
 
-            if (add)
-            {
-                accessControl.AddAccessRule(fileSystemAccessRule);
-            }
-            else
-            {
-                accessControl.RemoveAccessRule(fileSystemAccessRule);
-            }
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+            Apply(userName, directorySecurity, FileSystemRights.Read, add);
+            directoryInfo.SetAccessControl(directorySecurity);
 
-            fileInfo.SetAccessControl(accessControl);
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
+            {
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
+
+                if (add)
+                {
+                    accessControl.AddAccessRule(fileSystemAccessRule);
+                }
+                else
+                {
+                    accessControl.RemoveAccessRule(fileSystemAccessRule);
+                }
+            }
         }
 
         private static List<string> GetNamesOfUserProfiles()
@@ -952,6 +927,25 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UseCredentialsForNetworkingOnly_SetWindows_GetReturnsExpected(bool useCredentialsForNetworkingOnly)
+        {
+            var info = new ProcessStartInfo { UseCredentialsForNetworkingOnly = useCredentialsForNetworkingOnly };
+            Assert.Equal(useCredentialsForNetworkingOnly, info.UseCredentialsForNetworkingOnly);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UseCredentialsForNetworkingOnly_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.UseCredentialsForNetworkingOnly);
+            Assert.Throws<PlatformNotSupportedException>(() => info.UseCredentialsForNetworkingOnly = false);
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("passwordInClearText")]
@@ -1149,7 +1143,7 @@ namespace System.Diagnostics.Tests
                 return $"Didn't get expected HRESULT (1) when getting char count. HRESULT was 0x{result:x8}";
 
             string value = new string((char)0, (int)count - 1);
-            fixed(char* s = value)
+            fixed (char* s = value)
             {
                 result = AssocQueryStringW(flags, str, pszAssoc, pszExtra, s, ref count);
             }
@@ -1199,7 +1193,7 @@ namespace System.Diagnostics.Tests
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
 
-                if (   !PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
+                if (!PlatformDetection.IsInAppContainer // https://github.com/dotnet/runtime/issues/21919
                     && !PlatformDetection.IsWindowsNanoServer // By design
                     && !PlatformDetection.IsWindowsIoTCore)
                     data.Add(true);
@@ -1210,6 +1204,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_SUCCESS = 0x0;
         private const int ERROR_FILE_NOT_FOUND = 0x2;
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
+        private const int ERROR_SHARING_VIOLATION = 0x20;
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -1252,7 +1247,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void UnintializedArgumentList()
+        public void UninitializedArgumentList()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
             Assert.Equal(0, psi.ArgumentList.Count);
@@ -1314,6 +1309,11 @@ namespace System.Diagnostics.Tests
                 return; // On Server Core, notepad exists but does not return a title
             }
 
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                return; // On Windows 11, we aren't able to get the title for some reason; Windows 10 coverage should be sufficient
+            }
+
             // On some Windows versions, the file extension is not included in the title
             string expected = Path.GetFileNameWithoutExtension(filename);
 
@@ -1335,6 +1335,103 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.StartsWith(expected, title);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [OuterLoop("Launches notepad")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void StartInfo_LoadUserProfile_And_UseCredentialsForNetworkingOnly_AreIncompatible()
+        {
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                LoadUserProfile = true,
+                UseCredentialsForNetworkingOnly = true,
+                UserName = "dummy",
+                PasswordInClearText = "not used, because ArgumentException should be thrown before",
+                FileName = "notepad.exe",
+                Arguments = null,
+                WindowStyle = ProcessWindowStyle.Minimized
+            };
+
+            Assert.Throws<ArgumentException>("startInfo", () =>
+            {
+                using (var process = Process.Start(info))
+                {
+                    Assert.False(process != null, $"Process started despite incompatible options {nameof(info.LoadUserProfile)} and {nameof(info.UseCredentialsForNetworkingOnly)} were enabled");
+                }
+            });
+        }
+
+        private static TestProcessState CreateUserAndExecute(
+            Process process,
+            Action<string, string> additionalSetup = null,
+            Action<string, string> additionalCleanup = null,
+            [CallerMemberName] string memberName = "")
+        {
+            string callerIntials = new string(memberName.Where(c => char.IsUpper(c)).Take(18).ToArray());
+
+            WindowsTestAccount processAccount = new WindowsTestAccount(string.Concat("d", callerIntials));
+            string workingDirectory = string.IsNullOrEmpty(process.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : process.StartInfo.WorkingDirectory;
+
+            additionalSetup?.Invoke(processAccount.AccountName, workingDirectory);
+
+            process.StartInfo.UserName = processAccount.AccountName.Split('\\').Last();
+            process.StartInfo.Domain = processAccount.AccountName.Split('\\').First();
+            process.StartInfo.PasswordInClearText = processAccount.Password;
+
+            try
+            {
+                bool hasStarted = process.Start();
+                return new TestProcessState(process, hasStarted, processAccount, workingDirectory, additionalCleanup);
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+            {
+                throw new SkipTestException($"{process.StartInfo.FileName} has been locked by some other process");
+            }
+        }
+
+        private class TestProcessState : IDisposable
+        {
+            private readonly Process _process;
+
+            private readonly bool _hasStarted;
+
+            private readonly WindowsTestAccount _processAccount;
+
+            private readonly string _workingDirectory;
+
+            private readonly Action<string, string> _additionalCleanup;
+
+            public TestProcessState(
+                Process process,
+                bool hasStarted,
+                WindowsTestAccount processAccount,
+                string workingDirectory,
+                Action<string, string> additionalCleanup)
+            {
+                _process = process;
+                _hasStarted = hasStarted;
+                _processAccount = processAccount;
+                _workingDirectory = workingDirectory;
+                _additionalCleanup = additionalCleanup;
+            }
+
+            public string ProcessAccountName => _processAccount?.AccountName;
+
+            public void Dispose()
+            {
+                if (_hasStarted)
+                {
+                    _process.Kill();
+
+                    Assert.True(_process.WaitForExit(WaitInMS));
+                }
+
+                _additionalCleanup?.Invoke(_processAccount?.AccountName, _workingDirectory);
+                _processAccount?.Dispose();
+            }
         }
     }
 }

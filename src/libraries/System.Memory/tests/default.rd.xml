@@ -1,0 +1,55 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <!-- xUnit needs for Assert.Equals -->
+      <Type Name="System.IEquatable`1[[System.Range,System.Private.CoreLib]]" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="System.Memory.Tests">
+      <Type Name="System.SpanTests.SpanTests">
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

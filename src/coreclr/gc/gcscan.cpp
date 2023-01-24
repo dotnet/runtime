@@ -237,7 +237,7 @@ size_t GCScan::AskForMoreReservedMemory (size_t old_size, size_t need_size)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_CORECLR) && !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_CORECLR) && !defined(FEATURE_NATIVEAOT)
     // call the host....
 
     IGCHostControl *pGCHostControl = CorHost::GetGCHostControl();

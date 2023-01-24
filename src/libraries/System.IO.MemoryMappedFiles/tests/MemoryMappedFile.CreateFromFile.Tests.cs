@@ -672,9 +672,13 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
-        private void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool succeeds)
+        [Theory]
+        [InlineData(MemoryMappedFileAccess.Read, true)]
+        [InlineData(MemoryMappedFileAccess.ReadWrite, false)]
+        [InlineData(MemoryMappedFileAccess.CopyOnWrite, false)]
+        public void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool shouldSucceedWithoutPrivilege)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
@@ -683,34 +687,21 @@ namespace System.IO.MemoryMappedFiles.Tests
                 File.SetAttributes(file.Path, FileAttributes.ReadOnly);
                 try
                 {
-                    if (succeeds)
+                    if (shouldSucceedWithoutPrivilege || (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess))
+                    {
                         using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access))
                             ValidateMemoryMappedFile(mmf, Capacity, MemoryMappedFileAccess.Read);
+                    }
                     else
+                    {
                         Assert.Throws<UnauthorizedAccessException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access));
+                    }
                 }
                 finally
                 {
                     File.SetAttributes(file.Path, original);
                 }
             }
-        }
-
-        [Theory]
-        [InlineData(MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
-        public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
-        {
-            WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
-                            PlatformDetection.IsSuperUser);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
-        public void WriteToReadOnlyFile_CopyOnWrite()
-        {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
         }
 
         /// <summary>
@@ -837,6 +828,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.OSX, "Because of the file-based backing, OS X pops up a warning dialog about being out-of-space (even though we clean up immediately)")]
         [Fact]
         public void TooLargeCapacity()
@@ -975,6 +967,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -994,6 +987,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks fifo")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();

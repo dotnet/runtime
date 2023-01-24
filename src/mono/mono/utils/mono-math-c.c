@@ -20,5 +20,5 @@ int mono_isunordered_float (float a, float b)    { return isunordered (a, b); }
 int mono_isunordered_double (double a, double b) { return isunordered (a, b); }
 int mono_signbit_float (float a)                 { return signbit (a); }
 int mono_signbit_double (double a)               { return signbit (a); }
-float mono_trunc_float (float a)                 { return trunc (a); }
+float mono_trunc_float (float a)                 { return (float)trunc (a); }
 double mono_trunc_double (double a)              { return trunc (a); }

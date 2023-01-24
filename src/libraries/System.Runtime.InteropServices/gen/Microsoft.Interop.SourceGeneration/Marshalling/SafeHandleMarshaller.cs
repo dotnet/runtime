@@ -18,32 +18,19 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 6;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return MarshallerHelpers.SystemIntPtrType;
+            return SpecialTypeInfo.IntPtr;
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            string identifier = context.GetIdentifiers(info).native;
-            if (info.IsByRef)
-            {
-                return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(identifier)));
-            }
-
-            return Argument(IdentifierName(identifier));
+            return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -130,7 +117,7 @@ namespace Microsoft.Interop
                         {
                             yield return LocalDeclarationStatement(
                                 VariableDeclaration(
-                                    AsNativeType(info),
+                                    AsNativeType(info).Syntax,
                                     SingletonSeparatedList(
                                         VariableDeclarator(handleValueBackupIdentifier)
                                         .WithInitializer(EqualsValueClause(
@@ -143,7 +130,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind != RefKind.Out)
+                    if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
                         // <managedIdentifier>.DangerousAddRef(ref <addRefdIdentifier>);
                         yield return ExpressionStatement(

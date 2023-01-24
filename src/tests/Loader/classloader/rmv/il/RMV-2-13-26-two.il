@@ -12,7 +12,7 @@
 .assembly extern mscorlib {}
 
 .class value sealed Foo extends [mscorlib]System.ValueType{
-	.method public pinvokeimpl("NonExistant.dll") void Foo(){
+	.method public pinvokeimpl("NonExistent.dll") void Foo(){
 	}
 }
 

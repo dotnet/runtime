@@ -4,6 +4,7 @@
 
 #include "common.h"
 
+#include "ecall.h"
 #include "eetwain.h"
 #include "dbginterface.h"
 #include "gcenv.h"
@@ -251,7 +252,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->revPInvokeOffset = header.revPInvokeOffset;
 
     infoPtr->doubleAlign     = header.doubleAlign;
-    infoPtr->securityCheck   = header.security;
     infoPtr->handlers        = header.handlers;
     infoPtr->localloc        = header.localloc;
     infoPtr->editNcontinue   = header.editNcontinue;
@@ -377,19 +377,6 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
 // We do a "pop eax; jmp eax" to return from a fault or finally handler
 const size_t END_FIN_POP_STACK = sizeof(TADDR);
 
-
-// The offset (in bytes) from EBP for the secutiy object on the stack
-inline size_t GetSecurityObjectOffset(hdrInfo * info)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE(info->securityCheck && info->ebpFrame);
-
-    unsigned position = info->savedRegsCountExclFP +
-                        1;
-    return position * sizeof(TADDR);
-}
-
 inline
 size_t GetLocallocSPOffset(hdrInfo * info)
 {
@@ -398,7 +385,6 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
-                        info->securityCheck +
                         1;
     return position * sizeof(TADDR);
 }
@@ -411,7 +397,6 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
-                        info->securityCheck +
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
     return position * sizeof(TADDR);
@@ -751,7 +736,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(stateBuf->hdrInfoBody.ebpFrame);
-    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will alway be set. Remove it</TODO>
+    _ASSERTE(stateBuf->hdrInfoBody.handlers); // <TODO>@TODO : This will always be set. Remove it</TODO>
 
     TADDR      baseSP;
     GetHandlerFrameInfo(&stateBuf->hdrInfoBody, ctx->Ebp,
@@ -776,7 +761,7 @@ void EECodeManager::FixContext( ContextType     ctxType,
     if (ctxType == FILTER_CONTEXT)
         *ppEndRegion = (size_t *)pBaseSPslots + 1;
 
-    /*  This is just a simple assigment of throwObject to ctx->Eax,
+    /*  This is just a simple assignment of throwObject to ctx->Eax,
         just pretend the cast goo isn't there.
      */
 
@@ -812,7 +797,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  Last chance for the runtime support to do fixups in the context
  *  before execution continues inside an EnC updated function.
  *  It also adjusts ESP and munges on the stack. So the caller has to make
- *  sure that that stack region isnt needed (by doing a localloc)
+ *  sure that this stack region is not needed (by doing a localloc).
  *  Also, if this returns EnC_FAIL, we should not have munged the
  *  context ie. transcated commit
  *  The plan of attack is:
@@ -905,16 +890,13 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     /* @TODO: Check if we have grown out of space for locals, in the face of localloc */
     _ASSERTE(!oldInfo.localloc && !newInfo.localloc);
 
-    // Always reserve space for the securityCheck slot
-    _ASSERTE(oldInfo.securityCheck && newInfo.securityCheck);
-
     // @TODO: If nesting level grows above the MAX_EnC_HANDLER_NESTING_LEVEL,
     // we should return EnC_NESTED_HANLDERS
     _ASSERTE(oldInfo.handlers && newInfo.handlers);
 
     LOG((LF_ENC, LL_INFO100, "EECM::FixContextForEnC: Checks out\n"));
 
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
     // Strategy for zeroing out the frame on x64:
     //
@@ -929,7 +911,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     // Local variables (if any)
     // ---------------------------------------
     // Frame header (stuff we must preserve, such as bool for synchronized
-    // methods, saved RBP, etc.)
+    // methods, saved FP, saved callee-preserved registers, etc.)
     // Return address (also included in frame header)
     // ---------------------------------------
     // Arguments for this frame (that's getting remapped).  Will naturally be preserved
@@ -951,6 +933,27 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     //
     // We'll need to restore PSPSym; location gotten from GCInfo.
     // We'll need to copy security object; location gotten from GCInfo.
+    //
+    // On ARM64 the JIT generates a slightly different frame and we do not have
+    // the invariant FP == SP, since the FP needs to point at the saved fp/lr
+    // pair for ETW stack walks. The frame there looks something like:
+    // =======================================
+    // Arguments for next call (if there is one)     <- SP
+    // JIT temporaries
+    // Locals
+    // PSPSym
+    // ---------------------------------------    ^ zeroed area
+    // MonitorAcquired (for synchronized methods)
+    // Saved FP                                      <- FP
+    // Saved LR
+    // ---------------------------------------    ^ preserved area
+    // Arguments
+    //
+    // The JIT reports the size of the "preserved" area, which includes
+    // MonitorAcquired when it is present. It could also include other local
+    // values that need to be preserved across EnC transitions, but no explicit
+    // treatment of these is necessary here beyond preserving the values in
+    // this region.
 
     // GCInfo for old method
     GcInfoDecoder oldGcDecoder(
@@ -969,6 +972,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
     UINT32 oldSizeOfPreservedArea = oldGcDecoder.GetSizeOfEditAndContinuePreservedArea();
     UINT32 newSizeOfPreservedArea = newGcDecoder.GetSizeOfEditAndContinuePreservedArea();
 
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Got old and new EnC preserved area sizes of %u and %u\n", oldSizeOfPreservedArea, newSizeOfPreservedArea));
     // This ensures the JIT generated EnC compliant code.
     if ((oldSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ||
         (newSizeOfPreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA))
@@ -977,16 +981,39 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return CORDBG_E_ENC_INFOLESS_METHOD;
     }
 
+    TADDR oldStackBase = GetSP(&oldCtx);
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old SP=%p, FP=%p\n", (void*)oldStackBase, (void*)GetFP(&oldCtx)));
+
+#if defined(TARGET_AMD64)
+    // Note: we cannot assert anything about the relationship between oldFixedStackSize
+    // and newFixedStackSize.  It's possible the edited frame grows (new locals) or
+    // shrinks (less temporaries).
+    DWORD oldFixedStackSize = pOldCodeInfo->GetFixedStackSize();
+    DWORD newFixedStackSize = pNewCodeInfo->GetFixedStackSize();
+
+    // This verifies no localallocs were used in the old method.
     // JIT is required to emit frame register for EnC-compliant code
     _ASSERTE(pOldCodeInfo->HasFrameRegister());
     _ASSERTE(pNewCodeInfo->HasFrameRegister());
 
-    TADDR oldStackBase = GetSP(&oldCtx);
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
 
-    // This verifies no localallocs were used in the old method.  (RBP == RSP for
-    // EnC-compliant x64 code.)
-    if (oldStackBase != oldCtx.Rbp)
+    // x64: SP == FP before localloc
+    if (oldStackBase != GetFP(&oldCtx))
         return E_FAIL;
+#elif defined(TARGET_ARM64)
+    DWORD oldFixedStackSize = oldGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+    DWORD newFixedStackSize = newGcDecoder.GetSizeOfEditAndContinueFixedStackFrame();
+
+    LOG((LF_CORDB, LL_INFO100, "EECM::FixContextForEnC: Old and new fixed stack sizes are %u and %u\n", oldFixedStackSize, newFixedStackSize));
+
+    // ARM64: FP + 16 == SP + oldFixedStackSize before localloc
+    if (GetFP(&oldCtx) + 16 != oldStackBase + oldFixedStackSize)
+        return E_FAIL;
+#else
+    PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+#endif
 
     // EnC remap inside handlers is not supported
     if (pOldCodeInfo->IsFunclet() || pNewCodeInfo->IsFunclet())
@@ -998,33 +1025,20 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return E_FAIL;
     }
 
-    // Note: we cannot assert anything about the relationship between oldFixedStackSize
-    // and newFixedStackSize.  It's possible the edited frame grows (new locals) or
-    // shrinks (less temporaries).
-
-    DWORD oldFixedStackSize = pOldCodeInfo->GetFixedStackSize();
-    DWORD newFixedStackSize = pNewCodeInfo->GetFixedStackSize();
-
     TADDR callerSP = oldStackBase + oldFixedStackSize;
 
-    // If the old code saved a security object, store the object's reference now.
-    OBJECTREF securityObject = NULL;
-    INT32 nOldSecurityObjectStackSlot = oldGcDecoder.GetSecurityObjectStackSlot();
-    if (nOldSecurityObjectStackSlot != NO_SECURITY_OBJECT)
-    {
-        securityObject = ObjectToOBJECTREF(*PTR_PTR_Object(callerSP + nOldSecurityObjectStackSlot));
-    }
-
 #ifdef _DEBUG
-    // If the old method has a PSPSym, then its value should == FP
+    // If the old method has a PSPSym, then its value should == FP for x64 and callerSP for arm64
     INT32 nOldPspSymStackSlot = oldGcDecoder.GetPSPSymStackSlot();
     if (nOldPspSymStackSlot != NO_PSP_SYM)
     {
-        // Read the PSP.
+#if defined(TARGET_AMD64)
         TADDR oldPSP = *PTR_TADDR(oldStackBase + nOldPspSymStackSlot);
-
-        // Now we're set up to assert that PSPSym's value == FP
         _ASSERTE(oldPSP == GetFP(&oldCtx));
+#elif defined(TARGET_ARM64)
+        TADDR oldPSP = *PTR_TADDR(callerSP + nOldPspSymStackSlot);
+        _ASSERTE(oldPSP == callerSP);
+#endif
     }
 #endif // _DEBUG
 
@@ -1094,7 +1108,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pOldVar->startOffset <= oldMethodOffset &&
                 pOldVar->endOffset   >  oldMethodOffset)
             {
-                oldMethodVarsSorted[varNumber] = *pOldVar;
+                oldMethodVarsSorted[(int)varNumber] = *pOldVar;
             }
         }
 
@@ -1146,7 +1160,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[varNumber] = *pNewVar;
+                newMethodVarsSorted[(int)varNumber] = *pNewVar;
             }
         }
 
@@ -1237,13 +1251,6 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         pCtx->Xmm4.High = pCtx->Xmm4.Low = 0;
         pCtx->Xmm5.High = pCtx->Xmm5.Low = 0;
 
-        // Any saved nonvolatile registers should also be zeroed out, but there are none
-        // in EnC-compliant x64 code.  Yes, you read that right.  Registers like RDI, RSI,
-        // RBX, etc., which are often saved in the prolog of non-EnC code are NOT saved in
-        // EnC code.  EnC code instead just agrees never to use those registers so they
-        // remain pristine for the caller (except RBP, which is considered part of the frame
-        // header, and is thus not zeroed out by us).
-
         // 3) zero out the stack frame - this'll initialize _all_ variables
 
         /*-------------------------------------------------------------------------
@@ -1263,9 +1270,31 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         _ASSERTE(frameHeaderSize <= oldFixedStackSize);
         _ASSERTE(frameHeaderSize <= newFixedStackSize);
 
-        // For EnC-compliant x64 code, Rbp == Rsp.  Since Rsp changed above, update Rbp now
+        // For EnC-compliant x64 code, FP == SP.  Since SP changed above, update FP now
         pCtx->Rbp = newStackBase;
-#else   // !X86, !AMD64
+
+#elif defined(TARGET_ARM64)
+        // Zero out volatile part of stack frame
+        // x0-x17
+        memset(&pCtx->X[0], 0, sizeof(pCtx->X[0]) * 18);
+        // v0-v7
+        memset(&pCtx->V[0], 0, sizeof(pCtx->V[0]) * 8);
+        // v16-v31
+        memset(&pCtx->V[16], 0, sizeof(pCtx->V[0]) * 16);
+
+        TADDR newStackBase = callerSP - newFixedStackSize;
+
+        SetSP(pCtx, newStackBase);
+
+        size_t frameHeaderSize = newSizeOfPreservedArea;
+        _ASSERTE(frameHeaderSize <= oldFixedStackSize);
+        _ASSERTE(frameHeaderSize <= newFixedStackSize);
+
+        // EnC prolog saves only fp,lr and does it at sp-16. It should already
+        // be set up from previous version.
+        _ASSERTE(GetFP(pCtx) == callerSP - 16);
+
+#else   // !X86
         PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
 
@@ -1318,7 +1347,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                 // and so (since the stack grows towards 0) can't easily determine where the end of
                 // the local lies.
             }
-#elif defined (TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
             switch(newMethodVarsSortedBase[i].loc.vlType)
             {
             default:
@@ -1364,7 +1393,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                     ((TADDR) pVarStackLocation >= newStackBase + newFixedStackSize));
                 break;
             }
-#else   // !X86, !X64
+#else   // !X86, !X64, !ARM64
             PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
         }
@@ -1373,32 +1402,25 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
 
         // Clear the local and temporary stack space
 
-#if defined (TARGET_X86)
+#if defined(TARGET_X86)
         memset((void*)(size_t)(pCtx->Esp), 0, newInfo.stackSize - frameHeaderSize );
-#elif defined (TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
         memset((void*)newStackBase, 0, newFixedStackSize - frameHeaderSize);
-
-        // On AMD64, after zeroing out the stack, restore the security object and PSPSym...
-
-        // There is no relationship we can guarantee between the old code having a security
-        // object and the new code having a security object.  If the new code does have a
-        // security object, then we copy over the old security object's reference if there
-        // was one (else we copy over NULL, which is fine).  If the new code doesn't have a
-        // security object, we do nothing.
-        INT32 nNewSecurityObjectStackSlot = newGcDecoder.GetSecurityObjectStackSlot();
-        if (nNewSecurityObjectStackSlot != NO_SECURITY_OBJECT)
-        {
-            *PTR_PTR_Object(callerSP + nNewSecurityObjectStackSlot) = OBJECTREFToObject(securityObject);
-        }
 
         // Restore PSPSym for the new function. Its value should be set to our new FP. But
         // first, we gotta find PSPSym's location on the stack
         INT32 nNewPspSymStackSlot = newGcDecoder.GetPSPSymStackSlot();
         if (nNewPspSymStackSlot != NO_PSP_SYM)
         {
+#if defined(TARGET_AMD64)
             *PTR_TADDR(newStackBase + nNewPspSymStackSlot) = GetFP(pCtx);
+#elif defined(TARGET_ARM64)
+            *PTR_TADDR(callerSP + nNewPspSymStackSlot) = callerSP;
+#else
+            PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
+#endif
         }
-#else   // !X86, !X64
+#else   // !X86, !X64, !ARM64
         PORTABILITY_ASSERT("Edit-and-continue not enabled on this platform.");
 #endif
 
@@ -1461,7 +1483,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return gcInfoDecoder.IsInterruptible();
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
     CONTRACTL {
@@ -1479,7 +1501,7 @@ bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 
     return gcInfoDecoder.HasTailCalls();
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 
@@ -1882,7 +1904,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
                        S   indicates that register ESI is an interior pointer
                        D   indicates that register EDI is an interior pointer
                        the list count is the number of entries in the list
-                       the list size gives the byte-lenght of the list
+                       the list size gives the byte-length of the list
                        the offsets in the list are variable-length
   */
         while (scanOffs < curOffs)
@@ -2053,7 +2075,7 @@ unsigned scanArgRegTable(PTR_CBYTE    table,
  *
  * Note on the encoding used for interior pointers
  *
- *   The iptr encoding must immediately preceed a call encoding.  It is used to
+ *   The iptr encoding must immediately precede a call encoding.  It is used to
  *   transform a normal GC pointer addresses into an interior pointers for GC purposes.
  *   The mask supplied to the iptr encoding is read from the least signicant bit
  *   to the most signicant bit. (i.e the lowest bit is read first)
@@ -2701,7 +2723,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
 
                 if  (argOfs >= MAX_PTRARG_OFS)
                 {
-                     _ASSERTE_ALL_BUILDS("clr/src/VM/eetwain.cpp", !"scanArgRegTableI: args pushed 'too deep'");
+                     _ASSERTE_ALL_BUILDS(!"scanArgRegTableI: args pushed 'too deep'");
                 }
                 else
                 {
@@ -2815,7 +2837,7 @@ unsigned scanArgRegTableI(PTR_CBYTE    table,
                 }
             }
 
-            // For partial arg info, need to find the next higest pointer for argHigh
+            // For partial arg info, need to find the next highest pointer for argHigh
 
             if (hasPartialArgInfo)
             {
@@ -4201,15 +4223,6 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
 
     if (pUnwindInfo != NULL)
     {
-        pUnwindInfo->securityObjectOffset = 0;
-        if (info->securityCheck)
-        {
-            _ASSERTE(info->ebpFrame);
-            SIZE_T securityObjectOffset = (GetSecurityObjectOffset(info) / sizeof(void*));
-            _ASSERTE(securityObjectOffset != 0);
-            pUnwindInfo->securityObjectOffset = DWORD(securityObjectOffset);
-        }
-
         pUnwindInfo->fUseEbpAsFrameReg = info->ebpFrame;
         pUnwindInfo->fUseEbp = ((info->savedRegMask & RM_EBP) != 0);
     }
@@ -4220,7 +4233,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          *  First, handle the epilog
          */
 
-        PTR_CBYTE epilogBase = (PTR_CBYTE) (breakPC - info->epilogOffs);
+        PTR_CBYTE epilogBase = methodStart + (curOffs - info->epilogOffs);
         UnwindEpilog(pContext, info, epilogBase, flags);
     }
     else if (!info->ebpFrame && !info->doubleAlign)
@@ -4412,7 +4425,27 @@ void promoteVarArgs(PTR_BYTE argsStart, PTR_VASigCookie varArgSig, GCCONTEXT* ct
     }
 }
 
-INDEBUG(void* forceStack1;)
+#ifndef DACCESS_COMPILE
+FCIMPL1(void, GCReporting::Register, GCFrame* frame)
+{
+    FCALL_CONTRACT;
+
+    // Construct a GCFrame.
+    _ASSERTE(frame != NULL);
+    frame->Push(GetThread());
+}
+FCIMPLEND
+
+FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
+{
+    FCALL_CONTRACT;
+
+    // Destroy the GCFrame.
+    _ASSERTE(frame != NULL);
+    frame->Pop();
+}
+FCIMPLEND
+#endif // !DACCESS_COMPILE
 
 #ifndef USE_GC_INFO_DECODER
 
@@ -4583,7 +4616,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
      * in order to adjust ESP.
      *
      * Note that we report "this" for all methods, even if
-     * noncontinuable, because because of the off chance they may be
+     * noncontinuable, because of the off chance they may be
      * synchronized and we have to release the monitor on unwind. This
      * could conceivably be optimized, but it turns out to be more
      * expensive to check whether we're synchronized (which involves
@@ -5583,7 +5616,7 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 
 /*****************************************************************************
  *
- *  Returns the extra argument passed to to shared generic code if it is still alive.
+ *  Returns the extra argument passed to shared generic code if it is still alive.
  *  Returns NULL in all other cases.
  */
 PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
@@ -5922,7 +5955,7 @@ unsigned int EECodeManager::GetFrameSize(GCInfoToken gcInfoToken)
     DecodeGCHdrInfo(gcInfoToken, 0, &info);
 
     // currently only used by E&C callers need to know about doubleAlign
-    // in all likelyhood
+    // in all likelihood
     _ASSERTE(!info.doubleAlign);
     return info.stackSize;
 }
@@ -5961,7 +5994,7 @@ BOOL EECodeManager::IsInFilter(GCInfoToken gcInfoToken,
     /* make sure that we have an ebp stack frame */
 
     _ASSERTE(info.ebpFrame);
-    _ASSERTE(info.handlers); // <TODO> This will alway be set. Remove it</TODO>
+    _ASSERTE(info.handlers); // <TODO> This will always be set. Remove it</TODO>
 
     TADDR       baseSP;
     DWORD       nestingLevel;
@@ -6053,7 +6086,7 @@ void EECodeManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
  *  GetAmbientSP
  *
  *  This function computes the zero-depth stack pointer for the given nesting
- *  level within the method given.  Nesting level is the the depth within
+ *  level within the method given.  Nesting level is the depth within
  *  try-catch-finally blocks, and is zero based.  It is up to the caller to
  *  supply a valid nesting level value.
  *

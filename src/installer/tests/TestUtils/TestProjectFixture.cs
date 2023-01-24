@@ -298,6 +298,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--self-contained");
                 publishArgs.Add(selfContained.Value ? "true" : "false");
+
+                // Workaround for https://github.com/dotnet/sdk/issues/25062
+                // If self-contained is specified via the command line, also specify the
+                // runtime identifier (if we didn't already). Otherwise, the SDK ends up
+                // passing the runtime identifier of the SDK such that the one specified
+                // in the project file is ignored.
+                if (selfContained.Value && runtime == null)
+                {
+                    publishArgs.Add("--runtime");
+                    publishArgs.Add(RepoDirProvider.TargetRID);
+                }
             }
 
             if (outputDirectory != null)

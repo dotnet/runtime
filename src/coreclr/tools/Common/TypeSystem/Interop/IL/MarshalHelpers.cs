@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Internal.IL;
 using Debug = System.Diagnostics.Debug;
-using Internal.IL.Stubs;
+using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
@@ -165,17 +164,14 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.LayoutClassPtr:
                 case MarshallerKind.AsAnyA:
                 case MarshallerKind.AsAnyW:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
                 case MarshallerKind.ComInterface:
+                case MarshallerKind.CustomMarshaler:
+                case MarshallerKind.BlittableValueClassByRefReturn:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
 #if !READYTORUN
                 case MarshallerKind.Variant:
                     return InteropTypes.GetVariant(context);
-
-                case MarshallerKind.CustomMarshaler:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
 #endif
 
                 case MarshallerKind.OleCurrency:
@@ -228,29 +224,35 @@ namespace Internal.TypeSystem.Interop
         {
             elementMarshallerKind = MarshallerKind.Invalid;
 
-            bool isByRef = false;
-            if (type.IsByRef)
-            {
-                isByRef = true;
-
-                type = type.GetParameterType();
-
-                if (!type.IsPrimitive && type.IsValueType && marshallerType != MarshallerType.Field
-                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                {
-                    return MarshallerKind.BlittableValueClassWithCopyCtor;
-                }
-
-                // Compat note: CLR allows ref returning blittable structs for IJW
-                if (isReturn)
-                    return MarshallerKind.Invalid;
-            }
             TypeSystemContext context = type.Context;
             NativeTypeKind nativeType = NativeTypeKind.Default;
             bool isField = marshallerType == MarshallerType.Field;
 
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
+
+            if (type.IsByRef)
+            {
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
+                {
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
+                }
+
+                if (isReturn)
+                {
+                    // Allow ref returning blittable structs for IJW
+                    if (type.IsValueType &&
+                        (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        MarshalUtils.IsBlittableType(type))
+                    {
+                        return MarshallerKind.BlittableValueClassByRefReturn;
+                    }
+                    return MarshallerKind.Invalid;
+                }
+            }
 
             if (nativeType == NativeTypeKind.CustomMarshaler)
             {
@@ -408,32 +410,19 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                bool isBlittable = MarshalUtils.IsBlittableType(type);
-
-                // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * ByReference<T>: This represents an interior pointer and is not actually blittable
-                // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
-                // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
-                // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
-                // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-                // We can't block these types for field scenarios for back-compat reasons.
-
-                if (type.HasInstantiation && !isField && (!isBlittable
-                    || InteropTypes.IsSystemByReference(context, type)
-                    || InteropTypes.IsSystemSpan(context, type)
-                    || InteropTypes.IsSystemReadOnlySpan(context, type)
-                    || InteropTypes.IsSystemNullable(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
-                    || InteropTypes.IsSystemRuntimeIntrinsicsVector256T(context, type)
-                    || InteropTypes.IsSystemNumericsVectorT(context, type)))
+                if (!IsValidForGenericMarshalling(type, isField))
                 {
-                    // Generic types cannot be marshaled.
+                    // Generic types cannot be marshalled.
                     return MarshallerKind.Invalid;
                 }
 
-                if (isBlittable)
+                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields)
+                {
+                    // Int128 types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
+                if (MarshalUtils.IsBlittableType(type))
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
                         return MarshallerKind.Invalid;
@@ -454,14 +443,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsSzArray)
             {
-#if READYTORUN
-                // We don't want the additional test/maintenance cost of this in R2R.
-                if (isByRef)
-                    return MarshallerKind.Invalid;
-#else
-                _ = isByRef;
-#endif
-
                 if (nativeType == NativeTypeKind.Default)
                     nativeType = NativeTypeKind.Array;
 
@@ -517,16 +498,16 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
-                if (nativeType == NativeTypeKind.Default)
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
                 {
-                    var pointedAtType = type.GetParameterType();
-                    if (!pointedAtType.IsPrimitive && !type.IsEnum && marshallerType != MarshallerType.Field
-                        && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                    {
-                        return MarshallerKind.BlittableValueClassWithCopyCtor;
-                    }
-                    return MarshallerKind.BlittableValue;
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
                 }
+
+                if (nativeType == NativeTypeKind.Default)
+                    return MarshallerKind.BlittableValue;
                 else
                     return MarshallerKind.Invalid;
             }
@@ -869,8 +850,45 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        private static bool IsValidForGenericMarshalling(
+            TypeDesc type,
+            bool isFieldScenario,
+            bool builtInMarshallingEnabled = true)
+        {
+            // Not generic, so passes "generic" test
+            if (!type.HasInstantiation)
+                return true;
+
+            // We can't block generic types for field scenarios for back-compat reasons.
+            if (isFieldScenario)
+                return true;
+
+            // Built-in marshalling considers the blittability for a generic type.
+            if (builtInMarshallingEnabled && !MarshalUtils.IsBlittableType(type))
+                return false;
+
+            // Generics (blittable when built-in is enabled) are allowed to be marshalled with the following exceptions:
+            // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+            // * Span<T>: Not supported by built-in marshalling
+            // * ReadOnlySpan<T>: Not supported by built-in marshalling
+            // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+            // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+            // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+            // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
+            // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+            return !InteropTypes.IsSystemNullable(type.Context, type)
+                && !InteropTypes.IsSystemSpan(type.Context, type)
+                && !InteropTypes.IsSystemReadOnlySpan(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector64T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector128T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector256T(type.Context, type)
+                && !InteropTypes.IsSystemRuntimeIntrinsicsVector512T(type.Context, type)
+                && !InteropTypes.IsSystemNumericsVectorT(type.Context, type);
+        }
+
         internal static MarshallerKind GetDisabledMarshallerKind(
-            TypeDesc type)
+            TypeDesc type,
+            bool isFieldScenario)
         {
             // Get the underlying type for enum types.
             TypeDesc underlyingType = type.UnderlyingType;
@@ -894,7 +912,10 @@ namespace Internal.TypeSystem.Interop
             else if (underlyingType.IsValueType)
             {
                 var defType = (DefType)underlyingType;
-                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
+                if (!defType.ContainsGCPointers
+                    && !defType.IsAutoLayoutOrHasAutoLayoutFields
+                    && !defType.IsInt128OrHasInt128Fields
+                    && IsValidForGenericMarshalling(defType, isFieldScenario, builtInMarshallingEnabled: false))
                 {
                     return MarshallerKind.BlittableValue;
                 }
@@ -902,12 +923,13 @@ namespace Internal.TypeSystem.Interop
             return MarshallerKind.Invalid;
         }
 
+        private const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
+
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
             if (!target.IsOSX)
                 return false;
 
-            const string ObjectiveCLibrary = "/usr/lib/libobjc.dylib";
             const string ObjectiveCMsgSend = "objc_msgSend";
 
             // This is for the objc_msgSend suite of functions.
@@ -918,6 +940,24 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
+        {
+            if (!target.IsOSX || pinvokeModule != ObjectiveCLibrary)
+                return null;
+
+#pragma warning disable CA1416
+            return pinvokeFunction switch
+            {
+                "objc_msgSend" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSend,
+                "objc_msgSend_fpret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendFpret,
+                "objc_msgSend_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendStret,
+                "objc_msgSendSuper" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuper,
+                "objc_msgSendSuper_stret" => (int)ObjectiveCMarshal.MessageSendFunction.MsgSendSuperStret,
+                _ => null,
+            };
+#pragma warning restore CA1416
         }
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)

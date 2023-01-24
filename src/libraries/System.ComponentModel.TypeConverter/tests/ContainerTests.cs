@@ -322,7 +322,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'dup'") != -1);
+            Assert.True(ex.Message.IndexOf("'dup'") != -1 || ex.Message.IndexOf(" dup") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(1, container.Components.Count);
 
@@ -334,7 +334,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'duP'") != -1);
+            Assert.True(ex.Message.IndexOf("'duP'") != -1 || ex.Message.IndexOf(" duP") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(1, container.Components.Count);
 
@@ -356,7 +356,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'dup'") != -1);
+            Assert.True(ex.Message.IndexOf("'dup'") != -1 || ex.Message.IndexOf(" dup") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(2, container.Components.Count);
             Assert.Equal(1, container2.Components.Count);
@@ -729,7 +729,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'dup'") != -1);
+            Assert.True(ex.Message.IndexOf("'dup'") != -1 || ex.Message.IndexOf(" dup") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(2, _container.Components.Count);
             _container.InvokeValidateName(compB, "whatever");
@@ -742,7 +742,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'dup'") != -1);
+            Assert.True(ex.Message.IndexOf("'dup'") != -1 || ex.Message.IndexOf(" dup") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(2, _container.Components.Count);
             _container.InvokeValidateName(compC, "whatever");
@@ -757,7 +757,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             Assert.NotNull(ex.Message);
-            Assert.True(ex.Message.IndexOf("'dup'") != -1);
+            Assert.True(ex.Message.IndexOf("'dup'") != -1 || ex.Message.IndexOf(" dup") != -1);
             Assert.Null(ex.ParamName);
             Assert.Equal(2, _container.Components.Count);
             _container.InvokeValidateName(compD, "whatever");

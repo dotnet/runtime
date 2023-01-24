@@ -163,10 +163,7 @@ namespace System.Data
                     _dataSet.Tables[src.TableName, src.Namespace];
             }
 
-            if (dt != null)
-            {
-                dt.EvaluateExpressions();
-            }
+            dt?.EvaluateExpressions();
 
             if (!_isStandAlonetable)
             {
@@ -282,10 +279,7 @@ namespace System.Data
                         // Getting our own copy instead. ndxSearch = dst.primaryKey.Key.GetSortIndex();
                         // IMO, Better would be to reuse index
                         // ndxSearch = dst.primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added );
-                        if (null != ndxSearch)
-                        {
-                            ndxSearch.RemoveRef();
-                        }
+                        ndxSearch?.RemoveRef();
                         ndxSearch = new Index(dst, dst._primaryKey!.Key.GetIndexDesc(), DataViewRowState.OriginalRows | DataViewRowState.Added, null);
                         ndxSearch.AddRef(); // need to addref twice, otherwise it will be collected
                         ndxSearch.AddRef(); // in past first adref was done in const
@@ -310,10 +304,7 @@ namespace System.Data
                     targetRow.Table.EvaluateExpressions(targetRow, DataRowAction.Change, null);
                 }
             }
-            if (null != ndxSearch)
-            {
-                ndxSearch.RemoveRef();
-            }
+            ndxSearch?.RemoveRef();
 
             _dataSet.EnforceConstraints = fEnforce;
         }
@@ -632,7 +623,7 @@ namespace System.Data
             }
         }
 
-        private DataKey GetSrcKey(DataTable src, DataTable dst)
+        private static DataKey GetSrcKey(DataTable src, DataTable dst)
         {
             if (src._primaryKey != null)
             {

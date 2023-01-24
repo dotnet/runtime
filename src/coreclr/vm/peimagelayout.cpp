@@ -7,7 +7,6 @@
 #include "common.h"
 #include "peimagelayout.h"
 #include "peimagelayout.inl"
-#include "dataimage.h"
 
 #if defined(TARGET_WINDOWS)
 #include "amsi.h"
@@ -24,7 +23,7 @@ extern "C"
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
-    return new FlatImageLayout(pOwner, array, size); 
+    return new FlatImageLayout(pOwner, array, size);
 }
 
 #ifndef TARGET_UNIX
@@ -79,21 +78,25 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 
-#ifdef TARGET_UNIX
+// TODO: enable on OSX eventually
+//       right now we have binaries that will trigger this in a singlefile bundle.
+#ifdef TARGET_LINUX
     // we should not see R2R files here on Unix.
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
 #endif
 
-    if (!pFlat->HasReadyToRunHeader() && !pFlat->HasWriteableSections())
+    // ignore R2R if the image is not a file.
+    if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
+        pFlat->HasWriteableSections())
     {
-        // we can use flat layout for this
-        return pFlat.Extract();
+        return new ConvertedImageLayout(pFlat);
     }
 
-    return new ConvertedImageLayout(pFlat);
+    // we can use flat layout for this
+    return pFlat.Extract();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -168,6 +171,13 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 }
 #endif // TARGET_UNIX
 
+// IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
+#ifdef TARGET_64BIT
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
+#else // !TARGET_64BIT
+#define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW
+#endif // !TARGET_64BIT
+
 //To force base relocation on Vista (which uses ASLR), unmask IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
 //(0x40) for OptionalHeader.DllCharacteristics
 void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
@@ -229,10 +239,18 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             // Restore the protection
             if (dwOldProtection != 0)
             {
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
+                // Disable writing on Apple Silicon
+                if (bExecRegion)
+                    PAL_JitWriteProtect(false);
+#else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
-
+#endif // __APPLE__ && HOST_ARM64
                 dwOldProtection = 0;
             }
 
@@ -251,8 +269,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
-#ifdef __APPLE__
-                    dwNewProtection = PAGE_READWRITE;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                    // Enable writing on Apple Silicon
+                    PAL_JitWriteProtect(true);
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -260,9 +279,11 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #endif
                 }
 #endif // TARGET_UNIX
+#if !(defined(__APPLE__) && defined(HOST_ARM64))
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
 #ifdef TARGET_UNIX
                 dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
 #endif // TARGET_UNIX
@@ -323,13 +344,19 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
     if (dwOldProtection != 0)
     {
+#if defined(__APPLE__) && defined(HOST_ARM64)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+        // Disable writing on Apple Silicon
+        if (bExecRegion)
+            PAL_JitWriteProtect(false);
+#else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
     }
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
@@ -423,7 +450,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
 
     IfFailThrow(Init(loadedImage));
 
-    if (IsNativeMachineFormat() && g_fAllowNativeImages)
+    if (m_pOwner->IsFile() && IsNativeMachineFormat() && g_fAllowNativeImages)
     {
         // Do base relocation and exception hookup, if necessary.
         // otherwise R2R will be disabled for this image.
@@ -494,7 +521,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     }
 
     IfFailThrow(Init(m_Module, true));
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %S\n", (LPCWSTR)pOwner->GetPath()));
+
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: Opened HMODULE %s\n", pOwner->GetPath().GetUTF8()));
 
 #else
     HANDLE hFile = pOwner->GetFileHandle();
@@ -508,8 +536,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
-        (LPCWSTR)pOwner->GetPath(), hFile, (void*)m_LoadedFile));
+    LOG((LF_LOADER, LL_INFO1000, "PEImage: image %s (hFile %p) mapped @ %p\n",
+        pOwner->GetPath().GetUTF8(), hFile, (void*)m_LoadedFile));
 
     IfFailThrow(Init((void*)m_LoadedFile));
 
@@ -576,7 +604,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
 
-    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %S\n", (LPCWSTR) pOwner->GetPath()));
+    LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %s\n", pOwner->GetPath().GetUTF8()));
 
     // If a size is not specified, load the whole file
     if (size == 0)
@@ -748,10 +776,18 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
+    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+#ifdef HOST_UNIX
+    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
+    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
+    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
+    allocationType |= MEM_RESERVE_EXECUTABLE;
+#endif
+
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
 
     if (base == NULL)
         ThrowLastError();
@@ -792,9 +828,13 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
+        DWORD executableProtection = PAGE_EXECUTE_READ;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+        executableProtection = PAGE_EXECUTE_READWRITE;
+#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
+            executableProtection :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;
@@ -954,6 +994,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     SIZE_T offset = (SIZE_T)m_pOwner->GetOffset();
     int imagePartIndex = 0;
     PVOID pReserved = NULL;
+    PVOID reservedEnd = NULL;
     IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
 
     if  ((ntHeader->OptionalHeader.FileAlignment < GetOsPageSize()) &&
@@ -983,7 +1024,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     if (pReserved == NULL)
         goto FAILED;
 
-    PVOID reservedEnd = (char*)pReserved + reserveSize;
+    reservedEnd = (char*)pReserved + reserveSize;
     IMAGE_DOS_HEADER* loadedHeader = (IMAGE_DOS_HEADER*)((SIZE_T)pReserved + OffsetWithinPage(offset));
     _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((SIZE_T)loadedHeader));
 

@@ -36,8 +36,10 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle!!)
+        public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
@@ -85,7 +87,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the DSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeDsaHandle currentKey = _key.Value;
+            SafeDsaHandle currentKey = GetKey();
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
             try

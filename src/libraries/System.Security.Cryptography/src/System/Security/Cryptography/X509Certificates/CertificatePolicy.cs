@@ -227,8 +227,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
-            ISet<string>? applicationCertPolicies = null;
-            ISet<string>? ekus = null;
+            HashSet<string>? applicationCertPolicies = null;
+            HashSet<string>? ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
 
             PolicyData policyData = cert.Pal.GetPolicyData();
@@ -289,7 +289,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             try
             {
-                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
                 int inhibitAnyPolicy;
                 reader.TryReadInt32(out inhibitAnyPolicy);
                 reader.ThrowIfNotEmpty();
@@ -311,14 +311,14 @@ namespace System.Security.Cryptography.X509Certificates
             policy.InhibitMappingDepth = constraints.InhibitMappingDepth;
         }
 
-        private static ISet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
+        private static HashSet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
         {
             HashSet<string> oids = new HashSet<string>();
 
             try
             {
-                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-                AsnReader sequenceReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 //OidCollection usages
@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.X509Certificates
             return oids;
         }
 
-        internal static ISet<string> ReadCertPolicyExtension(byte[] rawData)
+        internal static HashSet<string> ReadCertPolicyExtension(byte[] rawData)
         {
             try
             {
@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.X509Certificates
                 List<CertificatePolicyMappingAsn> mappings = new List<CertificatePolicyMappingAsn>();
                 while (sequenceReader.HasData)
                 {
-                    CertificatePolicyMappingAsn.Decode(ref sequenceReader, rawData, out CertificatePolicyMappingAsn mapping);
+                    CertificatePolicyMappingAsn.Decode(ref sequenceReader, out CertificatePolicyMappingAsn mapping);
                     mappings.Add(mapping);
                 }
 

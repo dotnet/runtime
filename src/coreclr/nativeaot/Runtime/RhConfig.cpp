@@ -17,7 +17,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "event.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
@@ -215,7 +214,7 @@ void RhConfig::ReadEmbeddedSettings()
 
 //Parses one line of config and populates values in the passed in configPair
 //returns: true if the parsing was successful, false if the parsing failed.
-//NOTE: if the method fails configPair is left in an unitialized state
+//NOTE: if the method fails configPair is left in an uninitialized state
 bool RhConfig::ParseConfigLine(_Out_ ConfigPair* configPair, _In_z_ const char * line)
 {
     uint32_t iLine = 0;

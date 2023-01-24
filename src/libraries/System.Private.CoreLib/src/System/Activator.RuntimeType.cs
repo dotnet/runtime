@@ -16,8 +16,10 @@ namespace System
         // Note: CreateInstance returns null for Nullable<T>, e.g. CreateInstance(typeof(int?)) returns null.
         //
 
-        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type!!, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
+        public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type is System.Reflection.Emit.TypeBuilder)
                 throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
 
@@ -86,8 +88,10 @@ namespace System
         public static object? CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type, bool nonPublic) =>
             CreateInstance(type, nonPublic, wrapExceptions: true);
 
-        internal static object? CreateInstance(Type type!!, bool nonPublic, bool wrapExceptions)
+        internal static object? CreateInstance(Type type, bool nonPublic, bool wrapExceptions)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type.UnderlyingSystemType is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
@@ -97,8 +101,6 @@ namespace System
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2096:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of Activator that linker intrinsically recognizes")]
         private static ObjectHandle? CreateInstanceInternal(string assemblyString,
                                                            string typeName,
@@ -110,7 +112,7 @@ namespace System
                                                            object?[]? activationAttributes,
                                                            ref StackCrawlMark stackMark)
         {
-            Assembly assembly;
+            RuntimeAssembly assembly;
             if (assemblyString == null)
             {
                 assembly = Assembly.GetExecutingAssembly(ref stackMark);
@@ -121,8 +123,10 @@ namespace System
                 assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
             }
 
+            // Issues IL2026 warning.
             Type? type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
+            // Issues IL2072 warning.
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 
             return o != null ? new ObjectHandle(o) : null;

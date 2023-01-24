@@ -11,15 +11,12 @@ namespace System.Net.Http
     /// </summary>
     internal struct MultiProxy
     {
-        private static readonly char[] s_proxyDelimiters = { ';', ' ', '\n', '\r', '\t' };
         private readonly FailedProxyCache? _failedProxyCache;
         private readonly Uri[]? _uris;
         private readonly string? _proxyConfig;
         private readonly bool _secure;
         private int _currentIndex;
         private Uri? _currentUri;
-
-        public static MultiProxy Empty => new MultiProxy(null, Array.Empty<Uri>());
 
         private MultiProxy(FailedProxyCache? failedProxyCache, Uri[] uris)
         {
@@ -40,6 +37,8 @@ namespace System.Net.Http
             _currentIndex = 0;
             _currentUri = null;
         }
+
+        public static MultiProxy Empty => new MultiProxy(null, Array.Empty<Uri>());
 
         /// <summary>
         /// Parses a WinHTTP proxy config into a MultiProxy instance.
@@ -198,6 +197,7 @@ namespace System.Net.Http
         {
             const int SECURE_FLAG = 1;
             const int INSECURE_FLAG = 2;
+            const string ProxyDelimiters = "; \n\r\t";
 
             int wantedFlag = secure ? SECURE_FLAG : INSECURE_FLAG;
             int originalLength = proxyString.Length;
@@ -206,7 +206,7 @@ namespace System.Net.Http
             {
                 // Skip any delimiters.
                 int iter = 0;
-                while (iter < proxyString.Length && Array.IndexOf(s_proxyDelimiters, proxyString[iter]) >= 0)
+                while (iter < proxyString.Length && ProxyDelimiters.Contains(proxyString[iter]))
                 {
                     ++iter;
                 }
@@ -245,7 +245,7 @@ namespace System.Net.Http
                 }
 
                 // Find the next delimiter, or end of string.
-                iter = proxyString.IndexOfAny(s_proxyDelimiters);
+                iter = proxyString.IndexOfAny(ProxyDelimiters);
                 if (iter < 0)
                 {
                     iter = proxyString.Length;

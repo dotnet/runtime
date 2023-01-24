@@ -20,11 +20,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void AddHandler(int dispid, object func)
         {
-            ComEventsMethod method = FindMethod(dispid);
-            if (method == null)
-            {
-                method = AddMethod(dispid);
-            }
+            ComEventsMethod method = FindMethod(dispid) ?? AddMethod(dispid);
 
             if (func is Delegate d)
             {

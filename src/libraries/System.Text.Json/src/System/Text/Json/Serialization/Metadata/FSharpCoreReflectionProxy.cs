@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -61,6 +61,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// If true, also initializes the proxy singleton for future by other F# types.
         /// </summary>
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public static bool IsFSharpType(Type type)
         {
             if (s_singletonInstance is null)
@@ -92,6 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         private FSharpCoreReflectionProxy(Assembly fsharpCoreAssembly)
         {
             Debug.Assert(fsharpCoreAssembly.GetName().Name == "FSharp.Core");
@@ -112,6 +114,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public FSharpKind DetectFSharpKind(Type type)
         {
             Attribute? compilationMappingAttribute = GetFSharpCompilationMappingAttribute(type);
@@ -140,6 +143,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<TFSharpOption, T> CreateFSharpOptionValueGetter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, T>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType);
@@ -148,6 +152,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<TElement?, TFSharpOption> CreateFSharpOptionSomeConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, TElement>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType);
@@ -156,6 +161,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public StructGetter<TFSharpValueOption, TElement> CreateFSharpValueOptionValueGetter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpValueOption, TElement>()
             where TFSharpValueOption : struct
         {
@@ -165,6 +171,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<TElement?, TFSharpOption> CreateFSharpValueOptionSomeConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, TElement>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpValueOptionType);
@@ -173,6 +180,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<IEnumerable<TElement>, TFSharpList> CreateFSharpListConstructor<TFSharpList, TElement>()
         {
             Debug.Assert(typeof(TFSharpList).GetGenericTypeDefinition() == _fsharpListType);
@@ -180,6 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<IEnumerable<TElement>, TFSharpSet> CreateFSharpSetConstructor<TFSharpSet, TElement>()
         {
             Debug.Assert(typeof(TFSharpSet).GetGenericTypeDefinition() == _fsharpSetType);
@@ -187,6 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap> CreateFSharpMapConstructor<TFSharpMap, TKey, TValue>()
         {
             Debug.Assert(typeof(TFSharpMap).GetGenericTypeDefinition() == _fsharpMapType);
@@ -217,7 +227,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static TDelegate CreateDelegate<TDelegate>(MethodInfo methodInfo) where TDelegate : Delegate
             => (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo, throwOnBindFailure: true)!;
 
-        private TMemberInfo EnsureMemberExists<TMemberInfo>(TMemberInfo? memberInfo, string memberName) where TMemberInfo : MemberInfo
+        private static TMemberInfo EnsureMemberExists<TMemberInfo>(TMemberInfo? memberInfo, string memberName) where TMemberInfo : MemberInfo
         {
             if (memberInfo is null)
             {

@@ -26,7 +26,7 @@
 #define PTR_IMAGE_FIRST_SECTION( ntheader )                            \
    PTR_IMAGE_SECTION_HEADER                                            \
     (dac_cast<TADDR>(ntheader) +                                       \
-     FIELD_OFFSET( IMAGE_NT_HEADERS, OptionalHeader ) +                \
+     offsetof( IMAGE_NT_HEADERS, OptionalHeader ) +                \
      VAL16((ntheader)->FileHeader.SizeOfOptionalHeader)                \
     )
 

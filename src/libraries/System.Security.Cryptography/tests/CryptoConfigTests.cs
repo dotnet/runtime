@@ -7,6 +7,9 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+// String factory methods are obsolete. Warning is disabled for the entire file as most tests exercise the obsolete methods
+#pragma warning disable SYSLIB0045
+
 namespace System.Security.Cryptography.Tests
 {
     public static class CryptoConfigTests
@@ -36,7 +39,7 @@ namespace System.Security.Cryptography.Tests
 
         // The returned types on .NET Framework can differ when the machine is in FIPS mode.
         // So check hash algorithms via a more complicated manner.
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("MD5", typeof(MD5))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#md5", typeof(MD5))]
@@ -70,7 +73,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("System.Security.Cryptography.HMAC", typeof(HMACSHA1))]
         [InlineData("System.Security.Cryptography.KeyedHashAlgorithm", typeof(HMACSHA1))]
@@ -103,7 +106,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("AES", typeof(Aes))]
 #pragma warning disable SYSLIB0022 // Rijndael types are obsolete
@@ -129,7 +132,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("RSA", typeof(RSA))]
         [InlineData("System.Security.Cryptography.RSA", typeof(RSA))]
@@ -143,7 +146,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         [InlineData("DSA", typeof(DSA))]
         [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
@@ -166,7 +169,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(AsymmetricAlgorithm.Create(identifier));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public static void NamedCreate_Mismatch()
         {
@@ -231,7 +234,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddOID(string.Empty, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void AddAlgorithm_CreateFromName_ReturnsMapped()
         {
@@ -279,7 +282,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void StaticCreateMethods()
         {
@@ -301,12 +304,13 @@ namespace System.Security.Cryptography.Tests
             VerifyStaticCreateResult(SHA384.Create(typeof(SHA384Managed).FullName), typeof(SHA384Managed));
             VerifyStaticCreateResult(SHA512.Create(typeof(SHA512Managed).FullName), typeof(SHA512Managed));
 #pragma warning restore SYSLIB0022 // Rijndael types are obsolete
-        }
 
-        private static void VerifyStaticCreateResult(object obj, Type expectedType)
-        {
-           Assert.NotNull(obj);
-           Assert.IsType(expectedType, obj);
+            static void VerifyStaticCreateResult(object obj, Type expectedType)
+            {
+                Assert.NotNull(obj);
+                Assert.IsType(expectedType, obj);
+                (obj as IDisposable)?.Dispose();
+            }
         }
 
         [Fact]
@@ -342,6 +346,18 @@ namespace System.Security.Cryptography.Tests
         {
             get
             {
+                // Keyed Hash Algorithms - supported on all platforms
+                yield return new object[] { "System.Security.Cryptography.HMAC", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "System.Security.Cryptography.KeyedHashAlgorithm", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "HMACSHA1", "System.Security.Cryptography.HMACSHA1", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA1", null, true };
+                yield return new object[] { "HMACSHA256", "System.Security.Cryptography.HMACSHA256", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA256", null, true };
+                yield return new object[] { "HMACSHA384", "System.Security.Cryptography.HMACSHA384", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA384", null, true };
+                yield return new object[] { "HMACSHA512", "System.Security.Cryptography.HMACSHA512", true };
+                yield return new object[] { "System.Security.Cryptography.HMACSHA512", null, true };
+
                 if (PlatformDetection.IsBrowser)
                 {
                     // Hash functions
@@ -381,19 +397,9 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "SHA-512", typeof(SHA512Managed).FullName, true };
                     yield return new object[] { "System.Security.Cryptography.SHA512", typeof(SHA512Managed).FullName, true };
 
-                    // Keyed Hash Algorithms
-                    yield return new object[] { "System.Security.Cryptography.HMAC", "System.Security.Cryptography.HMACSHA1", true };
-                    yield return new object[] { "System.Security.Cryptography.KeyedHashAlgorithm", "System.Security.Cryptography.HMACSHA1", true };
+                    // Keyed Hash Algorithms - not supported on Browser
                     yield return new object[] { "HMACMD5", "System.Security.Cryptography.HMACMD5", true };
                     yield return new object[] { "System.Security.Cryptography.HMACMD5", null, true };
-                    yield return new object[] { "HMACSHA1", "System.Security.Cryptography.HMACSHA1", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA1", null, true };
-                    yield return new object[] { "HMACSHA256", "System.Security.Cryptography.HMACSHA256", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA256", null, true };
-                    yield return new object[] { "HMACSHA384", "System.Security.Cryptography.HMACSHA384", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA384", null, true };
-                    yield return new object[] { "HMACSHA512", "System.Security.Cryptography.HMACSHA512", true };
-                    yield return new object[] { "System.Security.Cryptography.HMACSHA512", null, true };
 
                     // Asymmetric algorithms
                     yield return new object[] { "RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
@@ -453,10 +459,13 @@ namespace System.Security.Cryptography.Tests
                     yield return new object[] { "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", typeof(HMACSHA512).FullName, true };
 
                     // X509
+                    yield return new object[] { "1.3.6.1.5.5.7.1.1", "System.Security.Cryptography.X509Certificates.X509AuthorityInformationAccessExtension", true };
                     yield return new object[] { "2.5.29.10", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.19", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension", true };
                     yield return new object[] { "2.5.29.14", "System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.15", "System.Security.Cryptography.X509Certificates.X509KeyUsageExtension", true };
+                    yield return new object[] { "2.5.29.17", "System.Security.Cryptography.X509Certificates.X509SubjectAlternativeNameExtension", true };
+                    yield return new object[] { "2.5.29.35", "System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension", true };
                     yield return new object[] { "2.5.29.37", "System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension", true };
                     yield return new object[] { "X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain", true };
 
@@ -470,7 +479,8 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory, MemberData(nameof(AllValidNames))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [MemberData(nameof(AllValidNames))]
         public static void CreateFromName_AllValidNames(string name, string typeName, bool supportsUnixMac)
         {
             bool isWindows = OperatingSystem.IsWindows();

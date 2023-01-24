@@ -108,8 +108,8 @@ static HRESULT appendStrNumW(CQuickBytes *out, int num)
     }
     CONTRACTL_END
 
-    WCHAR buff[32];
-    swprintf_s(buff, 32, W("%d"), num);
+    WCHAR buff[MaxSigned32BitDecString + 1];
+    FormatInteger(buff, ARRAY_SIZE(buff), "%d", num);
     return appendStrW(out, buff);
 } // static HRESULT appendStrNumW()
 
@@ -136,8 +136,8 @@ static HRESULT appendStrHexW(CQuickBytes *out, int num)
     }
     CONTRACTL_END
 
-    WCHAR buff[32];
-    swprintf_s(buff, 32, W("%08X"), num);
+    WCHAR buff[Max32BitHexString + 1];
+    FormatInteger(buff, ARRAY_SIZE(buff), "%08X", num);
     return appendStrW(out, buff);
 } // static HRESULT appendStrHexW()
 
@@ -788,8 +788,12 @@ static HRESULT PrettyPrintTypeA(
         break;
 
     case ELEMENT_TYPE_FNPTR:
-        IfFailGo(appendStrA(out, "fnptr "));
-        IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", out,pIMDI));
+        {
+            IfFailGo(appendStrA(out, "fnptr "));
+            CQuickBytes qbOut;
+            IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", &qbOut,pIMDI));
+            IfFailGo(appendStrA(out, (char *)qbOut.Ptr()));
+        }
         break;
 
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
@@ -927,7 +931,7 @@ HRESULT PrettyPrintSigWorkerInternal(
     CONTRACTL_END
 
     HRESULT     hr = S_OK;
-    unsigned    numArgs;     // Count of arugments to function, or count of local vars.
+    unsigned    numArgs;     // Count of arguments to function, or count of local vars.
     unsigned numTyArgs = 0;
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
     bool needComma = false;

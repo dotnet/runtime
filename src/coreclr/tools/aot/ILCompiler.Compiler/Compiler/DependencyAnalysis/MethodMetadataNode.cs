@@ -14,11 +14,14 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a method that has metadata generated in the current compilation.
+    /// This corresponds to a ECMA-335 MethodDef record. It is however not a 1:1
+    /// mapping because a method could be used in the AOT compiled program without generating
+    /// the reflection metadata for it (which would not be possible in IL terms).
     /// </summary>
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class MethodMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class MethodMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MethodDesc _method;
 
@@ -45,11 +48,16 @@ namespace ILCompiler.DependencyAnalysis
                 TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
             }
 
+            if (_method is EcmaMethod ecmaMethod)
+            {
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)
         {
-            return "Reflectable method: " + _method.ToString();
+            return "Method metadata: " + _method.ToString();
         }
 
         protected override void OnMarked(NodeFactory factory)

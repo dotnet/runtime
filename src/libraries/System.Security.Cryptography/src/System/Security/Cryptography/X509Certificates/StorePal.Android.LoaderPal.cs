@@ -32,8 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             public void Dispose()
             {
-                if (_certs != null)
-                    _certs.DisposeAll();
+                _certs?.DisposeAll();
             }
 
             public void MoveTo(X509Certificate2Collection collection)

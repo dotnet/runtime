@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Principal;
 using Xunit;
 
@@ -110,7 +111,9 @@ public class SecurityIdentifierTests
             whoamiProcess.StartInfo.UseShellExecute = false;
             whoamiProcess.StartInfo.RedirectStandardOutput = true;
             whoamiProcess.Start();
-            output = whoamiProcess.StandardOutput.ReadToEnd();
+
+            using StreamReader sr = whoamiProcess.StandardOutput;
+            output = sr.ReadToEnd();
             whoamiProcess.WaitForExit();
 
             Assert.Equal(0, whoamiProcess.ExitCode);

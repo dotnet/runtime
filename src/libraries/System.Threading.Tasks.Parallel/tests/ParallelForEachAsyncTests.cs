@@ -124,7 +124,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2)]
         [InlineData(4)]
         [InlineData(128)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50566", TestPlatforms.Android)]
         public async Task Dop_WorkersCreatedRespectingLimitAndTaskScheduler_Sync(int dop)
         {
             static IEnumerable<int> IterateUntilSet(StrongBox<bool> box)
@@ -141,7 +140,7 @@ namespace System.Threading.Tasks.Tests
             int activeWorkers = 0;
             var block = new TaskCompletionSource();
 
-            const int MaxSchedulerLimit = 2;
+            int MaxSchedulerLimit = Math.Min(2, Environment.ProcessorCount);
 
             Task t = Parallel.ForEachAsync(IterateUntilSet(box), new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new MaxConcurrencyLevelPassthroughTaskScheduler(MaxSchedulerLimit) }, async (item, cancellationToken) =>
             {
@@ -910,6 +909,36 @@ namespace System.Threading.Tasks.Tests
                     await tcs.Task;
                 }
             }));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Exception_LockWaitAsyncCancellationDoesntPropagate()
+        {
+            static async IAsyncEnumerable<int> Iterate(Task signal)
+            {
+                for (int i = 0; ; i++)
+                {
+                    if (i != 0)
+                    {
+                        await signal;
+                    }
+                    yield return i;
+                }
+            }
+
+            var signal = new TaskCompletionSource(TaskContinuationOptions.RunContinuationsAsynchronously);
+            AggregateException ae = Assert.Throws<AggregateException>(() => Parallel.ForEachAsync(Iterate(signal.Task), new ParallelOptions { MaxDegreeOfParallelism = 3 }, async (item, cancellationToken) =>
+            {
+                if (item == 0)
+                {
+                    signal.SetResult();
+                    throw new FormatException();
+                }
+                await Task.CompletedTask;
+            }).Wait());
+
+            Assert.Equal(1, ae.InnerExceptions.Count);
+            Assert.IsType<FormatException>(ae.InnerException);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

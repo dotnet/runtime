@@ -27,61 +27,61 @@
 #include <mono/metadata/icalls.h>
 
 /* Use this as MONO_CHECK_ARG (arg,expr,) in functions returning void */
-#define MONO_CHECK_ARG(arg, expr, retval) do {				\
-	if (G_UNLIKELY (!(expr)))					\
-	{								\
-		if (0) { (void)(arg); } /* check if the name exists */	\
-		ERROR_DECL (error);					\
-		mono_error_set_argument_format (error, #arg, "assertion `%s' failed", #expr); \
-		mono_error_set_pending_exception (error);		\
-		return retval;						\
-	} 								\
+#define MONO_CHECK_ARG(arg, expr, retval) do { \
+	if (G_UNLIKELY (!(expr))) \
+	{ \
+		if (0) { (void)(arg); } /* check if the name exists */ \
+		ERROR_DECL (__error); \
+		mono_error_set_argument_format (__error, #arg, "assertion `%s' failed", #expr); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 
-#define MONO_CHECK_ARG_NULL_NAMED(arg, argname, retval) do {	\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		ERROR_DECL (error);				\
-		mono_error_set_argument_null (error, (argname), "");	\
-		mono_error_set_pending_exception (error);	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL_NAMED(arg, argname, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		ERROR_DECL (__error); \
+		mono_error_set_argument_null (__error, (argname), ""); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 /* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
-#define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		mono_error_set_argument_null (error, #arg, "");	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL(arg, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		mono_error_set_argument_null (error, #arg, ""); \
+		return retval; \
+	} \
 } while (0)
 
 /* Use this as MONO_CHECK_ARG_NULL_HANDLE (arg,) in functions returning void */
-#define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { 		\
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
-	{							\
-		mono_error_set_argument_null (error, #arg, "");	\
-		return retval;					\
-	}							\
+#define MONO_CHECK_ARG_NULL_HANDLE(arg, retval) do { \
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg))) \
+	{ \
+		mono_error_set_argument_null (error, #arg, ""); \
+		return retval; \
+	} \
 } while (0)
 
 #define MONO_CHECK_ARG_NULL_HANDLE_NAMED(arg, argname, retval) do { \
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
-	{							\
-		mono_error_set_argument_null (error, (argname), "");	\
-		return retval;					\
-	}							\
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg))) \
+	{ \
+		mono_error_set_argument_null (error, (argname), ""); \
+		return retval; \
+	} \
 } while (0)
 
 /* Use this as MONO_CHECK_NULL (arg,) in functions returning void */
-#define MONO_CHECK_NULL(arg, retval) do { 			\
-	if (G_UNLIKELY (!(arg)))				\
-	{							\
-		ERROR_DECL (error);				\
-		mono_error_set_null_reference (error);		\
-		mono_error_set_pending_exception (error);	\
-		return retval;					\
-	} 							\
+#define MONO_CHECK_NULL(arg, retval) do { \
+	if (G_UNLIKELY (!(arg))) \
+	{ \
+		ERROR_DECL (__error); \
+		mono_error_set_null_reference (__error); \
+		mono_error_set_pending_exception (__error); \
+		return retval; \
+	} \
 } while (0)
 
 MONO_COMPONENT_API MonoClass *
@@ -171,11 +171,12 @@ struct _MonoArray {
 /* match the layout of the managed definition of Span<T> */
 #define MONO_DEFINE_SPAN_OF_T(name, type)	\
 	typedef struct {	\
-		type* _pointer;	\
+		type* _reference;	\
 		uint32_t _length;	\
 	} name;
 
 MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfVoid, void)
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
@@ -220,7 +221,7 @@ mono_array_handle_length (MonoArrayHandle arr)
 #define mono_array_set_fast(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr_fast ((array), type, (index));	\
-		*__p = (value);	\
+		*__p = (type)(value);	\
 	} while (0)
 #define mono_array_setref_fast(array,index,value)	\
 	do {	\
@@ -241,7 +242,7 @@ mono_array_handle_length (MonoArrayHandle arr)
 // in order to mimic non-_internal but without the GC mode transitions, or at least,
 // to avoid the runtime using the embedding API, whether or not it has GC mode transitions.
 static inline char*
-mono_array_addr_with_size_internal (MonoArray *array, int size, uintptr_t idx)
+mono_array_addr_with_size_internal (MonoArray *array, size_t size, uintptr_t idx)
 {
 	return mono_array_addr_with_size_fast (array, size, idx);
 }
@@ -251,7 +252,7 @@ mono_array_addr_with_size_internal (MonoArray *array, int size, uintptr_t idx)
 #define mono_array_set_internal(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr_internal ((array), type, (index));	\
-		*__p = (value);	\
+		*__p = (type)(value);	\
 	} while (0)
 #define mono_array_setref_internal(array,index,value)	\
 	do {	\
@@ -280,9 +281,9 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 
 #define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_reference ? (type)0 : span->_reference[idx])
 
-#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span->_reference + idx)
 
 #define mono_span_setref(span,index,value)	\
 	do {	\
@@ -296,10 +297,10 @@ mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
 		span._length = (int32_t)mono_array_length_internal (arr);
-		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+		span._reference = mono_array_addr_fast (arr, MonoObject*, 0);
 	} else {
 		span._length = 0;
-		span._pointer = NULL;
+		span._reference = NULL;
 	}
 	return span;
 }
@@ -330,7 +331,7 @@ struct _MonoStringBuilder {
 	int maxCapacity;
 };
 
-static inline int
+static inline guint
 mono_string_builder_capacity (MonoStringBuilderHandle sbh)
 {
 	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);
@@ -439,6 +440,7 @@ TYPED_HANDLE_DECL (MonoSafeHandle);
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
+	MonoObject *m_keepalive;
 };
 
 /* Safely access System.Type from native code */
@@ -651,6 +653,11 @@ typedef struct {
 	guint32 intType;
 } MonoClassInterfaceAttribute;
 
+typedef struct {
+	MonoObject object;
+	gsize taggedHandle;
+} MonoWeakReference;
+
 /* Safely access System.Delegate from native code */
 TYPED_HANDLE_DECL (MonoDelegate);
 
@@ -691,6 +698,7 @@ typedef struct {
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
+	void (*init_class) (MonoClass *klass);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -835,6 +843,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
 	MonoBoolean method_is_virtual;
+	MonoBoolean bound;
 };
 
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
@@ -881,7 +890,7 @@ typedef struct {
 	MonoEvent *event;
 } MonoReflectionMonoEvent;
 
-/* Safely access Systme.Reflection.MonoEvent from native code */
+/* Safely access System.Reflection.MonoEvent from native code */
 TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {
@@ -898,10 +907,11 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
-/* System.RuntimeAssembly */
+/* System.Reflection.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *m_keepalive;
 };
 
 typedef struct {
@@ -1182,7 +1192,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
+/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
@@ -1325,13 +1335,11 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoMethod *mhandle;
-	MonoString *name;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
-	guint32 attrs;
-	guint32 call_conv;
 	MonoReflectionModule *module;
 	MonoBoolean skip_visibility;
+	MonoBoolean restricted_skip_visibility;
 	MonoBoolean init_locals;
 	MonoReflectionILGen *ilgen;
 	gint32 nrefs;
@@ -1416,6 +1424,14 @@ typedef enum {
 	UNLOADING = 1
 } MonoManagedAssemblyLoadContextInternalState;
 
+
+typedef struct {
+	MonoObject object;
+	MonoObject *m_scout;
+	MonoArray *m_slots;
+	MonoArray *m_hashes;
+	int m_nslots;
+} MonoManagedLoaderAllocator;
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1804,6 +1820,9 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 gboolean
 mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
+gboolean
+mono_object_isinst_vtable_mbyref (MonoVTable *vt, MonoClass *klass, MonoError *error);
+
 MonoStringHandle
 mono_string_new_size_handle (gint32 len, MonoError *error);
 
@@ -1873,12 +1892,8 @@ void
 mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
 MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
-			       MonoObject **exc, MonoError *error);
-
-MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
-				   MonoError *error);
+mono_runtime_try_invoke_byrefs (MonoMethod *method, void *obj, gpointer *params_byref,
+				MonoObject **exc, MonoError *error);
 
 void*
 mono_compile_method_checked (MonoMethod *method, MonoError *error);
@@ -1981,6 +1996,9 @@ mono_string_hash_internal (MonoString *s);
 
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
+
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
 
 ICALL_EXPORT
 void
@@ -2122,9 +2140,6 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 MONO_COMPONENT_API char *
 mono_runtime_get_managed_cmd_line (void);
 
-char *
-mono_runtime_get_cmd_line (int argc, char **argv);
-
 #ifdef HOST_WASM
 int
 mono_string_instance_is_interned (MonoString *str);
@@ -2132,5 +2147,8 @@ mono_string_instance_is_interned (MonoString *str);
 
 gpointer
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
+
+void
+mono_runtime_run_startup_hooks (void);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

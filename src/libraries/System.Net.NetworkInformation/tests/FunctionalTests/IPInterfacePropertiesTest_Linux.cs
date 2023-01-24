@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 namespace System.Net.NetworkInformation.Tests
 {
     [PlatformSpecific(TestPlatforms.Linux)]
+    [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal /proc")]
     public class IPInterfacePropertiesTest_Linux
     {
         private readonly ITestOutputHelper _log;
@@ -165,8 +166,8 @@ namespace System.Net.NetworkInformation.Tests
             }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public async Task IPv6ScopeId_AccessAllValues_Success()
         {
             await Task.Run(() =>
@@ -220,8 +221,8 @@ namespace System.Net.NetworkInformation.Tests
             }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public async Task IPInfoTest_IPv6Loopback_ProperAddress()
         {
             await Task.Run(() =>

@@ -102,7 +102,7 @@ ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream)
 {
 	uint8_t advertise_buffer [DOTNET_IPC_V1_ADVERTISE_SIZE];
 	uint8_t *cookie = ds_ipc_advertise_cookie_v1_get ();
-	uint64_t pid = DS_VAL64 (ep_rt_current_process_get_id ());
+	uint64_t pid = ep_rt_val_uint64_t (ep_rt_current_process_get_id ());
 	uint64_t *buffer = (uint64_t *)advertise_buffer;
 	bool result = false;
 
@@ -152,6 +152,7 @@ ipc_message_try_send_string_utf16_t (
 	uint32_t total_written = 0;
 	uint32_t written = 0;
 
+	string_len = ep_rt_val_uint32_t (string_len);
 	bool result = ds_ipc_stream_write (stream, (const uint8_t *)&string_len, (uint32_t)sizeof (string_len), &written, EP_INFINITE_WAIT);
 	total_written += written;
 
@@ -188,7 +189,7 @@ ipc_message_flatten_blitable_type (
 	ep_raise_error_if_nok (buffer != NULL);
 
 	buffer_cursor = buffer;
-	message->header.size = message->size;
+	message->header.size = ep_rt_val_uint16_t (message->size);
 
 	memcpy (buffer_cursor, &message->header, sizeof (message->header));
 	buffer_cursor += sizeof (message->header);
@@ -230,16 +231,16 @@ ipc_message_try_parse (
 	if (!result || (bytes_read < sizeof (message->header)))
 		ep_raise_error ();
 
-	if (message->header.size < sizeof (message->header))
-		ep_raise_error ();
+	message->size = ep_rt_val_uint16_t (message->header.size);
 
-	message->size = message->header.size;
+	if (message->size < sizeof (message->header))
+		ep_raise_error ();
 
 	// Then read out payload to buffer.
 	uint16_t payload_len;
-	payload_len = message->header.size - sizeof (message->header);
+	payload_len = message->size - sizeof (message->header);
 	if (payload_len != 0) {
-		uint8_t *buffer = ep_rt_byte_array_alloc (payload_len);
+		buffer = ep_rt_byte_array_alloc (payload_len);
 		ep_raise_error_if_nok (buffer != NULL);
 
 		result = ds_ipc_stream_read (stream, buffer, payload_len, &bytes_read, EP_INFINITE_WAIT);
@@ -288,7 +289,7 @@ ipc_message_flatten (
 
 	uint8_t * buffer_cursor;
 	buffer_cursor = buffer;
-	message->header.size = message->size;
+	message->header.size = ep_rt_val_uint16_t (message->size);
 
 	memcpy (buffer_cursor, &message->header, sizeof (DiagnosticsIpcHeader));
 	buffer_cursor += sizeof (DiagnosticsIpcHeader);
@@ -415,7 +416,7 @@ ds_ipc_message_try_parse_uint64_t (
 
 	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)value, (uint32_t)sizeof (uint64_t));
 	if (result)
-		*value = DS_VAL64 (*value);
+		*value = ep_rt_val_uint64_t (*value);
 	return result;
 }
 
@@ -431,7 +432,7 @@ ds_ipc_message_try_parse_uint32_t (
 
 	bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t*)value, (uint32_t)sizeof (uint32_t));
 	if (result)
-		*value = DS_VAL32 (*value);
+		*value = ep_rt_val_uint32_t (*value);
 	return result;
 }
 
@@ -499,6 +500,7 @@ ds_ipc_message_initialize_header_uint32_t_payload (
 	EP_ASSERT (header);
 
 	message->header = *header;
+	payload = ep_rt_val_uint32_t (payload);
 	return ipc_message_flatten_blitable_type (message, (uint8_t *)&payload, sizeof (payload));
 }
 
@@ -512,6 +514,7 @@ ds_ipc_message_initialize_header_uint64_t_payload (
 	EP_ASSERT (header);
 
 	message->header = *header;
+	payload = ep_rt_val_uint64_t (payload);
 	return ipc_message_flatten_blitable_type (message, (uint8_t *)&payload, sizeof (payload));
 }
 
@@ -560,6 +563,7 @@ ds_ipc_message_try_write_string_utf16_t (
 
 	bool result = true;
 	uint32_t string_len = (uint32_t)(ep_rt_utf16_string_len (value) + 1);
+	uint32_t string_len_le = ep_rt_val_uint32_t (string_len);
 	size_t total_bytes = (string_len * sizeof (ep_char16_t)) + sizeof(uint32_t);
 
 	EP_ASSERT (total_bytes <= UINT16_MAX);
@@ -567,8 +571,8 @@ ds_ipc_message_try_write_string_utf16_t (
 	if (*buffer_len < (uint16_t)total_bytes || total_bytes > UINT16_MAX)
 		ep_raise_error ();
 
-	memcpy (*buffer, &string_len, sizeof (string_len));
-	*buffer += sizeof (string_len);
+	memcpy (*buffer, &string_len_le, sizeof (string_len_le));
+	*buffer += sizeof (string_len_le);
 
 	memcpy (*buffer, value, string_len * sizeof (ep_char16_t));
 	*buffer += (string_len * sizeof (ep_char16_t));
@@ -594,11 +598,12 @@ ds_ipc_message_try_write_string_utf16_t_to_stream (
 	bool result = true;
 	uint32_t bytes_written = 0;
 	uint32_t string_len = (uint32_t)(ep_rt_utf16_string_len (value) + 1);
+	uint32_t string_len_le = ep_rt_val_uint32_t (string_len);
 	size_t total_bytes = (string_len * sizeof (ep_char16_t)) + sizeof(uint32_t);
 
 	EP_ASSERT (total_bytes <= UINT16_MAX);
 
-	result &= ds_ipc_stream_write (stream, (const uint8_t *)&string_len, sizeof (string_len), &bytes_written, EP_INFINITE_WAIT);
+	result &= ds_ipc_stream_write (stream, (const uint8_t *)&string_len_le, sizeof (string_len_le), &bytes_written, EP_INFINITE_WAIT);
 	total_bytes -= bytes_written;
 	if (result) {
 		result &= ds_ipc_stream_write (stream, (const uint8_t *)value, string_len * sizeof (ep_char16_t), &bytes_written, EP_INFINITE_WAIT);
@@ -671,7 +676,7 @@ ds_ipc_header_get_generic_error (void)
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_protocol = 0;
 #endif

@@ -101,10 +101,7 @@ namespace System.Net
                 {
                     lock (this)
                     {
-                        if (_ftpRequestHeaders == null)
-                        {
-                            _ftpRequestHeaders = new WebHeaderCollection();
-                        }
+                        _ftpRequestHeaders ??= new WebHeaderCollection();
                     }
                 }
                 return _ftpRequestHeaders;

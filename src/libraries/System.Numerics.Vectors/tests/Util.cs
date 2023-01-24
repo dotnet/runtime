@@ -91,62 +91,53 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        [RequiresPreviewFeatures]
         public static T Abs<T>(T value) where T : INumber<T>
         {
             return T.Abs(value);
         }
-        [RequiresPreviewFeatures]
+
         public static T Sqrt<T>(T value) where T : struct, INumber<T>
         {
-            double dValue = Create<T, double>(value);
+            double dValue = CreateChecked<T, double>(value);
             double dSqrt = Math.Sqrt(dValue);
             return T.CreateTruncating<double>(dSqrt);
         }
 
-        [RequiresPreviewFeatures]
-        private static TSelf Create<TOther, TSelf>(TOther value)
+        private static TResult CreateChecked<TOther, TResult>(TOther value)
             where TOther : INumber<TOther>
-            where TSelf : INumber<TSelf>
-            => TSelf.Create<TOther>(value);
+            where TResult : INumber<TResult>
+            => TResult.CreateChecked<TOther>(value);
 
-        [RequiresPreviewFeatures]
         public static T Multiply<T>(T left, T right) where T : INumber<T>
         {
             return left * right;
         }
 
-        [RequiresPreviewFeatures]
         public static T Divide<T>(T left, T right) where T : INumber<T>
         {
             return left / right;
         }
 
-        [RequiresPreviewFeatures]
         public static T Add<T>(T left, T right) where T : INumber<T>
         {
             return left + right;
         }
 
-        [RequiresPreviewFeatures]
         public static T Subtract<T>(T left, T right) where T : INumber<T>
         {
             return left - right;
         }
 
-        [RequiresPreviewFeatures]
         public static T Xor<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
             return left ^ right;
         }
 
-        [RequiresPreviewFeatures]
         public static T AndNot<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
             return left & ~ right;
         }
 
-        [RequiresPreviewFeatures]
         public static T OnesComplement<T>(T left) where T : IBitwiseOperators<T, T, T>
         {
             return ~left;
@@ -157,43 +148,36 @@ namespace System.Numerics.Tests
             return value > max ? max : value < min ? min : value;
         }
 
-        [RequiresPreviewFeatures]
         public static T Zero<T>() where T : struct, INumber<T>
         {
             return T.Zero;
         }
 
-        [RequiresPreviewFeatures]
         public static T One<T>() where T : struct, INumber<T>
         {
             return T.One;
         }
 
-        [RequiresPreviewFeatures]
         public static bool GreaterThan<T>(T left, T right) where T : INumber<T>
         {
             return left > right;
         }
 
-        [RequiresPreviewFeatures]
-        public static bool GreaterThanOrEqual<T>(T left, T right) where T : INumber<T> 
-        { 
+        public static bool GreaterThanOrEqual<T>(T left, T right) where T : INumber<T>
+        {
             return left >= right;
         }
 
-        [RequiresPreviewFeatures]
         public static bool LessThan<T>(T left, T right) where T : INumber<T>
         {
             return left < right;
         }
 
-        [RequiresPreviewFeatures]
         public static bool LessThanOrEqual<T>(T left, T right) where T : INumber<T>
         {
             return left <= right;
         }
 
-        [RequiresPreviewFeatures]
         public static bool AnyEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
@@ -206,7 +190,6 @@ namespace System.Numerics.Tests
             return false;
         }
 
-        [RequiresPreviewFeatures]
         public static bool AllEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
@@ -217,6 +200,57 @@ namespace System.Numerics.Tests
                 }
             }
             return true;
+        }
+
+        public static T ShiftLeft<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value << shiftAmount;
+        }
+
+        public static float ShiftLeft(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) << shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftLeft(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) << shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static T ShiftRightArithmetic<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value >> shiftAmount;
+        }
+
+        public static float ShiftRightArithmetic(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) >> shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftRightArithmetic(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) >> shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static T ShiftRightLogical<T>(T value, int shiftAmount) where T : IBinaryInteger<T>
+        {
+            return value >>> shiftAmount;
+        }
+
+        public static float ShiftRightLogical(float value, int shiftAmount)
+        {
+            int result = BitConverter.SingleToInt32Bits(value) >>> shiftAmount;
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double ShiftRightLogical(double value, int shiftAmount)
+        {
+            long result = BitConverter.DoubleToInt64Bits(value) >>> shiftAmount;
+            return BitConverter.Int64BitsToDouble(result);
         }
     }
 }

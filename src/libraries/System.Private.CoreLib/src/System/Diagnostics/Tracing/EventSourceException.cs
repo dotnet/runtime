@@ -4,11 +4,7 @@
 using System;
 using System.Runtime.Serialization;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// Exception that is thrown when an error occurs during EventSource operation.

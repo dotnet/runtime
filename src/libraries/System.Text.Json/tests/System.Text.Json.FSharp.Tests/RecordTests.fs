@@ -49,3 +49,30 @@ let ``Support F# struct record serialization``() =
 let ``Support F# struct record deserialization``() =
     let result = JsonSerializer.Deserialize<MyStructRecord>(MyStructRecord.ExpectedJson)
     Assert.Equal(MyStructRecord.Value, result)
+
+type RecursiveRecord =
+    {
+        Next : RecursiveRecord option
+    }
+
+[<Fact>]
+let ``Recursive records are supported``() =
+    let value = { Next = Some { Next = None } }
+    let json = JsonSerializer.Serialize(value)
+    Assert.Equal("""{"Next":{"Next":null}}""", json)
+    let deserializedValue = JsonSerializer.Deserialize<RecursiveRecord>(json)
+    Assert.Equal(value, deserializedValue)
+
+[<Struct>]
+type RecursiveStructRecord =
+    {
+        Next : RecursiveStructRecord voption []
+    }
+
+[<Fact>]
+let ``Recursive struct records are supported``() =
+    let value = { Next = [| ValueSome { Next = [| ValueNone |] } |] }
+    let json = JsonSerializer.Serialize(value)
+    Assert.Equal("""{"Next":[{"Next":[null]}]}""", json)
+    let deserializedValue = JsonSerializer.Deserialize<RecursiveStructRecord>(json)
+    Assert.Equal(value, deserializedValue)

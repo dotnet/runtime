@@ -17,6 +17,8 @@
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#elif HAVE_GETAUXVAL
+#include <sys/auxv.h>
 #endif
 
 #ifdef __cplusplus
@@ -73,13 +75,6 @@ static inline char* minipal_getexepath(void)
     // This is a packaging convention that our tooling should enforce.
     return strdup("/managed");
 #else
-#if HAVE_GETAUXVAL && defined(AT_EXECFN)
-    const char* path = (const char *)getauxval(AT_EXECFN);
-    if (path)
-    {
-        return realpath(path, NULL);
-    }
-#endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
 #ifdef __linux__
     const char* symlinkEntrypointExecutable = "/proc/self/exe";
 #else
@@ -87,7 +82,23 @@ static inline char* minipal_getexepath(void)
 #endif
 
     // Resolve the symlink to the executable from /proc
-    return realpath(symlinkEntrypointExecutable, NULL);
+    char* path = realpath(symlinkEntrypointExecutable, NULL);
+    if (path)
+    {
+        return path;
+    }
+
+#if HAVE_GETAUXVAL && defined(AT_EXECFN)
+    // fallback to AT_EXECFN, which does not work properly in rare cases
+    // when .NET process is set as interpreter (shebang).
+    const char* exePath = (const char *)(getauxval(AT_EXECFN));
+    if (exePath && !errno)
+    {
+        return realpath(exePath, NULL);
+    }
+#endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
+
+    return NULL;
 #endif // defined(__APPLE__)
 }
 

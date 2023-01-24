@@ -60,8 +60,10 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// Warning: The assembly versioning mechanism is dead!
         /// </summary>
-        public static CompareInfo GetCompareInfo(int culture, Assembly assembly!!)
+        public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             // Parameter checking.
             if (assembly != typeof(object).Module.Assembly)
             {
@@ -76,8 +78,11 @@ namespace System.Globalization
         /// assembly for the specified culture.
         /// The purpose of this method is to provide version for CompareInfo tables.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name!!, Assembly assembly!!)
+        public static CompareInfo GetCompareInfo(string name, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly != typeof(object).Module.Assembly)
             {
                 throw new ArgumentException(SR.Argument_OnlyMscorlib, nameof(assembly));
@@ -103,18 +108,22 @@ namespace System.Globalization
         /// <summary>
         /// Get the CompareInfo for the specified culture.
         /// </summary>
-        public static CompareInfo GetCompareInfo(string name!!)
+        public static CompareInfo GetCompareInfo(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return CultureInfo.GetCultureInfo(name).CompareInfo;
         }
 
         public static bool IsSortable(char ch)
         {
-            return IsSortable(MemoryMarshal.CreateReadOnlySpan(ref ch, 1));
+            return IsSortable(new ReadOnlySpan<char>(in ch));
         }
 
-        public static bool IsSortable(string text!!)
+        public static bool IsSortable(string text)
         {
+            ArgumentNullException.ThrowIfNull(text);
+
             return IsSortable(text.AsSpan());
         }
 
@@ -372,15 +381,11 @@ namespace System.Globalization
             // We know a bounds check error occurred. Now we just need to figure
             // out the correct error message to surface.
 
-            if (length1 < 0 || length2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length1);
+            ArgumentOutOfRangeException.ThrowIfNegative(length2);
 
-            if (offset1 < 0 || offset2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset1);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset2);
 
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {
@@ -785,7 +790,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return IndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return IndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int IndexOf(string source, string value, CompareOptions options)
@@ -857,7 +862,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -865,7 +870,7 @@ namespace System.Globalization
                 }
             }
 
-            int result = IndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int result = IndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (result >= 0)
             {
                 result += startIndex;
@@ -891,7 +896,7 @@ namespace System.Globalization
 
                 if ((uint)startIndex > (uint)source.Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
                 else
                 {
@@ -1118,7 +1123,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return LastIndexOf(source, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            return LastIndexOf(source, new ReadOnlySpan<char>(in value), options);
         }
 
         public int LastIndexOf(string source, string value, CompareOptions options)
@@ -1202,7 +1207,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
                 }
             }
 
@@ -1213,7 +1218,7 @@ namespace System.Globalization
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            int retVal = LastIndexOf(sourceSpan, MemoryMarshal.CreateReadOnlySpan(ref value, 1), options);
+            int retVal = LastIndexOf(sourceSpan, new ReadOnlySpan<char>(in value), options);
             if (retVal >= 0)
             {
                 retVal += startIndex;
@@ -1262,7 +1267,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
                 }
             }
 

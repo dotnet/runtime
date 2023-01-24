@@ -5,32 +5,32 @@
 **
 ** 	Source: \composite\threading\threadsuspension\threadsuspension.c
 **
-** 	Purpose: To verify Thread Suspension Reegneering effort for this milestone 
+** 	Purpose: To verify Thread Suspension Reegneering effort for this milestone
 
 	PsedoCode:
 
 		Preparation:
 		Create PROCESS_COUNT processes.
 		Test:
-			Create Worker Thread 
-				Start Reading and writing to a File
-			
 			Create Worker Thread
-				In an infinite loop do the following 
+				Start Reading and writing to a File
+
+			Create Worker Thread
+				In an infinite loop do the following
 					Enter Critical Section
 		 				Increment Counter
-					Leave Critical Section 
-			
+					Leave Critical Section
+
 			Create Worker Thread
 				Allocate Memory and Free Memory
-			
+
 			Create Worker Thread
 				In a tight loop add numbers
-			
+
 			In a loop repeated REPEAT_COUNT times
 
-				Create Thread 
-				
+				Create Thread
+
 					Suspend all worker threads
 					Resume all worker threads
 
@@ -47,20 +47,20 @@
 
 
 	Scenario:
-**    
+**
 		One thread suspends all remaining threads which are in the middle of doing some work and resume all threads
 		Thread 1:  Reading and Writing File
 		Thread 2:  Enter and Leave Critical Section
 		Thread 3:  Allocating chunks of memory
 		Thread 4:  Perform Unsafe Operation (printf, malloc)
 		Thread 5:  Suspends Thread 1 to Thread 4 and resumes them
-	     
+
 **
 **
 **
-** 	Dependencies: 
-**                
-** 
+** 	Dependencies:
+**
+**
 
 **
 **=========================================================*/
@@ -87,7 +87,7 @@ HANDLE hThread[NUMBER_OF_WORKER_THREAD_TYPES][THREAD_MAX];
 
 /*unsigned int g_readfileoperation;
 unsigned int g_enterleavecsoperation;
-unsigned int g_allocatefreeoperation; 
+unsigned int g_allocatefreeoperation;
 unsigned int g_doworintightloop;
 */
 
@@ -100,7 +100,7 @@ struct statistics{
     unsigned int processId;
     unsigned int operationsFailed;
     unsigned int operationsPassed;
-    unsigned int operationsTotal; 
+    unsigned int operationsTotal;
     DWORD        operationTime;
     unsigned int relationId;
 };
@@ -116,10 +116,10 @@ ResultBuffer *resultBuffer;
 
 
 /* Test Input Variables */
-unsigned int USE_PROCESS_COUNT = 0; 	//Identifies the Process number.  There could potentially  
+unsigned int USE_PROCESS_COUNT = 0; 	//Identifies the Process number.  There could potentially
 unsigned int WORKER_THREAD_MULTIPLIER_COUNT = 0;  //In this test case this represents the number of worker thread instances
 unsigned int REPEAT_COUNT = 0; //Number of  Suspend Resume operation of worker threads
-unsigned int RELATION_ID = 0; 
+unsigned int RELATION_ID = 0;
 
 
 
@@ -162,7 +162,7 @@ struct processStatistics processStats;
 struct statistics* tmpBuf = NULL;
 int statisticsSize = 0;
 
-DWORD dwThreadId=0; 
+DWORD dwThreadId=0;
 HANDLE hMainThread;
 unsigned int i = 0;
 int j = 0;
@@ -191,7 +191,7 @@ _snprintf(processFileName, MAX_PATH, "%d_process_threadsuspension_%d_.txt", USE_
 hProcessFile = fopen(processFileName, "w+");
 
 if(hProcessFile == NULL)
-    { 
+    {
        Fail("Error in opening file to write process results for process [%d]\n", USE_PROCESS_COUNT);
     }
 
@@ -203,13 +203,13 @@ processStats.relationId = RELATION_ID;
 //Start Process Time Capture
 dwStart = GetTickCount();
 
-//Setup for Thread Result Collection 
+//Setup for Thread Result Collection
 statisticsSize = sizeof(struct statistics);
 _snprintf(fileName, MAX_PATH, "%d_thread_threadsuspension_%d_.txt", USE_PROCESS_COUNT,RELATION_ID);
 hFile = fopen(fileName, "w+");
 
 if(hFile == NULL)
-    { 
+    {
         Fail("Error in opening file to write thread results for process [%d]\n", USE_PROCESS_COUNT);
     }
 
@@ -218,9 +218,9 @@ if(hFile == NULL)
 resultBuffer = new ResultBuffer( 1, statisticsSize);
 
 /*
-*	Call the Setup Routine 
+*	Call the Setup Routine
 */
-setup();    
+setup();
 
 Trace("WORKER_THREAD_MULTIPLIER_COUNT: %d \n", WORKER_THREAD_MULTIPLIER_COUNT);
 
@@ -228,126 +228,126 @@ Trace("WORKER_THREAD_MULTIPLIER_COUNT: %d \n", WORKER_THREAD_MULTIPLIER_COUNT);
 for (i=0;i<WORKER_THREAD_MULTIPLIER_COUNT;i++)
 {
 
- 	    /* 
+ 	    /*
 	     * Create readfile thread
 	     */
 	    hThread[0][i] = CreateThread(
-		NULL,         
-		0,            
-		readfile,     
-		NULL,     
-		0,           
+		NULL,
+		0,
+		readfile,
+		NULL,
+		0,
 		&dwThreadId);
 
-	    if ( NULL == hThread[0][i] ) 
+	    if ( NULL == hThread[0][i] )
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());   
+		       "GetLastError returned %d\n", GetLastError());
 	    }
 
-	 
-	   
-	    /* 
+
+
+	    /*
 	     * Create Enter and Leave Critical Section Thread
 	     */
 	    hThread[1][i] = CreateThread(
-		NULL,         
-		0,            
-		enterandleave_cs,     
-		NULL,     
-		0,           
+		NULL,
+		0,
+		enterandleave_cs,
+		NULL,
+		0,
 		&dwThreadId);
 
-	    if ( NULL == hThread[1][i] ) 
+	    if ( NULL == hThread[1][i] )
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());   
+		       "GetLastError returned %d\n", GetLastError());
 	    }
-	   
-			 
 
-	    /* 
+
+
+	    /*
 	     * Create Allocate and Free Memory Thread
 	     */
 	    hThread[2][i] = CreateThread(
-		NULL,         
-		0,            
-		allocateandfree_memory,     
-		NULL,     
-		0,           
+		NULL,
+		0,
+		allocateandfree_memory,
+		NULL,
+		0,
 		&dwThreadId);
 
-	    if ( NULL == hThread[2][i]) 
+	    if ( NULL == hThread[2][i])
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());   
+		       "GetLastError returned %d\n", GetLastError());
 	    }
-	   
-		   
 
-		/* 
+
+
+		/*
 	     * Create Work in tight Loop thread
 	     */
 	    hThread[3][i] = CreateThread(
-		NULL,         
-		0,            
-		doworkintightloop_cs,     
-		NULL,     
-		0,           
+		NULL,
+		0,
+		doworkintightloop_cs,
+		NULL,
+		0,
 		&dwThreadId);
 
-	    if ( NULL == hThread[3][i]) 
+	    if ( NULL == hThread[3][i])
 	    {
 		Fail ( "CreateThread() returned NULL.  Failing test.\n"
-		       "GetLastError returned %d\n", GetLastError());   
+		       "GetLastError returned %d\n", GetLastError());
 	    }
 
-   	    
- 
+
+
 }
 
 
 
 
 
-/* 
+/*
      * Create Main test case thread that Suspends and Resumes Threads
      */
     hMainThread = CreateThread(
-	NULL,         
-	0,            
-	suspendandresumethreads,     
-	(LPVOID)dwThrdParam,     
-	0,           
+	NULL,
+	0,
+	suspendandresumethreads,
+	(LPVOID)dwThrdParam,
+	0,
 	&dwThreadId);
 
-    if ( NULL == hMainThread ) 
+    if ( NULL == hMainThread )
     {
 	Fail ( "CreateThread() returned NULL.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());   
+	       "GetLastError returned %d\n", GetLastError());
     }
 
 
 
 
 /*
-* Set Event to allow all threads to start 
+* Set Event to allow all threads to start
 */
 
 if (0==SetEvent(g_hEvent))
 {
 	Fail ( "SetEvent returned Zero.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());  
+	       "GetLastError returned %d\n", GetLastError());
 }
 
 /*
  * Wait for main thread to complete
- * 
+ *
  */
  if (WAIT_OBJECT_0 != WaitForSingleObject (hMainThread, INFINITE))
  	{
  		Fail ("Main: Wait for Single Object (mainThread) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());  
+	       "GetLastError returned %d\n", GetLastError());
  	}
 
 //Get the end time of the process
@@ -355,7 +355,7 @@ processStats.operationTime = GetTickCount() - dwStart;
 
 //Write Process Result Contents to File
 if(hProcessFile!= NULL)
-    { 
+    {
             fprintf(hProcessFile, "%d,%lu,%d\n", processStats.processId, processStats.operationTime, processStats.relationId );
     }
 
@@ -375,9 +375,9 @@ if (0!=fclose(hProcessFile))
 
 //Write Thread Result Contents to File
 if(hFile!= NULL)
-    { 
+    {
         for( i = 0; i < 1; i++ )
-        {  
+        {
             buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
             fprintf(hFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
         }
@@ -392,10 +392,10 @@ if (0!=fclose(hFile))
 cleanup();
 
 if (failFlag == TRUE)
-{	
+{
 	return FAIL;
 }
-else 
+else
 {
 	return PASS;
 }
@@ -410,31 +410,31 @@ VOID
 setup(VOID)
 {
 	/*Delete All Temporary Files Created by the previous execution of the test case*/
-	HANDLE hSearch; 
-	BOOL fFinished = FALSE; 
-	WIN32_FIND_DATA FileData; 
+	HANDLE hSearch;
+	BOOL fFinished = FALSE;
+	WIN32_FIND_DATA FileData;
 
 	//Start searching for .tmp files in the current directory.
-	hSearch = FindFirstFile("*.tmp*", &FileData); 
-	if (hSearch == INVALID_HANDLE_VALUE) 
-	{ 
-		//No Files That Matched Criteria 
+	hSearch = FindFirstFile("*.tmp*", &FileData);
+	if (hSearch == INVALID_HANDLE_VALUE)
+	{
+		//No Files That Matched Criteria
 		fFinished = TRUE;
 	}
 
-	//Delete all files that match the pattern 
-	while (!fFinished) 
+	//Delete all files that match the pattern
+	while (!fFinished)
 	{
 		if (!DeleteFile(FileData.cFileName))
 		{
-			Trace("Setup:  Could not delete temporary file %s\n",FileData.cFileName ); 
-			Fail ("GetLastError returned %d\n", GetLastError());  
+			Trace("Setup:  Could not delete temporary file %s\n",FileData.cFileName );
+			Fail ("GetLastError returned %d\n", GetLastError());
 		}
-		if (!FindNextFile(hSearch, &FileData)) 
+		if (!FindNextFile(hSearch, &FileData))
 		{
-			if (GetLastError() == ERROR_NO_MORE_FILES) 
-			{ 
-				fFinished = TRUE; 
+			if (GetLastError() == ERROR_NO_MORE_FILES)
+			{
+				fFinished = TRUE;
 			}
 			else
 			{
@@ -442,14 +442,14 @@ setup(VOID)
 			}
 		}
 	}
-		
+
 	// Close the search handle, only if HANDLE is Valid
 	if (hSearch != INVALID_HANDLE_VALUE)
 	{
 		if (!FindClose(hSearch))
 		{
-			Trace("Setup: Could not close search handle \n"); 
-			Fail ("GetLastError returned %d\n", GetLastError());  
+			Trace("Setup: Could not close search handle \n");
+			Fail ("GetLastError returned %d\n", GetLastError());
 		}
 	}
 
@@ -470,12 +470,12 @@ setup(VOID)
 VOID
 cleanup(VOID)
 {
-	//DeleteCriticalSection(&g_csUniqueFileName);	
+	//DeleteCriticalSection(&g_csUniqueFileName);
 	PAL_Terminate();
 }
 
 
-VOID 
+VOID
 incrementCounter(VOID)
 {
 
@@ -483,59 +483,59 @@ incrementCounter(VOID)
 		{
 			GLOBAL_COUNTER = 0;
 		}
-			
-	GLOBAL_COUNTER++;	
+
+	GLOBAL_COUNTER++;
 }
 
 /*
- * Worker Thread 
+ * Worker Thread
  * Read File:  Read from a file and write to a temporary file and then delete the temp file
  */
 DWORD
-PALAPI 
+PALAPI
 readfile( LPVOID lpParam )
 {
 
-	// Declaring Local Variables   
+	// Declaring Local Variables
 	HANDLE hFile,hTempfile;
-	char buffer[BUFSIZE]; 
+	char buffer[BUFSIZE];
 	DWORD  dwBytesRead, dwBytesWritten, dwBufSize=BUFSIZE;
 	 DWORD dwWaitResult=0;
 	 char filename[MAX_PATH];
 
-	//Wait for event to signal to start test	
+	//Wait for event to signal to start test
 	dwWaitResult  = WaitForSingleObject(g_hEvent,INFINITE);
 	if (WAIT_OBJECT_0 != dwWaitResult)
 		{
 		Fail ("readfile: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError()); 
+	       "GetLastError returned %d\n", GetLastError());
 		}
-	
-	 
+
+
 	/*Start Operation*/
 
-	// Open the existing file. 
+	// Open the existing file.
 	while(TRUE)
 		{
 
-		hFile = CreateFile("samplefile.dat",  // file name 
-		        GENERIC_READ,                   // open for reading 
-		        FILE_SHARE_READ,              // Share the file for read 
-		        NULL,                           	// default security 
-		        OPEN_EXISTING,                // existing file only 
-		        FILE_ATTRIBUTE_NORMAL,  // normal file 
-		        NULL);                          	// no template 
+		hFile = CreateFile("samplefile.dat",  // file name
+		        GENERIC_READ,                   // open for reading
+		        FILE_SHARE_READ,              // Share the file for read
+		        NULL,                           	// default security
+		        OPEN_EXISTING,                // existing file only
+		        FILE_ATTRIBUTE_NORMAL,  // normal file
+		        NULL);                          	// no template
 
-			if (hFile == INVALID_HANDLE_VALUE) 
-		 	{ 
+			if (hFile == INVALID_HANDLE_VALUE)
+		 	{
 		        Trace("Could not open file \n");
-			 Fail ( "GetLastError returned %d\n", GetLastError());   
-		    	} 
+			 Fail ( "GetLastError returned %d\n", GetLastError());
+		    	}
 
 			//Generate Unique File Name to Write
 			//Enter CS
 			EnterCriticalSection(&g_csUniqueFileName);
-			
+
 				//Increment Number and assign to local variable
 				UNIQUE_FILE_NUMBER++;
 				_snprintf(filename, MAX_PATH, "%d_%d_tempfile.tmp", USE_PROCESS_COUNT,UNIQUE_FILE_NUMBER);
@@ -543,59 +543,59 @@ readfile( LPVOID lpParam )
 			//Leave CS
 			LeaveCriticalSection(&g_csUniqueFileName);
 
-			
-			// Create a temporary file with name generate above 
-			hTempfile = CreateFile(filename,  // file name 
-				        GENERIC_WRITE, // open for read/write 
-				        0,                            // do not share 
-				        NULL,                         // default security 
+
+			// Create a temporary file with name generate above
+			hTempfile = CreateFile(filename,  // file name
+				        GENERIC_WRITE, // open for read/write
+				        0,                            // do not share
+				        NULL,                         // default security
 				        CREATE_ALWAYS,                // overwrite existing file
-				        FILE_ATTRIBUTE_NORMAL,        // normal file 
-				        NULL);                        // no template 
+				        FILE_ATTRIBUTE_NORMAL,        // normal file
+				        NULL);                        // no template
 
 
-			 if (hTempfile == INVALID_HANDLE_VALUE) 
-				    { 
-				        Trace("Could not create temporary file\n"); 
-					 Fail ( "GetLastError returned %d\n", GetLastError());   
-				    } 
+			 if (hTempfile == INVALID_HANDLE_VALUE)
+				    {
+				        Trace("Could not create temporary file\n");
+					 Fail ( "GetLastError returned %d\n", GetLastError());
+				    }
 
-			     // Read 4K blocks to the buffer. 
-			    // Change all characters in the buffer to upper case. 
-			    // Write the buffer to the temporary file. 
-	 
-			    do 
+			     // Read 4K blocks to the buffer.
+			    // Change all characters in the buffer to upper case.
+			    // Write the buffer to the temporary file.
+
+			    do
 			    {
-			        if (ReadFile(hFile, buffer, 4096, 
-			            &dwBytesRead, NULL)) 
-			        { 
-			            
-			            WriteFile(hTempfile, buffer, dwBytesRead, 
-			                &dwBytesWritten, NULL); 
-			        } 
-			    } while (dwBytesRead == BUFSIZE); 
-			 
-	    		    
-		
-			     // Close both files. 
+			        if (ReadFile(hFile, buffer, 4096,
+			            &dwBytesRead, NULL))
+			        {
+
+			            WriteFile(hTempfile, buffer, dwBytesRead,
+			                &dwBytesWritten, NULL);
+			        }
+			    } while (dwBytesRead == BUFSIZE);
+
+
+
+			     // Close both files.
 	 		    if (0==CloseHandle(hFile))
 	 		    	{
-	 		    		Trace("Could not handle hFile\n"); 
-					Fail ( "GetLastError returned %d\n", GetLastError());  
+	 		    		Trace("Could not handle hFile\n");
+					Fail ( "GetLastError returned %d\n", GetLastError());
 			    	}
 
 			    if (0==CloseHandle(hTempfile))
 			    	{
-			    		Trace("Could not handle hTempFile\n"); 
-					Fail ( "GetLastError returned %d\n", GetLastError());  
+			    		Trace("Could not handle hTempFile\n");
+					Fail ( "GetLastError returned %d\n", GetLastError());
 			    	}
 
 			    //Delete the file that was created
 			    if (!DeleteFile(filename))
 			    	{
-					Trace("Could not delete temporary file %s\n", filename); 
-					Fail ( "GetLastError returned %d\n", GetLastError());  
-					
+					Trace("Could not delete temporary file %s\n", filename);
+					Fail ( "GetLastError returned %d\n", GetLastError());
+
 			    	}
 
             SwitchToThread();
@@ -612,42 +612,42 @@ readfile( LPVOID lpParam )
  * Enter and Leave Nested Critical Sections
  */
 DWORD
-PALAPI 
+PALAPI
 enterandleave_cs( LPVOID lpParam )
 {
-       
+
 	//Declare Local Variables
-	
+
 	CRITICAL_SECTION lcs;
 	CRITICAL_SECTION lcsNested;
 
 	 DWORD dwWaitResult;
 
-	//Intialize Critical Section Structures
+	//Initialize Critical Section Structures
 	InitializeCriticalSection ( &lcs);
 	InitializeCriticalSection ( &lcsNested);
 
-	
-	//Wait for event to signal to start test	
+
+	//Wait for event to signal to start test
 	dwWaitResult  = WaitForSingleObject(g_hEvent,INFINITE);
 	if (WAIT_OBJECT_0 != dwWaitResult)
 		{
 		Fail ("enterandleave_cs: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError()); 
+	       "GetLastError returned %d\n", GetLastError());
 		}
-		 
+
 	//Trace("Critical Section Started\n");
-	
+
 	while(TRUE)
 		{
 	EnterCriticalSection(&lcs);
 
 		EnterCriticalSection(&lcsNested);
-		
+
 			incrementCounter();
 
 		LeaveCriticalSection(&lcsNested);
-		
+
 	LeaveCriticalSection(&lcs);
 
         SwitchToThread();
@@ -658,34 +658,34 @@ enterandleave_cs( LPVOID lpParam )
 
 	DeleteCriticalSection(&lcs);
 	DeleteCriticalSection(&lcsNested);
-	
-	 
+
+
     return 0;
 }
 
 
-/* 
+/*
  * Allocate and Free Memory
  */
 DWORD
-PALAPI 
+PALAPI
 allocateandfree_memory( LPVOID lpParam )
 {
-       
+
 
 	int i;
 	char *textArrPtr[64];
 	 DWORD dwWaitResult;
 
-	//Wait for event to signal to start test	
+	//Wait for event to signal to start test
 	dwWaitResult  = WaitForSingleObject(g_hEvent,INFINITE);
 	if (WAIT_OBJECT_0 != dwWaitResult)
 		{
 		Fail ("allocateandfree_memory: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError()); 
+	       "GetLastError returned %d\n", GetLastError());
 		}
-	
-	 
+
+
 	while(TRUE)
 	{
 
@@ -700,7 +700,7 @@ allocateandfree_memory( LPVOID lpParam )
 						testStatus = TEST_FAIL;
 					}
 			}
-		
+
 		for (i=0;i<64;i++)
 			{
 				free(textArrPtr[i]);
@@ -710,31 +710,31 @@ allocateandfree_memory( LPVOID lpParam )
             //g_allocatefreeoperation++;
 	}
 
-	
-	
-	
+
+
+
     return 0;
 }
 
-/* 
+/*
  * Do work in a tight loop
  */
 DWORD
-PALAPI 
+PALAPI
 doworkintightloop_cs( LPVOID lpParam )
 {
-       
+
 	unsigned int i;
 	 DWORD dwWaitResult;
-	
-	//Wait for event to signal to start test	
+
+	//Wait for event to signal to start test
 	dwWaitResult  = WaitForSingleObject(g_hEvent,INFINITE);
 	if (WAIT_OBJECT_0 != dwWaitResult)
 		{
 		Fail ("doworkintightloop_cs: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError()); 
+	       "GetLastError returned %d\n", GetLastError());
 		}
-	
+
 	i= 0;
 	while (TRUE)
 	{
@@ -751,14 +751,14 @@ doworkintightloop_cs( LPVOID lpParam )
 }
 
 
-/* 
+/*
  * Main Test Case worker thread which will suspend and resume all other worker threads
  */
 DWORD
-PALAPI 
+PALAPI
 suspendandresumethreads( LPVOID lpParam )
 {
-       
+
 	unsigned int loopcount = REPEAT_COUNT;
 	int Id=(int)lpParam;
 	unsigned int i,j,k;
@@ -768,7 +768,7 @@ suspendandresumethreads( LPVOID lpParam )
 	struct statistics stats;
 	  struct statistics* buffer;
 
-	  
+
 
 	//Initialize the Statistics Structure
 	stats.relationId = RELATION_ID;
@@ -778,25 +778,25 @@ suspendandresumethreads( LPVOID lpParam )
 	stats.operationsTotal  = 0;
 	stats.operationTime    = 0;
 
-	
-	
-	//Wait for event to signal to start test	
+
+
+	//Wait for event to signal to start test
 	WaitForSingleObject(g_hEvent,INFINITE);
 	if (WAIT_OBJECT_0 != dwWaitResult)
 	{
 		Fail ("suspendandresumethreads: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	    "GetLastError returned %d\n", GetLastError()); 
+	    "GetLastError returned %d\n", GetLastError());
 	}
 
-	 
-	//Capture Start Import 
+
+	//Capture Start Import
 	dwStart = GetTickCount();
 
 	for(i = 0; i < loopcount; i++)
 	{
 
 		failFlag = false;
-		
+
 		//Suspend Worker Threads
 		for (k=0;k<WORKER_THREAD_MULTIPLIER_COUNT;k++)
 		{
@@ -818,30 +818,30 @@ suspendandresumethreads( LPVOID lpParam )
 			{
 
 				//Only suspend if not already in suspended state
-				
+
 				if (-1 == ResumeThread(hThread[j][k]))
 				{
 					//If the operation indicate failure
 					failFlag = true;
 				}
-			
+
 			}
 		}
 
 
 		//Check for Fail Flag.  If set increment number of failures
 		// If Fail flag not set then increment number of operations and number of passe
-		if (failFlag == true) 
+		if (failFlag == true)
 			{
 				stats.operationsFailed++;
 			}
 		else
 			{
 				stats.operationsPassed +=1;
-		
+
 			}
 		stats.operationsTotal  +=1;
-		
+
 	}
 
 	stats.operationTime = GetTickCount() - dwStart;
@@ -858,8 +858,8 @@ suspendandresumethreads( LPVOID lpParam )
 
 	 buffer = (struct statistics *)resultBuffer->getResultBuffer(Id);
        //Trace("\n%d,%d,%d,%lu\n", buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime );
-            
-	
+
+
     return 0;
 }
 
@@ -868,43 +868,43 @@ suspendandresumethreads( LPVOID lpParam )
 int GetParameters( int argc, char **argv)
 {
 
-	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         Trace("PAL -Composite Thread Suspension Test\n");
         Trace("Usage:\n");
-	 Trace("\t[PROCESS_COUNT] Greater than or Equal to  1 \n"); 
-	 Trace("\t[WORKER_THREAD_MULTIPLIER_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n"); 
+	 Trace("\t[PROCESS_COUNT] Greater than or Equal to  1 \n");
+	 Trace("\t[WORKER_THREAD_MULTIPLIER_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n");
         Trace("\t[REPEAT_COUNT] Greater than or Equal to 1\n");
-	 Trace("\t[RELATION_ID  [greater than or Equal to 1]\n"); 
+	 Trace("\t[RELATION_ID  [greater than or Equal to 1]\n");
         return -1;
     }
 
 //  Trace("Args 1 is [%s], Arg 2 is [%s], Arg 3 is [%s]\n", argv[1], argv[2], argv[3]);
-    
+
     USE_PROCESS_COUNT = atoi(argv[1]);
-    if( USE_PROCESS_COUNT < 0) 
+    if( USE_PROCESS_COUNT < 0)
     {
         Trace("\nPROCESS_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
     WORKER_THREAD_MULTIPLIER_COUNT = atoi(argv[2]);
-    if( WORKER_THREAD_MULTIPLIER_COUNT < 1 || WORKER_THREAD_MULTIPLIER_COUNT > 64) 
+    if( WORKER_THREAD_MULTIPLIER_COUNT < 1 || WORKER_THREAD_MULTIPLIER_COUNT > 64)
     {
         Trace("\nWORKER_THREAD_MULTIPLIER_COUNT to be greater than or equal to 1 or less than or equal to 64\n");
         return -1;
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         Trace("\nREPEAT_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         Trace("\nRELATION_ID to be greater than or equal to 1\n");
         return -1;

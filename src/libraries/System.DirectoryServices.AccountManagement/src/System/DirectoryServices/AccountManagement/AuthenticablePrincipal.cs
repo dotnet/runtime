@@ -398,8 +398,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // If this is the first AccountInfo attribute we're loading,
                         // we'll need to create the AccountInfo to hold it
-                        if (_accountInfo == null)
-                            _accountInfo = new AccountInfo(this);
+                        _accountInfo ??= new AccountInfo(this);
 
                         _accountInfo.LoadValueIntoProperty(propertyName, value);
                     }
@@ -407,8 +406,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // If this is the first PasswordInfo attribute we're loading,
                         // we'll need to create the PasswordInfo to hold it
-                        if (_passwordInfo == null)
-                            _passwordInfo = new PasswordInfo(this);
+                        _passwordInfo ??= new PasswordInfo(this);
 
                         _passwordInfo.LoadValueIntoProperty(propertyName, value);
                     }
@@ -444,7 +442,7 @@ namespace System.DirectoryServices.AccountManagement
                     // to add some type of tag to the property names to differentiate them here
                     bool? val = rosf.GetChangeStatusForProperty(propertyName);
 
-                    if (val.HasValue == true)
+                    if (val.HasValue)
                         return val.Value;
 
                     if (propertyName.StartsWith(PropertyNames.AcctInfoPrefix, StringComparison.Ordinal))
@@ -526,15 +524,9 @@ namespace System.DirectoryServices.AccountManagement
 
             RefreshOriginalThumbprintList();
 
-            if (_accountInfo != null)
-            {
-                _accountInfo.ResetAllChangeStatus();
-            }
+            _accountInfo?.ResetAllChangeStatus();
 
-            if (_passwordInfo != null)
-            {
-                _passwordInfo.ResetAllChangeStatus();
-            }
+            _passwordInfo?.ResetAllChangeStatus();
 
             rosf.ResetAllChangeStatus();
 

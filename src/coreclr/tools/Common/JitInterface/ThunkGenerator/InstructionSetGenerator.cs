@@ -3,17 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Diagnostics;
 
 namespace Thunkerator
 {
     public class InstructionSetGenerator
     {
-        class InstructionSetInfo
+        private sealed class InstructionSetInfo
         {
             public string Architecture { get; }
             public string ManagedName { get; }
@@ -26,7 +26,7 @@ namespace Thunkerator
             {
                 Architecture = architecture;
                 ManagedName = managedName;
-                R2rName = String.IsNullOrEmpty(r2rName) ? managedName : r2rName;
+                R2rName = string.IsNullOrEmpty(r2rName) ? managedName : r2rName;
                 R2rNumericValue = r2rNumericValue;
                 JitName = jitName;
                 CommandLineName = commandLineName;
@@ -46,11 +46,11 @@ namespace Thunkerator
             {
                 get
                 {
-                    if (!String.IsNullOrEmpty(CommandLineName))
+                    if (!string.IsNullOrEmpty(CommandLineName))
                         return CommandLineName;
-                    if (!String.IsNullOrEmpty(ManagedName))
+                    if (!string.IsNullOrEmpty(ManagedName))
                         return ManagedName;
-                    else if (!String.IsNullOrEmpty(R2rName))
+                    else if (!string.IsNullOrEmpty(R2rName))
                         return R2rName;
                     else
                         return JitName;
@@ -58,7 +58,9 @@ namespace Thunkerator
             }
         }
 
-        class InstructionSetImplication
+        private sealed record InstructionSetGroup(string Names, string Archs, string Sets);
+
+        private sealed class InstructionSetImplication
         {
             public string Architecture { get; }
             public string JitName { get; }
@@ -79,18 +81,22 @@ namespace Thunkerator
             }
         }
 
-        List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
-        List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
-        Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
-        SortedDictionary<string,int> _r2rNamesByName = new SortedDictionary<string,int>();
-        SortedDictionary<int,string> _r2rNamesByNumber = new SortedDictionary<int,string>();
-        SortedSet<string> _architectures = new SortedSet<string>();
-        Dictionary<string,List<string>> _architectureJitNames = new Dictionary<string,List<string>>();
-        Dictionary<string,List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string,List<string>>();
-        HashSet<string> _64BitArchitectures = new HashSet<string>();
-        Dictionary<string,string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string,string>();
+        private List<InstructionSetInfo> _instructionSets = new List<InstructionSetInfo>();
+        private List<InstructionSetImplication> _implications = new List<InstructionSetImplication>();
+        private List<InstructionSetGroup> _instructionSetsGroups = new List<InstructionSetGroup>();
+        private Dictionary<string, HashSet<string>> _64bitVariants = new Dictionary<string, HashSet<string>>();
+        private SortedDictionary<string, int> _r2rNamesByName = new SortedDictionary<string, int>();
+        private SortedDictionary<int, string> _r2rNamesByNumber = new SortedDictionary<int, string>();
+        private SortedSet<string> _architectures = new SortedSet<string>();
+        private Dictionary<string, List<string>> _architectureJitNames = new Dictionary<string, List<string>>();
+        private Dictionary<string, List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string, List<string>>();
+        private HashSet<string> _64BitArchitectures = new HashSet<string>();
+        private Dictionary<string, string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string, string>();
 
-        void ArchitectureEncountered(string arch)
+        // This represents the number of flags fields we currently track
+        private const int FlagsFieldCount = 1;
+
+        private void ArchitectureEncountered(string arch)
         {
             if (!_64bitVariants.ContainsKey(arch))
                 _64bitVariants.Add(arch, new HashSet<string>());
@@ -101,13 +107,13 @@ namespace Thunkerator
                 _architectureVectorInstructionSetJitNames.Add(arch, new List<string>());
         }
 
-        void ValidateArchitectureEncountered(string arch)
+        private void ValidateArchitectureEncountered(string arch)
         {
             if (!_architectures.Contains(arch))
                 throw new Exception("Architecture not defined");
         }
 
-        private string ArchToIfDefArch(string arch)
+        private static string ArchToIfDefArch(string arch)
         {
             if (arch == "X64")
                 return "AMD64";
@@ -142,7 +148,7 @@ namespace Thunkerator
                     {
                         command[i] = command[i].Trim();
                     }
-                    switch(command[0])
+                    switch (command[0])
                     {
                         case "definearch":
                             if (command.Length != 4)
@@ -163,7 +169,7 @@ namespace Thunkerator
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
                             _architectureJitNames[command[1]].Add(command[5]);
-                            _instructionSets.Add(new InstructionSetInfo(command[1],command[2],command[3],command[4],command[5],command[6]));
+                            _instructionSets.Add(new InstructionSetInfo(command[1], command[2], command[3], command[4], command[5], command[6]));
                             break;
                         case "vectorinstructionset":
                             if (command.Length != 3)
@@ -182,7 +188,12 @@ namespace Thunkerator
                             if (command.Length != 4)
                                 throw new Exception("Incorrect number of args for instructionset");
                             ValidateArchitectureEncountered(command[1]);
-                            _implications.Add(new InstructionSetImplication(command[1],command[2], command[3]));
+                            _implications.Add(new InstructionSetImplication(command[1], command[2], command[3]));
+                            break;
+                        case "instructionsetgroup":
+                            if (command.Length != 4)
+                                throw new Exception("Incorrect number of args for instructionsetgroup");
+                            _instructionSetsGroups.Add(new InstructionSetGroup(command[1], command[2], command[3]));
                             break;
                         case "copyinstructionsets":
                             if (command.Length != 3)
@@ -227,9 +238,9 @@ namespace Thunkerator
 
             foreach (var instructionSet in _instructionSets)
             {
-                if (!String.IsNullOrEmpty(instructionSet.R2rName))
+                if (!string.IsNullOrEmpty(instructionSet.R2rName))
                 {
-                    int r2rValue = Int32.Parse(instructionSet.R2rNumericValue);
+                    int r2rValue = int.Parse(instructionSet.R2rNumericValue);
                     if (_r2rNamesByName.ContainsKey(instructionSet.R2rName))
                     {
                         if (_r2rNamesByName[instructionSet.R2rName] != r2rValue)
@@ -245,9 +256,9 @@ namespace Thunkerator
 
             foreach (var architectureInfo in _architectureJitNames)
             {
-                if (architectureInfo.Value.Count > 62)
+                if (architectureInfo.Value.Count > ((FlagsFieldCount * sizeof(ulong) * 8) - 2))
                 {
-                    throw new Exception("Too many instruction sets added. Scheme of using uint64_t as instruction mask will need updating");
+                    throw new Exception("Too many instruction sets added. Update FlagsFieldCount");
                 }
             }
 
@@ -320,7 +331,7 @@ namespace Internal.ReadyToRunConstants
                     if (instructionSet.Architecture != architecture) continue;
 
                     string r2rEnumerationValue;
-                    if (!String.IsNullOrEmpty(instructionSet.R2rName))
+                    if (!string.IsNullOrEmpty(instructionSet.R2rName))
                         r2rEnumerationValue = $"ReadyToRunInstructionSet.{instructionSet.R2rName}";
                     else
                         r2rEnumerationValue = $"null";
@@ -365,11 +376,9 @@ namespace Internal.ReadyToRunConstants
 // FROM /src/coreclr/tools/Common/JitInterface/ThunkGenerator/InstructionSetDesc.txt
 // using /src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -377,8 +386,9 @@ namespace Internal.JitInterface
     public enum InstructionSet
     {
         ILLEGAL = 0,
-        NONE = 63,
 ");
+
+            tr.WriteLine($"        NONE = {((FlagsFieldCount * sizeof(ulong) * 8) - 1)},");
 
             foreach (string architecture in _architectures)
             {
@@ -389,7 +399,6 @@ namespace Internal.JitInterface
             }
 
             tr.Write(@"    }
-
 ");
 
             foreach (string architecture in _architectures)
@@ -411,11 +420,12 @@ namespace Internal.JitInterface
 ");
             }
 
-            tr.Write(@"    public struct InstructionSetFlags : IEnumerable<InstructionSet>
-    {
-        private ulong _flags;
-
-");
+            tr.Write(@"    public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
+    {");
+            tr.WriteLine();
+            tr.WriteLine($"        private const int FlagsFieldCount = {FlagsFieldCount};");
+            tr.WriteLine($"        private const int BitsPerFlagsField = 64;");
+            tr.WriteLine($"        private fixed ulong _flags[FlagsFieldCount];");
 
             foreach (string architecture in _architectures)
             {
@@ -423,44 +433,85 @@ namespace Internal.JitInterface
                 tr.WriteLine();
             }
 
-            tr.Write(@"        public void AddInstructionSet(InstructionSet instructionSet)
+            tr.Write(@"        public InstructionSetFlags() { }
+
+        private static uint GetFlagsFieldIndex(InstructionSet instructionSet)
         {
-            _flags = _flags | (((ulong)1) << (int)instructionSet);
+            uint bitIndex = (uint)instructionSet;
+            return (uint)(bitIndex / (uint)BitsPerFlagsField);
+        }
+
+        private static ulong GetRelativeBitMask(InstructionSet instructionSet)
+        {
+            return ((ulong)1) << ((int)instructionSet & 0x3F);
+        }
+
+        public void AddInstructionSet(InstructionSet instructionSet)
+        {
+            uint index = GetFlagsFieldIndex(instructionSet);
+            _flags[index] |= GetRelativeBitMask(instructionSet);
         }
 
         public void RemoveInstructionSet(InstructionSet instructionSet)
         {
-            _flags = _flags & ~(((ulong)1) << (int)instructionSet);
+            uint index = GetFlagsFieldIndex(instructionSet);
+            ulong bitIndex = GetRelativeBitMask(instructionSet);
+            _flags[index] &= ~bitIndex;
         }
 
         public bool HasInstructionSet(InstructionSet instructionSet)
         {
-            return (_flags & (((ulong)1) << (int)instructionSet)) != 0;
+            uint index = GetFlagsFieldIndex(instructionSet);
+            ulong bitIndex = GetRelativeBitMask(instructionSet);
+            return ((_flags[index] & bitIndex) != 0);
         }
 
         public bool Equals(InstructionSetFlags other)
         {
-            return _flags == other._flags;
+            for (int i = 0; i < FlagsFieldCount; i++)
+            {
+                if (_flags[i] != other._flags[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public void Add(InstructionSetFlags other)
         {
-            _flags |= other._flags;
+            for (int i = 0; i < FlagsFieldCount; i++)
+            {
+                _flags[i] |= other._flags[i];
+            }
         }
 
         public void IntersectionWith(InstructionSetFlags other)
         {
-            _flags &= other._flags;
+            for (int i = 0; i < FlagsFieldCount; i++)
+            {
+                _flags[i] &= other._flags[i];
+            }
         }
 
         public void Remove(InstructionSetFlags other)
         {
-            _flags &= ~other._flags;
+            for (int i = 0; i < FlagsFieldCount; i++)
+            {
+                _flags[i] &= ~other._flags[i];
+            }
         }
 
         public bool IsEmpty()
         {
-            return _flags == 0;
+            for (int i = 0; i < FlagsFieldCount; i++)
+            {
+                if (_flags[i] != 0)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -470,7 +521,7 @@ namespace Internal.JitInterface
 
         public IEnumerator<InstructionSet> GetEnumerator()
         {
-            for (int i = 1; i < (int)InstructionSet.NONE; i ++)
+            for (int i = 1; i < (int)InstructionSet.NONE; i++)
             {
                 InstructionSet instructionSet = (InstructionSet)i;
                 if (HasInstructionSet(instructionSet))
@@ -529,12 +580,12 @@ namespace Internal.JitInterface
 
         public static InstructionSetFlags ExpandInstructionSetByImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
-            InstructionSetFlags oldflags = input;
+            InstructionSetFlags oldflags;
             InstructionSetFlags resultflags = input;
             do
             {
                 oldflags = resultflags;
-                switch(architecture)
+                switch (architecture)
                 {
 ");
             foreach (string architecture in _architectures)
@@ -572,7 +623,7 @@ namespace Internal.JitInterface
 
         private static InstructionSetFlags ExpandInstructionSetByReverseImplicationHelper(TargetArchitecture architecture, InstructionSetFlags input)
         {
-            InstructionSetFlags oldflags = input;
+            InstructionSetFlags oldflags;
             InstructionSetFlags resultflags = input;
             do
             {
@@ -605,6 +656,28 @@ namespace Internal.JitInterface
             return resultflags;
         }
 
+        private static Dictionary<(string, TargetArchitecture), string> AllInstructionSetGroups { get; } = new()
+            {
+");
+            foreach (InstructionSetGroup group in _instructionSetsGroups)
+            {
+                foreach (string name in group.Names.Split(' '))
+                {
+                    foreach (string arch in group.Archs.Split(' '))
+                    {
+                        string key = $"\"{name}\",".PadRight(13, ' ') + $" TargetArchitecture.{arch}),".PadRight(27, ' ');
+                        tr.WriteLine($"                {{ ({key} \"{group.Sets}\" }},");
+                    }
+                }
+            }
+            tr.Write(@"            };
+
+        public static IEnumerable<string> AllCpuNames =>
+            AllInstructionSetGroups.Keys.Select(key => key.Item1).Distinct();
+
+        public static IEnumerable<string> CpuNameToInstructionSets(string cpu, TargetArchitecture arch) =>
+            AllInstructionSetGroups.TryGetValue((cpu, arch), out string value) ? value.Split(' ') : null;
+
         public struct InstructionSetInfo
         {
             public readonly string Name;
@@ -634,7 +707,7 @@ namespace Internal.JitInterface
                 foreach (var instructionSet in _instructionSets)
                 {
                     if (instructionSet.Architecture != architecture) continue;
-                    bool instructionSetIsSpecifiable = !String.IsNullOrEmpty(instructionSet.CommandLineName);
+                    bool instructionSetIsSpecifiable = !string.IsNullOrEmpty(instructionSet.CommandLineName);
                     string name = instructionSet.PublicName;
                     string managedName = instructionSet.ManagedName;
                     string specifiable = instructionSetIsSpecifiable ? "true" : "false";
@@ -731,8 +804,11 @@ namespace Internal.JitInterface
 enum CORINFO_InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
-    InstructionSet_NONE = 63,
 ");
+
+            int lastAvailableBit = (FlagsFieldCount * 64) - 1;
+            tr.WriteLine($"    InstructionSet_NONE = {lastAvailableBit},");
+
             foreach (string architecture in _architectures)
             {
                 tr.WriteLine($"#ifdef TARGET_{ArchToIfDefArch(architecture)}");
@@ -749,41 +825,92 @@ enum CORINFO_InstructionSet
 struct CORINFO_InstructionSetFlags
 {
 private:
-    uint64_t _flags = 0;
+");
+
+            tr.WriteLine($"    static const int32_t FlagsFieldCount = {FlagsFieldCount};");
+            tr.WriteLine($"    static const int32_t BitsPerFlagsField = sizeof(uint64_t) * 8;");
+            tr.WriteLine($"    uint64_t _flags[FlagsFieldCount] = {{ }};");
+
+            tr.Write(@"
+
+    static uint32_t GetFlagsFieldIndex(CORINFO_InstructionSet instructionSet)
+    {
+        uint32_t bitIndex = (uint32_t)instructionSet;
+        return (uint32_t)(bitIndex / (uint32_t)BitsPerFlagsField);
+    }
+
+    static uint64_t GetRelativeBitMask(CORINFO_InstructionSet instructionSet)
+    {
+        return ((uint64_t)1) << (instructionSet & 0x3F);
+    }
+
 public:
+
+    const int GetInstructionFlagsFieldCount() const
+    {
+        return FlagsFieldCount;
+    }
+
     void AddInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        _flags = _flags | (((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        _flags[index] |= GetRelativeBitMask(instructionSet);
     }
 
     void RemoveInstructionSet(CORINFO_InstructionSet instructionSet)
     {
-        _flags = _flags & ~(((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        uint64_t bitIndex = GetRelativeBitMask(instructionSet);
+        _flags[index] &= ~bitIndex;
     }
 
     bool HasInstructionSet(CORINFO_InstructionSet instructionSet) const
     {
-        return _flags & (((uint64_t)1) << instructionSet);
+        uint32_t index = GetFlagsFieldIndex(instructionSet);
+        uint64_t bitIndex = GetRelativeBitMask(instructionSet);
+        return ((_flags[index] & bitIndex) != 0);
     }
 
     bool Equals(CORINFO_InstructionSetFlags other) const
     {
-        return _flags == other._flags;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            if (_flags[i] != other._flags[i])
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     void Add(CORINFO_InstructionSetFlags other)
     {
-        _flags |= other._flags;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            _flags[i] |= other._flags[i];
+        }
     }
 
     bool IsEmpty() const
     {
-        return _flags == 0;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            if (_flags[i] != 0)
+            {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     void Reset()
     {
-        _flags = 0;
+        for (int i = 0; i < FlagsFieldCount; i++)
+        {
+            _flags[i] = 0;
+        }
     }
 
     void Set64BitInstructionSetVariants()
@@ -808,14 +935,9 @@ public:
             tr.Write(@"
     }
 
-    uint64_t GetFlagsRaw()
+    uint64_t* GetFlagsRaw()
     {
         return _flags;
-    }
-
-    void SetFromFlagsRaw(uint64_t flags)
-    {
-        _flags = flags;
     }
 };
 
@@ -903,9 +1025,9 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
                 {
                     if (instructionSet.Architecture != architecture) continue;
                     string r2rEnumerationValue;
-                    if (String.IsNullOrEmpty(instructionSet.R2rName))
+                    if (string.IsNullOrEmpty(instructionSet.R2rName))
                         continue;
-                    
+
                     r2rEnumerationValue = $"READYTORUN_INSTRUCTION_{instructionSet.R2rName}";
 
                     tr.WriteLine($"        case {r2rEnumerationValue}: return InstructionSet_{instructionSet.JitName};");

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -15,11 +14,14 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a type that has metadata generated in the current compilation.
+    /// This node corresponds to an ECMA-335 TypeDef record. It is however not a 1:1
+    /// mapping because IL could be compiled into machine code without generating a record
+    /// in the reflection metadata (which would not be possible in IL terms).
     /// </summary>
     /// <remarks>
     /// Only expected to be used during ILScanning when scanning for reflection.
     /// </remarks>
-    internal class TypeMetadataNode : DependencyNodeCore<NodeFactory>
+    internal sealed class TypeMetadataNode : DependencyNodeCore<NodeFactory>
     {
         private readonly MetadataType _type;
 
@@ -44,20 +46,22 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
-            if (_type.IsDelegate)
-            {
-                // A delegate type metadata is rather useless without the Invoke method.
-                // If someone reflects on a delegate, chances are they're going to look at the signature.
-                var invokeMethod = _type.GetMethod("Invoke", null);
-                if (!mdManager.IsReflectionBlocked(invokeMethod))
-                    dependencies.Add(factory.MethodMetadata(invokeMethod), "Delegate invoke method metadata");
-            }
 
             if (_type.IsEnum)
             {
                 // A lot of the enum reflection actually happens on top of the respective MethodTable (e.g. getting the underlying type),
                 // so for enums also include their MethodTable.
-                dependencies.Add(factory.MaximallyConstructableType(_type), "Reflectable enum");
+                dependencies.Add(factory.ReflectedType(_type), "Reflectable enum");
+
+                // Enums are not useful without their literal fields. The literal fields are not referenced
+                // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
+                foreach (FieldDesc enumField in _type.GetFields())
+                {
+                    if (enumField.IsLiteral)
+                    {
+                        dependencies.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
+                    }
+                }
             }
 
             // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.
@@ -127,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)typeDefinition))
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)typeDefinition), reason);
                         }
 
@@ -140,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         if (mdManager.CanGenerateMetadata((MetadataType)type))
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             dependencies.Add(nodeFactory.TypeMetadata((MetadataType)type), reason);
                         }
                     }

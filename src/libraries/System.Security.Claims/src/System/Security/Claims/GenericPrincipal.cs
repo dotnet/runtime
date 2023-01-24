@@ -12,8 +12,10 @@ namespace System.Security.Principal
         private readonly IIdentity m_identity;
         private readonly string[]? m_roles;
 
-        public GenericPrincipal(IIdentity identity!!, string[]? roles)
+        public GenericPrincipal(IIdentity identity, string[]? roles)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             m_identity = identity;
             if (roles != null)
             {
@@ -81,6 +83,6 @@ namespace System.Security.Principal
         }
 
         // This is called by AppDomain.GetThreadPrincipal() via reflection.
-        private static IPrincipal GetDefaultInstance() => new GenericPrincipal(new GenericIdentity(string.Empty), new string[] { string.Empty });
+        private static GenericPrincipal GetDefaultInstance() => new GenericPrincipal(new GenericIdentity(string.Empty), new string[] { string.Empty });
     }
 }

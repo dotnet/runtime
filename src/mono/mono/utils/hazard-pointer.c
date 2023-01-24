@@ -89,8 +89,8 @@ mono_thread_small_id_alloc (void)
 		MonoBitSet *new_table;
 		if (small_id_table->size * 2 >= (1 << 16))
 			g_assert_not_reached ();
-		new_table = mono_bitset_clone (small_id_table, small_id_table->size * 2);
-		id = mono_bitset_find_first_unset (new_table, small_id_table->size - 1);
+		new_table = mono_bitset_clone (small_id_table, (gint32)small_id_table->size * 2);
+		id = mono_bitset_find_first_unset (new_table, (gint)small_id_table->size - 1);
 
 		mono_bitset_free (small_id_table);
 		small_id_table = new_table;
@@ -100,7 +100,7 @@ mono_thread_small_id_alloc (void)
 	mono_bitset_set_fast (small_id_table, id);
 
 	small_id_next++;
-	if (small_id_next >= small_id_table->size)
+	if (GINT_TO_UINT(small_id_next) >= small_id_table->size)
 		small_id_next = 0;
 
 	g_assert (id < HAZARD_TABLE_MAX_SIZE);
@@ -158,7 +158,7 @@ mono_thread_small_id_free (int id)
 	/* MonoBitSet operations are not atomic. */
 	mono_os_mutex_lock (&small_id_mutex);
 
-	g_assert (id >= 0 && id < small_id_table->size);
+	g_assert (id >= 0 && GINT_TO_UINT(id) < small_id_table->size);
 	g_assert (mono_bitset_test_fast (small_id_table, id));
 	mono_bitset_clear_fast (small_id_table, id);
 

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -20,21 +19,26 @@
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
              Link="Common\System\Security\IdentityHelper.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">
+    <Compile Include="System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.AnyMobile.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'android' and '$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'maccatalyst' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="System\IO\IsolatedStorage\Helper.NonMobile.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.NonMobile.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>

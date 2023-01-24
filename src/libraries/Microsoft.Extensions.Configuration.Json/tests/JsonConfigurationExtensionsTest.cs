@@ -12,7 +12,6 @@ namespace Microsoft.Extensions.Configuration.Json
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void AddJsonFile_ThrowsIfFilePathIsNullOrEmpty(string path)
         {
             // Arrange
@@ -25,7 +24,6 @@ namespace Microsoft.Extensions.Configuration.Json
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void AddJsonFile_ThrowsIfFileDoesNotExistAtPath()
         {
             // Arrange

@@ -19,7 +19,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
-            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            Debug.Assert(!type.IsGenericDefinition);
             _type = type;
         }
 
@@ -38,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
- 
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(GetMangledName(_type, nameMangler));
@@ -61,13 +62,23 @@ namespace ILCompiler.DependencyAnalysis
                 result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
 
-            if (_type.Module.GetGlobalModuleType().GetStaticConstructor() is MethodDesc moduleCctor)
-            {
-                result.Add(factory.MethodEntrypoint(moduleCctor), "Static base in a module with initializer");
-            }
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
 
-            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;
+        }
+
+        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            // If we have a type loader template for this type, we need to keep track of the generated
+            // bases in the type info hashtable. The type symbol node does such accounting.
+            return new CombinedDependencyListEntry[]
+            {
+                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Keeping track of template-constructable type static bases"),
+            };
         }
 
         public override bool StaticDependenciesAreComputed => true;

@@ -160,6 +160,8 @@ protected:
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_PrecodeHeapInstance[sizeof(CodeFragmentHeap)];
+    BYTE                m_FixupPrecodeHeapInstance[sizeof(LoaderHeap)];
+    BYTE                m_NewStubPrecodeHeapInstance[sizeof(LoaderHeap)];
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
@@ -168,6 +170,8 @@ protected:
 #ifdef FEATURE_READYTORUN
     PTR_CodeFragmentHeap m_pDynamicHelpersHeap;
 #endif
+    PTR_LoaderHeap      m_pFixupPrecodeHeap;
+    PTR_LoaderHeap      m_pNewStubPrecodeHeap;
     //****************************************************************************************
     OBJECTHANDLE        m_hLoaderAllocatorObjectHandle;
     FuncPtrStubs *      m_pFuncPtrStubs; // for GetMultiCallableAddrOfCode()
@@ -236,7 +240,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-    VirtualCallStubManager *m_pVirtualCallStubManager;
+    PTR_VirtualCallStubManager m_pVirtualCallStubManager;
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -354,7 +358,7 @@ public:
     //    - Other LoaderAllocator can have this LoaderAllocator in its reference list
     //      (code:m_LoaderAllocatorReferences), but without call to code:AddRef.
     //    - LoaderAllocator cannot ever go back to phase #1 or #2, but it can skip this phase if there are
-    //      not any LCG method references keeping it alive at the time of manged scout finalization.
+    //      no LCG method references keeping it alive at the time of managed scout finalization.
     //    Detection:
     //        code:IsAlive ... TRUE
     //        code:IsManagedScoutAlive ... FALSE (change from phase #2)
@@ -443,12 +447,24 @@ public:
         return m_pPrecodeHeap;
     }
 
+    PTR_LoaderHeap GetNewStubPrecodeHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pNewStubPrecodeHeap;
+    }
+
     // The executable heap is intended to only be used by the global loader allocator.
     // It refers to executable memory that is not associated with a rangelist.
     PTR_LoaderHeap GetExecutableHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pExecutableHeap;
+    }
+
+    PTR_LoaderHeap GetFixupPrecodeHeap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pFixupPrecodeHeap;
     }
 
     PTR_CodeFragmentHeap GetDynamicHelpersHeap();
@@ -574,7 +590,7 @@ public:
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
-    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData);
+    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);
     void LazyInitStringLiteralMap();
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
@@ -583,7 +599,7 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-    inline VirtualCallStubManager *GetVirtualCallStubManager()
+    inline PTR_VirtualCallStubManager GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pVirtualCallStubManager;
@@ -657,6 +673,12 @@ public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
+    virtual void CleanupDependentHandlesToNativeObjects() {};
+#endif
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -749,6 +771,20 @@ private:
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
     CustomAssemblyBinder* m_binderToRelease;
+#endif
+
+private:
+    class DependentHandleToNativeObjectHashTraits : public PtrSetSHashTraits<LADependentHandleToNativeObject *> {};
+    typedef SHash<DependentHandleToNativeObjectHashTraits> DependentHandleToNativeObjectSet;
+
+    CrstExplicitInit m_dependentHandleToNativeObjectSetCrst;
+    DependentHandleToNativeObjectSet m_dependentHandleToNativeObjectSet;
+
+#ifndef DACCESS_COMPILE
+public:
+    virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle);
+    virtual void CleanupDependentHandlesToNativeObjects();
 #endif
 };
 

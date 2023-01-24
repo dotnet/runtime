@@ -150,7 +150,7 @@ gcc -g opcodes.cpp -o opcodes
 
 In investigating the various disassembly formats, the `intel`
 disassembly format is superior to the `att` format. This is because the
-`intel` format clearly marks the the instruction relative accesses and
+`intel` format clearly marks the instruction relative accesses and
 their sizes. For instance:
 
 - "BYTE PTR [rip+0x53525150]"

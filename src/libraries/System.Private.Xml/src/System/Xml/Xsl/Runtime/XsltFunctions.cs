@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.IO;
 using System.Text;
 using System.Reflection;
@@ -104,7 +103,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static string NormalizeSpace(string value)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             int idx, idxStart = 0, idxSpace = 0;
 
             for (idx = 0; idx < value.Length; idx++)
@@ -120,15 +119,16 @@ namespace System.Xml.Xsl.Runtime
                     {
                         // Space was previous character or this is a non-space character
                         if (sb == null)
+                        {
                             sb = new StringBuilder(value.Length);
+                        }
                         else
+                        {
                             sb.Append(' ');
+                        }
 
                         // Copy non-space characters into string builder
-                        if (idxSpace == idx)
-                            sb.Append(value, idxStart, idx - idxStart - 1);
-                        else
-                            sb.Append(value, idxStart, idx - idxStart);
+                        sb.Append(value, idxStart, idxSpace == idx ? idx - idxStart - 1 : idx - idxStart);
 
                         idxStart = idx + 1;
                     }
@@ -247,7 +247,7 @@ namespace System.Xml.Xsl.Runtime
 
         public static string OuterXml(XPathNavigator navigator)
         {
-            RtfNavigator rtf = navigator as RtfNavigator;
+            RtfNavigator? rtf = navigator as RtfNavigator;
             if (rtf == null)
             {
                 return navigator.OuterXml;
@@ -379,11 +379,7 @@ namespace System.Xml.Xsl.Runtime
                 DateTime dt = xdt.ToZulu();
 
                 // If format is the empty string or not specified, use the default format for the given locale
-                if (format.Length == 0)
-                {
-                    format = null;
-                }
-                return dt.ToString(format, new CultureInfo(locale));
+                return dt.ToString(format.Length != 0 ? format : null, new CultureInfo(locale));
             }
             catch (ArgumentException)
             { // Operations with DateTime can throw this exception eventualy
@@ -516,7 +512,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 return string.Empty;
             }
-            string ns = currentNode.LookupNamespace(prefix);
+            string? ns = currentNode.LookupNamespace(prefix);
             if (ns != null)
             {
                 return ns;

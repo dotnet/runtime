@@ -111,10 +111,9 @@ namespace System.Reflection.Emit
         [CLSCompliantAttribute(false)]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
-            if (codeSize < 0)
-                throw new ArgumentOutOfRangeException(nameof(codeSize), SR.ArgumentOutOfRange_GenericPositive);
-            if (codeSize > 0 && code == null)
-                throw new ArgumentNullException(nameof(code));
+            ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
+            if (codeSize > 0)
+                ArgumentNullException.ThrowIfNull(code);
 
             method.GetILGenerator().SetCode(code, codeSize, maxStackSize);
         }

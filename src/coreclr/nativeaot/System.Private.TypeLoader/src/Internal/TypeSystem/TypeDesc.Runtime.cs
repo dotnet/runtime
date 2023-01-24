@@ -26,7 +26,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        ///  Setter for RuntimeTypeHandle. Seperate from normal property as all uses should be done with great care.
+        ///  Setter for RuntimeTypeHandle. Separate from normal property as all uses should be done with great care.
         ///  Must not be set with partially constructed type handles
         /// </summary>
         public void SetRuntimeTypeHandleUnsafe(RuntimeTypeHandle runtimeTypeHandle)
@@ -44,26 +44,6 @@ namespace Internal.TypeSystem
         {
             RetrieveRuntimeTypeHandleIfPossible();
             return RuntimeTypeHandle;
-        }
-
-        private NativeLayoutFieldDesc[] _nativeLayoutFields;
-        /// <summary>
-        /// The native layout fields of a type. This property is for the use of the NativeLayoutFieldAlgorithm,
-        /// DefType.GetFieldByNativeLayoutOrdinal, TypeBuilderState.PrepareStaticGCLayout and DefType.GetDiagnosticFields
-        /// only. Other uses should use the more general purpose GetFields api or similar.
-        /// </summary>
-        internal NativeLayoutFieldDesc[] NativeLayoutFields
-        {
-            get
-            {
-                return _nativeLayoutFields;
-            }
-            set
-            {
-                Debug.Assert(_nativeLayoutFields == null);
-                Debug.Assert(value != null);
-                _nativeLayoutFields = value;
-            }
         }
 
         internal TypeBuilderState TypeBuilderState { get; set; }
@@ -84,38 +64,10 @@ namespace Internal.TypeSystem
             if (state != null && state.AttemptedAndFailedToRetrieveTypeHandle)
                 return false;
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 TypeDesc typeDefinition = typeAsDefType.GetTypeDefinition();
                 RuntimeTypeHandle typeDefHandle = typeDefinition.RuntimeTypeHandle;
-                if (typeDefHandle.IsNull())
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    NativeFormat.NativeFormatType mdType = typeDefinition as NativeFormat.NativeFormatType;
-                    if (mdType != null)
-                    {
-                        // Look up the runtime type handle in the module metadata
-                        if (TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(new QTypeDefinition(mdType.MetadataReader, mdType.Handle), out typeDefHandle))
-                        {
-                            typeDefinition.SetRuntimeTypeHandleUnsafe(typeDefHandle);
-                        }
-                    }
-#endif
-#if ECMA_METADATA_SUPPORT
-                    Ecma.EcmaType ecmaType = typeDefinition as Ecma.EcmaType;
-                    if (ecmaType != null)
-                    {
-                        // Look up the runtime type handle in the module metadata
-                        if (TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(new QTypeDefinition(ecmaType.MetadataReader, ecmaType.Handle), out typeDefHandle))
-                        {
-                            typeDefinition.SetRuntimeTypeHandleUnsafe(typeDefHandle);
-                        }
-                    }
-#endif
-                }
-
                 if (!typeDefHandle.IsNull())
                 {
                     Instantiation instantiation = typeAsDefType.Instantiation;
@@ -155,16 +107,13 @@ namespace Internal.TypeSystem
                     }
                 }
             }
-            else if (type is ParameterizedType)
+            else if (type is ParameterizedType typeAsParameterType)
             {
-                ParameterizedType typeAsParameterType = (ParameterizedType)type;
-
                 if (typeAsParameterType.ParameterType.RetrieveRuntimeTypeHandleIfPossible())
                 {
                     RuntimeTypeHandle rtth;
                     if ((type is ArrayType &&
-                          (TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth) ||
-                           TypeLoaderEnvironment.Instance.TryGetArrayTypeHandleForNonDynamicArrayTypeFromTemplateTable(type as ArrayType, out rtth)))
+                          TypeLoaderEnvironment.TryGetArrayTypeForElementType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, type.IsMdArray, type.IsMdArray ? ((ArrayType)type).Rank : -1, out rtth))
                            ||
                         (type is PointerType && TypeSystemContext.PointerTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
                            ||
@@ -232,7 +181,7 @@ namespace Internal.TypeSystem
             return ComputeTemplate(GetOrCreateTypeBuilderState(), templateRequired);
         }
 
-        internal TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
+        internal static TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
         {
             TypeDesc templateType = state.TemplateType;
 

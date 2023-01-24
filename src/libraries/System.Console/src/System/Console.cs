@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -86,7 +87,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -126,7 +127,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -391,26 +392,44 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowWidth = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowWidth = value;
+            }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowHeight = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowHeight = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -419,9 +438,20 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [SupportedOSPlatform("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
             ConsolePal.SetWindowSize(width, height);
         }
 
@@ -619,10 +649,7 @@ namespace System
         public static Stream OpenStandardInput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardInput();
         }
 
@@ -634,10 +661,7 @@ namespace System
         public static Stream OpenStandardOutput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardOutput();
         }
 
@@ -649,10 +673,7 @@ namespace System
         public static Stream OpenStandardError(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardError();
         }
 
@@ -662,7 +683,8 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, nameof(newIn));
+            ArgumentNullException.ThrowIfNull(newIn);
+
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (s_syncObject)
             {
@@ -672,7 +694,8 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, nameof(newOut));
+            ArgumentNullException.ThrowIfNull(newOut);
+
             newOut = TextWriter.Synchronized(newOut);
             lock (s_syncObject)
             {
@@ -683,19 +706,14 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, nameof(newError));
+            ArgumentNullException.ThrowIfNull(newError);
+
             newError = TextWriter.Synchronized(newError);
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
-        }
-
-        private static void CheckNonNull(object obj, string paramName)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(paramName);
         }
 
         //
@@ -808,25 +826,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.WriteLine(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.WriteLine(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, params object?[]? arg)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                       // avoid ArgumentNullException from String.Format
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
@@ -835,25 +853,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.Write(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.Write(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1, object? arg2)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.Write(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, params object?[]? arg)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                   // avoid ArgumentNullException from String.Format
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);

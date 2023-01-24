@@ -66,46 +66,9 @@ namespace System
         internal const int VTBitShift = 24;
         internal const int ArrayBitMask = 0x10000;
 
-        // Enum enum and Mask
-        internal const int EnumI1 = 0x100000;
-        internal const int EnumU1 = 0x200000;
-        internal const int EnumI2 = 0x300000;
-        internal const int EnumU2 = 0x400000;
-        internal const int EnumI4 = 0x500000;
-        internal const int EnumU4 = 0x600000;
-        internal const int EnumI8 = 0x700000;
-        internal const int EnumU8 = 0x800000;
-        internal const int EnumMask = 0xF00000;
-
-        internal static readonly Type[] ClassTypes = {
-            typeof(System.Empty),
-            typeof(void),
-            typeof(bool),
-            typeof(char),
-            typeof(sbyte),
-            typeof(byte),
-            typeof(short),
-            typeof(ushort),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(float),
-            typeof(double),
-            typeof(string),
-            typeof(void),           // ptr for the moment
-            typeof(DateTime),
-            typeof(TimeSpan),
-            typeof(object),
-            typeof(decimal),
-            typeof(object),     // Treat enum as Object
-            typeof(System.Reflection.Missing),
-            typeof(System.DBNull),
-        };
-
-        internal static readonly Variant Empty;
-        internal static readonly Variant Missing = new Variant(Variant.CV_MISSING, Type.Missing, 0);
-        internal static readonly Variant DBNull = new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
+        internal static Variant Empty => default;
+        internal static Variant Missing => new Variant(Variant.CV_MISSING, Type.Missing, 0);
+        internal static Variant DBNull => new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
 
         //
         // Native Methods

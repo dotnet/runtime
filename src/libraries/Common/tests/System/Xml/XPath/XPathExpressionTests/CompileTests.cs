@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Xml.XPath;
-using Xunit;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.XPathExpressionTests
 {
@@ -14,7 +13,7 @@ namespace XPathTests.XPathExpressionTests
         {
             Assert.NotNull(XPathExpression.Compile(toCompile));
         }
-        private static void NavigatorCompileTest(string toCompile)
+        private static void NavigatorCompileTest(Utils.NavigatorKind kind, string toCompile)
         {
             var xml = @"<DocumentElement>
     <Level1 Data='0'>
@@ -35,90 +34,111 @@ namespace XPathTests.XPathExpressionTests
     </Level1>
 </DocumentElement>";
 
-            var dataNav = Utils.CreateNavigator(xml);
+            var dataNav = Utils.CreateNavigator(kind, xml);
             Assert.NotNull(dataNav.Compile(toCompile));
         }
 
-        private static void RunCompileTests(string toCompile)
+        private static void RunCompileTests(Utils.NavigatorKind kind, string toCompile)
         {
             XPathExpressionCompileTest(toCompile);
-            NavigatorCompileTest(toCompile);
+            NavigatorCompileTest(kind, toCompile);
         }
 
-        private static void CompileTestsErrors(string toCompile, string exceptionString)
+        private static void CompileTestsErrors(Utils.NavigatorKind kind, string toCompile, string exceptionString)
         {
             Assert.Throws<XPathException>(() => XPathExpressionCompileTest(toCompile));
-            Assert.Throws<XPathException>(() => NavigatorCompileTest(toCompile));
+            Assert.Throws<XPathException>(() => NavigatorCompileTest(kind, toCompile));
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = Nodeset)
         /// Priority: 0
         /// </summary>
-        [Fact]
-        public static void Variation_1()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_1(Utils.NavigatorKind kind)
         {
-            RunCompileTests("child::*");
+            RunCompileTests(kind, "child::*");
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = String)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_2()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_2(Utils.NavigatorKind kind)
         {
-            RunCompileTests("string(1)");
+            RunCompileTests(kind, "string(1)");
         }
 
         /// <summary>
         ///  Pass in valid XPath Expression (return type = Number)
         ///  Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_3()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_3(Utils.NavigatorKind kind)
         {
-            RunCompileTests("number('1')");
+            RunCompileTests(kind, "number('1')");
         }
 
         /// <summary>
         /// Pass in valid XPath Expression (return type = Boolean)
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_4()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_4(Utils.NavigatorKind kind)
         {
-            RunCompileTests("true()");
+            RunCompileTests(kind, "true()");
         }
 
         /// <summary>
         /// Pass in invalid XPath Expression
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_5()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_5(Utils.NavigatorKind kind)
         {
-            CompileTestsErrors("invalid:::", "Xp_InvalidToken");
+            CompileTestsErrors(kind, "invalid:::", "Xp_InvalidToken");
         }
 
         /// <summary>
         /// Pass in empty string
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_6()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_6(Utils.NavigatorKind kind)
         {
-            CompileTestsErrors(string.Empty, "Xp_NodeSetExpected");
+            CompileTestsErrors(kind, string.Empty, "Xp_NodeSetExpected");
         }
 
         /// <summary>
         /// Pass in NULL
         /// Priority: 1
         /// </summary>
-        [Fact]
-        public static void Variation_7()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void Variation_7(Utils.NavigatorKind kind)
         {
-            CompileTestsErrors(null, "Xp_ExprExpected");
+            CompileTestsErrors(kind, null, "Xp_ExprExpected");
         }
     }
 }

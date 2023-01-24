@@ -5,23 +5,23 @@ namespace System.Transactions.Configuration
 {
     internal static class AppSettings
     {
-        private static volatile bool s_settingsInitalized;
+        private static volatile bool s_settingsInitialized;
         private static readonly object s_appSettingsLock = new object();
         private static bool s_includeDistributedTxIdInExceptionMessage;
 
         private static void EnsureSettingsLoaded()
         {
-            if (!s_settingsInitalized)
+            if (!s_settingsInitialized)
             {
                 lock (s_appSettingsLock)
                 {
-                    if (!s_settingsInitalized)
+                    if (!s_settingsInitialized)
                     {
                         // TODO: Determine how to handle configuration.
                         // This uses System.Configuration on .NET Framework to load:
                         // Transactions:IncludeDistributedTransactionIdInExceptionMessage
                         s_includeDistributedTxIdInExceptionMessage = false;
-                        s_settingsInitalized = true;
+                        s_settingsInitialized = true;
                     }
                 }
             }

@@ -18,25 +18,37 @@ namespace System.IO.Compression
         private readonly CompressionMode _mode;
 
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         public BrotliStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
+
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="System.IO.Compression.BrotliStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream!!, CompressionMode mode, bool leaveOpen)
+        public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             switch (mode)
             {
                 case CompressionMode.Compress:
                     if (!stream.CanWrite)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
+                    }
+
+                    _encoder.SetQuality(BrotliUtils.Quality_Default);
+                    _encoder.SetWindow(BrotliUtils.WindowBits_Default);
                     break;
+
                 case CompressionMode.Decompress:
                     if (!stream.CanRead)
+                    {
                         throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
+                    }
                     break;
+
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(mode));
             }
@@ -81,9 +93,9 @@ namespace System.IO.Compression
 
         /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="System.IO.Compression.BrotliStream" />.</summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
-        /// <remarks>The `DisposeAsync` method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in a Windows 8.x Store app or desktop app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.
-        /// This method disposes the Brotli stream by writing any changes to the backing store and closing the stream to release resources.
-        /// Calling `DisposeAsync` allows the resources used by the <see cref="System.IO.Compression.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</remarks>
+        /// <remarks><para>This method lets you perform a resource-intensive dispose operation without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
+        /// <para>This method disposes the Brotli stream by writing any changes to the backing store and closing the stream to release resources.</para>
+        /// <para>Calling <see cref="System.IO.Compression.BrotliStream.DisposeAsync" /> allows the resources used by the <see cref="System.IO.Compression.BrotliStream" /> to be reallocated for other purposes. For more information, see [Cleaning Up Unmanaged Resources](/dotnet/standard/garbage-collection/unmanaged).</para></remarks>
         public override async ValueTask DisposeAsync()
         {
             try

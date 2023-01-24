@@ -26,7 +26,6 @@
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
-#include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
@@ -58,28 +57,20 @@ inline __declspec(naked) unsigned __int64 getTimeStamp() {
 }
 
 #else // HOST_X86
-unsigned __int64 getTimeStamp() {
-
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-
-    PalQueryPerformanceCounter(&ret);
-
-    return ret.QuadPart;
+unsigned __int64 getTimeStamp()
+{
+    return PalQueryPerformanceCounter();
 }
 
 #endif // HOST_X86 else
 
 /*********************************************************************************/
-/* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
 {
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    PalQueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
+    return PalQueryPerformanceFrequency();
 }
 
 #endif // DACCESS_COMPILE
@@ -132,7 +123,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 /* create a new thread stress log buffer associated with pThread                 */
 
 ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
-
     if (theLog.facilitiesToLog == 0)
         return NULL;
 
@@ -143,12 +133,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog(Thread * pThread) {
     if (msgs != NULL)
     {
         return msgs;
-    }
-
-    //if we are not allowed to allocate stress log, we should not even try to take the lock
-    if (pThread->IsInCantAllocStressLogRegion())
-    {
-        return NULL;
     }
 
     // if it looks like we won't be allowed to allocate a new chunk, exit early
@@ -263,11 +247,7 @@ void StressLog::ThreadDetach(ThreadStressLog *msgs) {
 
 bool StressLog::AllowNewChunk (long numChunksInCurThread)
 {
-    Thread* pCurrentThread = ThreadStore::GetCurrentThread();
-    if (pCurrentThread->IsInCantAllocStressLogRegion())
-    {
-        return FALSE;
-    }
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
 
     _ASSERTE (numChunksInCurThread <= VolatileLoad(&theLog.totalChunk));
     uint32_t perThreadLimit = theLog.MaxSizePerThread;
@@ -345,7 +325,8 @@ void ThreadStressLog::LogMsg ( uint32_t facility, int cArgs, const char* format,
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
     msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs;
+    msg->numberOfArgs = cArgs & 0x7;
+    msg->numberOfArgsX = cArgs >> 3;
 
     for ( int i = 0; i < cArgs; ++i )
     {
@@ -367,7 +348,6 @@ void ThreadStressLog::Activate (Thread * pThread)
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
     writeHasWrapped = FALSE;
     this->pThread = pThread;
-    ASSERT(pThread->IsCurrentThread());
 }
 
 /* static */
@@ -378,7 +358,7 @@ void StressLog::LogMsg (unsigned facility, int cArgs, const char* format, ... )
     va_list Args;
     va_start(Args, format);
 
-    Thread *pThread = ThreadStore::GetCurrentThread();
+    Thread *pThread = ThreadStore::RawGetCurrentThread();
     if (pThread == NULL)
         return;
 
@@ -543,7 +523,7 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
             // entries (this was the case for %s arguments)
             memcpy_s(argsCopy, sizeof(argsCopy), latestMsg->args, (latestMsg->numberOfArgs)*sizeof(void*));
 
-            // @TODO: CORERT: Truncating threadId to 32-bit
+            // @TODO: Truncating threadId to 32-bit
             if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
                 break;
         }
@@ -553,7 +533,7 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
         {
             latestLog->readPtr = NULL;
 
-            // @TODO: CORERT: Truncating threadId to 32-bit
+            // @TODO: Truncating threadId to 32-bit
             if (!etcb((UINT32)latestLog->threadId, token))
                 break;
         }

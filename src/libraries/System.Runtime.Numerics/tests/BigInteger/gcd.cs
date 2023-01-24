@@ -63,6 +63,11 @@ namespace System.Numerics.Tests
             tempByteArray1 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 0 };
             tempByteArray2 = new byte[] { 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 254 };
             VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
+
+            // https://github.com/dotnet/runtime/issues/71641
+            tempByteArray1 = new byte[] { 62, 228, 246, 142, 92, 24, 255, 224, 2 };
+            tempByteArray2 = new byte[] { 0, 0, 230, 83, 69, 20, 2, 220, 1 };
+            VerifyGCDString(Print(tempByteArray1) + Print(tempByteArray2) + "bGCD");
         }
 
         [Fact]

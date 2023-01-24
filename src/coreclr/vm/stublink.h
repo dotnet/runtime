@@ -81,7 +81,7 @@ struct StubUnwindInfoHeaderSuffix
     UCHAR nUnwindInfoSize;  // Size of unwind info in bytes
 };
 
-// Variable-sized struct that preceeds a Stub when the stub requires unwind
+// Variable-sized struct that precedes a Stub when the stub requires unwind
 // information.  Followed by a StubUnwindInfoHeaderSuffix.
 typedef DPTR(struct StubUnwindInfoHeader) PTR_StubUnwindInfoHeader;
 struct StubUnwindInfoHeader
@@ -165,20 +165,6 @@ class StubLinker
         VOID Emit32(unsigned __int32 u32);
         VOID Emit64(unsigned __int64 u64);
         VOID EmitPtr(const VOID *pval);
-
-        //---------------------------------------------------------------
-        // Emit a UTF8 string
-        //---------------------------------------------------------------
-        VOID EmitUtf8(LPCUTF8 pUTF8)
-        {
-            WRAPPER_NO_CONTRACT;
-
-            LPCUTF8 p = pUTF8;
-            while (*(p++)) {
-                //nothing
-            }
-            EmitBytes((const BYTE *)pUTF8, (unsigned int)(p-pUTF8-1));
-        }
 
         //---------------------------------------------------------------
         // Append an instruction containing a reference to a label.
@@ -887,13 +873,13 @@ class Stub
 //
 //
 //   UINT RRT.GetSizeOfData(refsize, variationCode)
-//     Returns the total size of the seperate data area (if any) that the
+//     Returns the total size of the separate data area (if any) that the
 //     instruction needs in bytes for a given refsize. For this example
 //     on the SH3
 //          if (refsize==k32) return 4; else return 0;
 //
 //   The default implem of this returns 0, so CPUs that don't have need
-//   for a seperate constant area don't have to worry about it.
+//   for a separate constant area don't have to worry about it.
 //
 //
 //   BOOL CanReach(refsize, variationcode, fExternal, offset)

@@ -12,8 +12,10 @@ namespace System.ComponentModel.DataAnnotations
     public class CompareAttribute : ValidationAttribute
     {
         [RequiresUnreferencedCode("The property referenced by 'otherProperty' may be trimmed. Ensure it is preserved.")]
-        public CompareAttribute(string otherProperty!!) : base(SR.CompareAttribute_MustMatch)
+        public CompareAttribute(string otherProperty) : base(SR.CompareAttribute_MustMatch)
         {
+            ArgumentNullException.ThrowIfNull(otherProperty);
+
             OtherProperty = otherProperty;
         }
 
@@ -44,10 +46,7 @@ namespace System.ComponentModel.DataAnnotations
             object? otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
             if (!Equals(value, otherPropertyValue))
             {
-                if (OtherPropertyDisplayName == null)
-                {
-                    OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
-                }
+                OtherPropertyDisplayName ??= GetDisplayNameForProperty(otherPropertyInfo);
 
                 string[]? memberNames = validationContext.MemberName != null
                    ? new[] { validationContext.MemberName }

@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> GetStaticDependencies(DependencyContextType context);
-    
+
         IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> GetConditionalStaticDependencies(DependencyContextType context);
 
         IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencyContextType context);

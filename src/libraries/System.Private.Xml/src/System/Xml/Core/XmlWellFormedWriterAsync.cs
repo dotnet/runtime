@@ -217,18 +217,12 @@ namespace System.Xml
                     {
                         prefix = LookupPrefix(ns);
                     }
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
                 else if (prefix.Length > 0)
                 {
                     CheckNCName(prefix);
-                    if (ns == null)
-                    {
-                        ns = LookupNamespace(prefix);
-                    }
+                    ns ??= LookupNamespace(prefix);
                     if (ns == null || (ns != null && ns.Length == 0))
                     {
                         throw new ArgumentException(SR.Xml_PrefixForEmptyNs);
@@ -498,10 +492,7 @@ namespace System.Xml
                         if (!(localName == "xmlns" && namespaceName == XmlReservedNs.NsXmlNs))
                             prefix = LookupPrefix(namespaceName);
                     }
-                    if (prefix == null)
-                    {
-                        prefix = string.Empty;
-                    }
+                    prefix ??= string.Empty;
                 }
 
                 if (namespaceName == null)
@@ -510,10 +501,7 @@ namespace System.Xml
                     {
                         namespaceName = LookupNamespace(prefix);
                     }
-                    if (namespaceName == null)
-                    {
-                        namespaceName = string.Empty;
-                    }
+                    namespaceName ??= string.Empty;
                 }
 
                 if (prefix.Length == 0)
@@ -773,10 +761,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 await AdvanceStateAsync(Token.CData).ConfigureAwait(false);
                 await _writer.WriteCDataAsync(text).ConfigureAwait(false);
@@ -792,10 +777,7 @@ namespace System.Xml
         {
             try
             {
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 await AdvanceStateAsync(Token.Comment).ConfigureAwait(false);
                 await _writer.WriteCommentAsync(text).ConfigureAwait(false);
@@ -819,10 +801,7 @@ namespace System.Xml
                 CheckNCName(name);
 
                 // check text
-                if (text == null)
-                {
-                    text = string.Empty;
-                }
+                text ??= string.Empty;
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
                 if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
@@ -943,10 +922,7 @@ namespace System.Xml
         {
             try
             {
-                if (ws == null)
-                {
-                    ws = string.Empty;
-                }
+                ws ??= string.Empty;
 
                 if (!XmlCharType.IsOnlyWhitespace(ws))
                 {
@@ -1037,18 +1013,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 if (SaveAttrValue)
@@ -1072,18 +1039,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 await AdvanceStateAsync(Token.RawData).ConfigureAwait(false);
                 if (SaveAttrValue)
@@ -1133,18 +1091,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 Task task = AdvanceStateAsync(Token.Base64);
 
@@ -1454,10 +1403,7 @@ namespace System.Xml
                 }
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
         }
 
         private Task StartElementContentAsync()
@@ -1467,10 +1413,7 @@ namespace System.Xml
                 return StartElementContentAsync_WithNS();
             }
 
-            if (_rawWriter != null)
-            {
-                _rawWriter.StartElementContent();
-            }
+            _rawWriter?.StartElementContent();
 
             return Task.CompletedTask;
         }

@@ -38,8 +38,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <paramref name="name"/> and <paramref name="attributes "/> array.
         /// </summary>
-        protected MemberDescriptor(string name!!, Attribute[]? attributes)
+        protected MemberDescriptor(string name, Attribute[]? attributes)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.InvalidMemberName, nameof(name));
@@ -61,8 +63,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.MemberDescriptor'/> class with the specified <see cref='System.ComponentModel.MemberDescriptor'/>.
         /// </summary>
-        protected MemberDescriptor(MemberDescriptor descr!!)
+        protected MemberDescriptor(MemberDescriptor descr)
         {
+            ArgumentNullException.ThrowIfNull(descr);
+
             _name = descr.Name;
             _displayName = _name;
             _nameHash = _name?.GetHashCode() ?? 0;
@@ -80,8 +84,10 @@ namespace System.ComponentModel
         /// <see cref='System.ComponentModel.MemberDescriptor'/> and the attributes
         /// in both the old <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         /// </summary>
-        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor!!, Attribute[]? newAttributes)
+        protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[]? newAttributes)
         {
+            ArgumentNullException.ThrowIfNull(oldMemberDescriptor);
+
             _name = oldMemberDescriptor.Name;
             _displayName = oldMemberDescriptor.DisplayName;
             _nameHash = _name.GetHashCode();
@@ -159,13 +165,12 @@ namespace System.ComponentModel
         /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
-        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category);
+        public virtual string Category => _category ??= ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category;
 
         /// <summary>
         /// Gets the description of the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         /// </summary>
-        public virtual string Description => _description ??
-                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description);
+        public virtual string Description => _description ??= ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description;
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the
@@ -302,8 +307,10 @@ namespace System.ComponentModel
         /// specified list of attributes in the parent class. For duplicate attributes,
         /// the last one added to the list will be kept.
         /// </summary>
-        protected virtual void FillAttributes(IList attributeList!!)
+        protected virtual void FillAttributes(IList attributeList)
         {
+            ArgumentNullException.ThrowIfNull(attributeList);
+
             if (_originalAttributes != null)
             {
                 foreach (Attribute attr in _originalAttributes)
@@ -387,12 +394,14 @@ namespace System.ComponentModel
         /// Finds the given method through reflection.
         /// </summary>
         protected static MethodInfo? FindMethod(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type componentClass,
             string name,
             Type[] args,
             Type returnType,
             bool publicOnly)
         {
+            ArgumentNullException.ThrowIfNull(componentClass);
+
             MethodInfo? result;
             if (publicOnly)
             {
@@ -421,8 +430,11 @@ namespace System.ComponentModel
         /// someone associated another object with this instance, or if the instance is a
         /// custom type descriptor, GetInvocationTarget may return a different value.
         /// </summary>
-        protected virtual object? GetInvocationTarget(Type type!!, object instance!!)
+        protected virtual object? GetInvocationTarget(Type type, object instance)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(instance);
+
             return TypeDescriptor.GetAssociation(type, instance);
         }
 
@@ -432,8 +444,11 @@ namespace System.ComponentModel
         protected static ISite? GetSite(object? component) => (component as IComponent)?.Site;
 
         [Obsolete("MemberDescriptor.GetInvokee has been deprecated. Use GetInvocationTarget instead.")]
-        protected static object GetInvokee(Type componentClass!!, object component!!)
+        protected static object GetInvokee(Type componentClass, object component)
         {
+            ArgumentNullException.ThrowIfNull(componentClass);
+            ArgumentNullException.ThrowIfNull(component);
+
             return TypeDescriptor.GetAssociation(componentClass, component);
         }
     }

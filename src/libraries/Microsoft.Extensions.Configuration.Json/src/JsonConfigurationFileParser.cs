@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration.Json
         public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
 
-        private IDictionary<string, string?> ParseStream(Stream input)
+        private Dictionary<string, string?> ParseStream(Stream input)
         {
             var jsonDocumentOptions = new JsonDocumentOptions
             {
@@ -34,13 +34,13 @@ namespace Microsoft.Extensions.Configuration.Json
                 {
                     throw new FormatException(SR.Format(SR.Error_InvalidTopLevelJSONElement, doc.RootElement.ValueKind));
                 }
-                VisitElement(doc.RootElement);
+                VisitObjectElement(doc.RootElement);
             }
 
             return _data;
         }
 
-        private void VisitElement(JsonElement element)
+        private void VisitObjectElement(JsonElement element)
         {
             var isEmpty = true;
 
@@ -52,6 +52,26 @@ namespace Microsoft.Extensions.Configuration.Json
                 ExitContext();
             }
 
+            SetNullIfElementIsEmpty(isEmpty);
+        }
+
+        private void VisitArrayElement(JsonElement element)
+        {
+            int index = 0;
+
+            foreach (JsonElement arrayElement in element.EnumerateArray())
+            {
+                EnterContext(index.ToString());
+                VisitValue(arrayElement);
+                ExitContext();
+                index++;
+            }
+
+            SetNullIfElementIsEmpty(isEmpty: index == 0);
+        }
+
+        private void SetNullIfElementIsEmpty(bool isEmpty)
+        {
             if (isEmpty && _paths.Count > 0)
             {
                 _data[_paths.Peek()] = null;
@@ -65,18 +85,11 @@ namespace Microsoft.Extensions.Configuration.Json
             switch (value.ValueKind)
             {
                 case JsonValueKind.Object:
-                    VisitElement(value);
+                    VisitObjectElement(value);
                     break;
 
                 case JsonValueKind.Array:
-                    int index = 0;
-                    foreach (JsonElement arrayElement in value.EnumerateArray())
-                    {
-                        EnterContext(index.ToString());
-                        VisitValue(arrayElement);
-                        ExitContext();
-                        index++;
-                    }
+                    VisitArrayElement(value);
                     break;
 
                 case JsonValueKind.Number:

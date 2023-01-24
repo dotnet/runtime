@@ -323,6 +323,32 @@ public:
     //
     BOOL IsCanonicalSubtype() const;
 
+#ifndef DACCESS_COMPILE
+    bool IsManagedClassObjectPinned() const;
+
+    // Allocates a RuntimeType object with the given TypeHandle. If the LoaderAllocator
+    // represents a not-unloadable context, it allocates the object on a frozen segment
+    // so the direct reference will be stored to the pDest argument. In case of unloadable
+    // context, an index to the pinned table will be saved.
+    void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
+
+    FORCEINLINE static bool GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle, OBJECTREF* pRef)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // For a non-unloadable context, handle is expected to be either null (is not cached yet)
+        // or be a direct pointer to a frozen RuntimeType object
+
+        if (handle & 1)
+        {
+            // Clear the "is pinned object" bit from the managed reference
+            *pRef = (OBJECTREF)(handle - 1);
+            return true;
+        }
+        return false;
+    }
+#endif
+
     // Similar to IsCanonicalSubtype, but applied to a vector.
     static BOOL IsCanonicalSubtypeInstantiation(Instantiation inst);
 
@@ -423,7 +449,7 @@ public:
     PTR_Module GetModule() const;
 
     // The module where this type lives for the purposes of loading and prejitting
-    // Note: NGen time result might differ from runtime result for parametrized types (generics, arrays, etc.)
+    // Note: NGen time result might differ from runtime result for parameterized types (generics, arrays, etc.)
     // See code:ClassLoader::ComputeLoaderModule or file:clsload.hpp#LoaderModule for more information
     PTR_Module GetLoaderModule() const;
 
@@ -473,9 +499,6 @@ public:
 
     // Does this type have zap-encoded components (generic arguments, etc)?
     BOOL HasUnrestoredTypeKey() const;
-
-    // True if this type handle is a zap-encoded fixup
-    BOOL IsEncodedFixup() const;
 
     void DoRestoreTypeKey();
 

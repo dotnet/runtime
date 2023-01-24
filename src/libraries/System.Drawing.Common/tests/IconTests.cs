@@ -49,13 +49,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Unix_OverflowException_CorruptIcon()
-        {
-            Assert.Throws<OverflowException>(() => new Icon(Helpers.GetTestBitmapPath("overflowicon.ico")));
-        }
-
         public static IEnumerable<object[]> Size_TestData()
         {
             // Normal size
@@ -76,7 +69,6 @@ namespace System.Drawing.Tests
             yield return new object[] { "256x256_one_entry_32bit.ico", new Size(int.MaxValue, int.MaxValue), new Size(256, 256) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Width_Height(string fileName, Size size, Size expectedSize)
@@ -89,7 +81,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Size(string fileName, Size size, Size expectedSize)
@@ -122,7 +113,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Stream_Width_Height(string fileName, Size size, Size expectedSize)
@@ -136,7 +126,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Stream_Size(string fileName, Size size, Size expectedSize)
@@ -215,7 +204,6 @@ namespace System.Drawing.Tests
             yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, typeof(Win32Exception) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_InvalidBytesInStream_TestData))]
         public void Ctor_InvalidBytesInStream_ThrowsException(byte[] bytes, Type exceptionType)
@@ -229,7 +217,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Width_Height(string fileName, Size size, Size expectedSize)
@@ -244,7 +231,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Size(string fileName, Size size, Size expectedSize)
@@ -333,7 +319,6 @@ namespace System.Drawing.Tests
             Assert.Throws<ObjectDisposedException>(() => icon.Handle);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_OwnsHandle_DestroysHandle()
         {
@@ -384,7 +369,6 @@ namespace System.Drawing.Tests
             ExtractAssociatedIcon_FilePath_Success_Helper(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // UNC
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix for https://github.com/dotnet/runtime/issues/28220")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_UNCFilePath_Success()
@@ -418,7 +402,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExtractAssociatedIcon_NonFilePath_ThrowsFileNotFound()
         {
@@ -498,7 +481,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
@@ -512,7 +494,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_ClosedOutputStreamIconData_ThrowsException()
         {
@@ -525,7 +506,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_ClosedOutputStreamNoIconData()
@@ -549,7 +529,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Save_NoIconDataOwnsHandleAndDisposed_ThrowsObjectDisposedException()
         {
@@ -609,7 +588,6 @@ namespace System.Drawing.Tests
 
         private const string DontSupportPngFramesInIcons = "Switch.System.Drawing.DontSupportPngFramesInIcons";
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToBitmap_PngIconSupportedInSwitches_Success()
@@ -647,7 +625,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55655", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToBitmap_PngIconNotSupportedInSwitches_ThrowsArgumentOutOfRangeException()
@@ -670,7 +647,8 @@ namespace System.Drawing.Tests
             }
             else
             {
-                VerifyPngNotSupported();
+                if (AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool enabled) && enabled)
+                    VerifyPngNotSupported();
             }
         }
 
@@ -841,42 +819,17 @@ namespace System.Drawing.Tests
                         Assert.Equal(new Size(32, 32), bitmap.Size);
 
                         int expectedBitDepth;
-                        if (!PlatformDetection.IsWindows)
-                        {
-                            // The Unix implementation currently doesn't try to match the display,
-                            // it will just pick the highest color depth when creating the bitmap.
-                            // (see SaveBestSingleIcon()).
-                            expectedBitDepth = 32;
-                        }
-                        else
-                        {
-                            string fieldName = PlatformDetection.IsNetFramework ? "bitDepth" : "s_bitDepth";
-                            FieldInfo fi = typeof(Icon).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
-                            expectedBitDepth = (int)fi.GetValue(null);
-                        }
+                        string fieldName = PlatformDetection.IsNetFramework ? "bitDepth" : "s_bitDepth";
+                        FieldInfo fi = typeof(Icon).GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic);
+                        expectedBitDepth = (int)fi.GetValue(null);
 
                         // If the first icon entry was picked, the color would be black: 0xFF000000?
 
                         switch (expectedBitDepth)
                         {
                             case 32:
-                                if (!PlatformDetection.IsWindows)
-                                {
-                                    // libgdiplus on Unix doesn't natively support ARGB32 format. It
-                                    // uses the Cairo library which represents the bitmaps as PARGB32
-                                    // with individual channels premultiplied with the alpha channel.
-                                    // When converting back and forth it results in slight loss of
-                                    // precision so allow both original and rounded values here.
-                                    uint color = (uint)bitmap.GetPixel(0, 0).ToArgb();
-                                    Assert.True(color == 0x879EE532u || color == 0x879EE431u, color.ToString("x"));
-                                    color = (uint)bitmap.GetPixel(0, 31).ToArgb();
-                                    Assert.True(color == 0x661CD8B7u || color == 0x661BD7B6u, color.ToString("x"));
-                                }
-                                else
-                                {
-                                    Assert.Equal(0x879EE532u, (uint)bitmap.GetPixel(0, 0).ToArgb());
-                                    Assert.Equal(0x661CD8B7u, (uint)bitmap.GetPixel(0, 31).ToArgb());
-                                }
+                                Assert.Equal(0x879EE532u, (uint)bitmap.GetPixel(0, 0).ToArgb());
+                                Assert.Equal(0x661CD8B7u, (uint)bitmap.GetPixel(0, 31).ToArgb());
                                 break;
                             case 16:
                             case 8:

@@ -92,7 +92,7 @@ namespace System.Data.ProviderBase
         {
             private PerformanceCounter? _instance;
 
-            internal Counter(string? categoryName, string? instanceName, string counterName, PerformanceCounterType counterType)
+            internal Counter(string? categoryName, string? instanceName, string counterName)
             {
                 if (ADP.IsPlatformNT5)
                 {
@@ -121,32 +121,19 @@ namespace System.Data.ProviderBase
             internal void Decrement()
             {
                 PerformanceCounter? instance = _instance;
-                if (null != instance)
-                {
-                    instance.Decrement();
-                }
+                instance?.Decrement();
             }
 
             internal void Dispose()
             { // TODO: race condition, Dispose at the same time as Increment/Decrement
                 PerformanceCounter? instance = _instance;
                 _instance = null;
-                if (null != instance)
-                {
-                    instance.RemoveInstance();
-                    // should we be calling instance.Close?
-                    // if we do will it exacerbate the Dispose vs. Decrement race condition
-                    //instance.Close();
-                }
+                instance?.RemoveInstance();
             }
 
             internal void Increment()
             {
-                PerformanceCounter? instance = _instance;
-                if (null != instance)
-                {
-                    instance.Increment();
-                }
+                _instance?.Increment();
             }
         };
 
@@ -167,11 +154,11 @@ namespace System.Data.ProviderBase
         internal readonly Counter NumberOfStasisConnections;
         internal readonly Counter NumberOfReclaimedConnections;
 
-        protected DbConnectionPoolCounters() : this(null, null)
+        protected DbConnectionPoolCounters() : this(null)
         {
         }
 
-        protected DbConnectionPoolCounters(string? categoryName, string? categoryHelp)
+        protected DbConnectionPoolCounters(string? categoryName)
         {
             AppDomain.CurrentDomain.DomainUnload += new EventHandler(this.UnloadEventHandler);
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(this.ExitEventHandler);
@@ -189,16 +176,16 @@ namespace System.Data.ProviderBase
 
             // level 0-3: hard connects/disconnects, plus basic pool/pool entry statistics
             string? basicCategoryName = categoryName;
-            HardConnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardConnectsPerSecond.CounterName, CreationData.HardConnectsPerSecond.CounterType);
-            HardDisconnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardDisconnectsPerSecond.CounterName, CreationData.HardDisconnectsPerSecond.CounterType);
-            NumberOfNonPooledConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfNonPooledConnections.CounterName, CreationData.NumberOfNonPooledConnections.CounterType);
-            NumberOfPooledConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfPooledConnections.CounterName, CreationData.NumberOfPooledConnections.CounterType);
-            NumberOfActiveConnectionPoolGroups = new Counter(basicCategoryName, instanceName, CreationData.NumberOfActiveConnectionPoolGroups.CounterName, CreationData.NumberOfActiveConnectionPoolGroups.CounterType);
-            NumberOfInactiveConnectionPoolGroups = new Counter(basicCategoryName, instanceName, CreationData.NumberOfInactiveConnectionPoolGroups.CounterName, CreationData.NumberOfInactiveConnectionPoolGroups.CounterType);
-            NumberOfActiveConnectionPools = new Counter(basicCategoryName, instanceName, CreationData.NumberOfActiveConnectionPools.CounterName, CreationData.NumberOfActiveConnectionPools.CounterType);
-            NumberOfInactiveConnectionPools = new Counter(basicCategoryName, instanceName, CreationData.NumberOfInactiveConnectionPools.CounterName, CreationData.NumberOfInactiveConnectionPools.CounterType);
-            NumberOfStasisConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfStasisConnections.CounterName, CreationData.NumberOfStasisConnections.CounterType);
-            NumberOfReclaimedConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfReclaimedConnections.CounterName, CreationData.NumberOfReclaimedConnections.CounterType);
+            HardConnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardConnectsPerSecond.CounterName);
+            HardDisconnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardDisconnectsPerSecond.CounterName);
+            NumberOfNonPooledConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfNonPooledConnections.CounterName);
+            NumberOfPooledConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfPooledConnections.CounterName);
+            NumberOfActiveConnectionPoolGroups = new Counter(basicCategoryName, instanceName, CreationData.NumberOfActiveConnectionPoolGroups.CounterName);
+            NumberOfInactiveConnectionPoolGroups = new Counter(basicCategoryName, instanceName, CreationData.NumberOfInactiveConnectionPoolGroups.CounterName);
+            NumberOfActiveConnectionPools = new Counter(basicCategoryName, instanceName, CreationData.NumberOfActiveConnectionPools.CounterName);
+            NumberOfInactiveConnectionPools = new Counter(basicCategoryName, instanceName, CreationData.NumberOfInactiveConnectionPools.CounterName);
+            NumberOfStasisConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfStasisConnections.CounterName);
+            NumberOfReclaimedConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfReclaimedConnections.CounterName);
 
             // level 4: expensive stuff
             string? verboseCategoryName = null;
@@ -212,12 +199,12 @@ namespace System.Data.ProviderBase
                     verboseCategoryName = categoryName;
                 }
             }
-            SoftConnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftConnectsPerSecond.CounterName, CreationData.SoftConnectsPerSecond.CounterType);
-            SoftDisconnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftDisconnectsPerSecond.CounterName, CreationData.SoftDisconnectsPerSecond.CounterType);
-            NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName, CreationData.NumberOfActiveConnections.CounterType);
-            NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName, CreationData.NumberOfFreeConnections.CounterType);
+            SoftConnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftConnectsPerSecond.CounterName);
+            SoftDisconnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftDisconnectsPerSecond.CounterName);
+            NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName);
+            NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName);
         }
-        private string? GetAssemblyName()
+        private static string? GetAssemblyName()
         {
             string? result = null;
 
@@ -236,7 +223,7 @@ namespace System.Data.ProviderBase
         }
 
         // SxS: this method uses GetCurrentProcessId to construct the instance name.
-        private string GetInstanceName()
+        private static string GetInstanceName()
         {
             string? instanceName = GetAssemblyName(); // instance perfcounter name
 
@@ -296,12 +283,9 @@ namespace System.Data.ProviderBase
             SafeDispose(NumberOfReclaimedConnections);
         }
 
-        private void SafeDispose(Counter counter)
+        private static void SafeDispose(Counter counter)
         {
-            if (null != counter)
-            {
-                counter.Dispose();
-            }
+            counter?.Dispose();
         }
 
         private void ExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)

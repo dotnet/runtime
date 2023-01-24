@@ -41,7 +41,7 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	MONO_ADD_INS (cfg->cbb, args_alloc);
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, args), args_alloc->dreg);
 
-	for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+	for (guint i = 0; i < sig->hasthis + sig->param_count; ++i) {
 		NEW_VARLOADA (cfg, ins, cfg->args [i], cfg->args [i]->inst_vtype);
 		MONO_ADD_INS (cfg->cbb, ins);
 
@@ -59,13 +59,6 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 		EMIT_NEW_TEMPSTORE (cfg, store, var->inst_c0, ret);
 		EMIT_NEW_VARLOADA (cfg, addr, var, NULL);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, return_value), addr->dreg);
-
-		/* Work around a limitation of the register allocator regarding
-		 * FP stack, see https://github.com/mono/mono/pull/17251 */
-		if (cfg->backend->use_fpstack && (ret_type->type == MONO_TYPE_R8 || ret_type->type == MONO_TYPE_R4)) {
-			MonoInst *move_ret_back;
-			EMIT_NEW_VARSTORE (cfg, move_ret_back, ret, ret_type, var);
-		}
 	}
 
 	return alloc;
@@ -188,7 +181,7 @@ mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, uns
 	// Are we leaving a catch clause?
 	for (guint32 i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *hclause = &header->clauses [i];
-		guint32 offset = ip - header->code;
+		guint32 offset = GPTRDIFF_TO_UINT32 (ip - header->code);
 
 		if (hclause->flags != MONO_EXCEPTION_CLAUSE_NONE && hclause->flags != MONO_EXCEPTION_CLAUSE_FILTER)
 			continue;

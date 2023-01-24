@@ -7,95 +7,23 @@
 #include <mono/metadata/components.h>
 #include <mono/metadata/assembly-internals.h>
 
-/*
- * Forward declares of all static functions.
- */
-
-static
-void
-delegate_callback_data_free_func (
-	EventPipeCallback callback_func,
-	void *callback_data);
-
-static
-void
-delegate_callback_func (
-	const uint8_t *source_id,
-	unsigned long is_enabled,
-	uint8_t level,
-	uint64_t match_any_keywords,
-	uint64_t match_all_keywords,
-	EventFilterDescriptor *filter_data,
-	void *callback_context);
-
-static
-void
-delegate_callback_data_free_func (
-	EventPipeCallback callback_func,
-	void *callback_data)
-{
-	if (callback_data)
-		mono_gchandle_free_internal ((MonoGCHandle)callback_data);
-}
-
-static
-void
-delegate_callback_func (
-	const uint8_t *source_id,
-	unsigned long is_enabled,
-	uint8_t level,
-	uint64_t match_any_keywords,
-	uint64_t match_all_keywords,
-	EventFilterDescriptor *filter_data,
-	void *callback_context)
-{
-
-	/*internal unsafe delegate void EtwEnableCallback(
-		in Guid sourceId,
-		int isEnabled,
-		byte level,
-		long matchAnyKeywords,
-		long matchAllKeywords,
-		EVENT_FILTER_DESCRIPTOR* filterData,
-		void* callbackContext);*/
-
-	MonoGCHandle delegate_object_handle = (MonoGCHandle)callback_context;
-	MonoObject *delegate_object = delegate_object_handle ? mono_gchandle_get_target_internal (delegate_object_handle) : NULL;
-	if (delegate_object) {
-		void *params [7];
-		params [0] = (void *)source_id;
-		params [1] = (void *)&is_enabled;
-		params [2] = (void *)&level;
-		params [3] = (void *)&match_any_keywords;
-		params [4] = (void *)&match_all_keywords;
-		params [5] = (void *)filter_data;
-		params [6] = NULL;
-
-		ERROR_DECL (error);
-		mono_runtime_delegate_invoke_checked (delegate_object, params, error);
-	}
-}
-
 gconstpointer
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoStringHandle provider_name,
-	MonoDelegateHandle callback_func,
+	gpointer callback_func,
+	gpointer callback_context,
 	MonoError *error)
 {
 	EventPipeProvider *provider = NULL;
-	void *callback_data = NULL;
 
 	if (MONO_HANDLE_IS_NULL (provider_name)) {
 		mono_error_set_argument_null (error, "providerName", "");
 		return NULL;
 	}
 
-	if (!MONO_HANDLE_IS_NULL (callback_func))
-		callback_data = (void *)mono_gchandle_new_weakref_internal (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, callback_func)), FALSE);
-
 	char *provider_name_utf8 = mono_string_handle_to_utf8 (provider_name, error);
 	if (is_ok (error) && provider_name_utf8) {
-		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, delegate_callback_func, delegate_callback_data_free_func, callback_data);
+		provider = mono_component_event_pipe ()->create_provider (provider_name_utf8, callback_func, callback_context);
 	}
 
 	g_free (provider_name_utf8);
@@ -209,10 +137,18 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (intptr_t) mono_component_event_pipe()->get_wait_handle ((EventPipeSessionID)session_id);
+	return mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id) ? TRUE : FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	return mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout) ? TRUE : FALSE;
 }
 
 void
@@ -378,6 +314,22 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 }
 
 void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_min_max_threads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
+		clr_instance_id);
+}
+
+void
 ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadAdjustmentSample (
 	double throughput,
 	uint16_t clr_instance_id)
@@ -465,12 +417,25 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 		clr_instance_id);
 }
 
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	mono_component_event_pipe ()->write_event_threadpool_io_pack (
+		native_overlapped,
+		overlapped,
+		clr_instance_id);
+}
+
 #else /* ENABLE_PERFTRACING */
 
 gconstpointer
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider (
 	MonoStringHandle provider_name,
-	MonoDelegateHandle callback_func,
+	gpointer callback_func,
+	gpointer callback_context,
 	MonoError *error)
 {
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.CreateProvider");
@@ -565,13 +530,24 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetWaitHandle");
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.SignalSession");
 	mono_error_set_pending_exception (error);
-	return 0;
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WaitForSessionSignal");
+	mono_error_set_pending_exception (error);
+	return FALSE;
 }
 
 void
@@ -626,6 +602,19 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorke
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkerThreadWait");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolMinMaxThreads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolMinMaxThreads");
 	mono_error_set_pending_exception (error);
 }
 
@@ -700,6 +689,17 @@ ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorki
 {
 	ERROR_DECL (error);
 	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolWorkingThreadCount");
+	mono_error_set_pending_exception (error);
+}
+
+void
+ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.NativeRuntimeEventSource.LogThreadPoolIOPack");
 	mono_error_set_pending_exception (error);
 }
 

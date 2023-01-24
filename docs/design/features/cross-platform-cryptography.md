@@ -313,9 +313,9 @@ On macOS the X509Store class is a projection of system trust decisions (read-onl
 | Open LocalMachine\Disallowed (ReadOnly) | :white_check_mark: | `CryptographicException` | :white_check_mark: |
 | Open LocalMachine\Disallowed (ReadWrite) | :white_check_mark: | `CryptographicException` | `CryptographicException` |
 | Open LocalMachine\Disallowed (ExistingOnly) | :white_check_mark: | `CryptographicException` | :white_check_mark: (if ReadOnly) |
-| Open non-existant store (ExistingOnly) | `CryptographicException` | `CryptographicException` | `CryptographicException` |
-| Open CurrentUser non-existant store (ReadWrite)  | :white_check_mark: | :white_check_mark: | `CryptographicException` |
-| Open LocalMachine non-existant store (ReadWrite)  | :white_check_mark: | `CryptographicException` | `CryptographicException` |
+| Open non-existent store (ExistingOnly) | `CryptographicException` | `CryptographicException` | `CryptographicException` |
+| Open CurrentUser non-existent store (ReadWrite)  | :white_check_mark: | :white_check_mark: | `CryptographicException` |
+| Open LocalMachine non-existent store (ReadWrite)  | :white_check_mark: | `CryptographicException` | `CryptographicException` |
 
 On Linux stores are created on first-write, and no user stores exist by default, so opening CurrentUser\My with ExistingOnly may fail.
 

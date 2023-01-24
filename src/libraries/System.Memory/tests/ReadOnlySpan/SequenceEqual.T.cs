@@ -170,17 +170,19 @@ namespace System.SpanTests
         [Fact]
         public static void SequenceEqual_AlwaysTrueComparer()
         {
-            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], new AlwaysComparer<int>(true)));
-            Assert.True(((ReadOnlySpan<int>)new int[2]).SequenceEqual(new int[2], new AlwaysComparer<int>(true)));
-            Assert.True(((ReadOnlySpan<int>)new int[2] { 1, 3 }).SequenceEqual(new int[2] { 2, 4 }, new AlwaysComparer<int>(true)));
+            EqualityComparer<int> alwaysTrueComparer = EqualityComparer<int>.Create((x, y) => true);
+            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], alwaysTrueComparer));
+            Assert.True(((ReadOnlySpan<int>)new int[2]).SequenceEqual(new int[2], alwaysTrueComparer));
+            Assert.True(((ReadOnlySpan<int>)new int[2] { 1, 3 }).SequenceEqual(new int[2] { 2, 4 }, alwaysTrueComparer));
         }
 
         [Fact]
         public static void SequenceEqual_AlwaysFalseComparer()
         {
-            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], new AlwaysComparer<int>(false)));
-            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], new AlwaysComparer<int>(false)));
-            Assert.False(((ReadOnlySpan<int>)new int[2] { 1, 3 }).SequenceEqual(new int[2] { 2, 4 }, new AlwaysComparer<int>(false)));
+            EqualityComparer<int> alwaysFalseComparer = EqualityComparer<int>.Create((x, y) => false);
+            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], alwaysFalseComparer));
+            Assert.False(((ReadOnlySpan<int>)new int[1]).SequenceEqual(new int[2], alwaysFalseComparer));
+            Assert.False(((ReadOnlySpan<int>)new int[2] { 1, 3 }).SequenceEqual(new int[2] { 2, 4 }, alwaysFalseComparer));
         }
 
         [Fact]
@@ -200,14 +202,6 @@ namespace System.SpanTests
 
             Assert.False(((ReadOnlySpan<string>)lower).SequenceEqual(different));
             Assert.False(((ReadOnlySpan<string>)lower).SequenceEqual(different, StringComparer.OrdinalIgnoreCase));
-        }
-
-        private sealed class AlwaysComparer<T> : IEqualityComparer<T>
-        {
-            private readonly bool _result;
-            public AlwaysComparer(bool result) => _result = result;
-            public bool Equals(T? x, T? y) => _result;
-            public int GetHashCode([DisallowNull] T obj) => 0;
         }
     }
 }

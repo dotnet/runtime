@@ -395,46 +395,38 @@ namespace System.Text
             // it tries to consume as many code units as possible as long as those code
             // units constitute the beginning of a longer well-formed subsequence per Table 3-7.
 
+            // Try reading source[0].
+
             int index = 0;
-
-            // Try reading input[0].
-
-            if ((uint)index >= (uint)source.Length)
+            if (source.IsEmpty)
             {
                 goto NeedsMoreData;
             }
 
-            uint tempValue = source[index];
-            if (!UnicodeUtility.IsAsciiCodePoint(tempValue))
+            uint tempValue = source[0];
+            if (UnicodeUtility.IsAsciiCodePoint(tempValue))
             {
-                goto NotAscii;
+                bytesConsumed = 1;
+                result = UnsafeCreate(tempValue);
+                return OperationStatus.Done;
             }
-
-        Finish:
-
-            bytesConsumed = index + 1;
-            Debug.Assert(1 <= bytesConsumed && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
-            result = UnsafeCreate(tempValue);
-            return OperationStatus.Done;
-
-        NotAscii:
 
             // Per Table 3-7, the beginning of a multibyte sequence must be a code unit in
             // the range [C2..F4]. If it's outside of that range, it's either a standalone
             // continuation byte, or it's an overlong two-byte sequence, or it's an out-of-range
             // four-byte sequence.
 
+            // Try reading source[1].
+
+            index = 1;
             if (!UnicodeUtility.IsInRangeInclusive(tempValue, 0xC2, 0xF4))
             {
-                goto FirstByteInvalid;
+                goto Invalid;
             }
 
             tempValue = (tempValue - 0xC2) << 6;
 
-            // Try reading input[1].
-
-            index++;
-            if ((uint)index >= (uint)source.Length)
+            if (source.Length <= 1)
             {
                 goto NeedsMoreData;
             }
@@ -443,7 +435,7 @@ namespace System.Text
             // complement representation is in the range [-65..-128]. This allows us to
             // perform a single comparison to see if a byte is a continuation byte.
 
-            int thisByteSignExtended = (sbyte)source[index];
+            int thisByteSignExtended = (sbyte)source[1];
             if (thisByteSignExtended >= -64)
             {
                 goto Invalid;
@@ -485,15 +477,15 @@ namespace System.Text
             // The first two bytes were just fine. We don't need to perform any other checks
             // on the remaining bytes other than to see that they're valid continuation bytes.
 
-            // Try reading input[2].
+            // Try reading source[2].
 
-            index++;
-            if ((uint)index >= (uint)source.Length)
+            index = 2;
+            if (source.Length <= 2)
             {
                 goto NeedsMoreData;
             }
 
-            thisByteSignExtended = (sbyte)source[index];
+            thisByteSignExtended = (sbyte)source[2];
             if (thisByteSignExtended >= -64)
             {
                 goto Invalid; // this byte is not a UTF-8 continuation byte
@@ -510,15 +502,15 @@ namespace System.Text
                 goto Finish; // this is a valid 3-byte sequence
             }
 
-            // Try reading input[3].
+            // Try reading source[3].
 
-            index++;
-            if ((uint)index >= (uint)source.Length)
+            index = 3;
+            if (source.Length <= 3)
             {
                 goto NeedsMoreData;
             }
 
-            thisByteSignExtended = (sbyte)source[index];
+            thisByteSignExtended = (sbyte)source[3];
             if (thisByteSignExtended >= -64)
             {
                 goto Invalid; // this byte is not a UTF-8 continuation byte
@@ -529,19 +521,15 @@ namespace System.Text
             tempValue += 0x80; // remove the continuation byte marker
             tempValue -= (0xF0 - 0xE0) << 18; // remove the leading byte marker
 
+            // Valid 4-byte sequence
             UnicodeDebug.AssertIsValidSupplementaryPlaneScalar(tempValue);
-            goto Finish; // this is a valid 4-byte sequence
 
-        FirstByteInvalid:
+        Finish:
 
-            index = 1; // Invalid subsequences are always at least length 1.
-
-        Invalid:
-
-            Debug.Assert(1 <= index && index <= 3); // Invalid subsequences are always length 1..3
-            bytesConsumed = index;
-            result = ReplacementChar;
-            return OperationStatus.InvalidData;
+            bytesConsumed = index + 1;
+            Debug.Assert(1 <= bytesConsumed && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
+            result = UnsafeCreate(tempValue);
+            return OperationStatus.Done;
 
         NeedsMoreData:
 
@@ -549,6 +537,13 @@ namespace System.Text
             bytesConsumed = index;
             result = ReplacementChar;
             return OperationStatus.NeedMoreData;
+
+        Invalid:
+
+            Debug.Assert(1 <= index && index <= 3); // Invalid subsequences are always length 1..3
+            bytesConsumed = index;
+            result = ReplacementChar;
+            return OperationStatus.InvalidData;
         }
 
         /// <summary>
@@ -847,9 +842,9 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            if ((uint)index >= (uint)input!.Length)
+            if ((uint)index >= (uint)input.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             // Optimistically assume input is within BMP.
@@ -1024,7 +1019,7 @@ namespace System.Text
                     charsWritten = 1;
                     return true;
                 }
-                else if (1 < (uint)destination.Length)
+                else if (destination.Length > 1)
                 {
                     UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)value._value, out destination[0], out destination[1]);
                     charsWritten = 2;
@@ -1071,7 +1066,7 @@ namespace System.Text
                     return true;
                 }
 
-                if (1 < (uint)destination.Length)
+                if (destination.Length > 1)
                 {
                     if (value.Value <= 0x7FFu)
                     {
@@ -1082,7 +1077,7 @@ namespace System.Text
                         return true;
                     }
 
-                    if (2 < (uint)destination.Length)
+                    if (destination.Length > 2)
                     {
                         if (value.Value <= 0xFFFFu)
                         {
@@ -1094,7 +1089,7 @@ namespace System.Text
                             return true;
                         }
 
-                        if (3 < (uint)destination.Length)
+                        if (destination.Length > 3)
                         {
                             // Scalar 000uuuuu zzzzyyyy yyxxxxxx -> bytes [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
                             destination[0] = (byte)((value._value + (0b11110 << 21)) >> 18);

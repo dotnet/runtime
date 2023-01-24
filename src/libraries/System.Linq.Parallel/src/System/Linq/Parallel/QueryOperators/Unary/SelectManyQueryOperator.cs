@@ -351,10 +351,7 @@ namespace System.Linq.Parallel
             protected override void Dispose(bool disposing)
             {
                 _leftSource.Dispose();
-                if (_currentRightSource != null)
-                {
-                    _currentRightSource.Dispose();
-                }
+                _currentRightSource?.Dispose();
             }
         }
 
@@ -483,10 +480,7 @@ namespace System.Linq.Parallel
             protected override void Dispose(bool disposing)
             {
                 _leftSource.Dispose();
-                if (_currentRightSource != null)
-                {
-                    _currentRightSource.Dispose();
-                }
+                _currentRightSource?.Dispose();
             }
         }
     }

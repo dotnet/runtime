@@ -359,11 +359,6 @@ namespace System.Data
                 {
                     column.InitializeRecord(record);
                 }
-
-                if (_table.DataSet != null)
-                {
-                    column.OnSetDataSet();
-                }
             }
             catch (Exception e) when (ADP.IsCatchableOrSecurityExceptionType(e))
             {
@@ -756,10 +751,7 @@ namespace System.Data
 
                 foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
-                    if (column != null)
-                    {
-                        column.FinishInitInProgress();
-                    }
+                    column?.FinishInitInProgress();
                 }
 
                 _delayedAddRangeColumns = null;
@@ -769,7 +761,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Column1, Column2, ... Columni
         /// </summary>
-        private string MakeName(int index) => index == 1 ?
+        private static string MakeName(int index) => index == 1 ?
                 "Column1" :
                 "Column" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

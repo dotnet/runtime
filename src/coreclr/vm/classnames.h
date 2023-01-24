@@ -15,7 +15,6 @@
 #define g_ArrayClassName "System.Array"
 
 #define g_NullableName "Nullable`1"
-#define g_ByReferenceName "ByReference`1"
 
 #define g_CollectionsEnumerableItfName "System.Collections.IEnumerable"
 #define g_CollectionsEnumeratorClassName "System.Collections.IEnumerator"
@@ -38,6 +37,12 @@
 #define g_DateTimeOffsetClassName "System.DateTimeOffset"
 #define g_DecimalClassName "System.Decimal"
 
+#define g_Int128ClassName "System.Int128"
+#define g_Int128Name "Int128"
+
+#define g_UInt128ClassName "System.UInt128"
+#define g_UInt128Name "UInt128"
+
 #define g_Vector64ClassName "System.Runtime.Intrinsics.Vector64`1"
 #define g_Vector64Name "Vector64`1"
 
@@ -46,6 +51,9 @@
 
 #define g_Vector256ClassName "System.Runtime.Intrinsics.Vector256`1"
 #define g_Vector256Name "Vector256`1"
+
+#define g_Vector512ClassName "System.Runtime.Intrinsics.Vector512`1"
+#define g_Vector512Name "Vector512`1"
 
 #define g_EnumeratorToEnumClassName "System.Runtime.InteropServices.CustomMarshalers.EnumeratorToEnumVariantMarshaler"
 #define g_ExceptionClassName "System.Exception"
@@ -106,8 +114,6 @@
 #define g_DefaultDllImportSearchPathsAttribute "System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute"
 #define g_UnmanagedCallersOnlyAttribute "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"
 #define g_FixedBufferAttribute "System.Runtime.CompilerServices.FixedBufferAttribute"
-
-#define g_CompilerServicesTypeDependencyAttribute "System.Runtime.CompilerServices.TypeDependencyAttribute"
 
 #define g_ReferenceAssemblyAttribute "System.Runtime.CompilerServices.ReferenceAssemblyAttribute"
 

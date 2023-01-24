@@ -12,7 +12,7 @@ namespace System.Reflection.Tests
         {
             // Methods
             yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod), Helpers.AllFlags), true };
-            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod), Helpers.AllFlags).MakeGenericMethod(typeof(int)), false };
+            yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericMethod), Helpers.AllFlags).MakeGenericMethod(typeof(string)), false };
             yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestMethod), Helpers.AllFlags), false };
             yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestPartialGenericMethod), Helpers.AllFlags), true };
             yield return new object[] { TypeExtensions.GetMethod(typeof(NonGenericClass), nameof(NonGenericClass.TestGenericReturnTypeMethod), Helpers.AllFlags), true };

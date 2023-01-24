@@ -29,7 +29,7 @@ public class OtherType
 
 public class TypeWithFunkyStuff
 {
-	const string contant_field = "333";
+	const string constant_field = "333";
 	[MarshalAs (UnmanagedType.Struct)] int bla;
 
 	int[] z = new int[] {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
@@ -77,7 +77,7 @@ public class Generic<T> {
 
 public class NonGeneric {
 
-	public static object Bla () 
+	public static object Bla ()
 	{
 		Generic<int> f = new Generic<int> ();
 		return f;

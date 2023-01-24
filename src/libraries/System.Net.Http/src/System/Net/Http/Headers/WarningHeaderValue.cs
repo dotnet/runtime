@@ -71,10 +71,10 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             // Warning codes are always 3 digits according to RFC2616
-            sb.Append(NumberFormatInfo.InvariantInfo, $"{_code:000}");
+            sb.AppendSpanFormattable(_code, "000", NumberFormatInfo.InvariantInfo);
 
             sb.Append(' ');
             sb.Append(_agent);
@@ -84,11 +84,11 @@ namespace System.Net.Http.Headers
             if (_date.HasValue)
             {
                 sb.Append(" \"");
-                sb.Append(HttpDateParser.DateToString(_date.Value));
+                sb.AppendSpanFormattable(_date.Value, "r");
                 sb.Append('\"');
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -126,13 +126,13 @@ namespace System.Net.Http.Headers
 
             if (_date.HasValue)
             {
-                result = result ^ _date.Value.GetHashCode();
+                result ^= _date.Value.GetHashCode();
             }
 
             return result;
         }
 
-        public static WarningHeaderValue Parse(string? input)
+        public static WarningHeaderValue Parse(string input)
         {
             int index = 0;
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
@@ -187,7 +187,7 @@ namespace System.Net.Http.Headers
 
             string text = input.Substring(textStartIndex, textLength);
 
-            current = current + textLength;
+            current += textLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
             DateTimeOffset? date;
@@ -214,10 +214,10 @@ namespace System.Net.Http.Headers
             }
 
             agent = input.Substring(current, agentLength);
-            current = current + agentLength;
+            current += agentLength;
 
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // At least one whitespace required after <agent>. Also make sure we have characters left for <text>
             if ((whitespaceLength == 0) || (current == input.Length))
@@ -246,10 +246,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            current = current + codeLength;
+            current += codeLength;
 
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // Make sure the number is followed by at least one whitespace and that we have characters left to parse.
             if ((whitespaceLength == 0) || (current == input.Length))
@@ -266,7 +266,7 @@ namespace System.Net.Http.Headers
 
             // Make sure we have at least one whitespace between <text> and <date> (if we have <date>)
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
             if ((current < input.Length) && (input[current] == '"'))
@@ -280,19 +280,12 @@ namespace System.Net.Http.Headers
 
                 // Find the closing '"'
                 int dateStartIndex = current;
-                while (current < input.Length)
+                int quote = input.AsSpan(current).IndexOf('"');
+                if (quote <= 0) // no quote was found or it was the first character (meaning an empty quoted string)
                 {
-                    if (input[current] == '"')
-                    {
-                        break;
-                    }
-                    current++;
+                    return false;
                 }
-
-                if ((current == input.Length) || (current == dateStartIndex))
-                {
-                    return false; // we couldn't find the closing '"' or we have an empty quoted string.
-                }
+                current += quote;
 
                 DateTimeOffset temp;
                 if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
@@ -303,7 +296,7 @@ namespace System.Net.Http.Headers
                 date = temp;
 
                 current++; // skip closing '"'
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             return true;
@@ -316,10 +309,8 @@ namespace System.Net.Http.Headers
 
         private static void CheckCode(int code)
         {
-            if ((code < 0) || (code > 999))
-            {
-                throw new ArgumentOutOfRangeException(nameof(code));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(code);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(code, 999);
         }
 
         private static void CheckAgent(string agent)

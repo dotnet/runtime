@@ -45,7 +45,7 @@ namespace System.Data.Common
         {
             _useOdbcRules = useOdbcRules;
             _parsetable = new Dictionary<string, string?>();
-            _usersConnectionString = ((null != connectionString) ? connectionString : "");
+            _usersConnectionString = connectionString ?? "";
 
             // first pass on parsing, initial syntax check
             if (0 < _usersConnectionString.Length)
@@ -77,14 +77,13 @@ namespace System.Data.Common
             {
                 if (!ConvertValueToIntegratedSecurity())
                 {
-                    if (_parsetable.ContainsKey(KEY.Password))
+                    if (_parsetable.TryGetValue(KEY.Password, out string? value))
                     {
-                        return string.IsNullOrEmpty(_parsetable[KEY.Password]);
+                        return string.IsNullOrEmpty(value);
                     }
-                    else
-                    if (_parsetable.ContainsKey(SYNONYM.Pwd))
+                    else if (_parsetable.TryGetValue(SYNONYM.Pwd, out string? val))
                     {
-                        return string.IsNullOrEmpty(_parsetable[SYNONYM.Pwd]); // MDAC 83097
+                        return string.IsNullOrEmpty(val); // MDAC 83097
                     }
                     else
                     {
@@ -201,7 +200,7 @@ namespace System.Data.Common
             return ConvertValueToIntegratedSecurityInternal((string)value);
         }
 
-        internal bool ConvertValueToIntegratedSecurityInternal(string stringValue)
+        internal static bool ConvertValueToIntegratedSecurityInternal(string stringValue)
         {
             if (CompareInsensitiveInvariant(stringValue, "sspi") || CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
                 return true;
@@ -249,8 +248,7 @@ namespace System.Data.Common
 
         public string ConvertValueToString(string keyName, string defaultValue)
         {
-            string? value = _parsetable[keyName];
-            return ((null != value) ? value : defaultValue);
+            return _parsetable[keyName] ?? defaultValue;
         }
 
         public bool ContainsKey(string keyword)
@@ -340,7 +338,7 @@ namespace System.Data.Common
                 //    continue;
                 //}
 
-                // There is a set of keywords we explictly do NOT want to expand |DataDirectory| on
+                // There is a set of keywords we explicitly do NOT want to expand |DataDirectory| on
                 if (_useOdbcRules)
                 {
                     switch (current.Name)
@@ -452,7 +450,7 @@ namespace System.Data.Common
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && !s_connectionStringValidValueRegex.IsMatch(value))
+            if ((null != value) && value.IndexOf('\0') >= 0)
             {
                 throw ADP.InvalidValue(keyword);
             }

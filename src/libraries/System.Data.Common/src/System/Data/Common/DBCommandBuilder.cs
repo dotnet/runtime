@@ -477,8 +477,7 @@ namespace System.Data.Common
         {
             get
             {
-                string? quoteSuffix = _quoteSuffix;
-                return ((null != quoteSuffix) ? quoteSuffix : string.Empty);
+                return (_quoteSuffix ?? string.Empty);
             }
             set
             {
@@ -559,7 +558,7 @@ namespace System.Data.Common
             }
         }
 
-        private void BuildCache(bool closeConnection, DataRow? dataRow, bool useColumnsForParameterNames)
+        private void BuildCache(bool closeConnection, bool useColumnsForParameterNames)
         {
             // Don't bother building the cache if it's done already; wait for
             // the user to call RefreshSchema first.
@@ -648,7 +647,7 @@ namespace System.Data.Common
 
         protected virtual DataTable? GetSchemaTable(DbCommand sourceCommand)
         {
-            using (IDataReader dataReader = sourceCommand.ExecuteReader(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
+            using (DbDataReader dataReader = sourceCommand.ExecuteReader(CommandBehavior.SchemaOnly | CommandBehavior.KeyInfo))
             {
                 return dataReader.GetSchemaTable();
             }
@@ -1009,7 +1008,7 @@ namespace System.Data.Common
             {
                 DbSchemaRow row = schemaRows[i];
 
-                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row, isUpdate))
+                if ((null == row) || (0 == row.BaseColumnName.Length) || !IncludeInWhereClause(row))
                 {
                     continue;
                 }
@@ -1321,7 +1320,7 @@ namespace System.Data.Common
 
         internal DbCommand GetInsertCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildInsertCommand(GetTableMapping(dataRow), dataRow);
             return InsertCommand!;
         }
@@ -1338,7 +1337,7 @@ namespace System.Data.Common
 
         internal DbCommand GetUpdateCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildUpdateCommand(GetTableMapping(dataRow), dataRow);
             return UpdateCommand!;
         }
@@ -1355,7 +1354,7 @@ namespace System.Data.Common
 
         internal DbCommand GetDeleteCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
-            BuildCache(true, dataRow, useColumnsForParameterNames);
+            BuildCache(true, useColumnsForParameterNames);
             BuildDeleteCommand(GetTableMapping(dataRow), dataRow);
             return DeleteCommand!;
         }
@@ -1365,8 +1364,8 @@ namespace System.Data.Common
             return GetColumnValue(row, GetDataColumn(columnName, mappings, row), version);
         }
 
-        [return: NotNullIfNotNull("column")]
-        private object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
+        [return: NotNullIfNotNull(nameof(column))]
+        private static object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
         {
             object? value = null;
             if (null != column)
@@ -1404,19 +1403,19 @@ namespace System.Data.Common
             return p;
         }
 
-        private bool IncludeInInsertValues(DbSchemaRow row)
+        private static bool IncludeInInsertValues(DbSchemaRow row)
         {
             // NOTE: Include ignore condition - i.e. ignore if 'row' is IsReadOnly else include
             return (!row.IsAutoIncrement && !row.IsHidden && !row.IsExpression && !row.IsRowVersion && !row.IsReadOnly);
         }
 
-        private bool IncludeInUpdateSet(DbSchemaRow row)
+        private static bool IncludeInUpdateSet(DbSchemaRow row)
         {
             // NOTE: Include ignore condition - i.e. ignore if 'row' is IsReadOnly else include
             return (!row.IsAutoIncrement && !row.IsRowVersion && !row.IsHidden && !row.IsReadOnly);
         }
 
-        private bool IncludeInWhereClause(DbSchemaRow row, bool isUpdate)
+        private bool IncludeInWhereClause(DbSchemaRow row)
         {
             bool flag = IncrementWhereCount(row);
             if (flag && row.IsHidden)
@@ -1571,7 +1570,7 @@ namespace System.Data.Common
                             if ((null != command) && (null == command.Connection))
                             {
                                 DbDataAdapter? adapter = DataAdapter;
-                                DbCommand? select = ((null != adapter) ? adapter.SelectCommand : null);
+                                DbCommand? select = adapter?.SelectCommand;
                                 if (null != select)
                                 {
                                     command.Connection = select.Connection;
@@ -1599,7 +1598,7 @@ namespace System.Data.Common
         {
             // the Update method will close the connection if command was null and returned command.Connection is same as SelectCommand.Connection
             DataRow datarow = rowUpdatingEvent.Row;
-            BuildCache(false, datarow, false);
+            BuildCache(false, false);
 
             DbCommand? command;
             switch (rowUpdatingEvent.StatementType)
@@ -1623,10 +1622,7 @@ namespace System.Data.Common
             }
             if (null == command)
             {
-                if (null != datarow)
-                {
-                    datarow.AcceptChanges();
-                }
+                datarow?.AcceptChanges();
                 rowUpdatingEvent.Status = UpdateStatus.SkipCurrentRow;
             }
             rowUpdatingEvent.Command = command;

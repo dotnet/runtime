@@ -150,7 +150,7 @@ namespace System.Text.Encodings.Web.Tests
                     Assert.Equal(OperationStatus.Done, encoder.EncodeUtf8(aggregateInputBytesSoFar.ToArray(), destination, out bytesConsumed, out bytesWritten, isFinalBlock: true));
                     Assert.Equal(aggregateInputBytesSoFar.Count, bytesConsumed);
                     Assert.Equal(expectedOutputBytesSoFar.Count + "[FFFD]".Length, bytesWritten);
-                    Assert.Equal(expectedOutputBytesSoFar.Concat(Encoding.UTF8.GetBytes("[FFFD]")).ToArray(), new Span<byte>(destination, 0, expectedOutputBytesSoFar.Count + "[FFFD]".Length).ToArray());
+                    Assert.Equal(expectedOutputBytesSoFar.Concat("[FFFD]"u8.ToArray()), new Span<byte>(destination, 0, expectedOutputBytesSoFar.Count + "[FFFD]".Length).ToArray());
                 }
 
                 // Consume the remainder of this entry and make sure it escaped properly (if needed).
@@ -222,7 +222,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange
 
-            byte[] inputBytes = Encoding.UTF8.GetBytes("\U00000040\U00000400\U00004000\U00040000"); // code units of different lengths
+            byte[] inputBytes = "\U00000040\U00000400\U00004000\U00040000"u8.ToArray(); // code units of different lengths
             var encoder = new ConfigurableScalarTextEncoder(_ => true /* allow everything */);
 
             // Act
@@ -239,7 +239,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange
 
-            byte[] inputBytes = Encoding.UTF8.GetBytes("\U00000040\U00000400\U00004000\U00040000"); // code units of different lengths
+            byte[] inputBytes = "\U00000040\U00000400\U00004000\U00040000"u8.ToArray(); // code units of different lengths
             var encoder = new ConfigurableScalarTextEncoder(codePoint => codePoint != 0x4000 /* disallow U+4000, allow all else */);
 
             // Act

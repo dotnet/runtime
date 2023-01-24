@@ -8,9 +8,7 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -37,8 +35,6 @@ jobs:
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     pgoType: ${{ parameters.pgoType }}
@@ -90,13 +86,6 @@ jobs:
     - name: buildLinuxDacStagingPath
       value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
 
-    - name: crossDacHostArch
-      value: x64
-
-    - ${{ if eq(parameters.archType, 'arm') }}:
-      - name: crossDacHostArch
-        value: x86
-
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName
       value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
@@ -129,7 +118,7 @@ jobs:
       value: ''
 
     # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
-    # 'gc-standalone' is forced to run pri0 as well to start with. 
+    # 'gc-standalone' is forced to run pri0 as well to start with.
     - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone'), ne(parameters.testGroup, 'gc-standalone-server') ) }}:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: priorityArg
@@ -153,8 +142,8 @@ jobs:
     - name: osArg
       value: ''
 
-    - ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    - ${{ if eq(parameters.osGroup, 'freebsd') }}:
       - name: osArg
-        value: -os FreeBSD
+        value: -os freebsd
 
     steps: ${{ parameters.steps }}

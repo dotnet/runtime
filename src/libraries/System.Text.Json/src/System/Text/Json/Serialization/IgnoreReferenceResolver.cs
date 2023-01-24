@@ -24,10 +24,7 @@ namespace System.Text.Json.Serialization
         {
             var wrappedValue = new ReferenceEqualsWrapper(value);
 
-            if (_stackForCycleDetection is null)
-            {
-                _stackForCycleDetection = new Stack<ReferenceEqualsWrapper>();
-            }
+            _stackForCycleDetection ??= new Stack<ReferenceEqualsWrapper>();
 
             Debug.Assert(!_stackForCycleDetection.Contains(wrappedValue));
             _stackForCycleDetection.Push(wrappedValue);

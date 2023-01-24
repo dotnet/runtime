@@ -51,14 +51,10 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "TokenGroupSet", "CurrentAsPrincipal: using current");
 
-                    StringBuilder SidBindingString = new StringBuilder();
-
-                    SidBindingString.Append("<SID=");
-                    SidBindingString.Append(Utils.SecurityIdentifierToLdapHexBindingString(_currentSID));
-                    SidBindingString.Append('>');
+                    string SidBindingString = $"<SID={Utils.SecurityIdentifierToLdapHexBindingString(_currentSID)}>";
 
                     DirectoryEntry currentDE = SDSUtils.BuildDirectoryEntry(
-                                                BuildPathFromDN(SidBindingString.ToString()),
+                                                BuildPathFromDN(SidBindingString),
                                                 _storeCtx.Credentials,
                                                 _storeCtx.AuthTypes);
 
@@ -129,8 +125,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if (!_disposed)
                 {
-                    if (_current != null)
-                        _current.Dispose();
+                    _current?.Dispose();
 
                     _disposed = true;
                 }

@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Xml.XPath;
+
 namespace System.Xml
 {
-    using System.Xml.XPath;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Collections.Generic;
-
     internal sealed class XPathNodeList : XmlNodeList
     {
         private readonly List<XmlNode?> _list;
@@ -33,7 +33,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode? GetNode(XPathNavigator n)
+        private static XmlNode? GetNode(XPathNavigator n)
         {
             IHasXmlNode iHasNode = (IHasXmlNode)n;
             return iHasNode.GetNode();

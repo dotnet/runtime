@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -11,8 +12,8 @@ namespace System
     {
         public sealed override string? GetEnumName(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
+
             ulong rawValue;
             if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
@@ -20,18 +21,18 @@ namespace System
             // For desktop compatibility, do not bounce an incoming integer that's the wrong size.
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
 
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return Enum.GetEnumName(this, rawValue);
+            return Enum.GetName(this, rawValue);
         }
 
         public sealed override string[] GetEnumNames()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] ret = Enum.InternalGetNames(this);
+            string[] ret = Enum.GetNamesNoCopy(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
             return new ReadOnlySpan<string>(ret).ToArray();
@@ -39,7 +40,7 @@ namespace System
 
         public sealed override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
@@ -47,11 +48,10 @@ namespace System
 
         public sealed override bool IsEnumDefined(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             if (value is string valueAsString)
             {
@@ -82,32 +82,43 @@ namespace System
                 else
                 {
                     Type underlyingType = Enum.InternalGetUnderlyingType(this);
-                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
+                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.GetEETypePtr()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 
-                return Enum.GetEnumName(this, rawValue) != null;
+                return Enum.GetName(this, rawValue) != null;
             }
         }
 
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public sealed override Array GetEnumValues()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
+            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             int count = values.Length;
+
             // Without universal shared generics, chances are slim that we'll have the appropriate
-            // array type available. Offer an escape hatch that avoids a MissingMetadataException
+            // array type available. Offer an escape hatch that avoids a missing metadata exception
             // at the cost of a small appcompat risk.
-            Array result;
-            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
-                result = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count);
-            else
-                result = Array.CreateInstance(this, count);
+            Array result = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
+                Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count) :
+                Array.CreateInstance(this, count);
+
             Array.Copy(values, result, values.Length);
             return result;
         }
+
+        public sealed override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            return (Array)Enum.GetValuesAsUnderlyingTypeNoCopy(this).Clone();
+        }
+
+        internal bool IsActualEnum
+            => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
     }
 }

@@ -47,7 +47,7 @@ namespace ILCompiler
             }
         }
 
-        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
+        private static void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
         {
             foreach (MethodDesc method in type.GetAllMethods())
             {
@@ -77,7 +77,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types 
+        /// Validates that it will be possible to generate '<paramref name="method"/>' based on the types
         /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
         /// even a stubbed out throwing implementation.
         /// </summary>
@@ -101,10 +101,7 @@ namespace ILCompiler
         {
             MetadataType defType = type as MetadataType;
 
-            if (defType != null)
-            {
-                defType.ComputeTypeContainsGCPointers();
-            }
+            defType?.ComputeTypeContainsGCPointers();
         }
     }
 }

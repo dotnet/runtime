@@ -14,17 +14,8 @@ namespace System.Text.RegularExpressions.Symbolic
         Concat,
         /// <summary>A node that matches a loop (e.g. <see cref="RegexNodeKind.Loop"/>, <see cref="RegexNodeKind.Lazyloop"/>, <see cref="RegexNodeKind.Setloop"/>, etc.).</summary>
         Loop,
-
-        /// <summary>A node that matches if any of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        Or,
         /// <summary>A node that matches if any of its nodes match and that matches them in a fixed order that mirrors how the backtracking engines operate (e.g. <see cref="RegexNodeKind.Alternate"/>).</summary>
-        OrderedOr,
-        /// <summary>A node that matches if all of its nodes match.</summary>
-        /// <remarks>This is typically used to combine singletons.</remarks>
-        And,
-        /// <summary>A node that matches if its node doesn't (e.g. <see cref="RegexNodeKind.Notone"/>).</summary>
-        Not,
+        Alternate,
 
         /// <summary>A node that represents a beginning anchor (i.e. <see cref="RegexNodeKind.Beginning"/>).</summary>
         BeginningAnchor,
@@ -54,6 +45,27 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </remarks>
         FixedLengthMarker,
 
+        /// <summary>Effects to be applied when taking a transition.</summary>
+        /// <remarks>
+        /// Left child is the pattern itself and the right child is a concatenation of nodes whose effects should be applied.
+        /// Effect nodes are created in the rule for concatenation in <see cref="SymbolicRegexNode{TSet}.CreateDerivative(SymbolicRegexBuilder{TSet}, TSet, uint)"/>,
+        /// where they are used to represent additional operations that should be performed in the current position if
+        /// the pattern in the left child is used to match the input. Since these Effect nodes are relative to the current
+        /// position in the input, the effects from the right child must be applied in the transition that the derivative is
+        /// being created for. This is done by translating effects to <see cref="DerivativeEffect"/> structs, which provide
+        /// a more convenient form for storing and repeatedly executing the effects. Additionally, Effect nodes must be
+        /// stripped away before creating the target state(s) for the transition, since an Effect doesn't itself have a
+        /// derivative due to its "positionless" behavior.
+        /// This representation of first recording effects in Effect nodes was chosen to allow simplification rules to kick
+        /// in before any potentially unnecessary work to gather and manage effects is performed. Effect nodes allow
+        /// delaying work until it is known that mapping CaptureStart and CaptureEnd nodes to <see cref="DerivativeEffect"/>
+        /// is necessary.
+        /// Note that the right child of an Effect node does not only contain CaptureStart and other nodes that have side
+        /// effects. Rather, the right child can be any pattern and when mapping to <see cref="DerivativeEffect"/> the function
+        /// <see cref="SymbolicRegexNode{TSet}.ApplyEffects"/> finds which effects would be encountered by the backtracking
+        /// engines when taking a nullable path through the right child.
+        /// </remarks>
+        Effect,
         /// <summary>Indicates the start of a subcapture.</summary>
         /// <remarks><see cref="SymbolicRegexNode{S}._lower"/> stores the associated capture number.</remarks>
         CaptureStart,

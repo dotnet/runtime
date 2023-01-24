@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDualComObjectEmpty() };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(ChangeWrapperHandleStrength_ComObject_TestData))]
         public void ChangeWrapperHandleStrength_ComObject_ReturnsExpected(object o)
         {

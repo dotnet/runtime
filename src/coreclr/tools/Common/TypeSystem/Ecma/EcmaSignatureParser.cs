@@ -3,11 +3,8 @@
 
 using System;
 using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
-
-using Internal.TypeSystem;
 using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
@@ -49,10 +46,9 @@ namespace Internal.TypeSystem.Ecma
             _resolutionFailure = null;
         }
 
-        void SetResolutionFailure(ResolutionFailure failure)
+        private void SetResolutionFailure(ResolutionFailure failure)
         {
-            if (_resolutionFailure == null)
-                _resolutionFailure = failure;
+            _resolutionFailure ??= failure;
         }
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
@@ -100,10 +96,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             TypeDesc result = ParseTypeImpl(typeCode);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -270,10 +263,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             SignatureTypeCode result = ParseTypeCodeImpl(skipPinned);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -286,20 +276,14 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
-                    }
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
 
                 if (typeCode == SignatureTypeCode.OptionalModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
-                    }
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
 
@@ -323,10 +307,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             TypeDesc result = ParseTypeImpl();
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -370,10 +351,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             MethodSignature result = ParseMethodSignatureImpl(skipEmbeddedSignatureData);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -469,6 +447,25 @@ namespace Internal.TypeSystem.Ecma
                 throw new BadImageFormatException();
 
             return ParseType();
+        }
+
+        public TypeDesc ParseFieldSignature(out EmbeddedSignatureData[] embeddedSigData)
+        {
+            try
+            {
+                _indexStack = new Stack<int>();
+                _indexStack.Push(1);
+                _indexStack.Push(0);
+                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+                TypeDesc parsedType = ParseFieldSignature();
+                embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
+                return parsedType;
+            }
+            finally
+            {
+                _indexStack = null;
+                _embeddedSignatureDataList = null;
+            }
         }
 
         public LocalVariableDefinition[] ParseLocalsSignature()

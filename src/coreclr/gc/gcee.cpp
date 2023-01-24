@@ -64,7 +64,7 @@ void GCHeap::ReportGenerationBounds()
         {
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
-            FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+            FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
         }, nullptr);
     }
 }
@@ -105,12 +105,10 @@ void GCHeap::UpdatePostGCCounters()
     size_t promoted_finalization_mem = 0;
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
-#ifndef FEATURE_REDHAWK
     // if a max gen garbage collection was performed, resync the GC Handle counter;
     // if threads are currently suspended, we do not need to obtain a lock on each handle table
     if (condemned_gen == max_generation)
         total_num_gc_handles = HndCountAllHandles(!IsGCInProgress());
-#endif //FEATURE_REDHAWK
 
     // per generation calculation.
     for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
@@ -159,7 +157,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)",
+    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
@@ -325,21 +323,21 @@ bool GCHeap::IsConcurrentGCInProgress()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void gc_heap::fire_etw_allocation_event (size_t allocation_amount, 
-                                         int gen_number, 
+void gc_heap::fire_etw_allocation_event (size_t allocation_amount,
+                                         int gen_number,
                                          uint8_t* object_address,
                                          size_t object_size)
 {
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     FIRE_EVENT(GCAllocationTick_V1, (uint32_t)allocation_amount, (uint32_t)gen_to_oh (gen_number));
 #else
-    FIRE_EVENT(GCAllocationTick_V4, 
-                allocation_amount, 
+    FIRE_EVENT(GCAllocationTick_V4,
+                allocation_amount,
                 (uint32_t)gen_to_oh (gen_number),
-                heap_number, 
-                object_address, 
+                heap_number,
+                object_address,
                 object_size);
-#endif //FEATURE_REDHAWK
+#endif //FEATURE_NATIVEAOT
 }
 
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
@@ -452,6 +450,9 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_next(seg) = 0;
     heap_segment_used(seg) = heap_segment_allocated(seg);
     heap_segment_plan_allocated(seg) = 0;
+#ifdef USE_REGIONS
+    heap_segment_gen_num(seg) = max_generation;
+#endif //USE_REGIONS
     seg->flags = heap_segment_flags_readonly;
 
 #ifdef MULTIPLE_HEAPS
@@ -503,6 +504,15 @@ bool GCHeap::IsInFrozenSegment(Object *object)
 #else // FEATURE_BASICFREEZE
     return false;
 #endif
+}
+
+void GCHeap::UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
+{
+#ifdef FEATURE_BASICFREEZE
+    heap_segment* heap_seg = reinterpret_cast<heap_segment*>(seg);
+    heap_segment_committed(heap_seg) = committed;
+    heap_segment_allocated(heap_seg) = allocated;
+#endif // FEATURE_BASICFREEZE
 }
 
 bool GCHeap::RuntimeStructuresValid()

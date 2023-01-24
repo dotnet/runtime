@@ -133,7 +133,7 @@ g_file_set_contents (const gchar *filename, const gchar *contents, gssize length
 	if (length < 0)
 		length = strlen (contents);
 
-	if (fwrite (contents, 1, length, fp) < length) {
+	if (fwrite (contents, 1, length, fp) < GSSIZE_TO_SIZE(length)) {
 		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (ferror (fp)), "%s", g_strerror (ferror (fp)));
 		g_unlink (path);
 		g_free (path);

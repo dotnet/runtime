@@ -185,7 +185,6 @@ WszCreateProcess(
 
 
 #include "psapi.h"
-#include "tlhelp32.h"
 #include "winnls.h"
 
 //********** Globals. *********************************************************

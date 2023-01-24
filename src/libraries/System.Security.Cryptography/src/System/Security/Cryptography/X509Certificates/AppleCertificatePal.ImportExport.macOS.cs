@@ -94,11 +94,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void DisposeTempKeychain()
         {
-            SafeKeychainHandle? tempKeychain = Interlocked.Exchange(ref _tempKeychain, null);
-            if (tempKeychain != null)
-            {
-                tempKeychain.Dispose();
-            }
+            Interlocked.Exchange(ref _tempKeychain, null)?.Dispose();
         }
 
         internal unsafe byte[] ExportPkcs8(ReadOnlySpan<char> password)

@@ -79,6 +79,11 @@ namespace ILCompiler
             foreach (var methodNode in sortedMethodsList)
             {
                 methodNode.CustomSort = sortOrder;
+                MethodColdCodeNode methodColdCodeNode = methodNode.ColdCodeNode;
+                if (methodColdCodeNode != null)
+                {
+                    methodColdCodeNode.CustomSort = sortOrder + sortedMethodsList.Count;
+                }
                 sortOrder++;
             }
 
@@ -92,7 +97,7 @@ namespace ILCompiler
             }
 
             var newNodesArray = nodes.ToArray();
-            newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
+            newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
             return newNodesArray.ToImmutableArray();
 
             void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)

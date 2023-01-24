@@ -19,6 +19,8 @@ namespace System.Drawing.Imaging.Tests
         private static ImageFormat IconImageFormat = new ImageFormat(new Guid("b96b3cb5-0728-11d3-9d7b-0000f81ef32e"));
         private static ImageFormat JpegImageFormat = new ImageFormat(new Guid("b96b3cae-0728-11d3-9d7b-0000f81ef32e"));
         private static ImageFormat WmfImageFormat = new ImageFormat(new Guid("b96b3cad-0728-11d3-9d7b-0000f81ef32e"));
+        private static ImageFormat HeifImageFormat = new ImageFormat(new Guid("{b96b3cb6-0728-11d3-9d7b-0000f81ef32e}"));
+        private static ImageFormat WebpImageFormat = new ImageFormat(new Guid("{b96b3cb7-0728-11d3-9d7b-0000f81ef32e}"));
         private static ImageFormat CustomImageFormat = new ImageFormat(new Guid("48749428-316f-496a-ab30-c819a92b3137"));
 
         public static IEnumerable<object[]> ImageFormatGuidTestData
@@ -35,6 +37,10 @@ namespace System.Drawing.Imaging.Tests
                 yield return new object[] { IconImageFormat.Guid, ImageFormat.Icon };
                 yield return new object[] { JpegImageFormat.Guid, ImageFormat.Jpeg };
                 yield return new object[] { WmfImageFormat.Guid, ImageFormat.Wmf };
+#if NET
+                yield return new object[] { HeifImageFormat.Guid, ImageFormat.Heif };
+                yield return new object[] { WebpImageFormat.Guid, ImageFormat.Webp };
+#endif
                 yield return new object[] { new Guid("48749428-316f-496a-ab30-c819a92b3137"), CustomImageFormat };
             }
         }
@@ -53,6 +59,10 @@ namespace System.Drawing.Imaging.Tests
                 yield return new object[] { "Icon", ImageFormat.Icon };
                 yield return new object[] { "Jpeg", ImageFormat.Jpeg };
                 yield return new object[] { "Wmf", ImageFormat.Wmf };
+#if NET
+                yield return new object[] { "Heif", ImageFormat.Heif };
+                yield return new object[] { "Webp", ImageFormat.Webp };
+#endif
                 yield return new object[] { "[ImageFormat: 48749428-316f-496a-ab30-c819a92b3137]", CustomImageFormat };
             }
         }

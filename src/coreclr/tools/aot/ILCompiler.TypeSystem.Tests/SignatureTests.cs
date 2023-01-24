@@ -6,9 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -198,6 +195,35 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestSerializedSignatureWithReferenceToFieldWithModOpt()
+        {
+
+            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            FieldDesc fieldWithModOpt = modOptTester.GetFields().Single(m => string.Equals(m.Name, "fieldWithModOpt"));
+
+            // Create assembly with reference to interesting method
+            TypeSystemMetadataEmitter metadataEmitter = new TypeSystemMetadataEmitter(new System.Reflection.AssemblyName("Lookup"), _context);
+            var token = metadataEmitter.GetFieldRef(fieldWithModOpt);
+            MemoryStream peStream = new MemoryStream();
+            metadataEmitter.SerializeToStream(peStream);
+
+            peStream.Seek(0, SeekOrigin.Begin);
+
+            // Create new TypeSystemContext with just created assembly inside
+            var lookupContext = new TestTypeSystemContext(TargetArchitecture.X64);
+            var systemModule = lookupContext.CreateModuleForSimpleName("CoreTestAssembly");
+            lookupContext.SetSystemModule(systemModule);
+
+            lookupContext.CreateModuleForSimpleName("Lookup", peStream);
+
+            // Use generated assembly to trigger a load through the token created above and verify that it loads correctly
+            var ilLookupModule = (EcmaModule)lookupContext.GetModuleForSimpleName("Lookup");
+            FieldDesc fieldFound = ilLookupModule.GetField(token);
+
+            Assert.Equal("fieldWithModOpt", fieldFound.Name);
+        }
+
+        [Fact]
         public void TestMDArrayFunctionReading()
         {
             MetadataType mdArrayFunctionResolutionType = _testModule.GetType("", "MDArrayFunctionResolution");
@@ -224,7 +250,7 @@ namespace TypeSystemTests
                         {
                             successes++;
                         }
-                        _output.WriteLine($"call {tokenReferenceResult.ToString()}");
+                        _output.WriteLine($"call {tokenReferenceResult}");
                         break;
                 }
             }

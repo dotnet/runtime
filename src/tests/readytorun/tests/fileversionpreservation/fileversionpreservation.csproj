@@ -3,6 +3,7 @@
     <OutputType>exe</OutputType>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="fileversionpreservation.cs" />

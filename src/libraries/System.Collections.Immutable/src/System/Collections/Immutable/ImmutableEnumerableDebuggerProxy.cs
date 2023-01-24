@@ -18,7 +18,7 @@ namespace System.Collections.Immutable
         /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="dictionary">The enumerable to show in the debugger.</param>
-        public ImmutableDictionaryDebuggerProxy(IImmutableDictionary<TKey, TValue> dictionary)
+        public ImmutableDictionaryDebuggerProxy(IReadOnlyDictionary<TKey, TValue> dictionary)
             : base(enumerable: dictionary)
         {
         }
@@ -58,6 +58,6 @@ namespace System.Collections.Immutable
         /// Gets the contents of the enumerable for display in the debugger.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Contents => _cachedContents ?? (_cachedContents = _enumerable.ToArray());
+        public T[] Contents => _cachedContents ??= _enumerable.ToArray();
     }
 }

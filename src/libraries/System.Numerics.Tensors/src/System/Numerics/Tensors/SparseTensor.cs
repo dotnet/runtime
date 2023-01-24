@@ -13,7 +13,7 @@ namespace System.Numerics.Tensors
     {
         private readonly Dictionary<int, T> values;
         /// <summary>
-        /// Constructs a new SparseTensor of the specifed dimensions, initial capacity, and stride ordering.
+        /// Constructs a new SparseTensor of the specified dimensions, initial capacity, and stride ordering.
         /// </summary>
         /// <param name="dimensions">An span of integers that represent the size of each dimension of the SparseTensor to create.</param>
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Gets the value at the specied index, where index is a linearized version of n-dimension indices using strides.
+        /// Gets the value at the specified index, where index is a linearized version of n-dimension indices using strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <returns>The value at the specified position in this Tensor.</returns>
@@ -80,7 +80,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Sets the value at the specied index, where index is a linearized version of n-dimension indices using strides.
+        /// Sets the value at the specified index, where index is a linearized version of n-dimension indices using strides.
         /// </summary>
         /// <param name="index">An integer index computed as a dot-product of indices.</param>
         /// <param name="value">The new value to set at the specified position in this Tensor.</param>

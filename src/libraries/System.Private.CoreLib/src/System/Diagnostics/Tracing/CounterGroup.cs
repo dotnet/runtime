@@ -1,22 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
-using System;
-using System.Diagnostics;
-#endif
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Threading;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
+#if !ES_BUILD_STANDALONE
+#if !FEATURE_WASM_PERFTRACING
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
 #endif
     internal sealed class CounterGroup
     {
@@ -135,53 +129,29 @@ namespace System.Diagnostics.Tracing
                 ResetCounters(); // Reset statistics for counters before we start the thread.
 
                 _timeStampSinceCollectionStarted = DateTime.UtcNow;
-#if ES_BUILD_STANDALONE
-                // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                bool restoreFlow = false;
-                try
+                _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
+
+                // Create the polling thread and init all the shared state if needed
+                if (s_pollingThread == null)
                 {
-                    if (!ExecutionContext.IsFlowSuppressed())
+                    s_pollingThreadSleepEvent = new AutoResetEvent(false);
+                    s_counterGroupEnabledList = new List<CounterGroup>();
+                    s_pollingThread = new Thread(PollForValues)
                     {
-                        ExecutionContext.SuppressFlow();
-                        restoreFlow = true;
-                    }
-#endif
-                    _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
-
-                    // Create the polling thread and init all the shared state if needed
-                    if (s_pollingThread == null)
-                    {
-                        s_pollingThreadSleepEvent = new AutoResetEvent(false);
-                        s_counterGroupEnabledList = new List<CounterGroup>();
-                        s_pollingThread = new Thread(PollForValues)
-                        {
-                            IsBackground = true,
-                            Name = ".NET Counter Poller"
-                        };
-#if ES_BUILD_STANDALONE
-                        s_pollingThread.Start();
-#else
-                        s_pollingThread.UnsafeStart();
-#endif
-                    }
-
-                    if (!s_counterGroupEnabledList!.Contains(this))
-                    {
-                        s_counterGroupEnabledList.Add(this);
-                    }
-
-                    // notify the polling thread that the polling interval may have changed and the sleep should
-                    // be recomputed
-                    s_pollingThreadSleepEvent!.Set();
-#if ES_BUILD_STANDALONE
+                        IsBackground = true,
+                        Name = ".NET Counter Poller"
+                    };
+                    s_pollingThread.InternalUnsafeStart();
                 }
-                finally
+
+                if (!s_counterGroupEnabledList!.Contains(this))
                 {
-                    // Restore the current ExecutionContext
-                    if (restoreFlow)
-                        ExecutionContext.RestoreFlow();
+                    s_counterGroupEnabledList.Add(this);
                 }
-#endif
+
+                // notify the polling thread that the polling interval may have changed and the sleep should
+                // be recomputed
+                s_pollingThreadSleepEvent!.Set();
             }
         }
 

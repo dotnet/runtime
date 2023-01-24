@@ -359,8 +359,8 @@ coreclr::~coreclr()
 
 HRESULT coreclr::Initialize(
     _In_ int propertyCount,
-    _In_reads_(propertCount) const char **keys,
-    _In_reads_(propertCount) const char **values,
+    _In_reads_(propertyCount) const char **keys,
+    _In_reads_(propertyCount) const char **values,
     _In_opt_z_ const char *appDomainName)
 {
     if (_clrInst != nullptr)

@@ -58,12 +58,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Creates a new AttributeCollection from an existing AttributeCollection
         /// </summary>
-        public static AttributeCollection FromExisting(AttributeCollection existing!!, params Attribute[]? newAttributes)
+        public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[]? newAttributes)
         {
-            if (newAttributes == null)
-            {
-                newAttributes = Array.Empty<Attribute>();
-            }
+            ArgumentNullException.ThrowIfNull(existing);
+
+            newAttributes ??= Array.Empty<Attribute>();
 
             Attribute[] newArray = new Attribute[existing.Count + newAttributes.Length];
             int actualCount = existing.Count;
@@ -125,10 +124,12 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the attribute with the specified type.
         /// </summary>
-        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!]
+        public virtual Attribute? this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(attributeType);
+
                 lock (s_internalSyncObject)
                 {
                     // 2 passes here for perf. Really!  first pass, we just
@@ -137,10 +138,7 @@ namespace System.ComponentModel
                     // a relatively expensive call and we try to avoid it
                     // since we rarely encounter derived attribute types
                     // and this list is usually short.
-                    if (_foundAttributeTypes == null)
-                    {
-                        _foundAttributeTypes = new AttributeEntry[FoundTypesLimit];
-                    }
+                    _foundAttributeTypes ??= new AttributeEntry[FoundTypesLimit];
 
                     int ind = 0;
 
@@ -242,14 +240,13 @@ namespace System.ComponentModel
         /// Returns the default value for an attribute. This uses the following heuristic:
         /// 1. It looks for a public static field named "Default".
         /// </summary>
-        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType!!)
+        protected Attribute? GetDefaultAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type attributeType)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             lock (s_internalSyncObject)
             {
-                if (s_defaultAttributes == null)
-                {
-                    s_defaultAttributes = new Dictionary<Type, Attribute?>();
-                }
+                s_defaultAttributes ??= new Dictionary<Type, Attribute?>();
 
                 // If we have already encountered this, use what's in the table.
                 if (s_defaultAttributes.TryGetValue(attributeType, out Attribute? defaultAttribute))

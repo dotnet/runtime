@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,8 @@ namespace System.Net.WebSockets.Client.Tests
             Uri server,
             WebSocketMessageType type,
             int timeOutMilliseconds,
-            ITestOutputHelper output)
+            ITestOutputHelper output,
+            HttpMessageInvoker? invoker = null)
         {
             var cts = new CancellationTokenSource(timeOutMilliseconds);
             string message = "Hello WebSockets!";
@@ -27,7 +29,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[100];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, timeOutMilliseconds, output, invoker: invoker))
             {
                 output.WriteLine("TestEcho: SendAsync starting.");
                 await cws.SendAsync(WebSocketData.GetBufferFromText(message), type, true, cts.Token);
@@ -66,7 +68,8 @@ namespace System.Net.WebSockets.Client.Tests
             int timeOutMilliseconds,
             ITestOutputHelper output,
             TimeSpan keepAliveInterval = default,
-            IWebProxy proxy = null) =>
+            IWebProxy proxy = null,
+            HttpMessageInvoker? invoker = null) =>
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
@@ -83,7 +86,7 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cts = new CancellationTokenSource(timeOutMilliseconds))
                 {
                     output.WriteLine("GetConnectedWebSocket: ConnectAsync starting.");
-                    Task taskConnect = cws.ConnectAsync(server, cts.Token);
+                    Task taskConnect = invoker == null ? cws.ConnectAsync(server, cts.Token) : cws.ConnectAsync(server, invoker, cts.Token);
                     Assert.True(
                         (cws.State == WebSocketState.None) ||
                         (cws.State == WebSocketState.Connecting) ||

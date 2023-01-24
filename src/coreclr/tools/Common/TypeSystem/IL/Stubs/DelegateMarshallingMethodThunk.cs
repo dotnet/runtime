@@ -101,7 +101,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private TypeDesc GetNativeMethodParameterType(TypeDesc managedType, MarshalAsDescriptor marshalAs, InteropStateManager interopStateManager, bool isReturn, bool isAnsi)
+        private static TypeDesc GetNativeMethodParameterType(TypeDesc managedType, MarshalAsDescriptor marshalAs, InteropStateManager interopStateManager, bool isReturn, bool isAnsi)
         {
             TypeDesc nativeType;
             try
@@ -156,7 +156,7 @@ namespace Internal.IL.Stubs
                             marshalAs = parameterMetadataArray[parameterIndex++].MarshalAsDescriptor;
                         }
 
-                        TypeDesc nativeReturnType = GetNativeMethodParameterType(delegateSignature.ReturnType, 
+                        TypeDesc nativeReturnType = GetNativeMethodParameterType(delegateSignature.ReturnType,
                             marshalAs,
                             _interopStateManager,
                             isReturn:true,
@@ -180,7 +180,7 @@ namespace Internal.IL.Stubs
 
                             var managedType = isByRefType ? delegateSignature[i].GetParameterType() : delegateSignature[i];
 
-                            var nativeType = GetNativeMethodParameterType(managedType, 
+                            var nativeType = GetNativeMethodParameterType(managedType,
                                 marshalAs,
                                 _interopStateManager,
                                 isReturn:false,
@@ -231,8 +231,8 @@ namespace Internal.IL.Stubs
                     case DelegateMarshallingMethodThunkKind.ForwardNativeFunctionWrapper:
                         return "ForwardNativeFunctionWrapper";
                     default:
-                        System.Diagnostics.Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
-                        return String.Empty;
+                        Debug.Fail("Unexpected DelegateMarshallingMethodThunkKind.");
+                        return string.Empty;
                 }
             }
         }

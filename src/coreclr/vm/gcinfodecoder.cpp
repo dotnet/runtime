@@ -111,6 +111,8 @@ GcInfoDecoder::GcInfoDecoder(
 
     GcInfoHeaderFlags headerFlags;
     bool slimHeader = (m_Reader.ReadOneFast() == 0);
+    // Use flag mask to bail out early if we already decoded all the pieces that caller requested
+    int remainingFlags = flags == DECODE_EVERYTHING ? ~0 : flags;
 
     if (slimHeader)
     {
@@ -123,7 +125,6 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
     m_IsVarArg                 = headerFlags & GC_INFO_IS_VARARG;
-    int hasSecurityObject      = headerFlags & GC_INFO_HAS_SECURITY_OBJECT;
     int hasGSCookie            = headerFlags & GC_INFO_HAS_GS_COOKIE;
     int hasPSPSym              = headerFlags & GC_INFO_HAS_PSP_SYM;
     int hasGenericsInstContext = (headerFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE;
@@ -132,24 +133,31 @@ GcInfoDecoder::GcInfoDecoder(
     int hasStackBaseRegister   = headerFlags & GC_INFO_HAS_STACK_BASE_REGISTER;
 #ifdef TARGET_AMD64
     m_WantsReportOnlyLeaf      = ((headerFlags & GC_INFO_WANTS_REPORT_ONLY_LEAF) != 0);
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     m_HasTailCalls             = ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 #endif // TARGET_AMD64
-    int hasSizeOfEditAndContinuePreservedArea = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS;
+    int hasEncInfo = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO;
     int hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
 
     int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
     m_ReturnKind =
         (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
 
-    if (flags == DECODE_RETURN_KIND) {
+    remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    remainingFlags &= ~DECODE_HAS_TAILCALLS;
+#endif
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
 
     m_CodeLength = (UINT32) DENORMALIZE_CODE_LENGTH((UINT32) m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
 
-    if (flags == DECODE_CODE_LENGTH) {
+    remainingFlags &= ~DECODE_CODE_LENGTH;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -168,7 +176,7 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeEnd = (UINT32) DENORMALIZE_CODE_OFFSET(normCodeLength - normEpilogSize);
         _ASSERTE(m_ValidRangeStart < m_ValidRangeEnd);
     }
-    else if (hasSecurityObject || hasGenericsInstContext)
+    else if (hasGenericsInstContext)
     {
         // Decode prolog information
         UINT32 normPrologSize = (UINT32) m_Reader.DecodeVarLengthUnsigned(NORM_PROLOG_SIZE_ENCBASE) + 1;
@@ -181,22 +189,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeStart = m_ValidRangeEnd = 0;
     }
 
-    if (flags == DECODE_PROLOG_LENGTH) {
-        // Bail, if we've decoded enough,
-        return;
-    }
-
-    // Decode the offset to the security object.
-    if(hasSecurityObject)
+    remainingFlags &= ~DECODE_PROLOG_LENGTH;
+    if (remainingFlags == 0)
     {
-        m_SecurityObjectStackSlot = (INT32) DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(SECURITY_OBJECT_STACK_SLOT_ENCBASE));
-    }
-    else
-    {
-        m_SecurityObjectStackSlot = NO_SECURITY_OBJECT;
-    }
-
-    if (flags == DECODE_SECURITY_OBJECT) {
         // Bail, if we've decoded enough,
         return;
     }
@@ -211,7 +206,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_GSCookieStackSlot        = NO_GS_COOKIE;
     }
 
-    if (flags == DECODE_GS_COOKIE) {
+    remainingFlags &= ~DECODE_GS_COOKIE;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -227,7 +224,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_PSPSymStackSlot              = NO_PSP_SYM;
     }
 
-    if (flags == DECODE_PSP_SYM) {
+    remainingFlags &= ~DECODE_PSP_SYM;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -242,7 +241,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     }
 
-    if (flags == DECODE_GENERICS_INST_CONTEXT) {
+    remainingFlags &= ~DECODE_GENERICS_INST_CONTEXT;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -263,13 +264,26 @@ GcInfoDecoder::GcInfoDecoder(
         m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     }
 
-    if (hasSizeOfEditAndContinuePreservedArea)
+    if (hasEncInfo)
     {
         m_SizeOfEditAndContinuePreservedArea = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
+#endif
     }
     else
     {
         m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
+    }
+
+    remainingFlags &= ~DECODE_EDIT_AND_CONTINUE;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return;
     }
 
     if (hasReversePInvokeFrame)
@@ -281,6 +295,12 @@ GcInfoDecoder::GcInfoDecoder(
         m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
     }
 
+    remainingFlags &= ~DECODE_REVERSE_PINVOKE_VAR;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return;
+    }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     if (slimHeader)
@@ -363,7 +383,7 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Safepoints are encoded with a -1 adjustment
     codeOffset--;
 #endif
@@ -383,7 +403,7 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
     UINT32 result = m_NumSafePoints;
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Safepoints are encoded with a -1 adjustment
     // but normalizing them masks off the low order bit
     // Thus only bother looking if the address is odd
@@ -430,7 +450,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
         UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // Safepoints are encoded with a -1 adjustment
         offset--;
 #endif
@@ -466,12 +486,6 @@ void GcInfoDecoder::EnumerateInterruptibleRanges (
 
         lastInterruptibleRangeStopOffsetNormalized = rangeStopOffsetNormalized;
     }
-}
-
-INT32 GcInfoDecoder::GetSecurityObjectStackSlot()
-{
-    _ASSERTE( m_Flags & DECODE_SECURITY_OBJECT );
-    return m_SecurityObjectStackSlot;
 }
 
 INT32 GcInfoDecoder::GetGSCookieStackSlot()
@@ -522,13 +536,13 @@ bool GcInfoDecoder::GetIsVarArg()
     return m_IsVarArg;
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool GcInfoDecoder::HasTailCalls()
 {
     _ASSERTE( m_Flags & DECODE_HAS_TAILCALLS );
     return m_HasTailCalls;
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 bool GcInfoDecoder::WantsReportOnlyLeaf()
 {
@@ -564,6 +578,14 @@ UINT32 GcInfoDecoder::GetSizeOfEditAndContinuePreservedArea()
     _ASSERTE( m_Flags & DECODE_EDIT_AND_CONTINUE );
     return m_SizeOfEditAndContinuePreservedArea;
 }
+
+#ifdef TARGET_ARM64
+UINT32 GcInfoDecoder::GetSizeOfEditAndContinueFixedStackFrame()
+{
+    _ASSERTE( m_Flags & DECODE_EDIT_AND_CONTINUE );
+    return m_SizeOfEditAndContinueFixedStackFrame;
+}
+#endif
 
 size_t  GcInfoDecoder::GetNumBytesRead()
 {
@@ -1351,7 +1373,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 16);
     _ASSERTE(regNum != 4);  // rsp
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppRax = &pRD->pRax;
     if (regNum > 4) regNum--; // rsp is skipped in Redhawk RegDisplay
 #else
@@ -1364,7 +1386,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     return (OBJECTREF*)*(ppRax + regNum);
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1380,7 +1402,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pRax + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
@@ -1434,7 +1456,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1454,7 +1476,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK && !SOS_TARGET_AMD64
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1486,7 +1508,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     if(regNum < 14)
     {
         PTR_UIntNative* ppReg = &pRD->pR0;
@@ -1519,7 +1541,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 #endif
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1535,7 +1557,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pR0 + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
@@ -1609,7 +1631,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18); // TEB
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppReg = &pRD->pX0;
 
     return (OBJECTREF*)*(ppReg + regNum);
@@ -1675,7 +1697,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1717,7 +1739,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1742,7 +1764,134 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pX0 + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
+
+#elif defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
+OBJECTREF* GcInfoDecoder::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE(regNum >= 1 && regNum <= 31);
+
+    // The fields of CONTEXT are in the same order as
+    // the processor encoding numbers.
+
+    DWORD64 *pR0 = &pRD->pCurrentContext->R0;
+
+    return (OBJECTREF*)(pR0 + regNum);
+}
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
+
+OBJECTREF* GcInfoDecoder::GetRegisterSlot(
+                        int             regNum,
+                        PREGDISPLAY     pRD
+                        )
+{
+    _ASSERTE((regNum == 1) || (regNum >= 4 && regNum <= 31));
+
+#ifdef FEATURE_NATIVEAOT
+    PTR_UIntNative* ppReg = &pRD->pR0;
+
+    return (OBJECTREF*)*(ppReg + regNum);
+#else
+    if(regNum == 1)
+    {
+        return (OBJECTREF*) pRD->pCurrentContextPointers->Ra;
+    }
+    else if(regNum == 22)
+    {
+        return (OBJECTREF*) pRD->pCurrentContextPointers->Fp;
+    }
+    else if (regNum < 22)
+    {
+        return (OBJECTREF*)*(DWORD64**)(&pRD->volatileCurrContextPointers.A0 + (regNum - 4));//A0=4.
+    }
+
+    return (OBJECTREF*)*(DWORD64**)(&pRD->pCurrentContextPointers->S0 + (regNum-23));
+#endif
+}
+
+bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
+{
+    _ASSERTE(regNum >= 0 && regNum <= 31);
+
+    return (regNum <= 21 && ((regNum >= 4) || (regNum == 1)));
+}
+
+bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY     pRD)
+{
+#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
+    _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
+
+    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
+    _ASSERTE(pSlot >= pRD->SP);
+
+    return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
+#else
+    return FALSE;
+#endif
+}
+
+void GcInfoDecoder::ReportRegisterToGC(
+                                int             regNum,
+                                unsigned        gcFlags,
+                                PREGDISPLAY     pRD,
+                                unsigned        flags,
+                                GCEnumCallback  pCallBack,
+                                void *          hCallBack)
+{
+    GCINFODECODER_CONTRACT;
+
+    _ASSERTE(regNum > 0 && regNum <= 31);
+
+    LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
+
+    OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+
+    // On PAL, we don't always have the context pointers available due to
+    // a limitation of an unwinding library. In such case, the context
+    // pointers for some nonvolatile registers are NULL.
+    // In such case, we let the pObjRef point to the captured register
+    // value in the context and pin the object itself.
+    if (pObjRef == NULL)
+    {
+        // Report a pinned object to GC only in the promotion phase when the
+        // GC is scanning roots.
+        GCCONTEXT* pGCCtx = (GCCONTEXT*)(hCallBack);
+        if (!pGCCtx->sc->promotion)
+        {
+            return;
+        }
+
+        pObjRef = GetCapturedRegister(regNum, pRD);
+
+        gcFlags |= GC_CALL_PINNED;
+    }
+#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+
+#ifdef _DEBUG
+    if(IsScratchRegister(regNum, pRD))
+    {
+        // Scratch registers cannot be reported for non-leaf frames
+        _ASSERTE(flags & ActiveStackFrame);
+    }
+
+    LOG((LF_GCROOTS, LL_INFO1000, /* Part Two */
+         "at" FMT_ADDR "as ", DBG_ADDR(pObjRef) ));
+
+    VALIDATE_ROOT((gcFlags & GC_CALL_INTERIOR), hCallBack, pObjRef);
+
+    LOG_PIPTR(pObjRef, gcFlags, hCallBack);
+#endif //_DEBUG
+
+    gcFlags |= CHECK_APP_DOMAIN;
+
+    pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
+}
 
 #else // Unknown platform
 
@@ -1804,7 +1953,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
         // On PAL, we don't always have the context pointers available due to
         // a limitation of an unwinding library. In such case, the context
         // pointers for some nonvolatile registers are NULL.
@@ -1812,7 +1961,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
         {
             pFrameReg = (SIZE_T*) GetCapturedRegister(m_StackBaseRegister, pRD);
         }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
     }
@@ -1829,6 +1978,8 @@ int GcInfoDecoder::GetStackReg(int spBase)
     int esp = 13;
 #elif defined(TARGET_ARM64)
     int esp = 31;
+#elif defined(TARGET_LOONGARCH64)
+    int esp = 3;
 #endif
 
     if( GC_SP_REL == spBase )

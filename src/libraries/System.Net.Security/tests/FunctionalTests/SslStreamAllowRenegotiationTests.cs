@@ -35,10 +35,11 @@ namespace System.Net.Security.Tests
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (SslStream ssl = new SslStream(ns, true, validationCallback))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
-                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+                certBundle.Add(clientCert);
 
                 SslClientAuthenticationOptions options = new SslClientAuthenticationOptions
                 {
@@ -55,7 +56,7 @@ namespace System.Net.Security.Tests
                 Assert.True(ssl.IsEncrypted);
 
                 // Issue request that triggers renegotiation from server.
-                byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
+                byte[] message = "GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n"u8.ToArray();
                 await ssl.WriteAsync(message, 0, message.Length);
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
@@ -74,10 +75,11 @@ namespace System.Net.Security.Tests
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (SslStream ssl = new SslStream(ns, true))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
-                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+                certBundle.Add(clientCert);
 
                 SslClientAuthenticationOptions options = new SslClientAuthenticationOptions
                 {
@@ -94,7 +96,7 @@ namespace System.Net.Security.Tests
                 Assert.True(ssl.IsEncrypted);
 
                 // Issue request that triggers regotiation from server.
-                byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
+                byte[] message = "GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n"u8.ToArray();
                 await ssl.WriteAsync(message, 0, message.Length);
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.

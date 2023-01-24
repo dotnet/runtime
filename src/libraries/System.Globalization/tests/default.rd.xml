@@ -1,0 +1,15 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Linq">
+      <!-- called by xUnit in obscure MemberData scenarios  -->
+      <Type Name="System.Linq.Enumerable">
+        <Method Name="Cast" Dynamic="Required All">
+          <GenericArgument Name="System.Globalization.UnicodeCategory,System.Globalization" />
+        </Method>
+        <Method Name="ToArray" Dynamic="Required All">
+          <GenericArgument Name="System.Globalization.UnicodeCategory,System.Globalization" />
+        </Method>
+      </Type>
+    </Assembly>    
+  </Application>
+</Directives>

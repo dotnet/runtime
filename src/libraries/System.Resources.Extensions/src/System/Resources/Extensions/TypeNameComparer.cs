@@ -13,7 +13,7 @@ namespace System.Resources.Extensions
     /// When type names are missing, mscorlib is assumed.
     /// This comparer is not meant to capture all scenarios (eg: TypeForwards)
     /// but is meant to serve as a best effort, avoiding false positives, in the
-    /// absense of real type metadata.
+    /// absence of real type metadata.
     /// </summary>
     internal sealed class TypeNameComparer : IEqualityComparer<string>
     {
@@ -52,9 +52,18 @@ namespace System.Resources.Extensions
         // If a type name is missing assembly, we assume it came from mscorlib
         // since this is what Type.GetType will do.
 #pragma warning disable CS8767 // This API member has [AllowNull] implemented interface, but we don't want to accept nulls here.
-        public bool Equals(string assemblyQualifiedTypeName1!!, string assemblyQualifiedTypeName2!!)
+        public bool Equals(string assemblyQualifiedTypeName1, string assemblyQualifiedTypeName2)
 #pragma warning restore CS8767
         {
+            if (assemblyQualifiedTypeName1 is null)
+            {
+                throw new ArgumentNullException(nameof(assemblyQualifiedTypeName1));
+            }
+            if (assemblyQualifiedTypeName2 is null)
+            {
+                throw new ArgumentNullException(nameof(assemblyQualifiedTypeName2));
+            }
+
             if (ReferenceEquals(assemblyQualifiedTypeName1, assemblyQualifiedTypeName2))
                 return true;
 

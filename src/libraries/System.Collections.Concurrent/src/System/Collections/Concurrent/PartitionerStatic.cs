@@ -85,8 +85,10 @@ namespace System.Collections.Concurrent
         /// <returns>
         /// An orderable partitioner based on the input list.
         /// </returns>
-        public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list!!, bool loadBalance)
+        public static OrderablePartitioner<TSource> Create<TSource>(IList<TSource> list, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(list);
+
             if (loadBalance)
             {
                 return (new DynamicPartitionerForIList<TSource>(list));
@@ -109,8 +111,10 @@ namespace System.Collections.Concurrent
         /// <returns>
         /// An orderable partitioner based on the input array.
         /// </returns>
-        public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array!!, bool loadBalance)
+        public static OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             // This implementation uses 'ldelem' instructions for element retrieval, rather than using a
             // method call.
 
@@ -158,8 +162,10 @@ namespace System.Collections.Concurrent
         /// The ordering used in the created partitioner is determined by the natural order of the elements
         /// as retrieved from the source enumerable.
         /// </remarks>
-        public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source!!, EnumerablePartitionerOptions partitionerOptions)
+        public static OrderablePartitioner<TSource> Create<TSource>(IEnumerable<TSource> source, EnumerablePartitionerOptions partitionerOptions)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             if ((partitionerOptions & (~EnumerablePartitionerOptions.NoBuffering)) != 0)
                 throw new ArgumentOutOfRangeException(nameof(partitionerOptions));
 
@@ -172,10 +178,10 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             decimal range = (decimal)toExclusive - fromInclusive;
             long rangeSize = (long)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
@@ -193,8 +199,8 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -225,11 +231,11 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
         /// and the same issue could occur with rangeSize == -1 when fromInclusive = int.MinValue and toExclusive = int.MaxValue.</remarks>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
             long range = (long)toExclusive - fromInclusive;
             int rangeSize = (int)(range / (Environment.ProcessorCount * CoreOversubscriptionRate));
             if (rangeSize == 0) rangeSize = 1;
@@ -247,8 +253,8 @@ namespace System.Collections.Concurrent
         /// less than or equal to 0.</exception>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize)
         {
-            if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
-            if (rangeSize <= 0) throw new ArgumentOutOfRangeException(nameof(rangeSize));
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(toExclusive, fromInclusive);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rangeSize);
             return Partitioner.Create(CreateRanges(fromInclusive, toExclusive, rangeSize), EnumerablePartitionerOptions.NoBuffering); // chunk one range at a time
         }
 
@@ -494,14 +500,11 @@ namespace System.Collections.Concurrent
             /// <returns>A list containing <paramref name="partitionCount"/> enumerators.</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
 
-                IEnumerable<KeyValuePair<long, TSource>> partitionEnumerable = new InternalPartitionEnumerable(_source.GetEnumerator(), _useSingleChunking, true);
+                var partitionEnumerable = new InternalPartitionEnumerable(_source.GetEnumerator(), _useSingleChunking, true);
                 for (int i = 0; i < partitionCount; i++)
                 {
                     partitions[i] = partitionEnumerable.GetEnumerator();
@@ -599,15 +602,10 @@ namespace System.Collections.Concurrent
 
                 public IEnumerator<KeyValuePair<long, TSource>> GetEnumerator()
                 {
-                    if (_disposed)
-                    {
-                        throw new ObjectDisposedException(SR.PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed);
-                    }
-                    else
-                    {
-                        return new InternalPartitionEnumerator(_sharedReader, _sharedIndex,
-                            _hasNoElementsLeft, _activePartitionCount, this, _useSingleChunking);
-                    }
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+
+                    return new InternalPartitionEnumerator(_sharedReader, _sharedIndex,
+                        _hasNoElementsLeft, _activePartitionCount, this, _useSingleChunking);
                 }
 
 
@@ -920,10 +918,7 @@ namespace System.Collections.Concurrent
                     }
 
                     // defer allocation to avoid false sharing
-                    if (_localList == null)
-                    {
-                        _localList = new KeyValuePair<long, TSource>[_maxChunkSize];
-                    }
+                    _localList ??= new KeyValuePair<long, TSource>[_maxChunkSize];
 
                     // make the actual call to the enumerable that grabs a chunk
                     return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize!.Value);
@@ -1014,10 +1009,7 @@ namespace System.Collections.Concurrent
             /// <returns>A list containing <paramref name="partitionCount"/> enumerators.</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions
                     = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
                 IEnumerable<KeyValuePair<long, TSource>> partitionEnumerable = GetOrderableDynamicPartitions_Factory(_data);
@@ -1373,14 +1365,9 @@ namespace System.Collections.Concurrent
             /// <returns>a list of partitions</returns>
             public override IList<IEnumerator<KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount)
             {
-                if (partitionCount <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(partitionCount));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partitionCount);
 
-                int quotient, remainder;
-                quotient = SourceCount / partitionCount;
-                remainder = SourceCount % partitionCount;
+                (int quotient, int remainder) = Math.DivRem(SourceCount, partitionCount);
 
                 IEnumerator<KeyValuePair<long, TSource>>[] partitions = new IEnumerator<KeyValuePair<long, TSource>>[partitionCount];
                 int lastEndIndex = -1;

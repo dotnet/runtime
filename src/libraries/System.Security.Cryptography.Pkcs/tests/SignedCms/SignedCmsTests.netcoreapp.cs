@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Test.Cryptography;
@@ -239,7 +240,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCertificate()
         {
             SignedCms cms = new SignedCms();
@@ -258,7 +259,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCertificateWithPrivateKey()
         {
             SignedCms cms = new SignedCms();
@@ -323,7 +324,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void RemoveAllCertsAddBackSignerCert()
         {
             SignedCms cms = new SignedCms();
@@ -509,17 +510,24 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 }
 
                 signer.DigestAlgorithm = new Oid(digestOid, null);
-                cms.ComputeSignature(signer);
-                cmsBytes = cms.Encode();
+                if (!SignatureSupport.SupportsRsaSha1Signatures &&
+                    digestOid == Oids.Sha1)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => cms.ComputeSignature(signer));
+                }
+                else
+                {
+                    cms.ComputeSignature(signer);
+                    cmsBytes = cms.Encode();
+                    cms = new SignedCms();
+                    cms.Decode(cmsBytes);
+                    cms.CheckSignature(true); // Assert.NoThrow
+                    Assert.Single(cms.SignerInfos);
+
+                    SignerInfo signerInfo = cms.SignerInfos[0];
+                    Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
+                }
             }
-
-            cms = new SignedCms();
-            cms.Decode(cmsBytes);
-            cms.CheckSignature(true); // Assert.NoThrow
-            Assert.Single(cms.SignerInfos);
-
-            SignerInfo signerInfo = cms.SignerInfos[0];
-            Assert.Equal(Oids.RsaPss, signerInfo.SignatureAlgorithm.Value);
         }
 
         [Fact]
@@ -597,6 +605,92 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [Fact]
+        public static void AddCertificate_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            signedCms.CheckSignature(true);
+
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.GetCertificate())
+            {
+                signedCms.AddCertificate(cert);
+                byte[] reEncoded = signedCms.Encode();
+                int countAfter = CountCertificateChoices(reEncoded);
+                Assert.Equal(countBefore + 1, countAfter);
+
+                signedCms = new SignedCms();
+                signedCms.Decode(reEncoded);
+                signedCms.CheckSignature(true);
+            }
+        }
+
+        [Fact]
+        public static void RemoveCertificate_Existing_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            signedCms.RemoveCertificate(signedCms.Certificates[0]);
+            byte[] reEncoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(reEncoded);
+            Assert.Equal(countBefore - 1, countAfter);
+        }
+
+        [Fact]
+        public static void RemoveCertificate_NonExisting_CollectionContainsAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.GetCertificate())
+            {
+                // Remove a non-existing certificate so that we are forced to enumerate the entire 'certificates[0]'
+                // collection (including attribute certificates) looking for it.
+                Assert.Throws<CryptographicException>(() => signedCms.RemoveCertificate(cert));
+            }
+        }
+
+        [Fact]
+        public static void ComputeCounterSignature_PreservesAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(cert);
+                SignerInfo info = signedCms.SignerInfos[0];
+                info.ComputeCounterSignature(signer);
+            }
+
+            byte[] encoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(encoded);
+            Assert.Equal(countBefore + 1, countAfter);
+        }
+
+        [Fact]
+        public static void ComputeSignature_PreservesAttributeCertificate()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.TstWithAttributeCertificate);
+            int countBefore = CountCertificateChoices(SignedDocuments.TstWithAttributeCertificate);
+
+            using (X509Certificate2 cert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(cert);
+                signedCms.ComputeSignature(signer);
+            }
+
+            byte[] encoded = signedCms.Encode();
+            int countAfter = CountCertificateChoices(encoded);
+            Assert.Equal(countBefore + 1, countAfter);
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))
@@ -610,7 +704,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 CmsSigner signer = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key)
                 {
                     IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1)
+                    DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
                 };
 
                 cms.ComputeSignature(signer);
@@ -637,13 +731,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, pubCert, key)
                 {
                     IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1)
+                    DigestAlgorithm = key is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
                 };
 
                 CmsSigner cmsCounterSigner = new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, counterSignerPubCert, counterSignerKey)
                 {
                     IncludeOption = X509IncludeOption.EndCertOnly,
-                    DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1)
+                    DigestAlgorithm = counterSignerKey is DSA ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256)
                 };
 
                 cms.ComputeSignature(cmsSigner);
@@ -656,6 +750,37 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 Assert.Equal(1, cms.SignerInfos[0].CounterSignerInfos.Count);
                 Assert.Equal(counterSignerPubCert, cms.SignerInfos[0].CounterSignerInfos[0].Certificate);
             }
+        }
+
+        private static int CountCertificateChoices(byte[] encoded)
+        {
+            AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
+            reader = reader.ReadSequence();
+            reader.ReadObjectIdentifier();
+            reader = reader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+            reader = reader.ReadSequence();
+
+            reader.ReadInteger(); // version
+            reader.ReadSetOf(); // digestAlgorithms
+            reader.ReadSequence(); // encapsulatedContentInfo
+
+            Asn1Tag expectedTag = new Asn1Tag(TagClass.ContextSpecific, 0, true); // certificates[0]
+
+            if (reader.PeekTag() == expectedTag)
+            {
+                AsnReader certs = reader.ReadSetOf(expectedTag);
+                int count = 0;
+
+                while (certs.HasData)
+                {
+                    certs.ReadEncodedValue();
+                    count++;
+                }
+
+                return count;
+            }
+
+            return 0;
         }
     }
 }

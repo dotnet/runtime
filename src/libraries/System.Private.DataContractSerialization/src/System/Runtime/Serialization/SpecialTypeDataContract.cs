@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class SpecialTypeDataContract : DataContract
     {

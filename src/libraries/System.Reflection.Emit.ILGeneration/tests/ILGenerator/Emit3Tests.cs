@@ -81,7 +81,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("meth1");
 
             Assert.True((bool)createdMethod.Invoke(null, null));
@@ -105,7 +105,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType = tb.CreateTypeInfo().AsType();
+            Type createdType = tb.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("meth1");
 
             Assert.True((bool)createdMethod.Invoke(null, null));
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // create the type where this method is in
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("meth1");
 
             Assert.True((bool)createdMethod.Invoke(null, null));
@@ -205,7 +205,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ret);
 
             // Create the type where this method is in
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = createdType.GetMethod("meth1");
 
             Assert.True((bool)createdMethod.Invoke(null, null));

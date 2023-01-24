@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {B57C6031-B1F4-4BAC-A5DE-7943EA8B199E}
-.namespace JitTest
+.namespace JitTest_val_ctor_newobj_il
 {
-  .class value private auto ansi sealed TestStruct
+  .class value public auto ansi sealed TestStruct
          extends ['mscorlib']System.ValueType
   {
     .field private int64 m_testParam
@@ -35,13 +35,13 @@
       .maxstack  3
       IL_0000:  ldarg.0
       IL_0001:  ldarg.1
-      IL_0002:  stfld      int64 JitTest.TestStruct::m_testParam
-      IL_0007:  ldsfld     int64 JitTest.TestStruct::m_sum
+      IL_0002:  stfld      int64 JitTest_val_ctor_newobj_il.TestStruct::m_testParam
+      IL_0007:  ldsfld     int64 JitTest_val_ctor_newobj_il.TestStruct::m_sum
       IL_000c:  ldarg.0
-      IL_000d:  ldfld      int64 JitTest.TestStruct::m_testParam
+      IL_000d:  ldfld      int64 JitTest_val_ctor_newobj_il.TestStruct::m_testParam
       IL_0012:  add
-      IL_0013:  stsfld     int64 JitTest.TestStruct::m_sum
-      IL_0018:  ldsfld     int64 JitTest.TestStruct::m_sum
+      IL_0013:  stsfld     int64 JitTest_val_ctor_newobj_il.TestStruct::m_sum
+      IL_0018:  ldsfld     int64 JitTest_val_ctor_newobj_il.TestStruct::m_sum
       IL_001d:  ldc.i4.s   100
       IL_001f:  conv.i8
       IL_0020:  bge.s      IL_002d
@@ -51,12 +51,12 @@
       IL_0025:  ldc.i4.1
       IL_0026:  conv.i8
       IL_0027:  add
-      IL_0028:  newobj    instance void JitTest.TestStruct::.ctor(unsigned int64)
+      IL_0028:  newobj    instance void JitTest_val_ctor_newobj_il.TestStruct::.ctor(unsigned int64)
       			pop
       IL_002d:  ret
     } // end of method 'TestStruct::.ctor'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -70,9 +70,9 @@
       {
         IL_0002:  ldc.i4.0
         IL_0003:  conv.i8
-        IL_0004:  newobj       instance void JitTest.TestStruct::.ctor(unsigned int64)
+        IL_0004:  newobj       instance void JitTest_val_ctor_newobj_il.TestStruct::.ctor(unsigned int64)
         			pop
-        IL_0009:  ldsfld     int64 JitTest.TestStruct::m_sum
+        IL_0009:  ldsfld     int64 JitTest_val_ctor_newobj_il.TestStruct::m_sum
         IL_000e:  ldc.i4.s   105
         IL_0010:  conv.i8
         IL_0011:  beq.s      IL_0021
@@ -113,12 +113,12 @@
       .maxstack  8
       IL_0000:  ldc.i4.0
       IL_0001:  conv.i8
-      IL_0002:  stsfld     int64 JitTest.TestStruct::m_sum
+      IL_0002:  stsfld     int64 JitTest_val_ctor_newobj_il.TestStruct::m_sum
       IL_0007:  ret
     } // end of method 'TestStruct::.cctor'
 
   } // end of class 'TestStruct'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_val_ctor_newobj_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

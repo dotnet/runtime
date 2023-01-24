@@ -92,8 +92,7 @@ public static class MethodImplOptionsTests
                 new Regex(
                     @"\bvoid\s+Main\s*\(\s*\).*?\b" + ilDisasmAttributeKeyword + @"\b",
                     RegexOptions.Compiled | RegexOptions.Multiline);
-            Match match = findMainAttributeRegex.Match(disasmIl);
-            if (!match.Success)
+            if (!findMainAttributeRegex.IsMatch(disasmIl))
             {
                 Console.WriteLine($"Attribute '{ilDisasmAttributeKeyword}' did not round-trip through ilasm and ildasm");
                 return false;

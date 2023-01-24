@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Tests
         /// Verifies that the below Types don't have any DynamicallyAccessedMembers attributes,
         /// so we can safely call MakeGenericMethod on their methods.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public static void VerifyMethodsCalledWithMakeGenericMethod()
         {
             Assembly linqExpressions = typeof(Expression).Assembly;

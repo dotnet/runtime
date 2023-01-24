@@ -1111,7 +1111,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
                     // Request process info.
                     IpcMessage message = new IpcMessage(DiagnosticsServerCommandSet.Process, (byte)ProcessCommandId.GetProcessInfo);
-                
+
                     byte[] buffer = message.Serialize();
                     tcpClientStream.Write(buffer, 0, buffer.Length);
 
@@ -1322,7 +1322,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
                 Interlocked.Decrement(ref s_routerInstanceCount);
 
-                _logger?.LogTrace($"Diposed stats: Back End->Front End {_backendToFrontendByteTransfer} bytes, Front End->Back End {_frontendToBackendByteTransfer} bytes.");
+                _logger?.LogTrace($"Disposed stats: Back End->Front End {_backendToFrontendByteTransfer} bytes, Front End->Back End {_frontendToBackendByteTransfer} bytes.");
                 _logger?.LogTrace($"Active instances: {s_routerInstanceCount}");
             }
         }

@@ -113,10 +113,7 @@ namespace System.Diagnostics
                 {
                     lock (InternalSyncObject)
                     {
-                        if (s_computerName == null)
-                        {
-                            s_computerName = Interop.Kernel32.GetComputerName() ?? string.Empty;
-                        }
+                        s_computerName ??= Interop.Kernel32.GetComputerName() ?? string.Empty;
                     }
                 }
 
@@ -214,8 +211,7 @@ namespace System.Diagnostics
                 {
                     lock (_helpTableLock)
                     {
-                        if (_helpTable == null)
-                            _helpTable = GetStringTable(true);
+                        _helpTable ??= GetStringTable(true);
                     }
                 }
 
@@ -256,8 +252,7 @@ namespace System.Diagnostics
                 {
                     lock (_nameTableLock)
                     {
-                        if (_nameTable == null)
-                            _nameTable = GetStringTable(false);
+                        _nameTable ??= GetStringTable(false);
                     }
                 }
 
@@ -276,8 +271,6 @@ namespace System.Diagnostics
                     {
                         if (s_symbolFilePath == null)
                         {
-                            Path.GetTempPath();
-
                             try
                             {
                                 s_symbolFilePath = Path.GetTempFileName();
@@ -409,9 +402,7 @@ namespace System.Diagnostics
             for (int index = 0; index < entry.CounterIndexes.Length; ++index)
             {
                 int counterIndex = entry.CounterIndexes[index];
-                string counterName = (string)NameTable[counterIndex];
-                if (counterName == null)
-                    counterName = string.Empty;
+                string counterName = (string)NameTable[counterIndex] ?? string.Empty;
 
                 if (string.Equals(counterName, counter, StringComparison.OrdinalIgnoreCase))
                     return true;
@@ -529,9 +520,10 @@ namespace System.Diagnostics
             {
                 serviceParentKey = Registry.LocalMachine.OpenSubKey(ServicePath, true);
 
-                serviceKey = serviceParentKey.OpenSubKey(categoryName + "\\Performance", true);
-                if (serviceKey == null)
-                    serviceKey = serviceParentKey.CreateSubKey(categoryName + "\\Performance");
+                string categoryPerfKeyName = $"{categoryName}\\Performance";
+                serviceKey =
+                    serviceParentKey.OpenSubKey(categoryPerfKeyName, writable: true) ??
+                    serviceParentKey.CreateSubKey(categoryPerfKeyName);
 
                 serviceKey.SetValue("Open", "OpenPerformanceData");
                 serviceKey.SetValue("Collect", "CollectPerformanceData");
@@ -548,9 +540,10 @@ namespace System.Diagnostics
                     counterTypes[i] = ((int)creationData[i].CounterType).ToString(CultureInfo.InvariantCulture);
                 }
 
-                linkageKey = serviceParentKey.OpenSubKey(categoryName + "\\Linkage", true);
-                if (linkageKey == null)
-                    linkageKey = serviceParentKey.CreateSubKey(categoryName + "\\Linkage");
+                string categoryLinkageKeyName = $"{categoryName}\\Linkage";
+                linkageKey =
+                    serviceParentKey.OpenSubKey(categoryLinkageKeyName, writable: true) ??
+                    serviceParentKey.CreateSubKey(categoryLinkageKeyName);
 
                 linkageKey.SetValue("Export", new string[] { categoryName });
 
@@ -558,21 +551,13 @@ namespace System.Diagnostics
                 serviceKey.SetValue("Counter Names", (object)counters);
 
                 object firstID = serviceKey.GetValue("First Counter");
-                if (firstID != null)
-                    iniRegistered = true;
-                else
-                    iniRegistered = false;
+                iniRegistered = firstID != null;
             }
             finally
             {
-                if (serviceKey != null)
-                    serviceKey.Close();
-
-                if (linkageKey != null)
-                    linkageKey.Close();
-
-                if (serviceParentKey != null)
-                    serviceParentKey.Close();
+                serviceKey?.Close();
+                linkageKey?.Close();
+                serviceParentKey?.Close();
             }
         }
 
@@ -640,8 +625,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (serviceKey != null)
-                    serviceKey.Close();
+                serviceKey?.Close();
             }
         }
 
@@ -751,10 +735,8 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    if (key != null)
-                        key.Close();
-                    if (baseKey != null)
-                        baseKey.Close();
+                    key?.Close();
+                    baseKey?.Close();
                 }
             }
 
@@ -966,9 +948,7 @@ namespace System.Diagnostics
             for (int index = 0; index < entry.CounterIndexes.Length; ++index)
             {
                 int counterIndex = entry.CounterIndexes[index];
-                string counterName = (string)NameTable[counterIndex];
-                if (counterName == null)
-                    counterName = string.Empty;
+                string counterName = (string)NameTable[counterIndex] ?? string.Empty;
 
                 if (string.Equals(counterName, counter, StringComparison.OrdinalIgnoreCase))
                 {
@@ -989,22 +969,10 @@ namespace System.Diagnostics
 
         private static string[] GetLanguageIds()
         {
-            RegistryKey libraryParentKey = null;
-            string[] ids = Array.Empty<string>();
-            try
-            {
-                libraryParentKey = Registry.LocalMachine.OpenSubKey(PerflibPath);
-
-                if (libraryParentKey != null)
-                    ids = libraryParentKey.GetSubKeyNames();
-            }
-            finally
-            {
-                if (libraryParentKey != null)
-                    libraryParentKey.Close();
-            }
-
-            return ids;
+            using RegistryKey libraryParentKey = Registry.LocalMachine.OpenSubKey(PerflibPath);
+            return libraryParentKey != null ?
+                libraryParentKey.GetSubKeyNames() :
+                Array.Empty<string>();
         }
 
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
@@ -1017,12 +985,13 @@ namespace System.Diagnostics
             //race with CloseAllLibraries
             lock (InternalSyncObject)
             {
-                if (PerformanceCounterLib.s_libraryTable == null)
-                    PerformanceCounterLib.s_libraryTable = new Hashtable();
+                PerformanceCounterLib.s_libraryTable ??= new Hashtable();
 
                 string libraryKey = machineName + ":" + lcidString;
                 if (PerformanceCounterLib.s_libraryTable.Contains(libraryKey))
+                {
                     return (PerformanceCounterLib)PerformanceCounterLib.s_libraryTable[libraryKey];
+                }
                 else
                 {
                     PerformanceCounterLib library = new PerformanceCounterLib(machineName, lcidString);
@@ -1038,30 +1007,25 @@ namespace System.Diagnostics
             {
                 lock (InternalSyncObject)
                 {
-                    if (_performanceMonitor == null)
-                        _performanceMonitor = new PerformanceMonitor(_machineName);
+                    _performanceMonitor ??= new PerformanceMonitor(_machineName);
                 }
             }
 
             return _performanceMonitor.GetData(item, usePool);
         }
 
-        internal void ReleasePerformanceData(byte[] data)
+        internal static void ReleasePerformanceData(byte[] data)
         {
-            _performanceMonitor.ReleaseData(data);
+            PerformanceMonitor.ReleaseData(data);
         }
 
         private Hashtable GetStringTable(bool isHelp)
         {
             Hashtable stringTable;
-            RegistryKey libraryKey;
 
-            if (string.Equals(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase))
-                libraryKey = Registry.PerformanceData;
-            else
-            {
-                libraryKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, _machineName);
-            }
+            RegistryKey libraryKey = string.Equals(_machineName, ComputerName, StringComparison.OrdinalIgnoreCase) ?
+                Registry.PerformanceData :
+                RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, _machineName);
 
             try
             {
@@ -1122,9 +1086,7 @@ namespace System.Diagnostics
 
                     for (int index = 0; index < (names.Length / 2); ++index)
                     {
-                        string nameString = names[(index * 2) + 1];
-                        if (nameString == null)
-                            nameString = string.Empty;
+                        string nameString = names[(index * 2) + 1] ?? string.Empty;
 
                         int key;
                         if (!int.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))
@@ -1317,8 +1279,7 @@ namespace System.Diagnostics
 
         internal void Close()
         {
-            if (perfDataKey != null)
-                perfDataKey.Close();
+            perfDataKey?.Close();
 
             perfDataKey = null;
         }
@@ -1385,9 +1346,9 @@ namespace System.Diagnostics
             throw new Win32Exception(error);
         }
 
-        internal void ReleaseData(byte[] data)
+        internal static void ReleaseData(byte[] data)
         {
-            perfDataKey.ReleaseData(data);
+            PerformanceDataRegistryKey.ReleaseData(data);
         }
 
     }
@@ -1678,7 +1639,7 @@ namespace System.Diagnostics
 
             _disposed = true;
 
-            _library.ReleasePerformanceData(_data);
+            PerformanceCounterLib.ReleasePerformanceData(_data);
         }
 
         private void CheckDisposed()

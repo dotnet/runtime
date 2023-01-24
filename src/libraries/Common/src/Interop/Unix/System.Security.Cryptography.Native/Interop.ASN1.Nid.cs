@@ -20,7 +20,7 @@ internal static partial class Interop
 
         internal static int ResolveRequiredNid(string oid)
         {
-            return s_nidLookup.GetOrAdd(oid, s => LookupNid(s));
+            return s_nidLookup.GetOrAdd(oid, LookupNid);
         }
 
         private static int LookupNid(string oid)

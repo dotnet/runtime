@@ -25,17 +25,6 @@
 #include "treelifeupdater.h"
 #include "emit.h"
 
-#if 0
-// Enable USING_SCOPE_INFO flag to use psiScope/siScope info to report variables' locations.
-#define USING_SCOPE_INFO
-#endif
-#if 1
-// Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
-// Note: if both USING_SCOPE_INFO and USING_VARIABLE_LIVE_RANGE are defined, then USING_SCOPE_INFO
-// information is reported to the debugger.
-#define USING_VARIABLE_LIVE_RANGE
-#endif
-
 // Forward reference types
 
 class CodeGenInterface;
@@ -112,7 +101,7 @@ protected:
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -148,8 +137,8 @@ protected:
 
 public:
     bool genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf);
-    bool genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal);
-    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
+    bool genUseOptimizedWriteBarriers(GenTreeStoreInd* store);
+    CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
@@ -296,8 +285,6 @@ public:
     unsigned InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB);
     unsigned InferOpSizeAlign(GenTree* op, unsigned* alignmentWB);
 
-    void genMarkTreeInReg(GenTree* tree, regNumber reg);
-
     // Methods to abstract target information
 
     bool validImmForInstr(instruction ins, target_ssize_t val, insFlags flags = INS_FLAGS_DONT_CARE);
@@ -360,7 +347,7 @@ public:
         m_cgInterruptible = value;
     }
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 
     bool GetHasTailCalls()
     {
@@ -374,9 +361,9 @@ public:
 
 private:
     bool m_cgInterruptible;
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     bool m_cgHasTailCalls;
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.
@@ -398,10 +385,6 @@ private:
     bool m_cgFullPtrRegMap;
 
 public:
-#ifdef USING_SCOPE_INFO
-    virtual void siUpdate() = 0;
-#endif // USING_SCOPE_INFO
-
     /* These are the different addressing modes used to access a local var.
      * The JIT has to report the location of the locals back to the EE
      * for debugging purposes.
@@ -567,7 +550,6 @@ protected:
     unsigned genStackLevel;
 
 public:
-#ifdef USING_VARIABLE_LIVE_RANGE
     //--------------------------------------------
     //
     // VariableLiveKeeper: Holds an array of "VariableLiveDescriptor", one for each variable
@@ -723,8 +705,8 @@ public:
         VariableLiveDescriptor* m_vlrLiveDscForProlog; // Array of descriptors that manage VariableLiveRanges.
                                                        // Its indices correspond to lvaTable indexes (or lvSlotNum).
 
-        bool m_LastBasicBlockHasBeenEmited; // When true no more siEndVariableLiveRange is considered.
-                                            // No update/start happens when code has been generated.
+        bool m_LastBasicBlockHasBeenEmitted; // When true no more siEndVariableLiveRange is considered.
+                                             // No update/start happens when code has been generated.
 
     public:
         VariableLiveKeeper(unsigned int  totalLocalCount,
@@ -761,7 +743,6 @@ public:
 
 protected:
     VariableLiveKeeper* varLiveKeeper; // Used to manage VariableLiveRanges of variables
-#endif                                 // USING_VARIABLE_LIVE_RANGE
 
 #ifdef LATE_DISASM
 public:

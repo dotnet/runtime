@@ -51,8 +51,10 @@ namespace System.Xml
         ///      Add the given string to the NameTable or return
         ///      the existing string if it is already in the NameTable.
         /// </devdoc>
-        public override string Add(string key!!)
+        public override string Add(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             int len = key.Length;
             if (len == 0)
             {
@@ -92,10 +94,7 @@ namespace System.Xml
             }
 
             // Compatibility check for len < 0, just throw the same exception as new string(key, start, len)
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             int hashCode = string.GetHashCode(key.AsSpan(start, len));
 
@@ -113,8 +112,10 @@ namespace System.Xml
         /// <devdoc>
         ///      Find the matching string in the NameTable.
         /// </devdoc>
-        public override string? Get(string value!!)
+        public override string? Get(string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Length == 0)
             {
                 return string.Empty;

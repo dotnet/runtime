@@ -5,7 +5,7 @@
 **
 ** Source:  sprintf_s.h
 **
-** Purpose: Containts common testing functions for sprintf_s
+** Purpose: Contains common testing functions for sprintf_s
 **
 **
 **==========================================================================*/
@@ -21,9 +21,9 @@ inline void DoStrTest_snprintf_s(const char *formatstr, char* param, const char 
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert string \"%s\" into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             param, formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoStrTest DoStrTest_snprintf_s
 
@@ -35,9 +35,9 @@ inline void DoWStrTest_snprintf_s(const char *formatstr, WCHAR* param, const cha
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide string \"%s\" into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             convertC(param), formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoWStrTest DoWStrTest_snprintf_s
 
@@ -50,9 +50,9 @@ inline void DoPointerTest_snprintf_s(const char *formatstr, void* param, char* p
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
-            "Expected \"%s\", got \"%s\".\n", 
+            "Expected \"%s\", got \"%s\".\n",
             paramstr, formatstr, checkstr1, buf);
-    }    
+    }
 }
 #define DoPointerTest DoPointerTest_snprintf_s
 
@@ -60,7 +60,7 @@ inline void DoCountTest_snprintf_s(const char *formatstr, int param, const char 
 {
     char buf[512] = { 0 };
     int n = -1;
-    
+
     sprintf_s(buf, 512, formatstr, &n);
 
     if (n != param)
@@ -71,7 +71,7 @@ inline void DoCountTest_snprintf_s(const char *formatstr, int param, const char 
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
-    }    
+    }
 }
 #define DoCountTest DoCountTest_snprintf_s
 
@@ -79,7 +79,7 @@ inline void DoShortCountTest_snprintf_s(const char *formatstr, int param, const 
 {
     char buf[256] = { 0 };
     short int n = -1;
-    
+
     _snprintf_s(buf, 256, _TRUNCATE, formatstr, &n);
 
     if (n != param)
@@ -90,7 +90,7 @@ inline void DoShortCountTest_snprintf_s(const char *formatstr, int param, const 
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: Expected \"%s\" got \"%s\".\n", checkstr, buf);
-    }    
+    }
 }
 #define DoShortCountTest DoShortCountTest_snprintf_s
 
@@ -102,9 +102,9 @@ inline void DoCharTest_snprintf_s(const char *formatstr, char param, const char 
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert char \'%c\' (%d) into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             param, param, formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoCharTest DoCharTest_snprintf_s
 
@@ -116,9 +116,9 @@ inline void DoWCharTest_snprintf_s(const char *formatstr, WCHAR param, const cha
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert wide char \'%c\' (%d) into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             (char)param, param, formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoWCharTest DoWCharTest_snprintf_s
 
@@ -130,9 +130,9 @@ inline void DoNumTest_snprintf_s(const char *formatstr, int value, const char *c
     if (memcmp(buf, checkstr, strlen(checkstr) + 1) != 0)
     {
         Fail("ERROR: failed to insert %#x into \"%s\"\n"
-            "Expected \"%s\" got \"%s\".\n", 
+            "Expected \"%s\" got \"%s\".\n",
             value, formatstr, checkstr, buf);
-    }    
+    }
 }
 #define DoNumTest DoNumTest_snprintf_s
 
@@ -144,13 +144,13 @@ inline void DoI64Test_snprintf_s(const char *formatstr, INT64 value, char *value
     if (memcmp(buf, checkstr1, strlen(checkstr1) + 1) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\"\n"
-            "Expected \"%s\", got \"%s\".\n", 
+            "Expected \"%s\", got \"%s\".\n",
             valuestr, formatstr, checkstr1, buf);
-    }    
+    }
 }
 #define DoI64Test DoI64Test_snprintf_s
 
-inline void DoDoubleTest_snprintf_s(const char *formatstr, double value, const char *checkstr1, char 
+inline void DoDoubleTest_snprintf_s(const char *formatstr, double value, const char *checkstr1, char
 *checkstr2)
 {
     char buf[256] = { 0 };
@@ -160,13 +160,13 @@ inline void DoDoubleTest_snprintf_s(const char *formatstr, double value, const c
        && memcmp(buf, checkstr2, strlen(checkstr2) + 1) != 0)
     {
         Fail("ERROR: failed to insert %f into \"%s\"\n"
-            "Expected \"%s\" or \"%s\", got \"%s\".\n", 
+            "Expected \"%s\" or \"%s\", got \"%s\".\n",
             value, formatstr, checkstr1, checkstr2, buf);
-    }    
+    }
 }
 #define DoDoubleTest DoDoubleTest_snprintf_s
 
-inline void DoArgumentPrecTest_snprintf_s(const char *formatstr, int precision, void *param, char 
+inline void DoArgumentPrecTest_snprintf_s(const char *formatstr, int precision, void *param, char
 *paramstr, const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -179,11 +179,11 @@ inline void DoArgumentPrecTest_snprintf_s(const char *formatstr, int precision, 
             "Expected \"%s\" or \"%s\", got \"%s\".\n",
              paramstr, formatstr, precision, checkstr1, checkstr2, buf);
     }
-            
+
 }
 #define DoArgumentPrecTest DoArgumentPrecTest_snprintf_s
 
-inline void DoArgumentPrecDoubleTest_snprintf_s(const char *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_snprintf_s(const char *formatstr, int precision, double param,
 const char *checkstr1, const char *checkstr2)
 {
     char buf[256];
@@ -196,7 +196,7 @@ const char *checkstr1, const char *checkstr2)
              "Expected \"%s\" or \"%s\", got \"%s\".\n",
              param, formatstr, precision, checkstr1, checkstr2, buf);
     }
-            
+
 }
 #define DoArgumentPrecDoubleTest DoArgumentPrecDoubleTest_snprintf_s
 

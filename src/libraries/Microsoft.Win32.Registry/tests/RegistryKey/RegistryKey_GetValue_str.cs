@@ -86,5 +86,12 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Equal(expected, (string[])TestRegistryKey.GetValue(valueName));
             TestRegistryKey.DeleteValue(valueName);
         }
+
+        [Fact]
+        public void GetPerformanceKeyValue()
+        {
+            string[] counterNames = (string[])Registry.PerformanceData.GetValue("Counter");
+            Assert.NotEmpty(counterNames);
+        }
     }
 }

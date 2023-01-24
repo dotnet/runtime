@@ -12,9 +12,6 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public abstract class ObservableInstrument<T> : Instrument where T : struct
     {
         /// <summary>
@@ -41,9 +38,6 @@ namespace System.Diagnostics.Metrics
         public override bool IsObservable => true;
 
         // Will be called from MeterListener.RecordObservableInstruments for each observable instrument.
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         internal override void Observe(MeterListener listener)
         {
             object? state = GetSubscriptionState(listener);
@@ -62,7 +56,7 @@ namespace System.Diagnostics.Metrics
 
         // Will be called from the concrete classes which extends ObservabilityInstrument<T> when calling Observe() method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal IEnumerable<Measurement<T>> Observe(object callback)
+        internal static IEnumerable<Measurement<T>> Observe(object callback)
         {
             if (callback is Func<T> valueOnlyFunc)
             {

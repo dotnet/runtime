@@ -21,7 +21,6 @@ namespace System.Globalization.Tests
         /// There are some others that failed which have been commented out and marked in the dataset as "GETASCII DOES FAILS ON WINDOWS 8.1"
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58708", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserOnWindows), nameof(PlatformDetection.IsMonoAOT))]
         public void GetAscii_Success()
         {
             Assert.All(Factory.GetDataset().Where(e => e.ASCIIResult.Success), entry =>
@@ -52,7 +51,6 @@ namespace System.Globalization.Tests
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58708", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserOnWindows), nameof(PlatformDetection.IsMonoAOT))]
         public void GetUnicode_Success()
         {
             Assert.All(Factory.GetDataset().Where(e => e.UnicodeResult.Success && e.UnicodeResult.ValidDomainName), entry =>
@@ -85,7 +83,6 @@ namespace System.Globalization.Tests
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/22409
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58708", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserOnWindows), nameof(PlatformDetection.IsMonoAOT))]
         public void GetAscii_Invalid()
         {
             Assert.All(Factory.GetDataset().Where(entry => !entry.ASCIIResult.Success), entry =>
@@ -115,7 +112,6 @@ namespace System.Globalization.Tests
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58708", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserOnWindows), nameof(PlatformDetection.IsMonoAOT))]
         public void GetUnicode_Invalid()
         {
             Assert.All(Factory.GetDataset().Where(entry => !entry.UnicodeResult.Success), entry =>

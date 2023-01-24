@@ -10,7 +10,6 @@
 #include "common.h"
 #include "excep.h"
 #include "log.h"
-#include "win32threadpool.h"
 #include "threadsuspend.h"
 #include "tieredcompilation.h"
 
@@ -111,6 +110,22 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         // optimized tier
         return NativeCodeVersion::OptimizationTierOptimized;
     }
+
+#ifdef FEATURE_PGO
+    if (g_pConfig->TieredPGO())
+    {
+        // Initial tier for R2R is always just OptimizationTier0
+        // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
+        // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+        // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
+        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
+            ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
+        {
+            return NativeCodeVersion::OptimizationTier0;
+        }
+        return NativeCodeVersion::OptimizationTier0Instrumented;
+    }
+#endif
 
     return NativeCodeVersion::OptimizationTier0;
 #else
@@ -238,7 +253,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
 }
 
 void TieredCompilationManager::AsyncPromoteToTier1(
-    NativeCodeVersion tier0NativeCodeVersion,
+    NativeCodeVersion currentNativeCodeVersion,
     bool *createTieringBackgroundWorkerRef)
 {
     CONTRACTL
@@ -250,8 +265,8 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     CONTRACTL_END;
 
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
-    _ASSERTE(!tier0NativeCodeVersion.IsNull());
-    _ASSERTE(tier0NativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+    _ASSERTE(!currentNativeCodeVersion.IsNull());
+    _ASSERTE(!currentNativeCodeVersion.IsFinalTier());
     _ASSERTE(createTieringBackgroundWorkerRef != nullptr);
 
     NativeCodeVersion t1NativeCodeVersion;
@@ -262,10 +277,49 @@ void TieredCompilationManager::AsyncPromoteToTier1(
     // particular version of the IL code regardless of any changes that may
     // occur between now and when jitting completes. If the IL does change in that
     // interval the new code entry won't be activated.
-    MethodDesc *pMethodDesc = tier0NativeCodeVersion.GetMethodDesc();
-    ILCodeVersion ilCodeVersion = tier0NativeCodeVersion.GetILCodeVersion();
-    _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(tier0NativeCodeVersion));
-    hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, NativeCodeVersion::OptimizationTier1, &t1NativeCodeVersion);
+    MethodDesc *pMethodDesc = currentNativeCodeVersion.GetMethodDesc();
+
+    NativeCodeVersion::OptimizationTier nextTier = NativeCodeVersion::OptimizationTier1;
+
+#ifdef FEATURE_PGO
+    if (g_pConfig->TieredPGO())
+    {
+        if (currentNativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+        {
+            if (ExecutionManager::IsReadyToRunCode(currentNativeCodeVersion.GetNativeCode()))
+            {
+                // We definitely don't want to use unoptimized instrumentation tier for hot R2R:
+                // 1) It will produce a lot of new compilations for small methods which were inlined in R2R
+                // 2) Noticeable performance regression from fast R2R to slow instrumented Tier0
+                nextTier = NativeCodeVersion::OptimizationTier1Instrumented;
+            }
+            else
+            {
+                // For ILOnly it's fine to use unoptimized instrumented tier:
+                // 1) No new compilations since previous tier already triggered them
+                // 2) Better profile since we'll be able to instrument inlinees
+                // 3) Unoptimized instrumented tier is faster to produce and wire up
+                nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
+
+#if _DEBUG
+                if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized) != 0)
+                {
+                    // Override that behavior and always use optimizations.
+                    nextTier = NativeCodeVersion::OptimizationTier1Instrumented;
+                }
+#endif
+
+                // NOTE: we might consider using OptimizationTier1Instrumented if the previous Tier0
+                // made it to Tier1-OSR.
+            }
+        }
+    }
+#endif
+
+    ILCodeVersion ilCodeVersion = currentNativeCodeVersion.GetILCodeVersion();
+    _ASSERTE(!ilCodeVersion.HasAnyOptimizedNativeCodeVersion(currentNativeCodeVersion));
+    hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, nextTier, &t1NativeCodeVersion);
     if (FAILED(hr))
     {
         ThrowHR(hr);
@@ -504,9 +558,9 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             continue;
         }
-        _ASSERTE(waitResult == WAIT_TIMEOUT);
 
-        // The wait timed out, see if the worker can exit
+        // The wait timed out, see if the worker can exit. When using the PAL, it may be possible to get WAIT_FAILED in some
+        // shutdown scenarios, treat that as a timeout too since a signal would not have been observed anyway.
 
         LockHolder tieredCompilationLockHolder;
 
@@ -579,13 +633,7 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
         COUNT_T methodCount = methodsPendingCounting->GetCount();
         CodeVersionManager *codeVersionManager = GetAppDomain()->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
-
-        // Backpatching entry point slots requires cooperative GC mode, see
-        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-        // must be used here to prevent deadlock.
-        GCX_COOP();
+        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
         CodeVersionManager::LockHolder codeVersioningLockHolder;
 
         for (COUNT_T i = 0; i < methodCount; ++i)
@@ -599,10 +647,17 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 continue;
             }
 
+            PCODE codeEntryPoint = activeCodeVersion.GetNativeCode();
+            if (codeEntryPoint == NULL)
+            {
+                // The active IL/native code version has changed since the method was queued, and the currently active version
+                // doesn't have a code entry point yet
+                continue;
+            }
+
             EX_TRY
             {
-                bool wasSet =
-                    CallCountingManager::SetCodeEntryPoint(activeCodeVersion, activeCodeVersion.GetNativeCode(), false, nullptr);
+                bool wasSet = CallCountingManager::SetCodeEntryPoint(activeCodeVersion, codeEntryPoint, false, nullptr);
                 _ASSERTE(wasSet);
             }
             EX_CATCH
@@ -946,14 +1001,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     HRESULT hr = S_OK;
     {
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
-        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder(
-            mayHaveEntryPointSlotsToBackpatch);
-
-        // Backpatching entry point slots requires cooperative GC mode, see
-        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
-        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
-        // must be used here to prevent deadlock.
-        GCX_MAYBE_COOP(mayHaveEntryPointSlotsToBackpatch);
+        MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
 
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
@@ -973,7 +1021,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     }
 }
 
-// Dequeues the next method in the optmization queue.
+// Dequeues the next method in the optimization queue.
 // This runs on the background thread.
 NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
 {
@@ -1006,7 +1054,7 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
     _ASSERTE(config != nullptr);
     _ASSERTE(
         !config->WasTieringDisabledBeforeJitting() ||
-        config->GetCodeVersion().GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+        config->GetCodeVersion().IsFinalTier());
 
     CORJIT_FLAGS flags;
 
@@ -1029,9 +1077,25 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         NativeCodeVersion::OptimizationTier newOptimizationTier;
         if (!methodDesc->RequestedAggressiveOptimization())
         {
+            NativeCodeVersion::OptimizationTier currentTier = nativeCodeVersion.GetOptimizationTier();
+
             if (g_pConfig->TieredCompilation_QuickJit())
             {
-                _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier0Instrumented)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                    return flags;
+                }
+
+                if (currentTier == NativeCodeVersion::OptimizationTier::OptimizationTier1Instrumented)
+                {
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+                    return flags;
+                }
+
+                _ASSERTE(!nativeCodeVersion.IsFinalTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 return flags;
             }
@@ -1054,13 +1118,24 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
     switch (nativeCodeVersion.GetOptimizationTier())
     {
+        case NativeCodeVersion::OptimizationTier0Instrumented:
+            _ASSERT(g_pConfig->TieredCompilation_QuickJit());
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+            break;
+
+        case NativeCodeVersion::OptimizationTier1Instrumented:
+            _ASSERT(g_pConfig->TieredCompilation_QuickJit());
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER1);
+            break;
+
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }
-
             nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
             goto Optimized;
 

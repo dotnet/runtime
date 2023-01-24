@@ -287,7 +287,7 @@ namespace Legacy.Support
         {
             _properties.Clear();
 
-            // For each key in the defaultProperties Hashtable set poperties[key]
+            // For each key in the defaultProperties Hashtable set properties[key]
             // with the corresponding value in defaultProperties
             foreach (object key in defaultProperties.Keys)
             {

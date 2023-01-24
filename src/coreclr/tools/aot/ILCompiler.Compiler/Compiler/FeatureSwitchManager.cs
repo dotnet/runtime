@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Xml;
 
 using Internal.IL;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -24,10 +21,10 @@ namespace ILCompiler
         private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(switchValues));
+            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -102,7 +99,7 @@ namespace ILCompiler
 
         // Flags that we track for each byte of the IL instruction stream.
         [Flags]
-        enum OpcodeFlags : byte
+        private enum OpcodeFlags : byte
         {
             // This offset is an instruction boundary.
             InstructionStart = 0x1,
@@ -398,17 +395,17 @@ namespace ILCompiler
             }
 
             // Now sweep unreachable basic blocks by replacing them with nops
-            bool hasUnmarkedIntructions = false;
+            bool hasUnmarkedInstruction = false;
             foreach (var flag in flags)
             {
                 if ((flag & OpcodeFlags.InstructionStart) != 0 &&
                     (flag & OpcodeFlags.Mark) == 0)
                 {
-                    hasUnmarkedIntructions = true;
+                    hasUnmarkedInstruction = true;
                 }
             }
 
-            if (!hasUnmarkedIntructions)
+            if (!hasUnmarkedInstruction)
                 return method;
 
             byte[] newBody = (byte[])methodBytes.Clone();
@@ -447,7 +444,7 @@ namespace ILCompiler
 
             // EH regions with unmarked handlers belong to unmarked basic blocks
             // Need to eliminate them because they're not usable.
-            ArrayBuilder<ILExceptionRegion> newEHRegions = new ArrayBuilder<ILExceptionRegion>();
+            ArrayBuilder<ILExceptionRegion> newEHRegions = default(ArrayBuilder<ILExceptionRegion>);
             foreach (ILExceptionRegion ehRegion in ehRegions)
             {
                 if ((flags[ehRegion.HandlerOffset] & OpcodeFlags.Mark) != 0)
@@ -463,7 +460,7 @@ namespace ILCompiler
             IEnumerable<ILSequencePoint> oldSequencePoints = debugInfo?.GetSequencePoints();
             if (oldSequencePoints != null)
             {
-                ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
+                ArrayBuilder<ILSequencePoint> sequencePoints = default(ArrayBuilder<ILSequencePoint>);
                 foreach (var sequencePoint in oldSequencePoints)
                 {
                     if (sequencePoint.Offset < flags.Length && (flags[sequencePoint.Offset] & OpcodeFlags.Mark) != 0)
@@ -644,7 +641,7 @@ namespace ILCompiler
             return false;
         }
 
-        private class SubstitutedMethodIL : MethodIL
+        private sealed class SubstitutedMethodIL : MethodIL
         {
             private readonly byte[] _body;
             private readonly ILExceptionRegion[] _ehRegions;
@@ -669,7 +666,7 @@ namespace ILCompiler
             public override MethodDebugInformation GetDebugInfo() => _debugInfo;
         }
 
-        private class SubstitutedDebugInformation : MethodDebugInformation
+        private sealed class SubstitutedDebugInformation : MethodDebugInformation
         {
             private readonly MethodDebugInformation _originalDebugInformation;
             private readonly ILSequencePoint[] _sequencePoints;
@@ -685,12 +682,14 @@ namespace ILCompiler
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
         }
 
-        private class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
+            private readonly Logger _logger;
 
-            public FeatureSwitchHashtable(Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
             {
+                _logger = logger;
                 _switchValues = switchValues;
             }
 
@@ -701,18 +700,18 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues);
             }
         }
 
-        private class AssemblyFeatureInfo
+        private sealed class AssemblyFeatureInfo
         {
             public EcmaModule Module { get; }
 
             public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
             public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 Module = module;
 
@@ -740,171 +739,9 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        (BodySubstitutions, FieldSubstitutions) = SubstitutionsReader.GetSubstitutions(module.Context, XmlReader.Create(ms), module, featureSwitchValues);
+                        (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
                     }
                 }
-            }
-        }
-
-        private class BodySubstitution
-        {
-            private object _value;
-
-            private readonly static object Throw = new object();
-
-            public readonly static BodySubstitution ThrowingBody = new BodySubstitution(Throw);
-            public readonly static BodySubstitution EmptyBody = new BodySubstitution(null);
-
-            public object Value
-            {
-                get
-                {
-                    Debug.Assert(_value != Throw);
-                    return _value;
-                }
-            }
-
-            private BodySubstitution(object value) => _value = value;
-
-            public static BodySubstitution Create(object value) => new BodySubstitution(value);
-            public MethodIL EmitIL(MethodDesc method)
-            {
-                ILEmitter emit = new ILEmitter();
-                ILCodeStream codestream = emit.NewCodeStream();
-
-                if (_value == Throw)
-                {
-                    codestream.EmitCallThrowHelper(emit, method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowFeatureBodyRemoved"));
-                }
-                else if (_value == null)
-                {
-                    Debug.Assert(method.Signature.ReturnType.IsVoid);
-                    codestream.Emit(ILOpcode.ret);
-                }
-                else
-                {
-                    Debug.Assert(_value is int);
-                    codestream.EmitLdc((int)_value);
-                    codestream.Emit(ILOpcode.ret);
-                }
-
-                return emit.Link(method);
-            }
-        }
-
-        private class SubstitutionsReader : ProcessXmlBase
-        {
-            private readonly Dictionary<MethodDesc, BodySubstitution> _methodSubstitutions;
-            private readonly Dictionary<FieldDesc, object> _fieldSubstitutions;
-
-            private SubstitutionsReader(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, reader, module, featureSwitchValues)
-            {
-                _methodSubstitutions = new Dictionary<MethodDesc, BodySubstitution>();
-                _fieldSubstitutions = new Dictionary<FieldDesc, object>();
-            }
-
-            protected override void ProcessMethod(MethodDesc method)
-            {
-                string action = GetAttribute("body");
-                if (!String.IsNullOrEmpty(action))
-                {
-                    switch (action)
-                    {
-                        case "remove":
-                            _methodSubstitutions.Add(method, BodySubstitution.ThrowingBody);
-                            break;
-                        case "stub":
-                            BodySubstitution stubBody;
-                            if (method.Signature.ReturnType.IsVoid)
-                                stubBody = BodySubstitution.EmptyBody;
-                            else
-                                stubBody = BodySubstitution.Create(TryCreateSubstitution(method.Signature.ReturnType, GetAttribute("value")));
-
-                            if (stubBody != null)
-                            {
-                                _methodSubstitutions[method] = stubBody;
-                            }
-                            else
-                            {
-                                // Context.LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub", 2010, _xmlDocumentLocation);
-                            }
-
-                            break;
-                        default:
-                            //Context.LogWarning($"Unknown body modification '{action}' for '{method.GetDisplayName()}'", 2011, _xmlDocumentLocation);
-                            break;
-                    }
-                }
-            }
-
-            protected override void ProcessField(FieldDesc field)
-            {
-                if (!field.IsStatic || field.IsLiteral)
-                {
-                    // Context.LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, _xmlDocumentLocation);
-                    return;
-                }
-
-                string value = GetAttribute("value");
-                if (string.IsNullOrEmpty(value))
-                {
-                    //Context.LogWarning($"Missing 'value' attribute for field '{field.GetDisplayName()}'.", 2014, _xmlDocumentLocation);
-                    return;
-                }
-
-                object substitution = TryCreateSubstitution(field.FieldType, value);
-                if (substitution == null)
-                {
-                    //Context.LogWarning($"Invalid value '{value}' for '{field.GetDisplayName()}'.", 2015, _xmlDocumentLocation);
-                    return;
-                }
-
-                if (String.Equals(GetAttribute("initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    // We would need to also mess with the cctor of the type to set the field to this value:
-                    //
-                    // * Linker will remove all stsfld instructions referencing this field from the cctor
-                    // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
-                    //
-                    // This approach... has issues.
-                    throw new NotSupportedException();
-                }
-
-                _fieldSubstitutions[field] = substitution;
-            }
-
-            private object TryCreateSubstitution(TypeDesc type, string value)
-            {
-                switch (type.UnderlyingType.Category)
-                {
-                    case TypeFlags.Int32:
-                        if (string.IsNullOrEmpty(value))
-                            return 0;
-                        else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
-                            return iresult;
-                        break;
-
-                    case TypeFlags.Boolean:
-                        if (String.IsNullOrEmpty(value))
-                            return 0;
-                        else if (bool.TryParse(value, out bool bvalue))
-                            return bvalue ? 1 : 0;
-                        else
-                            goto case TypeFlags.Int32;
-
-                    default:
-                        throw new NotSupportedException(type.ToString());
-                }
-
-                return null;
-            }
-
-            public static (Dictionary<MethodDesc, BodySubstitution>, Dictionary<FieldDesc, object>) GetSubstitutions(TypeSystemContext context, XmlReader reader, ModuleDesc module, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            {
-                var rdr = new SubstitutionsReader(context, reader, module, featureSwitchValues);
-                rdr.ProcessXml();
-                return (rdr._methodSubstitutions, rdr._fieldSubstitutions);
             }
         }
     }

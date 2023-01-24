@@ -207,10 +207,7 @@ namespace System.Net
                 }
             }
 
-            if (ares != null)
-            {
-                ares.Complete(context);
-            }
+            ares?.Complete(context);
         }
 
         private void Cleanup(bool close_existing)
@@ -220,7 +217,7 @@ namespace System.Net
                 if (close_existing)
                 {
                     // Need to copy this since closing will call UnregisterContext
-                    ICollection keys = _listenerContexts.Keys;
+                    Dictionary<HttpListenerContext, HttpListenerContext>.KeyCollection keys = _listenerContexts.Keys;
                     var all = new HttpListenerContext[keys.Count];
                     keys.CopyTo(all, 0);
                     _listenerContexts.Clear();
@@ -230,7 +227,7 @@ namespace System.Net
 
                 lock ((_connections as ICollection).SyncRoot)
                 {
-                    ICollection keys = _connections.Keys;
+                    Dictionary<HttpConnection, HttpConnection>.KeyCollection keys = _connections.Keys;
                     var conns = new HttpConnection[keys.Count];
                     keys.CopyTo(conns, 0);
                     _connections.Clear();

@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
             // Android has its own ICU, which doesn't work well with slovak
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7, 2 };
             }
@@ -50,7 +50,7 @@ namespace System.Globalization.Tests
 
             // Turkish
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
                 yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, 1, 1 };

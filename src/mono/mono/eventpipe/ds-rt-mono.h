@@ -172,7 +172,11 @@ ds_rt_config_value_get_default_port_suspend (void)
 static
 inline
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	// TODO: Implement.
 	return DS_IPC_E_NOTSUPPORTED;
@@ -254,8 +258,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	gchar *nameNarrow = ep_rt_utf16_to_utf8_string (name, ep_rt_utf16_string_len (name));
-	gchar *valueNarrow = ep_rt_utf16_to_utf8_string (value, ep_rt_utf16_string_len (value));
+	gchar *nameNarrow = ep_rt_utf16le_to_utf8_string (name, ep_rt_utf16_string_len (name));
+	gchar *valueNarrow = ep_rt_utf16le_to_utf8_string (value, ep_rt_utf16_string_len (value));
 
 	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
 

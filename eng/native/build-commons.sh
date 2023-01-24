@@ -7,11 +7,11 @@ initTargetDistroRid()
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if cross is specified and the target platform is not Darwin that doesn't use rootfs
-    if [[ "$__CrossBuild" == 1 && "$platform" != "Darwin" ]]; then
+    if [[ "$__CrossBuild" == 1 && "$platform" != "darwin" ]]; then
         passedRootfsDir="$ROOTFS_DIR"
     fi
 
-    initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
+    initDistroRidGlobal "$__TargetOS" "$__TargetArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
 setup_dirs()
@@ -28,14 +28,14 @@ check_prereqs()
 {
     echo "Checking prerequisites..."
 
-    if [[ "$__HostOS" == "OSX" ]]; then
+    if [[ "$__HostOS" == "osx" ]]; then
         # Check presence of pkg-config on the path
         command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@3/lib/pkgconfig:$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
             pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
@@ -53,7 +53,7 @@ build_native()
     fi
 
     targetOS="$1"
-    platformArch="$2"
+    hostArch="$2"
     cmakeDir="$3"
     intermediatesDir="$4"
     target="$5"
@@ -61,45 +61,45 @@ build_native()
     message="$7"
 
     # All set to commence the build
-    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
-        if [[ "$platformArch" == x64 ]]; then
+    if [[ "$targetOS" == osx || "$targetOS" == maccatalyst ]]; then
+        if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
-        elif [[ "$platformArch" == arm64 ]]; then
+        elif [[ "$hostArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
-            echo "Error: Unknown OSX architecture $platformArch."
+            echo "Error: Unknown OSX architecture $hostArch."
             exit 1
         fi
     fi
 
-    if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    if [[ "$targetOS" == maccatalyst ]]; then
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
-    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+    if [[ ( "$targetOS" == android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
         fi
 
-        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
-        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+        # keep ANDROID_PLATFORM in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
 
-        if [[ "$platformArch" == x64 ]]; then
+        if [[ "$hostArch" == x64 ]]; then
             cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
-        elif [[ "$platformArch" == x86 ]]; then
+        elif [[ "$hostArch" == x86 ]]; then
             cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
-        elif [[ "$platformArch" == arm64 ]]; then
+        elif [[ "$hostArch" == arm64 ]]; then
             cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
-        elif [[ "$platformArch" == arm ]]; then
+        elif [[ "$hostArch" == arm ]]; then
             cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
         else
-            echo "Error: Unknown Android architecture $platformArch."
+            echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
     fi
@@ -117,7 +117,7 @@ build_native()
             scan_build=scan-build
         fi
 
-        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $hostArch $targetOS $__Compiler $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -163,7 +163,7 @@ build_native()
         popd
     else
         cmake_command=cmake
-        if [[ "$build_arch" == "wasm" ]]; then
+        if [[ "$build_arch" == "wasm" && "$__TargetOS" == "browser" ]]; then
             cmake_command="emcmake cmake"
             echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
             $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
@@ -197,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -s390x, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armv6, -armel, -arm64, -loongarch64, -riscv64, -s390x, -ppc64le, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -212,6 +212,7 @@ usage()
     echo "-gccx.y: optional argument to build using gcc version x.y."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
+    echo "-outputrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
@@ -228,30 +229,26 @@ usage()
 
 source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
-__BuildArch=$arch
-__HostArch=$arch
+__TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
+__OutputRid=''
 
 # Get the number of processors available to the scheduler
-# Other techniques such as `nproc` only get the number of
-# processors available to a single process.
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(($(sysctl -n hw.ncpu)+1))
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
-  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-elif [[ "$platform" == "Darwin" ]]; then
-  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
+  __NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
+  __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "darwin" ]]; then
+  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  __NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-  if command -v nproc > /dev/null 2>&1; then
-    __NumProc=$(nproc --all)
-  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
-    __NumProc=$(getconf _NPROCESSORS_ONLN)
-  else
-    __NumProc=1
-  fi
+  __NumProc=1
 fi
 
 while :; do
@@ -267,19 +264,19 @@ while :; do
             ;;
 
         arm|-arm)
-            __BuildArch=arm
+            __TargetArch=arm
             ;;
 
         armv6|-armv6)
-            __BuildArch=armv6
+            __TargetArch=armv6
             ;;
 
         arm64|-arm64)
-            __BuildArch=arm64
+            __TargetArch=arm64
             ;;
 
         armel|-armel)
-            __BuildArch=armel
+            __TargetArch=armel
             ;;
 
         bindir|-bindir)
@@ -374,31 +371,59 @@ while :; do
             ;;
 
         x86|-x86)
-            __BuildArch=x86
+            __TargetArch=x86
             ;;
 
         x64|-x64)
-            __BuildArch=x64
+            __TargetArch=x64
             ;;
 
         loongarch64|-loongarch64)
-            __BuildArch=loongarch64
+            __TargetArch=loongarch64
+            ;;
+
+        riscv64|-riscv64)
+            __TargetArch=riscv64
             ;;
 
         s390x|-s390x)
-            __BuildArch=s390x
+            __TargetArch=s390x
             ;;
 
         wasm|-wasm)
-            __BuildArch=wasm
+            __TargetArch=wasm
+            ;;
+
+        outputrid|-outputrid)
+            if [[ -n "$2" ]]; then
+                __OutputRid="$2"
+                shift
+            else
+                echo "ERROR: 'outputrid' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
+        ppc64le|-ppc64le)
+            __TargetArch=ppc64le
             ;;
 
         os|-os)
             if [[ -n "$2" ]]; then
-                __TargetOS="$2"
+                __TargetOS=$(echo "$2" | tr '[:upper:]' '[:lower:]')
                 shift
             else
                 echo "ERROR: 'os' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
+        hostarch|-hostarch)
+            if [[ -n "$2" ]]; then
+                __HostArch="$2"
+                shift
+            else
+                echo "ERROR: 'hostarch' requires a non-empty option argument"
                 exit 1
             fi
             ;;
@@ -415,7 +440,11 @@ while :; do
     shift
 done
 
-__CommonMSBuildArgs="/p:TargetArchitecture=$__BuildArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+if [[ -z "$__HostArch" ]]; then
+    __HostArch=$__TargetArch
+fi
+
+__CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [[ "$__VerboseBuild" == 1 ]]; then
@@ -428,16 +457,16 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
-if [[ "$__BuildArch" == wasm ]]; then
+if [[ "$__TargetArch" == wasm ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
-elif [[ "$__TargetOS" == Android ]]; then
+elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 else
@@ -449,11 +478,15 @@ if [[ "$__CrossBuild" == 1 ]]; then
     CROSSCOMPILE=1
     export CROSSCOMPILE
     # Darwin that doesn't use rootfs
-    if [[ -z "$ROOTFS_DIR" && "$platform" != "Darwin" ]]; then
-        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__BuildArch"
+    if [[ -z "$ROOTFS_DIR" && "$platform" != "darwin" ]]; then
+        ROOTFS_DIR="$__RepoRootDir/.tools/rootfs/$__TargetArch"
         export ROOTFS_DIR
     fi
 fi
 
 # init the target distro name
 initTargetDistroRid
+
+if [ -z "$__OutputRid" ]; then
+    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+fi

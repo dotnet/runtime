@@ -42,14 +42,18 @@ namespace System.Net.Http
             InnerHandler = innerHandler;
         }
 
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             SetOperationStarted();
             return _innerHandler!.Send(request, cancellationToken);
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             SetOperationStarted();
             return _innerHandler!.SendAsync(request, cancellationToken);
         }
@@ -59,26 +63,16 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_innerHandler != null)
-                {
-                    _innerHandler.Dispose();
-                }
+                _innerHandler?.Dispose();
             }
 
             base.Dispose(disposing);
         }
 
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
-        }
-
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
@@ -87,7 +81,8 @@ namespace System.Net.Http
 
         private void SetOperationStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             if (_innerHandler == null)
             {
                 throw new InvalidOperationException(SR.net_http_handler_not_assigned);

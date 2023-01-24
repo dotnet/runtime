@@ -9,6 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.Hosting.Systemd
 {
+    /// <summary>
+    /// Provides notification messages for application started and stopping, and configures console logging to the systemd format.
+    /// </summary>
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
@@ -19,8 +22,19 @@ namespace Microsoft.Extensions.Hosting.Systemd
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        public SystemdLifetime(IHostEnvironment environment!!, IHostApplicationLifetime applicationLifetime!!, ISystemdNotifier systemdNotifier!!, ILoggerFactory loggerFactory)
+        /// <summary>
+        /// Initializes a new <see cref="SystemdLifetime"/> instance.
+        /// </summary>
+        /// <param name="environment">Information about the host.</param>
+        /// <param name="applicationLifetime">The <see cref="IHostApplicationLifetime"/> that tracks the service lifetime.</param>
+        /// <param name="systemdNotifier">The <see cref="ISystemdNotifier"/> to notify Systemd about service status.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used to instantiate the lifetime logger.</param>
+        public SystemdLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ISystemdNotifier systemdNotifier, ILoggerFactory loggerFactory)
         {
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(systemdNotifier);
+
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
             SystemdNotifier = systemdNotifier;
@@ -41,12 +55,12 @@ namespace Microsoft.Extensions.Hosting.Systemd
         {
             _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStarted();
+                ((SystemdLifetime)state!).OnApplicationStarted();
             },
             this);
             _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStopping();
+                ((SystemdLifetime)state!).OnApplicationStopping();
             },
             this);
 

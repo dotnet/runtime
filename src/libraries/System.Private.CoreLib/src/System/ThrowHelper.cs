@@ -51,6 +51,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowAccessViolationException()
+        {
+            throw new AccessViolationException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
@@ -87,6 +93,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_ArgumentNull_TypedRefType()
+        {
+            throw new ArgumentNullException("value", SR.ArgumentNull_TypedRefType);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_CannotExtractScalar(ExceptionArgument argument)
         {
             throw GetArgumentException(ExceptionResource.Argument_CannotExtractScalar, argument);
@@ -99,10 +111,17 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRange_IndexException()
+        internal static void ThrowArgumentOutOfRange_IndexMustBeLessException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
-                                                    ExceptionResource.ArgumentOutOfRange_Index);
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.index,
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
         }
 
         [DoesNotReturn]
@@ -133,10 +152,17 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index()
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
-                                                    ExceptionResource.ArgumentOutOfRange_Index);
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess()
+        {
+            throw GetArgumentOutOfRangeException(ExceptionArgument.startIndex,
+                                                    ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
         }
 
         [DoesNotReturn]
@@ -181,6 +207,12 @@ namespace System
         internal static void ThrowArgumentOutOfRange_TimeSpanTooLong()
         {
             throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowOverflowException()
+        {
+            throw new OverflowException();
         }
 
         [DoesNotReturn]
@@ -310,12 +342,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperationException_OutstandingReferences()
-        {
-            throw new InvalidOperationException(SR.Memory_OutstandingReferences);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e)
         {
             throw new InvalidOperationException(GetResourceString(resource), e);
@@ -331,12 +357,6 @@ namespace System
         internal static void ThrowSerializationException(ExceptionResource resource)
         {
             throw new SerializationException(GetResourceString(resource));
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowSecurityException(ExceptionResource resource)
-        {
-            throw new System.Security.SecurityException(GetResourceString(resource));
         }
 
         [DoesNotReturn]
@@ -370,15 +390,15 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowUnauthorizedAccessException(ExceptionResource resource)
+        internal static void ThrowObjectDisposedException(object? instance)
         {
-            throw new UnauthorizedAccessException(GetResourceString(resource));
+            throw new ObjectDisposedException(instance?.GetType().FullName);
         }
 
         [DoesNotReturn]
-        internal static void ThrowObjectDisposedException(string objectName, ExceptionResource resource)
+        internal static void ThrowObjectDisposedException(Type? type)
         {
-            throw new ObjectDisposedException(objectName, GetResourceString(resource));
+            throw new ObjectDisposedException(type?.FullName);
         }
 
         [DoesNotReturn]
@@ -418,9 +438,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
-            throw new ArgumentException(SR.Argument_InvalidArrayType);
+            throw new ArgumentException(SR.Argument_IncompatibleArrayType);
         }
 
         [DoesNotReturn]
@@ -496,12 +516,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
-        {
-            throw new FileLoadException(SR.InvalidAssemblyName, name);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -511,12 +525,6 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
-        {
-            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
         }
 
         [DoesNotReturn]
@@ -547,6 +555,12 @@ namespace System
 
             ex.HResult = hr;
             throw ex;
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowFormatInvalidString()
+        {
+            throw new FormatException(SR.Format_InvalidString);
         }
 
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
@@ -625,9 +639,10 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>()
+            where T : struct
         {
-            if (!Vector<T>.IsTypeSupported)
+            if (!Vector<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -637,9 +652,10 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>()
+            where T : struct
         {
-            if (!Vector64<T>.IsTypeSupported)
+            if (!Vector64<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -649,9 +665,10 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>()
+            where T : struct
         {
-            if (!Vector128<T>.IsTypeSupported)
+            if (!Vector128<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -661,20 +678,34 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>()
+            where T : struct
         {
-            if (!Vector256<T>.IsTypeSupported)
+            if (!Vector256<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+        // Throws if 'T' is disallowed in Vector512<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
+            where T : struct
+        {
+            if (!Vector512<T>.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
+            Debug.Assert(Enum.IsDefined(argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
             return argument.ToString();
@@ -881,18 +912,20 @@ namespace System
                     return "anyOf";
                 case ExceptionArgument.overlapped:
                     return "overlapped";
+                case ExceptionArgument.minimumBytes:
+                    return "minimumBytes";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ExceptionResource resource)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
+            Debug.Assert(Enum.IsDefined(resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
             return SR.GetResourceString(resource.ToString());
@@ -903,8 +936,10 @@ namespace System
         {
             switch (resource)
             {
-                case ExceptionResource.ArgumentOutOfRange_Index:
-                    return SR.ArgumentOutOfRange_Index;
+                case ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual:
+                    return SR.ArgumentOutOfRange_IndexMustBeLessOrEqual;
+                case ExceptionResource.ArgumentOutOfRange_IndexMustBeLess:
+                    return SR.ArgumentOutOfRange_IndexMustBeLess;
                 case ExceptionResource.ArgumentOutOfRange_IndexCount:
                     return SR.ArgumentOutOfRange_IndexCount;
                 case ExceptionResource.ArgumentOutOfRange_IndexCountBuffer:
@@ -1041,6 +1076,8 @@ namespace System
                     return SR.CancellationTokenSource_Disposed;
                 case ExceptionResource.Argument_AlignmentMustBePow2:
                     return SR.Argument_AlignmentMustBePow2;
+                case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
+                    return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1151,6 +1188,7 @@ namespace System
         stream,
         anyOf,
         overlapped,
+        minimumBytes,
     }
 
     //
@@ -1158,7 +1196,8 @@ namespace System
     //
     internal enum ExceptionResource
     {
-        ArgumentOutOfRange_Index,
+        ArgumentOutOfRange_IndexMustBeLessOrEqual,
+        ArgumentOutOfRange_IndexMustBeLess,
         ArgumentOutOfRange_IndexCount,
         ArgumentOutOfRange_IndexCountBuffer,
         ArgumentOutOfRange_Count,
@@ -1170,6 +1209,7 @@ namespace System
         ArgumentOutOfRange_GetCharCountOverflow,
         ArgumentOutOfRange_ListInsert,
         ArgumentOutOfRange_NeedNonNegNum,
+        ArgumentOutOfRange_NotGreaterThanBufferLength,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
         Argument_CannotExtractScalar,

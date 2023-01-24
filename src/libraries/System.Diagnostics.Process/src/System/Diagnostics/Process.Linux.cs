@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -24,20 +25,21 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);
-            if (processName == null)
-            {
-                processName = string.Empty;
-            }
 
-            var processes = new List<Process>();
+            processName ??= "";
+
+            ArrayBuilder<Process> processes = default;
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
-                    string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
-                    processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
+                    string actualProcessName = GetUntruncatedProcessName(ref parsedStat);
+                    if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
+                        Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                    {
+                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, actualProcessName);
+                        processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
+                    }
                 }
             }
 
@@ -45,6 +47,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -75,40 +80,32 @@ namespace System.Diagnostics
             return dt.ToLocalTime();
         }
 
+        private static long s_bootTimeTicks;
         /// <summary>Gets the system boot time.</summary>
         private static DateTime BootTime
         {
             get
             {
-                // '/proc/stat -> btime' gets the boot time.
-                // btime is the time of system boot in seconds since the Unix epoch.
-                // It includes suspended time and is updated based on the system time (settimeofday).
-                const string StatFile = Interop.procfs.ProcStatFilePath;
-                string text = File.ReadAllText(StatFile);
-                int btimeLineStart = text.IndexOf("\nbtime ", StringComparison.Ordinal);
-                if (btimeLineStart >= 0)
-                {
-                    int btimeStart = btimeLineStart + "\nbtime ".Length;
-                    int btimeEnd = text.IndexOf('\n', btimeStart);
-                    if (btimeEnd > btimeStart)
+               long bootTimeTicks = Interlocked.Read(ref s_bootTimeTicks);
+               if (bootTimeTicks == 0)
+               {
+                    bootTimeTicks = Interop.Sys.GetBootTimeTicks();
+                    long oldValue = Interlocked.CompareExchange(ref s_bootTimeTicks, bootTimeTicks, 0);
+                    if (oldValue != 0) // a different thread has managed to update the ticks first
                     {
-                        if (long.TryParse(text.AsSpan(btimeStart, btimeEnd - btimeStart), out long bootTimeSeconds))
-                        {
-                            return DateTime.UnixEpoch + TimeSpan.FromSeconds(bootTimeSeconds);
-                        }
+                        bootTimeTicks = oldValue; // consistency
                     }
-                }
-
-                return DateTime.UtcNow;
-            }
-        }
+               }
+               return new DateTime(bootTimeTicks);
+           }
+       }
 
         /// <summary>Gets the parent process ID</summary>
         private int ParentProcessId =>
             GetStat().ppid;
 
         /// <summary>Gets execution path</summary>
-        private string? GetPathToOpenFile()
+        private static string? GetPathToOpenFile()
         {
             string[] allowedProgramsToRun = { "xdg-open", "gnome-open", "kfmclient" };
             foreach (var program in allowedProgramsToRun)
@@ -127,6 +124,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -140,6 +140,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get
@@ -238,21 +241,20 @@ namespace System.Diagnostics
         /// <param name="newMax">The new maximum working set limit, or null not to change it.</param>
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
-        private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
+#pragma warning disable IDE0060
+        private static void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
             // RLIMIT_RSS with setrlimit not supported on Linux > 2.4.30.
             throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);
         }
+#pragma warning restore IDE0060
 
         /// <summary>Gets the path to the executable for the process, or null if it could not be retrieved.</summary>
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
         internal static string? GetExePath(int processId = -1)
         {
-            string exeFilePath = processId == -1 ?
-                Interop.procfs.SelfExeFilePath :
-                Interop.procfs.GetExeFilePathForProcess(processId);
-
-            return Interop.Sys.ReadLink(exeFilePath);
+            return processId == -1 ? Environment.ProcessPath :
+                Interop.Sys.ReadLink(Interop.procfs.GetExeFilePathForProcess(processId));
         }
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>

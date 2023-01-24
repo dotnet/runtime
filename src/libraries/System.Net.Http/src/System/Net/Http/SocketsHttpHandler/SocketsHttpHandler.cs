@@ -18,19 +18,12 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandlerStage? _handler;
+        private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(SocketsHttpHandler));
-            }
-        }
 
         private void CheckDisposedOrStarted()
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (_handler != null)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
@@ -56,7 +49,7 @@ namespace System.Net.Http
         [AllowNull]
         public CookieContainer CookieContainer
         {
-            get => _settings._cookieContainer ?? (_settings._cookieContainer = new CookieContainer());
+            get => _settings._cookieContainer ??= new CookieContainer();
             set
             {
                 CheckDisposedOrStarted();
@@ -70,6 +63,7 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
+                EnsureDecompressionHandlerFactory();
                 _settings._automaticDecompression = value;
             }
         }
@@ -169,10 +163,7 @@ namespace System.Net.Http
             get => _settings._maxResponseDrainSize;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegativeNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseDrainSize = value;
@@ -200,10 +191,7 @@ namespace System.Net.Http
             get => _settings._maxResponseHeadersLength;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseHeadersLength = value;
@@ -213,7 +201,7 @@ namespace System.Net.Http
         [AllowNull]
         public SslClientAuthenticationOptions SslOptions
         {
-            get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
+            get => _settings._sslOptions ??= new SslClientAuthenticationOptions();
             set
             {
                 CheckDisposedOrStarted();
@@ -422,7 +410,7 @@ namespace System.Net.Http
         /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>
-            _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
+            _settings._properties ??= new Dictionary<string, object?>();
 
         /// <summary>
         /// Gets or sets a callback that returns the <see cref="Encoding"/> to encode the value for the specified request header name,
@@ -519,7 +507,8 @@ namespace System.Net.Http
 
             if (settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new DecompressionHandler(settings._automaticDecompression, handler);
+                Debug.Assert(_decompressionHandlerFactory is not null);
+                handler = _decompressionHandlerFactory(settings, handler);
             }
 
             // Ensure a single handler is used for all requests.
@@ -531,9 +520,18 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request!!,
+        // Allows for DecompressionHandler (and its compression dependencies) to be trimmed when
+        // AutomaticDecompression is not being used.
+        private void EnsureDecompressionHandlerFactory()
+        {
+            _decompressionHandlerFactory ??= (settings, handler) => new DecompressionHandler(settings._automaticDecompression, handler);
+        }
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             if (request.Version.Major >= 2)
             {
                 throw new NotSupportedException(SR.Format(SR.net_http_http2_sync_not_supported, GetType()));
@@ -545,7 +543,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.Format(SR.net_http_upgrade_not_enabled_sync, nameof(Send), request.VersionPolicy));
             }
 
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -560,16 +558,18 @@ namespace System.Net.Http
             return handler.Send(request, cancellationToken);
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
+
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
@@ -580,7 +580,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

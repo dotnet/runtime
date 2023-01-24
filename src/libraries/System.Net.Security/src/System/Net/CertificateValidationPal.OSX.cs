@@ -47,31 +47,11 @@ namespace System.Net
             return errors;
         }
 
-        //
-        // Extracts a remote certificate upon request.
-        //
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext securityContext)
-        {
-            return GetRemoteCertificate(securityContext, null);
-        }
-
-        internal static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext,
-            out X509Certificate2Collection? remoteCertificateStore)
-        {
-            if (securityContext == null)
-            {
-                remoteCertificateStore = null;
-                return null;
-            }
-
-            remoteCertificateStore = new X509Certificate2Collection();
-            return GetRemoteCertificate(securityContext, remoteCertificateStore);
-        }
-
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext securityContext,
-            X509Certificate2Collection? remoteCertificateStore)
+            SafeDeleteContext? securityContext,
+            bool retrieveChainCertificates,
+            ref X509Chain? chain,
+            X509ChainPolicy? chainPolicy)
         {
             if (securityContext == null)
             {
@@ -91,12 +71,20 @@ namespace System.Net
             {
                 long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
 
-                if (remoteCertificateStore != null)
+                if (retrieveChainCertificates && chainSize > 1)
                 {
-                    for (int i = 0; i < chainSize; i++)
+                    chain ??= new X509Chain();
+                    if (chainPolicy != null)
+                    {
+                        chain.ChainPolicy = chainPolicy;
+                    }
+
+                    // First certificate is peer's certificate.
+                    // Any any additional intermediate CAs to ExtraStore.
+                    for (int i = 1; i < chainSize; i++)
                     {
                         IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
-                        remoteCertificateStore.Add(new X509Certificate2(certHandle));
+                        chain.ChainPolicy.ExtraStore.Add(new X509Certificate2(certHandle));
                     }
                 }
 
@@ -113,6 +101,10 @@ namespace System.Net
 
             return result;
         }
+
+        // This is only called when we selected local client certificate.
+        // Currently this is only when Apple crypto asked for it.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _1, SafeDeleteContext? _2) => true;
 
         //
         // Used only by client SSL code, never returns null.

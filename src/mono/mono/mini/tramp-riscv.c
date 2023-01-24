@@ -159,7 +159,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	}
 
 	guint8 *buf = mono_global_codeman_reserve (128 * depth), *code = buf;
-	guint8 **null_jumps = g_malloc0 (sizeof (guint8 *) * (depth + 2));
 
 	if (!is_mrgctx) {
 	} else

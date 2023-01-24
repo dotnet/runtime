@@ -28,6 +28,7 @@
 
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -86,7 +87,7 @@ public:
         } CONTRACTL_END;
 
         DWORD spinCount = 0;
-        while(FastInterlockExchange(&m_lock, 0) != -1)
+        while(InterlockedExchange(&m_lock, 0) != -1)
         {
             GCX_PREEMP();
             __SwitchToThread(0, spinCount++);
@@ -341,6 +342,11 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 #endif // FEATURE_EVENT_TRACE
 }
 
+void PublishFrozenObject(Object*& orObject)
+{
+    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS);
+}
+
 inline SIZE_T MaxArrayLength()
 {
     // Impose limits on maximum array length to prevent corner case integer overflow bugs
@@ -369,8 +375,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     _ASSERTE(pArrayMT->CheckInstanceActivated());
@@ -544,8 +548,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 #endif
 
-    // IBC Log MethodTable access
-    g_IBCLogger.LogMethodTableAccess(pArrayMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     // keep original flags in case the call is recursive (jugged array case)
@@ -842,9 +844,7 @@ STRINGREF AllocateString( DWORD cchStringLength )
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.
-    //
-    // If the value below is changed, also change AllocateUtf8String.
-    if (cchStringLength > 0x3FFFFFDF)
+    if (cchStringLength > CORINFO_String_MaxLength)
         ThrowOutOfMemory();
 
     SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
@@ -864,6 +864,50 @@ STRINGREF AllocateString( DWORD cchStringLength )
 
     PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
+
+}
+
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIsFrozen)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(pIsFrozen != nullptr);
+
+    STRINGREF orStringRef = NULL;
+    StringObject* orString = nullptr;
+
+    // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
+    // overflows in buffer size calculations.
+    if (cchStringLength > CORINFO_String_MaxLength)
+        ThrowOutOfMemory();
+
+    const SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
+    _ASSERTE(totalSize > cchStringLength);
+
+    if (preferFrozenHeap)
+    {
+        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+        orString = static_cast<StringObject*>(foh->TryAllocateObject(g_pStringClass, totalSize, /* publish = */false));
+        if (orString != nullptr)
+        {
+            orString->SetStringLength(cchStringLength);
+            // Publish needs to be postponed in this case because we need to specify string length 
+            PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
+            _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
+            orStringRef = ObjectToSTRINGREF(orString);
+            *pIsFrozen = true;
+        }
+    }
+    if (orString == nullptr)
+    {
+        orStringRef = AllocateString(cchStringLength);
+        *pIsFrozen = false;
+    }
+    return orStringRef;
 }
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -920,8 +964,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
     // not set becuase it isn't until near the end of the fcn at which point we can allow
     // the check.
     _UNCHECKED_OBJECTREF oref;
-
-    g_IBCLogger.LogMethodTableAccess(pMT);
     SetTypeHandleOnThreadForAlloc(TypeHandle(pMT));
 
 
@@ -1118,7 +1160,7 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
         break;
     default:
         // It should be some member of the enumeration.
-        _ASSERTE_ALL_BUILDS(__FILE__, false);
+        _ASSERTE_ALL_BUILDS(false);
         break;
     }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS

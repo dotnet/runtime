@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            // Ensure the native layout data has been saved, in order to get valid Vertex offsets for the signature Vertices 
+            // Ensure the native layout data has been saved, in order to get valid Vertex offsets for the signature Vertices
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
 
             NativeWriter nativeWriter = new NativeWriter();
@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void GetGenericMethodsHashtableDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
-            
+
             // Method's containing type
             IEETypeNode containingTypeNode = factory.NecessaryTypeSymbol(method.OwningType);
             dependencies.Add(new DependencyListEntry(containingTypeNode, "GenericMethodsHashtable entry containing type"));

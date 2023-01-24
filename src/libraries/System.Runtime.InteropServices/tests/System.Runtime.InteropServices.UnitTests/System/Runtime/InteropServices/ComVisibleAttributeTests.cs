@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.Tests
     [ComVisible(true)]
     public class ComVisibleAttributeTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void Exists()
         {
             Type type = typeof(ComVisibleAttributeTests);
@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.True(attribute.Value);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Visible(bool visibility)

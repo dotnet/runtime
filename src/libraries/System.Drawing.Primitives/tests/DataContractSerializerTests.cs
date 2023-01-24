@@ -12,6 +12,7 @@ using System.Drawing;
 
 namespace System.Drawing.Primitives.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
     public class DataContractSerializerTests
     {
         [Fact]

@@ -79,7 +79,7 @@ namespace System.Threading.Tasks.Sources
         {
             ValidateToken(token);
             return
-                _continuation == null || !_completed ? ValueTaskSourceStatus.Pending :
+                Volatile.Read(ref _continuation) == null || !_completed ? ValueTaskSourceStatus.Pending :
                 _error == null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
@@ -115,8 +115,10 @@ namespace System.Threading.Tasks.Sources
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        public void OnCompleted(Action<object?> continuation!!, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
+            ArgumentNullException.ThrowIfNull(continuation);
+
             ValidateToken(token);
 
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
@@ -211,10 +213,12 @@ namespace System.Threading.Tasks.Sources
             }
             _completed = true;
 
-            if (_continuation is null && Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) is null)
+            if (Volatile.Read(ref _continuation) is null && Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) is null)
             {
                 return;
             }
+
+            Debug.Assert(_continuation is not null);
 
             if (_executionContext is null)
             {
@@ -243,7 +247,7 @@ namespace System.Threading.Tasks.Sources
         private void InvokeContinuationWithContext()
         {
             // This is in a helper as the error handling causes the generated asm
-            // for the surrounding code to become less efficent (stack spills etc)
+            // for the surrounding code to become less efficient (stack spills etc)
             // and it is an uncommon path.
 
             Debug.Assert(_continuation != null, $"Null {nameof(_continuation)}");

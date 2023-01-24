@@ -13,7 +13,7 @@ public class WindowsPrincipalTests
     [Fact]
     public static void WindowsPrincipalIsInRoleNeg()
     {
-        WindowsIdentity windowsIdentity = WindowsIdentity.GetAnonymous();
+        using WindowsIdentity windowsIdentity = WindowsIdentity.GetAnonymous();
         WindowsPrincipal windowsPrincipal = new WindowsPrincipal(windowsIdentity);
 
         try

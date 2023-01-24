@@ -21,7 +21,7 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw when opened with default permission check and write rights
             const string name = "FooBar";
             TestRegistryKey.SetValue(name, 42);
-            TestRegistryKey.CreateSubKey(name);
+            TestRegistryKey.CreateSubKey(name).Dispose();
             using (var rk = Registry.CurrentUser.OpenSubKey(name: TestRegistryKeyName, permissionCheck: RegistryKeyPermissionCheck.Default, rights: RegistryRights.WriteKey))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
@@ -79,8 +79,9 @@ namespace Microsoft.Win32.RegistryTests
 
             using (var rk = TestRegistryKey.OpenSubKey("", RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.CreateSubKey))
             {
-                rk.CreateSubKey(valueName);
-                Assert.NotNull(rk.OpenSubKey(valueName));
+                rk.CreateSubKey(valueName).Dispose();
+                using RegistryKey subkey = rk.OpenSubKey(valueName);
+                Assert.NotNull(subkey);
             }
         }
 

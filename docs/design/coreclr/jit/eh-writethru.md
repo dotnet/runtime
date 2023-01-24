@@ -61,8 +61,8 @@ There are a number of wrinkles informing this design based on how the JIT models
 - The jit does not model which handlers are reachable from a given protected region,
   so considers a variable live into a handler if it is live into any handler in the method.
 
-It is posible to do better than the "store every definition" approach outlined
-in the design, but the expectation is that this would require posibly
+It is possible to do better than the "store every definition" approach outlined
+in the design, but the expectation is that this would require possibly
 modifying the model in the JIT and staging more throughput intensive analyses.
 With these considerations this design was selected and further improvements
 left to future optimization.

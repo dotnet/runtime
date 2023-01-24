@@ -1,0 +1,15 @@
+# This step template evaluates changes in dependencies defined in `eng/Version.Details.xml`.
+# For more information on how this works works look at evaluate-changed-darc-deps.sh docs
+# at the beginning of that file.
+
+parameters:
+  subsetName: ''
+  # Array containing the arguments that are to be passed down to evaluate-changed-paths.sh
+  # Note that --azurevariable is always set to the dependency name, no need to pass it down.
+  arguments: []
+
+steps:
+  - script: eng/pipelines/evaluate-changed-darc-deps.sh
+            ${{ join(' ', parameters.arguments) }}
+    displayName: Evaluate eng/Version.Details.xml for dependency changes
+    name: DarcDependenciesChanged

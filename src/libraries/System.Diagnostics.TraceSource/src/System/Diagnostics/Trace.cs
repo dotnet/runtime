@@ -3,6 +3,7 @@
 
 #define TRACE
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Threading;
 
@@ -158,8 +159,19 @@ namespace System.Diagnostics
             TraceInternal.Fail(message, detailMessage);
         }
 
+        /// <summary>
+        ///  Occurs when a <see cref="TraceSource"/> needs to be refreshed from configuration.
+        /// </summary>
+        public static event EventHandler? Refreshing;
+
+        internal static void OnRefreshing()
+        {
+            Refreshing?.Invoke(null, EventArgs.Empty);
+        }
+
         public static void Refresh()
         {
+            OnRefreshing();
             Switch.RefreshAll();
             TraceSource.RefreshAll();
             TraceInternal.Refresh();
@@ -172,7 +184,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceInformation(string format, params object?[]? args)
+        public static void TraceInformation([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, format, args);
         }
@@ -184,7 +196,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceWarning(string format, params object?[]? args)
+        public static void TraceWarning([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, format, args);
         }
@@ -196,7 +208,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceError(string format, params object?[]? args)
+        public static void TraceError([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, format, args);
         }

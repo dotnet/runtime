@@ -279,7 +279,7 @@ namespace System.Globalization.Tests
             foreach (string cultureName in GetTestLocales())
             {
                 // Android has its own ICU, which doesn't work well with tr
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { cultureName, "I", "\u0131" };
                     yield return new object[] { cultureName, "HI!", "h\u0131!" };
@@ -407,7 +407,7 @@ namespace System.Globalization.Tests
             foreach (string cultureName in GetTestLocales())
             {
                 // Android has its own ICU, which doesn't work well with tr
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { cultureName, "i", "\u0130" };
                     yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };

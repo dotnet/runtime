@@ -8,9 +8,11 @@ namespace Microsoft.CSharp
 {
     internal sealed partial class CSharpCodeGenerator
     {
-        private CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
+#pragma warning disable IDE0060
+        private static CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

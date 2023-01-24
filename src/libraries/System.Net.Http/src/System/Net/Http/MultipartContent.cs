@@ -23,6 +23,9 @@ namespace System.Net.Http
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
 
+        private static readonly IndexOfAnyValues<char> s_allowedBoundaryChars =
+            IndexOfAnyValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
 
@@ -85,21 +88,9 @@ namespace System.Net.Http
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
 
-            const string AllowedMarks = @"'()+_,-./:=? ";
-
-            foreach (char ch in boundary)
+            if (boundary.AsSpan().IndexOfAnyExcept(s_allowedBoundaryChars) >= 0)
             {
-                if (('0' <= ch && ch <= '9') || // Digit.
-                    ('a' <= ch && ch <= 'z') || // alpha.
-                    ('A' <= ch && ch <= 'Z') || // ALPHA.
-                    (AllowedMarks.Contains(ch))) // Marks.
-                {
-                    // Valid.
-                }
-                else
-                {
-                    throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
-                }
+                throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
         }
 
@@ -108,8 +99,10 @@ namespace System.Net.Http
             return Guid.NewGuid().ToString();
         }
 
-        public virtual void Add(HttpContent content!!)
+        public virtual void Add(HttpContent content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _nestedContent.Add(content);
         }
 
@@ -353,12 +346,12 @@ namespace System.Net.Http
             return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
-        private static Stream EncodeStringToNewStream(string input)
+        private static MemoryStream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
-        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        private MemoryStream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
         {
             var stream = new MemoryStream();
             SerializeHeadersToStream(stream, content, writeDivider);
@@ -494,6 +487,12 @@ namespace System.Net.Http
                 }
             }
 
+            public override int ReadByte()
+            {
+                byte b = 0;
+                return Read(new Span<byte>(ref b)) == 1 ? b : -1;
+            }
+
             public override int Read(Span<byte> buffer)
             {
                 if (buffer.Length == 0)
@@ -574,10 +573,7 @@ namespace System.Net.Http
                 get { return _position; }
                 set
                 {
-                    if (value < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                    ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                     long previousStreamsLength = 0;
                     for (int i = 0; i < _streams.Length; i++)
@@ -636,6 +632,8 @@ namespace System.Net.Http
             public override long Length => _length;
 
             public override void Flush() { }
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
             public override void SetLength(long value) { throw new NotSupportedException(); }
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
             public override void Write(ReadOnlySpan<byte> buffer) { throw new NotSupportedException(); }

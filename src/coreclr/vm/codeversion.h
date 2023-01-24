@@ -71,15 +71,19 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = NULL);
 #endif
 
+    // NOTE: Don't change existing values to avoid breaking changes in event tracing
     enum OptimizationTier
     {
         OptimizationTier0,
         OptimizationTier1,
         OptimizationTier1OSR,
         OptimizationTierOptimized, // may do less optimizations than tier 1
+        OptimizationTier0Instrumented,
+        OptimizationTier1Instrumented,
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
+    bool IsFinalTier() const;
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif
@@ -174,7 +178,7 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, 
+    HRESULT AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier,
         NativeCodeVersion* pNativeCodeVersion, PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
@@ -190,7 +194,7 @@ public:
 
         // The CLR has initiated the call to the profiler's GetReJITParameters() callback
         // but it hasn't completed yet. At this point we have to assume the profiler has
-        // commited to a specific IL body, even if the CLR doesn't know what it is yet.
+        // committed to a specific IL body, even if the CLR doesn't know what it is yet.
         // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
         // and call GetReJITParameters() again.
         kStateGettingReJITParameters = 0x00000001,
@@ -254,7 +258,7 @@ class NativeCodeVersionNode
 
 public:
 #ifndef DACCESS_COMPILE
-    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier, 
+    NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier,
         PatchpointInfo* patchpointInfo, unsigned ilOffset);
 #endif
 

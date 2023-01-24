@@ -8,9 +8,6 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// Base class of all Metrics Instrument classes
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public abstract class Instrument
     {
         internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
@@ -37,10 +34,10 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        protected Instrument(Meter meter!!, string name!!, string? unit, string? description)
+        protected Instrument(Meter meter, string name, string? unit, string? description)
         {
-            Meter = meter;
-            Name = name;
+            Meter = meter ?? throw new ArgumentNullException(nameof(meter));
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Description = description;
             Unit = unit;
         }

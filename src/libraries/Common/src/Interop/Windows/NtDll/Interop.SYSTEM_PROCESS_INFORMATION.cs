@@ -45,7 +45,7 @@ internal static partial class Interop
         {
             private fixed long Reserved1[3];
             private readonly uint Reserved2;
-            internal IntPtr StartAddress;
+            internal void* StartAddress;
             internal CLIENT_ID ClientId;
             internal int Priority;
             internal int BasePriority;
@@ -55,10 +55,10 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CLIENT_ID
+        internal unsafe struct CLIENT_ID
         {
-            internal IntPtr UniqueProcess;
-            internal IntPtr UniqueThread;
+            internal void* UniqueProcess;
+            internal void* UniqueThread;
         }
     }
 }

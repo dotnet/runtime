@@ -27,7 +27,7 @@ public:
         {
             None = 0x00,
 
-            Mark = 0x01, // An aribtrary "mark" bit that can be used in place of
+            Mark = 0x01, // An arbitrary "mark" bit that can be used in place of
                          // a more expensive data structure when processing a set
                          // of LIR nodes. See for example `LIR::GetTreeRange`.
 
@@ -64,7 +64,7 @@ public:
         Use& operator=(const Use& other);
         Use& operator=(Use&& other);
 
-        static Use GetDummyUse(Range& range, GenTree* node);
+        static void MakeDummyUse(Range& range, GenTree* node, Use* dummyUse);
 
         GenTree* Def() const;
         GenTree* User() const;
@@ -226,7 +226,7 @@ public:
     // LIR::Range:
     //
     // Represents a contiguous range of LIR nodes. Provides a variety of
-    // variety of utilites that modify the LIR contained in the range. Unlike
+    // variety of utilities that modify the LIR contained in the range. Unlike
     // `ReadOnlyRange`, values of this type may be edited.
     //
     // Because it is not a final class, it is possible to slice values of this
@@ -335,6 +335,47 @@ inline void GenTree::ClearRegOptional()
 inline bool GenTree::IsRegOptional() const
 {
     return (gtLIRFlags & LIR::Flags::RegOptional) != 0;
+}
+
+template <typename T, T* T::*prev, T* T::*next>
+static void CheckDoublyLinkedList(T* first)
+{
+    // (1) ensure there are no circularities, (2) ensure the prev list is
+    // precisely the inverse of the gtNext list.
+    //
+    // To detect circularity, use the "tortoise and hare" 2-pointer algorithm.
+
+    if (first == nullptr)
+    {
+        return;
+    }
+
+    GenTree* slowNode = first;
+    assert(slowNode != nullptr);
+    GenTree* fastNode1    = nullptr;
+    GenTree* fastNode2    = slowNode;
+    GenTree* prevSlowNode = nullptr;
+    while (((fastNode1 = fastNode2->*next) != nullptr) && ((fastNode2 = fastNode1->*next) != nullptr))
+    {
+        if ((slowNode == fastNode1) || (slowNode == fastNode2))
+        {
+            assert(!"Circularity detected");
+        }
+        assert(slowNode->*prev == prevSlowNode && "Invalid prev link");
+        prevSlowNode = slowNode;
+        slowNode     = slowNode->*next;
+        assert(slowNode != nullptr); // the fastNodes would have gone null first.
+    }
+    // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
+    assert((fastNode1 == nullptr) || (fastNode2 == nullptr));
+
+    // Need to check the rest of the gtPrev links.
+    while (slowNode != nullptr)
+    {
+        assert(slowNode->*prev == prevSlowNode && "Invalid prev link");
+        prevSlowNode = slowNode;
+        slowNode     = slowNode->*next;
+    }
 }
 
 #endif // _LIR_H_

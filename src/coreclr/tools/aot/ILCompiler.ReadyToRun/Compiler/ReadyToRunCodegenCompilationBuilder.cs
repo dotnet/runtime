@@ -23,7 +23,6 @@ namespace ILCompiler
 
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
-        private bool _ibcTuning;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
@@ -39,7 +38,10 @@ namespace ILCompiler
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
+        private bool _hotColdSplitting;
         private CompositeImageSettings _compositeImageSettings;
+        private ulong _imageBase;
+        private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
 
         private string _jitPath;
         private string _outputFile;
@@ -47,20 +49,18 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ILProvider _ilProvider = new ReadyToRunILProvider();
+        private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
             CompilerTypeSystemContext context,
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
-            : base(context, group, new CoreRTNameMangler())
+            : base(context, group, new NativeAotNameMangler())
         {
+            _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
-
-            // R2R field layout needs compilation group information
-            ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -83,7 +83,7 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
-            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (_context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }
@@ -107,12 +107,6 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
             _jitPath = jitPath;
-            return this;
-        }
-
-        public ReadyToRunCodegenCompilationBuilder UseIbcTuning(bool ibcTuning)
-        {
-            _ibcTuning = ibcTuning;
             return this;
         }
 
@@ -192,9 +186,27 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseHotColdSplitting(bool hotColdSplitting)
+        {
+            _hotColdSplitting = hotColdSplitting;
+            return this;
+        }
+
         public ReadyToRunCodegenCompilationBuilder UseCompositeImageSettings(CompositeImageSettings compositeImageSettings)
         {
             _compositeImageSettings = compositeImageSettings;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseImageBase(ulong imageBase)
+        {
+            _imageBase = imageBase;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseNodeFactoryOptimizationFlags(NodeFactoryOptimizationFlags flags)
+        {
+            _nodeFactoryOptimizationFlags = flags;
             return this;
         }
 
@@ -240,14 +252,22 @@ namespace ILCompiler
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                flags);
+                flags,
+                _nodeFactoryOptimizationFlags,
+                _imageBase
+                );
 
             factory.CompositeImageSettings = _compositeImageSettings;
 
-            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
+            
             List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };
+            if (_hotColdSplitting)
+            {
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
+            }
 
             switch (_optimizationMode)
             {
@@ -270,9 +290,6 @@ namespace ILCompiler
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
             }
-
-            if (_ibcTuning)
-                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
             if (!_isJitInitialized)
             {

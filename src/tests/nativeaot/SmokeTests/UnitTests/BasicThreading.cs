@@ -263,7 +263,7 @@ class ThreadTest
         s_startedThreads.Add(t4);
 
         // Start an unstarted resurrected thread.
-        // CoreCLR: ThreadStateException, CoreRT: no exception.
+        // CoreCLR: ThreadStateException, NativeAOT: no exception.
         Thread unstartedResurrected = Resurrector.CreateUnstartedResurrected();
         unstartedResurrected.Start();
         s_startedThreads.Add(unstartedResurrected);
@@ -507,7 +507,7 @@ class ThreadTest
 
         TestMaxStackSize();
         TestStartShutdown();
-        
+
         TestConcurrentIsBackgroundProperty();
 
         return (s_failed == 0) ? BasicThreading.Pass : BasicThreading.Fail;

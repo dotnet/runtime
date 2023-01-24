@@ -14,16 +14,16 @@ void make_palstr_arr(size_t argc, const pal::char_t** argv, std::vector<pal::str
     }
 }
 
-bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
+bool hostpolicy_init_t::init(const host_interface_t* input, hostpolicy_init_t* init)
 {
     // Check if there are any breaking changes.
     if (input->version_hi != HOST_INTERFACE_LAYOUT_VERSION_HI)
     {
-        trace::error(_X("The version of the data layout used to initialize %s is [0x%04x]; expected version [0x%04x]"), LIBHOSTPOLICY_NAME, input->version_hi, HOST_INTERFACE_LAYOUT_VERSION_HI);
+        trace::error(_X("The version of the data layout used to initialize %s is [0x%04zx]; expected version [0x%04x]"), LIBHOSTPOLICY_NAME, input->version_hi, HOST_INTERFACE_LAYOUT_VERSION_HI);
         return false;
     }
 
-    trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
+    trace::verbose(_X("Reading from host interface version: [0x%04zx:%zd] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
     // This check is to ensure is an old hostfxr can still load new hostpolicy.
     // We should not read garbage due to potentially shorter struct size
@@ -46,7 +46,7 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
     }
     else
     {
-        trace::error(_X("The size of the data layout used to initialize %s is %d; expected at least %d"), LIBHOSTPOLICY_NAME, input->version_lo, 
+        trace::error(_X("The size of the data layout used to initialize %s is %zd; expected at least %d"), LIBHOSTPOLICY_NAME, input->version_lo,
             offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
     }
 
@@ -57,7 +57,7 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
     {
         init->tfm = input->tfm;
     }
-    
+
     if (input->version_lo >= offsetof(host_interface_t, fx_ver) + sizeof(input->fx_ver))
     {
         init->additional_deps_serialized = input->additional_deps_serialized;
@@ -138,7 +138,7 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
     return true;
 }
 
-void hostpolicy_init_t::init_host_command(host_interface_t* input, hostpolicy_init_t* init)
+void hostpolicy_init_t::init_host_command(const host_interface_t* input, hostpolicy_init_t* init)
 {
     if (input->version_lo >= offsetof(host_interface_t, host_command) + sizeof(input->host_command))
     {

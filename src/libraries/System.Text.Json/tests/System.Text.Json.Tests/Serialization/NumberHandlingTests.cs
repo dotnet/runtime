@@ -13,6 +13,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -256,7 +257,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_Property()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"{{""MyDateTime"":{JsonSerializer.Serialize(dateTime)},""MyNullableGuid"":{JsonSerializer.Serialize(nullableGuid)}}}";
@@ -293,7 +294,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_CollectionRootType_Element()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"[{JsonSerializer.Serialize(dateTime)}]";
@@ -324,7 +325,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNumber_AsBoxed_CollectionProperty_Element()
         {
-            DateTime dateTime = DateTime.Now;
+            DateTime dateTime = DateTimeTestHelpers.FixedDateTimeValue;
             Guid? nullableGuid = Guid.NewGuid();
 
             string expected = @$"{{""MyDateTimes"":[{JsonSerializer.Serialize(dateTime)}],""MyNullableGuids"":[{JsonSerializer.Serialize(nullableGuid)}]}}";
@@ -359,7 +360,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void Number_AsCollectionElement_RoundTrip()
         {
             RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -373,17 +373,22 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
             RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+            }
         }
 
         private static void RunAsCollectionElementTest<T>(List<T> numbers)
@@ -981,7 +986,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void EscapingTest()
         {
             // Cause all characters to be escaped.
@@ -1767,7 +1771,7 @@ namespace System.Text.Json.Serialization.Tests
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[101]}", json);
 
@@ -1775,13 +1779,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, obj.Prop[0]);
 
             // Then with strings
-            options = new()
+            options = new JsonSerializerOptions()
             {
                 NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString,
                 Converters = { new AdaptableInt32Converter() }
             };
 
-            obj = new() { Prop = new List<int>() { 1 } };
+            obj = new PlainClassWithList() { Prop = new List<int>() { 1 } };
             json = JsonSerializer.Serialize(obj, options);
             Assert.Equal("{\"Prop\":[\"101\"]}", json);
 
@@ -1825,41 +1829,41 @@ namespace System.Text.Json.Serialization.Tests
 
     public class NumberHandlingTests_AsyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_AsyncStreamOverload() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
+        public NumberHandlingTests_AsyncStreamOverload() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncStreamOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncStreamOverload() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
+        public NumberHandlingTests_SyncStreamOverload() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class NumberHandlingTests_SyncOverload : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public NumberHandlingTests_SyncOverload() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
     public class NumberHandlingTests_Document : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Document() : base(JsonSerializerWrapperForString.DocumentSerializer) { }
+        public NumberHandlingTests_Document() : base(JsonSerializerWrapper.DocumentSerializer) { }
     }
 
     public class NumberHandlingTests_Element : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Element() : base(JsonSerializerWrapperForString.ElementSerializer) { }
+        public NumberHandlingTests_Element() : base(JsonSerializerWrapper.ElementSerializer) { }
     }
 
     public class NumberHandlingTests_Node : NumberHandlingTests_OverloadSpecific
     {
-        public NumberHandlingTests_Node() : base(JsonSerializerWrapperForString.NodeSerializer) { }
+        public NumberHandlingTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
     public abstract class NumberHandlingTests_OverloadSpecific
     {
-        private JsonSerializerWrapperForString Deserializer { get; }
+        private JsonSerializerWrapper Serializer { get; }
 
-        public NumberHandlingTests_OverloadSpecific(JsonSerializerWrapperForString deserializer)
+        public NumberHandlingTests_OverloadSpecific(JsonSerializerWrapper deserializer)
         {
-            Deserializer = deserializer;
+            Serializer = deserializer;
         }
 
         [Theory]
@@ -1872,7 +1876,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            Result result = await Deserializer.DeserializeWrapper<Result>(json, options);
+            Result result = await Serializer.DeserializeWrapper<Result>(json, options);
             JsonTestHelper.AssertJsonEqual(json, JsonSerializer.Serialize(result, options));
         }
 

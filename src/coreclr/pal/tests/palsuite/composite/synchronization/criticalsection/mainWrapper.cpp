@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
-Source Code: mainWrapper.c    
+Source Code: mainWrapper.c
 
 mainWrapper.c creates Composite Test Case Processes and waits for all processes to get over
 
@@ -23,7 +23,7 @@ unsigned int SLEEP_LENGTH = 0; //default
 unsigned int RELATION_ID  = 1001;
 
 
-//Strucuture to capture application wide statistics
+//Structure to capture application wide statistics
 struct applicationStatistics{
     DWORD        operationTime;
     unsigned int relationId;
@@ -39,42 +39,42 @@ struct applicationStatistics{
 int GetParameters( int argc, char **argv)
 {
 
-	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("Main Wrapper PAL -Composite Critical Section Test\n");
         printf("Usage:\n");
-	 printf("\t[PROCESS_COUNT] Greater than or Equal to  1 \n"); 
-	 printf("\t[THREAD_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n"); 
+	 printf("\t[PROCESS_COUNT] Greater than or Equal to  1 \n");
+	 printf("\t[THREAD_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n");
         printf("\t[REPEAT_COUNT] Greater than or Equal to 1\n");
-        printf("\t[RELATION_ID  [Greater than or Equal to 1]\n");        
+        printf("\t[RELATION_ID  [Greater than or Equal to 1]\n");
 
         return -1;
     }
 
     USE_PROCESS_COUNT = atoi(argv[1]);
-    if( USE_PROCESS_COUNT < 0) 
+    if( USE_PROCESS_COUNT < 0)
     {
         printf("\nPROCESS_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
    THREAD_COUNT = atoi(argv[2]);
-    if( THREAD_COUNT < 1 || THREAD_COUNT > 64) 
+    if( THREAD_COUNT < 1 || THREAD_COUNT > 64)
     {
         printf("\nTHREAD_COUNT to be greater than or equal to 1 or less than or equal to 64\n");
         return -1;
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nREPEAT_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nMain Process:Invalid RELATION_ID number, Pass greater than 1\n");
         return -1;
@@ -91,13 +91,13 @@ PALTEST(composite_synchronization_criticalsection_paltest_synchronization_critic
 {
 	unsigned int i = 0;
 	HANDLE hProcess[MAXIMUM_WAIT_OBJECTS];  //Array to hold Process handles
-	DWORD processReturnCode = 0; 
+	DWORD processReturnCode = 0;
 	int testReturnCode = PASS;
 	STARTUPINFO si[MAXIMUM_WAIT_OBJECTS];
 	PROCESS_INFORMATION pi[MAXIMUM_WAIT_OBJECTS];
 	FILE *hFile;  //handle to application results file
 	char fileName[MAX_PATH];  //file name of the application results file
-	struct applicationStatistics appStats;	 
+	struct applicationStatistics appStats;
 	DWORD dwStart=0;	//to store the tick count
 	char lpCommandLine[MAX_PATH] = "";
 	int returnCode = 0;
@@ -115,7 +115,7 @@ PALTEST(composite_synchronization_criticalsection_paltest_synchronization_critic
         Fail("Error in obtaining the parameters\n");
     }
 
-   //Initialize Application Statistics Strucuture
+   //Initialize Application Statistics Structure
  	appStats.operationTime=0;
 	appStats.relationId   = RELATION_ID;
     	appStats.processCount = USE_PROCESS_COUNT;
@@ -123,18 +123,18 @@ PALTEST(composite_synchronization_criticalsection_paltest_synchronization_critic
     	appStats.repeatCount  = REPEAT_COUNT;
     	appStats.buildNumber  = getBuildNumber();
 
-    
+
 _snprintf(fileName, MAX_PATH, "main_criticalsection_%d_.txt", RELATION_ID);
 
 hFile = fopen(fileName, "w+");
 
 if(hFile == NULL)
-    { 
+    {
         Fail("Error in opening file to write application results for Critical Section Test, and error code is %d\n", GetLastError());
     }
 
 //Start Process Time Capture
-dwStart = GetTickCount();	
+dwStart = GetTickCount();
 
 for( i = 0; i < USE_PROCESS_COUNT; i++ )
     {
@@ -142,9 +142,9 @@ for( i = 0; i < USE_PROCESS_COUNT; i++ )
         ZeroMemory( lpCommandLine, MAX_PATH );
         if ( _snprintf( lpCommandLine, MAX_PATH-1, "criticalsection %d %d %d %d", i, THREAD_COUNT, REPEAT_COUNT, RELATION_ID) < 0 )
         {
-            Trace ("Error: Insufficient commandline string length for for iteration [%d]\n",   i);
+            Trace ("Error: Insufficient commandline string length for iteration [%d]\n",   i);
         }
-        
+
         /* Zero the data structure space */
         ZeroMemory ( &pi[i], sizeof(pi[i]) );
         ZeroMemory ( &si[i], sizeof(si[i]) );
@@ -154,7 +154,7 @@ for( i = 0; i < USE_PROCESS_COUNT; i++ )
 
 	//Printing the Command Line
 	//Trace("Command Line \t %s \n", lpCommandLine);
-		
+
         //Create Process
         if(!CreateProcess( NULL, /* lpApplicationName*/
                           lpCommandLine, /* lpCommandLine */
@@ -178,7 +178,7 @@ for( i = 0; i < USE_PROCESS_COUNT; i++ )
 
     }
 
-    returnCode = WaitForMultipleObjects( USE_PROCESS_COUNT, hProcess, TRUE, INFINITE);  
+    returnCode = WaitForMultipleObjects( USE_PROCESS_COUNT, hProcess, TRUE, INFINITE);
      if( WAIT_OBJECT_0 != returnCode )
     {
         Trace("Wait for Object(s) @ Main thread for %d processes returned %d, and GetLastError value is %d\n", USE_PROCESS_COUNT, returnCode, GetLastError());
@@ -190,15 +190,15 @@ for( i = 0; i < USE_PROCESS_COUNT; i++ )
         /* check the exit code from the process */
         if( ! GetExitCodeProcess( pi[i].hProcess, &processReturnCode ) )
         {
-            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n", 
-                i, GetLastError() ); 
-           
+            Trace( "GetExitCodeProcess call failed for iteration %d with error code %u\n",
+                i, GetLastError() );
+
             testReturnCode = FAIL;
         }
 
         if(processReturnCode == FAIL)
         {
-            Trace( "Process [%d] failed and returned FAIL\n", i); 
+            Trace( "Process [%d] failed and returned FAIL\n", i);
             testReturnCode = FAIL;
         }
 
@@ -221,17 +221,17 @@ appStats.operationTime = GetTickCount() - dwStart;
 if( testReturnCode == PASS)
     {
         Trace("Test Passed\n");
-	
+
     }
     else
     {
         Fail("Test Failed\n");
-	
+
     }
-	
+
 //Write Process Result Contents to File
 if(hFile!= NULL)
-    { 
+    {
             fprintf(hFile, "%lu,%d,%d,%d,%d,%s\n", appStats.operationTime, appStats.relationId,appStats.processCount, appStats.threadCount, appStats.repeatCount, appStats.buildNumber);
     }
 

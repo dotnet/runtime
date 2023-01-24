@@ -44,17 +44,12 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsPinnableType(QCallTypeHandle type);
-
         internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
             var type = (obj.GetType() as RuntimeType)!;
-            return IsPinnableType(new QCallTypeHandle(ref type));
-            //Type type = obj.GetType ();
-            //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
+            return !RuntimeTypeHandle.HasReferences (type);
         }
 
         private static void PrelinkCore(MethodInfo m)
@@ -72,10 +67,8 @@ namespace System.Runtime.InteropServices
 
         private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
         {
-            if (structure == null)
-                throw new ArgumentNullException(nameof(structure));
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
+            ArgumentNullException.ThrowIfNull(structure);
+            ArgumentNullException.ThrowIfNull(ptr);
             PtrToStructureInternal(ptr, structure, allowValueClasses);
         }
 
@@ -125,9 +118,19 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
+#pragma warning disable 8500
+#pragma warning disable 9080
+        private static unsafe void SetInvokeArgs(ref string cookie, IntPtr *params_byref)
+        {
+            ByReference objRef = ByReference.Create(ref cookie);
+            *(ByReference*)params_byref = objRef;
+        }
+#pragma warning restore 9080
+#pragma warning restore 8500
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
-        internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
+        internal static unsafe ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {
             var key = (type, cookie);
 
@@ -162,10 +165,18 @@ namespace System.Runtime.InteropServices
                     throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
                 }
 
+                if (getInstanceMethod.ContainsGenericParameters)
+                {
+                    throw new System.TypeLoadException($"Custom marshaler '{type.FullName}' contains unassigned generic type parameter(s).");
+                }
+
                 Exception? exc;
                 try
                 {
-                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, new object[] { cookie }, out exc);
+                    IntPtr byrefStorage = default;
+                    IntPtr *pbyrefStorage = &byrefStorage;
+                    SetInvokeArgs(ref cookie, pbyrefStorage);
+                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, pbyrefStorage, out exc);
                 }
                 catch (Exception e)
                 {

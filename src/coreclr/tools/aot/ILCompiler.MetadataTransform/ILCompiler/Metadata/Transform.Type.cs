@@ -13,7 +13,7 @@ using TypeAttributes = System.Reflection.TypeAttributes;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.TypeDesc, MetadataRecord> _types =
             new EntityMap<Cts.TypeDesc, MetadataRecord>(EqualityComparer<Cts.TypeDesc>.Default);
@@ -40,25 +40,25 @@ namespace ILCompiler.Metadata
             switch (type.Category)
             {
                 case Cts.TypeFlags.SzArray:
-                    rec = _types.Create((Cts.ArrayType)type, _initSzArray ?? (_initSzArray = InitializeSzArray));
+                    rec = _types.Create((Cts.ArrayType)type, _initSzArray ??= InitializeSzArray);
                     break;
                 case Cts.TypeFlags.Array:
-                    rec = _types.Create((Cts.ArrayType)type, _initArray ?? (_initArray = InitializeArray));
+                    rec = _types.Create((Cts.ArrayType)type, _initArray ??= InitializeArray);
                     break;
                 case Cts.TypeFlags.ByRef:
-                    rec = _types.Create((Cts.ByRefType)type, _initByRef ?? (_initByRef = InitializeByRef));
+                    rec = _types.Create((Cts.ByRefType)type, _initByRef ??= InitializeByRef);
                     break;
                 case Cts.TypeFlags.Pointer:
-                    rec = _types.Create((Cts.PointerType)type, _initPointer ?? (_initPointer = InitializePointer));
+                    rec = _types.Create((Cts.PointerType)type, _initPointer ??= InitializePointer);
                     break;
                 case Cts.TypeFlags.FunctionPointer:
-                    rec = _types.Create((Cts.FunctionPointerType)type, _initFunctionPointer ?? (_initFunctionPointer = InitializeFunctionPointer));
+                    rec = _types.Create((Cts.FunctionPointerType)type, _initFunctionPointer ??= InitializeFunctionPointer);
                     break;
                 case Cts.TypeFlags.SignatureTypeVariable:
-                    rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
+                    rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ??= InitializeTypeVariable);
                     break;
                 case Cts.TypeFlags.SignatureMethodVariable:
-                    rec = _types.Create((Cts.SignatureMethodVariable)type, _initMethodVar ?? (_initMethodVar = InitializeMethodVariable));
+                    rec = _types.Create((Cts.SignatureMethodVariable)type, _initMethodVar ??= InitializeMethodVariable);
                     break;
                 default:
                     {
@@ -67,7 +67,7 @@ namespace ILCompiler.Metadata
                         if (!type.IsTypeDefinition)
                         {
                             // Instantiated generic type
-                            rec = _types.Create(type, _initTypeInst ?? (_initTypeInst = InitializeTypeInstance));
+                            rec = _types.Create(type, _initTypeInst ??= InitializeTypeInstance);
                         }
                         else
                         {
@@ -76,18 +76,17 @@ namespace ILCompiler.Metadata
                             if (_policy.GeneratesMetadata(metadataType))
                             {
                                 Debug.Assert(!_policy.IsBlocked(metadataType));
-                                rec = _types.Create(metadataType, _initTypeDef ?? (_initTypeDef = InitializeTypeDef));
+                                rec = _types.Create(metadataType, _initTypeDef ??= InitializeTypeDef);
                             }
                             else
                             {
-                                rec = _types.Create(metadataType, _initTypeRef ?? (_initTypeRef = InitializeTypeRef));
+                                rec = _types.Create(metadataType, _initTypeRef ??= InitializeTypeRef);
                             }
                         }
                     }
                     break;
             }
-            
- 
+
             Debug.Assert(rec is TypeDefinition || rec is TypeReference || rec is TypeSpecification);
 
             return rec;
@@ -178,7 +177,7 @@ namespace ILCompiler.Metadata
             Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
             MetadataRecord parentRecord = HandleType(containingType);
             TypeReference parentReferenceRecord = parentRecord as TypeReference;
-            
+
             if (parentReferenceRecord != null)
             {
                 // Easy case - parent type doesn't have a definition record.
@@ -377,7 +376,7 @@ namespace ILCompiler.Metadata
                 => entity.GetNestedTypes().GetEnumerator().MoveNext();
         }
 
-        private TypeAttributes GetTypeAttributes(Cts.MetadataType type)
+        private static TypeAttributes GetTypeAttributes(Cts.MetadataType type)
         {
             TypeAttributes result;
 

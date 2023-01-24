@@ -222,8 +222,10 @@ namespace System.Xml.Resolvers
             return base.ResolveUri(baseUri, relativeUri);
         }
 
-        public override object? GetEntity(Uri absoluteUri!!, string? role, Type? ofObjectToReturn)
+        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
+            ArgumentNullException.ThrowIfNull(absoluteUri);
+
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
@@ -260,8 +262,10 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public override bool SupportsType(Uri absoluteUri!!, Type? type)
+        public override bool SupportsType(Uri absoluteUri, Type? type)
         {
+            ArgumentNullException.ThrowIfNull(absoluteUri);
+
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
@@ -275,58 +279,53 @@ namespace System.Xml.Resolvers
             return data.SupportsType(type);
         }
 
-        public void Add(Uri uri!!, byte[] value!!)
+        public void Add(Uri uri, byte[] value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(uri, new ByteArrayChunk(value, 0, value.Length));
         }
 
-        public void Add(Uri uri!!, byte[] value!!, int offset, int count)
+        public void Add(Uri uri, byte[] value, int offset, int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (value.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset);
 
             Add(uri, new ByteArrayChunk(value, offset, count));
         }
 
-        public void Add(Uri uri!!, Stream value!!)
+        public void Add(Uri uri, Stream value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.CanSeek)
             {
                 // stream of known length -> allocate the byte array and read all data into it
                 int size = checked((int)value.Length);
                 byte[] bytes = new byte[size];
-                value.Read(bytes, 0, size);
+                value.ReadExactly(bytes);
                 Add(uri, new ByteArrayChunk(bytes));
             }
             else
             {
                 // stream of unknown length -> read into memory stream and then get internal the byte array
                 MemoryStream ms = new MemoryStream();
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = value.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                int size = checked((int)ms.Position);
-                byte[] bytes = new byte[size];
-                Array.Copy(ms.ToArray(), bytes, size);
-                Add(uri, new ByteArrayChunk(bytes));
+                value.CopyTo(ms);
+                Add(uri, new ByteArrayChunk(ms.GetBuffer(), 0, checked((int)ms.Position)));
             }
         }
 
-        public void Add(Uri uri!!, string value!!)
+        public void Add(Uri uri, string value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(uri, new StringData(value));
         }
 
@@ -341,10 +340,7 @@ namespace System.Xml.Resolvers
 
         public void Remove(Uri uri)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
             _mappings.Remove(uri);
         }
 

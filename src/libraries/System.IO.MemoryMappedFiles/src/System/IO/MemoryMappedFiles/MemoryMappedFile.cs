@@ -103,9 +103,11 @@ namespace System.IO.MemoryMappedFiles
             return CreateFromFile(path, mode, mapName, capacity, MemoryMappedFileAccess.ReadWrite);
         }
 
-        public static MemoryMappedFile CreateFromFile(string path!!, FileMode mode, string? mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             if (mapName != null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
@@ -184,10 +186,12 @@ namespace System.IO.MemoryMappedFiles
             return new MemoryMappedFile(handle, fileHandle, false);
         }
 
-        public static MemoryMappedFile CreateFromFile(FileStream fileStream!!, string? mapName, long capacity,
+        public static MemoryMappedFile CreateFromFile(FileStream fileStream, string? mapName, long capacity,
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
         {
+            ArgumentNullException.ThrowIfNull(fileStream);
+
             if (mapName != null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
@@ -258,10 +262,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
@@ -318,10 +319,7 @@ namespace System.IO.MemoryMappedFiles
         {
             ArgumentException.ThrowIfNullOrEmpty(mapName);
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
@@ -370,10 +368,7 @@ namespace System.IO.MemoryMappedFiles
 
         public MemoryMappedViewStream CreateViewStream(long offset, long size, MemoryMappedFileAccess access)
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (size < 0)
             {
@@ -407,10 +402,7 @@ namespace System.IO.MemoryMappedFiles
 
         public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size, MemoryMappedFileAccess access)
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (size < 0)
             {

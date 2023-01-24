@@ -31,6 +31,33 @@ typedef gssize host_mgreg_t;
 typedef gsize host_umgreg_t;
 #endif
 
+#ifdef ENABLE_CHECKED_CASTS
+__CAST_STYPE_TO_STYPE(host_mgreg_t, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(host_mgreg_t, guint32, UINT32_MAX)
+__CAST_STYPE_TO_STYPE(host_mgreg_t, gint16, INT16_MIN, INT16_MAX)
+__CAST_STYPE_TO_UTYPE(host_mgreg_t, guint16, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(host_mgreg_t, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(host_mgreg_t, guint8, UINT8_MAX)
+__CAST_STYPE_TO_STYPE(host_mgreg_t, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(host_mgreg_t, guint, UINT_MAX)
+
+__CAST_STYPE_TO_STYPE(gint64, host_mgreg_t, PTRDIFF_MIN, PTRDIFF_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, host_mgreg_t, PTRDIFF_MIN, PTRDIFF_MAX)
+#endif
+
+#define GHMREG_TO_INT32(v)        G_CAST_TYPE_TO_TYPE(host_mgreg_t, gint32, v)
+#define GHMREG_TO_UINT32(v)       G_CAST_TYPE_TO_TYPE(host_mgreg_t, guint32, v)
+#define GHMREG_TO_INT16(v)        G_CAST_TYPE_TO_TYPE(host_mgreg_t, gint16, v)
+#define GHMREG_TO_UINT16(v)       G_CAST_TYPE_TO_TYPE(host_mgreg_t, guint16, v)
+#define GHMREG_TO_INT8(v)         G_CAST_TYPE_TO_TYPE(host_mgreg_t, gint8, v)
+#define GHMREG_TO_UINT8(v)        G_CAST_TYPE_TO_TYPE(host_mgreg_t, guint8, v)
+
+#define GHMREG_TO_INT(v)          G_CAST_TYPE_TO_TYPE(host_mgreg_t, gint, v)
+#define GHMREG_TO_UINT(v)         G_CAST_TYPE_TO_TYPE(host_mgreg_t, guint, v)
+
+#define GINT64_TO_HMREG(v)        G_CAST_TYPE_TO_TYPE(gint64, host_mgreg_t, v)
+#define GUINT64_TO_HMREG(v)       G_CAST_TYPE_TO_TYPE(guint64, host_mgreg_t, v)
+
 /* SIZEOF_REGISTER      ... machine register size of target machine
  * TARGET_SIZEOF_VOID_P ... pointer size of target machine
  *
@@ -41,6 +68,33 @@ typedef gint32 target_mgreg_t;
 #else
 typedef gint64 target_mgreg_t;
 #endif
+
+#ifdef ENABLE_CHECKED_CASTS
+__CAST_STYPE_TO_STYPE(target_mgreg_t, gint32, INT32_MIN, INT32_MAX)
+__CAST_STYPE_TO_UTYPE(target_mgreg_t, guint32, UINT32_MAX)
+__CAST_STYPE_TO_STYPE(target_mgreg_t, gint16, INT16_MIN, INT16_MAX)
+__CAST_STYPE_TO_UTYPE(target_mgreg_t, guint16, UINT16_MAX)
+__CAST_STYPE_TO_STYPE(target_mgreg_t, gint8, INT8_MIN, INT8_MAX)
+__CAST_STYPE_TO_UTYPE(target_mgreg_t, guint8, UINT8_MAX)
+__CAST_STYPE_TO_STYPE(target_mgreg_t, gint, INT_MIN, INT_MAX)
+__CAST_STYPE_TO_UTYPE(target_mgreg_t, guint, UINT_MAX)
+
+__CAST_STYPE_TO_STYPE(gint64, target_mgreg_t, PTRDIFF_MIN, PTRDIFF_MAX)
+__CAST_UTYPE_TO_STYPE(guint64, target_mgreg_t, PTRDIFF_MIN, PTRDIFF_MAX)
+#endif
+
+#define GTMREG_TO_INT32(v)        G_CAST_TYPE_TO_TYPE(target_mgreg_t, gint32, v)
+#define GTMREG_TO_UINT32(v)       G_CAST_TYPE_TO_TYPE(target_mgreg_t, guint32, v)
+#define GTMREG_TO_INT16(v)        G_CAST_TYPE_TO_TYPE(target_mgreg_t, gint16, v)
+#define GTMREG_TO_UINT16(v)       G_CAST_TYPE_TO_TYPE(target_mgreg_t, guint16, v)
+#define GTMREG_TO_INT8(v)         G_CAST_TYPE_TO_TYPE(target_mgreg_t, gint8, v)
+#define GTMREG_TO_UINT8(v)        G_CAST_TYPE_TO_TYPE(target_mgreg_t, guint8, v)
+
+#define GTMREG_TO_INT(v)          G_CAST_TYPE_TO_TYPE(target_mgreg_t, gint, v)
+#define GTMREG_TO_UINT(v)         G_CAST_TYPE_TO_TYPE(target_mgreg_t, guint, v)
+
+#define GINT64_TO_TMREG(v)        G_CAST_TYPE_TO_TYPE(gint64, target_mgreg_t, v)
+#define GUINT64_TO_TMREG(v)       G_CAST_TYPE_TO_TYPE(guint64, target_mgreg_t, v)
 
 /* Alignment for MonoArray.vector */
 #if defined(_AIX)

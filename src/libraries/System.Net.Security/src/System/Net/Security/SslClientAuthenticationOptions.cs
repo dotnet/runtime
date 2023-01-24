@@ -31,6 +31,11 @@ namespace System.Net.Security
 
         public X509CertificateCollection? ClientCertificates { get; set; }
 
+        /// <summary>
+        /// Gets or sets the client certificate context.
+        /// </summary>
+        public SslStreamCertificateContext? ClientCertificateContext { get; set; }
+
         public X509RevocationMode CertificateRevocationCheckMode
         {
             get => _checkCertificateRevocation;
@@ -73,5 +78,13 @@ namespace System.Net.Security
         /// Use extreme caution when changing this setting.
         /// </summary>
         public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional customized policy for remote certificate
+        /// validation. If not <see langword="null"/>,
+        /// <see cref="CertificateRevocationCheckMode"/> and <see cref="SslCertificateTrust"/>
+        /// are ignored.
+        /// </summary>
+        public X509ChainPolicy? CertificateChainPolicy { get; set; }
     }
 }

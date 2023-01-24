@@ -16,6 +16,7 @@ class DefaultAssemblyBinder final : public AssemblyBinder
 public:
 
     HRESULT BindUsingPEImage(PEImage* pPEImage,
+        bool excludeAppPaths,
         BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
@@ -37,8 +38,6 @@ public:
     HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                               SString  &sPlatformResourceRoots,
                               SString  &sAppPaths);
-
-    HRESULT Bind(LPCWSTR wszCodeBase, BINDER_SPACE::Assembly **ppAssembly);
 
     HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly);
 

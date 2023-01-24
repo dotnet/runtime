@@ -11,6 +11,6 @@ typedef enum
 {
     Success = 0,
     UnknownError = 1,
-    InsufficentBuffer = 2,
+    InsufficientBuffer = 2,
     OutOfMemory = 3
 } ResultCode;

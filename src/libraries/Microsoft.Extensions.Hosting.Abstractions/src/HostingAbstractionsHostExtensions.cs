@@ -8,6 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="IHost"/> from the hosting abstractions package.
+    /// </summary>
     public static class HostingAbstractionsHostExtensions
     {
         /// <summary>
@@ -86,18 +89,18 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
-            IHostApplicationLifetime applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
+            IHostApplicationLifetime applicationLifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
 
             token.Register(state =>
             {
-                ((IHostApplicationLifetime)state).StopApplication();
+                ((IHostApplicationLifetime)state!).StopApplication();
             },
             applicationLifetime);
 
-            var waitForStop = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var waitForStop = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
             applicationLifetime.ApplicationStopping.Register(obj =>
             {
-                var tcs = (TaskCompletionSource<object>)obj;
+                var tcs = (TaskCompletionSource<object?>)obj!;
                 tcs.TrySetResult(null);
             }, waitForStop);
 

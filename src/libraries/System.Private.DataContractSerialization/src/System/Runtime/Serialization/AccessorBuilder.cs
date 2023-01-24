@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,6 +26,7 @@ namespace System.Runtime.Serialization
         private static readonly MethodInfo s_createSetterInternal = typeof(FastInvokerBuilder).GetMethod(nameof(CreateSetterInternal), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
         private static readonly MethodInfo s_make = typeof(FastInvokerBuilder).GetMethod(nameof(Make), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static)!;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "The call to MakeGenericMethod is safe due to the fact that we are preserving the constructors of type which is what Make() is doing.")]
         public static Func<object> GetMakeNewInstanceFunc(
@@ -66,15 +68,14 @@ namespace System.Runtime.Serialization
                 // Only JIT if dynamic code is supported.
                 if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                 {
+#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported.
                     var createGetterGeneric = s_createGetterInternal.MakeGenericMethod(declaringType, propertyType).CreateDelegate<Func<PropertyInfo, Getter>>();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                     return createGetterGeneric(propInfo);
                 }
                 else
                 {
-                    return (obj) =>
-                    {
-                        return propInfo.GetValue(obj);
-                    };
+                    return propInfo.GetValue;
                 }
             }
             else if (memberInfo is FieldInfo fieldInfo)
@@ -95,9 +96,8 @@ namespace System.Runtime.Serialization
             Justification = "The call to MakeGenericMethod is safe due to the fact that FastInvokerBuilder.CreateSetterInternal<T, T1> is not annotated.")]
         public static Setter CreateSetter(MemberInfo memberInfo)
         {
-            if (memberInfo is PropertyInfo)
+            if (memberInfo is PropertyInfo propInfo)
             {
-                PropertyInfo propInfo = (PropertyInfo)memberInfo;
                 if (propInfo.CanWrite)
                 {
                     Type declaringType = propInfo.DeclaringType!;
@@ -125,7 +125,9 @@ namespace System.Runtime.Serialization
                     // Only JIT if dynamic code is supported.
                     if (RuntimeFeature.IsDynamicCodeSupported || (!declaringType.IsValueType && !propertyType.IsValueType))
                     {
+#pragma warning disable IL3050 // AOT compiling should recognize that this call is gated by RuntimeFeature.IsDynamicCodeSupported.
                         var createSetterGeneric = s_createSetterInternal.MakeGenericMethod(propInfo.DeclaringType!, propInfo.PropertyType).CreateDelegate<Func<PropertyInfo, Setter>>();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
                         return createSetterGeneric(propInfo);
                     }
                     else
@@ -141,9 +143,8 @@ namespace System.Runtime.Serialization
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.NoSetMethodForProperty, propInfo.DeclaringType, propInfo.Name)));
                 }
             }
-            else if (memberInfo is FieldInfo)
+            else if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 return (ref object obj, object? val) =>
                 {
                     fieldInfo.SetValue(obj, val);

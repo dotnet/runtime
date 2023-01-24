@@ -1,5 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#include "Crst.h"
+
 class Thread;
 class CLREventStatic;
 class RuntimeInstance;
@@ -21,19 +24,18 @@ class ThreadStore
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
-    CLREventStatic      m_SuspendCompleteEvent;
-    ReaderWriterLock    m_Lock;
+    Crst                m_Lock;
 
 private:
     ThreadStore();
 
+public:
     void                    LockThreadStore();
     void                    UnlockThreadStore();
 
 public:
     class Iterator
     {
-        ReaderWriterLock::ReadHolder    m_readHolder;
         PTR_Thread                      m_pCurrentPosition;
     public:
         Iterator();
@@ -64,7 +66,6 @@ public:
     void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
-    void        WaitForSuspendComplete();
 };
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 

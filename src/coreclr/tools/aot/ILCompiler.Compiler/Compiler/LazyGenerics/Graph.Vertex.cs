@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 namespace ILCompiler
@@ -75,7 +74,7 @@ namespace ILCompiler
                 /// <summary>
                 /// Flag used during Tarjan's algorithm
                 /// </summary>
-                public bool OnStack = false;
+                public bool OnStack;
 
                 /// <summary>
                 /// Index used in Tarjan's algorithm
@@ -87,7 +86,7 @@ namespace ILCompiler
                 /// </summary>
                 public int LowLink = -1;
 
-                public sealed override String ToString()
+                public sealed override string ToString()
                 {
                     return this.Payload.ToString();
                 }
@@ -107,14 +106,13 @@ namespace ILCompiler
                 public readonly Vertex Destination;
                 public bool Flagged;
 
-                public override String ToString()
+                public override string ToString()
                 {
                     return "[" + (Flagged ? "==>" : "-->") + Destination + "]";
                 }
             }
-        
+
             private Dictionary<P, Vertex> _vertexMap = new Dictionary<P, Vertex>();
         }
     }
 }
-

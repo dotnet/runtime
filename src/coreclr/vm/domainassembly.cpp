@@ -13,8 +13,6 @@
 // Headers
 // --------------------------------------------------------------------------------
 
-#include <shlwapi.h>
-
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"
@@ -113,7 +111,7 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
-        // we have done so because of reentrancy contraints.)
+        // we have done so because of reentrancy constraints.)
 
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
@@ -340,7 +338,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
         // Atomically create a handle
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedModuleObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedModuleObject) == NULL)
@@ -603,6 +601,13 @@ void DomainAssembly::Activate()
     }
 #endif //_DEBUG
 
+#ifdef FEATURE_READYTORUN
+    if (m_pModule->IsReadyToRun())
+    {
+        m_pModule->GetReadyToRunInfo()->RegisterUnrelatedR2RModule();
+    }
+#endif
+
     RETURN;
 }
 
@@ -650,7 +655,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 
         LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
 
-        FastInterlockCompareExchangePointer(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
+        InterlockedCompareExchangeT(&m_hExposedAssemblyObject, handle, static_cast<LOADERHANDLE>(NULL));
     }
 
     if (pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject) == NULL)
@@ -803,6 +808,14 @@ void DomainAssembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
+#ifdef PROFILING_SUPPORTED
+    if (!IsProfilerNotified())
+    {
+        SetProfilerNotified();
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
+    }
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())
@@ -890,7 +903,7 @@ void DomainAssembly::SetupDebuggingConfig(void)
 
     SetDebuggerInfoBits((DebuggerAssemblyControlFlags)dacfFlags);
 
-    LOG((LF_CORDB, LL_INFO10, "Assembly %S: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
+    LOG((LF_CORDB, LL_INFO10, "Assembly %s: bits=0x%x\n", GetDebugName(), GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -968,7 +981,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
                     *pdwFlags &= (~DACF_ALLOW_JIT_OPTS);
                 }
 
-                LOG((LF_CORDB, LL_INFO10, "Assembly %S: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
+                LOG((LF_CORDB, LL_INFO10, "Assembly %s: has %s=%d,%d bits = 0x%x\n", GetDebugName(),
                      DEBUGGABLE_ATTRIBUTE_TYPE_NAME,
                      blob[2], blob[3], *pdwFlags));
             }
@@ -1060,14 +1073,17 @@ void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_pPEAssembly->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE
-    && m_pDomain.IsValid())
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        m_pDomain->EnumMemoryRegions(flags, true);
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
+        if (m_pDomain.IsValid())
+        {
+            m_pDomain->EnumMemoryRegions(flags, true);
+        }
+
         if (m_pAssembly.IsValid())
         {
             m_pAssembly->EnumMemoryRegions(flags);

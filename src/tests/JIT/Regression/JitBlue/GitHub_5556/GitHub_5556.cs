@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This test has two effectively identical methods, one of which copies
-// its input paramter to a local, allowing it to be promoted.
+// its input parameter to a local, allowing it to be promoted.
 // The JIT should be able to generate identical code for these.
 
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_5556
+public class GitHub_5556
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static long SpanAsParam(Span<long> span)
@@ -33,7 +33,7 @@ class GitHub_5556
         return value;
     }
 
-    static int Main()
+    public static int Main()
     {
         long[] a = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         Span<long> mySpan = new Span<long>(a);

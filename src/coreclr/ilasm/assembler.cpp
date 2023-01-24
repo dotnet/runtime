@@ -992,7 +992,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
             }
         }
         //--------------------------------------------------------------------------------
-        // Set the the RVA to a dummy value.  later it will be fixed
+        // Set the RVA to a dummy value.  later it will be fixed
         // up to be something correct, but if we don't emit something
         // the size of the meta-data will not be correct
         if (pFD->m_rvaLabel)
@@ -1026,7 +1026,7 @@ void Assembler::EmitByte(int val)
 void Assembler::NewSEHDescriptor(void) //sets m_SEHD
 {
     m_SEHDstack.PUSH(m_SEHD);
-    m_SEHD = new SEH_Descriptor;
+    m_SEHD = new (nothrow) SEH_Descriptor();
     if(m_SEHD == NULL) report->error("Failed to allocate SEH descriptor\n");
 }
 /**************************************************************************/
@@ -1161,7 +1161,7 @@ void Assembler::EmitLocals(BinStr* sig)
             ARG_NAME_LIST   *pAN, *pList= getArgNameList();
             if(pList)
             {
-                VarDescr*       pVD;
+                VarDescr* pVD = NULL;
                 for(pAN=pList; pAN; pAN = pAN->pNext)
                 {
                     if(pAN->dwAttr == 0) pAN->dwAttr = m_pCurMethod->m_Locals.COUNT() +1;
@@ -1681,7 +1681,7 @@ void Assembler::EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* labe
     int offset=0;
     if (pLabel == NULL) // branching forward -- no optimization
     {
-        int pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
+        BYTE pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
         AddDeferredFixup(label, m_pCurOutputPos+1,
                                        (m_CurPC + pcrelsize), pcrelsize-1);
     }
@@ -1886,9 +1886,8 @@ void Assembler::ResetEvent(__inout_z __inout char* szName, mdToken typeSpec, DWO
         report->error("Event '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    if((m_pCurEvent = new EventDescriptor))
+    if((m_pCurEvent = new (nothrow) EventDescriptor()))
     {
-        memset(m_pCurEvent,0,sizeof(EventDescriptor));
         m_pCurEvent->m_tdClass = m_pCurClass->m_cl;
         m_pCurEvent->m_szName = szName;
         m_pCurEvent->m_dwAttr = dwAttr;
@@ -1943,13 +1942,12 @@ void Assembler::ResetProp(__inout_z __inout char * szName, BinStr* bsType, DWORD
         report->error("Property '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    m_pCurProp = new PropDescriptor;
+    m_pCurProp = new (nothrow) PropDescriptor();
     if(m_pCurProp == NULL)
     {
         report->error("Failed to allocate Property Descriptor\n");
         return;
     }
-    memset(m_pCurProp,0,sizeof(PropDescriptor));
     m_pCurProp->m_tdClass = m_pCurClass->m_cl;
     m_pCurProp->m_szName = szName;
     m_pCurProp->m_dwAttr = dwAttr;
@@ -2061,8 +2059,8 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     );
     if (FAILED(hr))
     {
-        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%S'\n",
-               hr, UnicodeString);
+        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%s'\n",
+               hr, pb);
     }
     else
     {
@@ -2382,7 +2380,6 @@ void Assembler::SetSourceFileName(_In_ __nullterminated char* szName)
             if(strcmp(m_szSourceFileName,szName))
             {
                 strcpy_s(m_szSourceFileName,MAX_FILENAME_LENGTH*3+1,szName);
-                WszMultiByteToWideChar(g_uCodePage,0,szName,-1,m_wzSourceFileName,MAX_FILENAME_LENGTH);
             }
             if(m_fGeneratePDB)
             {
@@ -2549,7 +2546,7 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
         if (isParamDirective)
         {
             // Setup the custom descr list so that we can record
-            // custom attributes on this generic param contraint
+            // custom attributes on this generic param constraint
             //
             m_pCustomDescrList = pGPC->CAList();
         }
@@ -2564,7 +2561,7 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
         if (isParamDirective)
         {
             // Setup the custom descr list so that we can record
-            // custom attributes on this generic param contraint
+            // custom attributes on this generic param constraint
             //
             m_pCustomDescrList = pNewGPCDescr->CAList();
         }
@@ -2739,4 +2736,9 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         pGPC->Token(tkOwnerOfCA);
         EmitCustomAttributes(tkOwnerOfCA, pGPC->CAList());
     }
+
+    delete[] nConstraintsArr;
+    delete[] nConstraintIndexArr;
+    delete[] pConstraintsArr;
+    delete[] pGPConstraintsArr;
 }

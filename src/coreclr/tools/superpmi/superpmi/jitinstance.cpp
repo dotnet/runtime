@@ -277,7 +277,28 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     return true;
 }
 
-JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics)
+#undef DLLEXPORT
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif
+
+DLLEXPORT volatile UINT64 s_globalZero;
+// A dynamic instrumentor can rewrite this function to provide precise
+// instruction counts that SPMI will report in metrics. We need the volatile
+// read here to model to the compiler that something might actually happen in
+// this function.
+extern "C" DLLEXPORT NOINLINE void Instrumentor_GetInsCount(UINT64* result)
+{
+    // Instrumentor may have written the value already.
+    if (*result == 0)
+    {
+        *result = s_globalZero;
+    }
+}
+
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics, bool* isMinOpts)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -288,6 +309,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         int                 mcIndex;
         bool                collectThroughput;
         MetricsSummary*     metrics;
+        bool*               isMinOpts;
     } param;
     param.pThis             = this;
     param.result            = RESULT_SUCCESS; // assume success
@@ -295,6 +317,9 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
     param.metrics           = metrics;
+    param.isMinOpts         = isMinOpts;
+
+    *isMinOpts = false;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -304,6 +329,9 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     stj.Start();
 
+    UINT64 insCountBefore = 0;
+    Instrumentor_GetInsCount(&insCountBefore);
+
     PAL_TRY(Param*, pParam, &param)
     {
         uint8_t*   NEntryBlock    = nullptr;
@@ -311,6 +339,14 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         CORINFO_OS os             = CORINFO_WINNT;
 
         pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags, &os);
+        CORJIT_FLAGS jitFlags;
+        pParam->pThis->mc->repGetJitFlags(&jitFlags, sizeof(jitFlags));
+
+        *pParam->isMinOpts =
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT) ||
+            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Start();
@@ -323,6 +359,17 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             pParam->pThis->lt.Stop();
             pParam->pThis->times[0] = pParam->pThis->lt.GetCycles();
         }
+
+        CorInfoMethodRuntimeFlags flags = pParam->pThis->mc->cr->repSetMethodAttribs(pParam->info.ftn);
+        if ((flags & CORINFO_FLG_SWITCHED_TO_MIN_OPT) != 0)
+        {
+            *pParam->isMinOpts = true;
+        }
+        else if ((flags & CORINFO_FLG_SWITCHED_TO_OPTIMIZED) != 0)
+        {
+            *pParam->isMinOpts = false;
+        }
+
         if (jitResult == CORJIT_SKIPPED)
         {
             SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
@@ -405,9 +452,13 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     mc->cr->secondsToCompile = stj.GetSeconds();
 
+    UINT64 insCountAfter = 0;
+    Instrumentor_GetInsCount(&insCountAfter);
+
     if (param.result == RESULT_SUCCESS)
     {
         metrics->SuccessfulCompiles++;
+        metrics->NumExecutedInstructions += static_cast<long long>(insCountAfter - insCountBefore);
     }
     else
     {
@@ -559,7 +610,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     return param.result;
 }
 
-// Reset JitConfig, that stores Enviroment variables.
+// Reset JitConfig, that stores Environment variables.
 bool JitInstance::resetConfig(MethodContext* firstContext)
 {
     if (pnjitStartup == nullptr)

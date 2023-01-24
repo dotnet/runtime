@@ -170,7 +170,7 @@ typedef struct {
 	int start_offset;
 	int end_offset;
 	/*
-	 * The offset relative to frame_offset where the the memory described by the GC maps
+	 * The offset relative to frame_offset where the memory described by the GC maps
 	 * begins.
 	 */
 	int map_offset;
@@ -1001,7 +1001,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		cindex = i;
 
 		/*
-		 * This is not neccessary true on x86 because frames have a different size at each
+		 * This is not necessary true on x86 because frames have a different size at each
 		 * call site.
 		 */
 		//g_assert (real_frame_start >= stack_limit);

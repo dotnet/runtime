@@ -83,7 +83,7 @@
     <ItemGroup>
       <RuntimeLibToTestDependency Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' != '$(TestPackageId)'" />
 
-      <!-- Some dependent packages may be excluded from compile, consider these as candiates as well.-->
+      <!-- Some dependent packages may be excluded from compile, consider these as candidates as well.-->
       <ReferenceCopyLocalPaths Original="%(Identity)" />
       <_referenceCopyLocalPathsPackages Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')"
                                         Condition="'%(ReferenceCopyLocalPaths.RuntimeIdentifier)' == ''"

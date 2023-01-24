@@ -113,10 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
-                if (_storePal != null)
-                {
-                    _storePal.CloneTo(certificates);
-                }
+                _storePal?.CloneTo(certificates);
                 return certificates;
             }
         }
@@ -126,8 +123,10 @@ namespace System.Security.Cryptography.X509Certificates
             get { return _storePal != null; }
         }
 
-        public void Add(X509Certificate2 certificate!!)
+        public void Add(X509Certificate2 certificate)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
@@ -137,8 +136,10 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Add(certificate.Pal);
         }
 
-        public void AddRange(X509Certificate2Collection certificates!!)
+        public void AddRange(X509Certificate2Collection certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -160,8 +161,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public void Remove(X509Certificate2 certificate!!)
+        public void Remove(X509Certificate2 certificate)
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             if (_storePal == null)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotOpen);
 
@@ -171,8 +174,10 @@ namespace System.Security.Cryptography.X509Certificates
             _storePal.Remove(certificate.Pal);
         }
 
-        public void RemoveRange(X509Certificate2Collection certificates!!)
+        public void RemoveRange(X509Certificate2Collection certificates)
         {
+            ArgumentNullException.ThrowIfNull(certificates);
+
             int i = 0;
             try
             {
@@ -203,9 +208,9 @@ namespace System.Security.Cryptography.X509Certificates
         public void Close()
         {
             IStorePal? storePal = _storePal;
-            _storePal = null;
             if (storePal != null)
             {
+                _storePal = null;
                 storePal.Dispose();
             }
         }

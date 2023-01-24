@@ -9,43 +9,23 @@ namespace System.Threading.RateLimiting
     public sealed class ConcurrencyLimiterOptions
     {
         /// <summary>
-        /// Initializes the <see cref="ConcurrencyLimiterOptions"/>.
-        /// </summary>
-        /// <param name="permitLimit">Maximum number of permits that can be leased concurrently.</param>
-        /// <param name="queueProcessingOrder">Determines the behaviour of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.</param>
-        /// <param name="queueLimit">Maximum number of permits that can be queued concurrently.</param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/> or <paramref name="queueLimit"/> are less than 0.</exception>
-        public ConcurrencyLimiterOptions(int permitLimit, QueueProcessingOrder queueProcessingOrder, int queueLimit)
-        {
-            if (permitLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
-            PermitLimit = permitLimit;
-            QueueProcessingOrder = queueProcessingOrder;
-            QueueLimit = queueLimit;
-        }
-
-        /// <summary>
         /// Maximum number of permits that can be leased concurrently.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
         /// </summary>
-        public int PermitLimit { get; }
+        public int PermitLimit { get; set; }
 
         /// <summary>
-        /// Determines the behaviour of <see cref="RateLimiter.WaitAsync"/> when not enough resources can be leased.
+        /// Determines the behaviour of <see cref="RateLimiter.AcquireAsync"/> when not enough resources can be leased.
         /// </summary>
         /// <value>
         /// <see cref="QueueProcessingOrder.OldestFirst"/> by default.
         /// </value>
-        public QueueProcessingOrder QueueProcessingOrder { get; } = QueueProcessingOrder.OldestFirst;
+        public QueueProcessingOrder QueueProcessingOrder { get; set; } = QueueProcessingOrder.OldestFirst;
 
         /// <summary>
         /// Maximum number of permits that can be queued concurrently.
+        /// Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="ConcurrencyLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; }
+        public int QueueLimit { get; set; }
     }
 }

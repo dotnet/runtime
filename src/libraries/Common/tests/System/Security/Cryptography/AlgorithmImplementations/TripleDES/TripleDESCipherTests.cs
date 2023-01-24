@@ -460,7 +460,8 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         private static byte[] TripleDESEncryptDirectKey(TripleDES tdes, byte[] key, byte[] iv, byte[] plainBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, tdes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform encryptor = tdes.CreateEncryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(plainBytes, 0, plainBytes.Length);
                 cryptoStream.FlushFinalBlock();
@@ -472,7 +473,8 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         private static byte[] TripleDESDecryptDirectKey(TripleDES tdes, byte[] key, byte[] iv, byte[] cipherBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, tdes.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform decryptor = tdes.CreateDecryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, decryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
                 cryptoStream.FlushFinalBlock();

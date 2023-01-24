@@ -36,21 +36,23 @@ namespace Microsoft.Win32.RegistryTests
             //Try getting registrykey from handle for key that has been deleted.
             Assert.Throws<IOException>(() =>
             {
-                RegistryKey rk = TestRegistryKey.CreateSubKey(subKeyName);
+                using RegistryKey rk = TestRegistryKey.CreateSubKey(subKeyName);
                 SafeRegistryHandle handle = rk.Handle;
                 TestRegistryKey.DeleteSubKey(subKeyName);
-                rk = RegistryKey.FromHandle(handle, RegistryView.Default);
-                rk.CreateSubKey("TestThrows");
+
+                using RegistryKey rk2 = RegistryKey.FromHandle(handle, RegistryView.Default);
+                rk2.CreateSubKey("TestThrows").Dispose();
             });
 
             //Try getting handle on deleted key.
             Assert.Throws<IOException>(() =>
             {
-                RegistryKey rk = TestRegistryKey.CreateSubKey(subKeyName);
+                using RegistryKey rk = TestRegistryKey.CreateSubKey(subKeyName);
                 TestRegistryKey.DeleteSubKey(subKeyName);
                 SafeRegistryHandle handle = rk.Handle;
-                rk = RegistryKey.FromHandle(handle, RegistryView.Default);
-                rk.CreateSubKey("TestThrows");
+
+                using RegistryKey rk2 = RegistryKey.FromHandle(handle, RegistryView.Default);
+                rk2.CreateSubKey("TestThrows");
             });
         }
     }

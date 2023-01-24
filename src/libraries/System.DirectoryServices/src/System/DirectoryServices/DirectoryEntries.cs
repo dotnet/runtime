@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 using System.Collections;
-using System.DirectoryServices.Interop;
 
 namespace System.DirectoryServices
 {
@@ -126,10 +125,7 @@ namespace System.DirectoryServices
                     if (_enumVariant == null)
                         throw new InvalidOperationException(SR.DSNoCurrentChild);
 
-                    if (_currentEntry == null)
-                        _currentEntry = new DirectoryEntry(_enumVariant.GetValue(), _container.UsePropertyCache, _container.GetUsername(), _container.GetPassword(), _container.AuthenticationType);
-
-                    return _currentEntry;
+                    return _currentEntry ??= new DirectoryEntry(_enumVariant.GetValue(), _container.UsePropertyCache, _container.GetUsername(), _container.GetPassword(), _container.AuthenticationType);
                 }
             }
 

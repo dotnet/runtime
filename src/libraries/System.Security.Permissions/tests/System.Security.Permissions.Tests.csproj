@@ -5,6 +5,9 @@
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
     <Compile Include="CodeConnectAccessTests.cs" />
     <Compile Include="CodeGroupTests.cs" />

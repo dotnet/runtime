@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     /// thunk, as if it was generated. The node acts as a symbol for the canonical thunk
     /// method for convenience.
     /// </summary>
-    internal class ShadowConcreteUnboxingThunkNode : DependencyNodeCore<NodeFactory>, IMethodNode
+    internal sealed class ShadowConcreteUnboxingThunkNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         private IMethodNode _canonicalThunk;
 
@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies;
         }
 
-        protected override string GetName(NodeFactory factory) => $"{Method.ToString()} backed by {_canonicalThunk.GetMangledName(factory.NameMangler)}";
+        protected override string GetName(NodeFactory factory) => $"{Method} backed by {_canonicalThunk.GetMangledName(factory.NameMangler)}";
 
         public sealed override bool HasConditionalStaticDependencies => false;
         public sealed override bool HasDynamicDependencies => false;

@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
 
 # Use uname to determine what the OS is.
-OSName=$(uname -s)
+OSName=$(uname -s | tr '[:upper:]' '[:lower:]')
 
 if command -v getprop && getprop ro.product.system.model 2>&1 | grep -qi android; then
-    OSName="Android"
+    OSName="android"
 fi
 
 case "$OSName" in
-FreeBSD|Linux|NetBSD|OpenBSD|SunOS|Android)
+freebsd|linux|netbsd|openbsd|sunos|android)
     os="$OSName" ;;
-Darwin)
-    os=OSX ;;
+darwin)
+    os=osx ;;
 *)
-    echo "Unsupported OS $OSName detected, configuring as if for Linux"
-    os=Linux ;;
+    echo "Unsupported OS $OSName detected!"
+    exit 1 ;;
 esac
 
 # On Solaris, `uname -m` is discouraged, see https://docs.oracle.com/cd/E36784_01/html/E36870/uname-1.html
 # and `uname -p` returns processor type (e.g. i386 on amd64).
 # The appropriate tool to determine CPU is isainfo(1) https://docs.oracle.com/cd/E36784_01/html/E36870/isainfo-1.html.
-if [ "$os" = "SunOS" ]; then
+if [ "$os" = "sunos" ]; then
     if uname -o 2>&1 | grep -q illumos; then
         os="illumos"
     else
-        os="Solaris"
+        os="solaris"
     fi
     CPUName=$(isainfo -n)
 else
@@ -39,6 +39,10 @@ case "$CPUName" in
 
     loongarch64)
         arch=loongarch64
+        ;;
+
+    riscv64)
+        arch=riscv64
         ;;
 
     amd64|x86_64)
@@ -64,10 +68,13 @@ case "$CPUName" in
 
     s390x)
         arch=s390x
-	;;
+        ;;
 
+    ppc64le)
+        arch=ppc64le
+        ;;
     *)
-        echo "Unknown CPU $CPUName detected, configuring as if for x64"
-        arch=x64
+        echo "Unknown CPU $CPUName detected!"
+        exit 1
         ;;
 esac

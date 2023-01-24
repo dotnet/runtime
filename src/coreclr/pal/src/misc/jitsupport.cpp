@@ -54,7 +54,9 @@ static const CpuCapability CpuCapabilities[] = {
 #endif
     //{ "jscvt", HWCAP_JSCVT },
     //{ "fcma", HWCAP_FCMA },
-    //{ "lrcpc", HWCAP_LRCPC },
+#ifdef HWCAP_LRCPC
+    { "lrcpc", HWCAP_LRCPC },
+#endif
     //{ "dcpop", HWCAP_DCPOP },
     //{ "sha3", HWCAP_SHA3 },
     //{ "sm3", HWCAP_SM3 },
@@ -146,6 +148,7 @@ static unsigned long GetCpuCapabilityFlagsFromCpuInfo()
 }
 #endif // defined(HOST_ARM64) && defined(__linux__)
 
+#if defined(HOST_ARM64) && defined(TARGET_ARM64)
 PALIMPORT
 VOID
 PALAPI
@@ -153,7 +156,6 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 {
     _ASSERTE(flags);
 
-#if defined(HOST_ARM64)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
@@ -208,8 +210,8 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 //        flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_JSCVT);
 #endif
 #ifdef HWCAP_LRCPC
-//    if (hwCap & HWCAP_LRCPC)
-//        flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_LRCPC);
+      if (hwCap & HWCAP_LRCPC)
+          flags->Set(InstructionSet_Rcpc);
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
@@ -280,6 +282,9 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 
     if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
         flags->Set(InstructionSet_Atomics);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Rcpc);
 #endif // HAVE_SYSCTLBYNAME
     // CoreCLR SIMD and FP support is included in ARM64 baseline
     // On exceptional basis platforms may leave out support, but CoreCLR does not
@@ -289,10 +294,5 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     flags->Set(InstructionSet_AdvSimd);
     //    flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_FP);
 #endif // HAVE_AUXV_HWCAP_H
-#elif defined(TARGET_ARM64)
-    // Enable ARM64 based flags by default so we always crossgen
-    // ARM64 intrinsics for Linux
-    flags->Set(InstructionSet_ArmBase);
-    flags->Set(InstructionSet_AdvSimd);
-#endif // defined(HOST_ARM64)
 }
+#endif // HOST_ARM64 && TARGET_ARM64

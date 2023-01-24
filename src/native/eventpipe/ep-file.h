@@ -123,7 +123,7 @@ EP_DEFINE_GETTER(StackHashKey *, stack_hash_key, uint32_t, hash)
 StackHashKey *
 ep_stack_hash_key_init (
 	StackHashKey *key,
-	const EventPipeStackContents *stack_contents);
+	const EventPipeStackContentsInstance *stack_contents);
 
 void
 ep_stack_hash_key_fini (StackHashKey *key);
@@ -163,7 +163,7 @@ ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry);
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (
-	const EventPipeStackContents *stack_contents,
+	const EventPipeStackContentsInstance *stack_contents,
 	uint32_t id,
 	uint32_t hash);
 

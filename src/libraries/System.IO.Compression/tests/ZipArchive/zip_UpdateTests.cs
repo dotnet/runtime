@@ -93,38 +93,20 @@ namespace System.IO.Compression.Tests
             baseline = baseline.Clone();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                if (mode == ZipArchiveMode.Create)
-                {
-                    AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                    e.LastWriteTime = lastWrite;
-                    using (Stream s = e.Open()) { }
-                }
-                else
-                {
-                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
-
-                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
-                }
+                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                e.LastWriteTime = lastWrite;
+                using (Stream s = e.Open()) { }
             }
 
             test = test.Clone();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                if (mode == ZipArchiveMode.Create)
-                {
-                    AddEntry(archive, "data1.txt", data1, lastWrite);
+                AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                    e.LastWriteTime = lastWrite;
-                }
-                else
-                {
-                    Assert.Throws<InvalidOperationException>(() => AddEntry(archive, "data1.txt", data1, lastWrite));
-
-                    Assert.Throws<InvalidOperationException>(() => archive.CreateEntry("empty.txt"));
-                }
+                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                e.LastWriteTime = lastWrite;
             }
             //compare
             Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
@@ -169,14 +151,14 @@ namespace System.IO.Compression.Tests
                 {
                     s.Seek(0, SeekOrigin.End);
 
-                    byte[] data = Encoding.ASCII.GetBytes("\r\n\r\nThe answer my friend, is blowin' in the wind.");
+                    byte[] data = "\r\n\r\nThe answer my friend, is blowin' in the wind."u8.ToArray();
                     if (writeWithSpans)
                     {
-                        s.Write(data, 0, data.Length);
+                        s.Write(new ReadOnlySpan<byte>(data));
                     }
                     else
                     {
-                        s.Write(new ReadOnlySpan<byte>(data));
+                        s.Write(data, 0, data.Length);
                     }
                 }
 
@@ -355,6 +337,19 @@ namespace System.IO.Compression.Tests
                 compressionMethod = modifiedTestContent[8];
                 Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
             }
+        }
+
+        [Fact]
+        public void Update_VerifyDuplicateEntriesAreAllowed()
+        {
+            using var ms = new MemoryStream();
+            using var archive = new ZipArchive(ms, ZipArchiveMode.Update);
+
+            string entryName = "foo";
+            AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now);
+            AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now);
+
+            Assert.Equal(2, archive.Entries.Count);
         }
     }
 }

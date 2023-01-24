@@ -13,7 +13,7 @@ namespace Amd64InstrDecode
     //      MOp      // Instruction supports modrm RIP memory operations
     //      M1st     // Memory op is first operand normally src/dst
     //      MOnly    // Memory op is only operand.  May not be a write...
-    //      MUnknown // Memory op size is unknown.  Size not included in disassemby
+    //      MUnknown // Memory op size is unknown.  Size not included in disassembly
     //      MAddr    // Memory op is address load effective address
     //      M1B      // Memory op is 1  byte
     //      M2B      // Memory op is 2  bytes

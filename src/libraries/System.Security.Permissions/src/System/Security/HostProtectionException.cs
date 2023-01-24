@@ -20,18 +20,21 @@ namespace System.Security
 
         public HostProtectionException() : base()
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
 
         public HostProtectionException(string message) : base(message)
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
 
         public HostProtectionException(string message, Exception e) : base(message, e)
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
@@ -55,7 +58,7 @@ namespace System.Security
 
         public HostProtectionResource ProtectedResources { get; }
 
-        private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
+        private static void AppendResourceString(string resourceString, object attr, StringBuilder sb)
         {
             if (attr == null)
                 return;

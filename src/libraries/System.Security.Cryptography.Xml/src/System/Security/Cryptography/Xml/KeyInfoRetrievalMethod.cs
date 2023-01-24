@@ -7,8 +7,8 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfoRetrievalMethod : KeyInfoClause
     {
-        private string _uri;
-        private string _type;
+        private string? _uri;
+        private string? _type;
 
         //
         // public constructors
@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoRetrievalMethod() { }
 
-        public KeyInfoRetrievalMethod(string strUri)
+        public KeyInfoRetrievalMethod(string? strUri)
         {
             _uri = strUri;
         }
@@ -31,13 +31,13 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Uri
+        public string? Uri
         {
             get { return _uri; }
             set { _uri = value; }
         }
 
-        public string Type
+        public string? Type
         {
             get { return _type; }
             set { _type = value; }
@@ -63,8 +63,13 @@ namespace System.Security.Cryptography.Xml
             return retrievalMethodElement;
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
         }

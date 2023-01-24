@@ -94,8 +94,6 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 extern "C" bool RhInitialize();
-extern "C" void RhpEnableConservativeStackReporting();
-extern "C" void RhpShutdown();
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -113,6 +111,11 @@ extern "C" void OnFirstChanceException();
 extern "C" void OnUnhandledException();
 extern "C" void IDynamicCastableIsInterfaceImplemented();
 extern "C" void IDynamicCastableGetInterfaceImplementation();
+#ifdef FEATURE_OBJCMARSHAL
+extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
+extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
+extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+#endif
 
 typedef void(*pfn)();
 
@@ -127,6 +130,15 @@ static const pfn c_classlibFunctions[] = {
     &OnUnhandledException,
     &IDynamicCastableIsInterfaceImplemented,
     &IDynamicCastableGetInterfaceImplementation,
+#ifdef FEATURE_OBJCMARSHAL
+    &ObjectiveCMarshalTryGetTaggedMemory,
+    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
+    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+#else
+    nullptr,
+    nullptr,
+    nullptr,
+#endif
 };
 
 #ifndef _countof
@@ -135,26 +147,24 @@ static const pfn c_classlibFunctions[] = {
 
 extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
-#ifndef CORERT_DLL
-#define CORERT_ENTRYPOINT __managed__Main
+#ifndef NATIVEAOT_DLL
+#define NATIVEAOT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 #else
-#define CORERT_ENTRYPOINT __managed__Startup
+#define NATIVEAOT_ENTRYPOINT __managed__Startup
 extern "C" void __managed__Startup();
-#endif // !CORERT_DLL
+#endif // !NATIVEAOT_DLL
 
 static int InitializeRuntime()
 {
     if (!RhInitialize())
         return -1;
 
-    // RhpEnableConservativeStackReporting();
-
-    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+    void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
 
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
@@ -168,15 +178,15 @@ static int InitializeRuntime()
 
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 
-#ifdef CORERT_DLL
+#ifdef NATIVEAOT_DLL
     // Run startup method immediately for a native library
     __managed__Startup();
-#endif // CORERT_DLL
+#endif // NATIVEAOT_DLL
 
     return 0;
 }
 
-#ifndef CORERT_DLL
+#ifndef NATIVEAOT_DLL
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
 __attribute__((noinline, optnone))
@@ -202,15 +212,11 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
-    int retval = __managed__Main(argc, argv);
-
-    RhpShutdown();
-
-    return retval;
+    return __managed__Main(argc, argv);
 }
-#endif // !CORERT_DLL
+#endif // !NATIVEAOT_DLL
 
-#ifdef CORERT_DLL
+#ifdef NATIVEAOT_DLL
 static struct InitializeRuntimePointerHelper
 {
     InitializeRuntimePointerHelper()
@@ -219,10 +225,10 @@ static struct InitializeRuntimePointerHelper
     }
 } initializeRuntimePointerHelper;
 
-extern "C" void* CoreRT_StaticInitialization();
+extern "C" void* NativeAOT_StaticInitialization();
 
-void* CoreRT_StaticInitialization()
+void* NativeAOT_StaticInitialization()
 {
     return &initializeRuntimePointerHelper;
 }
-#endif // CORERT_DLL
+#endif // NATIVEAOT_DLL

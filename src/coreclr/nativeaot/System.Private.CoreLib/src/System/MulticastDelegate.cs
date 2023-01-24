@@ -5,8 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 using Internal.Runtime.CompilerServices;
 
@@ -46,7 +46,7 @@ namespace System
             return true;
         }
 
-        public override sealed bool Equals([NotNullWhen(true)] object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -61,9 +61,9 @@ namespace System
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
             var d = Unsafe.As<MulticastDelegate>(obj);
 
-            // there are 2 kind of delegate kinds for comparision
+            // there are 2 kind of delegate kinds for comparison
             // 1- Multicast (m_helperObject is Delegate[])
-            // 2- Single-cast delegate, which can be compared with a structural comparision
+            // 2- Single-cast delegate, which can be compared with a structural comparison
 
             IntPtr multicastThunk = GetThunk(MulticastThunk);
             if (m_functionPointer == multicastThunk)
@@ -79,7 +79,7 @@ namespace System
                     return false;
                 }
 
-                // Those delegate kinds with thunks put themselves into the m_firstParamter, so we can't
+                // Those delegate kinds with thunks put themselves into the m_firstParameter, so we can't
                 // blindly compare the m_firstParameter fields for equality.
                 if (object.ReferenceEquals(m_firstParameter, this))
                 {
@@ -90,7 +90,7 @@ namespace System
             }
         }
 
-        public override sealed int GetHashCode()
+        public sealed override int GetHashCode()
         {
             Delegate[]? invocationList = m_helperObject as Delegate[];
             if (invocationList == null)
@@ -109,7 +109,6 @@ namespace System
             }
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
@@ -117,14 +116,12 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? true : false;
+                return d1 is null;
             }
 
             return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(MulticastDelegate? d1, MulticastDelegate? d2)
         {
@@ -134,8 +131,7 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (d1 is null) ? false : true;
+                return d1 is not null;
             }
 
             return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
@@ -144,7 +140,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.EETypePtr);
+            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.GetEETypePtr());
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -163,7 +159,7 @@ namespace System
             return result;
         }
 
-        private bool TrySetSlot(Delegate[] a, int index, Delegate o)
+        private static bool TrySetSlot(Delegate[] a, int index, Delegate o)
         {
             if (a[index] == null && System.Threading.Interlocked.CompareExchange<Delegate>(ref a[index], o, null) == null)
                 return true;
@@ -297,7 +293,7 @@ namespace System
             return newInvocationList;
         }
 
-        private bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
+        private static bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
         {
             for (int i = 0; i < count; i++)
             {

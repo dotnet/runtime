@@ -97,7 +97,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
@@ -117,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MaxStreamWindowSize_WhenSet_WindowDoesNotScaleAboveMaximum()
         {
             const int MaxWindow = 654321;
@@ -140,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_HighValue_WindowScalesSlower()
         {
             static async Task RunTest()
@@ -161,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Runs long")]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamWindowScaleThresholdMultiplier_LowValue_WindowScalesFaster()
         {
             static async Task RunTest()

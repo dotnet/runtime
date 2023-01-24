@@ -4,7 +4,7 @@ To enable profiling set the following environment variables:
 - `CORECLR_PROFILER={_CLSID of profiler_}`
 
 # Finding the profiler library
-Once profiling is enabled there are two ways we load your profiler, with enviroment variables (cross-plat) or through the registry (Windows only)
+Once profiling is enabled there are two ways we load your profiler, with environment variables (cross-plat) or through the registry (Windows only)
 
 ## Environment Variable (cross-plat)
 Set one of the following (if all are set, the bitness-specific variables take precedence). The 32/64 ones specify which bitness of profiler is loaded

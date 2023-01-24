@@ -27,7 +27,7 @@ namespace ILCompiler
         {
             const int HeaderSize = 4;
 
-            ArrayBuilder<byte> options = new ArrayBuilder<byte>();
+            ArrayBuilder<byte> options = default(ArrayBuilder<byte>);
 
             // Reserve space for the header
             options.ZeroExtend(HeaderSize);

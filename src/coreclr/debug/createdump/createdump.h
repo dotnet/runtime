@@ -6,12 +6,13 @@
 #define ___in       _SAL1_Source_(__in, (), _In_)
 #define ___out      _SAL1_Source_(__out, (), _Out_)
 
-extern void trace_printf(const char* format, ...);
-extern void trace_verbose_printf(const char* format, ...);
 extern bool g_diagnostics;
 extern bool g_diagnosticsVerbose;
 
 #ifdef HOST_UNIX
+extern bool g_checkForSingleFile;
+extern void trace_printf(const char* format, ...);
+extern void trace_verbose_printf(const char* format, ...);
 #define TRACE(args...) trace_printf(args)
 #define TRACE_VERBOSE(args...) trace_verbose_printf(args)
 #else
@@ -51,6 +52,7 @@ typedef int T_CONTEXT;
 #include <releaseholder.h>
 #ifdef HOST_UNIX
 #include <dumpcommon.h>
+#include <clrconfignocache.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -98,12 +100,19 @@ typedef int T_CONTEXT;
 #include "crashinfo.h"
 #include "crashreportwriter.h"
 #include "dumpwriter.h"
+#include "runtimeinfo.h"
 #endif
 
 #ifndef MAX_LONGPATH
 #define MAX_LONGPATH   1024
 #endif
 
-bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
-bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool crashReport, int crashThread, int signal);
+extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
+extern bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool createDump, bool crashReport, int crashThread, int signal);
 
+extern std::string GetLastErrorString();
+extern void printf_status(const char* format, ...);
+extern void printf_error(const char* format, ...);
+
+// Keep in sync with the definitions in dbgutil.cpp and daccess.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"

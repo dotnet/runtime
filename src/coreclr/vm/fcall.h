@@ -201,7 +201,7 @@
 //        registers.
 //
 //        The while loop is to prevent the compiler from doing tail call optimizations.
-//        The helper frame interpretter needs the frame to be present.
+//        The helper frame interpreter needs the frame to be present.
 //
 //      - The MethodDesc* that this FCall implements. This MethodDesc*
 //        is part of the frame and ensures that the FCall will appear
@@ -242,7 +242,7 @@
 
 #ifdef _DEBUG
 //
-// Linked list of unmanaged methods preceeding a HelperMethodFrame push.  This
+// Linked list of unmanaged methods preceding a HelperMethodFrame push.  This
 // is linked onto the current Thread.  Each list entry is stack-allocated so it
 // can be associated with an unmanaged frame.  Each unmanaged frame needs to be
 // associated with at least one list entry.
@@ -308,6 +308,21 @@ private:
 #endif // _DEBUG
 };
 
+// These macros are used to narrowly suppress
+// warning 4611 - interaction between 'function' and C++ object destruction is non-portable
+// See usage of setjmp() and inclusion of setjmp.h for reasoning behind usage.
+#ifdef _MSC_VER
+#define DISABLE_4611()          \
+    _Pragma("warning(push)")    \
+    _Pragma("warning(disable:4611)")
+
+#define RESET_4611()    \
+    _Pragma("warning(pop)")
+#else
+#define DISABLE_4611()
+#define RESET_4611()
+#endif // _MSC_VER
+
 #define PERMIT_HELPER_METHOD_FRAME_BEGIN()                                  \
         if (1)                                                              \
         {                                                                   \
@@ -318,7 +333,9 @@ private:
         else                                \
         {                                   \
             jmp_buf ___jmpbuf;              \
+            DISABLE_4611()                  \
             setjmp(___jmpbuf);              \
+            RESET_4611()                    \
             __assume(0);                    \
         }
 
@@ -514,7 +531,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 // use the capture state machinery if the architecture has one
 //
-// For a normal build we create a loop (see explaination on RestoreState below)
+// For a normal build we create a loop (see explanation on RestoreState below)
 // We don't want a loop here for PREFAST since that causes
 //   warning 263: Using _alloca in a loop
 // And we can't use DEBUG_OK_TO_RETURN for PREFAST because the PREFAST version
@@ -780,7 +797,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_GET_RETURN_ADDRESS()                                        \
     ( static_cast<UINT_PTR>( (__helperframe.InsureInit(false, NULL)), (__helperframe.MachineState()->GetRetAddr()) ) )
 
-    // Very short routines, or routines that are guarenteed to force GC or EH
+    // Very short routines, or routines that are guaranteed to force GC or EH
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
 #define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
 
@@ -887,7 +904,7 @@ void HCallAssert(void*& cache, void* target);
 // use the NOINLINE macro to prevent the compiler from inlining it into the FCALL (which would obviously
 // mess up the unwind count).
 //
-// The other invarient that needs to hold is that the epilog walker needs to be able to get from the call to
+// The other invariant that needs to hold is that the epilog walker needs to be able to get from the call to
 // the helper routine to the end of the FCALL using trivial heurisitics.   The easiest (and only supported)
 // way of doing this is to place your helper right before a return (eg at the end of the method).  Generally
 // this is not a problem at all, since the FCALL itself will pick off some common case and then tail-call to
@@ -1272,7 +1289,7 @@ public:
 
 // The x86 JIT calling convention expects returned small types (e.g. bool) to be
 // widened on return. The C/C++ calling convention does not guarantee returned
-// small types to be widened. The small types has to be artifically widened on return
+// small types to be widened. The small types has to be artificially widened on return
 // to fit x86 JIT calling convention. Thus fcalls returning small types has to
 // use the FC_XXX_RET types to force C/C++ compiler to do the widening.
 //
@@ -1302,7 +1319,7 @@ typedef LPVOID FC_BOOL_RET;
 #else
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artifically widened on x86 and amd64
+// The return value is artificially widened on x86 and amd64
 typedef INT32 FC_BOOL_RET;
 #else
 typedef CLR_BOOL FC_BOOL_RET;
@@ -1314,7 +1331,7 @@ typedef CLR_BOOL FC_BOOL_RET;
 
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artifically widened on x86 and amd64
+// The return value is artificially widened on x86 and amd64
 typedef UINT32 FC_CHAR_RET;
 typedef INT32 FC_INT8_RET;
 typedef UINT32 FC_UINT8_RET;

@@ -76,6 +76,7 @@ namespace System.Numerics.Tests
         [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
         [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
         [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80876", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Matrix4x4IndexerSetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
         {
             var matrix = new Matrix4x4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -1690,29 +1691,13 @@ namespace System.Numerics.Tests
         {
             Matrix4x4 target = GenerateIncrementalMatrixNumber();
 
-            HashCode hash = default;
+            int expected = HashCode.Combine(
+                new Vector4(target.M11, target.M12, target.M13, target.M14),
+                new Vector4(target.M21, target.M22, target.M23, target.M24),
+                new Vector4(target.M31, target.M32, target.M33, target.M34),
+                new Vector4(target.M41, target.M42, target.M43, target.M44)
+            );
 
-            hash.Add(target.M11);
-            hash.Add(target.M12);
-            hash.Add(target.M13);
-            hash.Add(target.M14);
-
-            hash.Add(target.M21);
-            hash.Add(target.M22);
-            hash.Add(target.M23);
-            hash.Add(target.M24);
-
-            hash.Add(target.M31);
-            hash.Add(target.M32);
-            hash.Add(target.M33);
-            hash.Add(target.M34);
-
-            hash.Add(target.M41);
-            hash.Add(target.M42);
-            hash.Add(target.M43);
-            hash.Add(target.M44);
-
-            int expected = hash.ToHashCode();
             int actual = target.GetHashCode();
 
             Assert.Equal(expected, actual);
@@ -2490,7 +2475,7 @@ namespace System.Numerics.Tests
 
         // A test for Matrix4x4 comparison involving NaN values
         [Fact]
-        public void Matrix4x4EqualsNanTest()
+        public void Matrix4x4EqualsNaNTest()
         {
             Matrix4x4 a = new Matrix4x4(float.NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             Matrix4x4 b = new Matrix4x4(0, float.NaN, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -2577,23 +2562,22 @@ namespace System.Numerics.Tests
             Assert.False(o.IsIdentity);
             Assert.False(p.IsIdentity);
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
-            Assert.False(d.Equals(d));
-            Assert.False(e.Equals(e));
-            Assert.False(f.Equals(f));
-            Assert.False(g.Equals(g));
-            Assert.False(h.Equals(h));
-            Assert.False(i.Equals(i));
-            Assert.False(j.Equals(j));
-            Assert.False(k.Equals(k));
-            Assert.False(l.Equals(l));
-            Assert.False(m.Equals(m));
-            Assert.False(n.Equals(n));
-            Assert.False(o.Equals(o));
-            Assert.False(p.Equals(p));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
+            Assert.True(d.Equals(d));
+            Assert.True(e.Equals(e));
+            Assert.True(f.Equals(f));
+            Assert.True(g.Equals(g));
+            Assert.True(h.Equals(h));
+            Assert.True(i.Equals(i));
+            Assert.True(j.Equals(j));
+            Assert.True(k.Equals(k));
+            Assert.True(l.Equals(l));
+            Assert.True(m.Equals(m));
+            Assert.True(n.Equals(n));
+            Assert.True(o.Equals(o));
+            Assert.True(p.Equals(p));
         }
 
         // A test to make sure these types are blittable directly into GPU buffer memory layouts

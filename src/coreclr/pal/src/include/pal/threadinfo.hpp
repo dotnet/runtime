@@ -10,7 +10,7 @@ Module Name:
     include/pal/threadinfo.hpp
 
 Abstract:
-    Header file for thread info initialzer
+    Header file for thread info initializer
 
 
 

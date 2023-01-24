@@ -233,7 +233,7 @@ namespace System.Net.Http
                         if (_contentBytesRemaining == 0)
                         {
                             // Dispose of the registration and then check whether cancellation has been
-                            // requested. This is necessary to make determinstic a race condition between
+                            // requested. This is necessary to make deterministic a race condition between
                             // cancellation being requested and unregistering from the token.  Otherwise,
                             // it's possible cancellation could be requested just before we unregister and
                             // we then return a connection to the pool that has been or will be disposed

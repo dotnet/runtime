@@ -215,7 +215,7 @@ namespace System.IO
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
-        [return: NotNullIfNotNull("path")]
+        [return: NotNullIfNotNull(nameof(path))]
         internal static string? TrimEndingDirectorySeparator(string? path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path.AsSpan()) ?
                 path!.Substring(0, path.Length - 1) :
@@ -224,7 +224,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        internal static bool EndsInDirectorySeparator(string? path) =>
+        internal static bool EndsInDirectorySeparator([NotNullWhen(true)] string? path) =>
               !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
 
         /// <summary>

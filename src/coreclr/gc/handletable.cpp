@@ -111,7 +111,7 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     if (pTable == NULL)
         return NULL;
 
-    memset (pTable, 0, dwSize);
+    memset ((void*)pTable, 0, dwSize);
 
     // allocate the initial handle segment
     pTable->pSegmentList = SegmentAlloc(pTable);
@@ -521,6 +521,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation);
         FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation);
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
@@ -531,6 +532,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
                 FIRE_EVENT(SetGCHandle, (void *)overlapped, (void *)to, HNDTYPE_PINNED, generation);
             });
         }
+#endif
     }
 #else
     UNREFERENCED_PARAMETER(handle);
@@ -578,12 +580,14 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         int generation = g_theGCHeap->WhichGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
         //its age is consider to be min age of the user data, to be simple, we just make it 0
         if (uType == HNDTYPE_ASYNCPINNED)
         {
             generation = 0;
         }
+#endif
 
         if (uType == HNDTYPE_DEPENDENT)
         {
@@ -1116,14 +1120,14 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
             // dump the generation number and the number of blocks scanned
             LOG((LF_GC, level,     "--------------------------------------------------------------\n"));
             LOG((LF_GC, level,     "    Condemned Generation      = %d\n", i));
-            LOG((LF_GC, level,     "    Blocks Scanned            = %I64u\n", totalBlocksScanned));
+            LOG((LF_GC, level,     "    Blocks Scanned            = %llu\n", totalBlocksScanned));
 
             // if we scanned any blocks in this generation then dump some interesting numbers
             if (totalBlocksScanned)
             {
-                LOG((LF_GC, level, "    Blocks Examined           = %I64u\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
-                LOG((LF_GC, level, "    Slots Scanned             = %I64u\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
-                LOG((LF_GC, level, "    Handles Scanned           = %I64u\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
+                LOG((LF_GC, level, "    Blocks Examined           = %llu\n", pTable->_DEBUG_TotalBlocksScannedNonTrivially[i]));
+                LOG((LF_GC, level, "    Slots Scanned             = %llu\n", pTable->_DEBUG_TotalHandleSlotsScanned       [i]));
+                LOG((LF_GC, level, "    Handles Scanned           = %llu\n", pTable->_DEBUG_TotalHandlesActuallyScanned   [i]));
 
                 double blocksScanned  = (double) totalBlocksScanned;
                 double blocksExamined = (double) pTable->_DEBUG_TotalBlocksScannedNonTrivially[i];

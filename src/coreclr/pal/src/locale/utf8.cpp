@@ -245,9 +245,9 @@ public:
 class DecoderFallbackBuffer
 {
     friend class UTF8Encoding;
-    // Most implimentations will probably need an implimenation-specific constructor
+    // Most implementations will probably need an implementation-specific constructor
 
-    // internal methods that cannot be overriden that let us do our fallback thing
+    // internal methods that cannot be overridden that let us do our fallback thing
     // These wrap the internal methods so that we can check for people doing stuff that's incorrect
 
 public:
@@ -284,7 +284,7 @@ protected:
     }
 
     // Set the above values
-    // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
+    // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
     void InternalInitialize(BYTE* byteStart, WCHAR* charEnd)
     {
         this->byteStart = byteStart;
@@ -722,9 +722,9 @@ public:
 class EncoderFallbackBuffer
 {
     friend class UTF8Encoding;
-    // Most implementations will probably need an implemenation-specific constructor
+    // Most implementations will probably need an implementation-specific constructor
 
-    // Public methods that cannot be overriden that let us do our fallback thing
+    // Public methods that cannot be overridden that let us do our fallback thing
     // These wrap the internal methods so that we can check for people doing stuff that is incorrect
 
 public:
@@ -772,7 +772,7 @@ protected:
     }
 
     // Set the above values
-    // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
+    // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
     void InternalInitialize(WCHAR* charStart, WCHAR* charEnd, bool setEncoder)
     {
         this->charStart = charStart;
@@ -1075,7 +1075,7 @@ class UTF8Encoding
     DecoderReplacementFallback decoderReplacementFallback;
     DecoderExceptionFallback decoderExceptionFallback;
 
-    bool InRange(WCHAR c, WCHAR begin, WCHAR end)
+    bool InRange(int c, int begin, int end)
     {
         return begin <= c && c <= end;
     }
@@ -1093,14 +1093,14 @@ class UTF8Encoding
     void ThrowBytesOverflow()
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an encoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
         throw InsufficientBufferException("The output byte buffer is too small to contain the encoded data", "bytes");
     }
 
     void ThrowBytesOverflow(bool nothingEncoded)
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an encoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
         if (nothingEncoded){
             ThrowBytesOverflow();
         }
@@ -1109,14 +1109,14 @@ class UTF8Encoding
     void ThrowCharsOverflow()
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented a decoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented a decoder fallback with a broken GetMaxCharCount
         throw InsufficientBufferException("The output char buffer is too small to contain the encoded data", "chars");
     }
 
     void ThrowCharsOverflow(bool nothingEncoded)
     {
         // Special message to include fallback type in case fallback's GetMaxCharCount is broken
-        // This happens if user has implimented an decoder fallback with a broken GetMaxCharCount
+        // This happens if user has implemented an decoder fallback with a broken GetMaxCharCount
         if (nothingEncoded){
             ThrowCharsOverflow();
         }
@@ -1164,7 +1164,7 @@ class UTF8Encoding
         int size;
 
         // See if it was a plain char
-        // (have to check >= 0 because we have all sorts of wierd bit flags)
+        // (have to check >= 0 because we have all sorts of weird bit flags)
         if (ch < 0x100 && ch >= 0)
         {
             pSrc--;
@@ -1912,7 +1912,7 @@ public:
                         goto LongCodeWithMask16;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (WCHAR)((ch >> 8) & 0x7F);
                     pSrc += 2;
@@ -1934,7 +1934,7 @@ public:
                         goto LongCodeWithMask32;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (WCHAR)((ch >> 24) & 0x7F);
                     *(pTarget + 1) = (WCHAR)((ch >> 16) & 0x7F);
@@ -2412,7 +2412,7 @@ public:
                         goto LongCodeWithMask;
                     }
 
-                    // Unfortunately, this is endianess sensitive
+                    // Unfortunately, this is endianness sensitive
 #if BIGENDIAN
                     *pTarget = (BYTE)(ch >> 16);
                     *(pTarget + 1) = (BYTE)ch;

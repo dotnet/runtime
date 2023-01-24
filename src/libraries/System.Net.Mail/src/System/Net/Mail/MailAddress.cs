@@ -82,7 +82,7 @@ namespace System.Net.Mail
         /// <param name="address">A <see cref="string"/> that contains an email address.</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName: null, out result);
+        public static bool TryCreate([NotNullWhen(true)] string? address, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName: null, out result);
 
         /// <summary>
         /// Create a new <see cref="MailAddress"/>. Does not throw an exception if the MailAddress cannot be created.
@@ -91,7 +91,7 @@ namespace System.Net.Mail
         /// <param name="displayName">A <see cref="string"/> that contains the display name associated with address. This parameter can be null.</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, string? displayName, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName, displayNameEncoding: null, out result);
+        public static bool TryCreate([NotNullWhen(true)] string? address, string? displayName, [NotNullWhen(true)] out MailAddress? result) => TryCreate(address, displayName, displayNameEncoding: null, out result);
 
         /// <summary>
         /// Create a new <see cref="MailAddress"/>. Does not throw an exception if the MailAddress cannot be created.
@@ -101,11 +101,11 @@ namespace System.Net.Mail
         /// <param name="displayNameEncoding">The <see cref="Encoding"/> that defines the character set used for displayName</param>
         /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
-        public static bool TryCreate(string address, string? displayName, Encoding? displayNameEncoding, [NotNullWhen(true)] out MailAddress? result)
+        public static bool TryCreate([NotNullWhen(true)] string? address, string? displayName, Encoding? displayNameEncoding, [NotNullWhen(true)] out MailAddress? result)
         {
             if (TryParse(address, displayName, displayNameEncoding,
-                        out (string displayName, string user, string host, Encoding displayNameEncoding) parsed,
-                        throwExceptionIfFail: false))
+                out (string displayName, string user, string host, Encoding displayNameEncoding) parsed,
+                throwExceptionIfFail: false))
             {
                 result = new MailAddress(parsed.displayName, parsed.user, parsed.host, parsed.displayNameEncoding);
                 return true;
@@ -117,7 +117,7 @@ namespace System.Net.Mail
             }
         }
 
-        private static bool TryParse(string address, string? displayName, Encoding? displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, bool throwExceptionIfFail)
+        private static bool TryParse([NotNullWhen(true)] string? address, string? displayName, Encoding? displayNameEncoding, out (string displayName, string user, string host, Encoding displayNameEncoding) parsedData, bool throwExceptionIfFail)
         {
             if (throwExceptionIfFail)
             {
@@ -141,9 +141,9 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                if (displayName.Length >= 2 && displayName[0] == '\"' && displayName[^1] == '\"')
+                if (displayName.Length >= 2 && displayName.StartsWith('\"') && displayName.EndsWith('\"'))
                 {
-                    // Peal bounding quotes, they'll get re-added later.
+                    // Peel bounding quotes, they'll get re-added later.
                     displayName = displayName.Substring(1, displayName.Length - 2);
                 }
             }
@@ -276,8 +276,6 @@ namespace System.Net.Mail
             return StringComparer.InvariantCultureIgnoreCase.GetHashCode(ToString());
         }
 
-        private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();
-
         // Encodes the full email address, folding as needed
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
@@ -300,7 +298,7 @@ namespace System.Net.Mail
                 else
                 {
                     //encode the displayname since it's non-ascii
-                    encoder = s_encoderFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
+                    encoder = EncodedStreamFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
                     encoder.EncodeString(_displayName, _displayNameEncoding);
                     encodedAddress = encoder.GetEncodedString();
                 }

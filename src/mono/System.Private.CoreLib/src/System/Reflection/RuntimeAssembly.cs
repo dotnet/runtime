@@ -64,9 +64,11 @@ namespace System.Reflection
 
         //
         // KEEP IN SYNC WITH _MonoReflectionAssembly in /mono/mono/metadata/object-internals.h
+        // and AssemblyBuilder.cs.
         //
         #region VM dependency
         private IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
         #endregion
 
         internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
@@ -89,6 +91,7 @@ namespace System.Reflection
 
         public override bool ReflectionOnly => false;
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => GetInfo(AssemblyInfoKind.CodeBase);
 
@@ -135,8 +138,7 @@ namespace System.Reflection
 
         internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
         {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
+            ArgumentNullException.ThrowIfNull(assemblyString);
 
             if ((assemblyString.Length == 0) ||
                 (assemblyString[0] == '\0'))
@@ -265,8 +267,8 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
-                throw new ArgumentNullException(nameof(type));
+            if (name == null)
+                ArgumentNullException.ThrowIfNull(type);
 
             string? nameSpace = type?.Namespace;
 
@@ -396,8 +398,7 @@ namespace System.Reflection
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             return InternalGetSatelliteAssembly(this, culture, version, true)!;
         }

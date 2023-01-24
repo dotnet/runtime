@@ -16,6 +16,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCpuUtilization")]
-        internal static partial int GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
+        internal static partial double GetCpuUtilization(ref ProcessCpuInformation previousCpuInfo);
     }
 }

@@ -140,16 +140,11 @@ MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt_fast) \
 MONO_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_aot_failed_exception) \
-MONO_JIT_ICALL (mini_llvmonly_pop_lmf) \
 MONO_JIT_ICALL (mini_llvmonly_interp_entry_gsharedvt) \
 MONO_JIT_ICALL (mini_llvmonly_throw_exception) \
 MONO_JIT_ICALL (mini_llvmonly_rethrow_exception) \
 MONO_JIT_ICALL (mini_llvmonly_throw_corlib_exception) \
-MONO_JIT_ICALL (mini_llvmonly_resume_exception) \
 MONO_JIT_ICALL (mini_llvmonly_resume_exception_il_state) \
-MONO_JIT_ICALL (mini_llvmonly_load_exception) \
-MONO_JIT_ICALL (mini_llvmonly_clear_exception) \
-MONO_JIT_ICALL (mini_llvmonly_match_exception) \
 MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_amd64_throw_corlib_exception)	\
@@ -309,6 +304,7 @@ MONO_JIT_ICALL (mono_threads_exit_gc_unsafe_region_unbalanced) \
 MONO_JIT_ICALL (mono_threads_state_poll) \
 MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
+MONO_JIT_ICALL (mono_throw_ambiguous_implementation) \
 MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
 MONO_JIT_ICALL (mono_throw_platform_not_supported) \
@@ -321,6 +317,7 @@ MONO_JIT_ICALL (mono_value_copy_internal) \
 MONO_JIT_ICALL (mono_x86_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_x86_throw_corlib_exception)	\
 MONO_JIT_ICALL (mono_x86_throw_exception)	\
+MONO_JIT_ICALL (mini_init_method_rgctx)		\
 MONO_JIT_ICALL (native_to_interp_trampoline)	\
 MONO_JIT_ICALL (personality) \
 MONO_JIT_ICALL (pthread_getspecific) \

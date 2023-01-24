@@ -43,7 +43,7 @@
       Encoding="Unicode"/>      
   </Target> 
 
-  <Target Name="GenerateSerializationAssembly" AfterTargets="Build">
+  <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Inputs="@(ReferencePath);@(IntermediateAssembly)" Outputs="$(_SerializerDllIntermediateFolder)">
     <Delete Condition="Exists('$(_SerializerDllIntermediateFolder)') == 'true'" Files="$(_SerializerDllIntermediateFolder)" ContinueOnError="true"/>
     <Delete Condition="Exists('$(_SerializerPdbIntermediateFolder)') == 'true'" Files="$(_SerializerPdbIntermediateFolder)" ContinueOnError="true"/>
     <Delete Condition="Exists('$(_SerializerCsIntermediateFolder)') == 'true'"  Files="$(_SerializerCsIntermediateFolder)" ContinueOnError="true"/>

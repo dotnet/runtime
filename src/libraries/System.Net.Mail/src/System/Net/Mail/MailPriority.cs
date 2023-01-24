@@ -147,7 +147,7 @@ namespace System.Net.Mail
                     {
                         // Store the decoded value, we'll re-encode before sending
                         value = MimeBasePart.DecodeHeaderValue(value);
-                        _subjectEncoding = _subjectEncoding ?? inputEncoding;
+                        _subjectEncoding ??= inputEncoding;
                     }
                     // Failed to decode, just pass it through as ascii (legacy)
                     catch (FormatException) { }
@@ -252,7 +252,7 @@ namespace System.Net.Mail
             EmptySendContext context = (EmptySendContext)result.AsyncState!;
             try
             {
-                context._writer.EndGetContentStream(result).Close();
+                BaseWriter.EndGetContentStream(result).Close();
             }
             catch (Exception ex)
             {
@@ -273,10 +273,10 @@ namespace System.Net.Mail
             internal BaseWriter _writer;
         }
 
-        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode,
+        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
             AsyncCallback? callback, object? state)
         {
-            PrepareHeaders(sendEnvelope, allowUnicode);
+            PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
 
             if (Content != null)
@@ -289,15 +289,17 @@ namespace System.Net.Mail
                 IAsyncResult newResult = writer.BeginGetContentStream(EmptySendCallback, new EmptySendContext(writer, result));
                 if (newResult.CompletedSynchronously)
                 {
-                    writer.EndGetContentStream(newResult).Close();
+                    BaseWriter.EndGetContentStream(newResult).Close();
                     result.InvokeCallback();
                 }
                 return result;
             }
         }
 
-        internal void EndSend(IAsyncResult asyncResult!!)
+        internal void EndSend(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             if (Content != null)
             {
                 Content.EndSend(asyncResult);
@@ -329,11 +331,11 @@ namespace System.Net.Mail
         {
             if (sendEnvelope)
             {
-                PrepareEnvelopeHeaders(sendEnvelope, allowUnicode);
+                PrepareEnvelopeHeaders(allowUnicode);
                 writer.WriteHeaders(EnvelopeHeaders, allowUnicode);
             }
 
-            PrepareHeaders(sendEnvelope, allowUnicode);
+            PrepareHeaders(allowUnicode);
             writer.WriteHeaders(Headers, allowUnicode);
 
             if (Content != null)
@@ -346,12 +348,9 @@ namespace System.Net.Mail
             }
         }
 
-        internal void PrepareEnvelopeHeaders(bool sendEnvelope, bool allowUnicode)
+        internal void PrepareEnvelopeHeaders(bool allowUnicode)
         {
-            if (_headersEncoding == null)
-            {
-                _headersEncoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
-            }
+            _headersEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
 
             EncodeHeaders(EnvelopeHeaders, allowUnicode);
 
@@ -380,14 +379,9 @@ namespace System.Net.Mail
             }
         }
 
-        internal void PrepareHeaders(bool sendEnvelope, bool allowUnicode)
+        internal void PrepareHeaders(bool allowUnicode)
         {
-            string headerName;
-
-            if (_headersEncoding == null)
-            {
-                _headersEncoding = Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
-            }
+            _headersEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
 
             //ContentType is written directly to the stream so remove potential user duplicate
             Headers.Remove(MailHeaderInfo.GetString(MailHeaderID.ContentType)!);
@@ -396,7 +390,7 @@ namespace System.Net.Mail
 
             // add sender to headers first so that it is written first to allow the IIS smtp svc to
             // send MAIL FROM with the sender if both sender and from are present
-            headerName = MailHeaderInfo.GetString(MailHeaderID.Sender)!;
+            string headerName = MailHeaderInfo.GetString(MailHeaderID.Sender)!;
             if (Sender != null)
             {
                 Headers.InternalAdd(headerName, Sender.Encode(headerName.Length, allowUnicode));

@@ -1,1 +1,1 @@
-Sources taken from https://github.com/dotnet/linker/tree/890591b13da936d2c38a52afdaeac0db69858d4f/src/ILLink.Shared.
+Sources taken from https://github.com/dotnet/linker/tree/6aaa900a0b1268fe4a6ce3e8af4678e84ea154fd/src/ILLink.Shared.

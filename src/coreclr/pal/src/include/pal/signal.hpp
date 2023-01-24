@@ -64,7 +64,7 @@ extern "C" int SignalHandlerWorkerReturnOffset12;
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured.
+    Handles signal on the original stack where the signal occurred.
     Invoked via setcontext.
 
 Parameters :
@@ -116,15 +116,5 @@ Function :
     (no parameters, no return value)
 --*/
 void SEHCleanupSignals();
-
-/*++
-Function :
-    SEHCleanupAbort()
-
-    Restore default SIGABORT signal handlers
-
-    (no parameters, no return value)
---*/
-void SEHCleanupAbort();
 
 #endif /* _PAL_SIGNAL_HPP_ */

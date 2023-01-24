@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ret);
             property.SetGetMethod(method);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             object obj = createdType.GetConstructor(new Type[0]).Invoke(null);
             Assert.Throws<NotSupportedException>(() => property.SetValue(obj, 99, null));
         }

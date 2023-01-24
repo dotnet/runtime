@@ -429,14 +429,6 @@ mono_native_thread_os_id_get (void)
 	return (guint64)GetCurrentThreadId ();
 }
 
-gint32
-mono_native_thread_processor_id_get (void)
-{
-	PROCESSOR_NUMBER proc_num;
-	GetCurrentProcessorNumberEx (&proc_num);
-	return ((proc_num.Group << 6) | proc_num.Number);
-}
-
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
@@ -492,9 +484,9 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = high - low;
 #else // Win7 and older (or newer, still works, but much slower).
 	MEMORY_BASIC_INFORMATION info;
-	// Windows stacks are commited on demand, one page at time.
+	// Windows stacks are committed on demand, one page at time.
 	// teb->StackBase is the top from which it grows down.
-	// teb->StackLimit is commited, the lowest it has gone so far.
+	// teb->StackLimit is committed, the lowest it has gone so far.
 	// info.AllocationBase is reserved, the lowest it can go.
 	//
 	VirtualQuery (&info, &info, sizeof (info));
@@ -583,7 +575,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_exit (gsize exit_code)
 {
-	ExitThread (exit_code);
+	ExitThread ((DWORD)exit_code);
 }
 
 int

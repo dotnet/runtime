@@ -165,14 +165,14 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new SubInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new SubInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new SubInt64()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new SubUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new SubUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new SubUInt64()),
-                TypeCode.Single => s_Single ?? (s_Single = new SubSingle()),
-                TypeCode.Double => s_Double ?? (s_Double = new SubDouble()),
+                TypeCode.Int16 => s_Int16 ??= new SubInt16(),
+                TypeCode.Int32 => s_Int32 ??= new SubInt32(),
+                TypeCode.Int64 => s_Int64 ??= new SubInt64(),
+                TypeCode.UInt16 => s_UInt16 ??= new SubUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new SubUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new SubUInt64(),
+                TypeCode.Single => s_Single ??= new SubSingle(),
+                TypeCode.Double => s_Double ??= new SubDouble(),
                 _ => throw ContractUtils.Unreachable,
             };
         }
@@ -301,12 +301,12 @@ namespace System.Linq.Expressions.Interpreter
             Debug.Assert(type.IsArithmetic());
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new SubOvfInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new SubOvfInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new SubOvfInt64()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new SubOvfUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new SubOvfUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new SubOvfUInt64()),
+                TypeCode.Int16 => s_Int16 ??= new SubOvfInt16(),
+                TypeCode.Int32 => s_Int32 ??= new SubOvfInt32(),
+                TypeCode.Int64 => s_Int64 ??= new SubOvfInt64(),
+                TypeCode.UInt16 => s_UInt16 ??= new SubOvfUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new SubOvfUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new SubOvfUInt64(),
                 _ => SubInstruction.Create(type),
             };
         }

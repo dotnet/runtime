@@ -61,7 +61,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->basename_lens = g_new0 (uint32_t, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
 		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
-		a->basename_lens [i] = strlen (a->basenames [i]);
+		a->basename_lens [i] = (uint32_t)strlen (a->basenames [i]);
 	}
 	a->basenames [asm_count] = NULL;
 	a->basename_lens [asm_count] = 0;
@@ -113,7 +113,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	size_t basename_len;
 	basename_len = strlen (basename);
 
-	for (int i = 0; i < a->assembly_count; ++i) {
+	for (guint32 i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, default_alc);
@@ -131,6 +131,25 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 				if (result)
 					break;
 			}
+#ifdef ENABLE_WEBCIL
+			else {
+				/* /path/foo.dll -> /path/foo.webcil */
+				size_t n = strlen (fullpath);
+				if (n < strlen(".dll"))
+					continue;
+				n -= strlen(".dll");
+				char *fullpath2 = g_malloc (n + strlen(".webcil") + 1);
+				g_strlcpy (fullpath2, fullpath, n + 1);
+				g_strlcpy (fullpath2 + n, ".webcil", 8);
+				if (g_file_test (fullpath2, G_FILE_TEST_IS_REGULAR)) {
+					MonoImageOpenStatus status;
+					result = mono_assembly_request_open (fullpath2, &req, &status);
+				}
+				g_free (fullpath2);
+				if (result)
+					break;
+			}
+#endif
 		}
 	}
 
@@ -289,7 +308,7 @@ monovm_create_delegate (const char *assemblyName, const char *typeName, const ch
 	/* monovm_create_delegate may be called instead of monovm_execute_assembly.  Initialize the
 	 * runtime if it isn't already. */
 	if (!mono_get_root_domain())
-		mini_init (assemblyName, "v4.0.30319");
+		mini_init (assemblyName);
 	MONO_ENTER_GC_UNSAFE;
 	result = monovm_create_delegate_impl (assemblyName, typeName, methodName, delegate);
 	MONO_EXIT_GC_UNSAFE;

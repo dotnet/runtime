@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection.PortableExecutable;
@@ -13,13 +14,15 @@ namespace System.Reflection.Metadata
         internal AssemblyName GetAssemblyName(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyHashAlgorithm assemblyHashAlgorithm, AssemblyFlags flags)
         {
             string name = GetString(nameHandle);
-            // compat: normalize 'null' culture name to "" to match AssemblyName.GetAssemblyName()
+            // compat: normalize Nil culture name to "" to match original behavior of AssemblyName.GetAssemblyName()
             string cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : "";
             var hashAlgorithm = (Configuration.Assemblies.AssemblyHashAlgorithm)assemblyHashAlgorithm;
-            byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : null;
+            // compat: original native implementation used to guarantee that publicKeyOrToken is never null in this scenario.
+            byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : Array.Empty<byte>();
 
-            var assemblyName = new AssemblyName(name)
+            var assemblyName = new AssemblyName()
             {
+                Name = name,
                 Version = version,
                 CultureName = cultureName,
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
@@ -42,8 +45,22 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile!!)
+        /// <summary>
+        /// Gets the <see cref="AssemblyName"/> for a given file.
+        /// </summary>
+        /// <param name="assemblyFile">The path for the assembly which <see cref="AssemblyName"/> is to be returned.</param>
+        /// <returns>An <see cref="AssemblyName"/> that represents the given <paramref name="assemblyFile"/>.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="assemblyFile"/> is null.</exception>
+        /// <exception cref="ArgumentException">If <paramref name="assemblyFile"/> is invalid.</exception>
+        /// <exception cref="FileNotFoundException">If <paramref name="assemblyFile"/> is not found.</exception>
+        /// <exception cref="BadImageFormatException">If <paramref name="assemblyFile"/> is not a valid assembly.</exception>
+        public static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
+            if (assemblyFile is null)
+            {
+                Throw.ArgumentNull(nameof(assemblyFile));
+            }
+
             FileStream? fileStream = null;
             MemoryMappedFile? mappedFile = null;
             MemoryMappedViewAccessor? accessor = null;
@@ -68,6 +85,12 @@ namespace System.Reflection.Metadata
                     peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
                     MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                     AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+
+                    AssemblyFlags aFlags = mdReader.AssemblyTable.GetFlags();
+#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
+                    assemblyName.ProcessorArchitecture = CalculateProcArch(peReader, aFlags);
+#pragma warning restore SYSLIB0037
+
                     return assemblyName;
                 }
                 finally
@@ -80,11 +103,47 @@ namespace System.Reflection.Metadata
             }
             catch (InvalidOperationException ex)
             {
-                throw new BadImageFormatException(ex.Message);
+                throw new BadImageFormatException(ex.Message, assemblyFile, ex);
             }
         }
 
-        private AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
+        private static ProcessorArchitecture CalculateProcArch(PEReader peReader, AssemblyFlags aFlags)
+        {
+            // 0x70 specifies "reference assembly".
+            // For these, CLR wants to return None as arch so they can be always loaded, regardless of process type.
+            if (((uint)aFlags & 0xF0) == 0x70)
+                return ProcessorArchitecture.None;
+
+            PEHeaders peHeaders = peReader.PEHeaders;
+            switch (peHeaders.CoffHeader.Machine)
+            {
+                case Machine.IA64:
+                    return ProcessorArchitecture.IA64;
+                case Machine.Arm:
+                    return ProcessorArchitecture.Arm;
+                case Machine.Amd64:
+                    return ProcessorArchitecture.Amd64;
+                case Machine.I386:
+                    {
+                        CorFlags flags = peHeaders.CorHeader!.Flags;
+                        if ((flags & CorFlags.ILOnly) != 0 &&
+                            (flags & CorFlags.Requires32Bit) == 0)
+                        {
+                            // platform neutral.
+                            return ProcessorArchitecture.MSIL;
+                        }
+
+                        // requires x86
+                        return ProcessorArchitecture.X86;
+                    }
+            }
+
+            // ProcessorArchitecture is a legacy API and does not cover other Machine kinds.
+            // For example ARM64 is not expressible
+            return ProcessorArchitecture.None;
+        }
+
+        private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
 
@@ -103,7 +162,7 @@ namespace System.Reflection.Metadata
             return assemblyNameFlags;
         }
 
-        private AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
         {
             return (AssemblyContentType)(((int)flags & (int)AssemblyFlags.ContentTypeMask) >> 9);
         }

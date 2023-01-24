@@ -45,8 +45,13 @@ namespace System.IO.Pipelines
         {
         }
 
-        public override int Read(byte[] buffer!!, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
+            if (buffer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
+            }
+
             return ReadInternal(new Span<byte>(buffer, offset, count));
         }
 
@@ -59,7 +64,7 @@ namespace System.IO.Pipelines
         private int ReadInternal(Span<byte> buffer)
         {
             ValueTask<ReadResult> vt = _pipeReader.ReadAsync();
-            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().Result;
+            ReadResult result = vt.IsCompletedSuccessfully ? vt.Result : vt.AsTask().GetAwaiter().GetResult();
             return HandleReadResult(result, buffer);
         }
 
@@ -75,8 +80,13 @@ namespace System.IO.Pipelines
         public sealed override int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
 
-        public override Task<int> ReadAsync(byte[] buffer!!, int offset, int count, CancellationToken cancellationToken)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
+            if (buffer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
+            }
+
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 

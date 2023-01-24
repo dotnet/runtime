@@ -8,6 +8,9 @@
     <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="..\default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Include tests from System.Globalization.Tests -->
     <Compile Include="NlsSwitchTests.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.cs"
@@ -221,6 +224,9 @@
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="Common\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />

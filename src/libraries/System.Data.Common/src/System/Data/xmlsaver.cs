@@ -107,7 +107,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void AddXdoProperties(object? instance, XmlElement root, XmlDocument xd)
+        internal void AddXdoProperties(object? instance, XmlElement root)
         {
             if (instance == null)
             {
@@ -123,13 +123,13 @@ namespace System.Data
 
             for (int i = 0; i < pds.Count; i++)
             {
-                AddXdoProperty(pds[i], instance, root, xd);
+                AddXdoProperty(pds[i], instance, root);
             }
             return;
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root, XmlDocument xd)
+        internal void AddXdoProperty(PropertyDescriptor pd, object instance, XmlElement root)
         {
             Type type = pd.PropertyType;
             bool bisDataColumn = false;
@@ -172,7 +172,7 @@ namespace System.Data
                 return;
             }
             // SDUB: perf: Why not have this as a table?
-            // there are several xdo properties that equal to some xml attributes, we should not explicitly ouput them.
+            // there are several xdo properties that equal to some xml attributes, we should not explicitly output them.
             if (
                 string.Equals(pd.Name, "Namespace", StringComparison.Ordinal) ||
                 string.Equals(pd.Name, "PrimaryKey", StringComparison.Ordinal) ||
@@ -224,7 +224,7 @@ namespace System.Data
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields, typeof(DesignerSerializationVisibilityAttribute))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The DynamicDependency ensures the correct members are preserved.")]
-        private bool ContainsDesignerSerializationVisibleAttribute(PropertyDescriptor pd) => pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible);
+        private static bool ContainsDesignerSerializationVisibleAttribute(PropertyDescriptor pd) => pd.Attributes.Contains(DesignerSerializationVisibilityAttribute.Visible);
 
         internal static string XmlDataTypeName(Type type)
         {
@@ -341,7 +341,7 @@ namespace System.Data
             return props != null && props.Count != 0;
         }
 
-        private bool HaveExtendedProperties(DataSet ds)
+        private static bool HaveExtendedProperties(DataSet ds)
         {
             if (_PropsNotEmpty(ds._extendedProperties))
             {
@@ -374,7 +374,7 @@ namespace System.Data
             return false;
         }// HaveExtendedProperties
 
-        internal void WriteSchemaRoot(XmlDocument xd, XmlElement rootSchema, string targetNamespace)
+        internal void WriteSchemaRoot(XmlElement rootSchema, string targetNamespace)
         {
             /*
                         if (_ds != null)
@@ -597,11 +597,11 @@ namespace System.Data
             }
             if (_ds != null)
             {
-                WriteSchemaRoot(xd, rootSchema, _ds.Namespace);
+                WriteSchemaRoot(rootSchema, _ds.Namespace);
             }
             else
             {
-                WriteSchemaRoot(xd, rootSchema, _dt.Namespace);
+                WriteSchemaRoot(rootSchema, _dt.Namespace);
             }
 
             // register the root element and associated NS
@@ -665,7 +665,7 @@ namespace System.Data
                 // probably we need to throw an exception
                 FillDataSetElement(xd, ds, dt);
                 rootSchema.AppendChild(_dsElement);
-                AddXdoProperties(_ds, _dsElement, xd);
+                AddXdoProperties(_ds, _dsElement);
                 AddExtendedProperties(ds!._extendedProperties, _dsElement);
 
 
@@ -687,7 +687,7 @@ namespace System.Data
             // DataSet properties
             if (_ds != null)
             {
-                AddXdoProperties(_ds, _dsElement, xd);
+                AddXdoProperties(_ds, _dsElement);
                 AddExtendedProperties(_ds._extendedProperties, _dsElement);
             }
 
@@ -747,7 +747,7 @@ namespace System.Data
                 }
                 else
                 {
-                    AppendChildWithoutRef(rootSchema, top[i].Namespace, el, Keywords.XSD_ELEMENT);
+                    AppendChildWithoutRef(top[i].Namespace, el);
                     XmlElement node = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_ELEMENT, Keywords.XSDNS);
                     node.SetAttribute(Keywords.REF, ((string)_prefixes[top[i].Namespace]!) + ':' + top[i].EncodedTableName);
                     dsCompositor.AppendChild(node);
@@ -758,7 +758,7 @@ namespace System.Data
             _dsElement.RemoveChild(_constraintSeparator);
             rootSchema.AppendChild(_dsElement);
 
-            // Output all non-heirarchical relations without constraints
+            // Output all non-hierarchical relations without constraints
 
             DataRelation[] rels = Array.Empty<DataRelation>();
             if (ds != null && _tables.Count > 0)
@@ -955,7 +955,7 @@ namespace System.Data
 
             XmlElement rootSchema = xd.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SCHEMA, Keywords.XSDNS);
             _sRoot = rootSchema;
-            WriteSchemaRoot(xd, rootSchema, dt.Namespace);
+            WriteSchemaRoot(rootSchema, dt.Namespace);
 
             _ = FillDataSetElement(xd, null, dt);
 
@@ -1016,7 +1016,7 @@ namespace System.Data
             Debug.Assert(ds == null || dt == null);
             Debug.Assert(_dsElement != null);
 
-            DataSet? dataSet = (ds != null) ? ds : dt!.DataSet;
+            DataSet? dataSet = ds ?? dt!.DataSet;
             if (dataSet != null)
             {
                 _dsElement.SetAttribute(Keywords.NAME, XmlConvert.EncodeLocalName(dataSet.DataSetName));
@@ -1093,7 +1093,7 @@ namespace System.Data
             _fileName = Path.GetFileNameWithoutExtension(fs.Name);
             _fileExt = Path.GetExtension(fs.Name);
             if (!string.IsNullOrEmpty(_filePath))
-                _filePath = _filePath + "\\";
+                _filePath += "\\";
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
@@ -1204,13 +1204,9 @@ namespace System.Data
         {
             for (XmlNode? n = schema.FirstChild; n != null; n = n.NextSibling)
             {
-                if (n is XmlElement)
+                if (n is XmlElement e && e.GetAttribute(Keywords.NAME) == name)
                 {
-                    XmlElement e = (XmlElement)n;
-                    if (e.GetAttribute(Keywords.NAME) == name)
-                    {
-                        return e;
-                    }
+                    return e;
                 }
             }
             return null;
@@ -1222,7 +1218,7 @@ namespace System.Data
             if (schemaEl == null)
             {
                 schemaEl = _dc!.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SCHEMA, Keywords.XSDNS);
-                WriteSchemaRoot(_dc, schemaEl, NamespaceURI);
+                WriteSchemaRoot(schemaEl, NamespaceURI);
                 if (!string.IsNullOrEmpty(NamespaceURI))
                 {
                     string prefix = Keywords.APP + Convert.ToString(++_prefixCount, CultureInfo.InvariantCulture);
@@ -1444,7 +1440,7 @@ namespace System.Data
             }
 
             if (col.GetType() != typeof(DataColumn))
-                AddXdoProperties(col, root, dc);
+                AddXdoProperties(col, root);
             else
                 AddColumnProperties(col, root);
 
@@ -1560,14 +1556,14 @@ namespace System.Data
                 _ => null!,
             };
 
-        internal void AppendChildWithoutRef(XmlElement node, string Namespace, XmlElement el, string refString)
+        internal void AppendChildWithoutRef(string Namespace, XmlElement el)
         {
             XmlElement schNode = GetSchema(Namespace);
             if (FindTypeNode(schNode, el.GetAttribute(Keywords.NAME)) == null)
                 schNode.AppendChild(el);
         }
 
-        internal XmlElement? FindTypeNode(XmlElement node, string strType)
+        internal static XmlElement? FindTypeNode(XmlElement node, string strType)
         {
             if (node == null)
                 return null;
@@ -1600,7 +1596,7 @@ namespace System.Data
         // we write out column Ordinals only if the table contains columns
         // that map both to Attributes and Elements
 
-        private bool HasMixedColumns(DataTable table)
+        private static bool HasMixedColumns(DataTable table)
         {
             bool hasAttributes = false;
             bool hasElements = false;
@@ -1676,7 +1672,7 @@ namespace System.Data
             return AutoGenerated(unique.Key.ColumnsReference[0]);
         }
 
-        private bool AutoGenerated(ForeignKeyConstraint fk)
+        private static bool AutoGenerated(ForeignKeyConstraint fk)
         {
             return AutoGenerated(fk, true);
         }
@@ -1783,7 +1779,7 @@ namespace System.Data
                 root.SetAttribute(Keywords.MSD_LOCALE, Keywords.MSDNS, table.Locale.ToString());
             }
 
-            AddXdoProperties(table, root, dc);
+            AddXdoProperties(table, root);
 
             DataColumnCollection columns = table.Columns;
 
@@ -1864,7 +1860,7 @@ namespace System.Data
                 XmlElement sc = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLECONTENT, Keywords.XSDNS);
 
                 if (colTxt.GetType() != typeof(DataColumn))
-                    AddXdoProperties(colTxt, sc, dc);
+                    AddXdoProperties(colTxt, sc);
                 else
                     AddColumnProperties(colTxt, sc);
                 AddExtendedProperties(colTxt._extendedProperties, sc);
@@ -1992,10 +1988,8 @@ namespace System.Data
                 XmlElement? constraint;
                 DataColumn[] fields;
 
-                if (constraints[i] is UniqueConstraint)
+                if (constraints[i] is UniqueConstraint unique)
                 {
-                    UniqueConstraint unique = (UniqueConstraint)constraints[i];
-
                     if (IsAutoGenerated(unique))
                         continue;
 
@@ -2571,7 +2565,7 @@ namespace System.Data
                     object columnValue = row[col, version];
                     // if the object is built in type or if it implements IXMLSerializable, write the start Element, otherwise
                     //(if CDT and does not implement IXmlSerializable) skip it
-                    if (!col.IsCustomType || !col.IsValueCustomTypeInstance(columnValue) || (typeof(IXmlSerializable).IsAssignableFrom(columnValue.GetType())))
+                    if (!col.IsCustomType || !DataColumn.IsValueCustomTypeInstance(columnValue) || (typeof(IXmlSerializable).IsAssignableFrom(columnValue.GetType())))
                     {
                         _xmlw.WriteStartElement(colPrefix, col.EncodedColumnName, col.Namespace);
                         startElementSkipped = false;
@@ -2592,7 +2586,7 @@ namespace System.Data
                     { // Columns type is CDT
                         if ((columnValue != DBNull.Value) && (!col.ImplementsINullable || !DataStorage.IsObjectSqlNull(columnValue)))
                         {
-                            if (col.IsValueCustomTypeInstance(columnValue)/* && valuesType != typeof(Type)*/)
+                            if (DataColumn.IsValueCustomTypeInstance(columnValue)/* && valuesType != typeof(Type)*/)
                             {// value is also CDT
                                 // if SkippedElement, ie does not implement IXMLSerializable: so No Polymorphysm Support.
                                 if (!startElementSkipped && columnValue.GetType() != col.DataType)
@@ -2911,7 +2905,7 @@ namespace System.Data
             _xmlw.Flush();
         }
 
-        private ArrayList GetNestedChildRelations(DataRow row)
+        private static ArrayList GetNestedChildRelations(DataRow row)
         {
             ArrayList list = new ArrayList();
 
@@ -3002,7 +2996,7 @@ namespace System.Data
                         if (col._columnMapping != MappingType.SimpleContent)
                         {
                             // again, if we need to use XmlSerializer, do not write start Element (see above for more info)
-                            if (!col.IsCustomType || !col.IsValueCustomTypeInstance(value) || (typeof(IXmlSerializable).IsAssignableFrom(value.GetType())))
+                            if (!col.IsCustomType || !DataColumn.IsValueCustomTypeInstance(value) || (typeof(IXmlSerializable).IsAssignableFrom(value.GetType())))
                             {
                                 _xmlw.WriteStartElement(colPrefix, col.EncodedColumnName, col.Namespace);
                                 startElementSkipped = false;
@@ -3023,7 +3017,7 @@ namespace System.Data
                         }
                         else
                         { // Columns type is CDT
-                            if (col.IsValueCustomTypeInstance(value) /*&& !(value is Type) && valuesType != typeof(Type)*/)
+                            if (DataColumn.IsValueCustomTypeInstance(value) /*&& !(value is Type) && valuesType != typeof(Type)*/)
                             {// value is also CDT
                                 // if SkippedElement, ie does not implement IXMLSerializable: so No Polymorphism Support.
                                 if (!startElementSkipped && valuesType != col.DataType)

@@ -50,13 +50,19 @@ namespace System.Net.Http.Functional.Tests
 
                         string initialUser = response.Headers.GetValues(NtAuthTests.UserHeaderName).First();
 
-                        _output.WriteLine($"Starting test as {WindowsIdentity.GetCurrent().Name}");
+                        using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+                        {
+                            _output.WriteLine($"Starting test as {currentIdentity.Name}");
+                        }
 
                         // get token and run another request as different user.
                         WindowsIdentity.RunImpersonated(_fixture.TestAccount.AccountTokenHandle, () =>
                         {
-                            _output.WriteLine($"Running test as {WindowsIdentity.GetCurrent().Name}");
-                            Assert.Equal(_fixture.TestAccount.AccountName, WindowsIdentity.GetCurrent().Name);
+                            using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+                            {
+                                _output.WriteLine($"Running test as {currentIdentity.Name}");
+                                Assert.Equal(_fixture.TestAccount.AccountName, currentIdentity.Name);
+                            }
 
                             requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
                             requestMessage.Version = new Version(1, 1);

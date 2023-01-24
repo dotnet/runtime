@@ -54,45 +54,6 @@ namespace System.Collections.Concurrent
         /// </remarks>
         private const int MaxLockNumber = 1024;
 
-        /// <summary>Whether TValue is a type that can be written atomically (i.e., with no danger of torn reads).</summary>
-        private static readonly bool s_isValueWriteAtomic = IsValueWriteAtomic();
-
-        /// <summary>Determines whether type TValue can be written atomically.</summary>
-        private static bool IsValueWriteAtomic()
-        {
-            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
-            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-
-            if (!typeof(TValue).IsValueType ||
-                typeof(TValue) == typeof(IntPtr) ||
-                typeof(TValue) == typeof(UIntPtr))
-            {
-                return true;
-            }
-
-            switch (Type.GetTypeCode(typeof(TValue)))
-            {
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Single:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                    return true;
-
-                case TypeCode.Double:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return IntPtr.Size == 8;
-
-                default:
-                    return false;
-            }
-        }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentDictionary{TKey,TValue}"/>
         /// class that is empty, has the default concurrency level, has the default initial capacity, and
@@ -139,9 +100,11 @@ namespace System.Collections.Concurrent
         /// <param name="collection">The <see cref="IEnumerable{T}"/> whose elements are copied to the new <see cref="ConcurrentDictionary{TKey,TValue}"/>.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing keys.</param>
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is a null reference (Nothing in Visual Basic).</exception>
-        public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection!!, IEqualityComparer<TKey>? comparer)
+        public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(comparer)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             InitializeFromCollection(collection);
         }
 
@@ -160,9 +123,11 @@ namespace System.Collections.Concurrent
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is a null reference (Nothing in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="concurrencyLevel"/> is less than 1.</exception>
         /// <exception cref="ArgumentException"><paramref name="collection"/> contains one or more duplicate keys.</exception>
-        public ConcurrentDictionary(int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection!!, IEqualityComparer<TKey>? comparer)
+        public ConcurrentDictionary(int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(concurrencyLevel, DefaultCapacity, growLockArray: false, comparer)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             InitializeFromCollection(collection);
         }
 
@@ -204,14 +169,8 @@ namespace System.Collections.Concurrent
 
         internal ConcurrentDictionary(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<TKey>? comparer)
         {
-            if (concurrencyLevel < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositive);
-            }
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ConcurrentDictionary_CapacityMustNotBeNegative);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(concurrencyLevel);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard
             // any buckets.
@@ -307,7 +266,7 @@ namespace System.Collections.Concurrent
         /// found and removed; otherwise, false.
         /// </returns>
         /// <remarks>
-        /// Both the specifed key and value must match the entry in the dictionary for it to be removed.
+        /// Both the specified key and value must match the entry in the dictionary for it to be removed.
         /// The key is compared using the dictionary's comparer (or the default comparer for <typeparamref name="TKey"/>
         /// if no comparer was provided to the dictionary when it was constructed).  The value is compared using the
         /// default comparer for <typeparamref name="TValue"/>.
@@ -590,7 +549,11 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (s_isValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = newValue;
                                 }
@@ -666,12 +629,11 @@ namespace System.Collections.Concurrent
         /// elements in the source <see cref="ICollection"/> is greater than the available space from <paramref name="index"/> to
         /// the end of the destination <paramref name="array"/>.
         /// </exception>
-        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array!!, int index)
+        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
-            }
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             int locksAcquired = 0;
             try
@@ -927,7 +889,11 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (s_isValueWriteAtomic)
+                                // Do the reference type check up front to handle many cases of shared generics.
+                                // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                // for the remaining shared generic cases the field access here would disqualify inlining,
+                                // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
                                 {
                                     node._value = value;
                                 }
@@ -1789,12 +1755,10 @@ namespace System.Collections.Concurrent
         /// cref="ICollection"/>
         /// is greater than the available space from <paramref name="index"/> to the end of the destination
         /// <paramref name="array"/>.</exception>
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ConcurrentDictionary_IndexIsNegative);
-            }
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             int locksAcquired = 0;
             try
@@ -1866,20 +1830,8 @@ namespace System.Collections.Concurrent
         #endregion
 
 
-        private bool AreAllBucketsEmpty()
-        {
-            int[] countPerLock = _tables._countPerLock;
-
-            for (int i = 0; i < countPerLock.Length; i++)
-            {
-                if (countPerLock[i] != 0)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private bool AreAllBucketsEmpty() =>
+            _tables._countPerLock.AsSpan().IndexOfAnyExcept(0) < 0;
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the
@@ -2101,15 +2053,22 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var keys = new List<TKey>(count);
+                if (count == 0)
+                {
+                    return ReadOnlyCollection<TKey>.Empty;
+                }
+
+                var keys = new TKey[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        keys.Add(current._key);
+                        keys[n++] = current._key;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TKey>(keys);
             }
@@ -2135,15 +2094,22 @@ namespace System.Collections.Concurrent
                     ThrowHelper.ThrowOutOfMemoryException();
                 }
 
-                var values = new List<TValue>(count);
+                if (count == 0)
+                {
+                    return ReadOnlyCollection<TValue>.Empty;
+                }
+
+                var values = new TValue[count];
                 Node?[] buckets = _tables._buckets;
+                int n = 0;
                 for (int i = 0; i < buckets.Length; i++)
                 {
                     for (Node? current = buckets[i]; current != null; current = current._next)
                     {
-                        values.Add(current._value);
+                        values[n++] = current._value;
                     }
                 }
+                Debug.Assert(n == count);
 
                 return new ReadOnlyCollection<TValue>(values);
             }
@@ -2254,6 +2220,47 @@ namespace System.Collections.Concurrent
             public bool MoveNext() => _enumerator.MoveNext();
 
             public void Reset() => _enumerator.Reset();
+        }
+    }
+
+    internal static class ConcurrentDictionaryTypeProps<T>
+    {
+        /// <summary>Whether T's type can be written atomically (i.e., with no danger of torn reads).</summary>
+        internal static readonly bool IsWriteAtomic = IsWriteAtomicPrivate();
+
+        private static bool IsWriteAtomicPrivate()
+        {
+            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
+            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
+
+            if (!typeof(T).IsValueType ||
+                typeof(T) == typeof(IntPtr) ||
+                typeof(T) == typeof(UIntPtr))
+            {
+                return true;
+            }
+
+            switch (Type.GetTypeCode(typeof(T)))
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.SByte:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                    return true;
+
+                case TypeCode.Double:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    return IntPtr.Size == 8;
+
+                default:
+                    return false;
+            }
         }
     }
 

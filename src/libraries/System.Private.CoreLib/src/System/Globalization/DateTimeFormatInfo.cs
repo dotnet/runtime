@@ -228,7 +228,7 @@ namespace System.Globalization
             return monthNames;
         }
 
-        // Invariant DateTimeFormatInfo doesn't have user-overriden values
+        // Invariant DateTimeFormatInfo doesn't have user-overridden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
             : this(CultureInfo.InvariantCulture._cultureData, GregorianCalendar.GetDefaultInstance())
@@ -249,7 +249,7 @@ namespace System.Globalization
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
             Debug.Assert(cultureData != null);
-            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initalized calendarId");
+            Debug.Assert(calendarId != CalendarId.UNINITIALIZED_VALUE, "[DateTimeFormatInfo.Populate] Expected initialized calendarId");
 
             if (firstDayOfWeek == -1)
             {
@@ -260,22 +260,10 @@ namespace System.Globalization
                 calendarWeekRule = cultureData.CalendarWeekRule;
             }
 
-            if (amDesignator == null)
-            {
-                amDesignator = cultureData.AMDesignator;
-            }
-            if (pmDesignator == null)
-            {
-                pmDesignator = cultureData.PMDesignator;
-            }
-            if (timeSeparator == null)
-            {
-                timeSeparator = cultureData.TimeSeparator;
-            }
-            if (dateSeparator == null)
-            {
-                dateSeparator = cultureData.DateSeparator(calendarId);
-            }
+            amDesignator ??= cultureData.AMDesignator;
+            pmDesignator ??= cultureData.PMDesignator;
+            timeSeparator ??= cultureData.TimeSeparator;
+            dateSeparator ??= cultureData.DateSeparator(calendarId);
 
             allLongTimePatterns = _cultureData.LongTimes;
             Debug.Assert(allLongTimePatterns.Length > 0, "[DateTimeFormatInfo.Populate] Expected some long time patterns");
@@ -358,11 +346,7 @@ namespace System.Globalization
         {
             get
             {
-                if (amDesignator == null)
-                {
-                    amDesignator = _cultureData.AMDesignator;
-                }
-
+                amDesignator ??= _cultureData.AMDesignator;
                 Debug.Assert(amDesignator != null, "DateTimeFormatInfo.AMDesignator, amDesignator != null");
                 return amDesignator;
             }
@@ -476,8 +460,10 @@ namespace System.Globalization
         /// <summary>
         /// Get the era value by parsing the name of the era.
         /// </summary>
-        public int GetEra(string eraName!!)
+        public int GetEra(string eraName)
         {
+            ArgumentNullException.ThrowIfNull(eraName);
+
             // The Era Name and Abbreviated Era Name
             // for Taiwan Calendar on non-Taiwan SKU returns empty string (which
             // would be matched below) but we don't want the empty string to give
@@ -597,10 +583,7 @@ namespace System.Globalization
         {
             get
             {
-                if (dateSeparator == null)
-                {
-                    dateSeparator = _cultureData.DateSeparator(Calendar.ID);
-                }
+                dateSeparator ??= _cultureData.DateSeparator(Calendar.ID);
                 Debug.Assert(dateSeparator != null, "DateTimeFormatInfo.DateSeparator, dateSeparator != null");
                 return dateSeparator;
             }
@@ -794,11 +777,7 @@ namespace System.Globalization
         {
             get
             {
-                if (pmDesignator == null)
-                {
-                    pmDesignator = _cultureData.PMDesignator;
-                }
-
+                pmDesignator ??= _cultureData.PMDesignator;
                 Debug.Assert(pmDesignator != null, "DateTimeFormatInfo.PMDesignator, pmDesignator != null");
                 return pmDesignator;
             }
@@ -973,10 +952,7 @@ namespace System.Globalization
         {
             get
             {
-                if (timeSeparator == null)
-                {
-                    timeSeparator = _cultureData.TimeSeparator;
-                }
+                timeSeparator ??= _cultureData.TimeSeparator;
                 Debug.Assert(timeSeparator != null, "DateTimeFormatInfo.TimeSeparator, timeSeparator != null");
                 return timeSeparator;
             }
@@ -1290,14 +1266,14 @@ namespace System.Globalization
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < DateTimeFormat.allStandardFormats.Length; i++)
+            foreach (char standardFormat in DateTimeFormat.AllStandardFormats)
             {
-                string[] strings = GetAllDateTimePatterns(DateTimeFormat.allStandardFormats[i]);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string pattern in GetAllDateTimePatterns(standardFormat))
                 {
-                    results.Add(strings[j]);
+                    results.Add(pattern);
                 }
             }
+
             return results.ToArray();
         }
 
@@ -1583,8 +1559,10 @@ namespace System.Globalization
             }
         }
 
-        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi!!)
+        public static DateTimeFormatInfo ReadOnly(DateTimeFormatInfo dtfi)
         {
+            ArgumentNullException.ThrowIfNull(dtfi);
+
             if (dtfi.IsReadOnly)
             {
                 return dtfi;

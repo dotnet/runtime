@@ -44,7 +44,7 @@ namespace System.Collections.ObjectModel
 
                 if ((uint)index >= (uint)items.Count)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
 
                 SetItem(index, value);
@@ -101,7 +101,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             InsertItem(index, item);
@@ -129,7 +129,7 @@ namespace System.Collections.ObjectModel
 
             if ((uint)index >= (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             RemoveItem(index);
@@ -209,7 +209,7 @@ namespace System.Collections.ObjectModel
                 Type sourceType = typeof(T);
                 if (!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType)))
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 //
@@ -219,7 +219,7 @@ namespace System.Collections.ObjectModel
                 object?[]? objects = array as object[];
                 if (objects == null)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 int count = items.Count;
@@ -232,7 +232,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
             }
         }

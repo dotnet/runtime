@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 
@@ -29,6 +30,20 @@ namespace System.Net.WebSockets
         public bool UseDefaultCredentials
         {
             get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public Version HttpVersion
+        {
+            get => Net.HttpVersion.Version11;
+            [UnsupportedOSPlatform("browser")]
+            set => throw new PlatformNotSupportedException();
+        }
+
+        public System.Net.Http.HttpVersionPolicy HttpVersionPolicy
+        {
+            get => HttpVersionPolicy.RequestVersionOrLower;
+            [UnsupportedOSPlatform("browser")]
             set => throw new PlatformNotSupportedException();
         }
 
@@ -62,6 +77,13 @@ namespace System.Net.WebSockets
 
         [UnsupportedOSPlatform("browser")]
         public System.Net.CookieContainer Cookies
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public bool CollectHttpResponseDetails
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

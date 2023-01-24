@@ -16,8 +16,8 @@ namespace System.Net.Http
 {
     internal sealed class WinHttpRequestStream : Stream
     {
-        private static readonly byte[] s_crLfTerminator = new byte[] { 0x0d, 0x0a }; // "\r\n"
-        private static readonly byte[] s_endChunk = new byte[] { 0x30, 0x0d, 0x0a, 0x0d, 0x0a }; // "0\r\n\r\n"
+        private static readonly byte[] s_crLfTerminator = "\r\n"u8.ToArray();
+        private static readonly byte[] s_endChunk = "0\r\n\r\n"u8.ToArray();
 
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
@@ -97,8 +97,13 @@ namespace System.Net.Http
                 Task.CompletedTask;
         }
 
-        public override Task WriteAsync(byte[] buffer!!, int offset, int count, CancellationToken token)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
+            if (buffer is null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

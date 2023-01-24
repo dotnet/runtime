@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+// This file is a verbatim copy of the Windows OS header with PE file structure definitions.
+
+
 //
 // ===========================================================================
 // File: ntimage.h
@@ -403,7 +406,7 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 
 #define IMAGE_FIRST_SECTION( ntheader ) ((PIMAGE_SECTION_HEADER)        \
     ((ULONG_PTR)ntheader +                                              \
-     FIELD_OFFSET( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
+     offsetof( IMAGE_NT_HEADERS, OptionalHeader ) +                 \
      VAL16(((PIMAGE_NT_HEADERS)(ntheader))->FileHeader.SizeOfOptionalHeader)  \
     ))
 
@@ -470,22 +473,6 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 #define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
 #define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
 #define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
-
-#ifdef _MSC_VER
-//
-// Non-COFF Object file header
-//
-
-typedef struct ANON_OBJECT_HEADER {
-    USHORT  Sig1;            // Must be IMAGE_FILE_MACHINE_UNKNOWN
-    USHORT  Sig2;            // Must be 0xffff
-    USHORT  Version;         // >= 1 (implies the CLSID field is present)
-    USHORT  Machine;
-    ULONG   TimeDateStamp;
-    CLSID   ClassID;         // Used to invoke CoCreateInstance
-    ULONG   SizeOfData;      // Size of data that follows the header
-} ANON_OBJECT_HEADER;
-#endif
 
 //
 // Section header format.

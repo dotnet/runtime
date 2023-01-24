@@ -1,5 +1,13 @@
 <Project>
   <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadTasksAssemblyPath)" />
   <Import Project="..\Directory.Build.targets" />
+  
+  <PropertyGroup>
+    <!-- Central place to set the versions of all mono pkgprojs. -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+    <StableVersion Condition="'$(IsShippingPackage)' != 'true' and '$(MSBuildProjectExtension)' == '.pkgproj'" />
+  </PropertyGroup>
+  
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 </Project>

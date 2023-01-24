@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
@@ -13,6 +14,9 @@ namespace System.Diagnostics
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -42,7 +46,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets execution path</summary>
-        private string GetPathToOpenFile()
+        private static string GetPathToOpenFile()
         {
             return "/usr/bin/open";
         }
@@ -52,6 +56,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get
@@ -66,6 +73,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get
@@ -95,7 +105,7 @@ namespace System.Diagnostics
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
 
-        private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
+        private static Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
             return Interop.libproc.proc_pid_rusage(Environment.ProcessId);
         }

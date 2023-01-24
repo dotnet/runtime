@@ -5,33 +5,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime;
-using System.Text;
-
-using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
     using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
     using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using TypeEntryToRegister = TypeLoaderEnvironment.TypeEntryToRegister;
     using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using HandleBasedGenericTypeLookup = TypeLoaderEnvironment.HandleBasedGenericTypeLookup;
-    using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
-    using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-    using ThunkKind = CallConverterThunk.ThunkKind;
-    using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
     internal static class LowLevelListExtensions
     {
@@ -56,23 +42,6 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    [Flags]
-    internal enum FieldLoadState
-    {
-        None = 0,
-        Instance = 1,
-        Statics = 2,
-    }
-
-    public static class TypeBuilderApi
-    {
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
-        {
-            TypeBuilder.ResolveMultipleCells(cells, out fixups);
-        }
-    }
-
-
     internal class TypeBuilder
     {
         public TypeBuilder()
@@ -80,21 +49,17 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderEnvironment.Instance.VerifyTypeLoaderLockHeld();
         }
 
-        private const int MinimumValueTypeSize = 0x1;
-
         /// <summary>
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 
         private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
 
         private LowLevelList<TypeDesc> _typesThatNeedPreparation;
-
-        private object _epoch = new object();
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -103,48 +68,23 @@ namespace Internal.Runtime.TypeLoader
         // Helper exception to abort type building if we do not find the generic type template
         internal class MissingTemplateException : Exception
         {
+            public MissingTemplateException()
+                // Cannot afford calling into resource manager from here, even to get the default message for System.Exception.
+                // This exception is always caught and rethrown as something more user friendly.
+                : base("Template is missing") { }
         }
 
 
-        private bool CheckAllHandlesValidForMethod(MethodDesc method)
-        {
-            if (!method.OwningType.RetrieveRuntimeTypeHandleIfPossible())
-                return false;
-
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                if (!method.Instantiation[i].RetrieveRuntimeTypeHandleIfPossible())
-                    return false;
-
-            return true;
-        }
-
-        internal bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
-        {
-            result = IntPtr.Zero;
-
-            if (!method.IsNonSharableMethod || !CheckAllHandlesValidForMethod(method))
-                return false;
-
-            RuntimeTypeHandle[] genMethodArgs = method.Instantiation.Length > 0 ? new RuntimeTypeHandle[method.Instantiation.Length] : Empty<RuntimeTypeHandle>.Array;
-            for (int i = 0; i < method.Instantiation.Length; i++)
-                genMethodArgs[i] = method.Instantiation[i].RuntimeTypeHandle;
-
-            return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
-        }
-
-        internal bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
+        internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
                 return true;
 
-            bool allHandlesValid = CheckAllHandlesValidForMethod(method);
-
-            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... " + (allHandlesValid ? "(All type arg handles valid)" : ""));
+            TypeLoaderLogger.WriteLine("Looking for method dictionary for method " + method.ToString() + " ... ");
 
             IntPtr methodDictionary;
 
-            if ((allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new HandleBasedGenericMethodLookup(method), out methodDictionary)) ||
-                 (!allHandlesValid && TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionaryForComponents(new MethodDescBasedGenericMethodLookup(method), out methodDictionary)))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -156,7 +96,7 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Register the type for preparation. The preparation will be done once the current type is prepared.
-        /// This is the prefered way to get a dependent type prepared because of it avoids issues with cycles and recursion.
+        /// This is the preferred way to get a dependent type prepared because of it avoids issues with cycles and recursion.
         /// </summary>
         public void RegisterForPreparation(TypeDesc type)
         {
@@ -177,8 +117,7 @@ namespace Internal.Runtime.TypeLoader
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
 
-            if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -218,7 +157,7 @@ namespace Internal.Runtime.TypeLoader
             ParseNativeLayoutInfo(genericMethod);
         }
 
-        private void InsertIntoNeedsTypeHandleList(TypeBuilderState state, TypeDesc type)
+        private void InsertIntoNeedsTypeHandleList(TypeDesc type)
         {
             if ((type is DefType) || (type is ArrayType) || (type is PointerType) || (type is ByRefType))
             {
@@ -241,8 +180,7 @@ namespace Internal.Runtime.TypeLoader
             if (hasTypeHandle)
                 return;
 
-            if (state == null)
-                state = type.GetOrCreateTypeBuilderState();
+            state ??= type.GetOrCreateTypeBuilderState();
 
             // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
             if (state.HasBeenPrepared)
@@ -255,15 +193,13 @@ namespace Internal.Runtime.TypeLoader
 
             if (!hasTypeHandle)
             {
-                InsertIntoNeedsTypeHandleList(state, type);
+                InsertIntoNeedsTypeHandleList(type);
             }
 
             bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (typeAsDefType.HasInstantiation)
                 {
                     if (typeAsDefType.IsTypeDefinition)
@@ -274,7 +210,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         // This call to ComputeTemplate will find the native layout info for the type, and the template
                         // For metadata loaded types, a template will not exist, but we may find the NativeLayout describing the generic dictionary
-                        typeAsDefType.ComputeTemplate(state, false);
+                        TypeDesc.ComputeTemplate(state, false);
 
                         Debug.Assert(state.TemplateType == null || (state.TemplateType is DefType && !state.TemplateType.RuntimeTypeHandle.IsNull()));
 
@@ -283,10 +219,6 @@ namespace Internal.Runtime.TypeLoader
                         // We need the instantiation arguments to register a generic type
                         foreach (var instArg in typeAsDefType.Instantiation)
                             RegisterForPreparation(instArg);
-
-                        // We need the type definition to register a generic type
-                        if (type.GetTypeDefinition() is MetadataType)
-                            RegisterForPreparation(type.GetTypeDefinition());
 
                         ParseNativeLayoutInfo(state, type);
                     }
@@ -299,13 +231,11 @@ namespace Internal.Runtime.TypeLoader
             {
                 PrepareType(((ParameterizedType)type).ParameterType);
 
-                if (type is ArrayType)
+                if (type is ArrayType typeAsArrayType)
                 {
-                    ArrayType typeAsArrayType = (ArrayType)type;
-
                     if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
                     {
-                        typeAsArrayType.ComputeTemplate(state);
+                        TypeDesc.ComputeTemplate(state);
                         Debug.Assert(state.TemplateType != null && state.TemplateType is ArrayType && !state.TemplateType.RuntimeTypeHandle.IsNull());
 
                         ParseNativeLayoutInfo(state, type);
@@ -314,9 +244,6 @@ namespace Internal.Runtime.TypeLoader
                     {
                         Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer);
                     }
-
-                    // Assert that non-valuetypes are considered to have pointer size
-                    Debug.Assert(typeAsArrayType.ParameterType.IsValueType || state.ComponentSize == IntPtr.Size);
                 }
             }
             else
@@ -330,19 +257,7 @@ namespace Internal.Runtime.TypeLoader
                 PrepareBaseTypeAndDictionaries(type);
                 PrepareRuntimeInterfaces(type);
 
-                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete." +
-                    " IsHFA = " + (state.IsHFA ? "true" : "false") +
-                    " Type size = " + (state.TypeSize.HasValue ? state.TypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Fields size = " + (state.UnalignedTypeSize.HasValue ? state.UnalignedTypeSize.Value.LowLevelToString() : "UNDEF") +
-                    " Type alignment = " + (state.FieldAlignment.HasValue ? state.FieldAlignment.Value.LowLevelToString() : "UNDEF"));
-
-#if FEATURE_UNIVERSAL_GENERICS
-                if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    state.VTableSlotsMapping = new VTableSlotMapper(state.TemplateType.RuntimeTypeHandle.GetNumVtableSlots());
-                    ComputeVTableLayout(type, state.TemplateType, state);
-                }
-#endif
+                TypeLoaderLogger.WriteLine("Layout for type " + type.ToString() + " complete.");
             }
         }
 
@@ -384,38 +299,6 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
-        {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            uint r2rNativeLayoutInfoToken;
-            GenericDictionaryCell[] cells = null;
-            NativeFormatModuleInfo r2rNativeLayoutModuleInfo;
-
-            if ((new TemplateLocator()).TryGetMetadataNativeLayout(nonTemplateMethod, out r2rNativeLayoutModuleInfo, out r2rNativeLayoutInfoToken))
-            {
-                // ReadyToRun dictionary parsing
-                NativeReader readyToRunReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(r2rNativeLayoutModuleInfo.Handle);
-                var readyToRunInfoParser = new NativeParser(readyToRunReader, r2rNativeLayoutInfoToken);
-
-                // A null readyToRunInfoParser is a valid situation to end up in
-                // This can happen if either we have exact code for a method, or if
-                // we are going to use the universal generic implementation.
-                // In both of those cases, we do not have any generic dictionary cells
-                // to put into the dictionary
-                if (!readyToRunInfoParser.IsNull)
-                {
-                    NativeFormatMetadataUnit nativeMetadataUnit = method.Context.ResolveMetadataUnit(r2rNativeLayoutModuleInfo);
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(nativeMetadataUnit, nonTemplateMethod);
-                    cells = GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, readyToRunInfoParser, nativeMetadataUnit, resolver);
-                }
-            }
-
-            return cells;
-#else
-            return null;
-#endif
-        }
-
         internal void ParseNativeLayoutInfo(InstantiatedMethod method)
         {
             TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for method " + method.ToString() + " ...");
@@ -433,39 +316,22 @@ namespace Internal.Runtime.TypeLoader
 
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
-            MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
-
-            // If the templateMethod found in the static image is missing or universal, see if the R2R layout
-            // can provide something more specific.
-            if ((templateMethod == null) || templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal))
+            MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
+            if (templateMethod == null)
             {
-                GenericDictionaryCell[] cells = GetGenericMethodDictionaryCellsForMetadataBasedLoad(method, nonTemplateMethod);
+                throw new MissingTemplateException();
+            }
 
-                if (cells != null)
-                {
-                    method.SetGenericDictionary(new GenericMethodDictionary(cells));
-                    return;
-                }
-
-                if (templateMethod == null)
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    // In this case we were looking for the r2r template to create the dictionary, but
-                    // there isn't one. This implies that we don't need a Canon specific dictionary
-                    // so just generate something empty
-                    method.SetGenericDictionary(new GenericMethodDictionary(Array.Empty<GenericDictionaryCell>()));
-                    return;
-#else
-                    throw new TypeBuilder.MissingTemplateException();
-#endif
-                }
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            {
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
             // its template MUST be a universal canonical template method
             Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
 
-            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
             var methodInfoParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
             var context = new NativeLayoutInfoLoadContext
@@ -506,47 +372,15 @@ namespace Internal.Runtime.TypeLoader
                 isTemplateUniversalCanon = state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
             }
 
-            // If we found the universal template, see if there is a ReadyToRun dictionary description available.
-            // If so, use that, otherwise, run down the template type loader path with the universal template
-            if ((state.TemplateType == null) || isTemplateUniversalCanon)
+            if (state.TemplateType == null)
             {
-                // ReadyToRun case - Native Layout is just the dictionary
-                NativeParser readyToRunInfoParser = state.GetParserForReadyToRunNativeLayoutInfo();
-                GenericDictionaryCell[] cells = null;
-
-                // A null readyToRunInfoParser is a valid situation to end up in
-                // This can happen if either we have exact code for the method on a type, or if
-                // we are going to use the universal generic implementation.
-                // In both of those cases, we do not have any generic dictionary cells
-                // to put into the dictionary
-                if (!readyToRunInfoParser.IsNull)
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    NativeFormatMetadataUnit nativeMetadataUnit = type.Context.ResolveMetadataUnit(state.R2RNativeLayoutInfo.Module);
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(nativeMetadataUnit, type);
-                    cells = GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, readyToRunInfoParser, nativeMetadataUnit, resolver);
-#endif
-                }
-                state.Dictionary = cells != null ? new GenericTypeDictionary(cells) : null;
-
-                if (state.TemplateType == null)
-                    return;
+                throw new MissingTemplateException();
             }
 
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
             NativeLayoutInfoLoadContext context = state.NativeLayoutInfo.LoadContext;
 
             NativeParser baseTypeParser = new NativeParser();
-
-            int nonGcDataSize = 0;
-            int gcDataSize = 0;
-            int threadDataSize = 0;
-            bool staticSizesMeaningful = (type is DefType) // Is type permitted to have static fields
-                                    && !isTemplateUniversalCanon; // Non-universal templates always specify their statics sizes
-                                                                  // if the size can be greater than 0
-
-            int baseTypeSize = 0;
-            bool checkBaseTypeSize = false;
 
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
@@ -559,24 +393,10 @@ namespace Internal.Runtime.TypeLoader
                         baseTypeParser = typeInfoParser.GetParserFromRelativeOffset();
                         break;
 
-                    case BagElementKind.BaseTypeSize:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.BaseTypeSize");
-                        Debug.Assert(state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal));
-                        baseTypeSize = checked((int)typeInfoParser.GetUnsigned());
-                        break;
-
                     case BagElementKind.ImplementedInterfaces:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ImplementedInterfaces");
                         // Interface handling is done entirely in NativeLayoutInterfacesAlgorithm
                         typeInfoParser.GetUnsigned();
-                        break;
-
-                    case BagElementKind.TypeFlags:
-                        {
-                            TypeLoaderLogger.WriteLine("Found BagElementKind.TypeFlags");
-                            Internal.NativeFormat.TypeFlags flags = (Internal.NativeFormat.TypeFlags)typeInfoParser.GetUnsigned();
-                            Debug.Assert(state.HasStaticConstructor == ((flags & Internal.NativeFormat.TypeFlags.HasClassConstructor) != 0));
-                        }
                         break;
 
                     case BagElementKind.ClassConstructorPointer:
@@ -587,22 +407,19 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.NonGcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.NonGcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        nonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.NonGcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GcStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        gcDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.GcDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.ThreadStaticDataSize:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.ThreadStaticDataSize");
                         // Use checked typecast to int to ensure there aren't any overflows/truncations (size value used in allocation of memory later)
-                        threadDataSize = checked((int)typeInfoParser.GetUnsigned());
-                        Debug.Assert(staticSizesMeaningful);
+                        state.ThreadDataSize = checked((int)typeInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.GcStaticDesc:
@@ -628,18 +445,6 @@ namespace Internal.Runtime.TypeLoader
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
                         break;
 
-#if FEATURE_UNIVERSAL_GENERICS
-                    case BagElementKind.VTableMethodSignatures:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.VTableMethodSignatures");
-                        ParseVTableMethodSignatures(state, context, typeInfoParser.GetParserFromRelativeOffset());
-                        break;
-#endif
-
-                    case BagElementKind.SealedVTableEntries:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.SealedVTableEntries");
-                        state.NumSealedVTableEntries = typeInfoParser.GetUnsigned();
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
                         Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
@@ -660,170 +465,7 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            if (staticSizesMeaningful)
-            {
-                Debug.Assert((state.NonGcDataSize + (state.HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0)) == nonGcDataSize);
-                Debug.Assert(state.GcDataSize == gcDataSize);
-                Debug.Assert(state.ThreadDataSize == threadDataSize);
-            }
-
-#if GENERICS_FORCE_USG
-            if (isTemplateUniversalCanon && type.CanShareNormalGenericCode())
-            {
-                // Even in the GENERICS_FORCE_USG stress mode today, codegen will generate calls to normal-canonical target methods whenever possible.
-                // Given that we use universal template types to build the dynamic EETypes, these dynamic types will end up with NULL dictionary
-                // entries, causing the normal-canonical code sharing to fail.
-                // To fix this problem, we will load the generic dictionary from the non-universal template type, and build a generic dictionary out of
-                // it for the dynamic type, and store that dictionary pointer in the dynamic MethodTable's structure.
-                TypeBuilderState tempState = new TypeBuilderState();
-                tempState.NativeLayoutInfo = new NativeLayoutInfo();
-                state.NonUniversalTemplateType = tempState.TemplateType = type.Context.TemplateLookup.TryGetNonUniversalTypeTemplate(type, ref tempState.NativeLayoutInfo);
-                if (tempState.TemplateType != null)
-                {
-                    Debug.Assert(!tempState.TemplateType.IsCanonicalSubtype(CanonicalFormKind.UniversalCanonLookup));
-                    NativeParser nonUniversalTypeInfoParser = GetNativeLayoutInfoParser(type, ref tempState.NativeLayoutInfo);
-                    NativeParser dictionaryLayoutParser = nonUniversalTypeInfoParser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
-                    if (!dictionaryLayoutParser.IsNull)
-                        state.Dictionary = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, context, dictionaryLayoutParser));
-
-                    // Get the non-universal GCDesc pointers, so we can compare them the ones we will dynamically construct for the type
-                    // and verify they are equal (This is an easy and predictable way of validation for the GCDescs creation logic in the stress mode)
-                    GetNonUniversalGCDescPointers(type, state, tempState);
-                }
-            }
-#endif
             type.ParseBaseType(context, baseTypeParser);
-
-            // Assert that parsed base type size matches the BaseTypeSize that we calculated.
-            Debug.Assert(!checkBaseTypeSize || state.BaseTypeSize == baseTypeSize);
-        }
-
-#if FEATURE_UNIVERSAL_GENERICS
-        private void ParseVTableMethodSignatures(TypeBuilderState state, NativeLayoutInfoLoadContext nativeLayoutInfoLoadContext, NativeParser methodSignaturesParser)
-        {
-            TypeDesc type = state.TypeBeingBuilt;
-            if (methodSignaturesParser.IsNull)
-                return;
-
-            // Processing vtable method signatures is only meaningful in the context of universal generics only
-            Debug.Assert(state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal));
-
-            uint numSignatures = methodSignaturesParser.GetUnsigned();
-
-            state.VTableMethodSignatures = new TypeBuilderState.VTableLayoutInfo[numSignatures];
-
-            for (int i = 0; i < numSignatures; i++)
-            {
-                state.VTableMethodSignatures[i] = new TypeBuilderState.VTableLayoutInfo();
-
-                uint slot = methodSignaturesParser.GetUnsigned();
-                state.VTableMethodSignatures[i].VTableSlot = (slot >> 1);
-                if ((slot & 1) == 1)
-                {
-                    state.VTableMethodSignatures[i].IsSealedVTableSlot = true;
-                    state.NumSealedVTableMethodSignatures++;
-                }
-
-                NativeParser sigParser = methodSignaturesParser.GetParserFromRelativeOffset();
-                state.VTableMethodSignatures[i].MethodSignature = RuntimeSignature.CreateFromNativeLayoutSignature(nativeLayoutInfoLoadContext._module.Handle, sigParser.Offset);
-            }
-        }
-#endif
-
-        private unsafe void ComputeVTableLayout(TypeDesc currentType, TypeDesc currentTemplateType, TypeBuilderState targetTypeState)
-        {
-            TypeDesc baseType = GetBaseTypeThatIsCorrectForMDArrays(currentType);
-            TypeDesc baseTemplateType = GetBaseTypeUsingRuntimeTypeHandle(currentTemplateType);
-
-            Debug.Assert((baseType == null && baseTemplateType == null) || (baseType != null && baseTemplateType != null));
-
-            // Compute the vtable layout for the current type starting with base types first
-            if (baseType != null)
-                ComputeVTableLayout(baseType, baseTemplateType, targetTypeState);
-
-            currentTemplateType.RetrieveRuntimeTypeHandleIfPossible();
-            Debug.Assert(!currentTemplateType.RuntimeTypeHandle.IsNull());
-            Debug.Assert(baseTemplateType == null || !baseTemplateType.RuntimeTypeHandle.IsNull());
-
-            // The m_usNumVtableSlots field on EETypes includes the count of vtable slots of the base type,
-            // so make sure we don't count that twice!
-            int currentVtableIndex = baseTemplateType == null ? 0 : baseTemplateType.RuntimeTypeHandle.GetNumVtableSlots();
-
-            IntPtr dictionarySlotInVtable = IntPtr.Zero;
-
-            if (currentType.IsGeneric())
-            {
-                if (!currentType.CanShareNormalGenericCode() && currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    // We are building a type that cannot share code with normal canonical types, so the type has to have
-                    // the same vtable layout as non-shared generics, meaning no dictionary pointer in the vtable.
-                    // We use universal canonical template types to build such types. Universal canonical types have 'NULL'
-                    // dictionary pointers in their vtables, so we'll start copying the vtable entries right after that
-                    // dictionary slot (dictionaries are accessed/used at runtime in a different way, not through the vtable
-                    // dictionary pointer for such types).
-                    currentVtableIndex++;
-                }
-                else if (currentType.CanShareNormalGenericCode())
-                {
-                    // In the case of a normal canonical type in their base class hierarchy,
-                    // we need to keep track of its dictionary slot in the vtable mapping, and try to
-                    // copy its value values directly from its template type vtable.
-                    // Two possible cases:
-                    //      1)  The template type is a normal canonical type. In this case, the dictionary value
-                    //          in the vtable slot of the template is NULL, but that's ok because this case is
-                    //          correctly handled anyways by the FinishBaseTypeAndDictionaries() API.
-                    //      2)  The template type is NOT a canonical type. In this case, the dictionary value
-                    //          in the vtable slot of the template is not null, and we keep track of it in the
-                    //          VTableSlotsMapping so we can copy it to the dynamic type after creation.
-                    //          This corner case is not handled by FinishBaseTypeAndDictionaries(), so we track it
-                    //          here.
-                    // Examples:
-                    //      1) Derived<T,U> : Base<U>, instantiated over [int,string]
-                    //      2) Derived<__Universal> : BaseClass, and BaseClass : BaseBaseClass<object>
-                    //      3) Derived<__Universal> : BaseClass<object>
-                    Debug.Assert(currentTemplateType != null && !currentTemplateType.RuntimeTypeHandle.IsNull());
-
-                    IntPtr* pTemplateVtable = (IntPtr*)((byte*)(currentTemplateType.RuntimeTypeHandle.ToEETypePtr()) + sizeof(MethodTable));
-                    dictionarySlotInVtable = pTemplateVtable[currentVtableIndex];
-                }
-            }
-            else if (currentType is ArrayType)
-            {
-                if (currentTemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    TypeDesc canonicalElementType = currentType.Context.ConvertToCanon(((ArrayType)currentType).ElementType, CanonicalFormKind.Specific);
-                    bool quickIsNotCanonical = canonicalElementType == ((ArrayType)currentType).ElementType;
-
-                    Debug.Assert(quickIsNotCanonical == !canonicalElementType.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                    if (quickIsNotCanonical)
-                    {
-                        // We are building a type that cannot share code with normal canonical types, so the type has to have
-                        // the same vtable layout as non-shared generics, meaning no dictionary pointer in the vtable.
-                        // We use universal canonical template types to build such types. Universal canonical types have 'NULL'
-                        // dictionary pointers in their vtables, so we'll start copying the vtable entries right after that
-                        // dictionary slot (dictionaries are accessed/used at runtime in a different way, not through the vtable
-                        // dictionary pointer for such types).
-                        currentVtableIndex++;
-                    }
-                }
-            }
-
-            // Map vtable entries from target type's template type
-            int numVtableSlotsOnCurrentTemplateType = currentTemplateType.RuntimeTypeHandle.GetNumVtableSlots();
-            for (; currentVtableIndex < numVtableSlotsOnCurrentTemplateType; currentVtableIndex++)
-            {
-                targetTypeState.VTableSlotsMapping.AddMapping(
-                    currentVtableIndex,
-                    targetTypeState.VTableSlotsMapping.NumSlotMappings,
-                    dictionarySlotInVtable);
-
-                // Reset dictionarySlotInVtable (only one dictionary slot in vtable per type)
-                dictionarySlotInVtable = IntPtr.Zero;
-            }
-
-            // Sanity check: vtable of the dynamic type should be equal or smaller than the vtable of the template type
-            Debug.Assert(targetTypeState.VTableSlotsMapping.NumSlotMappings <= numVtableSlotsOnCurrentTemplateType);
         }
 
         /// <summary>
@@ -874,8 +516,7 @@ namespace Internal.Runtime.TypeLoader
             /// <param name="offset">The offset at which we need to write the bitfield.</param>
             public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
             {
-                if (bitfield == null)
-                    throw new ArgumentNullException(nameof(bitfield));
+                ArgumentNullException.ThrowIfNull(bitfield);
 
                 if (IsNone)
                     return;
@@ -945,48 +586,21 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-#if GENERICS_FORCE_USG
-        private unsafe void GetNonUniversalGCDescPointers(TypeDesc type, TypeBuilderState state, TypeBuilderState tempNonUniversalState)
-        {
-            NativeParser nonUniversalTypeInfoParser = GetNativeLayoutInfoParser(type, ref tempNonUniversalState.NativeLayoutInfo);
-            NativeLayoutInfoLoadContext context = tempNonUniversalState.NativeLayoutInfo.LoadContext;
-
-            uint beginOffset = nonUniversalTypeInfoParser.Offset;
-            uint? staticGCDescId = nonUniversalTypeInfoParser.GetUnsignedForBagElementKind(BagElementKind.GcStaticDesc);
-
-            nonUniversalTypeInfoParser.Offset = beginOffset;
-            uint? threadStaticGCDescId = nonUniversalTypeInfoParser.GetUnsignedForBagElementKind(BagElementKind.ThreadStaticDesc);
-
-            if(staticGCDescId.HasValue)
-                state.NonUniversalStaticGCDesc = context.GetStaticInfo(staticGCDescId.Value);
-
-            if (threadStaticGCDescId.HasValue)
-                state.NonUniversalThreadStaticGCDesc = context.GetStaticInfo(threadStaticGCDescId.Value);
-
-            state.NonUniversalInstanceGCDescSize = RuntimeAugments.GetGCDescSize(tempNonUniversalState.TemplateType.RuntimeTypeHandle);
-            if (state.NonUniversalInstanceGCDescSize > 0)
-                state.NonUniversalInstanceGCDesc = new IntPtr(((byte*)tempNonUniversalState.TemplateType.RuntimeTypeHandle.ToIntPtr().ToPointer()) - 1);
-        }
-#endif
-
         private unsafe void AllocateRuntimeType(TypeDesc type)
         {
             TypeBuilderState state = type.GetTypeBuilderState();
 
             Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
 
-            if (state.ThreadDataSize != 0)
-                state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue();
-
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
             if (state.ThreadDataSize != 0)
-                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadDataSize);
+                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
         }
 
-        private void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
+        private static void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
         {
             Debug.Assert(method.RuntimeMethodDictionary == IntPtr.Zero && method.Dictionary != null);
 
@@ -996,94 +610,11 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderLogger.WriteLine("Allocated new method dictionary for method " + method.ToString() + " @ " + rmd.LowLevelToString());
         }
 
-        private RuntimeTypeHandle[] GetGenericContextOfBaseType(DefType type, int vtableMethodSlot)
-        {
-            DefType baseType = type.BaseType;
-            Debug.Assert(baseType == null || !GetRuntimeTypeHandle(baseType).IsNull());
-            Debug.Assert(vtableMethodSlot < GetRuntimeTypeHandle(type).GetNumVtableSlots());
-
-            int numBaseTypeVtableSlots = baseType == null ? 0 : GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
-
-            if (vtableMethodSlot < numBaseTypeVtableSlots)
-                return GetGenericContextOfBaseType(baseType, vtableMethodSlot);
-            else
-                return GetRuntimeTypeHandles(type.Instantiation);
-        }
-
-#if FEATURE_UNIVERSAL_GENERICS
-        private unsafe void FinishVTableCallingConverterThunks(TypeDesc type, TypeBuilderState state)
-        {
-            Debug.Assert(state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal));
-
-            if (state.VTableMethodSignatures == null || state.VTableMethodSignatures.Length == 0)
-                return;
-
-            int numVtableSlots = GetRuntimeTypeHandle(type).GetNumVtableSlots();
-            IntPtr* vtableCells = (IntPtr*)((byte*)GetRuntimeTypeHandle(type).ToIntPtr() + sizeof(MethodTable));
-            Debug.Assert((state.VTableMethodSignatures.Length - state.NumSealedVTableMethodSignatures) <= numVtableSlots);
-
-            TypeDesc baseType = type.BaseType;
-            int numBaseTypeVtableSlots = GetRuntimeTypeHandle(baseType).GetNumVtableSlots();
-
-            // Generic context
-            RuntimeTypeHandle[] typeArgs = Empty<RuntimeTypeHandle>.Array;
-
-            if (type is DefType)
-                typeArgs = GetRuntimeTypeHandles(((DefType)type).Instantiation);
-            else if (type is ArrayType)
-                typeArgs = GetRuntimeTypeHandles(new Instantiation(new TypeDesc[] { ((ArrayType)type).ElementType }));
-
-            for (int i = 0; i < state.VTableMethodSignatures.Length; i++)
-            {
-                RuntimeTypeHandle[] typeArgsToUse = typeArgs;
-
-                int vtableSlotInDynamicType = -1;
-                if (!state.VTableMethodSignatures[i].IsSealedVTableSlot)
-                {
-                    vtableSlotInDynamicType = state.VTableSlotsMapping.GetVTableSlotInTargetType((int)state.VTableMethodSignatures[i].VTableSlot);
-                    Debug.Assert(vtableSlotInDynamicType != -1);
-
-                    if (vtableSlotInDynamicType < numBaseTypeVtableSlots)
-                    {
-                        // Vtable method  from the vtable portion of a base type. Use generic context of the basetype defining the vtable slot.
-                        // We should never reach here for array types (the vtable entries of the System.Array basetype should never need a converter).
-                        Debug.Assert(type is DefType);
-                        typeArgsToUse = GetGenericContextOfBaseType((DefType)type, vtableSlotInDynamicType);
-                    }
-                }
-
-                IntPtr originalFunctionPointerFromVTable = state.VTableMethodSignatures[i].IsSealedVTableSlot ?
-                    ((IntPtr*)state.HalfBakedSealedVTable)[state.VTableMethodSignatures[i].VTableSlot] :
-                    vtableCells[vtableSlotInDynamicType];
-
-                IntPtr thunkPtr = CallConverterThunk.MakeThunk(
-                    ThunkKind.StandardToGeneric,
-                    originalFunctionPointerFromVTable,
-                    state.VTableMethodSignatures[i].MethodSignature,
-                    IntPtr.Zero,                                        // No instantiating arg for non-generic instance methods
-                    typeArgsToUse,
-                    Empty<RuntimeTypeHandle>.Array);                    // No GVMs in vtables, no no method args
-
-                if (state.VTableMethodSignatures[i].IsSealedVTableSlot)
-                {
-                    // Patch the sealed vtable entry to point to the calling converter thunk
-                    Debug.Assert(state.VTableMethodSignatures[i].VTableSlot < state.NumSealedVTableEntries && state.HalfBakedSealedVTable != IntPtr.Zero);
-                    ((IntPtr*)state.HalfBakedSealedVTable)[state.VTableMethodSignatures[i].VTableSlot] = thunkPtr;
-                }
-                else
-                {
-                    // Patch the vtable entry to point to the calling converter thunk
-                    Debug.Assert(vtableSlotInDynamicType < numVtableSlots && vtableCells != null);
-                    vtableCells[vtableSlotInDynamicType] = thunkPtr;
-                }
-            }
-        }
-#endif
-
         //
         // Returns either the registered type handle or half-baked type handle. This method should be only called
         // during final phase of type building.
         //
+#pragma warning disable CA1822
         public RuntimeTypeHandle GetRuntimeTypeHandle(TypeDesc type)
         {
 #if DEBUG
@@ -1098,6 +629,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(!rtth.IsNull());
             return rtth;
         }
+#pragma warning restore CA1822
 
         public RuntimeTypeHandle[] GetRuntimeTypeHandles(Instantiation types)
         {
@@ -1136,7 +668,7 @@ namespace Internal.Runtime.TypeLoader
             return type.BaseType;
         }
 
-        private void FinishInterfaces(TypeDesc type, TypeBuilderState state)
+        private void FinishInterfaces(TypeBuilderState state)
         {
             DefType[] interfaces = state.RuntimeInterfaces;
             if (interfaces != null)
@@ -1148,8 +680,10 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe void FinishTypeDictionary(TypeDesc type, TypeBuilderState state)
+        private unsafe void FinishTypeDictionary(TypeDesc type)
         {
+            TypeBuilderState state = type.GetTypeBuilderState();
+
             if (state.Dictionary != null)
             {
                 // First, update the dictionary slot in the type's vtable to point to the created dictionary when applicable
@@ -1184,84 +718,10 @@ namespace Internal.Runtime.TypeLoader
             if (!state.HasStaticConstructor)
                 return;
 
-            IntPtr canonicalClassConstructorFunctionPointer = IntPtr.Zero; // Pointer to canonical static method to serve as cctor
-            IntPtr exactClassConstructorFunctionPointer = IntPtr.Zero; // Exact pointer. Takes priority over canonical pointer
-
-            if (state.TemplateType == null)
-            {
-                if (!type.HasInstantiation)
-                {
-                    // Non-Generic ReadyToRun types in their current state already have their static field region setup
-                    // with the class constructor initialized.
-                    return;
-                }
-                else
-                {
-                    // For generic types, we need to do the metadata lookup and then resolve to a function pointer.
-                    MethodDesc staticConstructor = type.GetStaticConstructor();
-                    IntPtr staticCctor;
-                    IntPtr unused1;
-                    TypeLoaderEnvironment.MethodAddressType addressType;
-                    if (!TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(staticConstructor, out staticCctor, out unused1, out addressType))
-                    {
-                        Environment.FailFast("Unable to find class constructor method address for type:" + type.ToString());
-                    }
-                    Debug.Assert(unused1 == IntPtr.Zero);
-
-                    switch (addressType)
-                    {
-                        case TypeLoaderEnvironment.MethodAddressType.Exact:
-                            // If we have an exact match, put it in the slot directly
-                            // and return as we don't want to make this into a fat function pointer
-                            exactClassConstructorFunctionPointer = staticCctor;
-                            break;
-
-                        case TypeLoaderEnvironment.MethodAddressType.Canonical:
-                        case TypeLoaderEnvironment.MethodAddressType.UniversalCanonical:
-                            // If we have a canonical method, setup for generating a fat function pointer
-                            canonicalClassConstructorFunctionPointer = staticCctor;
-                            break;
-
-                        default:
-                            Environment.FailFast("Invalid MethodAddressType during ClassConstructor discovery");
-                            return;
-                    }
-                }
-            }
-            else if (state.ClassConstructorPointer.HasValue)
-            {
-                canonicalClassConstructorFunctionPointer = state.ClassConstructorPointer.Value;
-            }
-            else
-            {
-                // Lookup the non-GC static data for the template type, and use the class constructor context offset to locate the class constructor's
-                // fat pointer within the non-GC static data.
-                IntPtr templateTypeStaticData = TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(GetRuntimeTypeHandle(state.TemplateType));
-                Debug.Assert(templateTypeStaticData != IntPtr.Zero);
-                IntPtr* templateTypeClassConstructorSlotPointer = (IntPtr*)((byte*)templateTypeStaticData + ClassConstructorOffset);
-                IntPtr templateTypeClassConstructorFatFunctionPointer = templateTypeClassConstructorFatFunctionPointer = *templateTypeClassConstructorSlotPointer;
-
-                // Crack the fat function pointer into the raw class constructor method pointer and the generic type dictionary.
-                Debug.Assert(FunctionPointerOps.IsGenericMethodPointer(templateTypeClassConstructorFatFunctionPointer));
-                GenericMethodDescriptor* templateTypeGenericMethodDescriptor = FunctionPointerOps.ConvertToGenericDescriptor(templateTypeClassConstructorFatFunctionPointer);
-                Debug.Assert(templateTypeGenericMethodDescriptor != null);
-                canonicalClassConstructorFunctionPointer = templateTypeGenericMethodDescriptor->MethodFunctionPointer;
-            }
+            IntPtr canonicalClassConstructorFunctionPointer = state.ClassConstructorPointer.Value;
 
             IntPtr generatedTypeStaticData = GetRuntimeTypeHandle(type).ToEETypePtr()->DynamicNonGcStaticsData;
             IntPtr* generatedTypeClassConstructorSlotPointer = (IntPtr*)((byte*)generatedTypeStaticData + ClassConstructorOffset);
-
-            if (exactClassConstructorFunctionPointer != IntPtr.Zero)
-            {
-                // We have an exact pointer, not a canonical match
-                // Just set the pointer and return. No need for a fat pointer
-                *generatedTypeClassConstructorSlotPointer = exactClassConstructorFunctionPointer;
-                return;
-            }
-
-            // If we reach here, classConstructorFunctionPointer points at a canonical method, that needs to be converted into
-            // a fat function pointer so that the calli in the ClassConstructorRunner will work properly
-            Debug.Assert(canonicalClassConstructorFunctionPointer != IntPtr.Zero);
 
             // Use the template type's class constructor method pointer and this type's generic type dictionary to generate a new fat pointer,
             // and save that fat pointer back to this type's class constructor context offset within the non-GC static data.
@@ -1318,10 +778,8 @@ namespace Internal.Runtime.TypeLoader
 
             var state = type.GetTypeBuilderState();
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (type.HasInstantiation)
                 {
                     // Type definitions don't need any further finishing once created by the EETypeCreator
@@ -1344,42 +802,26 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishBaseTypeAndDictionaries(type, state);
 
-                FinishInterfaces(type, state);
-
-                FinishTypeDictionary(type, state);
+                FinishInterfaces(state);
 
                 FinishClassConstructor(type, state);
-
-#if FEATURE_UNIVERSAL_GENERICS
-                // For types that were allocated from universal canonical templates, patch their vtables with
-                // pointers to calling convention conversion thunks
-                if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                    FinishVTableCallingConverterThunks(type, state);
-#endif
             }
             else if (type is ParameterizedType)
             {
-                if (type is ArrayType)
+                if (type is ArrayType typeAsSzArrayType)
                 {
-                    ArrayType typeAsSzArrayType = (ArrayType)type;
+                    RuntimeTypeHandle elementTypeHandle = GetRuntimeTypeHandle(typeAsSzArrayType.ElementType);
+                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(elementTypeHandle);
 
-                    state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
-
-                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
-
-                    FinishInterfaces(type, state);
-
-                    if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
+                    ushort componentSize = (ushort)IntPtr.Size;
+                    unsafe
                     {
-                        FinishTypeDictionary(type, state);
-
-#if FEATURE_UNIVERSAL_GENERICS
-                        // For types that were allocated from universal canonical templates, patch their vtables with
-                        // pointers to calling convention conversion thunks
-                        if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                            FinishVTableCallingConverterThunks(type, state);
-#endif
+                        if (typeAsSzArrayType.ElementType.IsValueType)
+                            componentSize = checked((ushort)elementTypeHandle.ToEETypePtr()->ValueTypeSize);
                     }
+                    state.HalfBakedRuntimeTypeHandle.SetComponentSize(componentSize);
+
+                    FinishInterfaces(state);
                 }
                 else if (type is PointerType)
                 {
@@ -1397,8 +839,7 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
                         state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
-                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(type);
-                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
                     }
                 }
             }
@@ -1408,7 +849,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<TypeEntryToRegister> TypesToRegister()
+        private IEnumerable<GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -1416,25 +857,12 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                if (typeAsDefType.HasInstantiation && !typeAsDefType.IsTypeDefinition)
+                yield return new GenericTypeEntry
                 {
-                    yield return new TypeEntryToRegister
-                    {
-                        GenericTypeEntry = new GenericTypeEntry
-                        {
-                            _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
-                            _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
-                            _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
-                        }
-                    };
-                }
-                else
-                {
-                    yield return new TypeEntryToRegister
-                    {
-                        MetadataDefinitionType = (MetadataType)typeAsDefType
-                    };
-                }
+                    _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
+                    _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
+                    _instantiatedTypeHandle = typeAsDefType.GetTypeBuilderState().HalfBakedRuntimeTypeHandle
+                };
             }
         }
 
@@ -1472,27 +900,6 @@ namespace Internal.Runtime.TypeLoader
             TypeLoaderEnvironment.Instance.RegisterDynamicGenericTypesAndMethods(registrationData);
         }
 
-        /// <summary>
-        /// Publish generic type / method information to the data buffer read by the debugger. This supports
-        /// debugging dynamically created types / methods
-        /// </summary>
-        private void RegisterDebugDataForTypesAndMethods()
-        {
-            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
-            {
-                DefType typeAsDefType;
-                if ((typeAsDefType = _typesThatNeedTypeHandles[i] as DefType) != null)
-                {
-                    SerializedDebugData.RegisterDebugDataForType(this, typeAsDefType, typeAsDefType.GetTypeBuilderState());
-                }
-            }
-
-            for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
-            {
-                SerializedDebugData.RegisterDebugDataForMethod(this, _methodsThatNeedDictionaries[i]);
-            }
-        }
-
         private void FinishTypeAndMethodBuilding()
         {
             // Once we start allocating EETypes and dictionaries, the only accepted failure is OOM.
@@ -1522,12 +929,15 @@ namespace Internal.Runtime.TypeLoader
                 FinishRuntimeType(_typesThatNeedTypeHandles[i]);
             }
 
+            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
+            {
+                FinishTypeDictionary(_typesThatNeedTypeHandles[i]);
+            }
+
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 FinishMethodDictionary(_methodsThatNeedDictionaries[i]);
             }
-
-            RegisterDebugDataForTypesAndMethods();
 
             int newArrayTypesCount = 0;
             int newPointerTypesCount = 0;
@@ -1548,8 +958,7 @@ namespace Internal.Runtime.TypeLoader
                     newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
-                    if (mdArrayNewTypesCount == null)
-                        mdArrayNewTypesCount = new int[MDArray.MaxRank + 1];
+                    mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
                     mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
                 }
             }
@@ -1634,21 +1043,6 @@ namespace Internal.Runtime.TypeLoader
             FinishTypeAndMethodBuilding();
         }
 
-        internal bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
-        {
-            TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
-
-            // Get the computed field offset result
-            LayoutInt layoutFieldOffset = declaringType.GetFieldByNativeLayoutOrdinal(fieldOrdinal).Offset;
-            if (layoutFieldOffset.IsIndeterminate)
-            {
-                fieldOffset = 0;
-                return false;
-            }
-            fieldOffset = layoutFieldOffset.AsInt;
-            return true;
-        }
-
         private void BuildMethod(InstantiatedMethod method)
         {
             TypeLoaderLogger.WriteLine("Dynamically allocating new method instantiation for " + method.ToString());
@@ -1692,7 +1086,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
-            reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+            reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
 
             NativeParser parser = new NativeParser(reader, offset);
 
@@ -1703,13 +1097,6 @@ namespace Internal.Runtime.TypeLoader
             NativeLayoutInfoLoadContext nlilContext = new NativeLayoutInfoLoadContext();
             nlilContext._module = moduleInfo;
             nlilContext._typeSystemContext = typeSystemContext;
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-            NativeFormatMetadataUnit metadataUnit = null;
-
-            if (moduleInfo.ModuleType == ModuleType.ReadyToRun)
-                metadataUnit = typeSystemContext.ResolveMetadataUnit(moduleInfo);
-#endif
 
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
             {
@@ -1747,25 +1134,7 @@ namespace Internal.Runtime.TypeLoader
                 if ((contextKind & GenericContextKind.HasDeclaringType) != 0)
                 {
                     // No need to deal with arrays - arrays can't have declaring type
-
-                    TypeDesc declaringType;
-
-                    if (moduleInfo.ModuleType == ModuleType.Eager)
-                    {
-                        declaringType = nlilContext.GetType(ref parser);
-                    }
-                    else
-                    {
-                        Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                        uint typeToken = parser.GetUnsigned();
-                        declaringType = metadataUnit.GetType(((int)typeToken).AsHandle());
-#else
-                        Environment.FailFast("Ready to Run module type?");
-                        declaringType = null;
-#endif
-                    }
-
+                    TypeDesc declaringType = nlilContext.GetType(ref parser);
                     DefType actualContext = GetExactDeclaringType((DefType)typeContext, (DefType)declaringType);
 
                     nlilContext._typeArgumentHandles = actualContext.Instantiation;
@@ -1784,23 +1153,7 @@ namespace Internal.Runtime.TypeLoader
                     return genericDictionary;
                 }
 
-                GenericTypeDictionary ucgDict;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
-                }
-                else
-                {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-                    FixupCellMetadataResolver metadataResolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionaryFromMetadataTokensAndContext(this, parser, metadataUnit, metadataResolver));
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    ucgDict = null;
-#endif
-                }
+                GenericTypeDictionary ucgDict = new GenericTypeDictionary(GenericDictionaryCell.BuildDictionary(this, nlilContext, parser));
                 genericDictionary = ucgDict.Allocate();
 
                 // Process the pending types
@@ -1815,39 +1168,7 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                GenericDictionaryCell cell;
-
-                if (moduleInfo.ModuleType == ModuleType.Eager)
-                {
-                    cell = GenericDictionaryCell.ParseAndCreateCell(
-                        nlilContext,
-                        ref parser);
-                }
-                else
-                {
-                    Debug.Assert(moduleInfo.ModuleType == ModuleType.ReadyToRun);
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-                    MetadataFixupKind fixupKind = (MetadataFixupKind)parser.GetUInt8();
-                    Internal.Metadata.NativeFormat.Handle token = parser.GetUnsigned().AsHandle();
-                    Internal.Metadata.NativeFormat.Handle token2 = default(Internal.Metadata.NativeFormat.Handle);
-
-                    switch (fixupKind)
-                    {
-                        case MetadataFixupKind.GenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericConstrainedMethod:
-                        case MetadataFixupKind.NonGenericDirectConstrainedMethod:
-                            token2 = parser.GetUnsigned().AsHandle();
-                            break;
-                    }
-
-                    FixupCellMetadataResolver resolver = new FixupCellMetadataResolver(metadataUnit, nlilContext);
-                    cell = GenericDictionaryCell.CreateCellFromFixupKindAndToken(fixupKind, resolver, token, token2);
-#else
-                    Environment.FailFast("Ready to Run module type?");
-                    cell = null;
-#endif
-                }
-
+                GenericDictionaryCell cell = GenericDictionaryCell.ParseAndCreateCell(nlilContext, ref parser);
                 cell.Prepare(this);
 
                 // Process the pending types
@@ -1859,101 +1180,6 @@ namespace Internal.Runtime.TypeLoader
 
                 return dictionaryCell;
             }
-        }
-
-        //
-        // This method is used to build the floating portion of a generic dictionary.
-        //
-        private unsafe IntPtr BuildFloatingDictionary(TypeSystemContext typeSystemContext, IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
-        {
-            isNewlyAllocatedDictionary = true;
-
-            NativeParser nativeLayoutParser;
-            NativeLayoutInfoLoadContext nlilContext;
-
-            if (isTypeContext)
-            {
-                TypeDesc typeContext = typeSystemContext.ResolveRuntimeTypeHandle(*(RuntimeTypeHandle*)&context);
-
-                TypeLoaderLogger.WriteLine("Building floating dictionary layout for type " + typeContext.ToString() + "...");
-
-                // We should only perform updates to floating dictionaries for types that share normal canonical code
-                Debug.Assert(typeContext.CanShareNormalGenericCode());
-
-                // Computing the template will throw if no template is found.
-                typeContext.ComputeTemplate();
-
-                TypeBuilderState state = typeContext.GetOrCreateTypeBuilderState();
-                nativeLayoutParser = state.GetParserForNativeLayoutInfo();
-                nlilContext = state.NativeLayoutInfo.LoadContext;
-            }
-            else
-            {
-                RuntimeTypeHandle declaringTypeHandle;
-                MethodNameAndSignature nameAndSignature;
-                RuntimeTypeHandle[] genericMethodArgHandles;
-                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
-                Debug.Assert(success);
-
-                DefType declaringType = (DefType)typeSystemContext.ResolveRuntimeTypeHandle(declaringTypeHandle);
-                InstantiatedMethod methodContext = (InstantiatedMethod)typeSystemContext.ResolveGenericMethodInstantiation(
-                    false,
-                    declaringType,
-                    nameAndSignature,
-                    typeSystemContext.ResolveRuntimeTypeHandles(genericMethodArgHandles),
-                    IntPtr.Zero,
-                    false);
-
-                TypeLoaderLogger.WriteLine("Building floating dictionary layout for method " + methodContext.ToString() + "...");
-
-                // We should only perform updates to floating dictionaries for gemeric methods that share normal canonical code
-                Debug.Assert(!methodContext.IsNonSharableMethod);
-
-                uint nativeLayoutInfoToken;
-                NativeFormatModuleInfo nativeLayoutModule;
-                MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
-                if (templateMethod == null)
-                    throw new TypeBuilder.MissingTemplateException();
-
-                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
-
-                nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
-                nlilContext = new NativeLayoutInfoLoadContext
-                {
-                    _typeSystemContext = methodContext.Context,
-                    _typeArgumentHandles = methodContext.OwningType.Instantiation,
-                    _methodArgumentHandles = methodContext.Instantiation,
-                    _module = nativeLayoutModule
-                };
-            }
-
-            NativeParser dictionaryLayoutParser = nativeLayoutParser.GetParserForBagElementKind(BagElementKind.DictionaryLayout);
-            if (dictionaryLayoutParser.IsNull)
-                return IntPtr.Zero;
-
-            int floatingVersionCellIndex, floatingVersionInLayout;
-            GenericDictionaryCell[] floatingCells = GenericDictionaryCell.BuildFloatingDictionary(this, nlilContext, dictionaryLayoutParser, out floatingVersionCellIndex, out floatingVersionInLayout);
-            if (floatingCells == null)
-                return IntPtr.Zero;
-
-            // If the floating section is already constructed, then return. This means we are beaten by another thread.
-            if (*((IntPtr*)fixedDictionary) != IntPtr.Zero)
-            {
-                isNewlyAllocatedDictionary = false;
-                return *((IntPtr*)fixedDictionary);
-            }
-
-            GenericTypeDictionary floatingDict = new GenericTypeDictionary(floatingCells);
-
-            IntPtr result = floatingDict.Allocate();
-
-            ProcessTypesNeedingPreparation();
-
-            FinishTypeAndMethodBuilding();
-
-            floatingDict.Finish(this);
-
-            return result;
         }
 
         public static bool TryBuildGenericType(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
@@ -1973,7 +1199,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = typeBeingLoaded.RuntimeTypeHandle;
                 Debug.Assert(!runtimeTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -1999,7 +1225,7 @@ namespace Internal.Runtime.TypeLoader
                 arrayTypeHandle = arrayType.RuntimeTypeHandle;
                 Debug.Assert(!arrayTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -2024,7 +1250,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2044,27 +1270,11 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
             return true;
-        }
-
-        public static bool TryBuildGenericMethod(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature methodNameAndSignature, out IntPtr methodDictionary)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, methodNameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
-
-            bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
-
-            // Recycle the context only if we succesfully built the method. The state may be partially initialized otherwise.
-            if (success)
-                TypeSystemContextFactory.Recycle(context);
-
-            return success;
         }
 
         internal static bool TryBuildGenericMethod(InstantiatedMethod methodBeingLoaded, out IntPtr methodDictionary)
@@ -2114,41 +1324,6 @@ namespace Internal.Runtime.TypeLoader
                 fixups[i] = cells[i].Create(this);
         }
 
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        private void ResolveSingleMetadataFixup(NativeFormatMetadataUnit module, Handle token, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
-        {
-            FixupCellMetadataResolver metadata = new FixupCellMetadataResolver(module);
-
-            // Allocate a cell object to represent the fixup, and prepare it
-            GenericDictionaryCell cell = GenericDictionaryCell.CreateCellFromFixupKindAndToken(fixupKind, metadata, token, default(Handle));
-            ResolveSingleCell_Worker(cell, out fixupResolution);
-        }
-
-        public static bool TryResolveSingleMetadataFixup(NativeFormatModuleInfo module, int metadataToken, MetadataFixupKind fixupKind, out IntPtr fixupResolution)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            NativeFormatMetadataUnit metadataUnit = context.ResolveMetadataUnit(module);
-            new TypeBuilder().ResolveSingleMetadataFixup(metadataUnit, metadataToken.AsHandle(), fixupKind, out fixupResolution);
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return true;
-        }
-
-        public static void ResolveSingleTypeDefinition(QTypeDefinition qTypeDefinition, out IntPtr typeHandle)
-        {
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            TypeDesc type = context.GetTypeDescFromQHandle(qTypeDefinition);
-            GenericDictionaryCell cell = GenericDictionaryCell.CreateTypeHandleCell(type);
-
-            new TypeBuilder().ResolveSingleCell_Worker(cell, out typeHandle);
-
-            TypeSystemContextFactory.Recycle(context);
-        }
-#endif
-
         internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
         {
             new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
@@ -2178,82 +1353,6 @@ namespace Internal.Runtime.TypeLoader
                 Environment.FailFast("MissingTemplateException thrown during lazy generic lookup", e);
 
                 auxResult = IntPtr.Zero;
-                return IntPtr.Zero;
-            }
-        }
-
-        public static bool TryGetFieldOffset(RuntimeTypeHandle declaringTypeHandle, uint fieldOrdinal, out int fieldOffset)
-        {
-            try
-            {
-                TypeSystemContext context = TypeSystemContextFactory.Create();
-
-                DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-                Debug.Assert(declaringType.HasInstantiation);
-
-                bool success = new TypeBuilder().TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
-
-                TypeSystemContextFactory.Recycle(context);
-
-                return success;
-            }
-            catch (MissingTemplateException)
-            {
-                fieldOffset = int.MinValue;
-                return false;
-            }
-        }
-
-        internal static bool TryGetDelegateInvokeMethodSignature(RuntimeTypeHandle delegateTypeHandle, out RuntimeSignature signature)
-        {
-            signature = default(RuntimeSignature);
-            bool success = false;
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            DefType delegateType = (DefType)context.ResolveRuntimeTypeHandle(delegateTypeHandle);
-            Debug.Assert(delegateType.HasInstantiation);
-
-            NativeLayoutInfo universalLayoutInfo;
-            NativeParser parser = delegateType.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out _, out universalLayoutInfo);
-            if (!parser.IsNull)
-            {
-                NativeParser sigParser = parser.GetParserForBagElementKind(BagElementKind.DelegateInvokeSignature);
-                if (!sigParser.IsNull)
-                {
-                    signature = RuntimeSignature.CreateFromNativeLayoutSignature(universalLayoutInfo.Module.Handle, sigParser.Offset);
-                    success = true;
-                }
-            }
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return success;
-        }
-
-        //
-        // This method is used to build the floating portion of a generic dictionary.
-        //
-        internal static IntPtr TryBuildFloatingDictionary(IntPtr context, bool isTypeContext, IntPtr fixedDictionary, out bool isNewlyAllocatedDictionary)
-        {
-            isNewlyAllocatedDictionary = true;
-
-            try
-            {
-                TypeSystemContext typeSystemContext = TypeSystemContextFactory.Create();
-
-                IntPtr ret = new TypeBuilder().BuildFloatingDictionary(typeSystemContext, context, isTypeContext, fixedDictionary, out isNewlyAllocatedDictionary);
-
-                TypeSystemContextFactory.Recycle(typeSystemContext);
-
-                return ret;
-            }
-            catch (MissingTemplateException e)
-            {
-                // This should not ever happen. The static compiler should ensure that the templates are always
-                // available for types and methods that have floating dictionaries
-                Environment.FailFast("MissingTemplateException thrown during dictionary update", e);
-
                 return IntPtr.Zero;
             }
         }

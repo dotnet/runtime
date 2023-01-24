@@ -64,7 +64,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Called when all replacements have already been made and all annotations are complete.
         /// </summary>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         protected virtual QilNode? NoReplace(QilNode? node)
         {
             return node;

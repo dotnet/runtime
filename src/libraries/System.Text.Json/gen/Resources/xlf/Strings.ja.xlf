@@ -32,6 +32,16 @@
         <target state="translated">重複した種類名。</target>
         <note />
       </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">型 '{0}' は 'JsonDerivedTypeAttribute' の注釈が付けられていますが、これは 'JsonSourceGenerationMode.Serialization' でサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">'JsonDerivedTypeAttribute' は 'JsonSourceGenerationMode.Serialization' ではサポートされていません。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="translated">メンバー '{0}.{1}' には、JsonIncludeAttribute で注釈が付けられていますが、ソース ジェネレーターには表示されません。</target>

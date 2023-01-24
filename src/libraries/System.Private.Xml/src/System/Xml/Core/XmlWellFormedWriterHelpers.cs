@@ -403,10 +403,11 @@ namespace System.Xml
 
                 // trim the string in StringBuilder
                 string valBefore = _stringValue.ToString();
-                string valAfter = XmlConvert.TrimString(valBefore);
+                ReadOnlySpan<char> valAfter = valBefore.AsSpan().Trim(XmlConvert.WhitespaceChars);
                 if (valBefore != valAfter)
                 {
-                    _stringValue = new StringBuilder(valAfter);
+                    _stringValue = new StringBuilder();
+                    _stringValue.Append(valAfter);
                 }
 
                 // trim the beginning of the recorded writer events

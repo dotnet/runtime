@@ -36,7 +36,7 @@ namespace System.Threading
                 LowLevelLock threadAdjustmentLock = threadPoolInstance._threadAdjustmentLock;
                 DelayHelper delayHelper = default;
 
-                if (BlockingConfig.IsCooperativeBlockingEnabled)
+                if (BlockingConfig.IsCooperativeBlockingEnabled && !BlockingConfig.IgnoreMemoryUsage)
                 {
                     // Initialize memory usage and limits, and register to update them on gen 2 GCs
                     threadPoolInstance.OnGen2GCCallback();
@@ -102,10 +102,8 @@ namespace System.Threading
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
-                        int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
+                        int cpuUtilization = (int)cpuUtilizationReader.CurrentUtilization;
                         threadPoolInstance._cpuUtilization = cpuUtilization;
-
-                        bool needGateThreadForRuntime = ThreadPool.PerformRuntimeSpecificGateActivities(cpuUtilization);
 
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
@@ -164,8 +162,7 @@ namespace System.Threading
                             }
                         }
 
-                        if (!needGateThreadForRuntime &&
-                            threadPoolInstance._separated.numRequestedWorkers <= 0 &&
+                        if (threadPoolInstance._separated.numRequestedWorkers <= 0 &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) <= GetRunningStateForNumRuns(0))
                         {
@@ -221,7 +218,7 @@ namespace System.Threading
                 }
                 else if ((numRunsMask & GateThreadRunningMask) == 0)
                 {
-                    CreateGateThread(threadPoolInstance);
+                    CreateGateThread();
                 }
             }
 
@@ -232,10 +229,8 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            private static void CreateGateThread(PortableThreadPool threadPoolInstance)
+            private static void CreateGateThread()
             {
-                bool created = false;
                 try
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
@@ -244,17 +239,13 @@ namespace System.Threading
                     {
                         IsThreadPoolThread = true,
                         IsBackground = true,
-                        Name = ".NET ThreadPool Gate"
+                        Name = ".NET TP Gate"
                     };
                     gateThread.UnsafeStart();
-                    created = true;
                 }
-                finally
+                catch (Exception e)
                 {
-                    if (!created)
-                    {
-                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
-                    }
+                    Environment.FailFast("Failed to create the thread pool Gate thread.", e);
                 }
             }
 
@@ -334,7 +325,5 @@ namespace System.Threading
                 }
             }
         }
-
-        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning(ThreadPoolInstance);
     }
 }

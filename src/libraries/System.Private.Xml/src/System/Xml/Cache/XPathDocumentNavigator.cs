@@ -126,11 +126,7 @@ namespace MS.Internal.Xml.Cache
                     }
                     else
                     {
-                        if (bldr == null)
-                        {
-                            bldr = new StringBuilder();
-                            bldr.Append(s);
-                        }
+                        bldr ??= new StringBuilder().Append(s);
                         bldr.Append(value);
                     }
                 }
@@ -1012,7 +1008,7 @@ namespace MS.Internal.Xml.Cache
         }
 
         /// <summary>
-        /// Return true if navigator is positioned to a node of the specified kind.  Whitespace/SignficantWhitespace/Text are
+        /// Return true if navigator is positioned to a node of the specified kind.  Whitespace/SignificantWhitespace/Text are
         /// all treated the same (i.e. they all match each other).
         /// </summary>
         public bool IsKindMatch(XPathNodeType typ)

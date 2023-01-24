@@ -56,7 +56,7 @@ StackingAllocator::InitialStackBlock::InitialStackBlock()
 {
     m_initialBlockHeader.m_Next = NULL;
     m_initialBlockHeader.m_Length = sizeof(m_dataSpace);
-    INDEBUG(m_initialBlockHeader.m_Sentinal = 0);
+    INDEBUG(m_initialBlockHeader.m_Sentinel = 0);
 }
 
 StackingAllocator::~StackingAllocator()
@@ -213,7 +213,7 @@ bool StackingAllocator::AllocNewBlockForBytes(unsigned n)
      // the cast below is safe because b->m_Length is less than MaxBlockSize (4096)
      m_BytesLeft = static_cast<unsigned>(b->m_Length);
 
-     INDEBUG(b->m_Sentinal = 0);
+     INDEBUG(b->m_Sentinel = 0);
 
      RETURN true;
 }
@@ -289,7 +289,7 @@ void StackingAllocator::Collapse(void *CheckpointMarker)
     }
 
     // Cache contents of checkpoint, we can potentially deallocate it in the
-    // next step (if a new block had to be allocated to accomodate the
+    // next step (if a new block had to be allocated to accommodate the
     // checkpoint).
     StackBlock *pOldBlock = c->m_OldBlock;
     unsigned iOldBytesLeft = c->m_OldBytesLeft;
@@ -315,7 +315,7 @@ void StackingAllocator::Validate(StackBlock *block, void* spot)
     if (!block)
         return;
     _ASSERTE(m_InitialBlock.m_initialBlockHeader.m_Length == sizeof(m_InitialBlock.m_dataSpace));
-    Sentinal* ptr = block->m_Sentinal;
+    Sentinel* ptr = block->m_Sentinel;
     _ASSERTE(spot);
     while(ptr >= spot)
     {
@@ -326,11 +326,11 @@ void StackingAllocator::Validate(StackBlock *block, void* spot)
             // has a return string buffer!.  This usually means the end
             // programmer did not allocate a big enough buffer before passing
             // it to the PINVOKE method.
-        if (ptr->m_Marker1 != Sentinal::marker1Val)
+        if (ptr->m_Marker1 != Sentinel::marker1Val)
             _ASSERTE(!"Memory overrun!! May be bad buffer passed to PINVOKE. turn on logging LF_STUBS level 6 to find method");
         ptr = ptr->m_Next;
     }
-    block->m_Sentinal = ptr;
+    block->m_Sentinel = ptr;
 }
 #endif // _DEBUG
 

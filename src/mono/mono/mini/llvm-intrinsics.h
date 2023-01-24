@@ -90,11 +90,7 @@ INTRINS_OVR(CTLZ_I32, ctlz, Generic, LLVMInt32Type ())
 INTRINS_OVR(CTLZ_I64, ctlz, Generic, LLVMInt64Type ())
 INTRINS_OVR(CTTZ_I32, cttz, Generic, LLVMInt32Type ())
 INTRINS_OVR(CTTZ_I64, cttz, Generic, LLVMInt64Type ())
-#if LLVM_API_VERSION >= 1000
 INTRINS_OVR(PREFETCH, prefetch, Generic, LLVMPointerType (i1_t, 0))
-#else
-INTRINS(PREFETCH, prefetch, Generic)
-#endif
 INTRINS(BZHI_I32, x86_bmi_bzhi_32, X86)
 INTRINS(BZHI_I64, x86_bmi_bzhi_64, X86)
 INTRINS(BEXTR_I32, x86_bmi_bextr_32, X86)
@@ -103,6 +99,11 @@ INTRINS(PEXT_I32, x86_bmi_pext_32, X86)
 INTRINS(PEXT_I64, x86_bmi_pext_64, X86)
 INTRINS(PDEP_I32, x86_bmi_pdep_32, X86)
 INTRINS(PDEP_I64, x86_bmi_pdep_64, X86)
+
+#if LLVM_API_VERSION >= 1400
+INTRINS_OVR_TAG(ROUNDEVEN, roundeven, Generic, Scalar | V64 | V128 | R4 | R8)
+#endif
+
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 INTRINS(SSE_PMOVMSKB, x86_sse2_pmovmskb_128, X86)
 INTRINS(SSE_MOVMSK_PS, x86_sse_movmsk_ps, X86)
@@ -252,14 +253,32 @@ INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
 #endif
 #if defined(TARGET_WASM)
+INTRINS_OVR(WASM_ALLTRUE_V16, wasm_alltrue, Wasm, sse_i1_t)
+INTRINS_OVR(WASM_ALLTRUE_V8, wasm_alltrue, Wasm, sse_i2_t)
+INTRINS_OVR(WASM_ALLTRUE_V4, wasm_alltrue, Wasm, sse_i4_t)
+INTRINS_OVR(WASM_ALLTRUE_V2, wasm_alltrue, Wasm, sse_i8_t)
 INTRINS_OVR(WASM_ANYTRUE_V16, wasm_anytrue, Wasm, sse_i1_t)
 INTRINS_OVR(WASM_ANYTRUE_V8, wasm_anytrue, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_ANYTRUE_V4, wasm_anytrue, Wasm, sse_i4_t)
 INTRINS_OVR(WASM_ANYTRUE_V2, wasm_anytrue, Wasm, sse_i8_t)
+INTRINS_OVR(WASM_BITMASK_V16, wasm_bitmask, Wasm, sse_i1_t)
+INTRINS_OVR(WASM_BITMASK_V8, wasm_bitmask, Wasm, sse_i2_t)
+INTRINS_OVR(WASM_BITMASK_V4, wasm_bitmask, Wasm, sse_i4_t)
+INTRINS_OVR(WASM_BITMASK_V2, wasm_bitmask, Wasm, sse_i8_t)
+INTRINS(WASM_DOT, wasm_dot, Wasm)
+INTRINS_OVR(WASM_FABS_V4, fabs, Generic, sse_r4_t)
+INTRINS_OVR(WASM_FABS_V2, fabs, Generic, sse_r8_t)
+INTRINS_OVR_2_ARG(WASM_NARROW_SIGNED_V16, wasm_narrow_signed, Wasm, sse_i1_t, sse_i2_t)
+INTRINS_OVR_2_ARG(WASM_NARROW_SIGNED_V8, wasm_narrow_signed, Wasm, sse_i2_t, sse_i4_t)
+INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V16, wasm_narrow_unsigned, Wasm, sse_i1_t, sse_i2_t)
+INTRINS_OVR_2_ARG(WASM_NARROW_UNSIGNED_V8, wasm_narrow_unsigned, Wasm, sse_i2_t, sse_i4_t)
+INTRINS(WASM_SHUFFLE, wasm_shuffle, Wasm)
+INTRINS(WASM_SWIZZLE, wasm_swizzle, Wasm)
 #endif
 #if defined(TARGET_ARM64)
 INTRINS_OVR(BITREVERSE_I32, bitreverse, Generic, LLVMInt32Type ())
 INTRINS_OVR(BITREVERSE_I64, bitreverse, Generic, LLVMInt64Type ())
+INTRINS_OVR_TAG(BITREVERSE, bitreverse, Generic, V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS(AARCH64_CRC32B, aarch64_crc32b, Arm64)
 INTRINS(AARCH64_CRC32H, aarch64_crc32h, Arm64)
 INTRINS(AARCH64_CRC32W, aarch64_crc32w, Arm64)
@@ -398,10 +417,14 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTE, aarch64_neon_frsqrte, Arm64, Scalar | 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTS, aarch64_neon_frsqrts, Arm64, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPS, aarch64_neon_frecps, Arm64, Scalar | V64 | V128 | R4 | R8)
 
+#if LLVM_API_VERSION < 1400
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, Arm64, V64 | V128 | I1)
+#endif
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Generic, Scalar | V64 | V128 | R4 | R8)
+#if LLVM_API_VERSION < 1400
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Arm64, Scalar | V64 | V128 | R4 | R8)
+#endif
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Generic, Scalar | V64 | V128 | R4 | R8)

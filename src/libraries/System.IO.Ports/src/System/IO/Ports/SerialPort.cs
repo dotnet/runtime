@@ -1024,11 +1024,8 @@ namespace System.IO.Ports
 
             _readLen += _internalSerialStream.Read(_inBuffer, _readLen, bytesInStream);
 
-            if (_singleCharBuffer == null)
-            {
-                // This is somewhat of an approximate guesstimate to get the max char[] size needed to encode a single character
-                _singleCharBuffer = new char[_maxByteCountForSingleChar];
-            }
+            // This is somewhat of an approximate guesstimate to get the max char[] size needed to encode a single character
+            _singleCharBuffer ??= new char[_maxByteCountForSingleChar];
 
             try
             {
@@ -1181,7 +1178,6 @@ namespace System.IO.Ports
             Write(text + NewLine);
         }
 
-#pragma warning disable CA2002
         // ----- SECTION: internal utility methods ----------------*
 
         // included here just to use the event filter to block unwanted invocations of the Serial Port's events.
@@ -1253,7 +1249,6 @@ namespace System.IO.Ports
                 }
             }
         }
-#pragma warning restore CA2002
 
         private void CompactBuffer()
         {

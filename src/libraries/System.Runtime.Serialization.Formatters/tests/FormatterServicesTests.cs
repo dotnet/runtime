@@ -133,7 +133,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(GetUninitializedObject_ByRefLikeType_NetCore_TestData))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Some runtimes don't support or recognise Span<T>, ReadOnlySpan<T> or ByReference<T> as ref types.")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Some runtimes don't support or recognise Span<T> or ReadOnlySpan<T> as ref types.")]
         public void GetUninitializedObject_ByRefLikeType_NetCore_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => FormatterServices.GetUninitializedObject(type));

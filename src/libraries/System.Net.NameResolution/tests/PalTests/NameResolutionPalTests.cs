@@ -343,7 +343,7 @@ namespace System.Net.NameResolution.PalTests
 
                 if (error == SocketError.HostNotFound && !OperatingSystem.IsWindows())
                 {
-                    // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+                    // On Unix, we are not guaranteed to be able to resolve the local host. The ability to do so depends on the
                     // machine configurations, which varies by distro and is often inconsistent.
                     return;
                 }
@@ -393,7 +393,7 @@ namespace System.Net.NameResolution.PalTests
 
                 if (error == SocketError.HostNotFound && !OperatingSystem.IsWindows())
                 {
-                    // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
+                    // On Unix, we are not guaranteed to be able to resolve the local host. The ability to do so depends on the
                     // machine configurations, which varies by distro and is often inconsistent.
                     return;
                 }
@@ -463,7 +463,7 @@ namespace System.Net.NameResolution.PalTests
 
             const string hostName = "test.123";
 
-            SocketException socketException = await Assert.ThrowsAnyAsync<SocketException>(() => NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, AddressFamily.Unspecified, CancellationToken.None)).ConfigureAwait(false);
+            SocketException socketException = await Assert.ThrowsAsync<SocketException>(() => NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, AddressFamily.Unspecified, CancellationToken.None)).ConfigureAwait(false);
             SocketError socketError = socketException.SocketErrorCode;
 
             Assert.Equal(SocketError.HostNotFound, socketError);

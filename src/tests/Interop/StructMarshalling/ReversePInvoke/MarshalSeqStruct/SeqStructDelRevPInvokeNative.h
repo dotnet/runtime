@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xplatform.h>
- 
+
 const int NumArrElements = 2;
 struct InnerSequential
 {
@@ -88,7 +88,7 @@ bool IsCorrectINNER2(INNER2* p)
     return true;
 }
 
-struct InnerExplicit 
+struct InnerExplicit
 {
 #ifdef WINDOWS
     union
@@ -106,7 +106,7 @@ struct InnerExplicit
     };
     INT _unused0;
     LPCSTR f3;
-#endif 
+#endif
 };
 
 void PrintInnerExplicit(InnerExplicit* p, const char* name)
@@ -292,7 +292,7 @@ bool IsCorrectCharSetAnsiSequential(CharSetAnsiSequential* p)
 }
 
 
-struct CharSetUnicodeSequential 
+struct CharSetUnicodeSequential
 {
     LPCWSTR f1;
     WCHAR f2;
@@ -346,15 +346,15 @@ struct NumberSequential // size = 64 bytes
     LONG64 i64;
     ULONG64 ui64;
     DOUBLE d;
-    INT i32;		
-    UINT ui32;		
-    SHORT s1;		
-    WORD us1;	
-    SHORT i16;		
+    INT i32;
+    UINT ui32;
+    SHORT s1;
+    WORD us1;
+    SHORT i16;
     WORD ui16;
     FLOAT sgl;
-    BYTE b;			
-    CHAR sb;		  
+    BYTE b;
+    CHAR sb;
 };
 
 void PrintNumberSequential(NumberSequential* str, const char* name)
@@ -423,7 +423,7 @@ void ChangeS3(S3* p)
 
     const char* strSource = "change string";
     size_t len = strlen(strSource);
-    LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));	
+    LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));
     if(temp != NULL)
     {
         memset((LPVOID)temp,0,len+1);
@@ -462,10 +462,10 @@ struct S4 // size = 8 bytes
     LPCSTR name;
 };
 
-enum Enum1 
+enum Enum1
 {
     e1 = 1,
-    e2 = 3 
+    e2 = 3
 };
 
 struct S5 // size = 8 bytes
@@ -484,7 +484,7 @@ void PrintS5(S5* str, const char* name)
 void ChangeS5(S5* str)
 {
     Enum1 eInstance = e2;
-    const char* strSource = "change string";	
+    const char* strSource = "change string";
     size_t len = strlen(strSource);
     LPCSTR temp = (LPCSTR)CoreClrAlloc(sizeof(char)*(len+1));
     if(temp != NULL)
@@ -552,7 +552,7 @@ void ChangeStringStructSequentialAnsi(StringStructSequentialAnsi* str)
     newFirst[512] = '\0';
     newLast[512] = '\0';
 
-    str->first = newFirst;	
+    str->first = newFirst;
     str->last = newLast;
 }
 
@@ -666,17 +666,17 @@ void ChangeS8(S8* str)
 }
 
 #pragma pack (8)
-struct IntergerStructSequential // size = 4 bytes
+struct IntegerStructSequential // size = 4 bytes
 {
     INT i;
 };
 
-void PrintIntergerStructSequential(IntergerStructSequential* str, const char* name)
+void PrintIntegerStructSequential(IntegerStructSequential* str, const char* name)
 {
     printf("\t%s.i = %d\n", name, str->i);
 }
 
-bool IsCorrectIntergerStructSequential(IntergerStructSequential* str)
+bool IsCorrectIntegerStructSequential(IntegerStructSequential* str)
 {
     if(str->i != 32)
         return false;
@@ -692,24 +692,24 @@ struct S9 // size = 8 bytes
     TestDelegate1 myDelegate1;
 };
 
-struct OuterIntergerStructSequential // size = 8 bytes
+struct OuterIntegerStructSequential // size = 8 bytes
 {
     INT i;
-    struct IntergerStructSequential s_int;
+    struct IntegerStructSequential s_int;
 };
 
-struct IncludeOuterIntergerStructSequential // size = 8 bytes
+struct IncludeOuterIntegerStructSequential // size = 8 bytes
 {
-    struct OuterIntergerStructSequential s;
+    struct OuterIntegerStructSequential s;
 };
 
-void PrintIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str, const char* name)
+void PrintIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str, const char* name)
 {
     printf("\t%s.s.s_int.i = %d\n", name, str->s.s_int.i);
     printf("\t%s.s.i = %d\n", name, str->s.i);
 }
 
-bool IsCorrectIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str)
+bool IsCorrectIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str)
 {
     if(str->s.s_int.i != 32)
         return false;
@@ -718,7 +718,7 @@ bool IsCorrectIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSeq
     return true;
 }
 
-void ChangeIncludeOuterIntergerStructSequential(IncludeOuterIntergerStructSequential* str)
+void ChangeIncludeOuterIntegerStructSequential(IncludeOuterIntegerStructSequential* str)
 {
     str->s.s_int.i = 64;
     str->s.i = 64;

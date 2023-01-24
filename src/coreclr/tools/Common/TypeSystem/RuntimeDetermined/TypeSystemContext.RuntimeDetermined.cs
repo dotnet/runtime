@@ -8,7 +8,7 @@ using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
-    partial class TypeSystemContext
+    public partial class TypeSystemContext
     {
         private struct RuntimeDeterminedTypeKey
         {
@@ -21,7 +21,7 @@ namespace Internal.TypeSystem
                 _detailsType = detailsType;
             }
 
-            public class RuntimeDeterminedTypeKeyHashtable : LockFreeReaderHashtable<RuntimeDeterminedTypeKey, RuntimeDeterminedType>
+            public sealed class RuntimeDeterminedTypeKeyHashtable : LockFreeReaderHashtable<RuntimeDeterminedTypeKey, RuntimeDeterminedType>
             {
                 protected override int GetKeyHashCode(RuntimeDeterminedTypeKey key)
                 {
@@ -96,7 +96,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            public class MethodForRuntimeDeterminedTypeKeyHashtable : LockFreeReaderHashtable<MethodForRuntimeDeterminedTypeKey, MethodForRuntimeDeterminedType>
+            public sealed class MethodForRuntimeDeterminedTypeKeyHashtable : LockFreeReaderHashtable<MethodForRuntimeDeterminedTypeKey, MethodForRuntimeDeterminedType>
             {
                 protected override int GetKeyHashCode(MethodForRuntimeDeterminedTypeKey key)
                 {

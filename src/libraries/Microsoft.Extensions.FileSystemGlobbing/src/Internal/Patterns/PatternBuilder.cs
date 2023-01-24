@@ -25,8 +25,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public StringComparison ComparisonType { get; }
 
-        public IPattern Build(string pattern!!)
+        public IPattern Build(string pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             pattern = pattern.TrimStart(_slashes);
 
             if (pattern.TrimEnd(_slashes).Length < pattern.Length)
@@ -39,9 +41,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
             var allSegments = new List<IPathSegment>();
             bool isParentSegmentLegal = true;
 
-            IList<IPathSegment>? segmentsPatternStartsWith = null;
-            IList<IList<IPathSegment>>? segmentsPatternContains = null;
-            IList<IPathSegment>? segmentsPatternEndsWith = null;
+            List<IPathSegment>? segmentsPatternStartsWith = null;
+            List<IList<IPathSegment>>? segmentsPatternContains = null;
+            List<IPathSegment>? segmentsPatternEndsWith = null;
 
             int endPattern = pattern.Length;
             for (int scanPattern = 0; scanPattern < endPattern;)
@@ -152,10 +154,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         scanSegment = endLiteral + 1;
                     }
 
-                    if (segment == null)
-                    {
-                        segment = new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
-                    }
+                    segment ??= new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
                 }
 
                 if (segment is not ParentPathSegment)
@@ -183,9 +182,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
-                    else if (segmentsPatternEndsWith != null)
+                    else
                     {
-                        segmentsPatternEndsWith.Add(segment);
+                        segmentsPatternEndsWith?.Add(segment);
                     }
 
                     allSegments.Add(segment);

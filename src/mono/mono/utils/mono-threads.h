@@ -98,7 +98,7 @@ typedef struct {
 } MonoThreadHandle;
 
 /*
-THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+THREAD_INFO_TYPE is a way to make the mono-threads module parameteric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 
@@ -491,9 +491,6 @@ mono_thread_info_suspend_lock (void);
 void
 mono_thread_info_suspend_unlock (void);
 
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
-
 MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 
@@ -539,7 +536,7 @@ mono_thread_info_self_interrupt (void);
 void
 mono_thread_info_clear_self_interrupt (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
 
 void
@@ -653,8 +650,6 @@ mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
  * MonoNativeThreadId, and is intended solely to match the output of various diagonistic tools.
  */
 guint64 mono_native_thread_os_id_get (void);
-
-gint32 mono_native_thread_processor_id_get (void);
 
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
@@ -875,7 +870,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 	const DWORD _last_error_restore_point = GetLastError ();
 
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
-		/* Only restore if changed to prevent unecessary writes. */ \
+		/* Only restore if changed to prevent unnecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 

@@ -55,7 +55,7 @@ namespace System.IO.Pipelines.Tests
         [MemberData(nameof(ReadCalls))]
         public async Task ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(ReadAsyncDelegate readAsync)
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
@@ -73,7 +73,7 @@ namespace System.IO.Pipelines.Tests
         [MemberData(nameof(ReadCalls))]
         public async Task AsStreamReturnsPipeReaderStream(ReadAsyncDelegate readAsync)
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
@@ -90,7 +90,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ReadingWithSmallerBufferWorks()
         {
-            byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var pipe = new Pipe();
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
@@ -279,6 +279,14 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(producedSum, consumedSum);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ReadThrowsOriginalExceptionWhenItOccurs()
+        {
+            var pipeReader = new BuggyAndNotCompletedPipeReader();
+            Stream stream = pipeReader.AsStream();
+            AssertExtensions.Throws<InvalidOperationException>(() => stream.Read(new byte[3], 0, 3), "error occurred during reading");
+        }
+
         [Fact]
         public void AsStreamDoNotCompleteReader()
         {
@@ -409,6 +417,12 @@ namespace System.IO.Pipelines.Tests
                 yield return new object[] { readArraySync };
                 yield return new object[] { readSpanSync };
             }
+        }
+
+        public class BuggyAndNotCompletedPipeReader : BuggyPipeReader
+        {
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) =>
+                new ValueTask<ReadResult>(Task.FromException<ReadResult>(new InvalidOperationException("error occurred during reading")));
         }
     }
 }

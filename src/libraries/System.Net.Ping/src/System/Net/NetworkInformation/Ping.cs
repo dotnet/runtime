@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,8 @@ namespace System.Net.NetworkInformation
         private SendOrPostCallback? _onPingCompletedDelegate;
         private bool _disposeRequested;
         private byte[]? _defaultSendBuffer;
+        private CancellationTokenSource? _timeoutOrCancellationSource;
+        // Used to differentiate between timeout and cancellation when _timeoutOrCancellationSource triggers
         private bool _canceled;
 
         // Thread safety:
@@ -39,9 +42,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(int timeout, byte[] buffer)
         {
-            CheckDisposed();
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
             ArgumentNullException.ThrowIfNull(buffer);
 
             if (buffer.Length > MaxBufferSize)
@@ -49,15 +52,12 @@ namespace System.Net.NetworkInformation
                 throw new ArgumentException(SR.net_invalidPingBufferSize, nameof(buffer));
             }
 
-            if (timeout < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(timeout);
         }
 
-        private void CheckArgs(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
+        private void CheckArgs(IPAddress address, int timeout, byte[] buffer)
         {
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             ArgumentNullException.ThrowIfNull(address);
 
@@ -75,6 +75,7 @@ namespace System.Net.NetworkInformation
             ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
+        [MemberNotNull(nameof(_timeoutOrCancellationSource))]
         private void CheckStart()
         {
             int currentStatus;
@@ -83,6 +84,7 @@ namespace System.Net.NetworkInformation
                 currentStatus = _status;
                 if (currentStatus == Free)
                 {
+                    _timeoutOrCancellationSource ??= new();
                     _canceled = false;
                     _status = InProgress;
                     _lockObject.Reset();
@@ -118,6 +120,10 @@ namespace System.Net.NetworkInformation
             {
                 Debug.Assert(_status == InProgress, $"Invalid status: {_status}");
                 _status = Free;
+                if (!_timeoutOrCancellationSource!.TryReset())
+                {
+                    _timeoutOrCancellationSource = null;
+                }
                 _lockObject.Set();
             }
 
@@ -127,7 +133,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        // Cancels pending async requests, closes the handles.
         private void InternalDispose()
         {
             _disposeRequested = true;
@@ -141,6 +146,8 @@ namespace System.Net.NetworkInformation
                 }
                 _status = Disposed;
             }
+
+            _timeoutOrCancellationSource?.Dispose();
 
             InternalDisposeCore();
         }
@@ -161,36 +168,186 @@ namespace System.Net.NetworkInformation
             PingCompleted?.Invoke(this, e);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the specified computer,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// A <see cref="string"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// The value specified for this parameter can be a host name or a string representation of an IP address.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(string hostNameOrAddress)
         {
             return Send(hostNameOrAddress, DefaultTimeout, DefaultSendBuffer);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the specified computer,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// A <see cref="string"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// The value specified for this parameter can be a host name or a string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(string hostNameOrAddress, int timeout)
         {
             return Send(hostNameOrAddress, timeout, DefaultSendBuffer);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the computer that has the specified <see cref="IPAddress"/>,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="address">
+        /// An <see cref="IPAddress"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(IPAddress address)
         {
             return Send(address, DefaultTimeout, DefaultSendBuffer);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the computer that has the specified <see cref="IPAddress"/>,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="address">
+        /// An <see cref="IPAddress"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(IPAddress address, int timeout)
         {
             return Send(address, timeout, DefaultSendBuffer);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the specified computer,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// A <see cref="string"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// The value specified for this parameter can be a host name or a string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer)
         {
             return Send(hostNameOrAddress, timeout, buffer, null);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the computer that has the specified <see cref="IPAddress"/>,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="address">
+        /// An <see cref="IPAddress"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(IPAddress address, int timeout, byte[] buffer)
         {
             return Send(address, timeout, buffer, null);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the specified computer,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// A <see cref="string"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// The value specified for this parameter can be a host name or a string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">
+        /// A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
         {
             if (string.IsNullOrEmpty(hostNameOrAddress))
@@ -203,14 +360,42 @@ namespace System.Net.NetworkInformation
                 return Send(address, timeout, buffer, options);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
             return GetAddressAndSend(hostNameOrAddress, timeout, buffer, options);
         }
 
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the computer that has the specified <see cref="IPAddress"/>,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="address">
+        /// An <see cref="IPAddress"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// </param>
+        /// <param name="timeout">
+        /// An <see cref="int"/> value that specifies the maximum number of milliseconds (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">
+        /// A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is less than zero.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
         public PingReply Send(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
 
             // Need to snapshot the address here, so we're sure that it's not changed between now
             // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
@@ -230,6 +415,69 @@ namespace System.Net.NetworkInformation
                 Finish();
             }
         }
+
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the computer that has the specified <see cref="IPAddress"/>,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="address">
+        /// An <see cref="IPAddress"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// </param>
+        /// <param name="timeout">
+        /// A value that specifies the maximum amount of time (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">
+        /// A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a time less than zero milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
+        public PingReply Send(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null) =>
+            Send(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
+
+        /// <summary>
+        /// Attempts to send an Internet Control Message Protocol (ICMP) echo message to the specified computer,
+        /// and receive a corresponding ICMP echo reply message from that computer.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// A <see cref="string"/> that identifies the computer that is the destination for the ICMP echo message.
+        /// The value specified for this parameter can be a host name or a string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">
+        /// A value that specifies the maximum amount of time (after sending the echo message) to wait for the ICMP echo reply message.
+        /// </param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">
+        /// A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.
+        /// </param>
+        /// <returns>
+        /// A <see cref="PingReply"/> object that provides information about the ICMP echo reply message, if one was received,
+        /// or provides the reason for the failure, if no message was received.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="hostNameOrAddress"/> is <see langword="null"/> or is an empty string ("").</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a time less than zero milliseconds or greater than <see cref="int.MaxValue"/> milliseconds.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="buffer"/>'s size is greater than 65,500 bytes.</exception>
+        /// <exception cref="InvalidOperationException">A call to SendAsync is in progress.</exception>
+        /// <exception cref="PingException">An exception was thrown while sending or receiving the ICMP messages. See the inner exception for the exact exception that was thrown.</exception>
+        /// <exception cref="ObjectDisposedException">This object has been disposed.</exception>
+        public PingReply Send(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null,
+            PingOptions? options = null) => Send(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options);
 
         public void SendAsync(string hostNameOrAddress, object? userToken)
         {
@@ -277,7 +525,7 @@ namespace System.Net.NetworkInformation
             {
                 var asyncOp = (AsyncOperation)state!;
                 var e = new PingCompletedEventArgs(t.IsCompletedSuccessfully ? t.Result : null, t.Exception, t.IsCanceled, asyncOp.UserSuppliedState);
-                SendOrPostCallback callback = _onPingCompletedDelegate ?? (_onPingCompletedDelegate = new SendOrPostCallback(o => { OnPingCompleted((PingCompletedEventArgs)o!); }));
+                SendOrPostCallback callback = _onPingCompletedDelegate ??= new SendOrPostCallback(o => { OnPingCompleted((PingCompletedEventArgs)o!); });
                 asyncOp.PostOperationCompleted(callback, e);
             }, AsyncOperationManager.CreateOperation(userToken), CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
         }
@@ -314,33 +562,73 @@ namespace System.Net.NetworkInformation
 
         public Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
         {
-            CheckArgs(address, timeout, buffer, options);
-            return SendPingAsyncInternal(address, timeout, buffer, options);
+            return SendPingAsync(address, timeout, buffer, options, CancellationToken.None);
         }
 
-        private async Task<PingReply> SendPingAsyncInternal(IPAddress address, int timeout, byte[] buffer, PingOptions? options)
+        /// <summary>
+        /// Sends an Internet Control Message Protocol (ICMP) echo message with the specified data buffer to the computer that has the specified
+        /// <see cref="IPAddress"/>, and receives a corresponding ICMP echo reply message from that computer as an asynchronous operation. This
+        /// overload allows you to specify a time-out value for the operation, a buffer to use for send and receive, control fragmentation and
+        /// Time-to-Live values, and a <see cref="CancellationToken"/> for the ICMP echo message packet.
+        /// </summary>
+        /// <param name="address">An IP address that identifies the computer that is the destination for the ICMP echo message.</param>
+        /// <param name="timeout">The amount of time (after sending the echo message) to wait for the ICMP echo reply message.</param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        public Task<PingReply> SendPingAsync(IPAddress address, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
         {
-            // Need to snapshot the address here, so we're sure that it's not changed between now
-            // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
-            IPAddress addressSnapshot = GetAddressSnapshot(address);
+            return SendPingAsync(address, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
+        }
 
-            CheckStart();
-            try
-            {
-                Task<PingReply> pingReplyTask = SendPingAsyncCore(addressSnapshot, buffer, timeout, options);
-                return await pingReplyTask.ConfigureAwait(false);
-            }
-            catch (Exception e) when (e is not PlatformNotSupportedException)
-            {
-                throw new PingException(SR.net_ping, e);
-            }
-            finally
-            {
-                Finish();
-            }
+        private Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
+        {
+            CheckArgs(address, timeout, buffer);
+
+            return SendPingAsyncInternal(
+                // Need to snapshot the address here, so we're sure that it's not changed between now
+                // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
+                GetAddressSnapshot(address),
+                static (address, cancellationToken) => new ValueTask<IPAddress>(address),
+                timeout,
+                buffer,
+                options,
+                cancellationToken);
         }
 
         public Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
+        {
+            return SendPingAsync(hostNameOrAddress, timeout, buffer, options, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Sends an Internet Control Message Protocol (ICMP) echo message with the specified data buffer to the specified computer, and
+        /// receives a corresponding ICMP echo reply message from that computer as an asynchronous operation. This overload allows you to
+        /// specify a time-out value for the operation, a buffer to use for send and receive, control fragmentation and Time-to-Live values,
+        /// and a <see cref="CancellationToken"/> for the ICMP echo message packet.
+        /// </summary>
+        /// <param name="hostNameOrAddress">
+        /// The computer that is the destination for the ICMP echo message. The value specified for this parameter can be a host name or a
+        /// string representation of an IP address.
+        /// </param>
+        /// <param name="timeout">The amount of time (after sending the echo message) to wait for the ICMP echo reply message.</param>
+        /// <param name="buffer">
+        /// A <see cref="byte"/> array that contains data to be sent with the ICMP echo message and returned in the ICMP echo reply message.
+        /// The array cannot contain more than 65,500 bytes.
+        /// </param>
+        /// <param name="options">A <see cref="PingOptions"/> object used to control fragmentation and Time-to-Live values for the ICMP echo message packet.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The task object representing the asynchronous operation.</returns>
+        public Task<PingReply> SendPingAsync(string hostNameOrAddress, TimeSpan timeout, byte[]? buffer = null, PingOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            return SendPingAsync(hostNameOrAddress, ToTimeoutMilliseconds(timeout), buffer ?? DefaultSendBuffer, options, cancellationToken);
+        }
+
+        private Task<PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(hostNameOrAddress))
             {
@@ -349,12 +637,29 @@ namespace System.Net.NetworkInformation
 
             if (IPAddress.TryParse(hostNameOrAddress, out IPAddress? address))
             {
-                return SendPingAsync(address, timeout, buffer, options);
+                return SendPingAsync(address, timeout, buffer, options, cancellationToken);
             }
 
-            CheckArgs(timeout, buffer, options);
+            CheckArgs(timeout, buffer);
 
-            return GetAddressAndSendAsync(hostNameOrAddress, timeout, buffer, options);
+            return SendPingAsyncInternal(
+                hostNameOrAddress,
+                static async (hostName, cancellationToken) =>
+                    (await Dns.GetHostAddressesAsync(hostName, cancellationToken).ConfigureAwait(false))[0],
+                timeout,
+                buffer,
+                options,
+                cancellationToken);
+        }
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
+            return (int)totalMilliseconds;
         }
 
         public void SendAsyncCancel()
@@ -363,15 +668,19 @@ namespace System.Net.NetworkInformation
             {
                 if (!_lockObject.IsSet)
                 {
-                    // As in the .NET Framework, this doesn't actually cancel an in-progress operation.  It just marks it such that
-                    // when the operation completes, it's flagged as canceled.
-                    _canceled = true;
+                    SetCanceled();
                 }
             }
 
             // As in the .NET Framework, synchronously wait for the in-flight operation to complete.
             // If there isn't one in flight, this event will already be set.
             _lockObject.Wait();
+        }
+
+        private void SetCanceled()
+        {
+            _canceled = true;
+            _timeoutOrCancellationSource?.Cancel();
         }
 
         private PingReply GetAddressAndSend(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
@@ -392,16 +701,30 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> GetAddressAndSendAsync(string hostNameOrAddress, int timeout, byte[] buffer, PingOptions? options)
+        private async Task<PingReply> SendPingAsyncInternal<TArg>(
+            TArg getAddressArg,
+            Func<TArg, CancellationToken, ValueTask<IPAddress>> getAddress,
+            int timeout,
+            byte[] buffer,
+            PingOptions? options,
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             CheckStart();
             try
             {
-                IPAddress[] addresses = await Dns.GetHostAddressesAsync(hostNameOrAddress).ConfigureAwait(false);
-                Task<PingReply> pingReplyTask = SendPingAsyncCore(addresses[0], buffer, timeout, options);
-                return await pingReplyTask.ConfigureAwait(false);
+                using CancellationTokenRegistration _ = cancellationToken.UnsafeRegister(static state => ((Ping)state!).SetCanceled(), this);
+
+                IPAddress address = await getAddress(getAddressArg, _timeoutOrCancellationSource.Token).ConfigureAwait(false);
+
+                Task<PingReply> pingTask = SendPingAsyncCore(address, buffer, timeout, options);
+                // Note: we set the cancellation-based timeout only after resolving the address and initiating the ping with the
+                // intent that the timeout applies solely to the ping operation rather than to any setup steps.
+                _timeoutOrCancellationSource.CancelAfter(timeout);
+                return await pingTask.ConfigureAwait(false);
             }
-            catch (Exception e) when (e is not PlatformNotSupportedException)
+            catch (Exception e) when (e is not PlatformNotSupportedException && !(e is OperationCanceledException && _canceled))
             {
                 throw new PingException(SR.net_ping, e);
             }
@@ -412,7 +735,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Tests if the current machine supports the given ip protocol family.
-        private void TestIsIpSupported(IPAddress ip)
+        private static void TestIsIpSupported(IPAddress ip)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork && !SocketProtocolSupportPal.OSSupportsIPv4)
             {

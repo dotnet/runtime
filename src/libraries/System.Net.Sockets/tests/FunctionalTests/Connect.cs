@@ -4,9 +4,11 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using System.Linq;
 
 namespace System.Net.Sockets.Tests
 {
@@ -123,14 +125,24 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop("Connects to external server")]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.FreeBSD, "Not supported on BSD like OSes.")]
         [Theory]
-        [InlineData("1.1.1.1", false)]
-        [InlineData("1.1.1.1", true)]
-        [InlineData("[::ffff:1.1.1.1]", false)]
-        [InlineData("[::ffff:1.1.1.1]", true)]
-        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns)
+        [InlineData("1.1.1.1", false, true)]
+        [InlineData("1.1.1.1", true, true)]
+        [InlineData("[::ffff:1.1.1.1]", false, true)]
+        [InlineData("[::ffff:1.1.1.1]", true, true)]
+        [InlineData("1.1.1.1", false, false)]
+        [InlineData("1.1.1.1", true, false)]
+        [InlineData("[::ffff:1.1.1.1]", false, false)]
+        [InlineData("[::ffff:1.1.1.1]", true, false)]
+        public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             IPAddress address = IPAddress.Parse(addressString);
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
@@ -139,6 +151,8 @@ namespace System.Net.Sockets.Tests
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref client, owning);
+
                 if (address.IsIPv4MappedToIPv6) client.DualMode = true;
 
                 Task connectTask = ConnectAsync(client, useDns ?
@@ -171,12 +185,7 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.True(disposedException || localSocketError == SocketError.NotSocket, $"{disposedException} {localSocketError}");
                 }
@@ -206,11 +215,86 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
         public ConnectTask(ITestOutputHelper output) : base(output) {}
+
+        [OuterLoop]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79820", TestPlatforms.Linux | TestPlatforms.Android)]
+        public static void Connect_ThrowSocketException_Success()
+        {
+            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int anonymousPort = socket.BindToAnonymousPort(IPAddress.Loopback);
+                IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, anonymousPort);
+                Assert.ThrowsAsync<SocketException>(() => socket.ConnectAsync(ep));
+                try
+                {
+                    socket.Connect(ep);
+                    Assert.Fail("Socket Connect should throw SocketException in this case.");
+                }
+                catch (SocketException ex)
+                {
+                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
+                    Assert.Contains(ep.ToString(), ex.Message);
+                }
+            }
+        }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
     {
         public ConnectEap(ITestOutputHelper output) : base(output) {}
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            IPEndPoint serverEp = (IPEndPoint)listener.LocalEndPoint!;
+            listener.Listen();
+
+            var serverTask = Task.Run(async () =>
+            {
+                using Socket handler = await listener.AcceptAsync();
+                using var cts = new CancellationTokenSource(TestSettings.PassingTestTimeout);
+                byte[] recvBuffer = new byte[6];
+                int received = await handler.ReceiveAsync(recvBuffer, SocketFlags.None, cts.Token);
+                Assert.True(received == 4);
+
+                recvBuffer.AsSpan(0, 4).SequenceEqual(new byte[] { 2, 3, 4, 5 });
+            });
+
+            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            byte[] buffer = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
+            
+            var mre = new ManualResetEventSlim(false);
+            var saea = new SocketAsyncEventArgs();
+            saea.RemoteEndPoint = serverEp;
+
+            // Slice the buffer to test the offset management:
+            if (useArrayApi)
+            {
+                saea.SetBuffer(buffer, 2, 4);
+            }
+            else
+            {
+                saea.SetBuffer(buffer.AsMemory(2, 4));
+            }
+            
+            saea.Completed += (_, __) => mre.Set();
+
+            if (client.ConnectAsync(saea))
+            {
+                Assert.True(mre.Wait(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+            }
+
+            Assert.Equal(SocketError.Success, saea.SocketError);
+
+            await serverTask;
+        }
     }
 
     public sealed class ConnectCancellableTask : Connect<SocketHelperCancellableTask>
@@ -341,8 +425,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task FailedConnect_ConnectedReturnsFalse()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task FailedConnect_ConnectedReturnsFalse(bool useTimeSpan)
         {
             using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -354,7 +440,14 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(SocketError.WouldBlock, se.SocketErrorCode);
 
                 // Give the non-blocking connect some time to complete.
-                socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+                if (useTimeSpan)
+                {
+                    socket.Poll(TimeSpan.FromMilliseconds(5000), SelectMode.SelectWrite);
+                }
+                else
+                {
+                    socket.Poll(5_000_000 /* microSeconds */, SelectMode.SelectWrite);
+                }
             }
 
             Assert.False(socket.Connected);

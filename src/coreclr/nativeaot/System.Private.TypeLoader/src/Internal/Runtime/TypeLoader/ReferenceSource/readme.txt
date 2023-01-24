@@ -1,1 +1,0 @@
-These files are used as the porting source for callingconventions.cs. They are merged from their CLR implementation so that we can have an exact copy of what was ported into callingconventions.cs.

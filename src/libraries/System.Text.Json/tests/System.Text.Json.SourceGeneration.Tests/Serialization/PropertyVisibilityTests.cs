@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,11 +14,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Metadata : PropertyVisibilityTests
     {
         public PropertyVisibilityTests_Metadata()
-            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default, (options) => new PropertyVisibilityTestsContext_Metadata(options)))
+            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default))
         {
         }
 
-        protected PropertyVisibilityTests_Metadata(Serialization.Tests.JsonSerializerWrapperForString serializerWrapper)
+        protected PropertyVisibilityTests_Metadata(Serialization.Tests.JsonSerializerWrapper serializerWrapper)
             : base(serializerWrapper)
         {
         }
@@ -27,14 +28,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
         {
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper("", type));
+            InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
+            ValidateInvalidOperationException();
 
-            InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(Activator.CreateInstance(type), type));
-            string exAsStr = ioe.ToString();
-            Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
-            Assert.Contains("MyBadMember", exAsStr);
-            Assert.Contains(type.ToString(), exAsStr);
-            Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+            ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
+            ValidateInvalidOperationException();
+
+            void ValidateInvalidOperationException()
+            {
+                string exAsStr = ioe.ToString();
+                Assert.Contains("JsonIgnoreCondition.WhenWritingNull", exAsStr);
+                Assert.Contains("MyBadMember", exAsStr);
+                Assert.Contains(type.ToString(), exAsStr);
+                Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
+            }
         }
 
         [Fact]
@@ -47,26 +54,10 @@ namespace System.Text.Json.SourceGeneration.Tests
                 ""MyUri"":""https://microsoft.com""
             }";
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json));
 
             var obj = new MyClass_WithNonPublicAccessors_WithPropertyAttributes();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(obj));
-        }
-
-        [Theory]
-        [InlineData(typeof(ClassWithInitOnlyProperty))]
-        [InlineData(typeof(StructWithInitOnlyProperty))]
-        public override async Task InitOnlyProperties(Type type)
-        {
-            PropertyInfo property = type.GetProperty("MyInt");
-
-            // Init-only properties can be serialized.
-            object obj = Activator.CreateInstance(type);
-            property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await JsonSerializerWrapperForString.SerializeWrapper(obj, type));
-
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
         }
 
         [Theory]
@@ -75,15 +66,25 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
         public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
+            bool isDeserializationSupported = type == typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute);
+
             PropertyInfo property = type.GetProperty("MyInt");
 
             // Init-only properties can be serialized.
             object obj = Activator.CreateInstance(type);
             property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await JsonSerializerWrapperForString.SerializeWrapper(obj, type));
+            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
 
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type));
+            // Deserializing JsonInclude is only supported for internal properties
+            if (isDeserializationSupported)
+            {
+                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+                Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
+            }
         }
 
         [Fact]
@@ -95,14 +96,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = @"{""MyEnum"":""AnotherValue"",""MyInt"":2}";
 
             // Deserialization baseline, without enum converter, we get JsonException. NB order of members in deserialized type is significant for this assertion to succeed.
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
 
             // JsonInclude not supported in source gen.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options));
 
             // JsonInclude on private getters not supported.
             var obj = new StructWithPropertiesWithConverter();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(obj, options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj, options));
         }
 
         [Fact]
@@ -110,13 +111,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             string json = @"{""W"":1,""X"":2,""Y"":3,""Z"":4}";
 
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
+            var obj = await Serializer.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
             Assert.Equal(1, obj.W);
             Assert.Equal(2, obj.X);
             Assert.Equal(3, obj.Y);
             Assert.Equal(4, obj.GetZ);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
         }
 
         [Fact]
@@ -124,11 +125,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             string json = @"{""prop1"":1}";
 
-            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
+            var obj = await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
             Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
 
             // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async() => await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            await Assert.ThrowsAsync<InvalidOperationException>(async() => await Serializer.SerializeWrapper(obj));
         }
 
         [Fact]
@@ -137,11 +138,11 @@ namespace System.Text.Json.SourceGeneration.Tests
             string json = @"{""prop2"":2}";
 
             // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json));
 
             var obj = new StructWithPropertiesWithJsonPropertyName_PrivateSetter();
             obj.SetProxy(2);
-            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -249,10 +250,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
+#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
@@ -270,6 +273,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -278,7 +288,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Default : PropertyVisibilityTests_Metadata
     {
         public PropertyVisibilityTests_Default()
-            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default, (options) => new PropertyVisibilityTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default))
         {
         }
 
@@ -295,8 +305,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             // Exception messages direct users to use JsonSourceGenerationMode.Metadata to see a more detailed error.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper("{}", type));
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(Activator.CreateInstance(type), type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
         }
 
         [Theory]
@@ -304,8 +314,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
         {
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper("{}", type));
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(Activator.CreateInstance(type), type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
         }
 
         [Theory]
@@ -314,8 +324,68 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
         {
             // Since this code goes down fast-path, there's no warm up and we hit the reader exception about having no tokens.
-            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper("", type));
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(Activator.CreateInstance(type), type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
+        }
+
+        [Fact]
+        public static void PublicContexAndTestClassWithPropertiesWithDifferentAccesibilities()
+        {
+            JsonSerializerOptions options = new()
+            {
+                IncludeFields = true,
+            };
+
+            options.AddContext<PublicContext>();
+
+            PublicClassWithDifferentAccessibilitiesProperties obj = new()
+            {
+                PublicProperty = new(),
+                PublicField = new(),
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"PublicProperty":{},"PublicField":{}}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.NotNull(deserialized.PublicProperty);
+            Assert.NotNull(deserialized.PublicField);
+
+            json = "{}";
+            deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.Null(deserialized.PublicProperty);
+            Assert.Null(deserialized.PublicField);
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonConverter()
+        {
+            JsonConverter obj = JsonMetadataServices.BooleanConverter;
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+            Assert.Equal("{}", json);
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>(json, PublicContext.Default.Options));
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonSerializerOptions()
+        {
+            JsonSerializerOptions obj = new()
+            {
+                DefaultBufferSize = 123,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                IncludeFields = true,
+            };
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+
+            JsonSerializerOptions deserialized = JsonSerializer.Deserialize<JsonSerializerOptions>(json, PublicContext.Default.Options);
+            Assert.Equal(obj.DefaultBufferSize, deserialized.DefaultBufferSize);
+            Assert.Equal(obj.DefaultIgnoreCondition, deserialized.DefaultIgnoreCondition);
+            Assert.Equal(obj.IncludeFields, deserialized.IncludeFields);
+            Assert.Equal(obj.IgnoreReadOnlyFields, deserialized.IgnoreReadOnlyFields);
+            Assert.Equal(obj.MaxDepth, deserialized.MaxDepth);
         }
 
         [JsonSerializable(typeof(ClassWithNewSlotField))]
@@ -422,10 +492,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedBigInteger))]
+#endif
         [JsonSerializable(typeof(ClassWithThingsToIgnore))]
         [JsonSerializable(typeof(ClassWithMixedPropertyAccessors_PropertyAttributes))]
         [JsonSerializable(typeof(ClassWithPropertyPolicyConflictWhichThrows))]
@@ -443,6 +515,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

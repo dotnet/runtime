@@ -17,13 +17,11 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal static bool UsePortableThreadPoolForIO => true;
-
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
         internal static bool YieldFromDispatchLoop => false;
 
-#if CORERT
+#if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
@@ -75,15 +73,6 @@ namespace System.Threading
         /// </summary>
         internal static void RequestWorkerThread() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
 
-        /// <summary>
-        /// Called from the gate thread periodically to perform runtime-specific gate activities
-        /// </summary>
-        /// <param name="cpuUtilization">CPU utilization as a percentage since the last call</param>
-        /// <returns>True if the runtime still needs to perform gate activities, false otherwise</returns>
-#pragma warning disable IDE0060
-        internal static bool PerformRuntimeSpecificGateActivities(int cpuUtilization) => false;
-#pragma warning restore IDE0060
-
         internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -97,13 +86,17 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject!!,
-             WaitOrTimerCallback callBack!!,
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
+
+            Thread.ThrowIfNoThreadStart();
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),

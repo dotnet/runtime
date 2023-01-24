@@ -17,6 +17,8 @@ extern bool g_hostpolicy_embedded;
 #define PLATFORM_SHARED_LIB_SUFFIX_W PAL_SHLIB_SUFFIX_W
 #define PLATFORM_SHARED_LIB_PREFIX_W PAL_SHLIB_PREFIX_W
 #else // !TARGET_UNIX
+// The default for Windows OS is ".DLL". This causes issues with case-sensitive file systems on Windows.
+// We are using the lowercase version due to historical precedence and how common it is now.
 #define PLATFORM_SHARED_LIB_SUFFIX_W W(".dll")
 #define PLATFORM_SHARED_LIB_PREFIX_W W("")
 #endif // !TARGET_UNIX
@@ -51,6 +53,7 @@ namespace
             LIMITED_METHOD_CONTRACT;
             m_hr = E_FAIL;
             m_priorityOfLastError = 0;
+            m_message = SString(SString::Utf8, "\n");
         }
 
         VOID TrackErrorCode()
@@ -135,7 +138,18 @@ namespace
 
         void SetMessage(LPCSTR message)
         {
+#ifdef TARGET_UNIX
+            //Append dlerror() messages
+            SString new_message = SString(SString::Utf8, message);
+            SString::Iterator i = m_message.Begin();
+            if (!m_message.Find(i, new_message))
+            {
+                m_message += new_message;
+                m_message += SString(SString::Utf8, "\n");
+            }
+#else
             m_message = SString(SString::Utf8, message);
+#endif
         }
 
         HRESULT m_hr;
@@ -501,15 +515,24 @@ namespace
         return hmod;
     }
 
+    // Enumerations for constructing lib name variations for probing
+    enum NameVariations
+    {
+        NameVariations_None = 0,
+        NameVariations_Prefix = 1,
+        NameVariations_Name = 2,
+        NameVariations_Suffix = 4,
+    };
+
 #ifdef TARGET_UNIX
     const int MaxVariationCount = 4;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(NameVariations* libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto PrefixNameFmt = W("%s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
-        static auto PrefixNameSuffixFmt = W("%s%s%s");
+        static auto NameFmt = (NameVariations)NameVariations_Name;
+        static auto PrefixNameFmt = (NameVariations)(NameVariations_Prefix | NameVariations_Name);
+        static auto NameSuffixFmt = (NameVariations)(NameVariations_Name | NameVariations_Suffix);
+        static auto PrefixNameSuffixFmt = (NameVariations)(NameVariations_Prefix | NameVariations_Name | NameVariations_Suffix);
 
         _ASSERTE(*numberOfVariations >= MaxVariationCount);
 
@@ -526,7 +549,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += (ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W) - 1);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -564,36 +587,29 @@ namespace
     }
 #else // TARGET_UNIX
     const int MaxVariationCount = 2;
-    void DetermineLibNameVariations(const WCHAR** libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
+    void DetermineLibNameVariations(NameVariations* libNameVariations, int* numberOfVariations, const SString& libName, bool libNameIsRelativePath)
     {
         // Supported lib name variations
-        static auto NameFmt = W("%.0s%s%.0s");
-        static auto NameSuffixFmt = W("%.0s%s%s");
+        static auto NameFmt = (NameVariations)NameVariations_Name;
+        static auto NameSuffixFmt = (NameVariations)(NameVariations_Name | NameVariations_Suffix);
 
         _ASSERTE(*numberOfVariations >= MaxVariationCount);
 
         int varCount = 0;
 
-        // The purpose of following code is to workaround LoadLibrary limitation:
-        // LoadLibrary won't append extension if filename itself contains '.'. Thus it will break the following scenario:
-        // [DllImport("A.B")] // The full name for file is "A.B.dll". This is common code pattern for cross-platform PInvoke
-        // The workaround for above scenario is to call LoadLibrary with "A.B" first, if it fails, then call LoadLibrary with "A.B.dll"
-        auto it = libName.Begin();
-        if (!libNameIsRelativePath ||
-            !libName.Find(it, W('.')) ||
-            libName.EndsWith(W(".")) ||
-            libName.EndsWithCaseInsensitive(W(".dll")) ||
-            libName.EndsWithCaseInsensitive(W(".exe")))
+        // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
+        // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string
+        // or provide an absolute path.
+        libNameVariations[varCount++] = NameFmt;
+
+        // The runtime will append the '.dll' extension if the path is relative and the name doesn't end with a "."
+        // or an existing known extension. This is done due to issues with case-sensitive file systems
+        // on Windows. The Windows loader always appends ".DLL" as opposed to the more common ".dll".
+        if (libNameIsRelativePath
+            && !libName.EndsWith(W("."))
+            && !libName.EndsWithCaseInsensitive(W(".dll"))
+            && !libName.EndsWithCaseInsensitive(W(".exe")))
         {
-            // Follow LoadLibrary rules in MSDN doc: https://msdn.microsoft.com/en-us/library/windows/desktop/ms684175(v=vs.85).aspx
-            // If the string specifies a full path, the function searches only that path for the module.
-            // If the string specifies a module name without a path and the file name extension is omitted, the function appends the default library extension .dll to the module name.
-            // To prevent the function from appending .dll to the module name, include a trailing point character (.) in the module name string.
-            libNameVariations[varCount++] = NameFmt;
-        }
-        else
-        {
-            libNameVariations[varCount++] = NameFmt;
             libNameVariations[varCount++] = NameSuffixFmt;
         }
 
@@ -647,13 +663,22 @@ namespace
         // even if it has one, or to leave off a prefix like "lib" even if it has one
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
-        const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
+        NameVariations prefixSuffixCombinations[MaxVariationCount] = {};
         int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {
             SString currLibNameVariation;
-            currLibNameVariation.Printf(prefixSuffixCombinations[i], PLATFORM_SHARED_LIB_PREFIX_W, wszLibName, PLATFORM_SHARED_LIB_SUFFIX_W);
+
+            NameVariations const variations = prefixSuffixCombinations[i];
+            if ((variations & NameVariations_Prefix) != 0)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_PREFIX_W);
+
+            _ASSERTE((variations & NameVariations_Name) != 0);
+            currLibNameVariation.Append(wszLibName);
+
+            if ((variations & NameVariations_Suffix) != 0)
+                currLibNameVariation.Append(PLATFORM_SHARED_LIB_SUFFIX_W);
 
             // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
             hmod = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, pErrorTracker);
@@ -691,33 +716,6 @@ namespace
             if (hmod != NULL)
             {
                 return hmod;
-            }
-        }
-
-        // This may be an assembly name
-        // Format is "fileName, assemblyDisplayName"
-        MAKE_UTF8PTR_FROMWIDE(szLibName, wszLibName);
-        char *szComma = strchr(szLibName, ',');
-        if (szComma)
-        {
-            *szComma = '\0';
-            // Trim white spaces
-            while (COMCharacter::nativeIsWhiteSpace(*(++szComma)));
-
-            AssemblySpec spec;
-            if (SUCCEEDED(spec.Init(szComma)))
-            {
-                // Need to perform case insensitive hashing.
-                SString moduleName(SString::Utf8, szLibName);
-                moduleName.LowerCase();
-
-                StackScratchBuffer buffer;
-                szLibName = (LPSTR)moduleName.GetUTF8(buffer);
-
-                Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
-                Module *pModule = pAssembly->FindModuleByName(szLibName);
-
-                hmod = LocalLoadLibraryHelper(pModule->GetPath(), loadWithAlteredPathFlags | dllImportSearchPathFlags, pErrorTracker);
             }
         }
 

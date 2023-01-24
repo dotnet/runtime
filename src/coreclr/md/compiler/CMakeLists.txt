@@ -37,7 +37,6 @@ set(MDCOMPILER_HEADERS
   disp.h
   filtermanager.h
   importhelper.h
-  mdperf.h
   mdutil.h
   regmeta.h
 )

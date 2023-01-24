@@ -144,6 +144,7 @@ namespace System.Formats.Asn1
     public sealed partial class AsnWriter
     {
         public AsnWriter(System.Formats.Asn1.AsnEncodingRules ruleSet) { }
+        public AsnWriter(System.Formats.Asn1.AsnEncodingRules ruleSet, int initialCapacity) { }
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
         public void CopyTo(System.Formats.Asn1.AsnWriter destination) { }
         public byte[] Encode() { throw null; }

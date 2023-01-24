@@ -236,7 +236,7 @@ namespace System.IO.Ports.Tests
             com1.DataBits = 7;
             com1.ReadTimeout = 500;
 
-            //Genrate random characters without an parity error
+            // Generate random characters without an parity error
             for (int i = 0; i < bytesToWrite.Length; i++)
             {
                 byte randByte;

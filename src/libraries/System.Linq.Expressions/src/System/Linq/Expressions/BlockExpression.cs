@@ -135,7 +135,7 @@ namespace System.Linq.Expressions
 
         internal virtual ReadOnlyCollection<ParameterExpression> GetOrMakeVariables()
         {
-            return EmptyReadOnlyCollection<ParameterExpression>.Instance;
+            return ReadOnlyCollection<ParameterExpression>.Empty;
         }
 
         /// <summary>
@@ -760,7 +760,7 @@ namespace System.Linq.Expressions
 
         public void CopyTo(Expression[] array, int index)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             if (index < 0)
             {
                 throw Error.ArgumentOutOfRange(nameof(index));
@@ -900,7 +900,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(params Expression[] expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             RequiresCanRead(expressions, nameof(expressions));
 
             return GetOptimizedBlockExpression(expressions);
@@ -913,7 +913,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<Expression> expressions)
         {
-            return Block(EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
+            return Block(ReadOnlyCollection<ParameterExpression>.Empty, expressions);
         }
 
         /// <summary>
@@ -924,7 +924,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, params Expression[] expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             return Block(type, (IEnumerable<Expression>)expressions);
         }
 
@@ -936,7 +936,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, IEnumerable<Expression> expressions)
         {
-            return Block(type, EmptyReadOnlyCollection<ParameterExpression>.Instance, expressions);
+            return Block(type, ReadOnlyCollection<ParameterExpression>.Empty, expressions);
         }
 
         /// <summary>
@@ -970,7 +970,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(expressions);
             ReadOnlyCollection<ParameterExpression> variableList = variables.ToReadOnly();
 
             if (variableList.Count == 0)
@@ -998,8 +998,8 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="BlockExpression"/>.</returns>
         public static BlockExpression Block(Type type, IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.RequiresNotNull(expressions, nameof(expressions));
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(expressions);
 
             ReadOnlyCollection<Expression> expressionList = expressions.ToReadOnly();
             RequiresCanRead(expressionList, nameof(expressions));
@@ -1089,7 +1089,7 @@ namespace System.Linq.Expressions
         {
             return expressions.Count switch
             {
-                0 => BlockCore(typeof(void), EmptyReadOnlyCollection<ParameterExpression>.Instance, EmptyReadOnlyCollection<Expression>.Instance),
+                0 => BlockCore(typeof(void), ReadOnlyCollection<ParameterExpression>.Empty, ReadOnlyCollection<Expression>.Empty),
                 2 => new Block2(expressions[0], expressions[1]),
                 3 => new Block3(expressions[0], expressions[1], expressions[2]),
                 4 => new Block4(expressions[0], expressions[1], expressions[2], expressions[3]),

@@ -5,7 +5,7 @@
 ## Usage:
 ## ./build-local.sh [StressConfiguration] [LibrariesConfiguration]
 
-version=7.0
+version=8.0
 repo_root=$(git rev-parse --show-toplevel)
 daily_dotnet_root=./.dotnet-daily
 
@@ -21,7 +21,7 @@ if [ "$2" != "" ]; then
     libraries_configuration=${libraries_configuration^} # Uppercase first character
 fi
 
-testhost_root=$repo_root/artifacts/bin/testhost/net$version-Linux-$libraries_configuration-x64
+testhost_root=$repo_root/artifacts/bin/testhost/net$version-linux-$libraries_configuration-x64
 echo "StressConfiguration: $stress_configuration, LibrariesConfiguration: $libraries_configuration, testhost: $testhost_root"
 
 if [[ ! -d $testhost_root ]]; then
@@ -59,7 +59,7 @@ dotnet build -c $stress_configuration
 runscript=./run-stress-${stress_configuration,,}-${libraries_configuration,,}.sh
 if [[ ! -f $runscript ]]; then
     echo "Generating runscript."
-    echo "$testhost_root/dotnet exec ./bin/$stress_configuration/net$version/HttpStress.dll \$@" > $runscript
+    echo "$testhost_root/dotnet exec --roll-forward Major ./bin/$stress_configuration/net$version/HttpStress.dll \$@" > $runscript
     chmod +x $runscript
 fi
 

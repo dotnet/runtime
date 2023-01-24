@@ -168,7 +168,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list aparg)
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
 
-                TempWChar = va_arg(ap, int);
+                TempWChar = (WCHAR)va_arg(ap, int);
                 Length = Silent_WideCharToMultiByte(&TempWChar, 1, TempBuffer, 4);
                 if (!Length)
                 {
@@ -204,7 +204,7 @@ int Silent_PAL_vfprintf(PAL_FILE *stream, const char *format, va_list aparg)
 
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
-                    *(va_arg(ap, short *)) = written;
+                    *(va_arg(ap, short *)) = (short)written;
                 }
                 else
                 {
@@ -476,6 +476,14 @@ BOOL Silent_ExtractFormatA(LPCSTR *Fmt, LPSTR Out, LPINT Flags, LPINT Width, LPI
         /* convert to 'll' so BSD's snprintf can handle it */
         *Fmt += 3;
         *Prefix = PFF_PREFIX_LONGLONG;
+    }
+    /* grab a prefix of 'z' */
+    else if (**Fmt == 'z')
+    {
+#ifdef HOST_64BIT
+        *Prefix = PFF_PREFIX_LONGLONG;
+#endif
+        ++(*Fmt);
     }
     /* grab a prefix of 'h' */
     else if (**Fmt == 'h')

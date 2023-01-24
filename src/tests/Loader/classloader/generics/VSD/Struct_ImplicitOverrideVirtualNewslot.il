@@ -7,7 +7,7 @@
 // The reason we are using IL is because C# doesn't allow struct to have virtual methods with 'virtual' keyword.
 // Methods that implement interface methods are by default virtual (which translates to 'virtual newslot final' in IL.
 // But if we use 'virtual' keyword in C# it translates to 'virtual newslot' in  IL
-// and struct virtual methods can't be overriden.
+// and struct virtual methods can't be overridden.
 
 
 .assembly extern mscorlib {}
@@ -17,7 +17,7 @@
 .class public auto ansi beforefieldinit A`1<T>
        extends [mscorlib]System.Object
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -38,12 +38,12 @@
 
 .class interface public abstract auto ansi I
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  method1() cil managed
   {
   } // end of method I::method1
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  method2<T>() cil managed
   {
   } // end of method I::method2
@@ -52,12 +52,12 @@
 
 .class interface public abstract auto ansi IGen`1<T>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  method1() cil managed
   {
   } // end of method IGen`1::method1
 
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           instance int32  method2<M>() cil managed
   {
   } // end of method IGen`1::method2
@@ -85,7 +85,7 @@
     IL_0006:  ret
   } // end of method C1::method1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method2<T>() cil managed
   {
     // Code size       7 (0x7)
@@ -146,7 +146,7 @@
 {
   .pack 0
   .size 1
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method1() cil managed
   {
     // Code size       7 (0x7)
@@ -161,7 +161,7 @@
     IL_0006:  ret
   } // end of method C3Int::method1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method2<U>() cil managed
   {
     // Code size       7 (0x7)
@@ -199,7 +199,7 @@
     IL_0006:  ret
   } // end of method C3String::method1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method2<U>() cil managed
   {
     // Code size       7 (0x7)
@@ -222,7 +222,7 @@
 {
   .pack 0
   .size 1
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method1() cil managed
   {
     // Code size       7 (0x7)
@@ -237,7 +237,7 @@
     IL_0006:  ret
   } // end of method C3Object::method1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method2<U>() cil managed
   {
     // Code size       7 (0x7)
@@ -260,7 +260,7 @@
 {
   .pack 0
   .size 1
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method1() cil managed
   {
     // Code size       7 (0x7)
@@ -275,7 +275,7 @@
     IL_0006:  ret
   } // end of method C4`1::method1
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  method2<U>() cil managed
   {
     // Code size       7 (0x7)
@@ -840,7 +840,7 @@
     IL_0048:  ret
   } // end of method Test::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -850,7 +850,7 @@
     IL_0006:  ret
   } // end of method Test::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       7 (0x7)

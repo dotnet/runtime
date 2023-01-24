@@ -82,7 +82,7 @@ namespace Sample
             void DoNothing ()
             {
                 if (doThrow)
-                    throw new Exception ("Reached DoThrow and throwed");
+                    throw new Exception ("Reached DoThrow and threw");
             }
         }
 
@@ -106,7 +106,7 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
             }
         }
 
@@ -130,7 +130,7 @@ namespace Sample
             void DoNothing()
             {
                 if (doThrow)
-                    throw new Exception("Reached DoThrow and throwed");
+                    throw new Exception("Reached DoThrow and threw");
             }
         }
 
@@ -154,7 +154,7 @@ namespace Sample
             void DoNothing()
             {
                 if (doThrow)
-                    throw new Exception("Reached DoThrow and throwed");
+                    throw new Exception("Reached DoThrow and threw");
             }
         }
 
@@ -181,7 +181,7 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
             }
         }
 
@@ -196,7 +196,7 @@ namespace Sample
                 {
                     DoThrow();
                 }
-                catch (Exception e) when (e.Message == "Reached DoThrow and throwed")
+                catch (Exception e) when (e.Message == "Reached DoThrow and threw")
                 {
                 }
             }
@@ -205,7 +205,7 @@ namespace Sample
             void DoThrow()
             {
                 if (doThrow)
-                    throw new System.Exception("Reached DoThrow and throwed");
+                    throw new System.Exception("Reached DoThrow and threw");
             }
         }
     }

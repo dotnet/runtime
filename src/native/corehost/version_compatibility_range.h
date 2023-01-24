@@ -4,7 +4,7 @@
 #ifndef __VERSION_COMPATIBILITY_RANGE_H_
 #define __VERSION_COMPATIBILITY_RANGE_H_
 
-// Defines teh allowed range of versions to consider during roll-forward search
+// Defines the allowed range of versions to consider during roll-forward search
 enum class version_compatibility_range_t
 {
     exact = 0,  // Only the specified version is allowed

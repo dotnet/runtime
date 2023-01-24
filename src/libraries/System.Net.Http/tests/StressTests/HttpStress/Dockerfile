@@ -1,20 +1,31 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
+# Build latest msquic locally
+WORKDIR /msquic
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+    gem install fpm
+RUN git clone --recursive https://github.com/dotnet/msquic
+RUN cd msquic/src/msquic && \
+    mkdir build && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
+    cd build && \
+    cmake --build . --config Release
+RUN cd msquic/src/msquic/build/bin/Release && \
+    rm libmsquic.so && \
+    fpm -f -s dir -t deb -n libmsquic -v $( find -type f | cut -d "." -f 4- ) \
+    --license MIT --url https://github.com/microsoft/msquic --log error \
+    $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
+    dpkg -i libmsquic_*.deb
+
+ARG VERSION=8.0
+ARG CONFIGURATION=Release
+
+# Build the stress server
 WORKDIR /app
 COPY . .
-
-# Pulling the msquic Debian package from packages.microsoft.com
-RUN apt-get update -y
-RUN apt-get install -y gnupg2 software-properties-common
-RUN curl -sSL https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-RUN apt-add-repository https://packages.microsoft.com/debian/11/prod
-RUN apt-get update -y
-RUN apt-get install -y libmsquic
-RUN apt-get upgrade -y
-
-ARG VERSION=7.0
-ARG CONFIGURATION=Release
 
 RUN dotnet build -c $CONFIGURATION \
     -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
@@ -24,12 +35,12 @@ RUN dotnet build -c $CONFIGURATION \
 # Enable dump collection
 ENV COMPlus_DbgEnableMiniDump=1
 ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV COMPlus_DbgMiniDumpName="/share/coredump.%p"
+ENV COMPlus_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
 
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
 ENV HTTPSTRESS_ARGS=''
-CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec \
+CMD /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major \
     ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Threading;
 using System.IO;
@@ -288,7 +287,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override bool MoveTo(XPathNavigator other)
         {
-            RtfTreeNavigator that = other as RtfTreeNavigator;
+            RtfTreeNavigator? that = other as RtfTreeNavigator;
             if (that != null)
             {
                 _events = that._events;
@@ -399,7 +398,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override bool MoveTo(XPathNavigator other)
         {
-            RtfTextNavigator that = other as RtfTextNavigator;
+            RtfTextNavigator? that = other as RtfTextNavigator;
             if (that != null)
             {
                 _text = that._text;
@@ -418,7 +417,7 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class NavigatorConstructor
     {
-        private object _cache;
+        private object? _cache;
 
         /// <summary>
         /// Create a document from the cache of events.  If a document has already been created previously, return it.

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 namespace System.Numerics
@@ -85,6 +86,10 @@ namespace System.Numerics
             get => new Vector2(0.0f, 1.0f);
         }
 
+        /// <summary>Gets or sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get or set.</param>
+        /// <returns>The the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
             get => GetElement(this, index);
@@ -224,6 +229,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector2.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector2" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator *(Vector2 left, float right)
         {
@@ -235,6 +241,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector2.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector2" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator *(float left, Vector2 right)
         {
@@ -260,6 +267,7 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector2.op_UnaryNegation" /> method defines the unary negation operation for <see cref="System.Numerics.Vector2" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator -(Vector2 value)
         {
@@ -560,11 +568,17 @@ namespace System.Numerics
         /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array)
         {
-            CopyTo(array, 0);
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if (array.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -577,34 +591,31 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="index" /> is greater than or equal to the array length.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array, int index)
         {
-            if (array is null)
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if ((uint)index >= (uint)array.Length)
             {
-                ThrowHelper.ThrowNullReferenceException();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
-            if ((index < 0) || (index >= array.Length))
-            {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
-            }
-
-            if ((array.Length - index) < 2)
+            if ((array.Length - index) < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            array[index] = X;
-            array[index + 1] = Y;
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />.The length of the destination span must be at least 2.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <exception cref="System.ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if (destination.Length < 2)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -615,15 +626,15 @@ namespace System.Numerics
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 2.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <returns><see langword="true" /> if the source vector was successfully copied to <paramref name="destination" />. <see langword="false" /> if <paramref name="destination" /> is not large enough to hold the source vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if (destination.Length < 2)
+            if (destination.Length < Count)
             {
                 return false;
             }
 
             Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
-
             return true;
         }
 
@@ -641,10 +652,28 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector2.X" /> and <see cref="System.Numerics.Vector2.Y" /> elements are equal.</remarks>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector2 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector64.IsHardwareAccelerated)
+            {
+                return Vector64.LoadUnsafe(ref Unsafe.AsRef(in X)).Equals(Vector64.LoadUnsafe(ref other.X));
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return this.AsVector128().Equals(other.AsVector128());
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector2 self, Vector2 other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
@@ -688,7 +717,7 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -700,17 +729,11 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
-        public readonly string ToString(string? format, IFormatProvider? formatProvider)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-            sb.Append('<');
-            sb.Append(X.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Y.ToString(format, formatProvider));
-            sb.Append('>');
-            return sb.ToString();
+
+            return $"<{X.ToString(format, formatProvider)}{separator} {Y.ToString(format, formatProvider)}>";
         }
     }
 }

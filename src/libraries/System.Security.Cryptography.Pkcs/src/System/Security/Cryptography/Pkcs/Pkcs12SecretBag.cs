@@ -36,10 +36,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetSecretType()
         {
-            if (_secretTypeOid == null)
-            {
-                _secretTypeOid = new Oid(_decoded.SecretTypeId);
-            }
+            _secretTypeOid ??= new Oid(_decoded.SecretTypeId);
 
             return _secretTypeOid.CopyOid();
         }

@@ -81,7 +81,7 @@ mono_100ns_ticks (void)
 	QueryPerformanceCounter (&value);
 	cur_time = value.QuadPart;
 	/* we use unsigned numbers and return the difference to avoid overflows */
-	return (cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart;
+	return GDOUBLE_TO_INT64 ((cur_time - start_time) * (double)MTICKS_PER_SEC / freq.QuadPart);
 }
 
 /* Returns the number of 100ns ticks since Jan 1, 1601, UTC timezone */
@@ -90,8 +90,10 @@ mono_100ns_datetime (void)
 {
 	ULARGE_INTEGER ft;
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof(ft) != sizeof(FILETIME))
 		g_assert_not_reached ();
+MONO_RESTORE_WARNING
 
 	GetSystemTimeAsFileTime ((FILETIME*) &ft);
 	return ft.QuadPart;
@@ -103,9 +105,6 @@ mono_100ns_datetime (void)
 #if defined (HAVE_SYS_PARAM_H)
 #include <sys/param.h>
 #endif
-#if defined(HAVE_SYS_SYSCTL_H)
-#include <sys/sysctl.h>
-#endif
 
 #if defined(HOST_DARWIN)
 #include <mach/mach.h>
@@ -115,7 +114,7 @@ mono_100ns_datetime (void)
 #include <time.h>
 
 /* Returns the number of milliseconds from boot time: this should be monotonic */
-/* Adapted from CoreCLR: https://github.com/dotnet/coreclr/blob/66d2738ea96fcce753dec1370e79a0c78f7b6adb/src/pal/src/misc/time.cpp */
+/* Adapted from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/pal/src/misc/time.cpp */
 gint64
 mono_msec_boottime (void)
 {

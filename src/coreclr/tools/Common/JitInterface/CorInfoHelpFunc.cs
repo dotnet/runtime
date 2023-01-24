@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Internal.JitInterface
 {
     // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -47,23 +43,22 @@ namespace Internal.JitInterface
         CORINFO_HELP_FLTROUND,
         CORINFO_HELP_DBLROUND,
 
-        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide 
+        /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
 
         CORINFO_HELP_NEWFAST,
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
         CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
-        CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
+        CORINFO_HELP_NEWSFAST_ALIGN8_VC, // allocator for small, value class, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-        CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+        CORINFO_HELP_NEW_MDARR, // multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
         CORINFO_HELP_STRCNS,            // create a new string literal
-        CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
         /* Object model */
 
         CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -81,17 +76,19 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTARRAY,
         CORINFO_HELP_CHKCASTCLASS,
         CORINFO_HELP_CHKCASTANY,
-        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 
+        CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
-        CORINFO_HELP_BOX,
+        CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
+
+        CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
         CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
         CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
         CORINFO_HELP_ARRADDR_ST,        // assign to element of object array with type-checking
-        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparision and returns address
+        CORINFO_HELP_LDELEMA_REF,       // does a precise type comparison and returns address
 
         /* Exceptions */
 
@@ -106,7 +103,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
         CORINFO_HELP_FAIL_FAST,         // Kill the process avoiding any exceptions or stack and data dependencies (use for GuardStack unsafe buffer checks)
 
-        CORINFO_HELP_METHOD_ACCESS_EXCEPTION,//Throw an access exception due to a failed member/class access check.
+        CORINFO_HELP_METHOD_ACCESS_EXCEPTION, //Throw an access exception due to a failed member/class access check.
         CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
         CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
@@ -120,7 +117,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_MON_EXIT_STATIC,
 
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor 
+        CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                               // in its ManagedClassObject
 
         /* GC support */
@@ -166,7 +163,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
-        // There are a variety of specialized helpers for accessing static fields. The JIT should use 
+        // There are a variety of specialized helpers for accessing static fields. The JIT should use
         // ICorClassInfo::getSharedStaticsOrCCtorHelper to determine which helper to use
 
         // Helpers for regular statics
@@ -215,9 +212,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_MEMCPY,                // Copy block of memory
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,// determine a type/field/method handle at run-time, with IBC logging
+        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG,// determine a type/field/method handle at run-time, with IBC logging
+        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG, // determine a type/field/method handle at run-time, with IBC logging
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
@@ -235,14 +232,17 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_NEWARR_1,
         CORINFO_HELP_READYTORUN_ISINSTANCEOF,
         CORINFO_HELP_READYTORUN_CHKCAST,
-        CORINFO_HELP_READYTORUN_STATIC_BASE,
+        CORINFO_HELP_READYTORUN_GCSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+        CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
         CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
         CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
 
-        CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
-        CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
+        CORINFO_HELP_EE_PERSONALITY_ROUTINE, // Not real JIT helper. Used in native images.
+        CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET, // Not real JIT helper. Used in native images to detect filter funclets.
 
         // ASSIGN_REF_EAX - CHECKED_ASSIGN_REF_EBP: NOGC_WRITE_BARRIERS JIT helper calls
         //
@@ -271,11 +271,12 @@ namespace Internal.JitInterface
         CORINFO_HELP_THROW_NOT_IMPLEMENTED,             // throw NotImplementedException
         CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
         CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
+        CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
 
-        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument    
+        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
@@ -285,9 +286,14 @@ namespace Internal.JitInterface
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
         CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+
         CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
         CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
-        CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+        CORINFO_HELP_DELEGATEPROFILE32,         // Update 32-bit method profile for a delegate call site
+        CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
+        CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
+        CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
 
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer

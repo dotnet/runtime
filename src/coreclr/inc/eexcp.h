@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-//
-
-//
-// ==--==
-
-
 #ifndef __eexcp_h__
 #define __eexcp_h__
 
@@ -130,7 +120,7 @@ inline BOOL IsDuplicateClause(EE_ILEXCEPTION_CLAUSE* pEHClause)
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // Finally is the only EH construct that can be part of the execution as being fall-through.
 //
-// "Cloned" finally is a contruct that represents a finally block that is used as
+// "Cloned" finally is a construct that represents a finally block that is used as
 // fall through for normal try-block execution. Such a "cloned" finally will:
 //
 // 1) Have its try-clause's Start and End PC the same as its handler's start PC (i.e. will have

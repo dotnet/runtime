@@ -1,304 +1,839 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Cbor;
-using System.Runtime.Versioning;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
+    /// <summary>
+    /// Represents a single-signature COSE_Sign1 message.
+    /// </summary>
     public sealed class CoseSign1Message : CoseMessage
     {
-        private const string SigStructureCoxtextSign1 = "Signature1";
-        private const int Sign1ArrayLegth = 4;
+        internal const int Sign1ArrayLength = 4;
+        private const int Sign1SizeOfCborTag = 1;
+        private readonly byte[] _signature;
 
-        internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr)
-            : base(protectedHeader, unprotectedHeader, content, signature, protectedHeaderAsBstr) { }
+        /// <summary>
+        /// Gets the digital signature.
+        /// </summary>
+        /// <value>A region of memory that contains the digital signature.</value>
+        public ReadOnlyMemory<byte> Signature => _signature;
 
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, ECDsa key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        internal CoseSign1Message(CoseHeaderMap protectedHeader, CoseHeaderMap unprotectedHeader, byte[]? content, byte[] signature, byte[] protectedHeaderAsBstr, bool isTagged)
+            : base(protectedHeader, unprotectedHeader, content, protectedHeaderAsBstr, isTagged)
         {
-            byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.ECDsa, hashAlgorithm);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
-            byte[] signature = SignWithECDsa(key, toBeSigned, hashAlgorithm);
-            return SignCore(encodedProtectedHeader, GetEmptyCborMap(), signature, content, isDetached);
+            _signature = signature;
         }
 
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, RSA key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        /// <summary>
+        /// Signs the specified content and encodes it as a COSE_Sign1 message with detached content.
+        /// </summary>
+        /// <param name="detachedContent">The content to sign.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns>The encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static byte[] SignDetached(byte[] detachedContent, CoseSigner signer, byte[]? associatedData = null)
         {
-            byte[] encodedProtectedHeader = CreateEncodedProtectedHeader(KeyType.RSA, hashAlgorithm);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtectedHeader, content);
-            byte[] signature = SignWithRSA(key, toBeSigned, hashAlgorithm);
-            return SignCore(encodedProtectedHeader, GetEmptyCborMap(), signature, content, isDetached);
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            return SignCore(detachedContent.AsSpan(), null, signer, associatedData, isDetached: true);
         }
 
-        [UnsupportedOSPlatform("browser")]
-        public static byte[] Sign(byte[] content!!, CoseHeaderMap protectedHeaders!!, CoseHeaderMap unprotectedHeaders!!, AsymmetricAlgorithm key!!, HashAlgorithmName hashAlgorithm, bool isDetached = false)
+        /// <summary>
+        /// Signs the specified content and encodes it as a COSE_Sign1 message with embedded content.
+        /// </summary>
+        /// <param name="embeddedContent">The content to sign and to include in the message.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="embeddedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns>The encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="embeddedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static byte[] SignEmbedded(byte[] embeddedContent, CoseSigner signer, byte[]? associatedData = null)
         {
-            KeyType keyType = key switch
+            if (embeddedContent is null)
+                throw new ArgumentNullException(nameof(embeddedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            return SignCore(embeddedContent.AsSpan(), null, signer, associatedData, isDetached: false);
+        }
+
+        /// <summary>
+        /// Signs the specified content and encodes it as a COSE_Sign1 message with detached content.
+        /// </summary>
+        /// <param name="detachedContent">The content to sign.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns>The encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static byte[] SignDetached(ReadOnlySpan<byte> detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
+        {
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            return SignCore(detachedContent, null, signer, associatedData, isDetached: true);
+        }
+
+        /// <summary>
+        /// Signs the specified content and encodes it as a COSE_Sign1 message with embedded content.
+        /// </summary>
+        /// <param name="embeddedContent">The content to sign and to include in the message.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="embeddedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns>The encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static byte[] SignEmbedded(ReadOnlySpan<byte> embeddedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
+        {
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            return SignCore(embeddedContent, null, signer, associatedData, isDetached: false);
+        }
+
+        /// <summary>
+        /// Signs the specified content and encodes it as a COSE_Sign1 message with detached content.
+        /// </summary>
+        /// <param name="detachedContent">The content to sign.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns>The encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static byte[] SignDetached(Stream detachedContent, CoseSigner signer, ReadOnlySpan<byte> associatedData = default)
+        {
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            if (!detachedContent.CanRead)
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+
+            if (!detachedContent.CanSeek)
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+
+            return SignCore(default, detachedContent, signer, associatedData, isDetached: true);
+        }
+
+        internal static byte[] SignCore(ReadOnlySpan<byte> contentBytes, Stream? contentStream, CoseSigner signer, ReadOnlySpan<byte> associatedData, bool isDetached)
+        {
+            Debug.Assert(contentStream == null || (isDetached && contentBytes.Length == 0));
+
+            ValidateBeforeSign(signer);
+
+            int expectedSize = ComputeEncodedSize(signer, contentBytes.Length, isDetached);
+            var buffer = new byte[expectedSize];
+
+            int bytesWritten = CreateCoseSign1Message(contentBytes, contentStream, buffer, signer, associatedData, isDetached);
+            Debug.Assert(expectedSize == bytesWritten);
+
+            return buffer;
+        }
+
+        /// <summary>
+        /// Asynchronously signs the specified content and encodes it as a COSE_Sign1 message with detached content.
+        /// </summary>
+        /// <param name="detachedContent">The content to sign.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous operation. The value of its <see cref="Task{T}.Result"/> property contains the encoded message.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="detachedContent"/> or <paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
+        {
+            if (detachedContent is null)
+                throw new ArgumentNullException(nameof(detachedContent));
+
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            if (!detachedContent.CanRead)
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+
+            if (!detachedContent.CanSeek)
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+
+            ValidateBeforeSign(signer);
+
+            int expectedSize = ComputeEncodedSize(signer, contentLength: 0, isDetached: true);
+            return SignAsyncCore(expectedSize, detachedContent, signer, associatedData, cancellationToken);
+        }
+
+        private static async Task<byte[]> SignAsyncCore(int expectedSize, Stream content, CoseSigner signer, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)
+        {
+            byte[] buffer = new byte[expectedSize];
+            int bytesWritten = await CreateCoseSign1MessageAsync(content, buffer, signer, associatedData, cancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(buffer.Length == bytesWritten);
+            return buffer;
+        }
+
+        /// <summary>
+        /// Attempts to sign the specified content and encode it as a COSE_Sign1 message with detached content into the specified buffer.
+        /// </summary>
+        /// <param name="detachedContent">The content to sign.</param>
+        /// <param name="destination">The buffer in which to write the encoded bytes.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="detachedContent"/>.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the encoded message; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static bool TrySignDetached(ReadOnlySpan<byte> detachedContent, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData = default)
+            => TrySign(detachedContent, destination, signer, out bytesWritten, associatedData, isDetached: true);
+
+        /// <summary>
+        /// Attempts to sign the specified content and encode it as a COSE_Sign1 message with embedded content into the specified buffer.
+        /// </summary>
+        /// <param name="embeddedContent">The content to sign and to include in the message.</param>
+        /// <param name="destination">The buffer in which to write the encoded bytes.</param>
+        /// <param name="signer">The signer information used to sign <paramref name="embeddedContent"/>.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must also be provided during verification.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the encoded message; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="signer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     The <see cref="CoseSigner.ProtectedHeaders"/> and <see cref="CoseSigner.UnprotectedHeaders"/> collections in <paramref name="signer"/> have one or more labels in common.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     One or more of the labels specified in a <see cref="CoseHeaderLabel.CriticalHeaders"/> header is missing.
+        ///   </para>
+        /// </exception>
+        public static bool TrySignEmbedded(ReadOnlySpan<byte> embeddedContent, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData = default)
+            => TrySign(embeddedContent, destination, signer, out bytesWritten, associatedData, isDetached: false);
+
+        private static bool TrySign(ReadOnlySpan<byte> content, Span<byte> destination, CoseSigner signer, out int bytesWritten, ReadOnlySpan<byte> associatedData, bool isDetached)
+        {
+            if (signer is null)
+                throw new ArgumentNullException(nameof(signer));
+
+            ValidateBeforeSign(signer);
+
+            int expectedSize = ComputeEncodedSize(signer, content.Length, isDetached);
+            if (expectedSize > destination.Length)
             {
-                ECDsa => KeyType.ECDsa,
-                RSA => KeyType.RSA,
-                _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedKey, key.GetType()))
-            };
-
-            ThrowIfDuplicateLabels(protectedHeaders, unprotectedHeaders);
-
-            int? algHeaderValueToSlip = ValidateOrSlipAlgorithmHeader(protectedHeaders, unprotectedHeaders, keyType, hashAlgorithm);
-
-            byte[] encodedProtetedHeaders = protectedHeaders.Encode(mustReturnEmptyBstrIfEmpty: true, algHeaderValueToSlip);
-            byte[] toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, encodedProtetedHeaders, content);
-
-            byte[] signature;
-            if (keyType == KeyType.ECDsa)
-            {
-                signature = SignWithECDsa((ECDsa)key, toBeSigned, hashAlgorithm);
+                bytesWritten = 0;
+                return false;
             }
-            else
-            {
-                signature = SignWithRSA((RSA)key, toBeSigned, hashAlgorithm);
-            }
 
-            return SignCore(encodedProtetedHeaders, unprotectedHeaders.Encode(), signature, content, isDetached);
+            bytesWritten = CreateCoseSign1Message(content, null, destination, signer, associatedData, isDetached);
+            Debug.Assert(expectedSize == bytesWritten);
+
+            return true;
         }
 
-        private static byte[] SignCore(
-            ReadOnlySpan<byte> encodedProtectedHeader,
-            ReadOnlySpan<byte> encodedUnprotectedHeader,
-            ReadOnlySpan<byte> signature,
-            ReadOnlySpan<byte> content,
-            bool isDetached)
+        internal static void ValidateBeforeSign(CoseSigner signer)
+        {
+            if (ContainDuplicateLabels(signer._protectedHeaders, signer._unprotectedHeaders))
+            {
+                throw new ArgumentException(SR.Sign1SignHeaderDuplicateLabels, nameof(signer));
+            }
+
+            if (MissingCriticalHeaders(signer._protectedHeaders, out string? labelName))
+            {
+                throw new ArgumentException(SR.Format(SR.CriticalHeaderMissing, labelName), nameof(signer));
+            }
+        }
+
+        private static int CreateCoseSign1Message(ReadOnlySpan<byte> contentBytes, Stream? contentStream, Span<byte> buffer, CoseSigner signer, ReadOnlySpan<byte> associatedData, bool isDetached)
         {
             var writer = new CborWriter();
             writer.WriteTag(Sign1Tag);
-            writer.WriteStartArray(Sign1ArrayLegth);
-            writer.WriteByteString(encodedProtectedHeader);
-            writer.WriteEncodedValue(encodedUnprotectedHeader);
+            writer.WriteStartArray(Sign1ArrayLength);
 
-            if (isDetached)
+            int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, signer._protectedHeaders, isProtected: true, signer._algHeaderValueToSlip);
+            // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
+            // so don't overwrite them yet.
+            CoseHelpers.WriteHeaderMap(buffer.Slice(protectedMapBytesWritten), writer, signer._unprotectedHeaders, isProtected: false, null);
+
+            CoseHelpers.WriteContent(writer, contentBytes, isDetached);
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
             {
-                writer.WriteNull();
-            }
-            else
-            {
-                writer.WriteByteString(content);
+                AppendToBeSigned(buffer, hasher, SigStructureContext.Signature1, buffer.Slice(0, protectedMapBytesWritten), ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
+                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
             }
 
-            writer.WriteByteString(signature);
             writer.WriteEndArray();
-
-            return writer.Encode();
+            return writer.Encode(buffer);
         }
 
-        [UnsupportedOSPlatform("browser")]
-        private static byte[] SignWithECDsa(ECDsa key, byte[] data, HashAlgorithmName hashAlgorithm)
-            => key.SignData(data, hashAlgorithm);
-
-        [UnsupportedOSPlatform("browser")]
-        private static byte[] SignWithRSA(RSA key, byte[] data, HashAlgorithmName hashAlgorithm)
-            => key.SignData(data, hashAlgorithm, RSASignaturePadding.Pss);
-
-        internal static byte[] CreateEncodedProtectedHeader(KeyType algType, HashAlgorithmName hashAlgorithm)
+        private static async Task<int> CreateCoseSign1MessageAsync(Stream content, byte[] buffer, CoseSigner signer, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)
         {
             var writer = new CborWriter();
-            writer.WriteStartMap(1);
-            writer.WriteInt32(KnownHeaders.Alg);
-            writer.WriteInt32(GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(algType, hashAlgorithm));
-            writer.WriteEndMap();
-            return writer.Encode();
+            writer.WriteTag(Sign1Tag);
+            writer.WriteStartArray(Sign1ArrayLength);
+
+            int protectedMapBytesWritten = CoseHelpers.WriteHeaderMap(buffer, writer, signer._protectedHeaders, isProtected: true, signer._algHeaderValueToSlip);
+            // We're going to use the encoded protected headers again after this step (for the toBeSigned construction),
+            // so don't overwrite them yet.
+            CoseHelpers.WriteHeaderMap(buffer.AsSpan(protectedMapBytesWritten), writer, signer._unprotectedHeaders, isProtected: false, null);
+            CoseHelpers.WriteContent(writer, default, isDetached: true);
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+            {
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, buffer.AsMemory(0, protectedMapBytesWritten), ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
+            }
+
+            writer.WriteEndArray();
+            return writer.Encode(buffer);
         }
 
-        private static byte[] GetEmptyCborMap()
+        /// <summary>
+        /// Verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, byte[], byte[])"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyEmbedded(AsymmetricAlgorithm key, byte[]? associatedData = null)
         {
-            var writer = new CborWriter();
-            writer.WriteStartMap(0);
-            writer.WriteEndMap();
-            return writer.Encode();
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasDetached);
+            }
+
+            return VerifyCore(key, _content, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
-        public bool Verify(ECDsa key) => VerifyECDsa(key, _content ?? throw new CryptographicException(SR.Sign1VerifyContentWasDetached));
-
-        [UnsupportedOSPlatform("browser")]
-        public bool Verify(RSA key) => VerifyRSA(key, _content ?? throw new CryptographicException(SR.Sign1VerifyContentWasDetached));
-
-        [UnsupportedOSPlatform("browser")]
-        public bool Verify(ECDsa key, ReadOnlySpan<byte> content) => VerifyECDsa(key, _content == null ? content : throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded));
-
-        [UnsupportedOSPlatform("browser")]
-        public bool Verify(RSA key, ReadOnlySpan<byte> content) =>  VerifyRSA(key, _content == null ? content : throw new CryptographicException(SR.Sign1VerifyContentWasEmbedded));
-
-        [UnsupportedOSPlatform("browser")]
-        private bool VerifyECDsa(ECDsa key, ReadOnlySpan<byte> content)
+        /// <summary>
+        /// Verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is detached from this message, use an overload that accepts a detached content.</exception>        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyEmbedded(AsymmetricAlgorithm key, ReadOnlySpan<byte> associatedData)
         {
-            PrepareForVerify(content, out int alg, out byte[] toBeSigned);
-            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(alg, KeyType.ECDsa);
-            return key.VerifyData(toBeSigned, _signature, hashAlgorithm);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasDetached);
+            }
+
+            return VerifyCore(key, _content, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
-        [UnsupportedOSPlatform("browser")]
-        private bool VerifyRSA(RSA key, ReadOnlySpan<byte> content)
+        /// <summary>
+        /// Verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyEmbedded(AsymmetricAlgorithm, byte[])"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyDetached(AsymmetricAlgorithm key, byte[] detachedContent, byte[]? associatedData = null)
         {
-            PrepareForVerify(content, out int alg, out byte[] toBeSigned);
-            HashAlgorithmName hashAlgorithm = GetHashAlgorithmFromCoseAlgorithmAndKeyType(alg, KeyType.RSA);
-            return key.VerifyData(toBeSigned, _signature, hashAlgorithm, RSASignaturePadding.Pss);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+
+            if (!IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
         }
 
-        private void PrepareForVerify(ReadOnlySpan<byte> content, out int alg, out byte[] toBeSigned)
+        /// <summary>
+        /// Verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="key"/> is of an unsupported type.</exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyEmbedded(AsymmetricAlgorithm, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyDetached(AsymmetricAlgorithm key, ReadOnlySpan<byte> detachedContent, ReadOnlySpan<byte> associatedData = default)
         {
-            ThrowIfUnsupportedHeaders();
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
-            ReadOnlyMemory<byte> encodedAlg = GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+            if (!IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
 
-            int? nullableAlg = DecodeCoseAlgorithmHeader(encodedAlg);
+            return VerifyCore(key, detachedContent, null, associatedData, CoseHelpers.GetKeyType(key));
+        }
+
+        /// <summary>
+        /// Verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <returns><see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetachedAsync(AsymmetricAlgorithm, Stream, ReadOnlyMemory{byte}, CancellationToken)"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public bool VerifyDetached(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlySpan<byte> associatedData = default)
+        {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanRead)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
+            }
+
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            if (!IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyCore(key, default, detachedContent, associatedData, CoseHelpers.GetKeyType(key));
+        }
+
+        private bool VerifyCore(AsymmetricAlgorithm key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, ReadOnlySpan<byte> associatedData, KeyType keyType)
+        {
+            Debug.Assert(contentStream == null || contentBytes.Length == 0);
+            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+
+            int? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
             if (nullableAlg == null)
             {
                 throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
             }
 
-            alg = nullableAlg.Value;
-            toBeSigned = CreateToBeSigned(SigStructureCoxtextSign1, _protectedHeaderAsBstr, content);
-        }
-
-        private static ReadOnlyMemory<byte> GetCoseAlgorithmFromProtectedHeaders(CoseHeaderMap protectedHeaders)
-        {
-            // https://datatracker.ietf.org/doc/html/rfc8152#section-3.1 alg:
-            // This parameter MUST be authenticated where the ability to do so exists.
-            // This authentication can be done either by placing the header in the protected header bucket or as part of the externally supplied data.
-            if (!protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
+            HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
-                throw new CryptographicException(SR.Sign1VerifyAlgIsRequired);
-            }
+                int bufferLength = ComputeToBeSignedEncodedSize(
+                    SigStructureContext.Signature1,
+                    _protectedHeaderAsBstr.Length,
+                    signProtectedLength: 0,
+                    associatedData.Length,
+                    contentLength: 0);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
 
-            return encodedAlg;
-        }
-
-        // If we Validate: The caller did specify a COSE Algorithm, we will make sure it matches the specified key and hash algorithm.
-        // If we Slip: The caller did not specify a COSE Algorithm, we will write the header for them, rather than throw.
-        private static int? ValidateOrSlipAlgorithmHeader(
-            CoseHeaderMap protectedHeaders,
-            CoseHeaderMap unprotectedHeaders,
-            KeyType keyType,
-            HashAlgorithmName hashAlgorithm)
-        {
-            int algHeaderValue = GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(keyType, hashAlgorithm);
-
-            if (protectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg))
-            {
-                ValidateAlgorithmHeader(encodedAlg, algHeaderValue, keyType, hashAlgorithm);
-                return null;
-            }
-
-            if (unprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out _))
-            {
-                throw new CryptographicException(SR.Sign1SignAlgMustBeProtected);
-            }
-
-            return algHeaderValue;
-
-            static void ValidateAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg, int expectedAlg, KeyType keyType, HashAlgorithmName hashAlgorithm)
-            {
-                int? alg = DecodeCoseAlgorithmHeader(encodedAlg);
-                Debug.Assert(alg.HasValue, "Algorithm (alg) is a known header and should have been validated in Set[Encoded]Value()");
-
-                if (expectedAlg != alg.Value)
+                try
                 {
-                    throw new CryptographicException(SR.Format(SR.Sign1SignCoseAlgorithDoesNotMatchSpecifiedKeyAndHashAlgorithm, alg.Value, keyType.ToString(), hashAlgorithm.Name));
+                    AppendToBeSigned(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
+                    return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
                 }
             }
         }
 
-        private static int? DecodeCoseAlgorithmHeader(ReadOnlyMemory<byte> encodedAlg)
+        /// <summary>
+        /// Asynchronously verifies that the signature is valid for the content using the specified key.
+        /// </summary>
+        /// <param name="key">The public key that is associated with the private key that was used to sign the content.</param>
+        /// <param name="detachedContent">The content that was previously signed.</param>
+        /// <param name="associatedData">The extra data associated with the signature, which must match the value provided during signing.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task whose <see cref="Task{TResult}"/> property is <see langword="true"/> if the signature is valid; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="detachedContent"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="key"/> is of an unsupported type.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="detachedContent"/> does not support reading or seeking.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="InvalidOperationException">The content is embedded on this message, use an overload that uses embedded content.</exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     <see cref="CoseMessage.ProtectedHeaders"/> does not have a value for the <see cref="CoseHeaderLabel.Algorithm"/> header.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was incorrectly formatted.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header was not one of the values supported by this implementation.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm protected header doesn't match with the algorithms supported by the specified <paramref name="key"/>.
+        ///   </para>
+        /// </exception>
+        /// <seealso cref="VerifyDetached(AsymmetricAlgorithm, Stream, ReadOnlySpan{byte})"/>
+        /// <seealso cref="CoseMessage.Content"/>
+        public Task<bool> VerifyDetachedAsync(AsymmetricAlgorithm key, Stream detachedContent, ReadOnlyMemory<byte> associatedData = default, CancellationToken cancellationToken = default)
         {
-            var reader = new CborReader(encodedAlg);
-            CborReaderState state = reader.PeekState();
-
-            if (state == CborReaderState.NegativeInteger || state == CborReaderState.UnsignedInteger)
+            if (key is null)
             {
-                int alg = reader.ReadInt32();
-                KnownCoseAlgorithms.ThrowIfNotSupported(alg);
-
-                if (reader.BytesRemaining != 0)
-                {
-                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
-                }
-
-                return alg;
+                throw new ArgumentNullException(nameof(key));
+            }
+            if (detachedContent is null)
+            {
+                throw new ArgumentNullException(nameof(detachedContent));
             }
 
-            if (state == CborReaderState.TextString)
+            if (!detachedContent.CanRead)
             {
-                int alg = KnownCoseAlgorithms.FromString(reader.ReadTextString());
-
-                if (reader.BytesRemaining != 0)
-                {
-                    throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
-                }
-
-                return alg;
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotReadable, nameof(detachedContent));
             }
 
-            return null;
+            if (!detachedContent.CanSeek)
+            {
+                throw new ArgumentException(SR.Sign1ArgumentStreamNotSeekable, nameof(detachedContent));
+            }
+
+            if (!IsDetached)
+            {
+                throw new InvalidOperationException(SR.ContentWasEmbedded);
+            }
+
+            return VerifyAsyncCore(key, detachedContent, associatedData, CoseHelpers.GetKeyType(key), cancellationToken);
         }
 
-        private static HashAlgorithmName GetHashAlgorithmFromCoseAlgorithmAndKeyType(int algorithm, KeyType keyType)
+        private async Task<bool> VerifyAsyncCore(AsymmetricAlgorithm key, Stream content, ReadOnlyMemory<byte> associatedData, KeyType keyType, CancellationToken cancellationToken)
         {
+            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
+
+            int? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
+            if (nullableAlg == null)
+            {
+                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
+            }
+
+            HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
+
+            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                int bufferLength = ComputeToBeSignedEncodedSize(
+                    SigStructureContext.Signature1,
+                    _protectedHeaderAsBstr.Length,
+                    signProtectedLength: 0,
+                    associatedData.Length,
+                    contentLength: 0);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
+
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+                bool retVal = VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+
+                ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+
+                return retVal;
+            }
+        }
+
+        private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
+        {
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            byte[] hash = hasher.GetHashAndReset();
+#else
+            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
+            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
+            hasher.GetHashAndReset(hash);
+#endif
             if (keyType == KeyType.ECDsa)
             {
-                return algorithm switch
-                {
-                    KnownCoseAlgorithms.ES256 => HashAlgorithmName.SHA256,
-                    KnownCoseAlgorithms.ES384 => HashAlgorithmName.SHA384,
-                    KnownCoseAlgorithms.ES512 => HashAlgorithmName.SHA512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(ECDsa)))
-                };
+                var ecdsa = (ECDsa)key;
+                return ecdsa.VerifyHash(hash, _signature);
             }
             else
             {
                 Debug.Assert(keyType == KeyType.RSA);
-                return algorithm switch
-                {
-                    KnownCoseAlgorithms.PS256 => HashAlgorithmName.SHA256,
-                    KnownCoseAlgorithms.PS384 => HashAlgorithmName.SHA384,
-                    KnownCoseAlgorithms.PS512 => HashAlgorithmName.SHA512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1AlgDoesNotMatchWithTheOnesSupportedByTypeOfKey, algorithm, typeof(RSA)))
-                };
+                Debug.Assert(padding != null);
+                var rsa = (RSA)key;
+                return rsa.VerifyHash(hash, _signature, hashAlgorithm, padding);
             }
         }
 
-        private static int GetCoseAlgorithmHeaderFromKeyTypeAndHashAlgorithm(KeyType keyType, HashAlgorithmName hashAlgorithm)
-            => keyType switch
-            {
-                KeyType.ECDsa => hashAlgorithm.Name switch
-                {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.ES256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.ES384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.ES512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
-                },
-                _ => hashAlgorithm.Name switch // KeyType.RSA
-                {
-                    nameof(HashAlgorithmName.SHA256) => KnownCoseAlgorithms.PS256,
-                    nameof(HashAlgorithmName.SHA384) => KnownCoseAlgorithms.PS384,
-                    nameof(HashAlgorithmName.SHA512) => KnownCoseAlgorithms.PS512,
-                    _ => throw new CryptographicException(SR.Format(SR.Sign1SignUnsupportedHashAlgorithm, hashAlgorithm.Name))
-                },
-            };
-
-        private void ThrowIfUnsupportedHeaders()
+        private static int ComputeEncodedSize(CoseSigner signer, int contentLength, bool isDetached)
         {
-            if (ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Critical, out _) ||
-                ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.CounterSignature, out _))
+            // tag + array(4) + encoded protected header map + unprotected header map + content + signature.
+            int encodedSize = Sign1SizeOfCborTag + CoseHelpers.SizeOfArrayOfLessThan24 +
+                CoseHelpers.GetByteStringEncodedSize(CoseHeaderMap.ComputeEncodedSize(signer._protectedHeaders, signer._algHeaderValueToSlip)) +
+                CoseHeaderMap.ComputeEncodedSize(signer._unprotectedHeaders);
+
+            if (isDetached)
             {
-                throw new NotSupportedException(SR.Sign1VerifyCriticalAndCounterSignNotSupported);
+                encodedSize += CoseHelpers.SizeOfNull;
+            }
+            else
+            {
+                encodedSize += CoseHelpers.GetByteStringEncodedSize(contentLength);
             }
 
-            if (UnprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Critical, out _) ||
-                UnprotectedHeaders.TryGetEncodedValue(CoseHeaderLabel.CounterSignature, out _))
+            encodedSize += CoseHelpers.GetByteStringEncodedSize(CoseHelpers.ComputeSignatureSize(signer));
+
+            return encodedSize;
+        }
+
+        /// <summary>
+        /// Calculates the number of bytes produced by encoding this message.
+        /// </summary>
+        /// <returns>The number of bytes produced by encoding this message.</returns>
+        public override int GetEncodedLength() =>
+            CoseHelpers.GetCoseSignEncodedLengthMinusSignature(_isTagged, Sign1SizeOfCborTag, _protectedHeaderAsBstr.Length, UnprotectedHeaders, _content) +
+            CoseHelpers.GetByteStringEncodedSize(_signature.Length);
+
+        /// <summary>
+        /// Attempts to encode this message into the specified buffer.
+        /// </summary>
+        /// <param name="destination">The buffer in which to write the encoded value.</param>
+        /// <param name="bytesWritten">On success, receives the number of bytes written to <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> had sufficient length to receive the value; otherwise, <see langword="false"/>.</returns>
+        /// <remarks>Use <see cref="GetEncodedLength()"/> to determine how many bytes result in encoding this message.</remarks>
+        /// <exception cref="InvalidOperationException">The <see cref="CoseMessage.ProtectedHeaders"/> and <see cref="CoseMessage.UnprotectedHeaders"/> collections have one or more labels in common.</exception>
+        /// <seealso cref="GetEncodedLength()"/>
+        public override bool TryEncode(Span<byte> destination, out int bytesWritten)
+        {
+            if (ContainDuplicateLabels(ProtectedHeaders, UnprotectedHeaders))
             {
-                throw new NotSupportedException(SR.Sign1VerifyCriticalAndCounterSignNotSupported);
+                throw new InvalidOperationException(SR.Sign1SignHeaderDuplicateLabels);
             }
+
+            if (destination.Length < GetEncodedLength())
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            var writer = new CborWriter();
+
+            if (_isTagged)
+            {
+                writer.WriteTag(Sign1Tag);
+            }
+
+            writer.WriteStartArray(Sign1ArrayLength);
+
+            writer.WriteByteString(_protectedHeaderAsBstr);
+
+            CoseHelpers.WriteHeaderMap(destination, writer, UnprotectedHeaders, isProtected: false, null);
+
+            CoseHelpers.WriteContent(writer, Content.GetValueOrDefault().Span, !Content.HasValue);
+            writer.WriteByteString(_signature);
+
+            writer.WriteEndArray();
+
+            bytesWritten = writer.Encode(destination);
+            Debug.Assert(bytesWritten == GetEncodedLength());
+
+            return true;
         }
     }
 }

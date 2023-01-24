@@ -52,11 +52,7 @@ namespace System.Data.ProviderBase
             Dictionary<DbConnectionPoolKey, DbConnectionPoolGroup> connectionPoolGroups = _connectionPoolGroups;
             foreach (KeyValuePair<DbConnectionPoolKey, DbConnectionPoolGroup> entry in connectionPoolGroups)
             {
-                DbConnectionPoolGroup poolGroup = entry.Value;
-                if (null != poolGroup)
-                {
-                    poolGroup.Clear();
-                }
+                entry.Value?.Clear();
             }
         }
 
@@ -256,17 +252,9 @@ namespace System.Data.ProviderBase
                 }
                 else
                 {
-                    if (((System.Data.OleDb.OleDbConnection)owningConnection).ForceNewConnection)
+                    if (!connectionPool.TryGetConnection(owningConnection, retry, userOptions, out connection))
                     {
-                        Debug.Assert(!(oldConnection is DbConnectionClosed), "Force new connection, but there is no old connection");
-                        connection = connectionPool.ReplaceConnection(owningConnection, userOptions, oldConnection);
-                    }
-                    else
-                    {
-                        if (!connectionPool.TryGetConnection(owningConnection, retry, userOptions, out connection))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
 
                     if (connection == null)

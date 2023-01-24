@@ -27,8 +27,6 @@ namespace System.Text.Json
         private byte[]? _extraRentedArrayPoolBytes;
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
 
-        private (int, string?) _lastIndexAndString = (-1, null);
-
         internal bool IsDisposable { get; }
 
         /// <summary>
@@ -103,8 +101,13 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteTo(Utf8JsonWriter writer!!)
+        public void WriteTo(Utf8JsonWriter writer)
         {
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+
             RootElement.WriteTo(writer);
         }
 
@@ -261,14 +264,6 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == index)
-            {
-                Debug.Assert(lastString != null);
-                return lastString;
-            }
-
             DbRow row = _parsedData.Get(index);
 
             JsonTokenType tokenType = row.TokenType;
@@ -283,19 +278,9 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (row.HasComplexChildren)
-            {
-                int backslash = segment.IndexOf(JsonConstants.BackSlash);
-                lastString = JsonReaderHelper.GetUnescapedString(segment, backslash);
-            }
-            else
-            {
-                lastString = JsonReaderHelper.TranscodeHelper(segment);
-            }
-
-            Debug.Assert(lastString != null);
-            _lastIndexAndString = (index, lastString);
-            return lastString;
+            return row.HasComplexChildren
+                ? JsonReaderHelper.GetUnescapedString(segment)
+                : JsonReaderHelper.TranscodeHelper(segment);
         }
 
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
@@ -304,13 +289,6 @@ namespace System.Text.Json
 
             int matchIndex = isPropertyName ? index - DbRow.Size : index;
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == matchIndex)
-            {
-                return otherText.SequenceEqual(lastString.AsSpan());
-            }
-
             byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
@@ -318,19 +296,16 @@ namespace System.Text.Json
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
-            ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
-            OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
+            OperationStatus status = JsonWriterHelper.ToUtf8(otherText, otherUtf8Text, out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
             bool result;
-            if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
+            if (status == OperationStatus.InvalidData)
             {
                 result = false;
             }
             else
             {
                 Debug.Assert(status == OperationStatus.Done);
-                Debug.Assert(consumed == utf16Text.Length);
-
                 result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
@@ -404,9 +379,7 @@ namespace System.Text.Json
             // Segment needs to be unescaped
             if (row.HasComplexChildren)
             {
-                int idx = segment.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(idx != -1);
-                return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, idx, out value);
+                return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, out value);
             }
 
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
@@ -888,13 +861,8 @@ namespace System.Text.Json
                 return text;
             }
 
-            int idx = text.IndexOf(JsonConstants.BackSlash);
-            Debug.Assert(idx >= 0);
-
             byte[] rent = ArrayPool<byte>.Shared.Rent(length);
-            text.Slice(0, idx).CopyTo(rent);
-
-            JsonReaderHelper.Unescape(text, rent, idx, out int written);
+            JsonReaderHelper.Unescape(text, rent, out int written);
             rented = new ArraySegment<byte>(rent, 0, written);
             return rented.AsSpan();
         }
@@ -933,7 +901,6 @@ namespace System.Text.Json
             finally
             {
                 ClearAndReturn(rented);
-
             }
         }
 
@@ -1047,7 +1014,7 @@ namespace System.Text.Json
 
                     database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
 
-                    if (reader._stringHasEscaping)
+                    if (reader.ValueIsEscaped)
                     {
                         database.SetHasComplexChildren(database.Length - DbRow.Size);
                     }
@@ -1072,7 +1039,7 @@ namespace System.Text.Json
 
                         database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
 
-                        if (reader._stringHasEscaping)
+                        if (reader.ValueIsEscaped)
                         {
                             database.SetHasComplexChildren(database.Length - DbRow.Size);
                         }
@@ -1094,11 +1061,11 @@ namespace System.Text.Json
         {
             if (_utf8Json.IsEmpty)
             {
-                throw new ObjectDisposedException(nameof(JsonDocument));
+                ThrowHelper.ThrowObjectDisposedException_JsonDocument();
             }
         }
 
-        private void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
+        private static void CheckExpectedType(JsonTokenType expected, JsonTokenType actual)
         {
             if (expected != actual)
             {

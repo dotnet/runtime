@@ -13,7 +13,17 @@ namespace ILCompiler
     {
         public override bool IsBlocked(MetadataType type) => !(type is EcmaType);
 
-        public override bool IsBlocked(FieldDesc field) => !(field is EcmaField);
+        public override bool IsBlocked(FieldDesc field)
+        {
+            if (field is not EcmaField ecmaField)
+                return true;
+
+            // Avoid exposing the MethodTable field
+            if (ecmaField.OwningType.IsObject)
+                return true;
+
+            return false;
+        }
 
         private MetadataType _arrayOfTType;
         private MetadataType InitializeArrayOfTType(TypeSystemEntity contextEntity)
@@ -39,6 +49,11 @@ namespace ILCompiler
                 // We can get rid of this special casing if we make these methods stop being regular EcmaMethods
                 // with Array<T> as their owning type
                 if (ecmaMethod.OwningType == GetArrayOfTType(ecmaMethod))
+                    return true;
+
+                // Also don't expose the ValueType.__GetFieldOverride method.
+                if (ecmaMethod.Name == Internal.IL.Stubs.ValueTypeGetFieldHelperMethodOverride.MetadataName
+                    && ecmaMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
                     return true;
 
                 return false;

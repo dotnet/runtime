@@ -54,8 +54,10 @@ namespace System.Security.Cryptography
             Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
-        private ICryptoTransform CreateTransform(byte[] rgbKey!!, byte[]? rgbIV, bool encrypting)
+        private UniversalCryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
+            ArgumentNullException.ThrowIfNull(rgbKey);
+
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
             if (!ValidKeySize(rgbKey.Length))
@@ -89,11 +91,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
@@ -115,11 +115,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
-                paddingMode,
                 Key,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -142,11 +140,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: true);
 
@@ -169,11 +165,9 @@ namespace System.Security.Cryptography
             Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
-                paddingMode,
                 Key,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
-                0, /*feedback size */
                 paddingSize: BlockSize / BitsPerByte,
                 encrypting: false);
 
@@ -208,7 +202,7 @@ namespace System.Security.Cryptography
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // CFB not supported at all
-            throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
         }
 
         private int GetPaddingSize()

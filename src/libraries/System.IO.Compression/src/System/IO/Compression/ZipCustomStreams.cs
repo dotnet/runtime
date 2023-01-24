@@ -329,7 +329,7 @@ namespace System.IO.Compression
         public override int ReadByte()
         {
             byte b = default;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -542,7 +542,7 @@ namespace System.IO.Compression
         }
 
         public override void WriteByte(byte value) =>
-            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            Write(new ReadOnlySpan<byte>(in value));
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {

@@ -37,11 +37,6 @@ PALEXPORT void SystemNative_Free(void* ptr);
 PALEXPORT void* SystemNative_Malloc(uintptr_t size);
 
 /**
- * C runtime memset
- */
-PALEXPORT void* SystemNative_MemSet(void* s, int c, uintptr_t n);
-
-/**
  * C runtime realloc
  */
 PALEXPORT void* SystemNative_Realloc(void* ptr, uintptr_t new_size);

@@ -20,7 +20,7 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw when opened with default permission check
             const string name = "FooBar";
             TestRegistryKey.SetValue(name, 42);
-            TestRegistryKey.CreateSubKey(name);
+            TestRegistryKey.CreateSubKey(name).Dispose();
             using (var rk = Registry.CurrentUser.OpenSubKey(name: TestRegistryKeyName, permissionCheck: RegistryKeyPermissionCheck.Default))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
@@ -59,8 +59,9 @@ namespace Microsoft.Win32.RegistryTests
             {
                 rk.SetValue(valueName, expectedValue);
                 Assert.Equal(expectedValue, rk.GetValue(valueName));
-                rk.CreateSubKey(valueName);
-                Assert.NotNull(rk.OpenSubKey(valueName));
+                rk.CreateSubKey(valueName).Dispose();
+                using RegistryKey subkey = rk.OpenSubKey(valueName);
+                Assert.NotNull(subkey);
             }
         }
 

@@ -51,7 +51,7 @@ namespace System.Data.ProviderBase
         {
             string fieldName = _dataReader.GetName(ordinal);
             Debug.Assert(null != fieldName, "null GetName");
-            return ((null != fieldName) ? fieldName : "");
+            return fieldName ?? "";
         }
         internal DataTable? GetSchemaTable()
         {

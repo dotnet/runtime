@@ -21,7 +21,6 @@
 #include "corerror.h"
 #include "stresslog.h"
 #include "staticcontract.h"
-#include "entrypoints.h"
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
@@ -186,6 +185,10 @@ class Exception
  public:
     Exception() {LIMITED_METHOD_DAC_CONTRACT; m_innerException = NULL;}
     virtual ~Exception() {LIMITED_METHOD_DAC_CONTRACT; if (m_innerException != NULL) Exception::Delete(m_innerException); }
+#ifdef DACCESS_COMPILE
+    void * operator new(size_t size);
+    void operator delete(void* ptr);
+#endif
     virtual BOOL IsDomainBound() {return m_innerException!=NULL && m_innerException->IsDomainBound();} ;
     virtual HRESULT GetHR() = 0;
     virtual void GetMessage(SString &s);
@@ -440,7 +443,9 @@ class COMException : public HRException
 
     // Virtual overrides
     IErrorInfo *GetErrorInfo();
+#ifdef FEATURE_COMINTEROP
     void GetMessage(SString &result);
+#endif
 
  protected:
     virtual Exception *CloneHelper()

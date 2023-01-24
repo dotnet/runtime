@@ -209,6 +209,8 @@ namespace System.Threading
             if (s_idDispenser == null)
                 Interlocked.CompareExchange(ref s_idDispenser, ImmutableIdDispenser.Empty, null);
 
+            Debug.Assert(s_idDispenser != null);
+
             int id;
 
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
@@ -243,6 +245,8 @@ namespace System.Threading
                 priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
         }
+
+        internal static int CurrentManagedThreadIdUnchecked => t_currentManagedThreadId;
 
         public static int Current
         {

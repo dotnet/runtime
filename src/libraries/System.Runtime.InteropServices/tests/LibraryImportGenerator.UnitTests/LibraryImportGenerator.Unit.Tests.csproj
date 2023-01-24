@@ -1,26 +1,38 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
-             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+            Link="Common\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs"
+            Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
+    <Compile Include="..\Common\TestUtils.cs"
+            Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\TargetFrameworkOptions.cs"
+            Link="Common\TargetFrameworkOptions.cs" />
+    <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs"
+            Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs"
+            Link="Common\CustomStructMarshallingCodeSnippets.cs" />
+    <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs"
+            Link="ICustomMarshallingSignatureTestProvider.cs" />
+    <Compile Include="..\Common\Verifiers\CSharpAnalyzerVerifier.cs"
+            Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
+            Link="Verifiers\CSharpCodeFixVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
+            Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
-    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -31,4 +43,18 @@
   <ItemGroup>
     <None Include="$(RepoRoot)/NuGet.config" Link="NuGet.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Reference the actual NetAnalyzers project to ensure we're testing our diagnostic suppressors against the actual analyzers they'll run with, not fake shims we have to maintain -->
+  <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
+    <PackageReference Update="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RunAnalyzers)' == 'false'">
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" ExcludeAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <Target Name="AddNetAnalyzersAssemblyAsReference" BeforeTargets="ResolveAssemblyReferences" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <Reference Include="$(PkgMicrosoft_CodeAnalysis_NetAnalyzers)/analyzers/dotnet/cs/Microsoft.CodeAnalysis.NetAnalyzers.dll" />
+    </ItemGroup>
+  </Target>
 </Project>

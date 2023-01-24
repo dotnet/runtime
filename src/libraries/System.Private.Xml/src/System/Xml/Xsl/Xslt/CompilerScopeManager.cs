@@ -3,11 +3,11 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using QilName = System.Xml.Xsl.Qil.QilName;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using QilName = System.Xml.Xsl.Qil.QilName;
-
     // Compiler scope manager keeps track of
     //   Variable declarations
     //   Namespace declarations
@@ -123,7 +123,7 @@ namespace System.Xml.Xsl.Xslt
             }
             if (excludeAll)
             {
-                // #all should be on the top of the stack, becase all NSs on this element should be excluded as well
+                // #all should be on the top of the stack, because all NSs on this element should be excluded as well
                 AddExNamespace(null);
             }
             return hasNamespaces;
@@ -146,7 +146,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void AddRecord(ScopeFlags flag, string? ncName, string? uri, [AllowNull] V value)
         {
-            Debug.Assert(flag == (flag & ScopeFlags.ExclusiveFlags) && (flag & (flag - 1)) == 0 && flag != 0, "One exclusive flag");
+            Debug.Assert(flag == (flag & ScopeFlags.ExclusiveFlags) && BitOperations.IsPow2((uint)flag), "One exclusive flag");
             Debug.Assert(uri != null || ncName == null, "null, null means exclude '#all'");
 
             ScopeFlags flags = _records[_lastRecord].flags;
@@ -165,7 +165,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void SetFlag(ScopeFlags flag, bool value)
         {
-            Debug.Assert(flag == (flag & ScopeFlags.InheritedFlags) && (flag & (flag - 1)) == 0 && flag != 0, "one inherited flag");
+            Debug.Assert(flag == (flag & ScopeFlags.InheritedFlags) && BitOperations.IsPow2((uint)flag), "one inherited flag");
             ScopeFlags flags = _records[_lastRecord].flags;
             if (((flags & flag) != 0) != value)
             {

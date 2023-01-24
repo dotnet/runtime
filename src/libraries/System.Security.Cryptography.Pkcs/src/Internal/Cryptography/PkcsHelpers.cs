@@ -149,10 +149,7 @@ namespace Internal.Cryptography
             writer.PopSetOf();
             normalizedValue = writer.Encode();
 
-            if (encodedValueProcessor != null)
-            {
-                encodedValueProcessor(normalizedValue);
-            }
+            encodedValueProcessor?.Invoke(normalizedValue);
 
             try
             {
@@ -306,18 +303,8 @@ namespace Internal.Cryptography
             return null;
         }
 
-        internal static bool AreByteArraysEqual(byte[] ba1, byte[] ba2)
-        {
-            if (ba1.Length != ba2.Length)
-                return false;
-
-            for (int i = 0; i < ba1.Length; i++)
-            {
-                if (ba1[i] != ba2[i])
-                    return false;
-            }
-            return true;
-        }
+        internal static bool AreByteArraysEqual(byte[] ba1, byte[] ba2) =>
+            ba1.AsSpan().SequenceEqual(ba2.AsSpan());
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.
@@ -413,48 +400,20 @@ namespace Internal.Cryptography
         /// <summary>
         /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc.
         /// </summary>
-        public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, byte[] encodedAttribute)
+        public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, ReadOnlySpan<byte> encodedAttribute)
         {
-            Pkcs9AttributeObject attributeObject = new Pkcs9AttributeObject(oid, encodedAttribute);
-            switch (oid.Value)
+            return oid.Value switch
             {
-                case Oids.DocumentName:
-                    attributeObject = Upgrade<Pkcs9DocumentName>(attributeObject);
-                    break;
-
-                case Oids.DocumentDescription:
-                    attributeObject = Upgrade<Pkcs9DocumentDescription>(attributeObject);
-                    break;
-
-                case Oids.SigningTime:
-                    attributeObject = Upgrade<Pkcs9SigningTime>(attributeObject);
-                    break;
-
-                case Oids.ContentType:
-                    attributeObject = Upgrade<Pkcs9ContentType>(attributeObject);
-                    break;
-
-                case Oids.MessageDigest:
-                    attributeObject = Upgrade<Pkcs9MessageDigest>(attributeObject);
-                    break;
-
+                Oids.DocumentName => new Pkcs9DocumentName(encodedAttribute),
+                Oids.DocumentDescription => new Pkcs9DocumentDescription(encodedAttribute),
+                Oids.SigningTime => new Pkcs9SigningTime(encodedAttribute),
+                Oids.ContentType => new Pkcs9ContentType(encodedAttribute),
+                Oids.MessageDigest => new Pkcs9MessageDigest(encodedAttribute),
 #if NETCOREAPP || NETSTANDARD2_1
-                case Oids.LocalKeyId:
-                    attributeObject = Upgrade<Pkcs9LocalKeyId>(attributeObject);
-                    break;
+                Oids.LocalKeyId => new Pkcs9LocalKeyId() { RawData = encodedAttribute.ToArray() },
 #endif
-
-                default:
-                    break;
-            }
-            return attributeObject;
-        }
-
-        private static T Upgrade<T>(Pkcs9AttributeObject basicAttribute) where T : Pkcs9AttributeObject, new()
-        {
-            T enhancedAttribute = new T();
-            enhancedAttribute.CopyFrom(basicAttribute);
-            return enhancedAttribute;
+                _ => new Pkcs9AttributeObject(oid, encodedAttribute),
+            };
         }
 
         internal static byte[] OneShot(this ICryptoTransform transform, byte[] data)
@@ -469,7 +428,7 @@ namespace Internal.Cryptography
                 return transform.TransformFinalBlock(data, offset, length);
             }
 
-            using (MemoryStream memoryStream = new MemoryStream())
+            using (MemoryStream memoryStream = new MemoryStream(length))
             {
                 using (var cryptoStream = new CryptoStream(memoryStream, transform, CryptoStreamMode.Write))
                 {
@@ -722,7 +681,7 @@ namespace Internal.Cryptography
 
         // Creates a defensive copy of an OID on platforms where OID
         // is mutable. On platforms where OID is immutable, return the OID as-is.
-        [return: NotNullIfNotNull("oid")]
+        [return: NotNullIfNotNull(nameof(oid))]
         public static Oid? CopyOid(this Oid? oid)
         {
             if (s_oidIsInitOnceOnly)

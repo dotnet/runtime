@@ -7,7 +7,7 @@ namespace System.Threading
 {
     public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal unsafe readonly Win32ThreadPoolNativeOverlapped* _overlapped;
+        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped;
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         [CLSCompliant(false)]
@@ -22,8 +22,7 @@ namespace System.Threading
 
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             _overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
         }

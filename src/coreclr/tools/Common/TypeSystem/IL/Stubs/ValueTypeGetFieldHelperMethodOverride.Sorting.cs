@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    partial class ValueTypeGetFieldHelperMethodOverride
+    public partial class ValueTypeGetFieldHelperMethodOverride
     {
         protected override int ClassCode => 2036839816;
 

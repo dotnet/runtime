@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ret);
             property.AddOtherMethod(method);
 
-            Type myType = type.CreateTypeInfo().AsType();
+            Type myType = type.CreateType();
             Assert.Throws<NotSupportedException>(() => property.GetIndexParameters());
         }
     }

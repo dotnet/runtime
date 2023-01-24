@@ -64,7 +64,13 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets or sets the maximum size of the cache.</summary>
         public static int MaxCacheSize
         {
-            get => s_maxCacheSize;
+            get
+            {
+                lock (SyncObj)
+                {
+                    return s_maxCacheSize;
+                }
+            }
             set
             {
                 Debug.Assert(value >= 0);
@@ -84,9 +90,10 @@ namespace System.Text.RegularExpressions
                     else if (value < s_cacheList.Count)
                     {
                         // If the value is being changed to less than the number of items we're currently storing,
-                        // sort the entries descending by last access stamp, and remove the excess.  This is expensive, but
-                        // this should be exceedingly rare, as CacheSize is generally set once (if at all) and then left unchanged.
-                        s_cacheList.Sort((n1, n2) => Volatile.Read(ref n2.LastAccessStamp).CompareTo(Volatile.Read(ref n1.LastAccessStamp)));
+                        // just trim off the excess.  This is almost never done in practice (if Regex.CacheSize is set
+                        // at all, it's almost always done once towards the beginning of the process, and when it is done,
+                        // it's typically to either 0 or to a larger value than the current limit), so we're not concerned
+                        // with ensuring the actual oldest items are trimmed away.
                         s_lastAccessed = s_cacheList[0];
                         for (int i = value; i < s_cacheList.Count; i++)
                         {

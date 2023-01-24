@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        protected IResourceReader Reader = null!;
+        protected IResourceReader? Reader; // The field is protected for .NET Framework compatibility
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -58,9 +58,11 @@ namespace System.Resources
             ReadResources();
         }
 
-        public ResourceSet(IResourceReader reader!!)
+        public ResourceSet(IResourceReader reader)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             Reader = reader;
             ReadResources();
         }
@@ -81,8 +83,7 @@ namespace System.Resources
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
                 Reader = null!;
-                if (copyOfReader != null)
-                    copyOfReader.Close();
+                copyOfReader?.Close();
             }
             Reader = null!;
             _caseInsensitiveTable = null;
@@ -122,12 +123,12 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            IDictionary? copyOfTableAsIDictionary = _table;  // Avoid a race with Dispose
-            if (copyOfTableAsIDictionary == null)
+            Dictionary<object, object?>? table = _table;  // Avoid a race with Dispose
+            if (table == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
              // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
-            return copyOfTableAsIDictionary.GetEnumerator();
+            return ((IDictionary)table).GetEnumerator();
         }
 
         // Look up a string value for a resource given its name.
@@ -198,8 +199,10 @@ namespace System.Resources
             // to help with some WinRes lifetime issues.
         }
 
-        private object? GetObjectInternal(string name!!)
+        private object? GetObjectInternal(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)

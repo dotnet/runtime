@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
-        const double IntervalSecs = 5;
+        const double IntervalSecs = 10;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
         public MetricEventSourceTests(ITestOutputHelper output)
@@ -248,6 +248,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79749", TargetFrameworkMonikers.NetFramework)]
         public void EventSourceFiltersInstruments()
         {
             using Meter meterA = new Meter("TestMeterA");

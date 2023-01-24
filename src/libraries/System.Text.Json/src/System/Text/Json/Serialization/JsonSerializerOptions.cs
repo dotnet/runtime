@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +17,7 @@ namespace System.Text.Json
     /// <summary>
     /// Provides options to be used with <see cref="JsonSerializer"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public sealed partial class JsonSerializerOptions
     {
         internal const int BufferSizeDefault = 16 * 1024;
@@ -32,20 +34,35 @@ namespace System.Text.Json
         /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
         /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
         /// </remarks>
-        public static JsonSerializerOptions Default { get; } = CreateDefaultImmutableInstance();
+        public static JsonSerializerOptions Default
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                if (s_defaultOptions is not JsonSerializerOptions options)
+                {
+                    options = GetOrCreateDefaultOptionsInstance();
+                }
+
+                return options;
+            }
+        }
+
+        private static JsonSerializerOptions? s_defaultOptions;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
-        private JsonSerializerContext? _serializerContext;
-        private MemberAccessor? _memberAccessorStrategy;
+        private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
-        private ConverterList _converters;
+        private ConfigurationList<JsonConverter> _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
+        private JsonUnmappedMemberHandling _unmappedMemberHandling;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -56,6 +73,8 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
+
+        private volatile bool _isReadOnly;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -73,17 +92,23 @@ namespace System.Text.Json
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="options"/> is <see langword="null"/>.
         /// </exception>
-        public JsonSerializerOptions(JsonSerializerOptions options!!)
+        public JsonSerializerOptions(JsonSerializerOptions options)
         {
-            _memberAccessorStrategy = options._memberAccessorStrategy;
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
+            _converters = new ConverterList(this, options._converters);
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
             _unknownTypeHandling = options._unknownTypeHandling;
+            _unmappedMemberHandling = options._unmappedMemberHandling;
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
@@ -94,15 +119,12 @@ namespace System.Text.Json
             _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
-
-            _converters = new ConverterList(this, options._converters);
+            _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 
-            // _classes is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
+            // _cachingContext is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
             // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
-
-            // _haveTypesBeenCreated is not copied; it's okay to make changes to this options instance as (de)serialization has not occurred.
 
             TrackOptionsInstance(this);
         }
@@ -139,18 +161,45 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Binds current <see cref="JsonSerializerOptions"/> instance with a new instance of the specified <see cref="Serialization.JsonSerializerContext"/> type.
+        /// Appends a <see cref="Serialization.JsonSerializerContext"/> to the metadata resolution of the current <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
         /// <typeparam name="TContext">The generic definition of the specified context type.</typeparam>
-        /// <remarks>When serializing and deserializing types using the options
+        /// <remarks>
+        /// When serializing and deserializing types using the options
         /// instance, metadata for the types will be fetched from the context instance.
+        ///
+        /// The methods supports adding multiple contexts per options instance.
+        /// Metadata will be resolved in the order of configuration, similar to
+        /// how <see cref="JsonTypeInfoResolver.Combine(IJsonTypeInfoResolver?[])"/> resolves metadata.
         /// </remarks>
         public void AddContext<TContext>() where TContext : JsonSerializerContext, new()
         {
             VerifyMutable();
             TContext context = new();
-            _serializerContext = context;
-            context._options = this;
+            TypeInfoResolver = JsonTypeInfoResolver.Combine(TypeInfoResolver, context);
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="JsonTypeInfo"/> contract resolver used by this instance.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver" />.
+        /// The property will be populated automatically once used with one of the <see cref="JsonSerializer"/> methods.
+        /// </remarks>
+        public IJsonTypeInfoResolver? TypeInfoResolver
+        {
+            get
+            {
+                return _typeInfoResolver;
+            }
+            set
+            {
+                VerifyMutable();
+                _typeInfoResolver = value;
+            }
         }
 
         /// <summary>
@@ -508,6 +557,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Determines how <see cref="JsonSerializer"/> handles JSON properties that
+        /// cannot be mapped to a specific .NET member when deserializing object types.
+        /// </summary>
+        public JsonUnmappedMemberHandling UnmappedMemberHandling
+        {
+            get => _unmappedMemberHandling;
+            set
+            {
+                VerifyMutable();
+                _unmappedMemberHandling = value;
+            }
+        }
+
+        /// <summary>
         /// Defines whether JSON should pretty print which includes:
         /// indenting nested JSON tokens, adding new lines, and adding white space between property names and values.
         /// By default, the JSON is serialized without any extra white space.
@@ -542,79 +605,115 @@ namespace System.Text.Json
             }
         }
 
-        internal JsonSerializerContext? JsonSerializerContext
-        {
-            get => _serializerContext;
-            set
-            {
-                VerifyMutable();
-                _serializerContext = value;
-            }
-        }
-
-        // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
-        internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
-
-        internal MemberAccessor MemberAccessorStrategy
+        internal bool CanUseFastPathSerializationLogic
         {
             get
             {
-                if (_memberAccessorStrategy == null)
-                {
-#if NETCOREAPP
-                    // if dynamic code isn't supported, fallback to reflection
-                    _memberAccessorStrategy = RuntimeFeature.IsDynamicCodeSupported ?
-                        new ReflectionEmitCachingMemberAccessor() :
-                        new ReflectionMemberAccessor();
-#elif NETFRAMEWORK
-                    _memberAccessorStrategy = new ReflectionEmitCachingMemberAccessor();
-#else
-                    _memberAccessorStrategy = new ReflectionMemberAccessor();
-#endif
-                }
-
-                return _memberAccessorStrategy;
+                Debug.Assert(IsReadOnly);
+                return _canUseFastPathSerializationLogic ??= _typeInfoResolver is JsonSerializerContext ctx ? ctx.CanUseFastPathSerializationLogic(this) : false;
             }
         }
 
+        private bool? _canUseFastPathSerializationLogic;
+
+        // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semanitcs or None of them.
+        internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
+        // Workaround https://github.com/dotnet/linker/issues/2715
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "Dynamic path is guarded by the runtime feature switch.")]
+        internal static MemberAccessor MemberAccessorStrategy =>
+            s_memberAccessorStrategy ??=
+#if NETCOREAPP
+                // if dynamic code isn't supported, fallback to reflection
+                RuntimeFeature.IsDynamicCodeSupported ?
+                    new ReflectionEmitCachingMemberAccessor() :
+                    new ReflectionMemberAccessor();
+#elif NETFRAMEWORK
+                    new ReflectionEmitCachingMemberAccessor();
+#else
+                    new ReflectionMemberAccessor();
+#endif
+
+        private static MemberAccessor? s_memberAccessorStrategy;
+
         /// <summary>
-        /// Whether the options instance has been primed for reflection-based serialization.
+        /// Specifies whether the current instance has been locked for modification.
         /// </summary>
-        internal bool IsInitializedForReflectionSerializer;
+        /// <remarks>
+        /// A <see cref="JsonSerializerOptions"/> instance can be locked either if
+        /// it has been passed to one of the <see cref="JsonSerializer"/> methods,
+        /// has been associated with a <see cref="JsonSerializerContext"/> instance,
+        /// or a user explicitly called the <see cref="MakeReadOnly"/> method on the instance.
+        /// </remarks>
+        public bool IsReadOnly => _isReadOnly;
+
+        /// <summary>
+        /// Locks the current instance for further modification.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The instance does not specify a <see cref="TypeInfoResolver"/> setting.</exception>
+        /// <remarks>This method is idempotent.</remarks>
+        public void MakeReadOnly()
+        {
+            if (_typeInfoResolver is null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsNoTypeInfoResolverSpecified();
+            }
+
+            _isReadOnly = true;
+        }
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
-        /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal void InitializeForReflectionSerializer()
         {
-            RootReflectionSerializerDependencies();
-            Volatile.Write(ref IsInitializedForReflectionSerializer, true);
-            if (_cachingContext != null)
+            // Even if a resolver has already been specified, we need to root
+            // the default resolver to gain access to the default converters.
+            DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+
+            switch (_typeInfoResolver)
             {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
+                case null:
+                    // Use the default reflection-based resolver if no resolver has been specified.
+                    _typeInfoResolver = defaultResolver;
+                    break;
+
+                case JsonSerializerContext ctx when AppContextSwitchHelper.IsSourceGenReflectionFallbackEnabled:
+                    // .NET 6 compatibility mode: enable fallback to reflection metadata for JsonSerializerContext
+                    _effectiveJsonTypeInfoResolver = JsonTypeInfoResolver.Combine(ctx, defaultResolver);
+                    break;
             }
+
+            MakeReadOnly();
+            _isInitializedForReflectionSerializer = true;
         }
 
-        private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
+        internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
+        private volatile bool _isInitializedForReflectionSerializer;
+
+        // Only populated in .NET 6 compatibility mode encoding reflection fallback in source gen
+        private IJsonTypeInfoResolver? _effectiveJsonTypeInfoResolver;
+
+        private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
-            JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
+            JsonTypeInfo? info = (_effectiveJsonTypeInfoResolver ?? _typeInfoResolver)?.GetTypeInfo(type, this);
+
             if (info != null)
             {
-                return info;
+                if (info.Type != type)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_ResolverTypeNotCompatible(type, info.Type);
+                }
+
+                if (info.Options != this)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+                }
             }
 
-            if (!IsInitializedForReflectionSerializer)
-            {
-                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type);
-                return null!;
-            }
-
-            Debug.Assert(
-                s_typeInfoCreationFunc != null,
-                "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
-            return s_typeInfoCreationFunc(type, this);
+            return info;
         }
 
         internal JsonDocumentOptions GetDocumentOptions()
@@ -660,17 +759,39 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            if (_cachingContext != null || _serializerContext != null)
+            if (_isReadOnly)
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_serializerContext);
+                ThrowHelper.ThrowInvalidOperationException_SerializerOptionsReadOnly(_typeInfoResolver as JsonSerializerContext);
             }
         }
 
-        private static JsonSerializerOptions CreateDefaultImmutableInstance()
+        private sealed class ConverterList : ConfigurationList<JsonConverter>
         {
-            var options = new JsonSerializerOptions();
-            options.InitializeCachingContext(); // eagerly initialize caching context to close type for modification.
-            return options;
+            private readonly JsonSerializerOptions _options;
+
+            public ConverterList(JsonSerializerOptions options, IList<JsonConverter>? source = null)
+                : base(source)
+            {
+                _options = options;
+            }
+
+            protected override bool IsImmutable => _options.IsReadOnly;
+            protected override void VerifyMutable() => _options.VerifyMutable();
         }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonSerializerOptions GetOrCreateDefaultOptionsInstance()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance(),
+                _isReadOnly = true
+            };
+
+            return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
+        }
+
+        private string DebuggerDisplay => $"TypeInfoResolver = {TypeInfoResolver?.GetType()?.Name}, IsImmutable = {IsReadOnly}";
     }
 }

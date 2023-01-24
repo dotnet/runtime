@@ -14,12 +14,9 @@
 
 //*****************************************************************************
 // Enum to track which version of the OS we are running
-// Note that NT5 (Win2k) is the minimum supported platform. Any code using
+// Note that Win7 is the minimum supported platform. Any code using
 // utilcode (which includes the CLR's execution engine) will fail to start
-// on a pre-Win2k platform. This is enforced by InitRunningOnVersionStatus.
-//
-// Note: The value is used for data mining from links clicked by user in shim dialog - see code:FWLinkTemplateFromTextID
-//   Please do not modify existing values, adding new ones is fine.
+// on a pre-Win7 platform. This is enforced by InitRunningOnVersionStatus.
 //*****************************************************************************
 typedef enum {
     RUNNING_ON_STATUS_UNINITED = 0,

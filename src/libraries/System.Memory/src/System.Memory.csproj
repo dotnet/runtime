@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- ArrayBufferWriter is publicly exposed from the System.Memory ref and only it should define this constant as true.  -->
     <DefineConstants>$(DefineConstants);MAKE_ABW_PUBLIC</DefineConstants>
@@ -26,9 +26,6 @@
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
     <Compile Include="System\Buffers\SequenceReaderExtensions.Binary.cs" />
-    <Compile Include="System\Buffers\Text\Base64.cs" />
-    <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
-    <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
     <Compile Include="System\Runtime\InteropServices\SequenceMarshal.cs" />
     <Compile Include="System\Text\EncodingExtensions.cs" />
   </ItemGroup>

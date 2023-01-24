@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslTransformApiTests
 {
     public class CSameInstanceXslTransformTestCase : XsltApiTestCaseBase
     {
@@ -61,7 +62,7 @@ namespace System.Xml.Tests
         [InlineData("xslt_mutith_boolean_expr_and.xsl", "xslt_mutith_boolean_expr_and.xml")]
         //[Variation("Boolean Expression OR", Params = new object[] { "xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml" })]
         [InlineData("xslt_mutith_boolean_expr_or.xsl", "xslt_mutith_boolean_expr_or.xml")]
-        //[Variation("FormatNubmer function", Params = new object[] { "xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml" })]
+        //[Variation("FormatNumber function", Params = new object[] { "xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml" })]
         [InlineData("xslt_mutith_format_number.xsl", "xslt_mutith_format_number.xml")]
         //[Variation("Position() function", Params = new object[] { "xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml" })]
         [InlineData("xslt_mutith_position_func.xsl", "xslt_mutith_position_func.xml")]

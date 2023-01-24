@@ -152,9 +152,9 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void CreateChildrenElements(IElementFactory elementFactory, IRule parent, IdentifierCollection ruleIds)
         {
-            foreach (GrammarBuilderBase buider in Items)
+            foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = buider.CreateElement(elementFactory, parent, parent, ruleIds);
+                IElement element = builder.CreateElement(elementFactory, parent, parent, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);
@@ -165,9 +165,9 @@ namespace System.Speech.Internal.GrammarBuilding
 
         internal void CreateChildrenElements(IElementFactory elementFactory, IItem parent, IRule rule, IdentifierCollection ruleIds)
         {
-            foreach (GrammarBuilderBase buider in Items)
+            foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = buider.CreateElement(elementFactory, parent, rule, ruleIds);
+                IElement element = builder.CreateElement(elementFactory, parent, rule, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);

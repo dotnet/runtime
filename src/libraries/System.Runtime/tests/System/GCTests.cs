@@ -69,7 +69,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(GCCollectionMode.Default - 1)]
-        [InlineData(GCCollectionMode.Optimized + 1)]
+        [InlineData(GCCollectionMode.Aggressive + 1)]
         public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode));
@@ -419,7 +419,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [InlineData(GCLatencyMode.Batch)]
         [InlineData(GCLatencyMode.Interactive)]
         // LowLatency does not roundtrip for server GC
@@ -449,9 +449,8 @@ namespace System.Tests
         /// <summary>
         /// NoGC regions will be automatically exited if more than the requested budget
         /// is allocated while still in the region. In order to avoid this, the budget is set
-        /// to be higher than what the test should be allocating. When running on CoreCLR/DesktopCLR,
-        /// these tests generally do not allocate because they are implemented as fcalls into the runtime
-        /// itself, but the CoreRT runtime is written in mostly managed code and tends to allocate more.
+        /// to be higher than what the test should be allocating to compensate for allocations
+        /// made internally by the runtime.
         ///
         /// This budget should be high enough to avoid exiting no-gc regions when doing normal unit
         /// tests, regardless of the runtime.
@@ -459,6 +458,7 @@ namespace System.Tests
         private const int NoGCRequestedBudget = 8192;
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void GetGeneration_WeakReference()
         {
@@ -509,6 +509,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [InlineData(true, -1)]
         [InlineData(false, -1)]
         [InlineData(true, 0)]
@@ -529,6 +530,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_EndNoGCRegion_ThrowsInvalidOperationException()
         {
@@ -551,6 +553,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_ExitThroughAllocation()
         {
@@ -569,6 +572,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion()
         {
@@ -584,6 +588,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollection()
         {
@@ -599,6 +604,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_LargeObjectHeapSize()
         {
@@ -614,6 +620,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollectionAndLOH()
         {
@@ -629,6 +636,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_SettingLatencyMode_ThrowsInvalidOperationException()
         {
@@ -637,8 +645,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() =>
             {
                 // The budget for this test is 4mb, because the act of throwing an exception with a message
-                // contained in a resource file has to potential to allocate a lot on CoreRT. In particular, when compiling
-                // in multi-file mode, this will trigger a resource lookup in System.Private.CoreLib.
+                // contained in a System.Private.CoreLib resource file has to potential to allocate a lot.
                 //
                 // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
                 Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));
@@ -650,6 +657,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize()
         {
@@ -664,6 +672,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_BlockingCollection()
         {
@@ -678,6 +687,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize()
         {
@@ -692,6 +702,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         public static void TryStartNoGCRegion_SOHSize_LOHSize_BlockingCollection()
         {
@@ -706,6 +717,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         [InlineData(0)]
         [InlineData(-1)]
@@ -720,6 +732,7 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [OuterLoop]
         [InlineData(0)]                   // invalid because lohSize ==
         [InlineData(-1)]                  // invalid because lohSize < 0
@@ -803,7 +816,7 @@ namespace System.Tests
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64935", TestPlatforms.FreeBSD)]
-        [ActiveIssue("https://github.com/mono/mono/issues/15236", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73167", TestRuntimes.Mono)]
         [ConditionalFact(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/29434")]
         public static void GetGCMemoryInfo()
         {

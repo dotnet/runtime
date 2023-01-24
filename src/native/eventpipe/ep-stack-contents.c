@@ -50,10 +50,53 @@ ep_stack_contents_free (EventPipeStackContents *stack_contents)
 	ep_rt_object_free (stack_contents);
 }
 
+/*
+ * EventPipeStackContentsInstance.
+ */
+
+EventPipeStackContentsInstance *
+ep_stack_contents_instance_alloc (void)
+{
+	EventPipeStackContentsInstance *instance = ep_rt_object_alloc (EventPipeStackContentsInstance);
+	ep_raise_error_if_nok (instance != NULL);
+	ep_raise_error_if_nok (ep_stack_contents_instance_init (instance) != NULL);
+
+ep_on_exit:
+	return instance;
+
+ep_on_error:
+	ep_stack_contents_instance_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+EventPipeStackContentsInstance *
+ep_stack_contents_instance_init (EventPipeStackContentsInstance *stack_contents_instance)
+{
+	EP_ASSERT (stack_contents_instance != NULL);
+
+	ep_stack_contents_instance_reset (stack_contents_instance);
+	return stack_contents_instance;
+}
+
+void
+ep_stack_contents_instance_fini (EventPipeStackContentsInstance *stack_contents_instance)
+{
+	;
+}
+
+void
+ep_stack_contents_instance_free (EventPipeStackContentsInstance *stack_contents_instance)
+{
+	ep_return_void_if_nok (stack_contents_instance != NULL);
+	ep_stack_contents_instance_fini (stack_contents_instance);
+	ep_rt_object_free (stack_contents_instance);
+}
+
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_stack_contents;
 const char quiet_linker_empty_file_warning_eventpipe_stack_contents = 0;
 #endif

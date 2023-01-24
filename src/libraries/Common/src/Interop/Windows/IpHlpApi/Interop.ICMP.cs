@@ -13,7 +13,7 @@ internal static partial class Interop
         internal const int IP_STATUS_BASE = 11000;
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct IPOptions
+        internal struct IP_OPTION_INFORMATION
         {
             internal byte ttl;
             internal byte tos;
@@ -21,7 +21,7 @@ internal static partial class Interop
             internal byte optionsSize;
             internal IntPtr optionsData;
 
-            internal IPOptions(PingOptions? options)
+            internal IP_OPTION_INFORMATION(PingOptions? options)
             {
                 ttl = 128;
                 tos = 0;
@@ -42,7 +42,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct IcmpEchoReply
+        internal struct ICMP_ECHO_REPLY
         {
             internal uint address;
             internal uint status;
@@ -50,31 +50,30 @@ internal static partial class Interop
             internal ushort dataSize;
             internal ushort reserved;
             internal IntPtr data;
-            internal IPOptions options;
+            internal IP_OPTION_INFORMATION options;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal struct Ipv6Address
+        internal unsafe struct IPV6_ADDRESS_EX
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
-            internal byte[] Goo;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            internal ushort port;
+            internal uint flowinfo;
+
             // Replying address.
-            internal byte[] Address;
+            private fixed byte _Address[16];
+            internal byte[] Address => MemoryMarshal.CreateReadOnlySpan(ref _Address[0], 16).ToArray();
+
             internal uint ScopeID;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct Icmp6EchoReply
+        internal struct ICMPV6_ECHO_REPLY
         {
-            internal Ipv6Address Address;
+            internal IPV6_ADDRESS_EX Address;
             // Reply IP_STATUS.
             internal uint Status;
             // RTT in milliseconds.
             internal uint RoundTripTime;
-            internal IntPtr data;
-            // internal IPOptions options;
-            // internal IntPtr data; data os after tjos
         }
 
         internal sealed class SafeCloseIcmpHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -101,10 +100,10 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial uint IcmpSendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+            uint ipAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
 
         [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
         internal static partial uint Icmp6SendEcho2(SafeCloseIcmpHandle icmpHandle, SafeWaitHandle Event, IntPtr apcRoutine, IntPtr apcContext,
-            byte[] sourceSocketAddress, byte[] destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IPOptions options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
+            byte[] sourceSocketAddress, byte[] destSocketAddress, SafeLocalAllocHandle data, ushort dataSize, ref IP_OPTION_INFORMATION options, SafeLocalAllocHandle replyBuffer, uint replySize, uint timeout);
     }
 }

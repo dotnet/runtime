@@ -75,6 +75,26 @@ struct HashTableInfo<unsigned>
     }
 };
 
+#ifdef HOST_64BIT
+//------------------------------------------------------------------------
+// HashTableInfo<ssize_t>: specialized version of HashTableInfo for ssize_t-
+//                          typed keys.
+template <>
+struct HashTableInfo<ssize_t>
+{
+    static bool Equals(ssize_t x, ssize_t y)
+    {
+        return x == y;
+    }
+
+    static unsigned GetHashCode(ssize_t key)
+    {
+        // Return the key itself
+        return (unsigned)key;
+    }
+};
+#endif
+
 //------------------------------------------------------------------------
 // HashTableBase: base type for HashTable and SmallHashTable. This class
 //                provides the vast majority of the implementation. The
@@ -94,7 +114,7 @@ struct HashTableInfo<unsigned>
 //
 // Resolving collisions using a bucket chain avoids the primary clustering
 // issue common in linearly-probed open addressed hash tables, while using
-// buckets as chain nodes avoids the allocaiton traffic typical of chained
+// buckets as chain nodes avoids the allocation traffic typical of chained
 // tables. Applying the hopscotch algorithm in the aforementioned paper
 // could further improve performance by optimizing access patterns for
 // better cache usage.
@@ -500,7 +520,7 @@ public:
     //
     // Returns:
     //    True if the key was removed from the table; false otherwise.
-    bool TryRemove(const TKey& key, TValue* value)
+    bool TryRemove(const TKey& key, TValue* value = nullptr)
     {
         unsigned hash = TKeyInfo::GetHashCode(key);
 
@@ -543,8 +563,25 @@ public:
 
         m_numFullBuckets--;
 
-        *value = bucket->m_value;
+        if (value != nullptr)
+        {
+            *value = bucket->m_value;
+        }
+
         return true;
+    }
+
+    //------------------------------------------------------------------------
+    // HashTableBase::Remove: removes a key from the hash table and asserts
+    //                        that it did exist in the the table.
+    //
+    // Arguments:
+    //    key   - The key to remove from the table.
+    //
+    void Remove(const TKey& key)
+    {
+        bool removed = TryRemove(key);
+        assert(removed);
     }
 
     //------------------------------------------------------------------------

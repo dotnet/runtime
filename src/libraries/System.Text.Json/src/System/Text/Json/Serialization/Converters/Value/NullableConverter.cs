@@ -5,7 +5,6 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
-        internal override ConverterStrategy ConverterStrategy { get; }
         internal override Type? ElementType => typeof(T);
         public override bool HandleNull => true;
 
@@ -17,15 +16,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             _elementConverter = elementConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
-
-            // Workaround for the base constructor depending on the (still unset) ConverterStrategy
-            // to derive the CanUseDirectReadOrWrite and RequiresReadAhead values.
             ConverterStrategy = elementConverter.ConverterStrategy;
-            CanUseDirectReadOrWrite = elementConverter.CanUseDirectReadOrWrite;
-            RequiresReadAhead = elementConverter.RequiresReadAhead;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
         {
             if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)
             {

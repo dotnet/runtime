@@ -16,7 +16,7 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        public unsafe sealed override ContentInfo? TryDecrypt(
+        public sealed override unsafe ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
             AsymmetricAlgorithm? privateKey,
@@ -119,7 +119,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private static Exception? TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
+        private static CryptographicException? TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
         {
             using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
             {
@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbSize))
                 {
-                    ErrorCode errorCode = (ErrorCode)(Marshal.GetLastWin32Error());
+                    ErrorCode errorCode = (ErrorCode)(Marshal.GetLastPInvokeError());
                     keySpec = default(CryptKeySpec);
                     return errorCode.ToCryptographicException();
                 }
@@ -149,7 +149,7 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, pData, ref cbSize))
                         {
-                            ErrorCode errorCode = (ErrorCode)(Marshal.GetLastWin32Error());
+                            ErrorCode errorCode = (ErrorCode)(Marshal.GetLastPInvokeError());
                             keySpec = default(CryptKeySpec);
                             return errorCode.ToCryptographicException();
                         }
@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private unsafe Exception? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
+        private unsafe CryptographicException? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
         {
             KeyTransRecipientInfoPalWindows pal = (KeyTransRecipientInfoPalWindows)(recipientInfo.Pal);
 
@@ -257,7 +257,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private Exception? TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
+        private CryptographicException? TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
         {
             if (!Interop.Crypt32.CryptMsgControl(_hCryptMsg, 0, MsgControlType.CMSG_CTRL_KEY_AGREE_DECRYPT, ref decryptPara))
             {

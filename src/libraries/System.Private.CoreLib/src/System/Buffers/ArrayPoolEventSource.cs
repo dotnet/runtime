@@ -10,9 +10,7 @@ namespace System.Buffers
     [EventSourceAutoGenerate]
     internal sealed partial class ArrayPoolEventSource : EventSource
     {
-#if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
         internal static readonly ArrayPoolEventSource Log = new ArrayPoolEventSource();
 
         /// <summary>Bucket ID used when renting/returning an array that's too large for a pool.</summary>
@@ -50,10 +48,8 @@ namespace System.Buffers
         /// of BufferAllocated events being less than or equal to those numbers (ideally significantly
         /// less than).
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(1, Level = EventLevel.Verbose)]
         internal unsafe void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId)
         {
@@ -78,10 +74,8 @@ namespace System.Buffers
         /// of BufferAllocated events is significantly smaller than the number of BufferRented and
         /// BufferReturned events.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(2, Level = EventLevel.Informational)]
         internal unsafe void BufferAllocated(int bufferId, int bufferSize, int poolId, int bucketId, BufferAllocatedReason reason)
         {
@@ -129,10 +123,8 @@ namespace System.Buffers
         /// <summary>
         /// Event raised when a buffer returned to the pool is dropped.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [Event(6, Level = EventLevel.Informational)]
         internal unsafe void BufferDropped(int bufferId, int bufferSize, int poolId, int bucketId, BufferDroppedReason reason)
         {

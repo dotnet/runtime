@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -18,31 +19,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public class CompilationHelper
     {
         private static readonly CSharpParseOptions s_parseOptions =
-            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse)
-            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
-            .WithLanguageVersion(LanguageVersion.Preview);
+            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
+
+#if NETCOREAPP
+        private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
+#endif
 
         public static Compilation CreateCompilation(
             string source,
             MetadataReference[] additionalReferences = null,
             string assemblyName = "TestAssembly",
-            bool includeSTJ = true)
+            bool includeSTJ = true,
+            Func<CSharpParseOptions, CSharpParseOptions> configureParseOptions = null)
         {
-            // Bypass System.Runtime error.
-            Assembly systemRuntimeAssembly = Assembly.Load("System.Runtime, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            Assembly systemCollectionsAssembly = Assembly.Load("System.Collections, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-            string systemRuntimeAssemblyPath = systemRuntimeAssembly.Location;
-            string systemCollectionsAssemblyPath = systemCollectionsAssembly.Location;
 
             List<MetadataReference> references = new List<MetadataReference> {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(KeyValuePair).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(KeyValuePair<,>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ContractNamespaceAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(JavaScriptEncoder).Assembly.Location),
-                MetadataReference.CreateFromFile(systemRuntimeAssemblyPath),
-                MetadataReference.CreateFromFile(systemCollectionsAssemblyPath),
+                MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
+#if NETCOREAPP
+                MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
+                MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
+#endif
             };
 
             if (includeSTJ)
@@ -59,9 +62,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
+            configureParseOptions ??= (options) => options;
+            var parseOptions = configureParseOptions(s_parseOptions);
             return CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, s_parseOptions) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
@@ -305,6 +310,119 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithConstructorInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            { 
+                public class MyClass
+                {
+                    public MyClass(int value)
+                    {
+                        Value = value;
+                    }
+
+                    public int Value { get; init; }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithMixedInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class MyClass
+                {
+                    public MyClass(int value)
+                    {
+                        Value = value;
+                    }
+
+                    public int Value { get; init; }
+                    public string Orphaned { get; init; }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithRequiredProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class MyClass
+                {
+                    public required string Required1 { get; set; }
+                    public required string Required2 { get; set; }
+
+                    public MyClass(string required1)
+                    {
+                        Required1 = required1;
+                    }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithRecordPositionalParameters()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {                
+                public record Location
+                (
+                    int Id,
+                    string Address1,
+                    string Address2,
+                    string City,
+                    string State,
+                    string PostalCode,
+                    string Name,
+                    string PhoneNumber,
+                    string Country
+                );
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
         {
             string source = @"
@@ -362,9 +480,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-            public static Compilation CreateReferencedSimpleLibRecordCompilation()
-            {
-                string source = @"
+        public static Compilation CreateReferencedSimpleLibRecordCompilation()
+        {
+            string source = @"
             using System.Text.Json.Serialization;
 
             namespace ReferencedAssembly
@@ -386,7 +504,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             }
 ";
 
-                return CreateCompilation(source);
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateReferencedModelWithFullyDocumentedProperties()
+        {
+            string source = @"
+            namespace ReferencedAssembly
+            {
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class Model
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property1 { get; set; }
+
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public int Property2 { get; set; }
+                }
+            }";
+
+            return CreateCompilation(source);
         }
 
         internal static void CheckDiagnosticMessages(

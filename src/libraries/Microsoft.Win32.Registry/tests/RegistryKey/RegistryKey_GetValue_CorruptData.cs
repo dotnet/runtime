@@ -44,10 +44,13 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Theory]
-        [InlineData(RegistryValueKind.String, new byte[] { 6, 5, 6 })]
-        [InlineData(RegistryValueKind.ExpandString, new byte[] { 6, 5, 6 })]
-        [InlineData(RegistryValueKind.MultiString, new byte[] { 6, 5, 6, 0, 0 })]
-        public void RegSzOddByteLength(RegistryValueKind kind, byte[] contents)
+        [InlineData(RegistryValueKind.String, new byte[] { 6, 5, 6 }, "\u0506")]
+        [InlineData(RegistryValueKind.ExpandString, new byte[] { 6, 5, 6 }, "\u0506")]
+        [InlineData(RegistryValueKind.MultiString, new byte[] { 6, 5, 6 }, "\u0506")]
+        [InlineData(RegistryValueKind.String, new byte[] { 6, 5, 6, 0, 0 }, "\u0506\u0006")]
+        [InlineData(RegistryValueKind.ExpandString, new byte[] { 6, 5, 6, 0, 0 }, "\u0506\u0006")]
+        [InlineData(RegistryValueKind.MultiString, new byte[] { 6, 5, 6, 0, 0 }, "\u0506\u0006")]
+        public void RegSzOddByteLength(RegistryValueKind kind, byte[] contents, string expected)
         {
             const string TestValueName = "CorruptData2";
 
@@ -73,9 +76,7 @@ namespace Microsoft.Win32.RegistryTests
                     s = (string)o;
                 }
 
-                Assert.Equal(2, s.Length);
-                Assert.Equal(0x506, s[0]);
-                Assert.Equal(0x6, s[1]);
+                Assert.Equal(expected, s);
             }
             finally
             {

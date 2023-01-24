@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-// ==--==
-
 #include "strike.h"
 #include "util.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <minipal/utils.h>
 
@@ -21,14 +16,9 @@ class MapViewHolder
     void* whatever;
 };
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#ifdef HOST_WINDOWS
-typedef long long int64_t;
-#else
+#ifndef HOST_WINDOWS
 #define FEATURE_PAL
 #endif
-typedef size_t uint64_t;
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"
@@ -39,29 +29,17 @@ void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
 
 
 /*********************************************************************************/
-static const WCHAR* getTime(const FILETIME* time, _Out_writes_ (buffLen) WCHAR* buff, int buffLen)
+static const char* getTime(const FILETIME* time, _Out_writes_ (buffLen) char* buff, int buffLen)
 {
     SYSTEMTIME systemTime;
-    static const WCHAR badTime[] = W("BAD TIME");
+    static const char badTime[] = "BAD TIME";
 
     if (!FileTimeToSystemTime(time, &systemTime))
         return badTime;
 
-#ifdef FEATURE_PAL
-    int length = _snwprintf_s(buff, buffLen, _TRUNCATE, W("%02d:%02d:%02d"), systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
+    int length = _snprintf_s(buff, buffLen, _TRUNCATE, "%02d:%02d:%02d", systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
     if (length <= 0)
         return badTime;
-#else // FEATURE_PAL
-    static const WCHAR format[] = W("HH:mm:ss");
-
-    SYSTEMTIME localTime;
-    SystemTimeToTzSpecificLocalTime(NULL, &systemTime, &localTime);
-
-    // we want a non null buff for the following
-    int ret = GetTimeFormatW(LOCALE_USER_DEFAULT, 0, &localTime, format, buff, buffLen);
-    if (ret == 0)
-        return badTime;
-#endif // FEATURE_PAL else
 
     return buff;
 }
@@ -142,8 +120,6 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     }
     CQuickBytes fullname;
     void** argsPtr = args;
-    const SIZE_T capacity_buff = 2048;
-    LPWSTR buff = (LPWSTR)alloca(capacity_buff * sizeof(WCHAR));
     static char formatCopy[256];
 
     int iArgCount = 0;
@@ -205,13 +181,17 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     MethodDescData.Request(g_sos,(CLRDATA_ADDRESS)arg);
 
                                     static WCHAR wszNameBuffer[1024]; // should be large enough
-                                    if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
+                                    static char szNameBuffer[(ARRAY_SIZE(wszNameBuffer) * 3) + 1];
+                                    if (g_sos->GetMethodDescName(arg, ARRAY_SIZE(wszNameBuffer), wszNameBuffer, NULL) == S_OK)
                                     {
-                                        wcscpy_s(wszNameBuffer, ARRAY_SIZE(wszNameBuffer), W("UNKNOWN METHODDESC"));
+                                        WideCharToMultiByte(CP_UTF8, 0, wszNameBuffer, -1, szNameBuffer, ARRAY_SIZE(szNameBuffer), NULL, NULL);
+                                    }
+                                    else
+                                    {
+                                        strcpy_s(szNameBuffer, ARRAY_SIZE(szNameBuffer), "UNKNOWN METHODDESC");
                                     }
 
-                                    wcscpy_s(buff, capacity_buff, wszNameBuffer);
-                                    fprintf(file, " (%S)", wszNameBuffer);
+                                    fprintf(file, " (%s)", szNameBuffer);
                                 }
                             }
                             break;
@@ -236,7 +216,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                 else
                                 {
                                     NameForMT_s (arg, g_mdName, mdNameLen);
-                                    fprintf(file, " (%S)", g_mdName);
+                                    fprintf(file, " (%s)", g_mdName);
                                 }
                             }
                             break;
@@ -476,10 +456,10 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     totalSecs = ((double) (lastTimeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
     toInt64(endTime) = toInt64(inProcLog.startTime) + ((__int64) (totalSecs * 1.0E7));
 
-    WCHAR timeBuff[64];
+    char timeBuff[64];
     vDoOut(bDoGcHist, file, "    Clock frequency  = %5.3f GHz\n", inProcLog.tickFrequency / 1.0E9);
-    vDoOut(bDoGcHist, file, "    Start time         %S\n", getTime(&inProcLog.startTime, timeBuff, 64));
-    vDoOut(bDoGcHist, file, "    Last message time  %S\n", getTime(&endTime, timeBuff, 64));
+    vDoOut(bDoGcHist, file, "    Start time         %s\n", getTime(&inProcLog.startTime, timeBuff, ARRAY_SIZE(timeBuff)));
+    vDoOut(bDoGcHist, file, "    Last message time  %s\n", getTime(&endTime, timeBuff, ARRAY_SIZE(timeBuff)));
     vDoOut(bDoGcHist, file, "    Total elapsed time %5.3f sec\n", totalSecs);
 
     if (!bDoGcHist)

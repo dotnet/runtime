@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -65,6 +66,11 @@ namespace System.Management.Tests
         [OuterLoop]
         public void Invoke_Instance_And_Static_Method_Win32_Process()
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                // https://github.com/dotnet/runtime/issues/70414
+                throw new SkipTestException("Unstable on Windows 11");
+            }
             // Retries are sometimes necessary as underlying API call can return
             // ERROR_NOT_READY or occasionally ERROR_INVALID_BLOCK or ERROR_NOT_ENOUGH_MEMORY
             RetryHelper.Execute(() =>

@@ -48,10 +48,13 @@ Follow these steps to prepare your machine to collect a performance trace.
 1. Have two shell windows available - one for controlling tracing, referred to as **[Trace]**, and one for running the application, referred to as **[App]**.
 2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
 
-	> ```bash
+    > ```bash
 	> export COMPlus_PerfMapEnabled=1
 	> export COMPlus_EnableEventLog=1
 	> ```
+
+   Note:
+   COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
 
 3. **[Trace]** Start collection.
 
@@ -142,7 +145,7 @@ issue should go away.   This only has to be one once per machine (until you upda
 
 ### Alternative: Turn off use of precompiled code ###
 
-If you don't have the abiltiy to update the .NET Runtime (to add crossgen), or if the above procedure did not work
+If you don't have the ability to update the .NET Runtime (to add crossgen), or if the above procedure did not work
 for some reason, there is another approach to getting framework symbols.   You can tell the runtime to simply
 not use the precompiled framework code.   The code will be Just in time compiled and the special crossgen tool
 is not needed.   This works, but will increase startup time for your code by something like a second or two.  If you
@@ -162,28 +165,22 @@ symbols for these when it converts its data, but ONLY if the symbols for these n
 the library they are for).
 
 There is a global command called [dotnet symbol](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md#symbol-downloader-dotnet-cli-extension) which does this.   This tool was mostly desiged to download symbols
-for debugging, but it works for perfcollect as well.  There are three steps to getting the symbols
+for debugging, but it works for perfcollect as well.  There are two steps to getting the symbols:
 
-   1. Install dotnet symbol
+   1. Install dotnet symbol.
    2. Download the symbols.
-   3. Copy the symbols to the correct place
 
 To install dotnet symbol issue the command
 ```
      dotnet tool install -g dotnet-symbol
 ```
-With that installed download the symbols to a local directory.  if your installed version of the .NET Core runtime is
-2.1.0 the command to do this is
+
+To download symbols for **all native libraries** (including .NET runtime/framework as well as any other installed frameworks like ASP.NET) and store them next to them:
+
 ```
-    mkdir mySymbols
-    dotnet symbol --symbols --output mySymbols  /usr/share/dotnet/shared/Microsoft.NETCore.App/2.1.0/lib*.so
+    sudo dotnet symbol --recurse-subdirectories --symbols '/usr/share/dotnet/*.so'
 ```
-Now all the symbols for those native dlls are in mySymbols.   You then have to copy them (as super user next to the
-dlls that they are for.
-```
-    sudo cp mySymbols/* /usr/share/dotnet/shared/Microsoft.NETCore.App/2.1.0
-```
-After this, you should get symbolic names for the native dlls when you run perfcollect.
+
 ## Collecting in a Docker Container ##
 Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
 
@@ -272,5 +269,5 @@ dotnet-trace collect --process-id <PID>
 The resulting trace can be viewed in [PerfView](https://aka.ms/perfview) on Windows. Alternatively on Linux/macOS, it can be viewed on [SpeedScope](https://speedscope.app) if you convert the trace format to speedscope by passing `--format speedscope` argument when collecting the trace.
 
 ## More Information ##
-To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md).
+To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/main/documentation/dotnet-trace-instructions.md).
 

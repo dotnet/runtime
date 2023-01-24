@@ -113,11 +113,7 @@ namespace System.Collections.Generic
         /// </exception>
         public PriorityQueue(int initialCapacity, IComparer<TPriority>? comparer)
         {
-            if (initialCapacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(initialCapacity), initialCapacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCapacity);
 
             _nodes = new (TElement, TPriority)[initialCapacity];
             _comparer = InitializeComparer(comparer);
@@ -157,8 +153,10 @@ namespace System.Collections.Generic
         ///  Constructs the heap using a heapify operation,
         ///  which is generally faster than enqueuing individual elements sequentially.
         /// </remarks>
-        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items!!, IComparer<TPriority>? comparer)
+        public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items, IComparer<TPriority>? comparer)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             _nodes = EnumerableHelpers.ToArray(items, out _size);
             _comparer = InitializeComparer(comparer);
 
@@ -198,13 +196,15 @@ namespace System.Collections.Generic
             // Note that the node being enqueued does not need to be physically placed
             // there at this point, as such an assignment would be redundant.
 
-            int currentSize = _size++;
+            int currentSize = _size;
             _version++;
 
             if (_nodes.Length == currentSize)
             {
                 Grow(currentSize + 1);
             }
+
+            _size = currentSize + 1;
 
             if (_comparer == null)
             {
@@ -246,6 +246,54 @@ namespace System.Collections.Generic
             TElement element = _nodes[0].Element;
             RemoveRootNode();
             return element;
+        }
+
+        /// <summary>
+        ///  Removes the minimal element and then immediately adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        /// </summary>
+        /// <param name="element">The element to add to the <see cref="PriorityQueue{TElement, TPriority}"/>.</param>
+        /// <param name="priority">The priority with which to associate the new element.</param>
+        /// <exception cref="InvalidOperationException">The queue is empty.</exception>
+        /// <returns>The minimal element removed before performing the enqueue operation.</returns>
+        /// <remarks>
+        ///  Implements an extract-then-insert heap operation that is generally more efficient
+        ///  than sequencing Dequeue and Enqueue operations: in the worst case scenario only one
+        ///  shift-down operation is required.
+        /// </remarks>
+        public TElement DequeueEnqueue(TElement element, TPriority priority)
+        {
+            if (_size == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
+            }
+
+            (TElement Element, TPriority Priority) root = _nodes[0];
+
+            if (_comparer == null)
+            {
+                if (Comparer<TPriority>.Default.Compare(priority, root.Priority) > 0)
+                {
+                    MoveDownDefaultComparer((element, priority), 0);
+                }
+                else
+                {
+                    _nodes[0] = (element, priority);
+                }
+            }
+            else
+            {
+                if (_comparer.Compare(priority, root.Priority) > 0)
+                {
+                    MoveDownCustomComparer((element, priority), 0);
+                }
+                else
+                {
+                    _nodes[0] = (element, priority);
+                }
+            }
+
+            _version++;
+            return root.Element;
         }
 
         /// <summary>
@@ -308,7 +356,7 @@ namespace System.Collections.Generic
         /// <remarks>
         ///  Implements an insert-then-extract heap operation that is generally more efficient
         ///  than sequencing Enqueue and Dequeue operations: in the worst case scenario only one
-        ///  sift-down operation is required.
+        ///  shift-down operation is required.
         /// </remarks>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {
@@ -346,13 +394,15 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="items"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items!!)
+        public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items)
         {
+            ArgumentNullException.ThrowIfNull(items);
+
             int count = 0;
             var collection = items as ICollection<(TElement Element, TPriority Priority)>;
             if (collection is not null && (count = collection.Count) > _nodes.Length - _size)
             {
-                Grow(_size + count);
+                Grow(checked(_size + count));
             }
 
             if (_size == 0)
@@ -407,13 +457,15 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException">
         ///  The specified <paramref name="elements"/> argument was <see langword="null"/>.
         /// </exception>
-        public void EnqueueRange(IEnumerable<TElement> elements!!, TPriority priority)
+        public void EnqueueRange(IEnumerable<TElement> elements, TPriority priority)
         {
+            ArgumentNullException.ThrowIfNull(elements);
+
             int count;
-            if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
+            if (elements is ICollection<TElement> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
             {
-                Grow(_size + count);
+                Grow(checked(_size + count));
             }
 
             if (_size == 0)
@@ -475,10 +527,7 @@ namespace System.Collections.Generic
         /// <returns>The current capacity of the <see cref="PriorityQueue{TElement, TPriority}"/>.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_nodes.Length < capacity)
             {
@@ -563,12 +612,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (index - 1) >> Log2Arity;
+        private static int GetParentIndex(int index) => (index - 1) >> Log2Arity;
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        private int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
+        private static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 
         /// <summary>
         /// Converts an unordered list into a heap.
@@ -800,8 +849,10 @@ namespace System.Collections.Generic
             object ICollection.SyncRoot => this;
             bool ICollection.IsSynchronized => false;
 
-            void ICollection.CopyTo(Array array!!, int index)
+            void ICollection.CopyTo(Array array, int index)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -814,7 +865,7 @@ namespace System.Collections.Generic
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 if (array.Length - index < _queue._size)
@@ -828,7 +879,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
 

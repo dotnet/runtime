@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
                         IntPtr.Zero,
                         IntPtr.Zero))
                     {
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
                 }
             }
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.X509Certificates
                         IntPtr.Zero,
                         IntPtr.Zero))
                     {
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
                 }
             }

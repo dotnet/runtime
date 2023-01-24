@@ -113,6 +113,39 @@
         </Method>
       </Type>
 
+      <Type Name="CtorDict.MyType1">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="CtorDict.MyType2">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="CtorDict.MyType5">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="CtorDict.MyType6">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+
+      <Type Name="ThreadLocalStatics.T1">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T2">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T4">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="ThreadLocalStatics.T5">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+
+      <Type Name="ConstraintsTests+TypeWithPublicCtor">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithPublicCtor">
+        <Method Name=".ctor" Dynamic="Required All" />
+      </Type>
+
       <Type Name="MethodAndUnboxingStubTesting.GenericClass`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
       <Type Name="MethodAndUnboxingStubTesting.GenericClass2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
       <Type Name="MethodAndUnboxingStubTesting.GenericStruct`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>

@@ -10,7 +10,7 @@ namespace Layout
 {
     public unsafe class SearchLoops
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Make sure equal strings compare as such
             if (!LoopReturn("hello", "hello") || !LoopGoto("goodbye", "goodbye"))
@@ -56,7 +56,7 @@ namespace Layout
             }
         }
 
-        // Variant with code written awkwardly but which acheives the desired
+        // Variant with code written awkwardly but which achieves the desired
         // performance if JIT simply lays out code in source order.
         public static bool LoopGoto(String strA, String strB)
         {

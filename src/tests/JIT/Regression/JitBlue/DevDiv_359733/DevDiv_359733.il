@@ -6,13 +6,13 @@
 // method C::M, which transitively takes exception-producing covnersions as arguments). The assert was
 // attempting to ensure that if value numbers were present on the comma node used to hold the side effects,
 // then value numbers were also present on the expression being added to the list. This condition may be violated
-// when remorphing, however, and the assertion was appropiately weakened.
+// when remorphing, however, and the assertion was appropriately weakened.
 
 .assembly extern mscorlib {}
 .assembly 'DevDiv_359733' {}
 .assembly extern xunit.core {}
 
-.class private C extends [mscorlib]System.Object
+.class public C extends [mscorlib]System.Object
 {
     .method private static int16 M(bool a0, int16 a1, int16 a2, int32 a3) cil managed noinlining
     {
@@ -39,7 +39,7 @@
         ret
     }
 
-    .method private static int32 Main() cil managed
+    .method public static int32 Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

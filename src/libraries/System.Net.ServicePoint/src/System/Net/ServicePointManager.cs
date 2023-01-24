@@ -51,10 +51,7 @@ namespace System.Net
             get { return s_maxServicePoints; }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 s_maxServicePoints = value;
             }
         }
@@ -64,10 +61,7 @@ namespace System.Net
             get { return s_connectionLimit; }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 s_connectionLimit = value;
             }
         }
@@ -77,10 +71,7 @@ namespace System.Net
             get { return s_maxServicePointIdleTime; }
             set
             {
-                if (value < Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, Timeout.Infinite);
                 s_maxServicePointIdleTime = value;
             }
         }
@@ -113,8 +104,10 @@ namespace System.Net
         public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static ServicePoint FindServicePoint(Uri address!!, IWebProxy? proxy)
+        public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             // If there's a proxy for this address, get the "real" address.
             bool isProxyServicePoint = ProxyAddressIfNecessary(ref address, proxy);
 
@@ -217,14 +210,8 @@ namespace System.Net
         {
             if (enabled)
             {
-                if (keepAliveTime <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(keepAliveTime));
-                }
-                if (keepAliveInterval <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(keepAliveInterval));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveTime);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(keepAliveInterval);
             }
         }
     }

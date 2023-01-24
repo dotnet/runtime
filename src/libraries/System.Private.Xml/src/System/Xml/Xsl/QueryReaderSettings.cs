@@ -84,7 +84,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        public XmlReader CreateReader(Stream stream, string baseUri)
+        public XmlReader CreateReader(Stream stream, string? baseUri)
         {
             XmlReader reader;
             if (_xmlReaderSettings != null)

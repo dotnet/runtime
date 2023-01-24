@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -43,13 +42,14 @@ namespace ILCompiler.DependencyAnalysis
             /// affect compiler correctness. Today that includes native layout tables.
             /// </summary>
             Ordered,
-            Unordered
+            Unordered,
+            Late,
         }
 
         protected enum ObjectNodeOrder
         {
             //
-            // The ordering of this sequence of nodes is deliberate and currently required for 
+            // The ordering of this sequence of nodes is deliberate and currently required for
             // compiler correctness.
             //
 
@@ -66,14 +66,13 @@ namespace ILCompiler.DependencyAnalysis
 
 
             //
-            // CoreRT Nodes
+            // NativeAOT Nodes
             //
             MetadataNode,
             ResourceDataNode,
             ResourceIndexNode,
             TypeMetadataMapNode,
             ClassConstructorContextMap,
-            DynamicInvokeTemplateDataNode,
             ReflectionInvokeMapNode,
             DelegateMarshallingStubMapNode,
             StructMarshallingStubMapNode,

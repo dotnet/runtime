@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -16,15 +15,29 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, unchecked((int)ptr));
         }
 
+        public void MethodWithSystemPointer(Pointer ptr, int expected)
+        {
+            Assert.Equal(expected, unchecked((int)Pointer.Unbox(ptr)));
+        }
+
         public bool* Return(int expected)
         {
             return unchecked((bool*)expected);
         }
+
+        public object ReturnWithSystemPointer(int expected)
+        {
+            return Pointer.Box((byte*)expected, typeof(byte*));
+        }
+
+        public static void MethodWithVoidPointer(void* vp) { }
     }
 
     unsafe delegate void MethodDelegate(byte* ptr, int expected);
+    unsafe delegate void MethodDelegateWithSystemPointer(Pointer ptr, int expected);
 
     unsafe delegate bool* ReturnDelegate(int expected);
+    unsafe delegate object ReturnDelegateWithSystemPointer(int expected);
 
     public unsafe class PointerTests
     {
@@ -209,6 +222,25 @@ namespace System.Reflection.Tests
             method.Invoke(obj, new object[] { (IntPtr)value, value });
         }
 
+        public static IEnumerable<object[]> PointersUInt =>
+            new[]
+            {
+                new object[] { UIntPtr.Zero },
+                new object[] { 0 },
+                new object[] { 1 },
+                new object[] { uint.MinValue },
+                new object[] { uint.MaxValue },
+            };
+
+        [Theory]
+        [MemberData(nameof(PointersUInt))]
+        public void UIntPtrMethodParameter(uint value)
+        {
+            var obj = new PointerHolder();
+            MethodInfo method = typeof(PointerHolder).GetMethod(nameof(PointerHolder.MethodWithVoidPointer));
+            method.Invoke(obj, new object[] { (UIntPtr)value });
+        }
+
         [Theory]
         [MemberData(nameof(Pointers))]
         public void PointerMethodParameter_InvalidType(int value)
@@ -242,12 +274,39 @@ namespace System.Reflection.Tests
             d.DynamicInvoke(Pointer.Box(unchecked((void*)value), typeof(byte*)), value);
         }
 
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        public void MethodDelegateParameter_SystemPointer(int value)
+        {
+            var obj = new PointerHolder();
+            MethodDelegateWithSystemPointer d = obj.MethodWithSystemPointer;
+            d.DynamicInvoke(Pointer.Box(unchecked((void*)value), typeof(byte*)), value);
+        }
+
         [Fact]
         public void PointerNullMethodDelegateParameter()
         {
             var obj = new PointerHolder();
             MethodDelegate d = obj.Method;
             d.DynamicInvoke(null, 0);
+        }
+
+        [Fact]
+        public void PointerNullMethodDelegateParameter_InvalidType_SystemPointer()
+        {
+            // An null is not converted to a System.Pointer.
+            var obj = new PointerHolder();
+            MethodDelegateWithSystemPointer d = obj.MethodWithSystemPointer;
+            try
+            {
+                d.DynamicInvoke(null, 0);
+            }
+            catch (TargetInvocationException e) when (e.InnerException is ArgumentException)
+            {
+                return;
+            }
+
+            Assert.Fail("Inner exception should be ArgumentException.");
         }
 
         [Theory]
@@ -257,6 +316,19 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             MethodDelegate d = obj.Method;
             d.DynamicInvoke((IntPtr)value, value);
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        public void IntPtrMethodDelegateParameter_InvalidType_SystemPointer(int value)
+        {
+            // An IntPtr is not converted to a System.Pointer.
+            var obj = new PointerHolder();
+            MethodDelegateWithSystemPointer d = obj.MethodWithSystemPointer;
+            AssertExtensions.Throws<ArgumentException>(null, () =>
+            {
+                d.DynamicInvoke((IntPtr)value, value);
+            });
         }
 
         [Theory]
@@ -273,10 +345,32 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
+        public void PointerMethodDelegateParameter_InvalidType_SystemPointer(int value)
+        {
+            // Although the type boxed doesn't match, when unboxing void* is returned.
+            var obj = new PointerHolder();
+            MethodDelegateWithSystemPointer d = obj.MethodWithSystemPointer;
+            d.DynamicInvoke(Pointer.Box(unchecked((void*)value), typeof(long*)), value);
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
         public void PointerMethodDelegateReturn(int value)
         {
             var obj = new PointerHolder();
             ReturnDelegate d = obj.Return;
+            object actualValue = d.DynamicInvoke(value);
+            Assert.IsType<Pointer>(actualValue);
+            void* actualPointer = Pointer.Unbox(actualValue);
+            Assert.Equal(value, unchecked((int)actualPointer));
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        public void PointerMethodDelegateReturn_SystemPointer(int value)
+        {
+            var obj = new PointerHolder();
+            ReturnDelegateWithSystemPointer d = obj.ReturnWithSystemPointer;
             object actualValue = d.DynamicInvoke(value);
             Assert.IsType<Pointer>(actualValue);
             void* actualPointer = Pointer.Unbox(actualValue);

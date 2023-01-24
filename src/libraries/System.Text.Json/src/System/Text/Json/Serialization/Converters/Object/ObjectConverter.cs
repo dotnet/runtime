@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object?>
     {
-        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Object;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Object;
 
         public ObjectConverter()
         {
@@ -34,15 +35,17 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteEndObject();
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value)
         {
+            object? referenceValue;
+
             if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
             {
                 JsonElement element = JsonElement.ParseValue(ref reader);
 
                 // Edge case where we want to lookup for a reference when parsing into typeof(object)
                 if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
-                    JsonSerializer.TryGetReferenceFromJsonElement(ref state, element, out object? referenceValue))
+                    JsonSerializer.TryHandleReferenceFromJsonElement(ref reader, ref state, element, out referenceValue))
                 {
                     value = referenceValue;
                 }
@@ -55,15 +58,42 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
-            value = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
-            // TODO reference lookup for JsonNode deserialization.
+
+            JsonNode node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+
+            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
+                JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, node, out referenceValue))
+            {
+                value = referenceValue;
+            }
+            else
+            {
+                value = node;
+            }
+
             return true;
+        }
+
+        public override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+            return null!;
         }
 
         internal override object ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return null!;
+        }
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
+            WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)

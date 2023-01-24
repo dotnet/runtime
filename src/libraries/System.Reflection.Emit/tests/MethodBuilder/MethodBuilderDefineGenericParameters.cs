@@ -47,7 +47,7 @@ namespace System.Reflection.Emit.Tests
             ilGenerator.Emit(OpCodes.Ldc_I4, 100);
             ilGenerator.Emit(OpCodes.Ret);
 
-            Type resultType = type.CreateTypeInfo().AsType();
+            Type resultType = type.CreateType();
             Type[] typeArguments = { typeof(int), typeof(string), typeof(object) };
             MethodInfo constructedMethod = resultType.GetMethod("TestMethod").MakeGenericMethod(typeArguments);
             Assert.Equal(typeArguments, constructedMethod.GetGenericArguments());
@@ -135,7 +135,7 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod("method1", MethodAttributes.Public | MethodAttributes.Static);
             method.GetILGenerator().Emit(OpCodes.Ret);
 
-            Type resultType = type.CreateTypeInfo().AsType();
+            Type resultType = type.CreateType();
             Assert.Throws<InvalidOperationException>(() => method.DefineGenericParameters("T", "U"));
         }
     }

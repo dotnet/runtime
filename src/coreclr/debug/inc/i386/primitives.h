@@ -164,7 +164,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
-// opcode and re-excute what was underneath the bp.
+// opcode and re-execute what was underneath the bp.
 inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;

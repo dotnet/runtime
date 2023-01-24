@@ -122,7 +122,7 @@ __PPF_ThreadReg SETS "r2"
 
         ; Perform the rest of the PInvokeTransitionFrame initialization.
         INIT_PROBE_FRAME $__PPF_ThreadReg, $trashReg, $BITMASK, PROBE_FRAME_SIZE
-        str         sp, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        str         sp, [$__PPF_ThreadReg, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     MEND
 
     ; Simple macro to use when PROLOG_PROBE_FRAME was used to set up and initialize the prolog and
@@ -132,25 +132,6 @@ __PPF_ThreadReg SETS "r2"
 
         FREE_PROBE_FRAME
         EPILOG_RETURN
-    MEND
-
-
-;;
-;; Macro to clear the hijack state. This is safe to do because the suspension code will not Unhijack this
-;; thread if it finds it at an IP that isn't managed code.
-;;
-;; Register state on entry:
-;;  r2: thread pointer
-;;
-;; Register state on exit:
-;;  r12: trashed
-;;
-    MACRO
-        ClearHijackState
-
-        mov         r12, #0
-        str         r12, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        str         r12, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
     MEND
 
 
@@ -177,32 +158,11 @@ __PPF_ThreadReg SETS "r2"
         ;;
         ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
-        ClearHijackState
-    MEND
+        ;; Clear hijack state
+        mov         r12, #0
+        str         r12, [r2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        str         r12, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
-;;
-;; Set the Thread state and wait for a GC to complete.
-;;
-;; Register state on entry:
-;;  r4: thread pointer
-;;
-;; Register state on exit:
-;;  r4: thread pointer
-;;  All other registers trashed
-;;
-
-    EXTERN RhpWaitForGCNoAbort
-
-    MACRO
-        WaitForGCCompletion
-
-        ldr         r2, [r4, #OFFSETOF__Thread__m_ThreadStateFlags]
-        tst         r2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
-        bne         %ft0
-
-        ldr         r2, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        bl          RhpWaitForGCNoAbort
-0
     MEND
 
 
@@ -229,38 +189,23 @@ __PPF_ThreadReg SETS "r2"
     EXTERN RhpPInvokeExceptionGuard
 
 
-    NESTED_ENTRY RhpGcProbeHijackScalarWrapper, .text, RhpPInvokeExceptionGuard
+    NESTED_ENTRY RhpGcProbeHijackWrapper, .text, RhpPInvokeExceptionGuard
 
         HijackTargetFakeProlog
 
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackScalar
+    LABELED_RETURN_ADDRESS RhpGcProbeHijack
 
         FixupHijackedCallstack
-        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackScalarWrapper
 
-    NESTED_ENTRY RhpGcProbeHijackObjectWrapper, .text, RhpPInvokeExceptionGuard
-
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackObject
-
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_GCREF)
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackObjectWrapper
-
-    NESTED_ENTRY RhpGcProbeHijackByrefWrapper, .text, RhpPInvokeExceptionGuard
-
-        HijackTargetFakeProlog
-
-    LABELED_RETURN_ADDRESS RhpGcProbeHijackByref
-
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_BYREF)
-        b           RhpGcProbe
-    NESTED_END RhpGcProbeHijackByrefWrapper
+        ldr         r3, =RhpTrapThreads
+        ldr         r3, [r3]
+        tst         r3, #TrapThreadsFlags_TrapThreads
+        bne         %0
+        bx          lr
+0
+        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0)
+        b           RhpWaitForGC
+    NESTED_END RhpGcProbeHijackWrapper
 
 #ifdef FEATURE_GC_STRESS
 ;;
@@ -268,28 +213,15 @@ __PPF_ThreadReg SETS "r2"
 ;; GC Stress Hijack targets
 ;;
 ;;
-    LEAF_ENTRY RhpGcStressHijackScalar
+    LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS
+        mov         r12, #DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0
         b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackScalar
-
-    LEAF_ENTRY RhpGcStressHijackObject
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_GCREF)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackObject
-
-    LEAF_ENTRY RhpGcStressHijackByref
-        FixupHijackedCallstack
-        mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_R0_IS_BYREF)
-        b           RhpGcStressProbe
-    LEAF_END RhpGcStressHijackByref
-
+    LEAF_END RhpGcStressHijack
 
 ;;
 ;; Worker for our GC stress probes.  Do not call directly!!
-;; Instead, go through RhpGcStressHijack{Scalar|Object|Byref}.
+;; Instead, go through RhpGcStressHijack.
 ;; This worker performs the GC Stress work and returns to the original return address.
 ;;
 ;; Register state on entry:
@@ -313,21 +245,11 @@ __PPF_ThreadReg SETS "r2"
 
     EXTERN RhpThrowHwEx
 
-    LEAF_ENTRY RhpGcProbe
-        ldr         r3, =RhpTrapThreads
-        ldr         r3, [r3]
-        tst         r3, #TrapThreadsFlags_TrapThreads
-        bne         %0
-        bx          lr
-0
-        b           RhpGcProbeRare
-    LEAF_END RhpGcProbe
-
-    NESTED_ENTRY RhpGcProbeRare
+    NESTED_ENTRY RhpWaitForGC
         PROLOG_PROBE_FRAME r2, r3, r12
 
-        mov         r4, r2
-        WaitForGCCompletion
+        ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame] 
+        bl          RhpWaitForGC2
 
         ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tst         r2, #PTFF_THREAD_ABORT
@@ -341,7 +263,7 @@ __PPF_ThreadReg SETS "r2"
         EPILOG_NOP mov         r1, lr ;; return address as exception PC
         EPILOG_BRANCH RhpThrowHwEx
 
-    NESTED_END RhpGcProbe
+    NESTED_END RhpWaitForGC
 
     LEAF_ENTRY RhpGcPoll
         ldr         r0, =RhpTrapThreads
@@ -357,8 +279,8 @@ __PPF_ThreadReg SETS "r2"
         ; Unhijack this thread, if necessary.
         INLINE_THREAD_UNHIJACK  r2, r0, r1       ;; trashes r0, r1
 
-        mov         r4, r2
-        WaitForGCCompletion
+        ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        bl          RhpWaitForGC2
 
         EPILOG_PROBE_FRAME
     NESTED_END RhpGcPollRare
@@ -410,181 +332,7 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
     NESTED_END RhpHijackForGcStress
 #endif ;; FEATURE_GC_STRESS
 
-
-;;
-;; The following functions are _jumped_ to when we need to transfer control from one method to another for EH
-;; dispatch. These are needed to properly coordinate with the GC hijacking logic. We are essentially replacing
-;; the return from the throwing method with a jump to the handler in the caller, but we need to be aware of
-;; any return address hijack that may be in place for GC suspension. These routines use a quick test of the
-;; return address against a specific GC hijack routine, and then fixup the stack pointer to what it would be
-;; after a real return from the throwing method. Then, if we are not hijacked we can simply jump to the
-;; handler in the caller.
-;;
-;; If we are hijacked, then we jump to a routine that will unhijack appropriatley and wait for the GC to
-;; complete. There are also variants for GC stress.
-;;
-;; Note that at this point we are eiher hijacked or we are not, and this will not change until we return to
-;; managed code. It is an invariant of the system that a thread will only attempt to hijack or unhijack
-;; another thread while the target thread is suspended in managed code, and this is _not_ managed code.
-;;
-;; Register state on entry:
-;;  r0: pointer to this function (i.e., trash)
-;;  r1: reference to the exception object.
-;;  r2: handler address we want to jump to.
-;;  Non-volatile registers are all already correct for return to the caller.
-;;  LR still contains the return address.
-;;
-;; Register state on exit:
-;;  All registers except r0 and lr unchanged
-;;
-    MACRO
-        RTU_EH_JUMP_HELPER $funcName, $hijackFuncName, $isStress, $stressFuncName
-
-        LEAF_ENTRY $funcName
-        ; Currently the EH epilog won't pop the return address back into LR,
-        ; so we have to have a funny load from [sp-4] here to retrieve it.
-
-            ldr         r0, =$hijackFuncName
-            cmp         r0, lr
-            beq         RhpGCProbeForEHJump
-
-            IF $isStress
-            ldr         r0, =$stressFuncName
-            cmp         r0, lr
-            beq         RhpGCStressProbeForEHJump
-            ENDIF
-
-            ;; We are not hijacked, so we can return to the handler.
-            ;; We return to keep the call/return prediction balanced.
-            mov         lr, r2  ; Update the return address
-            bx          lr
-        LEAF_END $funcName
-    MEND
-
-;; We need an instance of the helper for each possible hijack function. The binder has enough
-;; information to determine which one we need to use for any function.
-    RTU_EH_JUMP_HELPER RhpEHJumpScalar,         RhpGcProbeHijackScalar, {false}, 0
-    RTU_EH_JUMP_HELPER RhpEHJumpObject,         RhpGcProbeHijackObject, {false}, 0
-    RTU_EH_JUMP_HELPER RhpEHJumpByref,          RhpGcProbeHijackByref,  {false}, 0
 #ifdef FEATURE_GC_STRESS
-    RTU_EH_JUMP_HELPER RhpEHJumpScalarGCStress, RhpGcProbeHijackScalar, {true},  RhpGcStressHijackScalar
-    RTU_EH_JUMP_HELPER RhpEHJumpObjectGCStress, RhpGcProbeHijackObject, {true},  RhpGcStressHijackObject
-    RTU_EH_JUMP_HELPER RhpEHJumpByrefGCStress,  RhpGcProbeHijackByref,  {true},  RhpGcStressHijackByref
-#endif
-
-;;
-;; Macro to setup our frame and adjust the location of the EH object reference for EH jump probe funcs.
-;;
-;; Register state on entry:
-;;  r0: scratch
-;;  r1: reference to the exception object.
-;;  r2: handler address we want to jump to.
-;;  Non-volatile registers are all already correct for return to the caller.
-;;  The stack is as if we are just about to returned from the call
-;;
-;; Register state on exit:
-;;  r0: reference to the exception object
-;;  r2: thread pointer
-;;
-    MACRO
-        EHJumpProbeProlog
-
-        PROLOG_PUSH         {r1,r2}     ; save the handler address so we can jump to it later (save r1 just for alignment)
-        PROLOG_NOP          mov r0, r1  ; move the ex object reference into r0 so we can report it
-        ALLOC_PROBE_FRAME
-
-        ;; r2 <- GetThread(), TRASHES r1
-        INLINE_GETTHREAD r2, r1
-
-        ;; Recover the original return address and update the frame
-        ldr         lr, [r2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        str         lr, [sp, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
-
-        ;; ClearHijackState expects thread in r2 (trashes r12).
-        ClearHijackState
-
-        ; TRASHES r1
-        INIT_PROBE_FRAME r2, r1, #PROBE_SAVE_FLAGS_R0_IS_GCREF, (PROBE_FRAME_SIZE + 8)
-        str         sp, [r2, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-    MEND
-
-;;
-;; Macro to re-adjust the location of the EH object reference, cleanup the frame, and make the
-;; final jump to the handler for EH jump probe funcs.
-;;
-;; Register state on entry:
-;;  r0: reference to the exception object
-;;  r1-r3: scratch
-;;
-;; Register state on exit:
-;;  sp: correct for return to the caller
-;;  r1: reference to the exception object
-;;
-    MACRO
-        EHJumpProbeEpilog
-
-        FREE_PROBE_FRAME        ; This restores exception object back into r0
-        EPILOG_NOP mov r1, r0   ; Move the Exception object back into r1 where the catch handler expects it
-        EPILOG_POP {r0,pc}      ; Recover the handler address and jump to it
-    MEND
-
-;;
-;; We are hijacked for a normal GC (not GC stress), so we need to unhijack and wait for the GC to complete.
-;;
-;; Register state on entry:
-;;  r0: reference to the exception object.
-;;  r2: thread
-;;  Non-volatile registers are all already correct for return to the caller.
-;;  The stack is as if we have tail called to this function (lr points to return address).
-;;
-;; Register state on exit:
-;;  r7: previous frame pointer
-;;  r0: reference to the exception object
-;;
-    NESTED_ENTRY RhpGCProbeForEHJump
-        EHJumpProbeProlog
-
-#ifdef _DEBUG
-        ;;
-        ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
-        ;; reflect that we've been requested to synchronize.
-
-        ldr         r1, =RhpTrapThreads
-        ldr         r1, [r1]
-        tst         r1, #TrapThreadsFlags_TrapThreads
-        bne         %0
-
-        bl          RhDebugBreak
-0
-#endif ;; _DEBUG
-
-        mov         r4, r2
-        WaitForGCCompletion
-
-        EHJumpProbeEpilog
-    NESTED_END RhpGCProbeForEHJump
-
-#ifdef FEATURE_GC_STRESS
-;;
-;; We are hijacked for GC Stress (not a normal GC) so we need to invoke the GC stress helper.
-;;
-;; Register state on entry:
-;;  r1: reference to the exception object.
-;;  r2: thread
-;;  Non-volatile registers are all already correct for return to the caller.
-;;  The stack is as if we have tail called to this function (lr points to return address).
-;;
-;; Register state on exit:
-;;  r7: previous frame pointer
-;;  r0: reference to the exception object
-;;
-    NESTED_ENTRY RhpGCStressProbeForEHJump
-        EHJumpProbeProlog
-
-        bl          $REDHAWKGCINTERFACE__STRESSGC
-
-        EHJumpProbeEpilog
-    NESTED_END RhpGCStressProbeForEHJump
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.

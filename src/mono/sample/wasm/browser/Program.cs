@@ -2,21 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.InteropServices;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
-            Console.WriteLine ("Hello, World!");
+            DisplayMeaning(42);
+            return 0;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static int TestMeaning()
-        {
-            return 42;
-        }
+        [JSImport("Sample.Test.displayMeaning", "main.js")]
+        internal static partial void DisplayMeaning(int meaning);
     }
 }

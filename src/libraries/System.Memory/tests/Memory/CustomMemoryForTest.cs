@@ -28,8 +28,6 @@ namespace System.MemoryTests
             _length = length;
         }
 
-        public int OnNoRefencesCalledCount => _noReferencesCalledCount;
-
         public bool IsDisposed => _disposed;
 
         protected bool IsRetained => _referenceCount > 0;

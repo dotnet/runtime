@@ -17,7 +17,7 @@ namespace System.Data
         internal XmlElement? _schemaRoot;
         internal DataSet _ds;
 
-        internal XDRSchema(DataSet ds, bool fInline)
+        internal XDRSchema(DataSet ds)
         {
             _schemaUri = string.Empty;
             _schemaName = string.Empty;
@@ -65,7 +65,7 @@ namespace System.Data
                 ds.DataSetName = _schemaName;
         }
 
-        internal XmlElement? FindTypeNode(XmlElement node)
+        internal static XmlElement? FindTypeNode(XmlElement node)
         {
             string strType;
             XmlNode? vn;
@@ -128,7 +128,7 @@ namespace System.Data
             return null;
         }
 
-        internal bool IsTextOnlyContent(XmlElement node)
+        internal static bool IsTextOnlyContent(XmlElement node)
         {
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), $"Invalid node type {node.LocalName}");
 
@@ -151,7 +151,7 @@ namespace System.Data
             throw ExceptionBuilder.InvalidAttributeValue("content", value);
         }
 
-        internal bool IsXDRField(XmlElement node, XmlElement typeNode)
+        internal static bool IsXDRField(XmlElement node, XmlElement typeNode)
         {
             int min = 1;
             int max = 1;
@@ -279,7 +279,7 @@ namespace System.Data
             if (index < 0)
             {
 #if DEBUG
-                // Let's check that we realy don't have this name:
+                // Let's check that we really don't have this name:
                 foreach (NameType nt in s_mapNameTypeXdr)
                 {
                     Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");
@@ -294,19 +294,20 @@ namespace System.Data
         private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-        private Type ParseDataType(string dt, string dtValues)
+        private static Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
-            string[] parts = dt.Split(':');
 
-            if (parts.Length > 2)
+            Span<System.Range> parts = stackalloc System.Range[3];
+            switch (dt.AsSpan().Split(parts, ':'))
             {
-                throw ExceptionBuilder.InvalidAttributeValue("type", dt);
-            }
-            else if (parts.Length == 2)
-            {
-                // CONSIDER: check that we have valid prefix
-                strType = parts[1];
+                case 2:
+                    // CONSIDER: check that we have valid prefix
+                    strType = dt[parts[1]];
+                    break;
+
+                case > 2:
+                    throw ExceptionBuilder.InvalidAttributeValue("type", dt);
             }
 
             NameType nt = FindNameType(strType);
@@ -315,7 +316,7 @@ namespace System.Data
             return nt.type;
         }
 
-        internal string GetInstanceName(XmlElement node)
+        internal static string GetInstanceName(XmlElement node)
         {
             string instanceName;
 
@@ -429,19 +430,19 @@ namespace System.Data
                 if (strType == "bin.base64")
                 {
                     strType = string.Empty;
-                    xsdType = SimpleType.CreateByteArrayType("base64");
+                    xsdType = SimpleType.CreateByteArrayType();
                 }
 
                 if (strType == "bin.hex")
                 {
                     strType = string.Empty;
-                    xsdType = SimpleType.CreateByteArrayType("hex");
+                    xsdType = SimpleType.CreateByteArrayType();
                 }
             }
 
             bool isAttribute = FEqualIdentity(node, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS);
 
-            GetMinMax(node, isAttribute, ref minOccurs, ref maxOccurs);
+            GetMinMax(node, ref minOccurs, ref maxOccurs);
 
             // Does XDR has default?
             strDefault = node.GetAttribute(Keywords.DEFAULT);
@@ -490,12 +491,7 @@ namespace System.Data
                 }
         }
 
-        internal void GetMinMax(XmlElement elNode, ref int minOccurs, ref int maxOccurs)
-        {
-            GetMinMax(elNode, false, ref minOccurs, ref maxOccurs);
-        }
-
-        internal void GetMinMax(XmlElement elNode, bool isAttribute, ref int minOccurs, ref int maxOccurs)
+        internal static void GetMinMax(XmlElement elNode, ref int minOccurs, ref int maxOccurs)
         {
             string occurs = elNode.GetAttribute(Keywords.MINOCCURS);
             if (occurs != null && occurs.Length > 0)

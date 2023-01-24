@@ -9,8 +9,8 @@ namespace TypeSystemTests
 {
     public partial class GCPointerMapTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public GCPointerMapTests()
         {

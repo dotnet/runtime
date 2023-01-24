@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -56,13 +57,15 @@ namespace System
         #region Static Members
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
-            string typeName!!,
+            string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -86,7 +89,7 @@ namespace System
 
         #region Private Data Members
         private readonly SafeTypeNameParserHandle m_NativeParser;
-        private static readonly char[] SPECIAL_CHARS = { ',', '[', ']', '&', '*', '+', '\\' }; /* see typeparse.h */
+        private static readonly IndexOfAnyValues<char> s_specialChars = IndexOfAnyValues.Create(",[]&*+\\"); // see typeparse.h
         #endregion
 
         #region Constructor and Disposer
@@ -172,12 +175,7 @@ namespace System
             }
 
             int[]? modifiers = GetModifiers();
-
-            fixed (int* ptr = modifiers)
-            {
-                IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
-            }
+            return RuntimeTypeHandle.GetTypeHelper(baseType, types!, modifiers);
         }
 
         private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
@@ -279,13 +277,18 @@ namespace System
 
         private static string EscapeTypeName(string name)
         {
-            if (name.IndexOfAny(SPECIAL_CHARS) < 0)
+            int specialCharIndex = name.AsSpan().IndexOfAny(s_specialChars);
+            if (specialCharIndex < 0)
+            {
                 return name;
+            }
 
             var sb = new ValueStringBuilder(stackalloc char[64]);
-            foreach (char c in name)
+            sb.Append(name.AsSpan(0, specialCharIndex));
+
+            foreach (char c in name.AsSpan(specialCharIndex))
             {
-                if (Array.IndexOf<char>(SPECIAL_CHARS, c) >= 0)
+                if (s_specialChars.Contains(c))
                     sb.Append('\\');
 
                 sb.Append(c);

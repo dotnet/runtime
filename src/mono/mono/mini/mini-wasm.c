@@ -11,6 +11,12 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/components.h>
 
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+#include <mono/utils/mono-threads-wasm.h>
+#endif
+#endif
+
 static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
@@ -73,9 +79,8 @@ get_storage (MonoType *type, gboolean is_return)
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
-		if (mini_is_gsharedvt_type (type)) {
+		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
@@ -161,6 +166,37 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 gboolean
 mono_arch_opcode_supported (int opcode)
 {
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_I4:
+	case OP_ATOMIC_CAS_I8:
+	case OP_ATOMIC_LOAD_I1:
+	case OP_ATOMIC_LOAD_I2:
+	case OP_ATOMIC_LOAD_I4:
+	case OP_ATOMIC_LOAD_I8:
+	case OP_ATOMIC_LOAD_U1:
+	case OP_ATOMIC_LOAD_U2:
+	case OP_ATOMIC_LOAD_U4:
+	case OP_ATOMIC_LOAD_U8:
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_LOAD_R8:
+	case OP_ATOMIC_STORE_I1:
+	case OP_ATOMIC_STORE_I2:
+	case OP_ATOMIC_STORE_I4:
+	case OP_ATOMIC_STORE_I8:
+	case OP_ATOMIC_STORE_U1:
+	case OP_ATOMIC_STORE_U2:
+	case OP_ATOMIC_STORE_U4:
+	case OP_ATOMIC_STORE_U8:
+	case OP_ATOMIC_STORE_R4:
+	case OP_ATOMIC_STORE_R8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 	return FALSE;
 }
 
@@ -548,6 +584,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 EMSCRIPTEN_KEEPALIVE void
 mono_set_timeout_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
 	static MonoMethod *method = NULL;
@@ -576,6 +613,7 @@ mono_set_timeout_exec (void)
 		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #endif
@@ -584,7 +622,13 @@ void
 mono_wasm_set_timeout (int timeout)
 {
 #ifdef HOST_BROWSER
-	mono_set_timeout (timeout);
+#ifndef DISABLE_THREADS
+    if (!mono_threads_wasm_is_browser_thread ()) {
+        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_set_timeout, GINT_TO_POINTER(timeout));
+        return;
+    }
+#endif
+    mono_set_timeout (timeout);
 #endif
 }
 

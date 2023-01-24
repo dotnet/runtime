@@ -47,14 +47,14 @@ namespace ABIStress
             new[]
             {
                 typeof(byte), typeof(short), typeof(int), typeof(long),
-                typeof(float), typeof(double),
+                typeof(float), typeof(double), typeof(Int128),
                 typeof(Vector<int>), typeof(Vector128<int>), typeof(Vector256<int>),
                 typeof(S1P), typeof(S2P), typeof(S2U), typeof(S3U),
                 typeof(S4P), typeof(S4U), typeof(S5U), typeof(S6U),
                 typeof(S7U), typeof(S8P), typeof(S8U), typeof(S9U),
                 typeof(S10U), typeof(S11U), typeof(S12U), typeof(S13U),
                 typeof(S14U), typeof(S15U), typeof(S16U), typeof(S17U),
-                typeof(S31U), typeof(S32U),
+                typeof(S31U), typeof(S32U), typeof(I128_1), typeof(I128_2)
             };
 
         public CallingConvention[] PInvokeConventions { get; } = { CallingConvention.Cdecl, CallingConvention.StdCall, };
@@ -107,12 +107,13 @@ namespace ABIStress
                 typeof(byte), typeof(short), typeof(int), typeof(long),
                 typeof(float), typeof(double),
                 typeof(Vector<int>), typeof(Vector128<int>), typeof(Vector256<int>),
+                typeof(Int128),
                 typeof(S1P), typeof(S2P), typeof(S2U), typeof(S3U),
                 typeof(S4P), typeof(S4U), typeof(S5U), typeof(S6U),
                 typeof(S7U), typeof(S8P), typeof(S8U), typeof(S9U),
                 typeof(S10U), typeof(S11U), typeof(S12U), typeof(S13U),
                 typeof(S14U), typeof(S15U), typeof(S16U), typeof(S17U),
-                typeof(S31U), typeof(S32U),
+                typeof(S31U), typeof(S32U), typeof(I128_1), typeof(I128_2)
             };
 
         public CallingConvention[] PInvokeConventions { get; } = { CallingConvention.Cdecl };
@@ -135,14 +136,14 @@ namespace ABIStress
             new[]
             {
                 typeof(byte), typeof(short), typeof(int), typeof(long),
-                typeof(float), typeof(double),
+                typeof(float), typeof(double), typeof(Int128),
                 typeof(Vector<int>), typeof(Vector128<int>), typeof(Vector256<int>),
                 typeof(S1P), typeof(S2P), typeof(S2U), typeof(S3U),
                 typeof(S4P), typeof(S4U), typeof(S5U), typeof(S6U),
                 typeof(S7U), typeof(S8P), typeof(S8U), typeof(S9U),
                 typeof(S10U), typeof(S11U), typeof(S12U), typeof(S13U),
                 typeof(S14U), typeof(S15U), typeof(S16U),
-                typeof(Hfa1), typeof(Hfa2),
+                typeof(Hfa1), typeof(Hfa2), typeof(I128_1)
             };
 
         public CallingConvention[] PInvokeConventions { get; } = { CallingConvention.Cdecl };

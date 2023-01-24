@@ -9,7 +9,7 @@ using Internal.Runtime.TypeLoader;
 
 namespace Internal.Runtime
 {
-    // Supplies type loader specific extentions to MethodTable
+    // Supplies type loader specific extensions to MethodTable
     internal partial struct MethodTable
     {
         private static unsafe MethodTable* GetArrayEEType()

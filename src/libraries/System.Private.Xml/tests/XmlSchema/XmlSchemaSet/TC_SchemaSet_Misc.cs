@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.IO;
 using System.Xml.Schema;
 using System.Xml.XPath;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaTests
 {
     //[TestCase(Name = "TC_SchemaSet_Misc", Desc = "")]
     public class TC_SchemaSet_Misc : TC_SchemaSetBase
@@ -115,27 +115,27 @@ namespace System.Xml.Tests
             return;
         }
 
-        /* Parameters = file name , is custom xml namespace System.Xml.Tests */
+        /* Parameters = file name , is custom xml namespace System.Xml.XmlSchemaTests */
 
-        //[Variation(Desc = "v20 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v10.xsd", 2, false })]
+        //[Variation(Desc = "v20 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v10.xsd", 2, false })]
         [InlineData("bug264908_v10.xsd", 2, false)]
-        //[Variation(Desc = "v19 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v9.xsd", 5, true })]
+        //[Variation(Desc = "v19 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v9.xsd", 5, true })]
         [InlineData("bug264908_v9.xsd", 5, true)]
-        //[Variation(Desc = "v18 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v8.xsd", 5, false })]
+        //[Variation(Desc = "v18 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v8.xsd", 5, false })]
         [InlineData("bug264908_v8.xsd", 5, false)]
-        //[Variation(Desc = "v17 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v7.xsd", 4, false })]
+        //[Variation(Desc = "v17 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v7.xsd", 4, false })]
         [InlineData("bug264908_v7.xsd", 4, false)]
-        //[Variation(Desc = "v16 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v6.xsd", 4, true })]
+        //[Variation(Desc = "v16 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v6.xsd", 4, true })]
         [InlineData("bug264908_v6.xsd", 4, true)]
-        //[Variation(Desc = "v15 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v5.xsd", 4, false })]
+        //[Variation(Desc = "v15 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v5.xsd", 4, false })]
         [InlineData("bug264908_v5.xsd", 4, false)]
-        //[Variation(Desc = "v14 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v4.xsd", 4, true })]
+        //[Variation(Desc = "v14 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v4.xsd", 4, true })]
         [InlineData("bug264908_v4.xsd", 4, true)]
-        //[Variation(Desc = "v13 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v3.xsd", 1, true })]
+        //[Variation(Desc = "v13 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v3.xsd", 1, true })]
         [InlineData("bug264908_v3.xsd", 1, true)]
-        //[Variation(Desc = "v12 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v2.xsd", 1, true })]
+        //[Variation(Desc = "v12 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v2.xsd", 1, true })]
         [InlineData("bug264908_v2.xsd", 1, true)]
-        //[Variation(Desc = "v11 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.Tests", Priority = 1, Params = new object[] { "bug264908_v1.xsd", 3, true })]
+        //[Variation(Desc = "v11 - DCR 264908 - XSD: Support user specified schema for http://www.w3.org/XML/1998/namespace System.Xml.XmlSchemaTests", Priority = 1, Params = new object[] { "bug264908_v1.xsd", 3, true })]
         [InlineData("bug264908_v1.xsd", 3, true)]
         [Theory]
         public void v10(object param0, object param1, object param2)
@@ -219,7 +219,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "v23 - Bug 338038 - Conflicting components in custome xml namespace System.Xml.Tests be caught", Priority = 1)]
+        //[Variation(Desc = "v23 - Bug 338038 - Conflicting components in custome xml namespace System.Xml.XmlSchemaTests be caught", Priority = 1)]
         [Fact]
         public void v22()
         {
@@ -242,7 +242,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "v24 - Bug 338038 - Change type of xml:lang to decimal in custome xml namespace System.Xml.Tests", Priority = 1)]
+        //[Variation(Desc = "v24 - Bug 338038 - Change type of xml:lang to decimal in custome xml namespace System.Xml.XmlSchemaTests", Priority = 1)]
         [Fact]
         public void v24()
         {
@@ -324,7 +324,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "v27 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests", Priority = 1)]
+        //[Variation(Desc = "v27 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.XmlSchemaTests", Priority = 1)]
         [Fact]
         public void v27()
         {
@@ -348,7 +348,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "v28 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.Tests, remove default ns schema", Priority = 1)]
+        //[Variation(Desc = "v28 - Bug 338038 - Add new attributes to the already present xml namespace System.Xml.XmlSchemaTests, remove default ns schema", Priority = 1)]
         [Fact]
         public void v28()
         {
@@ -504,7 +504,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "v103 - Reference to a component from no namespace System.Xml.Tests an explicit import of no namespace System.Xml.Tests throw a validation warning", Priority = 1)]
+        //[Variation(Desc = "v103 - Reference to a component from no namespace System.Xml.XmlSchemaTests an explicit import of no namespace System.Xml.XmlSchemaTests throw a validation warning", Priority = 1)]
         [Fact]
         public void v105()
         {
@@ -989,19 +989,6 @@ namespace System.Xml.Tests
                 if (xmlReader.MoveToNextAttribute())
                     return;
             }
-            Assert.True(false);
-        }
-
-        //[Variation(Desc = "615444 XmlSchema.Write ((XmlWriter)null) throws InvalidOperationException instead of ArgumentNullException")]
-        [Fact]
-        public void v125()
-        {
-            XmlSchema xs = new XmlSchema();
-            try
-            {
-                xs.Write((XmlWriter)null);
-            }
-            catch (InvalidOperationException) { return; }
             Assert.True(false);
         }
 

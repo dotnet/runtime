@@ -3,21 +3,24 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
-using System.Xml;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
+using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
     internal sealed class JsonByteArrayDataContract : JsonDataContract
     {
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonByteArrayDataContract(ByteArrayDataContract traditionalByteArrayDataContract)
             : base(traditionalByteArrayDataContract)
         {
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {

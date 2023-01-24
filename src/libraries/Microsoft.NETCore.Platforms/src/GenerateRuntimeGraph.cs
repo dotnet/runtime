@@ -63,7 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         /// <summary>
-        /// Parent RID to use for any unknown AdditionalRuntimeIdentifer.
+        /// Parent RID to use for any unknown AdditionalRuntimeIdentifier.
         /// </summary>
         public string AdditionalRuntimeIdentifierParent
         {
@@ -240,7 +240,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return !Log.HasLoggedErrors;
         }
 
-        private void EnsureWritable(string file)
+        private static void EnsureWritable(string file)
         {
             if (File.Exists(file))
             {
@@ -292,7 +292,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return RuntimeGraph.Merge(existingGraph, runtimeGraph);
         }
 
-        private void ValidateImports(RuntimeGraph runtimeGraph, IDictionary<string, string> externalRIDs)
+        private void ValidateImports(RuntimeGraph runtimeGraph, Dictionary<string, string> externalRIDs)
         {
             foreach (var runtimeDescription in runtimeGraph.Runtimes.Values)
             {
@@ -328,7 +328,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static IDictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
+        private static Dictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
         {
             Dictionary<string, IEnumerable<string>> compatibilityMap = new Dictionary<string, IEnumerable<string>>();
 
@@ -344,13 +344,13 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         {
             var serializer = new JsonSerializer();
             using (var file = File.OpenText(mapFile))
-            using (var jsonTextReader = new JsonTextReader(file))
+            using (var jsonTextReader = new JsonTextReader(file) { MaxDepth = null })
             {
                 return serializer.Deserialize<IDictionary<string, IEnumerable<string>>>(jsonTextReader);
             }
         }
 
-        private static void WriteCompatibilityMap(IDictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
+        private static void WriteCompatibilityMap(Dictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
         {
             var serializer = new JsonSerializer()
             {

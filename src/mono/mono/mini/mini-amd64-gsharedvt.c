@@ -264,7 +264,6 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	GSharedVtCallInfo *info;
 	CallInfo *caller_cinfo, *callee_cinfo;
 	MonoMethodSignature *caller_sig, *callee_sig;
-	int aindex, i;
 	gboolean var_ret = FALSE;
 	CallInfo *cinfo, *gcinfo;
 	MonoMethodSignature *sig;
@@ -318,7 +317,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 	 */
 	map = g_ptr_array_new ();
 
-	for (aindex = 0; aindex < cinfo->nargs; ++aindex) {
+	for (int aindex = 0; aindex < cinfo->nargs; ++aindex) {
 		ArgInfo *src_info = &caller_cinfo->args [aindex];
 		ArgInfo *dst_info = &callee_cinfo->args [aindex];
 		int *src = NULL, *dst = NULL;
@@ -398,7 +397,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		nslots = MIN (nsrc, ndst);
 		DEBUG_AMD64_GSHAREDVT_PRINT ("nsrc %d ndst %d\n", nsrc, ndst);
 
-		for (i = 0; i < nslots; ++i)
+		for (int i = 0; i < nslots; ++i)
 			add_to_map (map, src [i], dst [i]);
 
 		g_free (src);
@@ -431,7 +430,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 
 #ifdef DEBUG_AMD64_GSHAREDVT
 	printf ("final map:\n");
-	for (i = 0; i < map->len; i += 2) {
+	for (guint i = 0; i < map->len; i += 2) {
 		printf ("\t[%d] src %x dst %x\n ",
 			i / 2,
 			GPOINTER_TO_UINT (g_ptr_array_index (map, i)),
@@ -441,7 +440,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 
 	info->vcall_offset = vcall_offset;
 	info->map_count = map->len / 2;
-	for (i = 0; i < map->len; ++i)
+	for (guint i = 0; i < map->len; ++i)
 		info->map [i] = GPOINTER_TO_UINT (g_ptr_array_index (map, i));
 	g_ptr_array_free (map, TRUE);
 

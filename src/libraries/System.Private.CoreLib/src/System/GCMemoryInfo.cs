@@ -104,17 +104,17 @@ namespace System
         }
 
         /// <summary>
-        /// High memory load threshold when this GC occured
+        /// High memory load threshold when this GC occurred
         /// </summary>
         public long HighMemoryLoadThresholdBytes => _data._highMemoryLoadThresholdBytes;
 
         /// <summary>
-        /// Memory load when this GC ocurred
+        /// Memory load when this GC occurred
         /// </summary>
         public long MemoryLoadBytes => _data._memoryLoadBytes;
 
         /// <summary>
-        /// Total available memory for the GC to use when this GC ocurred.
+        /// Total available memory for the GC to use when this GC occurred.
         ///
         /// If the environment variable COMPlus_GCHeapHardLimit is set,
         /// or "Server.GC.HeapHardLimit" is in runtimeconfig.json, this will come from that.
@@ -124,12 +124,12 @@ namespace System
         public long TotalAvailableMemoryBytes => _data._totalAvailableMemoryBytes;
 
         /// <summary>
-        /// The total heap size when this GC ocurred
+        /// The total heap size when this GC occurred
         /// </summary>
         public long HeapSizeBytes => _data._heapSizeBytes;
 
         /// <summary>
-        /// The total fragmentation when this GC ocurred
+        /// The total fragmentation when this GC occurred
         ///
         /// Let's take the example below:
         ///  | OBJ_A |     OBJ_B     | OBJ_C |   OBJ_D   | OBJ_E |

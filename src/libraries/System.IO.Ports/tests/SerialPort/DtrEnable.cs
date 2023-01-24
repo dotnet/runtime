@@ -53,7 +53,7 @@ namespace System.IO.Ports.Tests
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
-                Debug.WriteLine("Verifying seting DtrEnable to true then false before open");
+                Debug.WriteLine("Verifying setting DtrEnable to true then false before open");
 
                 com1.DtrEnable = true;
 
@@ -91,7 +91,7 @@ namespace System.IO.Ports.Tests
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
-                Debug.WriteLine("Verifying seting DtrEnable to true then false after open");
+                Debug.WriteLine("Verifying setting DtrEnable to true then false after open");
 
                 com1.Open();
 

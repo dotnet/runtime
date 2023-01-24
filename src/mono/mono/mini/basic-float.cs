@@ -38,7 +38,7 @@ class Tests
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
 #endif
-	
+
 	public static int test_0_beq () {
 		double a = 2.0;
 		if (a != 2.0)
@@ -189,39 +189,39 @@ class Tests
 
 	public static int test_5_add () {
 		double a = 2.0;
-		double b = 3.0;		
+		double b = 3.0;
 		return (int)(a + b);
 	}
 
 	public static int test_5_sub () {
 		double a = 8.0;
-		double b = 3.0;		
+		double b = 3.0;
 		return (int)(a - b);
-	}	
+	}
 
 	public static int test_24_mul () {
 		double a = 8.0;
-		double b = 3.0;		
+		double b = 3.0;
 		return (int)(a * b);
-	}	
+	}
 
 	public static int test_4_div () {
 		double a = 8.0;
-		double b = 2.0;		
+		double b = 2.0;
 		return (int)(a / b);
-	}	
+	}
 
 	public static int test_2_rem () {
 		double a = 8.0;
-		double b = 3.0;		
+		double b = 3.0;
 		return (int)(a % b);
-	}	
+	}
 
 	public static int test_2_neg () {
-		double a = -2.0;		
+		double a = -2.0;
 		return (int)(-a);
 	}
-	
+
 	public static int test_46_float_add_spill () {
 		// we overflow the FP stack
 		double a = 1;
@@ -377,7 +377,7 @@ class Tests
 		double b = 1.0;
 		int result = 0;
 		bool val;
-		
+
 		val = a == a;
 		if (!val)
 			return result;
@@ -466,7 +466,7 @@ class Tests
 		double b = 1.0;
 		int result = 0;
 		bool val;
-		
+
 		val = a == a;
 		if (val)
 			return result;
@@ -549,7 +549,7 @@ class Tests
 		double a = 2.0;
 		double b = 1.0;
 		int result = 0;
-		
+
 		if (!(a == a))
 			return result;
 		result++;
@@ -617,7 +617,7 @@ class Tests
 		double a = Double.NaN;
 		double b = 1.0;
 		int result = 0;
-		
+
 		if (a == a)
 			return result;
 		result++;
@@ -683,7 +683,7 @@ class Tests
 
 	public static int test_0_float_precision () {
 		float f1 = 3.40282346638528859E+38f;
-		float f2 = 3.40282346638528859E+38f;		
+		float f2 = 3.40282346638528859E+38f;
 		float PositiveInfinity =  (float)(1.0f / 0.0f);
 		float f = (float)(f1 + f2);
 
@@ -715,7 +715,7 @@ class Tests
 
 	public static int INT_VAL = 0x13456799;
 
-	public static int test_0_int4_to_float_convertion ()
+	public static int test_0_int4_to_float_conversion ()
     {
 		double d = (double)(float)INT_VAL;
 
@@ -724,7 +724,7 @@ class Tests
 		return 0;
 	}
 
-	public static int test_0_int8_to_float_convertion ()
+	public static int test_0_int8_to_float_conversion ()
     {
 		double d = (double)(float)(long)INT_VAL;
 

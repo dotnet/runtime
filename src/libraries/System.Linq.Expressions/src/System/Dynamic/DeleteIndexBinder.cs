@@ -16,14 +16,14 @@ namespace System.Dynamic
         /// <param name="callInfo">The signature of the arguments at the call site.</param>
         protected DeleteIndexBinder(CallInfo callInfo)
         {
-            ContractUtils.RequiresNotNull(callInfo, nameof(callInfo));
+            ArgumentNullException.ThrowIfNull(callInfo);
             CallInfo = callInfo;
         }
 
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType => typeof(void);
+        public sealed override Type ReturnType => typeof(void);
 
         /// <summary>
         /// Gets the signature of the arguments at the call site.
@@ -38,7 +38,7 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
             ContractUtils.RequiresNotNullItems(args, nameof(args));
 
             return target.BindDeleteIndex(this, args);
@@ -47,7 +47,7 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal override sealed bool IsStandardBinder => true;
+        internal sealed override bool IsStandardBinder => true;
 
         /// <summary>
         /// Performs the binding of the dynamic delete index operation if the target dynamic object cannot bind.

@@ -26,11 +26,6 @@ namespace Internal.Reflection
         public override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type) => type.TypeHandle;
         public override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle) => false;
         public override bool SupportsReflection(Type type) => false;
-        public override bool TryGetDefaultParameterValue(object defaultParametersContext, RuntimeTypeHandle thType, int argIndex, out object defaultValue)
-        {
-            defaultValue = null;
-            return false;
-        }
         public override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
     }
 }

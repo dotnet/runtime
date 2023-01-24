@@ -1,10 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
+using System.Threading;
 
 namespace System.Text.Json.Nodes
 {
@@ -85,7 +86,7 @@ namespace System.Text.Json.Nodes
             throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array)));
         }
 
-        internal JsonArray (JsonElement element, JsonNodeOptions? options = null) : base(options)
+        internal JsonArray(JsonElement element, JsonNodeOptions? options = null) : base(options)
         {
             Debug.Assert(element.ValueKind == JsonValueKind.Array);
             _jsonElement = element;
@@ -99,6 +100,7 @@ namespace System.Text.Json.Nodes
         ///   The object to be added to the end of the <see cref="JsonArray"/>.
         /// </param>
         [RequiresUnreferencedCode(JsonValue.CreateUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
             if (value == null)
@@ -107,11 +109,7 @@ namespace System.Text.Json.Nodes
             }
             else
             {
-                JsonNode? jNode = value as JsonNode;
-                if (jNode == null)
-                {
-                    jNode = new JsonValueNotTrimmable<T>(value);
-                }
+                JsonNode jNode = value as JsonNode ?? new JsonValueNotTrimmable<T>(value);
 
                 // Call the IList.Add() implementation.
                 Add(jNode);
@@ -152,8 +150,13 @@ namespace System.Text.Json.Nodes
         }
 
         /// <inheritdoc/>
-        public override void WriteTo(Utf8JsonWriter writer!!, JsonSerializerOptions? options = null)
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+
             if (_jsonElement.HasValue)
             {
                 _jsonElement.Value.WriteTo(writer);
@@ -163,7 +166,7 @@ namespace System.Text.Json.Nodes
                 CreateNodes();
                 Debug.Assert(_list != null);
 
-                options ??= JsonSerializerOptions.Default;
+                options ??= s_defaultOptions;
 
                 writer.WriteStartArray();
 
@@ -178,33 +181,47 @@ namespace System.Text.Json.Nodes
 
         private void CreateNodes()
         {
-            if (_list == null)
+            if (_list is null)
             {
-                List<JsonNode?> list;
+                CreateNodesCore();
+            }
 
-                if (_jsonElement == null)
+            void CreateNodesCore()
+            {
+                // Even though _list initialization can be subject to races,
+                // ensure that contending threads use a coherent view of jsonElement.
+
+                // Because JsonElement cannot be read atomically there might be torn reads,
+                // however the order of read/write operations guarantees that that's only
+                // possible if the value of _list is non-null.
+                JsonElement? jsonElement = _jsonElement;
+                Interlocked.MemoryBarrier();
+                List<JsonNode?>? list = _list;
+
+                if (list is null)
                 {
-                    list = new List<JsonNode?>();
-                }
-                else
-                {
-                    JsonElement jElement = _jsonElement.Value;
-                    Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
+                    list = new();
 
-                    list = new List<JsonNode?>(jElement.GetArrayLength());
-
-                    foreach (JsonElement element in jElement.EnumerateArray())
+                    if (jsonElement.HasValue)
                     {
-                        JsonNode? node = JsonNodeConverter.Create(element, Options);
-                        node?.AssignParent(this);
-                        list.Add(node);
+                        JsonElement jElement = jsonElement.Value;
+                        Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
+
+                        list = new List<JsonNode?>(jElement.GetArrayLength());
+
+                        foreach (JsonElement element in jElement.EnumerateArray())
+                        {
+                            JsonNode? node = JsonNodeConverter.Create(element, Options);
+                            node?.AssignParent(this);
+                            list.Add(node);
+                        }
                     }
 
-                    // Clear since no longer needed.
+                    // Ensure _jsonElement is written to after _list
+                    _list = list;
+                    Interlocked.MemoryBarrier();
                     _jsonElement = null;
                 }
-
-                _list = list;
             }
         }
 

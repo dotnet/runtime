@@ -37,7 +37,7 @@ char* asString(CQuickBytes *out);
 
 const char* PrettyPrintSig(
     PCCOR_SIGNATURE typePtr,            // type to convert,
-    unsigned typeLen,					// the lenght of 'typePtr'
+    unsigned typeLen,					// the length of 'typePtr'
     const char* name,                   // can be "", the name of the method for this sig 0 means local var sig
     CQuickBytes *out,                   // where to put the pretty printed string
     IMDInternalImport *pIMDI,           // ptr to IMDInternalImport class with ComSig

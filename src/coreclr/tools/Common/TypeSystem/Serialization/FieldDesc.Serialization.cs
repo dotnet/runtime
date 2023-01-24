@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Additional members of FieldDesc related to serialization.
-    partial class FieldDesc
+    public partial class FieldDesc
     {
         /// <summary>
         /// Gets a value indicating whether this field is not serialized.
@@ -19,7 +19,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class FieldForInstantiatedType
+    public partial class FieldForInstantiatedType
     {
         public override bool IsNotSerialized
         {

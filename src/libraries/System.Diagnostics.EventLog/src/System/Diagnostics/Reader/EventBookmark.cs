@@ -15,13 +15,22 @@ namespace System.Diagnostics.Eventing.Reader
     /// well as marks the location in the result set of the EventReader
     /// that the event instance was obtained from.
     /// </summary>
-    public class EventBookmark
+    public sealed class EventBookmark
     {
-        internal EventBookmark(string bookmarkText!!)
+        /// <summary>
+        /// Creates a bookmark that identifies an event in a channel.
+        /// </summary>
+        /// <param name="bookmarkXml">An XML string that represents the bookmark.</param>
+        public EventBookmark(string bookmarkXml)
         {
-            BookmarkText = bookmarkText;
+            ArgumentNullException.ThrowIfNull(bookmarkXml);
+
+            BookmarkXml = bookmarkXml;
         }
 
-        internal string BookmarkText { get; }
+        /// <summary>
+        /// Gets the XML string that represents the bookmark.
+        /// </summary>
+        public string BookmarkXml { get; }
     }
 }

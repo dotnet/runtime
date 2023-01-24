@@ -21,7 +21,7 @@
  Fat Header for other cases:
     - EncodingType[Fat]
     - Flag:     isVarArg,
-                hasSecurityObject,
+                unused (was hasSecurityObject),
                 hasGSCookie,
                 hasPSPSymStackSlot,
                 hasGenericsInstContextStackSlot,
@@ -32,7 +32,7 @@
                 hasReversePInvokeFrame,
     - ReturnKind (Fat: 4 bits)
     - CodeLength
-    - Prolog (if hasSecurityObject || hasGenericsInstContextStackSlot || hasGSCookie)
+    - Prolog (if hasGenericsInstContextStackSlot || hasGSCookie)
     - Epilog (if hasGSCookie)
     - SecurityObjectStackSlot (if any)
     - GSCookieStackSlot (if any)
@@ -118,7 +118,7 @@ struct GcInfoSize
     size_t NumUntracked;
     size_t NumTransitions;
     size_t SizeOfCode;
-    size_t EncPreservedSlots;
+    size_t EncInfoSize;
 
     size_t UntrackedSlotSize;
     size_t NumUntrackedSize;
@@ -420,7 +420,6 @@ public:
     // Miscellaneous method information
     //------------------------------------------------------------------------
 
-    void SetSecurityObjectStackSlot( INT32 spOffset );
     void SetPrologSize( UINT32 prologSize );
     void SetGSCookieStackSlot( INT32 spOffsetGSCookie, UINT32 validRangeStart, UINT32 validRangeEnd );
     void SetPSPSymStackSlot( INT32 spOffsetPSPSym );
@@ -434,6 +433,9 @@ public:
 
     // Number of slots preserved during EnC remap
     void SetSizeOfEditAndContinuePreservedArea( UINT32 size );
+#ifdef TARGET_ARM64
+    void SetSizeOfEditAndContinueFixedStackFrame( UINT32 size );
+#endif
 
 #ifdef TARGET_AMD64
     // Used to only report a frame once for the leaf function/funclet
@@ -483,10 +485,6 @@ private:
     IAllocator*                 m_pAllocator;
     NoMemoryFunction            m_pNoMem;
 
-#ifdef _DEBUG
-    const char *m_MethodName, *m_ModuleName;
-#endif
-
     BitStreamWriter     m_Info1;    // Used for everything except for chunk encodings
     BitStreamWriter     m_Info2;    // Used for chunk encodings
 
@@ -499,7 +497,6 @@ private:
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool   m_HasTailCalls;
 #endif // TARGET_AMD64
-    INT32  m_SecurityObjectStackSlot;
     INT32  m_GSCookieStackSlot;
     UINT32 m_GSCookieValidRangeStart;
     UINT32 m_GSCookieValidRangeEnd;
@@ -510,6 +507,9 @@ private:
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
+#ifdef TARGET_ARM64
+    UINT32 m_SizeOfEditAndContinueFixedStackFrame;
+#endif
     INT32  m_ReversePInvokeFrameSlot;
     InterruptibleRange* m_pLastInterruptibleRange;
 

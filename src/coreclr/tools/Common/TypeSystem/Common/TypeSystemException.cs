@@ -50,12 +50,12 @@ namespace Internal.TypeSystem
             {
                 if (formatString != null)
                 {
-                    return String.Format(formatString, (object[])args);
+                    return string.Format(formatString, (object[])args);
                 }
             }
             catch {}
-            
-            return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + String.Join(", ", args);
+
+            return "[TEMPORARY EXCEPTION MESSAGE] " + id.ToString() + ": " + string.Join(", ", args);
         }
 
         /// <summary>

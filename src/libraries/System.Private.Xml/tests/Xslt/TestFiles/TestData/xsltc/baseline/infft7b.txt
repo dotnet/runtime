@@ -1,1 +1,0 @@
-/class:fft7b fft7b.xsl

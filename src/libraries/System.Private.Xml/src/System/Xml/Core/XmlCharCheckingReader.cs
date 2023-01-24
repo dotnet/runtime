@@ -476,21 +476,12 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBase64(byte[] buffer!!, int index, int count)
+        public override int ReadElementContentAsBase64(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
             if (ReadState != ReadState.Interactive)
             {
@@ -533,21 +524,12 @@ namespace System.Xml
             return readCount;
         }
 
-        public override int ReadElementContentAsBinHex(byte[] buffer!!, int index, int count)
+        public override int ReadElementContentAsBinHex(byte[] buffer, int index, int count)
         {
-            // check arguments
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-            if (buffer.Length - index < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
             if (ReadState != ReadState.Interactive)
             {
                 return 0;
@@ -614,7 +596,7 @@ namespace System.Xml
             }
         }
 
-        private void ValidateQName(string name)
+        private static void ValidateQName(string name)
         {
             ValidateNames.ParseQNameThrow(name);
         }
@@ -636,7 +618,7 @@ namespace System.Xml
             }
         }
 
-        private void CheckCharacters(string value)
+        private static void CheckCharacters(string value)
         {
             XmlConvert.VerifyCharData(value, ExceptionType.ArgumentException, ExceptionType.XmlException);
         }
@@ -644,10 +626,7 @@ namespace System.Xml
         private void FinishReadBinary()
         {
             _state = State.Interactive;
-            if (_readBinaryHelper != null)
-            {
-                _readBinaryHelper.Finish();
-            }
+            _readBinaryHelper?.Finish();
         }
     }
 

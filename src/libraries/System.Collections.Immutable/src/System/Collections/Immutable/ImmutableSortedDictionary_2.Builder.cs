@@ -303,9 +303,9 @@ namespace System.Collections.Immutable
                     Requires.NotNull(value, nameof(value));
                     if (value != _keyComparer)
                     {
-                        var newRoot = Node.EmptyNode;
+                        ImmutableSortedDictionary<TKey, TValue>.Node newRoot = Node.EmptyNode;
                         int count = 0;
-                        foreach (var item in this)
+                        foreach (KeyValuePair<TKey, TValue> item in this)
                         {
                             bool mutated;
                             newRoot = newRoot.Add(item.Key, item.Value, value, _valueComparer, out mutated);
@@ -576,7 +576,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(items, nameof(items));
 
-                foreach (var pair in items)
+                foreach (KeyValuePair<TKey, TValue> pair in items)
                 {
                     this.Add(pair);
                 }
@@ -590,7 +590,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(keys, nameof(keys));
 
-                foreach (var key in keys)
+                foreach (TKey key in keys)
                 {
                     this.Remove(key);
                 }
@@ -640,12 +640,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
-                {
-                    _immutable = Wrap(this.Root, _count, _keyComparer, _valueComparer);
-                }
-
-                return _immutable;
+                return _immutable ??= Wrap(this.Root, _count, _keyComparer, _valueComparer);
             }
             #endregion
         }
@@ -679,17 +674,6 @@ namespace System.Collections.Immutable
         /// Gets a simple debugger-viewable collection.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<TKey, TValue>[] Contents
-        {
-            get
-            {
-                if (_contents == null)
-                {
-                    _contents = _map.ToArray(_map.Count);
-                }
-
-                return _contents;
-            }
-        }
+        public KeyValuePair<TKey, TValue>[] Contents => _contents ??= _map.ToArray(_map.Count);
     }
 }

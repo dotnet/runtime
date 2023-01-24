@@ -1,9 +1,6 @@
 <Project>
   <PropertyGroup>
-    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.csproj'">.cs</ResourcesSourceFileExtension>
-    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.vbproj'">.vb</ResourcesSourceFileExtension>
-
-    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesPath Condition="'$(StringResourcesPath)' == '' and Exists('$(MSBuildProjectDirectory)\Resources\Strings.resx')">$(MSBuildProjectDirectory)\Resources\Strings.resx</StringResourcesPath>
     <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
     <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
     <StringResourcesName Condition="'$(StringResourcesName)' == ''">FxResources.$(AssemblyName).$(StringResourcesClassName)</StringResourcesName>
@@ -15,20 +12,18 @@
   </PropertyGroup>
 
   <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
-  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">
-    <EmbeddedResource Include="$(StringResourcesPath)">
-      <Visible>true</Visible>
-      <ManifestResourceName>$(StringResourcesName)</ManifestResourceName>
-      <GenerateSource>true</GenerateSource>
-      <ClassName>$(StringResourcesNamespace).$(StringResourcesClassName)</ClassName>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <!-- Include common SR helper when resources are included unless SkipCommonResourcesIncludes is set. -->
-  <ItemGroup Condition="Exists('$(StringResourcesPath)') and '$(OmitResources)' != 'true' and '$(SkipCommonResourcesIncludes)' == ''">
-    <Compile Include="$(CommonPath)/System/SR$(ResourcesSourceFileExtension)">
-      <Visible>true</Visible>
-      <Link>Resources/Common/SR$(ResourcesSourceFileExtension)</Link>
-    </Compile>
+  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'"> 
+    <!-- Delete the embedded resource item pointing to StringResourcesPath in case the
+         EnableDefaultEmbeddedResourceItems glob didn't include it and include it again. -->
+    <EmbeddedResource Remove="$(StringResourcesPath)" Condition="'$(EnableDefaultEmbeddedResourceItems)' == 'true'" />
+    <EmbeddedResource Include="$(StringResourcesPath)"
+                      Visible="true"
+                      ManifestResourceName="$(StringResourcesName)"
+                      GenerateSource="true"
+                      ClassName="$(StringResourcesNamespace).$(StringResourcesClassName)" />
+    <!-- Include common SR helper when resources are included. -->
+    <Compile Include="$(CommonPath)/System/SR$(DefaultLanguageSourceExtension)"
+             Visible="true"
+             Link="Resources/Common/SR$(DefaultLanguageSourceExtension)" />
   </ItemGroup>
 </Project>

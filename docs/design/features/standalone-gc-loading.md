@@ -14,11 +14,11 @@ some terms that will be used often in this document.
   This is an intentionally vague definition. The GC does not care how (or even *if*) programs are
   compiled or executed, so it is up to the EE to invoke the GC whenever an executing
   program does something that requires the GC's attention. The EE is notable because the implementation
-  of an execution engine varies widely between runtimes; the CoreRT EE is primarily in managed code
+  of an execution engine varies widely between runtimes; the NativeAOT EE is primarily in managed code
   (C#), while CoreCLR (and the .NET Framework)'s EE is primarily in C++.
 * The **GC**, or **Garbage Collector** - The component of the CLR responsible for allocating managed
   objects and reclaiming unused memory. It is written in C++ and the code is shared by multiple runtimes.
-  (That is, CoreCLR/CoreRT may have different execution engines, but they share the *same* GC code.)
+  (That is, CoreCLR/NativeAOT may have different execution engines, but they share the *same* GC code.)
 * The **DAC**, or **Data Access Component** - A subset of the execution engine that is compiled in
   such a way that it can be run *out of process*, when debugging .NET code using a debugger. The DAC
   is used by higher-level components such as SOS (Son of Strike, a windbg/lldb debugger extension for
@@ -45,8 +45,8 @@ to the codebase:
 
 Worth noting is that the JIT (both RyuJIT and the legacy JIT(s) before it) can be built standalone
 and have realized these same benefits. The existence of an interface and an implementation loadable
-from shared libraries has enabled RyuJIT in particular to be used as the code generator for both the
-CoreRT compiler and crossgen, while still being flexible enough to be tested using tools that implement
+from shared libraries has enabled RyuJIT in particular to be reused as the code generator for the
+AOT compilers, while still being flexible enough to be tested using tools that implement
 very non-standard execution engines such as [SuperPMI](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/superpmi/readme.md).
 
 The below loading protocol is inspired directly by the JIT loader and many aspects of the GC loader are identical
@@ -127,7 +127,7 @@ standalone GCs has a major version number and minor version number that is obtai
   incompatible interfaces. A change is considered breaking if it alters the semantics of an existing method or if
   it deletes or renames existing methods so that VTable layouts are not compatible.
 * If the EE's MinorVersion is greater than the MinorVersion obtained from the candidate GC, accept
-  (Forward compatability). The EE must take care not to call any new APIs that are not present in the version of
+  (Forward compatibility). The EE must take care not to call any new APIs that are not present in the version of
   the candidate GC.
 * Otherwise, accept (Backward compatibility). It is perfectly safe to use a GC whose MinorVersion exceeds the EE's
   MinorVersion.
@@ -177,7 +177,7 @@ GC.
 ## Outstanding Questions
 
 How can we provide the most useful error message when a standalone GC fails to load? In the past it has been difficult
-to determine what preciscely has gone wrong with `coreclr_initialize` returns a HRESULT and no indication of what occured.
+to determine what preciscely has gone wrong with `coreclr_initialize` returns a HRESULT and no indication of what occurred.
 
 Same question for the DAC - Is `E_FAIL` the best we can do? If we could define our own error for DAC/GC version
 mismatches, that would be nice; however, that is technically a breaking change in the DAC.

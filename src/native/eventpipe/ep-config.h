@@ -41,7 +41,7 @@ inline
 EventPipeConfiguration *
 ep_config_get (void)
 {
-	// Singelton.
+	// Singleton.
 	return &_ep_config_instance;
 }
 
@@ -56,7 +56,6 @@ ep_config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
@@ -107,7 +106,7 @@ struct _EventPipeEventMetadataEvent {
 #endif
 
 EventPipeEventMetadataEvent *
-ep_event_metdata_event_alloc (
+ep_event_metadata_event_alloc (
 	EventPipeEvent *ep_event,
 	uint32_t proc_num,
 	uint64_t thread_id,
@@ -117,7 +116,7 @@ ep_event_metdata_event_alloc (
 	const uint8_t *related_activity_id);
 
 void
-ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event);
+ep_event_metadata_event_free (EventPipeEventMetadataEvent *metadata_event);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_CONFIGURATION_H__ */

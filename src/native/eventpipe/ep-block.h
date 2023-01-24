@@ -350,7 +350,7 @@ bool
 ep_stack_block_write_stack (
 	EventPipeStackBlock *stack_block,
 	uint32_t stack_id,
-	EventPipeStackContents *stack);
+	EventPipeStackContentsInstance *stack);
 
 static
 inline

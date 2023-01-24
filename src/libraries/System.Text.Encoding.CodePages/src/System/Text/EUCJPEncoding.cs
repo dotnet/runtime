@@ -63,11 +63,11 @@ namespace System.Text
                     if (bytes >= 0xfa40 && bytes <= 0xfa5b)
                     {
                         if (bytes <= 0xfa49)
-                            bytes = bytes - 0x0b51;
+                            bytes -= 0x0b51;
                         else if (bytes >= 0xfa4a && bytes <= 0xfa53)
-                            bytes = bytes - 0x072f6;
+                            bytes -= 0x072f6;
                         else if (bytes >= 0xfa54 && bytes <= 0xfa57)
-                            bytes = bytes - 0x0b5b;
+                            bytes -= 0x0b5b;
                         else if (bytes == 0xfa58)
                             bytes = 0x878a;
                         else if (bytes == 0xfa59)
@@ -81,11 +81,11 @@ namespace System.Text
                     {
                         byte tc = unchecked((byte)bytes);
                         if (tc < 0x5c)
-                            bytes = bytes - 0x0d5f;
+                            bytes -= 0x0d5f;
                         else if (tc >= 0x80 && tc <= 0x9B)
-                            bytes = bytes - 0x0d1d;
+                            bytes -= 0x0d1d;
                         else
-                            bytes = bytes - 0x0d1c;
+                            bytes -= 0x0d1c;
                     }
                 }
 

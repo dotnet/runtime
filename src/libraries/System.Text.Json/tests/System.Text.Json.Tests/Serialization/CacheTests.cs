@@ -361,6 +361,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreNullValues)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultIgnoreCondition)), JsonIgnoreCondition.WhenWritingDefault);
                 yield return (GetProp(nameof(JsonSerializerOptions.NumberHandling)), JsonNumberHandling.AllowReadingFromString);
+                yield return (GetProp(nameof(JsonSerializerOptions.UnmappedMemberHandling)), JsonUnmappedMemberHandling.Disallow);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
@@ -371,6 +372,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
                 yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
+                yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
 
                 static PropertyInfo GetProp(string name)
                 {

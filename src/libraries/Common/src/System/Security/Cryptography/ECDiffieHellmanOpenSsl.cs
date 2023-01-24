@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -8,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
     {
-        private ECOpenSsl _key;
+        private ECOpenSsl? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -44,18 +45,14 @@ namespace System.Security.Cryptography
             _key = new ECOpenSsl(this);
         }
 
-        public override KeySizes[] LegalKeySizes =>
-            new[] {
-                new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                new KeySizes(minSize: 521, maxSize: 521, skipSize: 0)
-            };
+        public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 _key?.Dispose();
-                _key = null!;
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -94,7 +91,11 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-                return new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+
+                using (SafeEvpPKeyHandle handle = _key.UpRefKeyHandle())
+                {
+                    return new ECDiffieHellmanOpenSslPublicKey(handle);
+                }
             }
         }
 
@@ -128,12 +129,10 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
+        [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key == null)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanOpenSsl));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEcKeyHandle GetKey()

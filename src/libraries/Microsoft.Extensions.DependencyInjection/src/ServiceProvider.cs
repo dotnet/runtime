@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
@@ -32,6 +33,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal static bool VerifyOpenGenericServiceTrimmability { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
+
+        internal static bool VerifyAotCompatibility =>
+#if NETFRAMEWORK || NETSTANDARD2_0
+            false;
+#else
+            !RuntimeFeature.IsDynamicCodeSupported;
+#endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
@@ -64,7 +72,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                     catch (Exception e)
                     {
-                        exceptions = exceptions ?? new List<Exception>();
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(e);
                     }
                 }
@@ -84,6 +92,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="serviceType">The type of the service to get.</param>
         /// <returns>The service that was produced.</returns>
         public object? GetService(Type serviceType) => GetService(serviceType, Root);
+
+        internal bool IsDisposed() => _disposed;
 
         /// <inheritdoc />
         public void Dispose()
@@ -192,11 +202,11 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceProviderEngine engine;
 
 #if NETFRAMEWORK || NETSTANDARD2_0
-            engine = new DynamicServiceProviderEngine(this);
+            engine = CreateDynamicEngine();
 #else
             if (RuntimeFeature.IsDynamicCodeCompiled)
             {
-                engine = new DynamicServiceProviderEngine(this);
+                engine = CreateDynamicEngine();
             }
             else
             {
@@ -205,6 +215,10 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 #endif
             return engine;
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "CreateDynamicEngine won't be called when using NativeAOT.")] // see also https://github.com/dotnet/linker/issues/2715
+            ServiceProviderEngine CreateDynamicEngine() => new DynamicServiceProviderEngine(this);
         }
     }
 }

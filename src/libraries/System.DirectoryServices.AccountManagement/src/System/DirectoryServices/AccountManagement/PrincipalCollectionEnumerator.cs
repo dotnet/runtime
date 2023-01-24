@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since MoveNext() saved off the current value for us, this is largely trivial.
 
-                if (_endReached == true || _currentMode == CurrentEnumeratorMode.None)
+                if (_endReached || _currentMode == CurrentEnumeratorMode.None)
                 {
                     // Either we're at the end or before the beginning
                     //  (CurrentEnumeratorMode.None implies we're _before_ the first value)

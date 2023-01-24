@@ -246,7 +246,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 
     if (regArgNum < NUM_ARGUMENT_REGISTERS)
     {
-        pMap[regArgNum] = typ;
+        pMap[regArgNum] = (BYTE)typ;
     }
 }
 #endif // CALLDESCR_REGTYPEMAP
@@ -304,9 +304,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         // may not trigger a GC before we actually call managed code
         //
         GCX_FORBID();
-
-        // Record this call if required
-        g_IBCLogger.LogMethodDescAccess(m_pMD);
 
         //
         // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
@@ -451,7 +448,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
             UINT32 stackSize = m_argIt.GetArgSize();
             // We need to pass in a pointer, but be careful of the ARG_SLOT calling convention. We might already have a pointer in the ARG_SLOT.
-            PVOID pSrc = stackSize > sizeof(ARG_SLOT) ? (LPVOID)ArgSlotToPtr(pArguments[arg]) : (LPVOID)ArgSlotEndianessFixup((ARG_SLOT*)&pArguments[arg], stackSize);
+            PVOID pSrc = stackSize > sizeof(ARG_SLOT) ? (LPVOID)ArgSlotToPtr(pArguments[arg]) : (LPVOID)ArgSlotEndiannessFixup((ARG_SLOT*)&pArguments[arg], stackSize);
 
 #if defined(UNIX_AMD64_ABI)
             if (argDest.IsStructPassedInRegs())
@@ -462,17 +459,44 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
-#endif // UNIX_AMD64_ABI
+#elif defined(TARGET_LOONGARCH64)
+            if (argDest.IsStructPassedInRegs())
+            {
+                argDest.CopyStructToRegisters(pSrc, stackSize, 0);
+            }
+            else
+#endif // TARGET_LOONGARCH64
             {
                 PVOID pDest = argDest.GetDestinationAddress();
 
                 switch (stackSize)
                 {
+#if defined(TARGET_LOONGARCH64)
+                    case 1:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U1 || m_argIt.GetArgType() == ELEMENT_TYPE_BOOLEAN)
+                            *((INT64*)pDest) = (UINT8)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT8)pArguments[arg];
+                        break;
+                    case 2:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U2 || m_argIt.GetArgType() == ELEMENT_TYPE_CHAR)
+                            *((INT64*)pDest) = (UINT16)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT16)pArguments[arg];
+                        break;
+                    case 4:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U4)
+                            *((INT64*)pDest) = (UINT32)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT32)pArguments[arg];
+                        break;
+#else
                     case 1:
                     case 2:
                     case 4:
                         *((INT32*)pDest) = (INT32)pArguments[arg];
                         break;
+#endif
 
                     case 8:
                         *((INT64*)pDest) = pArguments[arg];

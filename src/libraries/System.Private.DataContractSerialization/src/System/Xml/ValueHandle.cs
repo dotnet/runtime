@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization;
-using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
 
@@ -71,7 +69,6 @@ namespace System.Xml
         private ValueHandleType _type;
         private int _offset;
         private int _length;
-        private static Base64Encoding? s_base64Encoding;
         private static readonly string[] s_constStrings = {
                                         "string",
                                         "number",
@@ -86,8 +83,6 @@ namespace System.Xml
             _bufferReader = bufferReader;
             _type = ValueHandleType.Empty;
         }
-
-        private static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
 
         public void SetConstantValue(ValueHandleConstStringType constStringType)
         {
@@ -114,6 +109,7 @@ namespace System.Xml
         {
             SetValue(ValueHandleType.QName, key, prefix);
         }
+
         public void SetValue(ValueHandleType type, int offset, int length)
         {
             _type = type;
@@ -414,6 +410,7 @@ namespace System.Xml
                 return XmlConverter.ToGuid(_bufferReader.Buffer, _offset, _length);
             return XmlConverter.ToGuid(GetString());
         }
+
         public override string ToString()
         {
             return GetString();
@@ -442,7 +439,7 @@ namespace System.Xml
                         }
                     }
                     byte[] buffer = new byte[expectedLength];
-                    int actualLength = Base64Encoding.GetBytes(_bufferReader.Buffer, _offset, _length, buffer, 0);
+                    int actualLength = DataContractSerializer.Base64Encoding.GetBytes(_bufferReader.Buffer, _offset, _length, buffer, 0);
                     if (actualLength != buffer.Length)
                     {
                         byte[] newBuffer = new byte[actualLength];
@@ -458,7 +455,7 @@ namespace System.Xml
             }
             try
             {
-                return Base64Encoding.GetBytes(XmlConverter.StripWhitespace(GetString()));
+                return DataContractSerializer.Base64Encoding.GetBytes(XmlConverter.StripWhitespace(GetString()));
             }
             catch (FormatException exception)
             {
@@ -511,7 +508,7 @@ namespace System.Xml
                 case ValueHandleType.Base64:
                     byte[] bytes = ToByteArray();
                     DiagnosticUtility.DebugAssert(bytes != null, "");
-                    return Base64Encoding.GetString(bytes, 0, bytes.Length);
+                    return DataContractSerializer.Base64Encoding.GetString(bytes, 0, bytes.Length);
                 case ValueHandleType.List:
                     return XmlConverter.ToString(ToList());
                 case ValueHandleType.UniqueId:
@@ -673,7 +670,7 @@ namespace System.Xml
                 try
                 {
                     int charCount = Math.Min(count / 3 * 4, _length);
-                    actual = Base64Encoding.GetBytes(_bufferReader.Buffer, _offset, charCount, buffer, offset);
+                    actual = DataContractSerializer.Base64Encoding.GetBytes(_bufferReader.Buffer, _offset, charCount, buffer, offset);
                     _offset += charCount;
                     _length -= charCount;
                     return true;
@@ -707,7 +704,7 @@ namespace System.Xml
             int byteCount = _length;
             bool insufficientSpaceInCharsArray = false;
 
-            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            var encoding = DataContractSerializer.ValidatingUTF8;
             while (true)
             {
                 while (charCount > 0 && byteCount > 0)

@@ -3,8 +3,8 @@
 
 namespace Internal.TypeSystem
 {
-    // Functionality related to determinstic ordering of types
-    partial class PointerType
+    // Functionality related to deterministic ordering of types
+    public partial class PointerType
     {
         protected internal override int ClassCode => -2124247792;
 

@@ -36,7 +36,7 @@ namespace System.Xml
         {
             if (!doc.IsLoading)
             {
-                if (name.Length > 0 && name[0] == '#')
+                if (name.StartsWith('#'))
                 {
                     throw new ArgumentException(SR.Xdom_InvalidCharacter_EntityReference);
                 }
@@ -179,7 +179,7 @@ namespace System.Xml
             }
         }
 
-        private string ConstructBaseURI(string baseURI, string systemId)
+        private static string ConstructBaseURI(string baseURI, string systemId)
         {
             if (baseURI == null)
                 return systemId;

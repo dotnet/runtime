@@ -33,6 +33,7 @@ namespace System.Data
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
+        internal const string RequiresDynamicCodeMessage = "Members from serialized types may use dynamic code generation.";
         internal const string RequiresUnreferencedCodeMessage = "Members from serialized types may be trimmed if not referenced directly.";
         private const string KEY_XMLSCHEMA = "XmlSchema";
         private const string KEY_XMLDIFFGRAM = "XmlDiffGram";
@@ -217,6 +218,7 @@ namespace System.Data
 
         // Deserialize all the tables data of the dataset from binary/xml stream.
         // 'instance' method that consumes SerializationInfo
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected void GetSerializationData(SerializationInfo info, StreamingContext context)
         {
@@ -233,11 +235,12 @@ namespace System.Data
                 }
             }
 
-            DeserializeDataSetData(info, context, remotingFormat);
+            DeserializeDataSetData(info, remotingFormat);
         }
 
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
@@ -245,6 +248,7 @@ namespace System.Data
         {
         }
 
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
@@ -326,7 +330,7 @@ namespace System.Data
                 if (SchemaSerializationMode == SchemaSerializationMode.IncludeSchema)
                 {
                     //DataSet public state properties
-                    SerializeDataSetProperties(info, context);
+                    SerializeDataSetProperties(info);
 
                     //Tables Count
                     info.AddValue("DataSet.Tables.Count", Tables.Count);
@@ -346,28 +350,28 @@ namespace System.Data
                     //Constraints
                     for (int i = 0; i < Tables.Count; i++)
                     {
-                        Tables[i].SerializeConstraints(info, context, i, true);
+                        Tables[i].SerializeConstraints(info, i, true);
                     }
 
                     //Relations
-                    SerializeRelations(info, context);
+                    SerializeRelations(info);
 
                     //Expression Columns
                     for (int i = 0; i < Tables.Count; i++)
                     {
-                        Tables[i].SerializeExpressionColumns(info, context, i);
+                        Tables[i].SerializeExpressionColumns(info, i);
                     }
                 }
                 else
                 {
                     //Serialize  DataSet public properties.
-                    SerializeDataSetProperties(info, context);
+                    SerializeDataSetProperties(info);
                 }
 
                 //Rows
                 for (int i = 0; i < Tables.Count; i++)
                 {
-                    Tables[i].SerializeTableData(info, context, i);
+                    Tables[i].SerializeTableData(info, i);
                 }
             }
             else
@@ -386,16 +390,18 @@ namespace System.Data
         }
 
         // Deserialize all the tables - marked internal so that DataTable can call into this
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void DeserializeDataSet(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
             // deserialize schema
             DeserializeDataSetSchema(info, context, remotingFormat, schemaSerializationMode);
             // deserialize data
-            DeserializeDataSetData(info, context, remotingFormat);
+            DeserializeDataSetData(info, remotingFormat);
         }
 
         // Deserialize schema.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void DeserializeDataSetSchema(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
@@ -404,7 +410,7 @@ namespace System.Data
                 if (schemaSerializationMode == SchemaSerializationMode.IncludeSchema)
                 {
                     //DataSet public state properties
-                    DeserializeDataSetProperties(info, context);
+                    DeserializeDataSetProperties(info);
 
                     //Tables Count
                     int tableCount = info.GetInt32("DataSet.Tables.Count");
@@ -425,22 +431,22 @@ namespace System.Data
                     //Constraints
                     for (int i = 0; i < tableCount; i++)
                     {
-                        Tables[i].DeserializeConstraints(info, context,  /* table index */i,  /* serialize all constraints */ true); //
+                        Tables[i].DeserializeConstraints(info, /* table index */i,  /* serialize all constraints */ true); //
                     }
 
                     //Relations
-                    DeserializeRelations(info, context);
+                    DeserializeRelations(info);
 
                     //Expression Columns
                     for (int i = 0; i < tableCount; i++)
                     {
-                        Tables[i].DeserializeExpressionColumns(info, context, i);
+                        Tables[i].DeserializeExpressionColumns(info, i);
                     }
                 }
                 else
                 {
                     //DeSerialize DataSet public properties.[Locale, CaseSensitive and EnforceConstraints]
-                    DeserializeDataSetProperties(info, context);
+                    DeserializeDataSetProperties(info);
                 }
             }
             else
@@ -455,14 +461,15 @@ namespace System.Data
         }
 
         // Deserialize all  data.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        private void DeserializeDataSetData(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat)
+        private void DeserializeDataSetData(SerializationInfo info, SerializationFormat remotingFormat)
         {
             if (remotingFormat != SerializationFormat.Xml)
             {
                 for (int i = 0; i < Tables.Count; i++)
                 {
-                    Tables[i].DeserializeTableData(info, context, i);
+                    Tables[i].DeserializeTableData(info, i);
                 }
             }
             else
@@ -477,7 +484,7 @@ namespace System.Data
         }
 
         // Serialize just the dataset properties
-        private void SerializeDataSetProperties(SerializationInfo info, StreamingContext context)
+        private void SerializeDataSetProperties(SerializationInfo info)
         {
             //DataSet basic properties
             info.AddValue("DataSet.DataSetName", DataSetName);
@@ -494,7 +501,7 @@ namespace System.Data
         }
 
         // DeSerialize dataset properties
-        private void DeserializeDataSetProperties(SerializationInfo info, StreamingContext context)
+        private void DeserializeDataSetProperties(SerializationInfo info)
         {
             //DataSet basic properties
             _dataSetName = info.GetString("DataSet.DataSetName")!;
@@ -515,7 +522,7 @@ namespace System.Data
         // Gets relation info from the dataset.
         // ***Schema for Serializing ArrayList of Relations***
         // Relations -> [relationName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[Nested]->[extendedProperties]
-        private void SerializeRelations(SerializationInfo info, StreamingContext context)
+        private void SerializeRelations(SerializationInfo info)
         {
             ArrayList relationList = new ArrayList();
 
@@ -551,7 +558,7 @@ namespace System.Data
         // Adds relations to the dataset.
         // ***Schema for Serializing ArrayList of Relations***
         // Relations -> [relationName]->[parentTableIndex, parentcolumnIndexes]->[childTableIndex, childColumnIndexes]->[Nested]->[extendedProperties]
-        private void DeserializeRelations(SerializationInfo info, StreamingContext context)
+        private void DeserializeRelations(SerializationInfo info)
         {
             ArrayList relationList = (ArrayList)info.GetValue("DataSet.Relations", typeof(ArrayList))!;
 
@@ -639,12 +646,10 @@ namespace System.Data
                 {
                     lock (_defaultViewManagerLock)
                     {
-                        if (_defaultViewManager == null)
-                        {
-                            _defaultViewManager = new DataViewManager(this, true);
-                        }
+                        _defaultViewManager ??= new DataViewManager(this, true);
                     }
                 }
+
                 return _defaultViewManager;
             }
         }
@@ -758,10 +763,7 @@ namespace System.Data
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataSet.set_Namespace|API> {0}, '{1}'", ObjectID, value);
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (value != _namespaceURI)
                 {
@@ -801,10 +803,7 @@ namespace System.Data
             get { return _datasetPrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if ((XmlConvert.DecodeName(value) == value) && (XmlConvert.EncodeName(value) != value))
                 {
@@ -823,7 +822,7 @@ namespace System.Data
         /// Gets the collection of custom user information.
         /// </summary>
         [Browsable(false)]
-        public PropertyCollection ExtendedProperties => _extendedProperties ?? (_extendedProperties = new PropertyCollection());
+        public PropertyCollection ExtendedProperties => _extendedProperties ??= new PropertyCollection();
 
         /// <summary>
         /// Gets a value indicating whether there are errors in any
@@ -1240,7 +1239,7 @@ namespace System.Data
 
                     foreach (DataRow row in table.Rows)
                     {
-                        table.CopyRow(destTable, row);
+                        DataTable.CopyRow(destTable, row);
                     }
                 }
 
@@ -1347,7 +1346,7 @@ namespace System.Data
                             // Loop through the rows.
                             if (bitMatrix[i][j])
                             {
-                                table.CopyRow(destTable, table.Rows[j]);
+                                DataTable.CopyRow(destTable, table.Rows[j]);
                                 bitMatrix[i].HasChanges--;
                             }
                         }
@@ -1428,7 +1427,7 @@ namespace System.Data
         IList IListSource.GetList() => DefaultViewManager;
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        internal string GetRemotingDiffGram(DataTable table)
+        internal static string GetRemotingDiffGram(DataTable table)
         {
             StringWriter strWriter = new StringWriter(CultureInfo.InvariantCulture);
             XmlTextWriter writer = new XmlTextWriter(strWriter);
@@ -1677,7 +1676,7 @@ namespace System.Data
                     if (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
                     {
                         // load XSD schema and exit
-                        ReadXSDSchema(reader, denyResolving);
+                        ReadXSDSchema(reader);
                         return;
                     }
 
@@ -1721,7 +1720,7 @@ namespace System.Data
                         if (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
                         {
                             // load XSD schema and exit
-                            ReadXSDSchema(reader, denyResolving);
+                            ReadXSDSchema(reader);
                             return;
                         }
 
@@ -1750,7 +1749,7 @@ namespace System.Data
             }
         }
 
-        internal bool MoveToElement(XmlReader reader, int depth)
+        internal static bool MoveToElement(XmlReader reader, int depth)
         {
             while (!reader.EOF && reader.NodeType != XmlNodeType.EndElement && reader.NodeType != XmlNodeType.Element && reader.Depth > depth)
             {
@@ -1766,7 +1765,7 @@ namespace System.Data
                 reader.Read();
             }
         }
-        internal void ReadEndElement(XmlReader reader)
+        internal static void ReadEndElement(XmlReader reader)
         {
             while (reader.NodeType == XmlNodeType.Whitespace)
             {
@@ -1783,7 +1782,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        internal void ReadXSDSchema(XmlReader reader, bool denyResolving)
+        internal void ReadXSDSchema(XmlReader reader)
         {
             XmlSchemaSet sSet = new XmlSchemaSet();
 
@@ -1828,7 +1827,7 @@ namespace System.Data
             XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
             XmlNode schNode = xdoc.ReadNode(reader)!;
             xdoc.AppendChild(schNode);
-            XDRSchema schema = new XDRSchema(this, false);
+            XDRSchema schema = new XDRSchema(this);
             DataSetName = xdoc.DocumentElement!.LocalName;
             schema.LoadSchema((XmlElement)schNode, this);
         }
@@ -2089,7 +2088,7 @@ namespace System.Data
                         if (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
                         {
                             // load XSD schema and exit
-                            ReadXSDSchema(reader, denyResolving);
+                            ReadXSDSchema(reader);
                             return XmlReadMode.ReadSchema; //since the top level element is a schema return
                         }
 
@@ -2147,7 +2146,7 @@ namespace System.Data
                             if (reader.LocalName == Keywords.XSD_SCHEMA && reader.NamespaceURI == Keywords.XSDNS)
                             {
                                 // load XSD schema and exit
-                                ReadXSDSchema(reader, denyResolving);
+                                ReadXSDSchema(reader);
                                 fSchemaFound = true;
                                 continue;
                             }
@@ -2182,10 +2181,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    if (xmlload == null)
-                                    {
-                                        xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                                    }
+                                    xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                                     xmlload.LoadData(reader);
                                     topNodeIsProcessed = true; // we process the topnode
@@ -2226,10 +2222,7 @@ namespace System.Data
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
 
-                        if (xmlload == null)
-                        {
-                            xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                        }
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                         if (!isEmptyDataSet && !topNodeIsProcessed)
                         {
@@ -2629,7 +2622,7 @@ namespace System.Data
                                 if ((mode != XmlReadMode.IgnoreSchema) && (mode != XmlReadMode.InferSchema) &&
                                     (mode != XmlReadMode.InferTypedSchema))
                                 {
-                                    ReadXSDSchema(reader, denyResolving);
+                                    ReadXSDSchema(reader);
                                 }
                                 else
                                 {
@@ -2691,7 +2684,7 @@ namespace System.Data
                                 if ((mode != XmlReadMode.IgnoreSchema) && (mode != XmlReadMode.InferSchema) &&
                                     (mode != XmlReadMode.InferTypedSchema))
                                 {
-                                    ReadXSDSchema(reader, denyResolving);
+                                    ReadXSDSchema(reader);
                                     fSchemaFound = true;
                                 }
                                 else
@@ -2734,10 +2727,7 @@ namespace System.Data
                             }
                             else
                             {
-                                if (xmlload == null)
-                                {
-                                    xmlload = new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
-                                }
+                                xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
                                 xmlload.LoadData(reader);
                             }
                         } //end of the while
@@ -2747,8 +2737,7 @@ namespace System.Data
 
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
-                        if (xmlload == null)
-                            xmlload = new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
 
                         if (mode == XmlReadMode.DiffGram)
                         {
@@ -2942,7 +2931,7 @@ namespace System.Data
         /// Gets the collection of parent relations which belong to a
         /// specified table.
         /// </summary>
-        internal DataRelationCollection GetParentRelations(DataTable table) => table.ParentRelations;
+        internal static DataRelationCollection GetParentRelations(DataTable table) => table.ParentRelations;
 
         /// <summary>
         /// Merges this <see cref='System.Data.DataSet'/> into a specified <see cref='System.Data.DataSet'/>.
@@ -3153,11 +3142,7 @@ namespace System.Data
 
         internal void OnRemovedTable(DataTable table)
         {
-            DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
-            {
-                viewManager.DataViewSettings.Remove(table);
-            }
+            _defaultViewManager?.DataViewSettings.Remove(table);
         }
 
         /// <summary>

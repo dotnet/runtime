@@ -15,7 +15,7 @@ namespace System.Reflection
         MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, Type[] types, ParameterModifier[]? modifiers);
 
         // Return the requested method if it is implemented by the Reflection object.  The
-        // match is based upon the name of the method.  If the object implementes multiple methods
+        // match is based upon the name of the method.  If the object implements multiple methods
         // with the same name an AmbiguousMatchException is thrown.
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         MethodInfo? GetMethod(string name, BindingFlags bindingAttr);

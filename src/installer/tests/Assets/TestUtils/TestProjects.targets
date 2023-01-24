@@ -4,28 +4,29 @@
     provides basic info needed for restore and build with the vanilla SDK.
   -->
 
-  <!--
-    TODO: Remove when the SDK understands the net7.0 tfm.
-  -->
+  <!-- TODO: Remove when the SDK understands the net8.0 tfm. -->
   <PropertyGroup>
-    <NETCoreAppMaximumVersion>7.0</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>8.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <KnownFrameworkReference Include="Microsoft.NETCore.App"
-                             TargetFramework="net7.0"
+                             DefaultRuntimeFrameworkVersion="7.0.0"
+                             LatestRuntimeFrameworkVersion="7.0.0"
                              RuntimeFrameworkName="Microsoft.NETCore.App"
-                             DefaultRuntimeFrameworkVersion="6.0.0-rc.1.21411.2"
-                             LatestRuntimeFrameworkVersion="6.0.0-rc.1.21411.2"
-                             TargetingPackName="Microsoft.NETCore.App.Ref"
-                             TargetingPackVersion="6.0.0-rc.1.21411.2"
                              RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64" />
+                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
+                             TargetFramework="$(NetCoreAppCurrent)"
+                             TargetingPackName="Microsoft.NETCore.App.Ref"
+                             TargetingPackVersion="7.0.0"
+                             Condition="'@(KnownFrameworkReference)' == '' or !@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
 
     <KnownAppHostPack Include="Microsoft.NETCore.App"
-                      TargetFramework="net7.0"
+                      ExcludedRuntimeIdentifiers="android"
                       AppHostPackNamePattern="Microsoft.NETCore.App.Host.**RID**"
-                      AppHostPackVersion="6.0.0-rc.1.21411.2"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64" />
+                      AppHostPackVersion="7.0.0"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
+                      TargetFramework="$(NetCoreAppCurrent)"
+                      Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
   </ItemGroup>
 </Project>

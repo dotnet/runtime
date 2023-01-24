@@ -43,14 +43,6 @@
 #include "appdomain.inl"
 #include "typestring.h"
 
-// The enum that describes the value of the IDispatchImplAttribute custom attribute.
-enum IDispatchImplType
-{
-    SystemDefinedImpl   = 0,
-    InternalImpl        = 1,
-    CompatibleImpl      = 2
-};
-
 // The enum that describe the value of System.Runtime.InteropServices.CustomQueryInterfaceResult
 // It is the return value of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 enum CustomQueryInterfaceResult
@@ -319,68 +311,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 }
 
 //--------------------------------------------------------------------------
-// Determines if the Compatible IDispatch implementation is required for
-// the specified class.
-//--------------------------------------------------------------------------
-bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    HRESULT             hr;
-    const BYTE *        pVal;
-    ULONG               cbVal;
-    Assembly *          pAssembly = pClass->GetAssembly();
-    IDispatchImplType   DispImplType = SystemDefinedImpl;
-
-    // First check for the IDispatchImplType custom attribute first.
-    hr = pClass->GetCustomAttribute(WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Check to see if the assembly has the IDispatchImplType attribute set.
-    hr = pAssembly->GetCustomAttribute(pAssembly->GetManifestToken(), WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Removed registry key check per reg cleanup bug 45978
-    // Effect: Will return false so code cleanup
-    return false;
-}
-
-//--------------------------------------------------------------------------
 // This routine is called anytime a com method is invoked for the first time.
 // It is responsible for generating the real stub.
 //
@@ -409,8 +339,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     HRESULT hr = S_OK;
     PCODE retAddr = NULL;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     PCODE pStub = NULL;
     BOOL fNonTransientExceptionThrown = FALSE;
 
@@ -426,6 +354,13 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     }
     else
     {
+        if (pThread->PreemptiveGCDisabled())
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                COR_E_EXECUTIONENGINE,
+                W("Invalid Program: attempted to call a COM method from managed code."));
+        }
+
         // Transition to cooperative GC mode before we start setting up the stub.
         GCX_COOP();
 
@@ -559,6 +494,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 #else
             *ppofsWriterHolder.GetRW() = ((UINT_PTR)pStub);
 #endif
+            ClrFlushInstructionCache(ppofs, sizeof(UINT_PTR), /* hasCodeExecutedBefore */ true);
 
             // Return the address of the prepad. The prepad will regenerate the hidden parameter and due
             // to the update above will execute the new stub code the second time around.
@@ -592,9 +528,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
     retAddr = NULL;
 
 Exit:
-
-    END_ENTRYPOINT_VOIDRET;
-
     RETURN retAddr;
 }
 
@@ -647,7 +580,7 @@ NOINLINE void LogCCWRefCountChange_BREAKPOINT(ComCallWrapper *pCCW)
         DebugBreak();
 }
 
-void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount)
+void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSString &ssMessage, ULONG dwEstimatedRefCount)
 {
     CONTRACTL
     {
@@ -665,7 +598,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
-        // Force retriving the handle without using OBJECTREF and under cooperative mode
+        // Force retrieving the handle without using OBJECTREF and under cooperative mode
         // We only need the value in ETW events and it doesn't matter if it is super accurate
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));
@@ -678,6 +611,8 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
                 className.SetUTF8(pszClassName);
                 SString nameSpace;
                 nameSpace.SetUTF8(pszNamespace);
+                SString operation;
+                nameSpace.SetUTF8(szOperation);
 
                 FireEtwCCWRefCountChange(
                     handle,
@@ -685,7 +620,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
                     this,
                     dwEstimatedRefCount,
                     NULL,                   // domain value is not interesting in CoreCLR
-                    className.GetUnicode(), nameSpace.GetUnicode(), wszOperation, GetClrInstanceId());
+                    className.GetUnicode(), nameSpace.GetUnicode(), operation.GetUnicode(), GetClrInstanceId());
             }
             EX_CATCH
             { }
@@ -696,13 +631,11 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         {
             EX_TRY
             {
-                StackSString ssClassName;
-                TypeString::AppendType(ssClassName, TypeHandle(m_pMT));
-
-                ssMessage.Printf(W("LogCCWRefCountChange[%s]: '%s', Object=poi(%p)"),
-                    wszOperation,                                          // %s operation
-                    ssClassName.GetUnicode(),                              // %s type name
-                    handle);               // %p Object
+                ssMessage.Printf("LogCCWRefCountChange[%s]: '%s.%s', Object=poi(%p)",
+                    szOperation,
+                    pszNamespace,
+                    pszClassName,
+                    handle);
             }
             EX_CATCH
             { }
@@ -726,8 +659,8 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
     {
         EX_TRY
         {
-            ssMessage.AppendPrintf(W(", RefCount=%u\n"), dwRefCountToLog);
-            WszOutputDebugString(ssMessage.GetUnicode());
+            ssMessage.AppendPrintf(", RefCount=%u\n", dwRefCountToLog);
+            OutputDebugStringUtf8(ssMessage.GetUTF8());
         }
         EX_CATCH
         { }
@@ -751,7 +684,7 @@ LONGLONG SimpleComCallWrapper::ReleaseImplWithLogging(LONGLONG * pRefCount)
 
     StackSString ssMessage;
     ComCallWrapper *pWrap = GetMainWrapper();
-    BuildRefCountLogMessage(W("Release"), ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
+    BuildRefCountLogMessage("Release", ssMessage, GET_EXT_COM_REF(READ_REF(*pRefCount)-1));
 
     // Decrement the ref count
     newRefCount = ::InterlockedDecrement64(pRefCount);
@@ -853,7 +786,7 @@ VOID SimpleComCallWrapper::Neuter()
     ComCallWrapper *pWrap = m_pWrap;
     if (g_pConfig->LogCCWRefCountChangeEnabled())
     {
-        BuildRefCountLogMessage(W("Neuter"), ssMessage, GET_EXT_COM_REF(READ_REF(m_llRefCount) | CLEANUP_SENTINEL));
+        BuildRefCountLogMessage("Neuter", ssMessage, GET_EXT_COM_REF(READ_REF(m_llRefCount) | CLEANUP_SENTINEL));
     }
 
     // Set the neutered bit on the ref-count.
@@ -991,7 +924,7 @@ BOOL SimpleComCallWrapper::CustomQIRespondsToIMarshal()
         {
             newFlags |= enum_CustomQIRespondsToIMarshal;
         }
-        FastInterlockOr((ULONG *)&m_flags, newFlags);
+        InterlockedOr((LONG*)&m_flags, newFlags);
     }
 
     return (m_flags & enum_CustomQIRespondsToIMarshal);
@@ -1034,7 +967,7 @@ void SimpleComCallWrapper::InitDispatchExInfo()
     pDispExInfo->SynchWithManagedView();
 
     // Swap the lock into the class member in a thread safe manner.
-    if (NULL == FastInterlockCompareExchangePointer(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
+    if (NULL == InterlockedCompareExchangeT(&pAuxData->m_pDispatchExInfo, pDispExInfo.GetValue(), NULL))
         pDispExInfo.SuppressRelease();
 
     // Set the vtable entry to ensure that the next QI call will return immediately.
@@ -1103,7 +1036,7 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
 
     // Finally, we set the connection point list in the simple wrapper. If
     // no other thread already set it, we set pCPList to NULL to indicate
-    // that ownership has been transfered to the simple wrapper.
+    // that ownership has been transferred to the simple wrapper.
     if (InterlockedCompareExchangeT(&m_pCPList, pCPList.GetValue(), NULL) == NULL)
         pCPList.SuppressRelease();
 }
@@ -2083,7 +2016,7 @@ void ComCallWrapper::ClearHandle()
     WRAPPER_NO_CONTRACT;
 
     OBJECTHANDLE pThis = m_ppThis;
-    if (FastInterlockCompareExchangePointer(&m_ppThis, NULL, pThis) == pThis)
+    if (InterlockedCompareExchangeT(&m_ppThis, NULL, pThis) == pThis)
     {
         DestroyRefcountedHandle(pThis);
     }
@@ -3068,7 +3001,7 @@ LONG ComCallWrapperCache::AddRef()
     }
     CONTRACTL_END;
 
-    LONG i = FastInterlockIncrement(&m_cbRef);
+    LONG i = InterlockedIncrement(&m_cbRef);
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Addref %8.8x with %d in loader allocator [%d] %8.8x\n",
         this, i, GetLoaderAllocator()?GetLoaderAllocator()->GetCreationNumber() : 0, GetLoaderAllocator()));
 
@@ -3089,7 +3022,7 @@ LONG ComCallWrapperCache::Release()
     }
     CONTRACTL_END;
 
-    LONG i = FastInterlockDecrement(&m_cbRef);
+    LONG i = InterlockedDecrement(&m_cbRef);
     _ASSERTE(i >= 0);
 
     LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Release %8.8x with %d in loader allocator [%d] %8.8x\n",
@@ -3299,7 +3232,7 @@ void ComMethodTable::LayOutClassMethodTable()
 
     if (!m_pMT->HasGenericClassInstantiationInHierarchy())
     {
-        ExecutableWriterHolder<BYTE> methodDescMemoryWriteableHolder;
+        ExecutableWriterHolderNoLog<BYTE> methodDescMemoryWriteableHolder;
         //
         // Allocate method desc's for the rest of the slots.
         //
@@ -3310,7 +3243,7 @@ void ComMethodTable::LayOutClassMethodTable()
             pMDMemoryPtr = m_pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR)));
             pMethodDescMemory = pMDMemoryPtr;
 
-            methodDescMemoryWriteableHolder = ExecutableWriterHolder<BYTE>(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
+            methodDescMemoryWriteableHolder.AssignExecutableWriterHolder(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
             writeableOffset = methodDescMemoryWriteableHolder.GetRW() - pMethodDescMemory;
 
             // initialize the method desc memory to zero
@@ -3619,7 +3552,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         else
         {
             // We need to set the entry points to the Dispatch versions which determine
-            // which implmentation to use at runtime based on the class that implements
+            // which implementation to use at runtime based on the class that implements
             // the interface.
             pDispVtable->m_GetIDsOfNames    = (SLOT)Dispatch_GetIDsOfNames_Wrapper;
             pDispVtable->m_Invoke           = (SLOT)Dispatch_Invoke_Wrapper;
@@ -3714,9 +3647,9 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-        GuidToLPWSTR(m_IID, rIID, ARRAY_SIZE(rIID));
-        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%ls, vTbl:%#08x\n",
+        CHAR rIID[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(m_IID, rIID);
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%#x, IID:{%08x-...}, vTbl:%#08x\n",
@@ -3790,14 +3723,14 @@ void ComMethodTable::LayOutBasicMethodTable()
     //
     // Set the layout complete flag.
     //
-    FastInterlockOr((DWORD *)&m_Flags, enum_LayoutComplete);
+    InterlockedOr((LONG*)&m_Flags, enum_LayoutComplete);
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
 }
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
-// the DispatchInfo has not been initialized yet then it is initilized.
+// the DispatchInfo has not been initialized yet then it is initialized.
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {
@@ -3821,7 +3754,7 @@ DispatchInfo *ComMethodTable::GetDispatchInfo()
 
         ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // Swap the lock into the class member in a thread safe manner.
-        if (NULL == FastInterlockCompareExchangePointer(&comMTWriterHolder.GetRW()->m_pDispatchInfo, pDispInfo.GetValue(), NULL))
+        if (NULL == InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pDispatchInfo, pDispInfo.GetValue(), NULL))
             pDispInfo.SuppressRelease();
 
     }
@@ -3843,7 +3776,8 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     }
     CONTRACTL_END;
 
-    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+    if (InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pITypeInfo, pNew, NULL) == NULL)
     {
         SafeAddRef(pNew);
     }
@@ -4140,7 +4074,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
 
     if (isSafe)
     {
-        FastInterlockOr(&m_flags, enum_IsSafeTypeForMarshalling);
+        InterlockedOr((LONG*)&m_flags, enum_IsSafeTypeForMarshalling);
     }
 
     return isSafe;
@@ -4212,7 +4146,7 @@ DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **p
         _ASSERTE(th.IsNull() || !th.IsTypeDesc());
         m_pDefaultItf = th.AsMethodTable();
 
-        FastInterlockOr(&m_flags, enum_DefaultInterfaceTypeComputed | (DWORD)defItfType);
+        InterlockedOr((LONG*)&m_flags, enum_DefaultInterfaceTypeComputed | (DWORD)defItfType);
     }
 
     *ppDefaultItf = m_pDefaultItf;
@@ -4724,12 +4658,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             pTemplate->m_flags |= enum_SupportsIClassX;
         }
 
-        if (IsOleAutDispImplRequiredForClass(pMT))
-        {
-            // Determine what IDispatch implementation this class should use
-            pTemplate->m_flags |= enum_UseOleAutDispatchImpl;
-        }
-
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
@@ -4770,12 +4698,12 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
-            GuidToLPWSTR(IClassXIID, rIID, ARRAY_SIZE(rIID));
+            CHAR rIID[GUID_STR_BUFFER_LEN];
+            GuidToLPSTR(IClassXIID, rIID);
             SString ssName;
             thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%ls, IID:%ls, vTbl:%#08x\n",
-                 ssName.GetUnicode(), rIID, pComVtable));
+            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+                 ssName.GetUTF8(), rIID, pComVtable));
 #else
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
                  thClass.AsPtr(), IClassXIID.Data1, pComVtable));

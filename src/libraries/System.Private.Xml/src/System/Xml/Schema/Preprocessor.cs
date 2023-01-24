@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.IO;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.Versioning;
+using System.Reflection;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.IO;
-    using System.Threading;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Runtime.Versioning;
-    using System.Reflection;
-
     internal enum Compositor
     {
         Root,
@@ -170,7 +170,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void Cleanup(XmlSchema schema)
+        private static void Cleanup(XmlSchema schema)
         {
             if (schema == Preprocessor.GetBuildInSchema())
             {
@@ -188,7 +188,7 @@ namespace System.Xml.Schema
             schema.IsCompiledBySet = false;
         }
 
-        private void CleanupRedefine(XmlSchemaExternal include)
+        private static void CleanupRedefine(XmlSchemaExternal include)
         {
             XmlSchemaRedefine rdef = (include as XmlSchemaRedefine)!;
             rdef.AttributeGroups.Clear();
@@ -206,19 +206,8 @@ namespace System.Xml.Schema
 
         internal XmlReaderSettings ReaderSettings
         {
-            get
-            {
-                if (_readerSettings == null)
-                {
-                    _readerSettings = new XmlReaderSettings();
-                    _readerSettings.DtdProcessing = DtdProcessing.Prohibit;
-                }
-                return _readerSettings;
-            }
-            set
-            {
-                _readerSettings = value;
-            }
+            get => _readerSettings ??= new XmlReaderSettings() { DtdProcessing = DtdProcessing.Prohibit };
+            set => _readerSettings = value;
         }
 
         //internal Dictionary<Uri, XmlSchema> SchemaLocations {
@@ -313,7 +302,7 @@ namespace System.Xml.Schema
                 {
                     XmlSchemaImport import = (include as XmlSchemaImport)!;
                     Debug.Assert(import != null);
-                    string importNS = import.Namespace != null ? import.Namespace : string.Empty;
+                    string importNS = import.Namespace ?? string.Empty;
                     if (!schema.ImportedNamespaces.Contains(importNS))
                     {
                         schema.ImportedNamespaces.Add(importNS);
@@ -499,21 +488,14 @@ namespace System.Xml.Schema
                 {
                     import = (include as XmlSchemaImport)!;
                     ns = import.Namespace;
-                    if (ns == null)
-                    {
-                        ns = string.Empty;
-                    }
+                    ns ??= string.Empty;
                     if (_referenceNamespaces[ns] == null)
                         _referenceNamespaces.Add(ns, ns);
                 }
             }
 
             //Add the schema's targetnamespace
-            string? tns = schema.TargetNamespace;
-            if (tns == null)
-            {
-                tns = string.Empty;
-            }
+            string tns = schema.TargetNamespace ?? string.Empty;
             if (_referenceNamespaces[tns] == null)
             {
                 _referenceNamespaces.Add(tns, tns);
@@ -666,7 +648,7 @@ namespace System.Xml.Schema
             BuildRefNamespaces(schema);
             ValidateIdAttribute(schema);
 
-            _targetNamespace = targetNamespace == null ? string.Empty : targetNamespace;
+            _targetNamespace = targetNamespace ?? string.Empty;
 
             SetSchemaDefaults(schema);
 
@@ -690,10 +672,7 @@ namespace System.Xml.Schema
                             break;
 
                         case Compositor.Redefine:
-                            if (_redefinedList == null)
-                            {
-                                _redefinedList = new ArrayList();
-                            }
+                            _redefinedList ??= new ArrayList();
 
                             _redefinedList.Add(new RedefineEntry((external as XmlSchemaRedefine)!, _rootSchemaForRedefine!));
                             if (_processedExternals[includedSchema] != null)
@@ -709,7 +688,7 @@ namespace System.Xml.Schema
                             if (includedSchema != _rootSchema)
                             {
                                 XmlSchemaImport import = (external as XmlSchemaImport)!;
-                                string importNS = import.Namespace != null ? import.Namespace : string.Empty;
+                                string importNS = import.Namespace ?? string.Empty;
                                 if (!imports.Contains(includedSchema))
                                 {
                                     imports.Add(includedSchema);
@@ -854,7 +833,7 @@ namespace System.Xml.Schema
             XmlSchema schemaToUpdate = redefineEntry.schemaToUpdate;
             ArrayList includesOfRedefine = new ArrayList();
             GetIncludedSet(originalSchema, includesOfRedefine);
-            string targetNS = schemaToUpdate.TargetNamespace == null ? string.Empty : schemaToUpdate.TargetNamespace;
+            string targetNS = schemaToUpdate.TargetNamespace ?? string.Empty;
 
             XmlSchemaObjectCollection items = redefine.Items;
             for (int i = 0; i < items.Count; ++i)
@@ -886,9 +865,8 @@ namespace System.Xml.Schema
                         }
                     }
                 }
-                else if (items[i] is XmlSchemaAttributeGroup)
+                else if (items[i] is XmlSchemaAttributeGroup attributeGroup)
                 {
-                    XmlSchemaAttributeGroup attributeGroup = (XmlSchemaAttributeGroup)items[i];
                     PreprocessAttributeGroup(attributeGroup);
                     attributeGroup.QualifiedName.SetNamespace(targetNS); //Since PreprocessAttributeGroup will use this.targetNamespace and that will be that of the root schema's
                     if (redefine.AttributeGroups[attributeGroup.QualifiedName] != null)
@@ -912,9 +890,8 @@ namespace System.Xml.Schema
                         }
                     }
                 }
-                else if (items[i] is XmlSchemaComplexType)
+                else if (items[i] is XmlSchemaComplexType complexType)
                 {
-                    XmlSchemaComplexType complexType = (XmlSchemaComplexType)items[i];
                     PreprocessComplexType(complexType, false);
                     complexType.QualifiedName.SetNamespace(targetNS); //Since PreprocessComplexType will use this.targetNamespace and that will be that of the root schema's
                     if (redefine.SchemaTypes[complexType.QualifiedName] != null)
@@ -942,9 +919,8 @@ namespace System.Xml.Schema
                         }
                     }
                 }
-                else if (items[i] is XmlSchemaSimpleType)
+                else if (items[i] is XmlSchemaSimpleType simpleType)
                 {
-                    XmlSchemaSimpleType simpleType = (XmlSchemaSimpleType)items[i];
                     PreprocessSimpleType(simpleType, false);
                     simpleType.QualifiedName.SetNamespace(targetNS); //Since PreprocessSimpleType will use this.targetNamespace and that will be that of the root schema's
                     if (redefine.SchemaTypes[simpleType.QualifiedName] != null)
@@ -1492,9 +1468,8 @@ namespace System.Xml.Schema
                 valid = false;
             }
 
-            if (constraint is XmlSchemaKeyref)
+            if (constraint is XmlSchemaKeyref keyref)
             {
-                XmlSchemaKeyref keyref = (XmlSchemaKeyref)constraint;
                 if (keyref.Refer.IsEmpty)
                 {
                     SendValidationEvent(SR.Sch_IdConstraintNoRefer, constraint);
@@ -1570,9 +1545,8 @@ namespace System.Xml.Schema
             {
                 SendValidationEvent(SR.Sch_NoSimpleTypeContent, simpleType);
             }
-            else if (simpleType.Content is XmlSchemaSimpleTypeRestriction)
+            else if (simpleType.Content is XmlSchemaSimpleTypeRestriction restriction)
             {
-                XmlSchemaSimpleTypeRestriction restriction = (XmlSchemaSimpleTypeRestriction)simpleType.Content;
                 //SetParent
                 SetParent(restriction, simpleType);
                 for (int i = 0; i < restriction.Facets.Count; ++i)
@@ -1602,9 +1576,8 @@ namespace System.Xml.Schema
                 PreprocessAnnotation(restriction); //set parent of annotation child of simple type restriction
                 ValidateIdAttribute(restriction);
             }
-            else if (simpleType.Content is XmlSchemaSimpleTypeList)
+            else if (simpleType.Content is XmlSchemaSimpleTypeList list)
             {
-                XmlSchemaSimpleTypeList list = (XmlSchemaSimpleTypeList)simpleType.Content;
                 SetParent(list, simpleType);
 
                 if (list.ItemType != null)
@@ -1727,10 +1700,8 @@ namespace System.Xml.Schema
                 SetParent(complexType.ContentModel, complexType); //SimpleContent / complexCotent
                 PreprocessAnnotation(complexType.ContentModel);
 
-                if (complexType.Particle != null || complexType.Attributes != null)
-                {
-                    // this is illigal
-                }
+                // "complexType.Particle != null || complexType.Attributes != null" is illegal
+
                 if (complexType.ContentModel is XmlSchemaSimpleContent)
                 {
                     XmlSchemaSimpleContent content = (XmlSchemaSimpleContent)complexType.ContentModel;
@@ -1750,9 +1721,8 @@ namespace System.Xml.Schema
                         SetParent(content.Content, content);   //simplecontent extension / restriction
                         PreprocessAnnotation(content.Content); //annotation child of simple extension / restriction
 
-                        if (content.Content is XmlSchemaSimpleContentExtension)
+                        if (content.Content is XmlSchemaSimpleContentExtension contentExtension)
                         {
-                            XmlSchemaSimpleContentExtension contentExtension = (XmlSchemaSimpleContentExtension)content.Content;
                             if (contentExtension.BaseTypeName.IsEmpty)
                             {
                                 SendValidationEvent(SR.Sch_MissAttribute, "base", contentExtension);
@@ -1809,9 +1779,8 @@ namespace System.Xml.Schema
                         SetParent(content.Content, content);   //complexcontent extension / restriction
                         PreprocessAnnotation(content.Content); //Annotation child of extension / restriction
 
-                        if (content.Content is XmlSchemaComplexContentExtension)
+                        if (content.Content is XmlSchemaComplexContentExtension contentExtension)
                         {
-                            XmlSchemaComplexContentExtension contentExtension = (XmlSchemaComplexContentExtension)content.Content;
                             if (contentExtension.BaseTypeName.IsEmpty)
                             {
                                 SendValidationEvent(SR.Sch_MissAttribute, "base", contentExtension);
@@ -2002,9 +1971,8 @@ namespace System.Xml.Schema
                         }
                     }
                 }
-                else if (particle is XmlSchemaGroupRef)
+                else if (particle is XmlSchemaGroupRef groupRef)
                 {
-                    XmlSchemaGroupRef groupRef = (XmlSchemaGroupRef)particle;
                     if (groupRef.RefName.IsEmpty)
                     {
                         SendValidationEvent(SR.Sch_MissAttribute, "ref", groupRef);
@@ -2184,7 +2152,7 @@ namespace System.Xml.Schema
             return chameleonSchema;
         }
 
-        private void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
+        private static void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
         {
             child.Parent = parent;
         }

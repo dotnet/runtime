@@ -4,24 +4,16 @@
 #ifdef _MSC_VER
 
 // FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-#pragma warning(disable:4018) // signed/unsigned mismatch
-#pragma warning(disable:4090) // const problem
-#pragma warning(disable:4146) // unary minus operator applied to unsigned type, result still unsigned
-#pragma warning(disable:4244) // integer conversion, possible loss of data
-#pragma warning(disable:4267) // integer conversion, possible loss of data
-
-// promote warnings to errors
-#pragma warning(  error:4013) // function undefined; assuming extern returning int
-#pragma warning(  error:4022) // call and prototype disagree
-#pragma warning(  error:4047) // differs in level of indirection
-#pragma warning(  error:4098) // void return returns a value
-#pragma warning(  error:4113) // call and prototype disagree
-#pragma warning(  error:4172) // returning address of local variable or temporary
-#pragma warning(  error:4197) // top-level volatile in cast is ignored
-#pragma warning(  error:4273) // inconsistent dll linkage
-#pragma warning(  error:4293) // shift count negative or too big, undefined behavior
-#pragma warning(  error:4312) // 'type cast': conversion from 'MonoNativeThreadId' to 'gpointer' of greater size
-#pragma warning(  error:4715) // 'keyword' not all control paths return a value
+#pragma warning(disable:4090) // W1: const problem
+#pragma warning(disable:4100) // W4: unreferenced formal parameter
+#pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
+#pragma warning(disable:4201) // W4: nonstandard extension used: nameless struct/union
+#pragma warning(disable:4210) // W4: nonstandard extension used: function given file scope
+#pragma warning(disable:4245) // W4: signed/unsigned mismatch
+#pragma warning(disable:4389) // W4: signed/unsigned mismatch
+#pragma warning(disable:4505) // W4: unreferenced function with internal linkage has been removed
+#pragma warning(disable:4702) // W4: unreachable code
+#pragma warning(disable:4706) // W4: assignment within conditional expression
 
 #include <SDKDDKVer.h>
 
@@ -82,6 +74,9 @@
 
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
+
+/* Host Platform is OSX or Mac Catalyst */
+#cmakedefine HOST_OSX 1
 
 /* Host Platform is iOS */
 #cmakedefine HOST_IOS 1
@@ -155,9 +150,6 @@
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #cmakedefine HAVE_SYS_SYSCTL_H 1
 
-/* Define to 1 if you have the <libproc.h> header file. */
-#cmakedefine HAVE_LIBPROC_H 1
-
 /* Define to 1 if you have the <sys/prctl.h> header file. */
 #cmakedefine HAVE_SYS_PRCTL_H 1
 
@@ -178,6 +170,9 @@
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H 1
+
+/* Define to 1 if you have the <grp.h> header file. */
+#cmakedefine HAVE_GRP_H 1
 
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H 1
@@ -268,9 +263,6 @@
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
 
-/* Some VES is available at runtime */
-#cmakedefine ENABLE_ILGEN 1
-
 /* Disable non-blittable marshalling */
 #cmakedefine DISABLE_NONBLITTABLE
 
@@ -279,12 +271,6 @@
 
 /* Disable Soft Debugger Agent. */
 #cmakedefine DISABLE_DEBUGGER_AGENT 1
-
-/* Disable Performance Counters. */
-#cmakedefine DISABLE_PERFCOUNTERS 1
-
-/* Disable shared perfcounters. */
-#cmakedefine DISABLE_SHARED_PERFCOUNTERS 1
 
 /* Disable support code for the LLDB plugin. */
 #cmakedefine DISABLE_LLDB 1
@@ -313,8 +299,8 @@
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
-/* Disable perf counters */
-#cmakedefine DISABLE_PERF_COUNTERS
+/* Disable user thread creation on WebAssembly */
+#cmakedefine DISABLE_WASM_USER_THREADS 1
 
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
@@ -351,9 +337,6 @@
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #cmakedefine HAVE_EXECINFO_H 1
-
-/* Define to 1 if you have the <sys/auxv.h> header file. */
-#cmakedefine HAVE_SYS_AUXV_H 1
 
 /* Define to 1 if you have the <sys/resource.h> header file. */
 #cmakedefine HAVE_SYS_RESOURCE_H 1
@@ -393,15 +376,6 @@
 
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
-
-/* Define to 1 if you have the `sched_getcpu' function. */
-#cmakedefine HAVE_SCHED_GETCPU 1
-
-/* Define to 1 if you have the `getpwuid_r' function. */
-#cmakedefine HAVE_GETPWUID_R 1
-
-/* Define to 1 if you have the `readlink' function. */
-#cmakedefine HAVE_READLINK 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -512,6 +486,7 @@
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
 
+/* Have getauxval */
 #cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
@@ -520,9 +495,6 @@
 
 /* Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms */
 #cmakedefine ENABLE_SIGALTSTACK 1
-
-/* Define to 1 if you have the `shm_open' function. */
-#cmakedefine HAVE_SHM_OPEN 1
 
 /* Define to 1 if you have the `poll' function. */
 #cmakedefine HAVE_POLL 1
@@ -542,9 +514,6 @@
 /* Have getifaddrs */
 #cmakedefine HAVE_GETIFADDRS 1
 
-/* Have struct ifaddrs */
-#cmakedefine HAVE_IFADDRS 1
-
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
 
@@ -553,12 +522,6 @@
 
 /* Have mktemp */
 #cmakedefine HAVE_MKTEMP 1
-
-/* Define to 1 if you have the <sys/errno.h> header file. */
-#cmakedefine HAVE_SYS_ERRNO_H 1
-
-/* Define to 1 if you have the <sys/sendfile.h> header file. */
-#cmakedefine HAVE_SYS_SENDFILE_H 1
 
 /* Define to 1 if you have the <sys/statvfs.h> header file. */
 #cmakedefine HAVE_SYS_STATVFS_H 1
@@ -583,9 +546,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the `sendfile' function. */
-#cmakedefine HAVE_SENDFILE 1
 
 /* struct statfs */
 #cmakedefine HAVE_STATFS 1
@@ -649,8 +609,8 @@
 /* Define to 1 if `st_atimespec' is a member of `struct stat'. */
 #cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
 
-/* Define to 1 if `kp_proc' is a member of `struct kinfo_proc'. */
-#cmakedefine HAVE_STRUCT_KINFO_PROC_KP_PROC 1
+/* Define to 1 if `super_class' is a member of `struct objc_super'. */
+#cmakedefine HAVE_OBJC_SUPER_SUPER_CLASS 1
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1
@@ -713,9 +673,6 @@
 #cmakedefine TARGET_PS3 1
 
 /* ... */
-#cmakedefine __mono_ppc64__ 1
-
-/* ... */
 #cmakedefine TARGET_XBOX360 1
 
 /* ... */
@@ -752,15 +709,6 @@
 #cmakedefine TARGET_S390X 1
 
 /* ... */
-#cmakedefine TARGET_MIPS 1
-
-/* ... */
-#cmakedefine TARGET_SPARC 1
-
-/* ... */
-#cmakedefine TARGET_SPARC64 1
-
-/* ... */
 #cmakedefine HOST_WASM 1
 
 /* ... */
@@ -790,15 +738,6 @@
 /* ... */
 #cmakedefine HOST_S390X 1
 
-/* ... */
-#cmakedefine HOST_MIPS 1
-
-/* ... */
-#cmakedefine HOST_SPARC 1
-
-/* ... */
-#cmakedefine HOST_SPARC64 1
-
 /* Host is RISC-V */
 #cmakedefine HOST_RISCV 1
 
@@ -820,7 +759,7 @@
 /* The JIT/AOT targets Mac Catalyst */
 #cmakedefine TARGET_MACCAT 1
 
-/* The JIT/AOT targets OSX */
+/* The JIT/AOT targets OSX or Mac Catalyst */
 #cmakedefine TARGET_OSX 1
 
 /* The JIT/AOT targets Apple platforms */
@@ -949,6 +888,9 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #cmakedefine HAVE_USR_INCLUDE_MALLOC_H 1
 
+/* Define to 1 if you have linux cgroups */
+#cmakedefine HAVE_CGROUP_SUPPORT 1
+
 /* The architecture this is running on */
 #define MONO_ARCHITECTURE @MONO_ARCHITECTURE@
 
@@ -990,6 +932,9 @@
 
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
+
+/* Enable WebCIL image loader */
+#cmakedefine ENABLE_WEBCIL 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

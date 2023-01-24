@@ -62,7 +62,7 @@ class MemberLoader
 public:
     static void DECLSPEC_NORETURN ThrowMissingMethodException(MethodTable* pMT,
                                             LPCSTR szMember,
-                                            Module *pModule,
+                                            ModuleBase *pModule,
                                             PCCOR_SIGNATURE pSig,
                                             DWORD cSig,
                                             const SigTypeContext *pTypeContext);
@@ -100,7 +100,7 @@ public:
                                                mdToken FieldDef,
                                                BOOL strictMetadataChecks);
 
-    static void GetDescFromMemberRef(Module * pModule,
+    static void GetDescFromMemberRef(ModuleBase * pModule,
                                      mdToken MemberRef,
                                      MethodDesc ** ppMD,
                                      FieldDesc ** ppFD,
@@ -118,11 +118,11 @@ public:
                                      PCCOR_SIGNATURE * ppTypeSig = NULL,    // Optionally, return generic signatures fetched from metadata during loading.
                                      ULONG * pcbTypeSig = NULL);
 
-    static MethodDesc * GetMethodDescFromMemberRefAndType(Module * pModule,
+    static MethodDesc * GetMethodDescFromMemberRefAndType(ModuleBase * pModule,
                                                           mdToken MemberRef,
                                                           MethodTable * pMT);
 
-    static FieldDesc * GetFieldDescFromMemberRefAndType(Module * pModule,
+    static FieldDesc * GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
                                                         mdToken MemberRef,
                                                         MethodTable * pMT);
 
@@ -198,7 +198,7 @@ private:
     static const FM_Flags FM_SpecialVirtualMask = (FM_Flags) (FM_ExcludeNonVirtual |
                                                               FM_ExcludeVirtual);
 
-    // Typedef for string comparition functions.
+    // Typedef for string comparison functions.
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
 
     static inline UTF8StringCompareFuncPtr FM_GetStrCompFunc(DWORD dwFlags)
@@ -221,7 +221,7 @@ public:
        LPCUTF8 pszName,
        PCCOR_SIGNATURE pSignature,
        DWORD cSignature,
-       Module* pModule,
+       ModuleBase* pModule,
        FM_Flags flags = FM_Default,
        const Substitution *pDefSubst = NULL);
 
@@ -255,7 +255,7 @@ public:
        LPCUTF8 pszName,
        PCCOR_SIGNATURE pSignature,
        DWORD cSignature,
-       Module* pModule,
+       ModuleBase* pModule,
        BOOL bCaseSensitive = TRUE);
 
     static MethodDesc *FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature);

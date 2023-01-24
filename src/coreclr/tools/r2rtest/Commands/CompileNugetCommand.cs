@@ -58,7 +58,9 @@ namespace R2RTest
                     string appFolder = Path.Combine(nugetOutputFolder, $"{package}.TestApp");
                     Directory.CreateDirectory(appFolder);
 
-                    int exitCode = DotnetCli.New(appFolder, "console", nugetLog);
+                    Version version = Environment.Version;
+                    string targetFramework = $"net{version.Major}.{version.Minor}";
+                    int exitCode = DotnetCli.New(appFolder, $"console -f {targetFramework}", nugetLog);
                     if (exitCode != 0)
                     {
                         nugetLog.WriteLine($"dotnet new console for {package} failed with exit code {exitCode}");
@@ -80,7 +82,8 @@ namespace R2RTest
                     }
 
                     // This is not a reliable way of building the publish folder
-                    string publishFolder = Path.Combine(appFolder, @"artifacts\Debug\net5.0\publish");
+                   
+                    string publishFolder = Path.Combine(appFolder, "artifacts", "Debug", targetFramework, "publish");
                     if (!Directory.Exists(publishFolder))
                     {
                         nugetLog.WriteLine($"Could not find folder {publishFolder} containing the published app.");

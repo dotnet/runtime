@@ -30,30 +30,13 @@ namespace System.Linq.Parallel
         private static volatile EmptyEnumerable<T>? s_instance;
         private static volatile EmptyEnumerator<T>? s_enumeratorInstance;
 
-        internal static EmptyEnumerable<T> Instance
-        {
-            get
-            {
-                if (s_instance == null)
-                {
-                    // There is no need for thread safety here.
-                    s_instance = new EmptyEnumerable<T>();
-                }
+        internal static EmptyEnumerable<T> Instance =>
+            // There is no need for thread safety here.
+            s_instance ??= new EmptyEnumerable<T>();
 
-                return s_instance;
-            }
-        }
-
-        public override IEnumerator<T> GetEnumerator()
-        {
-            if (s_enumeratorInstance == null)
-            {
-                // There is no need for thread safety here.
-                s_enumeratorInstance = new EmptyEnumerator<T>();
-            }
-
-            return s_enumeratorInstance;
-        }
+        public override IEnumerator<T> GetEnumerator() =>
+            // There is no need for thread safety here.
+            s_enumeratorInstance ??= new EmptyEnumerator<T>();
     }
 
     internal sealed class EmptyEnumerator<T> : QueryOperatorEnumerator<T, int>, IEnumerator<T>

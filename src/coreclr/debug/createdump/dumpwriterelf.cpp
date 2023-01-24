@@ -3,6 +3,8 @@
 
 #include "createdump.h"
 
+extern int g_readProcessMemoryErrno;
+
 // Write the core dump file:
 //   ELF header
 //   Single section header (Shdr) for 64 bit program header count
@@ -47,10 +49,7 @@ DumpWriter::WriteDump()
     uint64_t phnum = 1;
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            phnum++;
-        }
+        phnum++;
     }
 
     if (phnum < PH_HDR_CANARY) {
@@ -80,7 +79,7 @@ DumpWriter::WriteDump()
         shdr.sh_size = 1;
         offset += sizeof(Shdr);
 
-        // When section header offset is present but ehdr section num = 0 then is is expected that
+        // When section header offset is present but ehdr section num = 0 then it is expected that
         // the sh_size indicates the size of the section array or 1 in our case.
         if (!WriteData(&shdr, sizeof(shdr))) {
             return false;
@@ -116,19 +115,16 @@ DumpWriter::WriteDump()
     // Write memory region note headers
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        if (memoryRegion.IsBackedByMemory())
-        {
-            phdr.p_flags = memoryRegion.Permissions();
-            phdr.p_vaddr = memoryRegion.StartAddress();
-            phdr.p_memsz = memoryRegion.Size();
+        phdr.p_flags = memoryRegion.Permissions();
+        phdr.p_vaddr = memoryRegion.StartAddress();
+        phdr.p_memsz = memoryRegion.Size();
 
-            offset += filesz;
-            phdr.p_filesz = filesz = memoryRegion.Size();
-            phdr.p_offset = offset;
+        offset += filesz;
+        phdr.p_filesz = filesz = memoryRegion.Size();
+        phdr.p_offset = offset;
 
-            if (!WriteData(&phdr, sizeof(phdr))) {
-                return false;
-            }
+        if (!WriteData(&phdr, sizeof(phdr))) {
+            return false;
         }
     }
 
@@ -161,7 +157,7 @@ DumpWriter::WriteDump()
     // and then laydown the memory blocks
     if (finalNoteAlignment > 0) {
         if (finalNoteAlignment > sizeof(m_tempBuffer)) {
-            fprintf(stderr, "finalNoteAlignment %zu > sizeof(m_tempBuffer)\n", finalNoteAlignment);
+            printf_error("Internal error: finalNoteAlignment %zu > sizeof(m_tempBuffer)\n", finalNoteAlignment);
             return false;
         }
         memset(m_tempBuffer, 0, finalNoteAlignment);
@@ -176,41 +172,36 @@ DumpWriter::WriteDump()
     uint64_t total = 0;
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        // Only write the regions that are backed by memory
-        if (memoryRegion.IsBackedByMemory())
+        uint64_t address = memoryRegion.StartAddress();
+        size_t size = memoryRegion.Size();
+        total += size;
+
+        while (size > 0)
         {
-            uint64_t address = memoryRegion.StartAddress();
-            size_t size = memoryRegion.Size();
-            total += size;
+            size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
+            size_t read = 0;
 
-            while (size > 0)
-            {
-                size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
-                size_t read = 0;
-
-                if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) FAILED\n", address, bytesToRead);
-                    return false;
-                }
-
-                // This can happen if the target process dies before createdump is finished
-                if (read == 0) {
-                    fprintf(stderr, "ReadProcessMemory(%" PRIA PRIx64 ", %08zx) returned 0 bytes read\n", address, bytesToRead);
-                    return false;
-                }
-
-                if (!WriteData(m_tempBuffer, read)) {
-                    return false;
-                }
-
-                address += read;
-                size -= read;
+            if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
+                printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+                return false;
             }
+
+            // This can happen if the target process dies before createdump is finished
+            if (read == 0) {
+                printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx returned 0 bytes read: %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
+                return false;
+            }
+
+            if (!WriteData(m_tempBuffer, read)) {
+                return false;
+            }
+
+            address += read;
+            size -= read;
         }
     }
 
-    printf("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
-
+    printf_status("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
     return true;
 }
 

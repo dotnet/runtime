@@ -167,7 +167,7 @@ public: // !!! NOTE: Called from macros only!!!
 // Note that CONTRACT_CHECK contracts do not support postconditions.
 //
 // CHECK: Check the given condition, return a CHECK failure if FALSE
-// CHECK_MSG: Same, but include a message paramter if the check fails
+// CHECK_MSG: Same, but include a message parameter if the check fails
 // CHECK_OK: Return a successful check value;
 //--------------------------------------------------------------------------------
 

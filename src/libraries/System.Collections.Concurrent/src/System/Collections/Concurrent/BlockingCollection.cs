@@ -173,14 +173,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentOutOfRangeException">The <paramref name="boundedCapacity"/> is not a positive value.</exception>
         /// <exception cref="System.ArgumentException">The supplied <paramref name="collection"/> contains more values
         /// than is permitted by <paramref name="boundedCapacity"/>.</exception>
-        public BlockingCollection(IProducerConsumerCollection<T> collection!!, int boundedCapacity)
+        public BlockingCollection(IProducerConsumerCollection<T> collection, int boundedCapacity)
         {
-            if (boundedCapacity < 1)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(boundedCapacity), boundedCapacity,
-                    SR.BlockingCollection_ctor_BoundedCapacityRange);
-            }
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(boundedCapacity);
 
             int count = collection.Count;
             if (count > boundedCapacity)
@@ -196,8 +192,10 @@ namespace System.Collections.Concurrent
         /// <param name="collection">The collection to use as the underlying data store.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is
         /// null.</exception>
-        public BlockingCollection(IProducerConsumerCollection<T> collection!!)
+        public BlockingCollection(IProducerConsumerCollection<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             Initialize(collection, NON_BOUNDED, collection.Count);
         }
 
@@ -434,10 +432,7 @@ namespace System.Collections.Concurrent
                 }
                 finally
                 {
-                    if (linkedTokenSource != null)
-                    {
-                        linkedTokenSource.Dispose();
-                    }
+                    linkedTokenSource?.Dispose();
                 }
             }
             if (waitForSemaphoreWasSuccessful)
@@ -466,50 +461,33 @@ namespace System.Collections.Concurrent
                     spinner.SpinOnce(sleep1Threshold: -1);
                 }
 
-                // This outer try/finally to workaround of repeating the decrement adders code 3 times, because we should decrement the adders if:
-                // 1- _collection.TryAdd threw an exception
-                // 2- _collection.TryAdd succeeded
-                // 3- _collection.TryAdd returned false
-                // so we put the decrement code in the finally block
+                //TryAdd is guaranteed to find a place to add the element. Its return value depends
+                //on the semantics of the underlying store. Some underlying stores will not add an already
+                //existing item and thus TryAdd returns false indicating that the size of the underlying
+                //store did not increase.
+                bool addingSucceeded = false;
+
                 try
                 {
-                    //TryAdd is guaranteed to find a place to add the element. Its return value depends
-                    //on the semantics of the underlying store. Some underlying stores will not add an already
-                    //existing item and thus TryAdd returns false indicating that the size of the underlying
-                    //store did not increase.
+                    //The token may have been canceled before the collection had space available, so we need a check after the wait has completed.
+                    //This fixes bug #702328, case 2 of 2.
+                    cancellationToken.ThrowIfCancellationRequested();
+                    addingSucceeded = _collection.TryAdd(item);
 
-
-                    bool addingSucceeded = false;
-                    try
-                    {
-                        //The token may have been canceled before the collection had space available, so we need a check after the wait has completed.
-                        //This fixes bug #702328, case 2 of 2.
-                        cancellationToken.ThrowIfCancellationRequested();
-                        addingSucceeded = _collection.TryAdd(item);
-                    }
-                    catch
-                    {
-                        //TryAdd did not result in increasing the size of the underlying store and hence we need
-                        //to increment back the count of the _freeNodes semaphore.
-                        if (_freeNodes != null)
-                        {
-                            _freeNodes.Release();
-                        }
-                        throw;
-                    }
-                    if (addingSucceeded)
-                    {
-                        //After adding an element to the underlying storage, signal to the consumers
-                        //waiting on _occupiedNodes that there is a new item added ready to be consumed.
-                        _occupiedNodes.Release();
-                    }
-                    else
-                    {
+                    if (!addingSucceeded)
                         throw new InvalidOperationException(SR.BlockingCollection_Add_Failed);
-                    }
                 }
                 finally
                 {
+                    if (addingSucceeded)
+                        //After adding an element to the underlying storage, signal to the consumers
+                        //waiting on _occupiedNodes that there is a new item added ready to be consumed.
+                        _occupiedNodes.Release();
+                    else
+                        //TryAdd did not result in increasing the size of the underlying store and hence we need
+                        //to increment back the count of the _freeNodes semaphore.
+                        _freeNodes?.Release();
+
                     // decrement the adders count
                     Debug.Assert((_currentAdders & ~COMPLETE_ADDING_ON_MASK) > 0);
                     Interlocked.Decrement(ref _currentAdders);
@@ -520,14 +498,13 @@ namespace System.Collections.Concurrent
 
         /// <summary>Takes an item from the <see cref="System.Collections.Concurrent.BlockingCollection{T}"/>.</summary>
         /// <returns>The item removed from the collection.</returns>
-        /// <exception cref="System.OperationCanceledException">The <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
-        /// as complete with regards to additions.</exception>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance, or the <see
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
+        /// as complete with regards to additions.</exception>
         /// <remarks>A call to <see cref="Take()"/> may block until an item is available to be removed.</remarks>
         public T Take()
         {
@@ -543,15 +520,15 @@ namespace System.Collections.Concurrent
 
         /// <summary>Takes an item from the <see cref="System.Collections.Concurrent.BlockingCollection{T}"/>.</summary>
         /// <returns>The item removed from the collection.</returns>
-        /// <exception cref="System.OperationCanceledException">If the <see cref="CancellationToken"/> is
-        /// canceled or the <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
-        /// as complete with regards to additions.</exception>
+        /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is
+        /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The <see
         /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> has been disposed.</exception>
         /// <exception cref="System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
-        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> instance, or the <see
+        /// cref="System.Collections.Concurrent.BlockingCollection{T}"/> is empty and has been marked
+        /// as complete with regards to additions.</exception>
         /// <remarks>A call to <see cref="Take(CancellationToken)"/> may block until an item is available to be removed.</remarks>
         public T Take(CancellationToken cancellationToken)
         {
@@ -687,9 +664,7 @@ namespace System.Collections.Concurrent
                 if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
                 {
                     // create the linked token if it is not created yet
-                    if (linkedTokenSource == null)
-                        linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                                                                                          _consumersCancellationTokenSource.Token);
+                    linkedTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
                     waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(millisecondsTimeout, linkedTokenSource.Token);
                 }
             }
@@ -711,7 +686,6 @@ namespace System.Collections.Concurrent
             if (waitForSemaphoreWasSuccessful)
             {
                 bool removeSucceeded = false;
-                bool removeFaulted = true;
                 try
                 {
                     //The token may have been canceled before an item arrived, so we need a check after the wait has completed.
@@ -720,7 +694,6 @@ namespace System.Collections.Concurrent
 
                     //If an item was successfully removed from the underlying collection.
                     removeSucceeded = _collection.TryTake(out item);
-                    removeFaulted = false;
                     if (!removeSucceeded)
                     {
                         // Check if the collection is empty which means that the collection was modified outside BlockingCollection
@@ -739,7 +712,7 @@ namespace System.Collections.Concurrent
                             _freeNodes.Release();
                         }
                     }
-                    else if (removeFaulted)
+                    else
                     {
                         _occupiedNodes.Release();
                     }
@@ -1528,11 +1501,7 @@ namespace System.Collections.Concurrent
         {
             if (!_isDisposed)
             {
-                if (_freeNodes != null)
-                {
-                    _freeNodes.Dispose();
-                }
-
+                _freeNodes?.Dispose();
                 _occupiedNodes.Dispose();
 
                 _isDisposed = true;
@@ -1642,25 +1611,15 @@ namespace System.Collections.Concurrent
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         public IEnumerable<T> GetConsumingEnumerable(CancellationToken cancellationToken)
         {
-            CancellationTokenSource? linkedTokenSource = null;
-            try
+            if (IsCompleted)
             {
-                linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
-                while (!IsCompleted)
-                {
-                    T? item;
-                    if (TryTakeWithNoTimeValidation(out item, Timeout.Infinite, cancellationToken, linkedTokenSource))
-                    {
-                        yield return item;
-                    }
-                }
+                yield break;
             }
-            finally
+
+            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);
+            while (TryTakeWithNoTimeValidation(out T? item, Timeout.Infinite, cancellationToken, linkedTokenSource))
             {
-                if (linkedTokenSource != null)
-                {
-                    linkedTokenSource.Dispose();
-                }
+                yield return item;
             }
         }
 
@@ -1691,8 +1650,10 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
         /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
-        private static void ValidateCollectionsArray(BlockingCollection<T>[] collections!!, bool isAddOperation)
+        private static void ValidateCollectionsArray(BlockingCollection<T>[] collections, bool isAddOperation)
         {
+            ArgumentNullException.ThrowIfNull(collections);
+
             if (collections.Length < 1)
             {
                 throw new ArgumentException(
@@ -1760,10 +1721,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(BlockingCollection<T>), SR.BlockingCollection_Disposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
     }
 
@@ -1776,8 +1734,10 @@ namespace System.Collections.Concurrent
 
         /// <summary>Constructs a new debugger view object for the provided blocking collection object.</summary>
         /// <param name="collection">A blocking collection to browse in the debugger.</param>
-        public BlockingCollectionDebugView(BlockingCollection<T> collection!!)
+        public BlockingCollectionDebugView(BlockingCollection<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _blockingCollection = collection;
         }
 

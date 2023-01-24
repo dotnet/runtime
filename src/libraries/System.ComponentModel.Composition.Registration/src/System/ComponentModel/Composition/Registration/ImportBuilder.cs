@@ -94,10 +94,7 @@ namespace System.ComponentModel.Composition.Registration
                 };
             }
 
-            if (attributes == null)
-            {
-                attributes = new List<Attribute>();
-            }
+            attributes ??= new List<Attribute>();
 
             attributes.Add(importAttribute);
         }

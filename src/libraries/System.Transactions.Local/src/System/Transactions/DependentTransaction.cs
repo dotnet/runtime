@@ -39,10 +39,7 @@ namespace System.Transactions
 
             lock (_internalTransaction)
             {
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(DependentTransaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (_complete)
                 {
@@ -64,7 +61,7 @@ namespace System.Transactions
 
             if (etwLog.IsEnabled())
             {
-                etwLog.TransactionDependentCloneComplete(this, "DependentTransaction");
+                etwLog.TransactionDependentCloneComplete(TraceSourceType.TraceSourceLtm, TransactionTraceId, "DependentTransaction");
                 etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
             }
         }

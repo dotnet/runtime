@@ -48,8 +48,8 @@ namespace System.Reflection
                 return false;
             if ((obj is Type))
                 return true;
-            if (corlib == null)
-                corlib = typeof(int).Assembly;
+
+            corlib ??= typeof(int).Assembly;
             return obj.GetType().Assembly != corlib;
         }
 
@@ -136,12 +136,18 @@ namespace System.Reflection
             return attrs;
         }
 
+        private static bool AttrTypeMatches(Type? attributeType, Type attrType)
+        {
+            if (attributeType == null)
+                return true;
+            return attributeType.IsAssignableFrom(attrType) ||
+                (attributeType.IsGenericTypeDefinition && attrType.IsGenericType && attributeType.IsAssignableFrom(attrType.GetGenericTypeDefinition()));
+        }
+
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute) && attributeType != typeof(object))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
@@ -160,9 +166,9 @@ namespace System.Reflection
             if (!inherit && res.Length == 1)
             {
                 if (res[0] == null)
-                    throw new CustomAttributeFormatException("Invalid custom attribute format");
+                    throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
-                if (attributeType != null)
+                if (attributeType != null && !attributeType.IsGenericTypeDefinition)
                 {
                     if (attributeType.IsAssignableFrom(res[0].GetType()))
                     {
@@ -208,7 +214,7 @@ namespace System.Reflection
                     foreach (object attr in res)
                     {
                         if (attr == null)
-                            throw new CustomAttributeFormatException("Invalid custom attribute format");
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                     }
                     var result = new Attribute[res.Length];
                     res.CopyTo(result, 0);
@@ -219,15 +225,13 @@ namespace System.Reflection
                 foreach (object attr in res)
                 {
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
-                    Type attrType = attr.GetType();
-                    if (attributeType != null && !attributeType.IsAssignableFrom(attrType))
-                        continue;
-                    a.Add(attr);
+                    if (AttrTypeMatches(attributeType, attr.GetType()))
+                        a.Add(attr);
                 }
 
-                if (attributeType == null || attributeType.IsValueType)
+                if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                     array = new Attribute[a.Count];
                 else
                     array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
@@ -246,14 +250,11 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attr == null)
-                        throw new CustomAttributeFormatException("Invalid custom attribute format");
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
                     Type attrType = attr.GetType();
-                    if (attributeType != null)
-                    {
-                        if (!attributeType.IsAssignableFrom(attrType))
-                            continue;
-                    }
+                    if (!AttrTypeMatches(attributeType, attr.GetType()))
+                        continue;
 
                     AttributeInfo? firstAttribute;
                     if (attributeInfos.TryGetValue(attrType, out firstAttribute))
@@ -284,9 +285,9 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
-            if (attributeType == null || attributeType.IsValueType)
+            if (attributeType == null || attributeType.IsValueType || attributeType.IsGenericTypeDefinition)
                 array = new Attribute[a.Count];
             else
                 array = (Array.CreateInstance(attributeType, a.Count) as object[])!;
@@ -299,8 +300,7 @@ namespace System.Reflection
 
         internal static object[] GetCustomAttributes(ICustomAttributeProvider obj, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!inherit)
                 return (object[])GetCustomAttributesBase(obj, null, false).Clone();
@@ -316,8 +316,7 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, bool inherit = false)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (!inherit)
                 return GetCustomAttributesDataBase(obj, null, false);
@@ -327,22 +326,19 @@ namespace System.Reflection
 
         internal static IList<CustomAttributeData> GetCustomAttributesData(ICustomAttributeProvider obj, Type? attributeType, bool inherit)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(obj);
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType == typeof(CustomAttribute))
                 attributeType = null;
 
-            const string Message = "Invalid custom attribute data format";
             IList<CustomAttributeData> r;
             IList<CustomAttributeData> res = GetCustomAttributesDataBase(obj, attributeType, false);
             // shortcut
             if (!inherit && res.Count == 1)
             {
                 if (res[0] == null)
-                    throw new CustomAttributeFormatException(Message);
+                    throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                 if (attributeType != null)
                 {
                     if (attributeType.IsAssignableFrom(res[0].AttributeType))
@@ -382,7 +378,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                     }
 
                     var result = new CustomAttributeData[res.Count];
@@ -395,7 +391,7 @@ namespace System.Reflection
                     foreach (CustomAttributeData attrData in res)
                     {
                         if (attrData == null)
-                            throw new CustomAttributeFormatException(Message);
+                            throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
                         if (!attributeType.IsAssignableFrom(attrData.AttributeType))
                             continue;
                         a.Add(attrData);
@@ -416,7 +412,7 @@ namespace System.Reflection
                 {
                     AttributeUsageAttribute usage;
                     if (attrData == null)
-                        throw new CustomAttributeFormatException(Message);
+                        throw new CustomAttributeFormatException(SR.Arg_CustomAttributeFormatException);
 
                     Type attrType = attrData.AttributeType;
                     if (attributeType != null)
@@ -456,7 +452,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesDataBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             return a.ToArray();
         }
@@ -553,8 +549,7 @@ namespace System.Reflection
 
         internal static bool IsDefined(ICustomAttributeProvider obj, Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
@@ -740,13 +735,48 @@ namespace System.Reflection
         {
             AttributeUsageAttribute? usageAttribute;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
-            if (usage_cache == null)
-                usage_cache = new Dictionary<Type, AttributeUsageAttribute>();
+            usage_cache ??= new Dictionary<Type, AttributeUsageAttribute>();
             if (usage_cache.TryGetValue(attributeType, out usageAttribute))
                 return usageAttribute;
             usageAttribute = RetrieveAttributeUsageNoCache(attributeType);
             usage_cache[attributeType] = usageAttribute;
             return usageAttribute;
+        }
+
+        internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
+        {
+            bool useAttributeArray = false;
+            bool useObjectArray = false;
+
+            if (caType == typeof(Attribute))
+            {
+                useAttributeArray = true;
+            }
+            else if (caType.IsValueType)
+            {
+                useObjectArray = true;
+            }
+            else if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    useAttributeArray = true;
+                }
+                else
+                {
+                    useObjectArray = true;
+                }
+            }
+
+            if (useAttributeArray)
+            {
+                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+            }
+            if (useObjectArray)
+            {
+                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+            }
+            return /*elementCount == 0 ? caType.GetEmptyArray() :*/ (object[])Array.CreateInstance(caType, elementCount);
         }
 
         private static readonly AttributeUsageAttribute DefaultAttributeUsage =

@@ -18,21 +18,13 @@ namespace System.Security.Cryptography
             Debug.Assert(!destination.IsEmpty);
             Debug.Assert(hashAlgorithmName.Name is not null);
 
-            if (!Helpers.HasHMAC)
-            {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_AlgorithmNotSupported, "HMAC" + hashAlgorithmName.Name));
-            }
-
             using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(
-                password.ToArray(),
-                salt.ToArray(),
+                password,
+                salt,
                 iterations,
-                hashAlgorithmName,
-                clearPassword: true))
+                hashAlgorithmName))
             {
-                byte[] result = deriveBytes.GetBytes(destination.Length);
-                result.AsSpan().CopyTo(destination);
+                deriveBytes.GetBytes(destination);
             }
         }
     }

@@ -43,8 +43,7 @@ namespace System.IO
 
         public MemoryStream(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
             _capacity = capacity;
@@ -59,8 +58,10 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer!!, bool writable)
+        public MemoryStream(byte[] buffer, bool writable)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             _buffer = buffer;
             _length = _capacity = buffer.Length;
             _writable = writable;
@@ -77,12 +78,12 @@ namespace System.IO
         {
         }
 
-        public MemoryStream(byte[] buffer!!, int index, int count, bool writable, bool publiclyVisible)
+        public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -306,9 +307,7 @@ namespace System.IO
             }
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
                 if (value > MemStreamMaxLength)
@@ -756,8 +755,10 @@ namespace System.IO
         }
 
         // Writes this MemoryStream to another stream.
-        public virtual void WriteTo(Stream stream!!)
+        public virtual void WriteTo(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);

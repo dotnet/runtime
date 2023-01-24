@@ -120,7 +120,7 @@ void DumpScope(void* GUICookie)
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[1024];
-    WCHAR guidString[1024];
+    CHAR guidString[GUID_STR_BUFFER_LEN];
     memset(scopeName,0,1024*sizeof(WCHAR));
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
@@ -133,15 +133,9 @@ void DumpScope(void* GUICookie)
             VDELETE(sz);
         }
         printLine(GUICookie,szString);
-        StringFromGUID2(mvid, guidString, 1024);
-        {
-            UINT32 L = (UINT32)wcslen(guidString)*3+3;
-            char* sz = new char[L];
-            memset(sz,0,L);
-            WszWideCharToMultiByte(CP_UTF8,0,guidString,-1,sz,L,NULL,NULL);
-            sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,sz);
-            VDELETE(sz);
-        }
+        GuidToLPSTR(mvid, guidString);
+        sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,guidString);
+
         printLine(GUICookie,szString);
         if(SUCCEEDED(g_pPubImport->GetModuleFromScope(&mdm)))
         {
@@ -573,15 +567,9 @@ void DumpComTypes(void* GUICookie)
                                                                 &tkTypeDef,         // [OUT] TypeDef token within the file.
                                                                 &dwFlags)))         // [OUT] Flags.
                 {
-                    LocalComTypeDescr* pCTD = new LocalComTypeDescr;
-                    memset(pCTD,0,sizeof(LocalComTypeDescr));
-                    pCTD->tkComTypeTok = rComTypeTok[ix];
-                    pCTD->tkTypeDef = tkTypeDef;
-                    pCTD->tkImplementation = tkImplementation;
-                    pCTD->wzName = new WCHAR[ulNameLen+1];
+                    LocalComTypeDescr* pCTD = new LocalComTypeDescr(rComTypeTok[ix], tkTypeDef, tkImplementation, new WCHAR[ulNameLen+1], dwFlags);
                     memcpy(pCTD->wzName,wzName,ulNameLen*sizeof(WCHAR));
                     pCTD->wzName[ulNameLen] = 0;
-                    pCTD->dwFlags = dwFlags;
 
                     if (g_pLocalComType == NULL)
                     {
@@ -794,8 +782,10 @@ void DumpManifestResources(void* GUICookie)
             static WCHAR wzFileName[2048];
 
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
-            wzName = wcsrchr(wzFileName,'\\');
+            wzName = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
+#ifdef HOST_WINDOWS
             if(wzName == NULL) wzName = wcsrchr(wzFileName,':');
+#endif
             if (wzName == NULL) wzName = wzFileName;
             else wzName++;
 
@@ -860,12 +850,12 @@ void DumpManifestResources(void* GUICookie)
                     {
                         BOOL fConflict = FALSE;
                         if (*wzName == 0)
-                    {
+                        {
                             // resource with an empty name
                             fConflict = TRUE;
-                    }
+                        }
                         else
-                    {
+                        {
                             for (ULONG i = 0; i < (ix + 2); i++)
                             {
                                 WCHAR *wzPreviousName = (WCHAR *)qbNameArray[i].Ptr();
@@ -875,17 +865,23 @@ void DumpManifestResources(void* GUICookie)
                                     // or with the same name as the output IL/RES file
                                     fConflict = TRUE;
                                     break;
-                    }
+                                }
                             }
-                    }
+                        }
 
                         // if we have a conflict, add a number suffix to the file name
-                        if (!fConflict ||
-                            swprintf_s(wpc, 2048 - (wpc - wzFileName), W("%d"), iIndex) <= 0)
-                    {
-                            // no conflict or unable to add index
+                        if (!fConflict)
+                        {
+                            // no conflict
                             break;
-                    }
+                        }
+
+                        WCHAR* next = FormatInteger(wpc, 2048 - (wpc - wzFileName), "%d", iIndex);
+                        if (next == wpc)
+                        {
+                            // Failed to append index
+                            break;
+                        }
 
                         // try again with this new number suffix
                         fAlias = TRUE;

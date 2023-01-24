@@ -154,8 +154,13 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
             Debug.Assert(_source != null, "_source not initialized");
@@ -406,8 +411,13 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
             Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
             Debug.Assert(_source != null, "_source not initialized");
@@ -527,7 +537,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Whether this target is declining future messages.</summary>
         private bool _decliningPermanently;
         /// <summary>Input messages for the next batch.</summary>
-        private IList<T> _messages = new List<T>();
+        private List<T> _messages = new List<T>();
 
         /// <summary>Initializes the target.</summary>
         /// <param name="sharedResources">The shared resources used by all targets associated with this batched join.</param>
@@ -551,7 +561,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Common.ContractAssertMonitorStatus(_sharedResources._incomingLock, held: true);
 
-            IList<T> toReturn = _messages;
+            List<T> toReturn = _messages;
             _messages = new List<T>();
             return toReturn;
         }
@@ -604,8 +614,13 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             lock (_sharedResources._incomingLock)
             {
                 if (!_decliningPermanently && !_sharedResources._decliningPermanently) _sharedResources._exceptionAction(exception);

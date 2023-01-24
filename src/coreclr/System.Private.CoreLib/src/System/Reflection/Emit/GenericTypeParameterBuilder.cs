@@ -119,8 +119,6 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -229,13 +227,11 @@ namespace System.Reflection.Emit
 
         public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
-            AssemblyBuilder.CheckContext(baseTypeConstraint);
             m_type.SetParent(baseTypeConstraint);
         }
 
         public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
         {
-            AssemblyBuilder.CheckContext(interfaceConstraints);
             m_type.SetInterfaces(interfaceConstraints);
         }
 

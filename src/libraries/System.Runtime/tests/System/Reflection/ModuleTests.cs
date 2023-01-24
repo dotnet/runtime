@@ -41,6 +41,7 @@ namespace System.Reflection.Tests
 {
     public class ModuleTests
     {
+        public const string ConstField = "Value";
         public static Module Module => typeof(ModuleTests).Module;
         public static Module TestModule => typeof(TestModule.Dummy).Module;
 
@@ -54,6 +55,7 @@ namespace System.Reflection.Tests
         public void ModuleHandle()
         {
             Assert.Equal(typeof(PointerTests).Module.ModuleHandle, Module.ModuleHandle);
+            Assert.NotEqual(typeof(PointerTests).Module.ModuleHandle, System.ModuleHandle.EmptyHandle);
         }
 
         [Fact]
@@ -163,8 +165,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60558", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64675", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public void GetField()
         {
             FieldInfo testInt = TestModule.GetField("TestInt", BindingFlags.Public | BindingFlags.Static);

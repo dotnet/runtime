@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Extension to TargetDetails related to code generation
-    partial class TargetDetails
+    public partial class TargetDetails
     {
         public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi, SimdVectorLength simdVectorLength)
             : this(architecture, targetOS, abi)
@@ -40,5 +40,10 @@ namespace Internal.TypeSystem
         /// Specifies that native vectors are 256 bit (e.g. AVX on x86).
         /// </summary>
         Vector256Bit,
+
+        /// <summary>
+        /// Specifies that native vectors are 512 bit (e.g. AVX512 on x86).
+        /// </summary>
+        Vector512Bit,
     }
 }

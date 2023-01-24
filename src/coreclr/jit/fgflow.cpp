@@ -673,13 +673,6 @@ void Compiler::fgComputePreds()
     noway_assert(fgFirstBB != nullptr);
 
 #ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In fgComputePreds()\n");
-        fgDispBasicBlocks();
-        printf("\n");
-    }
-
     // Check that the block numbers are increasing order.
     unsigned lastBBnum = fgFirstBB->bbNum;
     for (BasicBlock* const block : Blocks(fgFirstBB->bbNext))
@@ -821,7 +814,7 @@ void Compiler::fgComputePreds()
     {
         if (ehDsc->HasFilter())
         {
-            // The first block of a filter has an artifical extra refcount.
+            // The first block of a filter has an artificial extra refcount.
             ehDsc->ebdFilter->bbRefs++;
         }
 
@@ -831,15 +824,6 @@ void Compiler::fgComputePreds()
 
     fgModified         = false;
     fgComputePredsDone = true;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** After fgComputePreds()\n");
-        fgDispBasicBlocks();
-        printf("\n");
-    }
-#endif
 }
 
 unsigned Compiler::fgNSuccsOfFinallyRet(BasicBlock* block)

@@ -9,6 +9,7 @@
 #include "gcallocateprofiler/gcallocateprofiler.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "gcprofiler/gcprofiler.h"
+#include "handlesprofiler/handlesprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
@@ -16,6 +17,7 @@
 #include "transitions/transitions.h"
 #include "multiple/multiple.h"
 #include "inlining/inlining.h"
+#include "moduleload/moduleload.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -118,6 +120,14 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == InliningProfiler::GetClsid())
     {
         profiler = new InliningProfiler();
+    }
+    else if (clsid == HandlesProfiler::GetClsid())
+    {
+        profiler = new HandlesProfiler();
+    }
+    else if (clsid == ModuleLoad::GetClsid())
+    {
+        profiler = new ModuleLoad();
     }
     else
     {

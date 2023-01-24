@@ -367,7 +367,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             switch (intrin.numOperands)
             {
                 case 1:
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    if (intrin.op1->isContained())
+                    {
+                        assert(ins == INS_ld1);
+
+                        // Emit 'ldr target, [base, index]'
+                        GenTreeAddrMode* lea = intrin.op1->AsAddrMode();
+                        assert(lea->GetScale() == 1);
+                        assert(lea->Offset() == 0);
+                        GetEmitter()->emitIns_R_R_R(INS_ldr, emitSize, targetReg, lea->Base()->GetRegNum(),
+                                                    lea->Index()->GetRegNum());
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    }
                     break;
 
                 case 2:
@@ -599,7 +613,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.op2->isContainedIntOrIImmed());
                     assert(intrin.op2->AsIntCon()->gtIconVal == 0);
 
-                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                 }
                 else
@@ -690,10 +704,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
                 break;
 
-            case NI_AdvSimd_Store:
-                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
-                break;
-
             case NI_AdvSimd_StoreSelectedScalar:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
@@ -722,15 +732,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
-                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op1->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
                     // fmov reg1, reg2
                     assert(GetEmitter()->IsMovInstruction(ins));
+                    assert(intrin.baseType == intrin.op1->gtType);
                     GetEmitter()->emitIns_Mov(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
-                                              /* canSkip */ false, INS_OPTS_NONE);
+                                              /* canSkip */ true, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -776,17 +787,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            // mvni doesn't support the range of element types, so hard code the 'opts' value.
-            case NI_Vector64_get_Zero:
-            case NI_Vector64_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
-                break;
-
-            case NI_Vector128_get_Zero:
-            case NI_Vector128_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
-                break;
-
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
             case NI_AdvSimd_Arm64_DuplicateToVector64:
@@ -796,14 +796,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (intrin.op1->isContainedFltOrDblImmed())
                     {
-                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op1->AsDblCon()->DconValue();
                         GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                     }
                     else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
                     {
                         assert(intrin.baseType == TYP_DOUBLE);
                         assert(GetEmitter()->IsMovInstruction(ins));
-                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false, opt);
+                        assert(intrin.baseType == intrin.op1->gtType);
+                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true, opt);
                     }
                     else
                     {
@@ -954,18 +955,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Vector128_AsVector3:
+            {
+                // AsVector3 can be a no-op when it's already in the right register, otherwise
+                // we just need to move the value over. Vector3 operations will themselves mask
+                // out the upper element when it's relevant, so it's not worth us spending extra
+                // cycles doing so here.
+
+                GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
+                break;
+            }
+
             case NI_Vector64_ToScalar:
             case NI_Vector128_ToScalar:
             {
-                const ssize_t indexValue = 0;
-
-                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
-                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
+                    // no-op if vector is float/double and targetReg == op1Reg
                     break;
                 }
 
-                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, /* imm */ 0,
                                             INS_OPTS_NONE);
             }
             break;

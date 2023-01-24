@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public class zip_ManualAndCompatabilityTests : ZipFileTestBase
+    public class zip_ManualAndCompatibilityTests : ZipFileTestBase
     {
         public static bool IsUsingNewPathNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
 

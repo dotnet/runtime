@@ -6,7 +6,7 @@ namespace System
     // Enum used to indicate all the elements of the
     // VOS it is valid to attach this element to.
 
-    internal enum AttributeTargets
+    public enum AttributeTargets
     {
         Assembly = 0x0001,
         Module = 0x0002,

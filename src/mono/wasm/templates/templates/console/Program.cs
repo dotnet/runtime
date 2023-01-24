@@ -1,9 +1,19 @@
 using System;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
 
-Console.WriteLine("Hello World!");
+Console.WriteLine("Hello, Console!");
 
-Console.WriteLine("Args:");
-for (int i = 0; i < args.Length; i++) {
-    Console.WriteLine($"  args[{i}] = {args[i]}");
+return 0;
+
+public partial class MyClass
+{
+    [JSExport]
+    internal static string Greeting()
+    {
+        var text = $"Hello, World! Greetings from node version: {GetNodeVersion()}";
+        return text;
+    }
+
+    [JSImport("node.process.version", "main.mjs")]
+    internal static partial string GetNodeVersion();
 }

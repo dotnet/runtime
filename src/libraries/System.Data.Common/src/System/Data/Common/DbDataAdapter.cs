@@ -249,7 +249,7 @@ namespace System.Data.Common
             _IDbDataAdapter.DeleteCommand = CloneCommand(pfrom.DeleteCommand);
         }
 
-        private IDbCommand? CloneCommand(IDbCommand? command)
+        private static IDbCommand? CloneCommand(IDbCommand? command)
         {
             return (IDbCommand?)((command is ICloneable) ? ((ICloneable)command).Clone() : null);
         }
@@ -410,7 +410,7 @@ namespace System.Data.Common
             bool restoreNullConnection = (null == command.Connection);
             try
             {
-                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.FillSchema);
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(command, ADP.FillSchema);
                 ConnectionState originalState = ConnectionState.Open;
 
                 try
@@ -616,7 +616,7 @@ namespace System.Data.Common
             bool restoreNullConnection = (null == command.Connection);
             try
             {
-                IDbConnection activeConnection = DbDataAdapter.GetConnection3(this, command, ADP.Fill);
+                IDbConnection activeConnection = DbDataAdapter.GetConnection3(command, ADP.Fill);
                 ConnectionState originalState = ConnectionState.Open;
 
                 // the default is MissingSchemaAction.Add, the user must explicitly
@@ -647,10 +647,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        if (null != dataReader)
-                        {
-                            dataReader.Dispose();
-                        }
+                        dataReader?.Dispose();
                     }
                 }
                 finally
@@ -783,7 +780,7 @@ namespace System.Data.Common
             }
         }
 
-        private void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
+        private static void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
         {
             if (0 != (ParameterDirection.Output & parameter.Direction))
             {
@@ -1218,7 +1215,7 @@ namespace System.Data.Common
                                 }
                                 else if (null != dataCommand)
                                 {
-                                    IDbConnection connection = DbDataAdapter.GetConnection4(this, dataCommand, statementType, isCommandFromRowUpdating);
+                                    IDbConnection connection = DbDataAdapter.GetConnection4(dataCommand, statementType, isCommandFromRowUpdating);
                                     ConnectionState state = UpdateConnectionOpen(connection, statementType, connections, connectionStates, useSelectConnectionState);
                                     if (ConnectionState.Open == state)
                                     {
@@ -1375,7 +1372,7 @@ namespace System.Data.Common
             }
             catch (DbException e)
             {
-                // an exception was thrown be but some part of the batch may have been succesfull
+                // an exception was thrown be but some part of the batch may have been successful
                 ADP.TraceExceptionForCapture(e);
                 rowUpdatedEvent.Errors = e;
                 rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
@@ -1460,7 +1457,7 @@ namespace System.Data.Common
             }
         }
 
-        private ConnectionState UpdateConnectionOpen(IDbConnection connection, StatementType statementType, IDbConnection?[] connections, ConnectionState[] connectionStates, bool useSelectConnectionState)
+        private static ConnectionState UpdateConnectionOpen(IDbConnection connection, StatementType statementType, IDbConnection?[] connections, ConnectionState[] connectionStates, bool useSelectConnectionState)
         {
             Debug.Assert(null != connection, "unexpected null connection");
             int index = (int)statementType;
@@ -1602,7 +1599,7 @@ namespace System.Data.Common
             switch (rowUpdatedEvent.Status)
             {
                 case UpdateStatus.Continue:
-                    cumulativeDataRowsAffected = UpdatedRowStatusContinue(rowUpdatedEvent, batchCommands, commandCount);
+                    cumulativeDataRowsAffected = UpdatedRowStatusContinue(batchCommands, commandCount);
                     break; // return to foreach DataRow
                 case UpdateStatus.ErrorsOccurred:
                     cumulativeDataRowsAffected = UpdatedRowStatusErrors(rowUpdatedEvent, batchCommands, commandCount);
@@ -1617,7 +1614,7 @@ namespace System.Data.Common
             return cumulativeDataRowsAffected;
         }
 
-        private int UpdatedRowStatusContinue(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
+        private int UpdatedRowStatusContinue(BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
             int cumulativeDataRowsAffected = 0;
@@ -1695,7 +1692,7 @@ namespace System.Data.Common
             }
             else
             {
-                affected = UpdatedRowStatusContinue(rowUpdatedEvent, batchCommands, commandCount);
+                affected = UpdatedRowStatusContinue(batchCommands, commandCount);
             }
             if (!ContinueUpdateOnError)
             {
@@ -1704,7 +1701,7 @@ namespace System.Data.Common
             return affected; // return the count of successful rows within the batch failure
         }
 
-        private int UpdatedRowStatusSkip(BatchCommandInfo[] batchCommands, int commandCount)
+        private static int UpdatedRowStatusSkip(BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
 
@@ -1769,7 +1766,7 @@ namespace System.Data.Common
             return connection;
         }
 
-        private static IDbConnection GetConnection3(DbDataAdapter adapter, IDbCommand command, string method)
+        private static IDbConnection GetConnection3(IDbCommand command, string method)
         {
             Debug.Assert(null != command, "GetConnection3: null command");
             Debug.Assert(!string.IsNullOrEmpty(method), "missing method name");
@@ -1781,7 +1778,7 @@ namespace System.Data.Common
             return connection;
         }
 
-        private static IDbConnection GetConnection4(DbDataAdapter adapter, IDbCommand command, StatementType statementType, bool isCommandFromRowUpdating)
+        private static IDbConnection GetConnection4(IDbCommand command, StatementType statementType, bool isCommandFromRowUpdating)
         {
             Debug.Assert(null != command, "GetConnection4: null command");
             IDbConnection? connection = command.Connection;

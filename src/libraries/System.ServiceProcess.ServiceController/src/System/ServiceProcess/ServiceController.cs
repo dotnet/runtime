@@ -19,6 +19,11 @@ namespace System.ServiceProcess
         private string _machineName; // Never null
         private const string DefaultMachineName = ".";
 
+        // Note that ServiceType currently does not include all of SERVICE_TYPE_ALL; see see Interop.Advapi32.ServiceTypeOptions
+        private const int AllServiceTypes = (int)(ServiceType.Adapter | ServiceType.FileSystemDriver | ServiceType.InteractiveProcess |
+                                                  ServiceType.KernelDriver | ServiceType.RecognizerDriver | ServiceType.Win32OwnProcess |
+                                                  ServiceType.Win32ShareProcess);
+
         private string? _name;
         private string? _eitherName;
         private string? _displayName;
@@ -37,7 +42,7 @@ namespace System.ServiceProcess
         public ServiceController()
         {
             _machineName = DefaultMachineName;
-            _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
+            _type = AllServiceTypes;
         }
 
         /// <summary>
@@ -65,7 +70,7 @@ namespace System.ServiceProcess
 
             _machineName = machineName;
             _eitherName = name;
-            _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
+            _type = AllServiceTypes;
         }
 
         private ServiceController(string machineName, Interop.Advapi32.ENUM_SERVICE_STATUS status)
@@ -169,7 +174,7 @@ namespace System.ServiceProcess
         /// <summary>
         /// The set of services that depend on this service. These are the services that will be stopped if this service is stopped.
         /// </summary>
-        public ServiceController[] DependentServices
+        public unsafe ServiceController[] DependentServices
         {
             get
             {
@@ -187,7 +192,7 @@ namespace System.ServiceProcess
                         return _dependentServices;
                     }
 
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     if (lastError != Interop.Errors.ERROR_MORE_DATA)
                         throw new Win32Exception(lastError);
 
@@ -202,12 +207,13 @@ namespace System.ServiceProcess
                         if (!result)
                             throw new Win32Exception();
 
+                        byte* pEnumBuffer = (byte*)enumBuffer;
                         // for each of the entries in the buffer, create a new ServiceController object.
                         _dependentServices = new ServiceController[numEnumerated];
                         for (int i = 0; i < numEnumerated; i++)
                         {
                             Interop.Advapi32.ENUM_SERVICE_STATUS status = new Interop.Advapi32.ENUM_SERVICE_STATUS();
-                            IntPtr structPtr = (IntPtr)((long)enumBuffer + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
+                            IntPtr structPtr = (IntPtr)(pEnumBuffer + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
                             Marshal.PtrToStructure(structPtr, status);
                             _dependentServices[i] = new ServiceController(_machineName, status);
                         }
@@ -300,7 +306,7 @@ namespace System.ServiceProcess
                     return _servicesDependedOn;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -310,7 +316,7 @@ namespace System.ServiceProcess
                 {
                     success = Interop.Advapi32.QueryServiceConfig(serviceHandle, bufPtr, bytesNeeded, out bytesNeeded);
                     if (!success)
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                        throw new Win32Exception();
 
                     Interop.Advapi32.QUERY_SERVICE_CONFIG config = new Interop.Advapi32.QUERY_SERVICE_CONFIG();
                     Marshal.PtrToStructure(bufPtr, config);
@@ -379,7 +385,7 @@ namespace System.ServiceProcess
                 using var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_CONFIG);
                 bool success = Interop.Advapi32.QueryServiceConfig(serviceHandle, IntPtr.Zero, 0, out int bytesNeeded);
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                     throw new Win32Exception(lastError);
 
@@ -389,7 +395,7 @@ namespace System.ServiceProcess
                 {
                     success = Interop.Advapi32.QueryServiceConfig(serviceHandle, bufPtr, bytesNeeded, out bytesNeeded);
                     if (!success)
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                        throw new Win32Exception();
 
                     Interop.Advapi32.QUERY_SERVICE_CONFIG config = new Interop.Advapi32.QUERY_SERVICE_CONFIG();
                     Marshal.PtrToStructure(bufPtr, config);
@@ -467,7 +473,7 @@ namespace System.ServiceProcess
 
             _statusGenerated = false;
             _startTypeInitialized = false;
-            _type = Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_ALL;
+            _type = AllServiceTypes;
         }
 
         /// <summary>
@@ -491,7 +497,7 @@ namespace System.ServiceProcess
             Interop.Advapi32.SERVICE_STATUS svcStatus = default;
             bool success = Interop.Advapi32.QueryServiceStatus(serviceHandle, &svcStatus);
             if (!success)
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                throw new Win32Exception();
 
             _commandsAccepted = svcStatus.controlsAccepted;
             _status = (ServiceControllerStatus)svcStatus.currentState;
@@ -570,7 +576,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;
@@ -601,7 +607,7 @@ namespace System.ServiceProcess
                         break;
                 }
 
-                int lastError = Marshal.GetLastWin32Error();
+                int lastError = Marshal.GetLastPInvokeError();
                 if (lastError == Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST)
                 {
                     return null;
@@ -620,19 +626,15 @@ namespace System.ServiceProcess
 
         private static SafeServiceHandle GetDataBaseHandleWithAccess(string machineName, int serviceControlManagerAccess)
         {
-            SafeServiceHandle? databaseHandle;
-            if (machineName.Equals(DefaultMachineName) || machineName.Length == 0)
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess));
-            }
-            else
-            {
-                databaseHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
-            }
+            var databaseHandle = new SafeServiceHandle();
+            Marshal.InitHandle(databaseHandle, machineName.Equals(DefaultMachineName) || machineName.Length == 0 ?
+                Interop.Advapi32.OpenSCManager(null, null, serviceControlManagerAccess) :
+                Interop.Advapi32.OpenSCManager(machineName, null, serviceControlManagerAccess));
 
             if (databaseHandle.IsInvalid)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
+                databaseHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenSC, machineName), inner);
             }
 
@@ -647,10 +649,7 @@ namespace System.ServiceProcess
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
-            if (_serviceManagerHandle == null)
-            {
-                _serviceManagerHandle = GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
-            }
+            _serviceManagerHandle ??= GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
         }
 
         /// <summary>
@@ -669,7 +668,7 @@ namespace System.ServiceProcess
         /// <returns>Set of service controllers</returns>
         public static ServiceController[] GetDevices(string machineName)
         {
-            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_DRIVER);
+            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_DRIVER);
         }
 
         /// <summary>
@@ -681,10 +680,12 @@ namespace System.ServiceProcess
         {
             GetDataBaseHandleWithConnectAccess();
 
-            var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
+            var serviceHandle = new SafeServiceHandle();
+            Marshal.InitHandle(serviceHandle, Interop.Advapi32.OpenService(_serviceManagerHandle, ServiceName, desiredAccess));
             if (serviceHandle.IsInvalid)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
+                serviceHandle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.OpenService, ServiceName, _machineName), inner);
             }
 
@@ -707,7 +708,7 @@ namespace System.ServiceProcess
         /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)
         {
-            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32);
+            return GetServicesOfType(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32);
         }
 
         /// <summary>
@@ -718,7 +719,7 @@ namespace System.ServiceProcess
         /// <returns></returns>
         private static Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS[] GetServicesInGroup(string machineName, string group)
         {
-            return GetServices(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32, group, status => status);
+            return GetServices(machineName, Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32, group, status => status);
         }
 
         /// <summary>
@@ -736,7 +737,7 @@ namespace System.ServiceProcess
         }
 
         /// Helper for GetDevices, GetServices, and ServicesDependedOn
-        private static T[] GetServices<T>(string machineName, int serviceType, string? group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
+        private static unsafe T[] GetServices<T>(string machineName, int serviceType, string? group, Func<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS, T> selector)
         {
             int resumeHandle = 0;
 
@@ -777,9 +778,10 @@ namespace System.ServiceProcess
                 // Go through the block of memory it returned to us and select the results
                 //
                 services = new T[servicesReturned];
+                byte* pMemory = (byte*)memory;
                 for (int i = 0; i < servicesReturned; i++)
                 {
-                    IntPtr structPtr = (IntPtr)((long)memory + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
+                    IntPtr structPtr = (IntPtr)(pMemory + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
                     Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS status = new Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS();
                     Marshal.PtrToStructure(structPtr, status);
                     services[i] = selector(status);
@@ -804,7 +806,7 @@ namespace System.ServiceProcess
 
             if (!result)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
                 throw new InvalidOperationException(SR.Format(SR.PauseService, ServiceName, _machineName), inner);
             }
         }
@@ -819,7 +821,7 @@ namespace System.ServiceProcess
             bool result = Interop.Advapi32.ControlService(serviceHandle, Interop.Advapi32.ControlOptions.CONTROL_CONTINUE, &status);
             if (!result)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
                 throw new InvalidOperationException(SR.Format(SR.ResumeService, ServiceName, _machineName), inner);
             }
         }
@@ -835,7 +837,7 @@ namespace System.ServiceProcess
             bool result = Interop.Advapi32.ControlService(serviceHandle, command, &status);
             if (!result)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
                 throw new InvalidOperationException(SR.Format(SR.ControlService, ServiceName, MachineName), inner);
             }
         }
@@ -862,8 +864,10 @@ namespace System.ServiceProcess
         /// <summary>
         /// Starts a service in the machine specified.
         /// </summary>
-        public void Start(string[] args!!)
+        public void Start(string[] args)
         {
+            ArgumentNullException.ThrowIfNull(args);
+
             using SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_START);
             IntPtr[] argPtrs = new IntPtr[args.Length];
             int i = 0;
@@ -891,7 +895,7 @@ namespace System.ServiceProcess
                 bool result = Interop.Advapi32.StartService(serviceHandle, args.Length, argPtrsHandle.AddrOfPinnedObject());
                 if (!result)
                 {
-                    Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                    Exception inner = new Win32Exception();
                     throw new InvalidOperationException(SR.Format(SR.CannotStart, ServiceName, _machineName), inner);
                 }
             }
@@ -952,7 +956,7 @@ namespace System.ServiceProcess
             bool result = Interop.Advapi32.ControlService(serviceHandle, Interop.Advapi32.ControlOptions.CONTROL_STOP, &status);
             if (!result)
             {
-                Exception inner = new Win32Exception(Marshal.GetLastWin32Error());
+                Exception inner = new Win32Exception();
                 throw new InvalidOperationException(SR.Format(SR.StopService, ServiceName, _machineName), inner);
             }
         }
@@ -973,7 +977,7 @@ namespace System.ServiceProcess
         /// <param name="timeout">Wait for specific timeout</param>
         public void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
         {
-            if (!Enum.IsDefined(typeof(ServiceControllerStatus), desiredStatus))
+            if (!Enum.IsDefined(desiredStatus))
                 throw new ArgumentException(SR.Format(SR.InvalidEnumArgument, nameof(desiredStatus), (int)desiredStatus, typeof(ServiceControllerStatus)));
 
             DateTime start = DateTime.UtcNow;

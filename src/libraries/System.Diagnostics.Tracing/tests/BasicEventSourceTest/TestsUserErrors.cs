@@ -64,7 +64,6 @@ namespace BasicEventSourceTests
         /// Test the
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_BadEventSource_MismatchedIds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

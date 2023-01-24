@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -26,20 +27,20 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// __int64 _mm_cvtss_si64 (__m128 a)
             ///   CVTSS2SI r64, xmm/m32
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64(Vector128<float> value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
             ///   CVTSI2SS xmm, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __int64 _mm_cvttss_si64 (__m128 a)
             ///   CVTTSS2SI r64, xmm/m32
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static long ConvertToInt64WithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
@@ -477,7 +478,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)
         ///   SHUFPS xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_sqrt_ps (__m128 a)

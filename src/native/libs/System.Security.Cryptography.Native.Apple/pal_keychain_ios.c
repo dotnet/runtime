@@ -45,12 +45,10 @@ static int32_t EnumerateKeychain(CFStringRef matchType, CFArrayRef* pCertsOut)
         assert(result == NULL);
         status = noErr;
     }
-    else
+
+    if (result != NULL)
     {
-        if (result != NULL)
-        {
-            CFRelease(result);
-        }
+        CFRelease(result);
     }
 
     return status;

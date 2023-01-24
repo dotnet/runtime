@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -19,7 +18,7 @@ namespace System.Linq
         private int[] SortedMap(Buffer<TElement> buffer, int minIdx, int maxIdx) =>
             GetEnumerableSorter().Sort(buffer._items, buffer._count, minIdx, maxIdx);
 
-        public IEnumerator<TElement> GetEnumerator()
+        public virtual IEnumerator<TElement> GetEnumerator()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             if (buffer._count > 0)
@@ -63,9 +62,7 @@ namespace System.Linq
 
         internal abstract EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next);
 
-        private CachingComparer<TElement> GetComparer() => GetComparer(null);
-
-        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer);
+        internal abstract CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer = null);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -160,6 +157,57 @@ namespace System.Linq
         }
     }
 
+    /// <summary>An ordered enumerable used by Order/OrderDescending for Ts that are bitwise indistinguishable for any considered equal.</summary>
+    internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+    {
+        private readonly bool _descending;
+
+        public OrderedImplicitlyStableEnumerable(IEnumerable<TElement> source, bool descending) : base(source)
+        {
+            Debug.Assert(Enumerable.TypeIsImplicitlyStable<TElement>());
+
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            _descending = descending;
+        }
+
+        internal override CachingComparer<TElement> GetComparer(CachingComparer<TElement>? childComparer) =>
+            childComparer == null ?
+                new CachingComparer<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending) :
+                new CachingComparerWithChild<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, childComparer);
+
+        internal override EnumerableSorter<TElement> GetEnumerableSorter(EnumerableSorter<TElement>? next) =>
+            new EnumerableSorter<TElement, TElement>(EnumerableSorter<TElement>.IdentityFunc, Comparer<TElement>.Default, _descending, next);
+
+        public override IEnumerator<TElement> GetEnumerator()
+        {
+            var buffer = new Buffer<TElement>(_source);
+            if (buffer._count > 0)
+            {
+                Sort(buffer._items.AsSpan(0, buffer._count), _descending);
+                for (int i = 0; i < buffer._count; i++)
+                {
+                    yield return buffer._items[i];
+                }
+            }
+        }
+
+        private static void Sort(Span<TElement> span, bool descending)
+        {
+            if (descending)
+            {
+                span.Sort(static (a, b) => Comparer<TElement>.Default.Compare(b, a));
+            }
+            else
+            {
+                span.Sort();
+            }
+        }
+    }
+
     // A comparer that chains comparisons, and pushes through the last element found to be
     // lower or higher (depending on use), so as to represent the sort of comparisons
     // done by OrderBy().ThenBy() combinations.
@@ -239,6 +287,13 @@ namespace System.Linq
 
     internal abstract class EnumerableSorter<TElement>
     {
+        /// <summary>Function that returns its input unmodified.</summary>
+        /// <remarks>
+        /// Used for reference equality in order to avoid unnecessary computation when a caller
+        /// can benefit from knowing that the produced value is identical to the input.
+        /// </remarks>
+        internal static readonly Func<TElement, TElement> IdentityFunc = e => e;
+
         internal abstract void ComputeKeys(TElement[] elements, int count);
 
         internal abstract int CompareAnyKeys(int index1, int index2);
@@ -308,10 +363,24 @@ namespace System.Linq
 
         internal override void ComputeKeys(TElement[] elements, int count)
         {
-            _keys = new TKey[count];
-            for (int i = 0; i < count; i++)
+            Func<TElement, TKey> keySelector = _keySelector;
+            if (!ReferenceEquals(keySelector, IdentityFunc))
             {
-                _keys[i] = _keySelector(elements[i]);
+                var keys = new TKey[count];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    keys[i] = keySelector(elements[i]);
+                }
+                _keys = keys;
+            }
+            else
+            {
+                // The key selector is our known identity function, which means we don't
+                // need to invoke the key selector for every element.  Further, we can just
+                // use the original array as the keys (even if count is smaller, as the additional
+                // values will just be ignored).
+                Debug.Assert(typeof(TKey) == typeof(TElement));
+                _keys = (TKey[])(object)elements;
             }
 
             _next?.ComputeKeys(elements, count);
@@ -319,9 +388,10 @@ namespace System.Linq
 
         internal override int CompareAnyKeys(int index1, int index2)
         {
-            Debug.Assert(_keys != null);
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
 
-            int c = _comparer.Compare(_keys[index1], _keys[index2]);
+            int c = _comparer.Compare(keys[index1], keys[index2]);
             if (c == 0)
             {
                 if (_next == null)
@@ -338,10 +408,64 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
+        private int CompareAnyKeys_DefaultComparer_NoNext_Ascending(int index1, int index2)
+        {
+            Debug.Assert(typeof(TKey).IsValueType);
+            Debug.Assert(_comparer == Comparer<TKey>.Default);
+            Debug.Assert(_next is null);
+            Debug.Assert(!_descending);
+
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
+
+            int c = Comparer<TKey>.Default.Compare(keys[index1], keys[index2]);
+            return
+                c == 0 ? index1 - index2 : // ensure stability of sort
+                c;
+        }
+
+        private int CompareAnyKeys_DefaultComparer_NoNext_Descending(int index1, int index2)
+        {
+            Debug.Assert(typeof(TKey).IsValueType);
+            Debug.Assert(_comparer == Comparer<TKey>.Default);
+            Debug.Assert(_next is null);
+            Debug.Assert(_descending);
+
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
+
+            int c = Comparer<TKey>.Default.Compare(keys[index2], keys[index1]);
+            return
+                c == 0 ? index1 - index2 : // ensure stability of sort
+                c;
+        }
+
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
-        protected override void QuickSort(int[] keys, int lo, int hi) =>
-            new Span<int>(keys, lo, hi - lo + 1).Sort(CompareAnyKeys);
+        protected override void QuickSort(int[] keys, int lo, int hi)
+        {
+            Comparison<int> comparison;
+
+            if (typeof(TKey).IsValueType && _next is null && _comparer == Comparer<TKey>.Default)
+            {
+                // We can use Comparer<TKey>.Default.Compare and benefit from devirtualization and inlining.
+                // We can also avoid extra steps to check whether we need to deal with a subsequent tie breaker (_next).
+                if (!_descending)
+                {
+                    comparison = CompareAnyKeys_DefaultComparer_NoNext_Ascending;
+                }
+                else
+                {
+                    comparison = CompareAnyKeys_DefaultComparer_NoNext_Descending;
+                }
+            }
+            else
+            {
+                comparison = CompareAnyKeys;
+            }
+
+            new Span<int>(keys, lo, hi - lo + 1).Sort(comparison);
+        }
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.

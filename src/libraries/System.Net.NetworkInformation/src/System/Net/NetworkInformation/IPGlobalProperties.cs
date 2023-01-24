@@ -106,6 +106,10 @@ namespace System.Net.NetworkInformation
         /// </summary>
         public abstract IPGlobalStatistics GetIPv4GlobalStatistics();
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract IPGlobalStatistics GetIPv6GlobalStatistics();
 
         public virtual UnicastIPAddressInformationCollection GetUnicastAddresses()

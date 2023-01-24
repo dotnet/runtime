@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <Nullable>disable</Nullable>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
@@ -15,7 +16,7 @@
     <GenFacadesForceZeroVersionSeeds Condition="'$(MSBuildProjectName)' != 'netstandard'">true</GenFacadesForceZeroVersionSeeds>
     <!-- Opt out of some features which are on by default. -->
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
-    <RunApiCompat>false</RunApiCompat>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
   </PropertyGroup>

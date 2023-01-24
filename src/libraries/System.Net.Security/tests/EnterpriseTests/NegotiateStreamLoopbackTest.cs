@@ -23,7 +23,7 @@ namespace System.Net.Security.Enterprise.Tests
 
         private const string TargetName = "HOST/linuxclient.linux.contoso.com";
         private const int PartialBytesToRead = 5;
-        private static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        private static readonly byte[] s_sampleMsg = "Sample Test Message"u8.ToArray();
 
         private const int MaxWriteDataSize = 63 * 1024; // NegoState.MaxWriteDataSize
         private static string s_longString = new string('A', MaxWriteDataSize) + 'Z';
@@ -223,9 +223,12 @@ namespace System.Net.Security.Enterprise.Tests
             Assert.False(stream.LeaveInnerStreamOpen);
 
             IIdentity remoteIdentity = stream.RemoteIdentity;
-            Assert.Equal("Kerberos", remoteIdentity.AuthenticationType);
-            Assert.True(remoteIdentity.IsAuthenticated);
-            Assert.Equal(remoteName, remoteIdentity.Name);
+            using (remoteIdentity as IDisposable)
+            {
+                Assert.Equal("Kerberos", remoteIdentity.AuthenticationType);
+                Assert.True(remoteIdentity.IsAuthenticated);
+                Assert.Equal(remoteName, remoteIdentity.Name);
+            }
         }
     }
 }

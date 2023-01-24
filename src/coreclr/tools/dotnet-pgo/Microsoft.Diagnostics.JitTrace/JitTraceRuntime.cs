@@ -45,9 +45,9 @@ namespace Microsoft.Diagnostics.JitTrace
             return input.Replace("\\s", separator).Replace("\\\\", "\\");
         }
 
-        private static string[] SplitAndUnescape(string input, string separator, char[] seperatorCharArray)
+        private static string[] SplitAndUnescape(string input, string separator, char[] separatorCharArray)
         {
-            string[] returnValue = input.Split(seperatorCharArray);
+            string[] returnValue = input.Split(separatorCharArray);
             for (int i = 0; i < returnValue.Length; i++)
             {
                 returnValue[i] = UnescapeStr(returnValue[i], separator);

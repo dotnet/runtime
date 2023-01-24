@@ -120,15 +120,13 @@ Miscellaneous
   existing shared memory, naming, and waiting infrastructure is not suitable for this purpose, and is not used.
 */
 
-// - Temporarily disabling usage of pthread process-shared mutexes on ARM/ARM64 due to functional issues that cannot easily be
-//   detected with code due to hangs. See https://github.com/dotnet/runtime/issues/6014.
 // - On FreeBSD, pthread process-shared robust mutexes cannot be placed in shared memory mapped independently by the processes
 //   involved. See https://github.com/dotnet/runtime/issues/10519.
 // - On OSX, pthread robust mutexes were/are not available at the time of this writing. In case they are made available in the
 //   future, their use is disabled for compatibility.
 #if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && \
     HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && \
-    !(defined(HOST_ARM) || defined(HOST_ARM64) || defined(__FreeBSD__) || defined(TARGET_OSX))
+    !(defined(__FreeBSD__) || defined(TARGET_OSX))
 
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
 #else

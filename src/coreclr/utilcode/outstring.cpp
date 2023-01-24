@@ -100,10 +100,10 @@ OutString& OutString::dec(int i, size_t minWidth) {
 
 	for(;;) {
 		if (val < 10) {
-			*--ptr = '0' + val;
+			*--ptr = (char)('0' + val);
 			break;
 			}
-		*--ptr = '0' + (val % 10);
+		*--ptr = (char)('0' + (val % 10));
 		val = val / 10;
 		}
 

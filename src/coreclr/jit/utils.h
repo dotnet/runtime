@@ -44,6 +44,18 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+template <typename T>
+constexpr bool AreContiguous(T val1, T val2)
+{
+    return (val1 + 1) == val2;
+}
+
+template <typename T, typename... Ts>
+constexpr bool AreContiguous(T val1, T val2, Ts... rest)
+{
+    return ((val1 + 1) == val2) && AreContiguous(val2, rest...);
+}
+
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
 template <typename TIterator>
@@ -691,6 +703,10 @@ public:
 
     static float infinite_float();
 
+    static bool isAllBitsSet(float val);
+
+    static bool isAllBitsSet(double val);
+
     static bool isNegative(float val);
 
     static bool isNegative(double val);
@@ -699,6 +715,10 @@ public:
 
     static bool isNaN(double val);
 
+    static bool isNegativeZero(double val);
+
+    static bool isPositiveZero(double val);
+
     static double maximum(double val1, double val2);
 
     static float maximum(float val1, float val2);
@@ -706,6 +726,8 @@ public:
     static double minimum(double val1, double val2);
 
     static float minimum(float val1, float val2);
+
+    static double normalize(double x);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
@@ -799,6 +821,7 @@ template <typename T>
 bool FitsIn(var_types type, T value)
 {
     static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
                           std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     switch (type)

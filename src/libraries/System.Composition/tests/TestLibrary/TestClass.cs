@@ -6,22 +6,22 @@ using System.Composition;
 namespace TestLibrary
 {
     [Export]
-    public class ClassWithDependecy
+    public class ClassWithDependency
     {
         public TestDependency _dep;
         [ImportingConstructor]
-        public ClassWithDependecy(TestDependency dep)
+        public ClassWithDependency(TestDependency dep)
         {
             _dep = dep;
         }
     }
 
     [Export]
-    public class ClassWithDependecyAndSameBaseType
+    public class ClassWithDependencyAndSameBaseType
     {
         public IDependency _dep;
         [ImportingConstructor]
-        public ClassWithDependecyAndSameBaseType(IDependency dep)
+        public ClassWithDependencyAndSameBaseType(IDependency dep)
         {
             _dep = dep;
         }

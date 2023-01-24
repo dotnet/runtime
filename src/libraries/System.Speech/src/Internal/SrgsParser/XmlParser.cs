@@ -175,10 +175,7 @@ namespace System.Speech.Internal.SrgsParser
                 }
 
                 // Parse the token.
-                if (createTokens != null)
-                {
-                    createTokens(parent, sToken, pronunciation, display, reqConfidence);
-                }
+                createTokens?.Invoke(parent, sToken, pronunciation, display, reqConfidence);
             }
         }
 
@@ -1211,7 +1208,7 @@ namespace System.Speech.Internal.SrgsParser
                                 }
                                 else
                                 {
-                                    ThrowSrgsException(SRID.RuleAttributeDefinedMultipeTimes);
+                                    ThrowSrgsException(SRID.RuleAttributeDefinedMultipleTimes);
                                 }
                                 break;
 
@@ -1352,10 +1349,7 @@ namespace System.Speech.Internal.SrgsParser
                                         if (tag != null)
                                         {
                                             // The tag list is delayed as it might not be necessary
-                                            if (tags == null)
-                                            {
-                                                tags = new List<IPropertyTag>();
-                                            }
+                                            tags ??= new List<IPropertyTag>();
                                             tags.Add(tag);
                                         }
                                         break;
@@ -1853,7 +1847,7 @@ namespace System.Speech.Internal.SrgsParser
             // in srgs.xml: or  <ruleref uri="srgs.xml>
             if (_filename != null)
             {
-                if (uri.IndexOf(_shortFilename, StringComparison.Ordinal) == 0 && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
+                if (uri.StartsWith(_shortFilename, StringComparison.Ordinal) && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
                 {
                     ThrowSrgsException(SRID.InvalidRuleRefSelf);
                 }
@@ -1877,7 +1871,7 @@ namespace System.Speech.Internal.SrgsParser
             {
                 if (ruleNames.Contains(rule))
                 {
-                    XmlParser.ThrowSrgsException(SRID.RuleAttributeDefinedMultipeTimes, rule);
+                    XmlParser.ThrowSrgsException(SRID.RuleAttributeDefinedMultipleTimes, rule);
                 }
 
                 ruleNames.Add(rule);

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
-import { wrap_error } from "./method-calls";
-import { JSHandle, MonoString } from "./types";
-import { Int32Ptr } from "./types/emscripten";
+import { _lookup_js_owned_object } from "./gc-handles";
+import { TaskCallbackHolder } from "./marshal-to-cs";
+import { mono_assert, GCHandle } from "./types";
+import { createPromiseController, getPromiseController, ControllablePromise, assertIsControllablePromise } from "./promise-controller";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
-const promise_control_symbol = Symbol.for("wasm promise_control");
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function isThenable(js_obj: any): boolean {
@@ -17,50 +16,21 @@ export function isThenable(js_obj: any): boolean {
         ((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function");
 }
 
-export function mono_wasm_cancel_promise(thenable_js_handle: JSHandle, is_exception: Int32Ptr): void | MonoString {
-    try {
-        const promise = mono_wasm_get_jsobj_from_js_handle(thenable_js_handle);
-        const promise_control = promise[promise_control_symbol];
-        promise_control.reject("OperationCanceledException");
-    }
-    catch (ex) {
-        return wrap_error(is_exception, ex);
-    }
+export function wrap_as_cancelable_promise<T>(fn: () => Promise<T>): ControllablePromise<T> {
+    const { promise, promise_control } = createPromiseController<T>();
+    const inner = fn();
+    inner.then((data) => promise_control.resolve(data)).catch((reason) => promise_control.reject(reason));
+    return promise;
 }
 
-export interface PromiseControl {
-    isDone: boolean;
-    resolve: (data?: any) => void;
-    reject: (reason: string) => void;
+export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void {
+    const holder = _lookup_js_owned_object(task_holder_gc_handle) as TaskCallbackHolder;
+    if (!holder) return; // probably already GC collected
+
+    const promise = holder.promise;
+    mono_assert(!!promise, () => `Expected Promise for GCHandle ${task_holder_gc_handle}`);
+    assertIsControllablePromise(promise);
+    const promise_control = getPromiseController(promise);
+    promise_control.reject("OperationCanceledException");
 }
 
-export function _create_cancelable_promise(afterResolve?: () => void, afterReject?: () => void): {
-    promise: Promise<any>, promise_control: PromiseControl
-} {
-    let promise_control: PromiseControl | null = null;
-    const promise = new Promise(function (resolve, reject) {
-        promise_control = {
-            isDone: false,
-            resolve: (data: any) => {
-                if (!promise_control!.isDone) {
-                    promise_control!.isDone = true;
-                    resolve(data);
-                    if (afterResolve) {
-                        afterResolve();
-                    }
-                }
-            },
-            reject: (reason: string) => {
-                if (!promise_control!.isDone) {
-                    promise_control!.isDone = true;
-                    reject(reason);
-                    if (afterReject) {
-                        afterReject();
-                    }
-                }
-            }
-        };
-    });
-    (<any>promise)[promise_control_symbol] = promise_control;
-    return { promise, promise_control: promise_control! };
-}

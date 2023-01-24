@@ -51,6 +51,10 @@ namespace System.Net.Security.Tests
 
         private static Lazy<bool> s_cipherSuitePolicySupported = new Lazy<bool>(() =>
         {
+            // see src/libraries/System.Net.Security/src/System/Net/Security/Pal.Android/SafeDeleteSslContext.cs:InitializeSslContext
+            if (PlatformDetection.IsAndroid)
+                return false;
+
             try
             {
                 new CipherSuitesPolicy(Array.Empty<TlsCipherSuite>());
@@ -693,11 +697,12 @@ namespace System.Net.Security.Tests
 
             using (clientStream)
             using (serverStream)
+            using (X509Certificate2 serverCert = Configuration.Certificates.GetSelfSignedServerCertificate())
             using (SslStream server = new SslStream(serverStream, leaveInnerStreamOpen: false),
                              client = new SslStream(clientStream, leaveInnerStreamOpen: false))
             {
                 var serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificate = Configuration.Certificates.GetSelfSignedServerCertificate();
+                serverOptions.ServerCertificate = serverCert;
                 serverOptions.EncryptionPolicy = serverParams.EncryptionPolicy;
                 serverOptions.EnabledSslProtocols = serverParams.SslProtocols;
                 serverOptions.CipherSuitesPolicy = serverParams.CipherSuitesPolicy;
@@ -709,7 +714,7 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = "test";
                 clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

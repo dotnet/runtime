@@ -120,4 +120,13 @@
   <data name="BufferMaximumSizeExceeded" xml:space="preserve">
     <value>Cannot allocate a buffer of size {0}.</value>
   </data>
+  <data name="QueueModeNotSupported" xml:space="preserve">
+    <value>{0} is not a supported queue mode value.</value>
+  </data>
+  <data name="MaxQueueLengthBadValue" xml:space="preserve">
+    <value>{0} must be larger than zero.</value>
+  </data>
+  <data name="WarningMessageOnDrop" xml:space="preserve">
+    <value>{0} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerQueueFullMode` to stop dropping messages.</value>
+  </data>
 </root>

@@ -301,7 +301,7 @@ namespace System.DirectoryServices.AccountManagement
             // Since the QBE filter must be in the "unpersisted" state, any set properties have their changed
             // flag still set (qbeFilter.GetChangeStatusForProperty() == true).  Therefore, checking which properties
             // have been set == checking which properties have their change flag set to true.
-            Debug.Assert(_qbeFilter.unpersisted == true);
+            Debug.Assert(_qbeFilter.unpersisted);
 
             // Retrieve the list of referential properties for this type of Principal.
             // If this type of Principal doesn't have any, the Properties hashtable will return null.
@@ -315,7 +315,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 foreach (string propertyName in referentialProperties)
                 {
-                    if (_qbeFilter.GetChangeStatusForProperty(propertyName) == true)
+                    if (_qbeFilter.GetChangeStatusForProperty(propertyName))
                     {
                         // Property was set.
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalSearcher", "HasReferentialPropertiesSet: found ref property " + propertyName);

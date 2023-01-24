@@ -42,7 +42,7 @@ namespace System.Xml
 
         ~XmlElementList()
         {
-            Dispose(false);
+            Dispose();
         }
 
         internal void ConcurrencyCheck(XmlNodeChangedEventArgs args)
@@ -133,8 +133,10 @@ namespace System.Xml
         private XmlNode? PrevElemInPreOrder(XmlNode curNode)
         {
             Debug.Assert(curNode != null);
+
             //For preorder walking, the previous node will be the right-most node in the tree of PreviousSibling of the curNode
             XmlNode? retNode = curNode.PreviousSibling;
+
             // so if the PreviousSibling is not null, going through the tree down to find the right-most node
             while (retNode != null)
             {
@@ -142,9 +144,10 @@ namespace System.Xml
                     break;
                 retNode = retNode.LastChild;
             }
+
             // if no PreviousSibling, the previous node will be the curNode's parentNode
-            if (retNode == null)
-                retNode = curNode.ParentNode;
+            retNode ??= curNode.ParentNode;
+
             // if the final retNode is rootNode, consider having walked through the tree and no more previous node
             if (retNode == _rootNode)
                 retNode = null;
@@ -206,9 +209,9 @@ namespace System.Xml
         //the function is for the enumerator to find out the next available matching element node
         public XmlNode? GetNextNode(XmlNode? n)
         {
-            if (_empty == true)
+            if (_empty)
                 return null;
-            XmlNode node = (n == null) ? _rootNode : n;
+            XmlNode node = n ?? _rootNode;
             return GetMatchingNode(node, true);
         }
 
@@ -217,7 +220,7 @@ namespace System.Xml
             if (_rootNode == null || index < 0)
                 return null;
 
-            if (_empty == true)
+            if (_empty)
                 return null;
             if (_curInd == index)
                 return _curElem;
@@ -241,7 +244,7 @@ namespace System.Xml
         {
             get
             {
-                if (_empty == true)
+                if (_empty)
                     return 0;
 
                 if (_matchCount < 0)
@@ -268,8 +271,8 @@ namespace System.Xml
 
         public override IEnumerator GetEnumerator()
         {
-            if (_empty == true)
-                return new XmlEmptyElementListEnumerator(this);
+            if (_empty)
+                return new XmlEmptyElementListEnumerator();
 
             return new XmlElementListEnumerator(this);
         }
@@ -277,10 +280,10 @@ namespace System.Xml
         protected override void PrivateDisposeNodeList()
         {
             GC.SuppressFinalize(this);
-            Dispose(true);
+            Dispose();
         }
 
-        private void Dispose(bool disposing)
+        private void Dispose()
         {
             if (_listener != null)
             {
@@ -336,7 +339,7 @@ namespace System.Xml
 
     internal sealed class XmlEmptyElementListEnumerator : IEnumerator
     {
-        public XmlEmptyElementListEnumerator(XmlElementList list)
+        public XmlEmptyElementListEnumerator()
         {
         }
 

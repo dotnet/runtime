@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Pgo;
-using Internal.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -30,6 +29,10 @@ namespace Internal.JitInterface
     }
 
     public struct CORINFO_FIELD_STRUCT_
+    {
+    }
+
+    public struct CORINFO_OBJECT_STRUCT_
     {
     }
 
@@ -478,7 +481,11 @@ namespace Internal.JitInterface
     }
     public enum CorInfoInline
     {
-        INLINE_PASS = 0,    // Inlining OK
+        INLINE_PASS = 0,   // Inlining OK
+        INLINE_PREJIT_SUCCESS = 1,   // Inline check for prejit checking usage succeeded
+        INLINE_CHECK_CAN_INLINE_SUCCESS = 2,   // JIT detected it is permitted to try to actually inline
+        INLINE_CHECK_CAN_INLINE_VMFAIL = 3,   // VM specified that inline must fail via the CanInline api
+
 
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
@@ -518,7 +525,7 @@ namespace Internal.JitInterface
         //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
-        //     but do not jit the method if is is unverifiable.
+        //     but do not jit the method if it is unverifiable.
     }
 
     public enum CorInfoInitClassResult
@@ -618,7 +625,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -774,7 +781,7 @@ namespace Internal.JitInterface
     public enum CorInfoTypeWithMod
     {
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
-        CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indiate pinned
+        CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
     };
 
     public struct CORINFO_HELPER_ARG
@@ -815,7 +822,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DESKTOP_ABI = 0x100,
         CORINFO_CORECLR_ABI = 0x200,
-        CORINFO_CORERT_ABI = 0x300,
+        CORINFO_NATIVEAOT_ABI = 0x300,
     }
 
     // For some highly optimized paths, the JIT must generate code that directly
@@ -885,10 +892,10 @@ namespace Internal.JitInterface
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct CORINFO_TAILCALL_HELPERS
     {
-        CORINFO_TAILCALL_HELPERS_FLAGS flags;
-        CORINFO_METHOD_STRUCT_*        hStoreArgs;
-        CORINFO_METHOD_STRUCT_*        hCallTarget;
-        CORINFO_METHOD_STRUCT_*        hDispatcher;
+        private CORINFO_TAILCALL_HELPERS_FLAGS flags;
+        private CORINFO_METHOD_STRUCT_*        hStoreArgs;
+        private CORINFO_METHOD_STRUCT_*        hCallTarget;
+        private CORINFO_METHOD_STRUCT_*        hDispatcher;
     };
 
     public enum CORINFO_THIS_TRANSFORM
@@ -1108,7 +1115,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
         CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
-
+        CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
         CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
         CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
@@ -1121,7 +1128,6 @@ namespace Internal.JitInterface
         CORINFO_FLG_FIELD_UNMANAGED = 0x00000002, // RVA field
         CORINFO_FLG_FIELD_FINAL = 0x00000004,
         CORINFO_FLG_FIELD_STATIC_IN_HEAP = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
-        CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN = 0x00000010, // Field can be returned safely (has GC heap lifetime)
         CORINFO_FLG_FIELD_INITCLASS = 0x00000020, // initClass has to be called before accessing the field
         CORINFO_FLG_FIELD_PROTECTED = 0x00000040,
     }
@@ -1194,6 +1200,46 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
+    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
+    // to convey struct argument passing information.
+    //
+    // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
+    //
+    // Otherwise, and only for structs with no more than two fields and a total struct size no larger
+    // than two pointers:
+    //
+    // The lowest four bits denote the floating-point info:
+    //   bit 0: `1` means there is only one float or double field within the struct.
+    //   bit 1: `1` means only the first field is floating-point type.
+    //   bit 2: `1` means only the second field is floating-point type.
+    //   bit 3: `1` means the two fields are both floating-point type.
+    // The bits[5:4] denoting whether the field size is 8-bytes:
+    //   bit 4: `1` means the first field's size is 8.
+    //   bit 5: `1` means the second field's size is 8.
+    //
+    // Note that bit 0 and 3 cannot both be set.
+    public enum StructFloatFieldInfoFlags
+    {
+        STRUCT_NO_FLOAT_FIELD         = 0x0,
+        STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
+        STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
+        STRUCT_FLOAT_FIELD_FIRST      = 0x2,
+        STRUCT_FLOAT_FIELD_SECOND     = 0x4,
+        STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
+        STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
+
+        STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
+        STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
+        STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
+
+        STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
+        STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
+
+        STRUCT_HAS_ONE_FLOAT_MASK     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND),
+        STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
+        STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
+    };
+
     // DEBUGGER DATA
     public enum MappingTypes
     {
@@ -1247,7 +1293,7 @@ namespace Internal.JitInterface
 
         UNKNOWN_ILNUM       = -4, // Unknown variable
 
-        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in the enum
+        MAX_ILNUM           = -4  // Sentinel value. This should be set to the largest magnitude value in the enum
                                   // so that the compression routines know the enum's range.
     };
 
@@ -1257,6 +1303,30 @@ namespace Internal.JitInterface
         public uint endOffset;
         public uint varNumber;
     };
+
+    public unsafe struct InlineTreeNode
+    {
+        // Method handle for inlinee (or root)
+        public CORINFO_METHOD_STRUCT_* Method;
+        // IL offset of IL instruction resulting in the inline
+        public uint ILOffset;
+        // Index of child in tree, 0 if no children
+        public uint Child;
+        // Index of sibling in tree, 0 if no sibling
+        public uint Sibling;
+    }
+
+    public struct RichOffsetMapping
+    {
+        // Offset in emitted code
+        public uint NativeOffset;
+        // Index of inline tree node containing the IL offset (0 for root)
+        public uint Inlinee;
+        // IL offset of IL instruction in inlinee that this mapping was created from
+        public uint ILOffset;
+        // Source information about the IL instruction in the inlinee
+        public SourceTypes Source;
+    }
 
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
@@ -1323,7 +1393,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_DEBUG_CODE = 2, // generate "debuggable" code (no code-mangling optimizations)
         CORJIT_FLAG_DEBUG_EnC = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO = 4, // generate line and local-var info
-        CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necesarily debuggable code)
+        CORJIT_FLAG_MIN_OPT = 5, // disable all jit optimizations (not necessarily debuggable code)
         CORJIT_FLAG_ENABLE_CFG = 6, // generate CFG enabled code
         CORJIT_FLAG_MCJIT_BACKGROUND = 7, // Calling from multicore JIT background thread, do not call JitComplete
         CORJIT_FLAG_UNUSED2 = 8,
@@ -1333,7 +1403,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED6 = 12,
         CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
-        CORJIT_FLAG_FEATURE_SIMD = 17,
+        CORJIT_FLAG_UNUSED10 = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues
@@ -1364,7 +1434,7 @@ namespace Internal.JitInterface
 
     public struct CORJIT_FLAGS
     {
-        private UInt64 _corJitFlags;
+        private ulong _corJitFlags;
         public InstructionSetFlags InstructionSetFlags;
 
         public void Reset()

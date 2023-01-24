@@ -75,12 +75,7 @@ namespace System.Drawing
 
             Debug.Assert(idx >= 0 && idx < systemBrushes.Length, "System colors have been added but our system color array has not been expanded.");
 
-            if (systemBrushes[idx] == null)
-            {
-                systemBrushes[idx] = new SolidBrush(c, true);
-            }
-
-            return systemBrushes[idx];
+            return systemBrushes[idx] ??= new SolidBrush(c, true);
         }
     }
 }

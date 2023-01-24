@@ -31,13 +31,8 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         mov         qword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs], r11
 
         mov         qword ptr [rax + OFFSETOF__Thread__m_pTransitionFrame], rbx
-
-        test        dword ptr [C_VAR(RhpTrapThreads)], TrapThreadsFlags_TrapThreads
         pop_nonvol_reg rbx
-        jnz         0f                  // forward branch - predicted not taken
         ret
-0:
-        jmp         C_FUNC(RhpWaitForSuspend2)
 NESTED_END RhpPInvoke, _TEXT
 
 

@@ -16,10 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         private void BeginString()
         {
             Debug.Assert(_strBuilder == null || _strBuilder.Length == 0);
-            if (_strBuilder == null)
-            {
-                _strBuilder = new StringBuilder();
-            }
+            _strBuilder ??= new StringBuilder();
         }
 
         private string EndString()

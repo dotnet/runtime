@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// </summary>
         public static readonly XmlDocumentDecryptor Instance = new XmlDocumentDecryptor();
 
-        private readonly Func<XmlDocument, EncryptedXml> _encryptedXmlFactory;
+        private readonly Func<XmlDocument, EncryptedXml>? _encryptedXmlFactory;
 
         /// <summary>
         /// Initializes a XmlDocumentDecryptor.
@@ -48,9 +48,12 @@ namespace Microsoft.Extensions.Configuration.Xml
         }
 
         /// <summary>
-        /// Returns an XmlReader that decrypts data transparently.
+        /// Creates an <see cref="XmlReader"/> that decrypts data transparently.
         /// </summary>
-        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings settings)
+        /// <param name="input">The input <see cref="Stream"/> to read the XML configuration data from.</param>
+        /// <param name="settings">The settings for the new <see cref="XmlReader"/> instance.</param>
+        /// <returns>An <see cref="XmlReader"/> that decrypts data transparently.</returns>
+        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings? settings)
         {
             // XML-based configurations aren't really all that big, so we can buffer
             // the whole thing in memory while we determine decryption operations.
@@ -98,7 +101,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             // Finally, return the new XmlReader from the updated XmlDocument.
             // Error messages based on this XmlReader won't show line numbers,
             // but that's fine since we transformed the document anyway.
-            return document.CreateNavigator().ReadSubtree();
+            return document.CreateNavigator()!.ReadSubtree();
         }
     }
 }

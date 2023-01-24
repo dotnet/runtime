@@ -206,7 +206,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(builder.Environment.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
-            Assert.Null(builder.Environment.ApplicationName);
+            Assert.Equal(string.Empty, builder.Environment.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -221,7 +221,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
-            Assert.Null(env.ApplicationName);
+            Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -229,66 +229,128 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
         }
 
-        [Fact]
-        public void ConfigurationSettingCanInfluenceEnvironment()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ConfigurationSettingCanInfluenceEnvironment(bool disableDefaults)
         {
-            using var config = new ConfigurationManager();
+            var tempPath = CreateTempSubdirectory();
 
-            config.AddInMemoryCollection(new KeyValuePair<string, string>[]
+            try
             {
-                new(HostDefaults.ApplicationKey, "AppA" ),
-                new(HostDefaults.EnvironmentKey, "EnvA" ),
-            });
+                using var config = new ConfigurationManager();
 
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                config.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new(HostDefaults.ApplicationKey, "AppA" ),
+                    new(HostDefaults.EnvironmentKey, "EnvA" ),
+                    new(HostDefaults.ContentRootKey, tempPath)
+                });
+
+                var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                {
+                    DisableDefaults = disableDefaults,
+                    Configuration = config,
+                });
+
+                Assert.Equal("AppA", builder.Configuration[HostDefaults.ApplicationKey]);
+                Assert.Equal("EnvA", builder.Configuration[HostDefaults.EnvironmentKey]);
+                Assert.Equal(tempPath, builder.Configuration[HostDefaults.ContentRootKey]);
+
+                Assert.Equal("AppA", builder.Environment.ApplicationName);
+                Assert.Equal("EnvA", builder.Environment.EnvironmentName);
+                Assert.Equal(tempPath, builder.Environment.ContentRootPath);
+                var fileProviderFromBuilder = Assert.IsType<PhysicalFileProvider>(builder.Environment.ContentRootFileProvider);
+                Assert.Equal(tempPath, fileProviderFromBuilder.Root);
+
+                using IHost host = builder.Build();
+
+                var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
+                Assert.Equal("AppA", hostEnvironmentFromServices.ApplicationName);
+                Assert.Equal("EnvA", hostEnvironmentFromServices.EnvironmentName);
+                Assert.Equal(tempPath, hostEnvironmentFromServices.ContentRootPath);
+                var fileProviderFromServices = Assert.IsType<PhysicalFileProvider>(hostEnvironmentFromServices.ContentRootFileProvider);
+                Assert.Equal(tempPath, fileProviderFromServices.Root);
+            }
+            finally
             {
-                DisableDefaults = true,
-                Configuration = config,
-            });
-
-            Assert.Equal("AppA", builder.Configuration[HostDefaults.ApplicationKey]);
-            Assert.Equal("EnvA", builder.Configuration[HostDefaults.EnvironmentKey]);
-
-            Assert.Equal("AppA", builder.Environment.ApplicationName);
-            Assert.Equal("EnvA", builder.Environment.EnvironmentName);
-
-            using IHost host = builder.Build();
-
-            var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
-            Assert.Equal("AppA", hostEnvironmentFromServices.ApplicationName);
-            Assert.Equal("EnvA", hostEnvironmentFromServices.EnvironmentName);
+                Directory.Delete(tempPath);
+            }
         }
 
-        [Fact]
-        public void DirectSetttingsOverrideConfigurationSetting()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DirectSettingsOverrideConfigurationSetting(bool disableDefaults)
         {
-            using var config = new ConfigurationManager();
+            var tempPath = CreateTempSubdirectory();
 
-            config.AddInMemoryCollection(new KeyValuePair<string, string>[]
+            try
             {
-                new(HostDefaults.ApplicationKey, "AppA" ),
-                new(HostDefaults.EnvironmentKey, "EnvA" ),
-            });
+                using var config = new ConfigurationManager();
 
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                config.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new(HostDefaults.ApplicationKey, "AppA" ),
+                    new(HostDefaults.EnvironmentKey, "EnvA" ),
+                });
+
+                var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                {
+                    DisableDefaults = disableDefaults,
+                    Configuration = config,
+                    ApplicationName = "AppB",
+                    EnvironmentName = "EnvB",
+                    ContentRootPath = tempPath,
+                });
+
+                Assert.Equal("AppB", builder.Configuration[HostDefaults.ApplicationKey]);
+                Assert.Equal("EnvB", builder.Configuration[HostDefaults.EnvironmentKey]);
+                Assert.Equal(tempPath, builder.Configuration[HostDefaults.ContentRootKey]);
+
+                Assert.Equal("AppB", builder.Environment.ApplicationName);
+                Assert.Equal("EnvB", builder.Environment.EnvironmentName);
+                Assert.Equal(tempPath, builder.Environment.ContentRootPath);
+                var fileProviderFromBuilder = Assert.IsType<PhysicalFileProvider>(builder.Environment.ContentRootFileProvider);
+                Assert.Equal(tempPath, fileProviderFromBuilder.Root);
+
+                using IHost host = builder.Build();
+
+                var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
+                Assert.Equal("AppB", hostEnvironmentFromServices.ApplicationName);
+                Assert.Equal("EnvB", hostEnvironmentFromServices.EnvironmentName);
+                Assert.Equal(tempPath, hostEnvironmentFromServices.ContentRootPath);
+                var fileProviderFromServices = Assert.IsType<PhysicalFileProvider>(hostEnvironmentFromServices.ContentRootFileProvider);
+                Assert.Equal(tempPath, fileProviderFromServices.Root);
+            }
+            finally
             {
-                DisableDefaults = true,
-                Configuration = config,
-                ApplicationName = "AppB",
-                EnvironmentName = "EnvB",
-            });
+                Directory.Delete(tempPath);
+            }
+        }
 
-            Assert.Equal("AppB", builder.Configuration[HostDefaults.ApplicationKey]);
-            Assert.Equal("EnvB", builder.Configuration[HostDefaults.EnvironmentKey]);
+        private static string CreateTempSubdirectory()
+        {
+#if NETCOREAPP
+            DirectoryInfo directoryInfo = Directory.CreateTempSubdirectory();
+#else
+            DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            directoryInfo.Create();
+#endif
 
-            Assert.Equal("AppB", builder.Environment.ApplicationName);
-            Assert.Equal("EnvB", builder.Environment.EnvironmentName);
+            // PhysicalFileProvider will always ensure the path has a trailing slash
+            return EnsureTrailingSlash(directoryInfo.FullName);
+        }
 
-            using IHost host = builder.Build();
-
-            var hostEnvironmentFromServices = host.Services.GetRequiredService<IHostEnvironment>();
-            Assert.Equal("AppB", hostEnvironmentFromServices.ApplicationName);
-            Assert.Equal("EnvB", hostEnvironmentFromServices.EnvironmentName);
+        private static string EnsureTrailingSlash(string path)
+        {
+            if (!string.IsNullOrEmpty(path) &&
+                path[path.Length - 1] != Path.DirectorySeparatorChar)
+            {
+                return path + Path.DirectorySeparatorChar;
+            }
+ 
+            return path;
         }
 
         [Fact]
@@ -369,7 +431,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Environments.Development, builder.Environment.EnvironmentName);
             Assert.Equal(Path.GetFullPath("."), builder.Environment.ContentRootPath);
 
-            using IHost host = builder.Build(); 
+            using IHost host = builder.Build();
             var env = host.Services.GetRequiredService<IHostEnvironment>();
 
             Assert.Equal("MyProjectReference", env.ApplicationName);

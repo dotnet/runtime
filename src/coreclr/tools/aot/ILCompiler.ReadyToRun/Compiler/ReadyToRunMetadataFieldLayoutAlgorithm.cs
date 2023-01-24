@@ -116,6 +116,11 @@ namespace ILCompiler
             /// </summary>
             private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm = 8;
 
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for LoongArch64
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64 = 8;
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -152,7 +157,7 @@ namespace ILCompiler
                     if (typeDef.GetGenericParameters().Count != 0)
                     {
                         // Generic types are exempt from the static field layout algorithm, see
-                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2049">this check</a>.
+                        // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L931">this check</a>.
                         continue;
                     }
 
@@ -167,7 +172,7 @@ namespace ILCompiler
                         if ((fieldDef.Attributes & (FieldAttributes.Static | FieldAttributes.Literal)) == FieldAttributes.Static)
                         {
                             // Static RVA fields are included when approximating offsets and sizes for the module field layout, see
-                            // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2057">this loop</a>.
+                            // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L939">this loop</a>.
 
                             int index = (IsFieldThreadStatic(in fieldDef, module.MetadataReader) ? StaticIndex.ThreadLocal : StaticIndex.Regular);
                             int alignment;
@@ -253,7 +258,7 @@ namespace ILCompiler
                     size = fieldType.GetElementSize().AsInt;
                     alignment = size;
                 }
-                else if (fieldType.IsByRef || fieldType.IsByRefLike || fieldType.IsByReferenceOfT)
+                else if (fieldType.IsByRef || fieldType.IsByRefLike)
                 {
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, fieldDesc.OwningType);
                 }
@@ -266,7 +271,7 @@ namespace ILCompiler
                     if (moduleLayout && fieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
                     {
                         // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
-                        // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
+                        // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
                         alignment = TargetDetails.MaximumPrimitiveSize;
                         size = TargetDetails.MaximumPrimitiveSize;
                         isGcBoxedField = true;
@@ -367,7 +372,7 @@ namespace ILCompiler
                         if (moduleLayout && fieldDesc.FieldType.GetTypeDefinition() is EcmaType ecmaType && ecmaType.EcmaModule != module)
                         {
                             // Allocate pessimistic non-GC area for cross-module fields as that's what CoreCLR does
-                            // <a href="https://github.com/dotnet/coreclr/blob/659af58047a949ed50d11101708538d2e87f2568/src/vm/ceeload.cpp#L2124">here</a>
+                            // <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/ceeload.cpp#L1006">here</a>
                             alignment = TargetDetails.MaximumPrimitiveSize;
                             size = TargetDetails.MaximumPrimitiveSize;
                             isGcBoxedField = true;
@@ -412,6 +417,10 @@ namespace ILCompiler
 
                         case TargetArchitecture.ARM:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobArm;
+                            break;
+
+                        case TargetArchitecture.LoongArch64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
                             break;
 
                         default:

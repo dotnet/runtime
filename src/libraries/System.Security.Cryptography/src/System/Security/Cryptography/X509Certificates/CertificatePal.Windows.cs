@@ -24,7 +24,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(handle);
             if (safeCertContextHandle.IsInvalid)
-                throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+            {
+                Exception e = ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
+                safeCertContextHandle.Dispose();
+                throw e;
+            }
 
             int cbData = 0;
             bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out Interop.Crypt32.DATA_BLOB _, ref cbData);
@@ -76,10 +80,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string keyAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
-                    GC.KeepAlive(this);
-                    return keyAlgorithm;
+                    return InvokeWithCertContext(static certContext =>
+                    {
+                        return Marshal.PtrToStringAnsi(certContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
+                    });
                 }
             }
         }
@@ -90,39 +94,40 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
-
-                    int algId;
-                    if (keyAlgorithmOid == Oids.Rsa)
-                        algId = AlgId.CALG_RSA_KEYX;  // Fast-path for the most common case.
-                    else
-                        algId = Interop.Crypt32.FindOidInfo(Interop.Crypt32.CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, keyAlgorithmOid, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
-
-                    unsafe
+                    return InvokeWithCertContext(pCertContext =>
                     {
-                        byte* NULL_ASN_TAG = (byte*)0x5;
+                        string keyAlgorithmOid = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId)!;
 
-                        byte[] keyAlgorithmParameters;
-
-                        if (algId == AlgId.CALG_DSS_SIGN
-                            && pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.cbData == 0
-                            && pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.pbData.ToPointer() == NULL_ASN_TAG)
-                        {
-                            //
-                            // DSS certificates may not have the DSS parameters in the certificate. In this case, we try to build
-                            // the certificate chain and propagate the parameters down from the certificate chain.
-                            //
-                            keyAlgorithmParameters = PropagateKeyAlgorithmParametersFromChain();
-                        }
+                        int algId;
+                        if (keyAlgorithmOid == Oids.Rsa)
+                            algId = AlgId.CALG_RSA_KEYX;  // Fast-path for the most common case.
                         else
-                        {
-                            keyAlgorithmParameters = pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.ToByteArray();
-                        }
+                            algId = Interop.Crypt32.FindOidInfo(Interop.Crypt32.CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, keyAlgorithmOid, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
 
-                        GC.KeepAlive(this);
-                        return keyAlgorithmParameters;
-                    }
+                        unsafe
+                        {
+                            byte* NULL_ASN_TAG = (byte*)0x5;
+
+                            byte[] keyAlgorithmParameters;
+
+                            if (algId == AlgId.CALG_DSS_SIGN
+                                && pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.cbData == 0
+                                && pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.pbData.ToPointer() == NULL_ASN_TAG)
+                            {
+                                //
+                                // DSS certificates may not have the DSS parameters in the certificate. In this case, we try to build
+                                // the certificate chain and propagate the parameters down from the certificate chain.
+                                //
+                                keyAlgorithmParameters = PropagateKeyAlgorithmParametersFromChain();
+                            }
+                            else
+                            {
+                                keyAlgorithmParameters = pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.ToByteArray();
+                            }
+
+                            return keyAlgorithmParameters;
+                        }
+                    });
                 }
             }
         }
@@ -153,8 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 finally
                 {
-                    if (certChainContext != null)
-                        certChainContext.Dispose();
+                    certChainContext?.Dispose();
                 }
             }
         }
@@ -165,10 +169,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    byte[] publicKey = pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.ToByteArray();
-                    GC.KeepAlive(this);
-                    return publicKey;
+                    return InvokeWithCertContext(static pCertContext =>
+                    {
+                        return pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.ToByteArray();
+                    });
                 }
             }
         }
@@ -179,11 +183,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    byte[] serialNumber = pCertContext->pCertInfo->SerialNumber.ToByteArray();
-                    Array.Reverse(serialNumber);
-                    GC.KeepAlive(this);
-                    return serialNumber;
+                    return InvokeWithCertContext(static pCertContext =>
+                    {
+                        byte[] serialNumber = pCertContext->pCertInfo->SerialNumber.ToByteArray();
+                        Array.Reverse(serialNumber);
+                        return serialNumber;
+                    });
                 }
             }
         }
@@ -194,10 +199,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    string signatureAlgorithm = Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId)!;
-                    GC.KeepAlive(this);
-                    return signatureAlgorithm;
+                    return InvokeWithCertContext(static pCertContext =>
+                    {
+                        return Marshal.PtrToStringAnsi(pCertContext->pCertInfo->SignatureAlgorithm.pszObjId)!;
+                    });
                 }
             }
         }
@@ -208,10 +213,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    DateTime notAfter = pCertContext->pCertInfo->NotAfter.ToDateTime();
-                    GC.KeepAlive(this);
-                    return notAfter;
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotAfter.ToDateTime());
                 }
             }
         }
@@ -222,10 +224,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    DateTime notBefore = pCertContext->pCertInfo->NotBefore.ToDateTime();
-                    GC.KeepAlive(this);
-                    return notBefore;
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->NotBefore.ToDateTime());
                 }
             }
         }
@@ -236,10 +235,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    byte[] rawData = new Span<byte>(pCertContext->pbCertEncoded, pCertContext->cbCertEncoded).ToArray();
-                    GC.KeepAlive(this);
-                    return rawData;
+                    return InvokeWithCertContext(static pCertContext =>
+                    {
+                        return new Span<byte>(pCertContext->pbCertEncoded, pCertContext->cbCertEncoded).ToArray();
+                    });
                 }
             }
         }
@@ -250,10 +249,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_CONTEXT* pCertContext = _certContext.CertContext;
-                    int version = pCertContext->pCertInfo->dwVersion + 1;
-                    GC.KeepAlive(this);
-                    return version;
+                    return InvokeWithCertContext(static pCertContext => pCertContext->pCertInfo->dwVersion + 1);
                 }
             }
         }
@@ -274,7 +270,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                     Interop.Crypt32.DATA_BLOB* pValue = value ? &blob : (Interop.Crypt32.DATA_BLOB*)null;
                     if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, pValue))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
             }
         }
@@ -305,7 +301,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             set
             {
-                string friendlyName = (value == null) ? string.Empty : value;
+                string friendlyName = value ?? string.Empty;
                 unsafe
                 {
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
@@ -313,7 +309,7 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(pFriendlyName, checked(2 * ((uint)friendlyName.Length + 1)));
                         if (!Interop.Crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, Interop.Crypt32.CertSetPropertyFlags.None, &blob))
-                            throw Marshal.GetLastWin32Error().ToCryptographicException();
+                            throw Marshal.GetLastPInvokeError().ToCryptographicException();
                     }
                     finally
                     {
@@ -329,10 +325,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedSubjectName = _certContext.CertContext->pCertInfo->Subject.ToByteArray();
-                    X500DistinguishedName subjectName = new X500DistinguishedName(encodedSubjectName);
-                    GC.KeepAlive(this);
-                    return subjectName;
+                    return InvokeWithCertContext(static certContext =>
+                    {
+                        ReadOnlySpan<byte> encodedSubjectName = certContext->pCertInfo->Subject.DangerousAsSpan();
+                        X500DistinguishedName subjectName = new X500DistinguishedName(encodedSubjectName);
+                        return subjectName;
+                    });
                 }
             }
         }
@@ -343,10 +341,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    byte[] encodedIssuerName = _certContext.CertContext->pCertInfo->Issuer.ToByteArray();
-                    X500DistinguishedName issuerName = new X500DistinguishedName(encodedIssuerName);
-                    GC.KeepAlive(this);
-                    return issuerName;
+                    return InvokeWithCertContext(static certContext =>
+                    {
+                        ReadOnlySpan<byte> encodedIssuerName = certContext->pCertInfo->Issuer.DangerousAsSpan();
+                        X500DistinguishedName issuerName = new X500DistinguishedName(encodedIssuerName);
+                        return issuerName;
+                    });
                 }
             }
         }
@@ -362,21 +362,26 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 unsafe
                 {
-                    Interop.Crypt32.CERT_INFO* pCertInfo = _certContext.CertContext->pCertInfo;
-                    int numExtensions = pCertInfo->cExtension;
-                    X509Extension[] extensions = new X509Extension[numExtensions];
-                    for (int i = 0; i < numExtensions; i++)
+                    return InvokeWithCertContext(static certContext =>
                     {
-                        Interop.Crypt32.CERT_EXTENSION* pCertExtension = (Interop.Crypt32.CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
-                        string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
-                        Oid oid = new Oid(oidValue, friendlyName: null);
-                        bool critical = pCertExtension->fCritical != 0;
-                        byte[] rawData = pCertExtension->Value.ToByteArray();
+                        Interop.Crypt32.CERT_INFO* pCertInfo = certContext->pCertInfo;
+                        int numExtensions = pCertInfo->cExtension;
+                        X509Extension[] extensions = new X509Extension[numExtensions];
 
-                        extensions[i] = new X509Extension(oid, rawData, critical);
-                    }
-                    GC.KeepAlive(this);
-                    return extensions;
+                        for (int i = 0; i < numExtensions; i++)
+                        {
+                            Interop.Crypt32.CERT_EXTENSION* pCertExtension = (Interop.Crypt32.CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
+                            string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
+                            Oid oid = new Oid(oidValue, friendlyName: null);
+                            bool critical = pCertExtension->fCritical != 0;
+
+                            // X509Extension creates a copy of the data for itself.
+                            ReadOnlySpan<byte> rawData = pCertExtension->Value.DangerousAsSpan();
+                            extensions[i] = new X509Extension(oid, rawData, critical);
+                        }
+
+                        return extensions;
+                    });
                 }
             }
         }
@@ -466,13 +471,14 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal SafeCertContextHandle CertContext
+        internal SafeCertContextHandle GetCertContext()
         {
-            get
+            unsafe
             {
-                SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(_certContext.DangerousGetHandle());
-                GC.KeepAlive(_certContext);
-                return certContext;
+                return InvokeWithCertContext(static certContext =>
+                {
+                    return Interop.Crypt32.CertDuplicateCertificateContext((IntPtr)certContext);
+                });
             }
         }
 
@@ -521,9 +527,10 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 // We need to delete any associated key container upon disposition. Thus, replace the safehandle we got with a safehandle whose
                 // Release() method performs the key container deletion.
-                SafeCertContextHandle oldCertContext = certContext;
-                certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
-                GC.KeepAlive(oldCertContext);
+                using (SafeCertContextHandle oldCertContext = certContext)
+                {
+                    certContext = Interop.Crypt32.CertDuplicateCertificateContextWithKeyContainerDeletion(oldCertContext.DangerousGetHandle());
+                }
             }
             _certContext = certContext;
         }
@@ -537,5 +544,25 @@ namespace System.Security.Cryptography.X509Certificates
                 return exported;
             }
         }
+
+        private unsafe T InvokeWithCertContext<T>(CertContextCallback<T> callback)
+        {
+            bool added = false;
+            _certContext.DangerousAddRef(ref added);
+
+            try
+            {
+                return callback(_certContext.DangerousCertContext);
+            }
+            finally
+            {
+                if (added)
+                {
+                    _certContext.DangerousRelease();
+                }
+            }
+        }
+
+        private unsafe delegate T CertContextCallback<T>(Interop.Crypt32.CERT_CONTEXT* certContext);
     }
 }

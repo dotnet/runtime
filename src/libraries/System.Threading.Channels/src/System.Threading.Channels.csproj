@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for passing data between producers and consumers.
 
@@ -9,6 +8,7 @@ Commonly Used Types:
 System.Threading.Channel
 System.Threading.Channel&lt;T&gt;</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\VoidResult.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
@@ -37,23 +37,24 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="System\Threading\Channels\UnboundedChannel.cs" />
     <Compile Include="$(CommonPath)Internal\Padding.cs"
              Link="Common\Internal\Padding.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerConsumerQueue.cs"
-             Link="Common\System\Collections\Concurrent\SingleProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\IProducerConsumerQueue.cs"
+         Link="Common\System\Collections\Concurrent\IProducerConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\MultiProducerMultiConsumerQueue.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs"
+             Link="Common\System\Collections\Concurrent\SingleProducerSingleConsumerQueue.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
              Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>

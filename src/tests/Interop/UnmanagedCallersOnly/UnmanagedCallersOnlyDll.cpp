@@ -11,6 +11,8 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE DoubleImplNative(int n)
 }
 
 typedef int (STDMETHODCALLTYPE *CALLBACKPROC)(int n);
+typedef int (__stdcall *CALLBACKPROC_STDCALL)(int n);
+typedef int (__cdecl *CALLBACKPROC_CDECL)(int n);
 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, CALLBACKPROC pCallbackProc, int n)
 {
@@ -24,6 +26,16 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProcMultipleTimes(int m, 
 extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc(CALLBACKPROC pCallbackProc, int n)
 {
     return CallManagedProcMultipleTimes(1, pCallbackProc, n);
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Stdcall(CALLBACKPROC_STDCALL pCallbackProc, int n)
+{
+    return pCallbackProc(n);
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE CallManagedProc_Cdecl(CALLBACKPROC_CDECL pCallbackProc, int n)
+{
+    return pCallbackProc(n);
 }
 
 namespace

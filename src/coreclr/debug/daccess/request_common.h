@@ -44,7 +44,7 @@ HeapTableIndex(DPTR(unused_gc_heap**) heaps, size_t index)
 
 // field_offset = g_gcDacGlobals->gc_heap_field_offsets
 // p_field_offset = field_offset[field_index]
-// p_field = BASE + p_field_offset 
+// p_field = BASE + p_field_offset
 // field_index++
 #define LOAD_BASE(field_name, field_type)                                                    \
     DPTR(int) p_##field_name##_offset = TableIndex(field_offsets, field_index, sizeof(int)); \
@@ -108,14 +108,18 @@ inline bool IsRegionGCEnabled()
     return (g_gcDacGlobals->minor_version_number & 1) != 0;
 }
 
+inline bool IsBackgroundGCEnabled()
+{
+    return (g_gcDacGlobals->minor_version_number & 2) == 0;
+}
+
 // Load an instance of dac_gc_heap for the heap pointed by heap.
 // Fields that does not exist in the current gc_heap instance is zero initialized.
 // Return the dac_gc_heap object.
 inline dac_gc_heap
 LoadGcHeapData(TADDR heap)
 {
-    dac_gc_heap result;
-    memset(&result, 0, sizeof(dac_gc_heap));
+    dac_gc_heap result = {};
 
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
     int field_index = 0;
@@ -163,9 +167,7 @@ inline void EnumGcHeap(TADDR heap)
 inline dac_generation
 LoadGeneration(TADDR generation)
 {
-    dac_generation result;
-    memset(&result, 0, sizeof(dac_generation));
-
+    dac_generation result = {};
     DPTR(int) field_offsets = g_gcDacGlobals->generation_field_offsets;
     int field_index = 0;
 

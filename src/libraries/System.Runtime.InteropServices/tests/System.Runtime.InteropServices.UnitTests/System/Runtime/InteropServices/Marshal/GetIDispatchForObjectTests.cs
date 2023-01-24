@@ -18,15 +18,13 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetIDispatchForObject_NullObject_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetIDispatchForObject(null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void GetIDispatchForObject_NonDispatchObject_ThrowsInvalidCastException()
         {
             Assert.Throws<InvalidCastException>(() => Marshal.GetIDispatchForObject(string.Empty));

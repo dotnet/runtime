@@ -4,6 +4,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
@@ -13,28 +15,28 @@ namespace System.Security.Cryptography.Xml
     public class SignedXml
     {
         protected Signature m_signature;
-        protected string m_strSigningKeyName;
+        protected string? m_strSigningKeyName;
 
-        private AsymmetricAlgorithm _signingKey;
-        private XmlDocument _containingDocument;
-        private IEnumerator _keyInfoEnum;
-        private X509Certificate2Collection _x509Collection;
-        private IEnumerator _x509Enum;
+        private AsymmetricAlgorithm? _signingKey;
+        private XmlDocument? _containingDocument;
+        private IEnumerator? _keyInfoEnum;
+        private X509Certificate2Collection? _x509Collection;
+        private X509Certificate2Enumerator? _x509Enum;
 
-        private bool[] _refProcessed;
-        private int[] _refLevelCache;
+        private bool[]? _refProcessed;
+        private int[]? _refLevelCache;
 
-        internal XmlResolver _xmlResolver;
-        internal XmlElement _context;
+        internal XmlResolver? _xmlResolver;
+        internal XmlElement? _context;
         private bool _bResolverSet;
 
         private Func<SignedXml, bool> _signatureFormatValidator = DefaultSignatureFormatValidator;
         private Collection<string> _safeCanonicalizationMethods;
 
         // Built in canonicalization algorithm URIs
-        private static IList<string> s_knownCanonicalizationMethods;
+        private static IList<string>? s_knownCanonicalizationMethods;
         // Built in transform algorithm URIs (excluding canonicalization URIs)
-        private static IList<string> s_defaultSafeTransformMethods;
+        private static IList<string>? s_defaultSafeTransformMethods;
 
         // additional HMAC Url identifiers
         private const string XmlDsigMoreHMACMD5Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
@@ -44,7 +46,7 @@ namespace System.Security.Cryptography.Xml
         private const string XmlDsigMoreHMACRIPEMD160Url = "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160";
 
         // defines the XML encryption processing rules
-        private EncryptedXml _exml;
+        private EncryptedXml? _exml;
 
         //
         // public constant Url identifiers most frequently used within the XML Signature classes
@@ -90,19 +92,31 @@ namespace System.Security.Cryptography.Xml
             Initialize(null);
         }
 
-        public SignedXml(XmlDocument document!!)
+        public SignedXml(XmlDocument document)
         {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
             Initialize(document.DocumentElement);
         }
 
-        public SignedXml(XmlElement elem!!)
+        public SignedXml(XmlElement elem)
         {
+            if (elem is null)
+            {
+                throw new ArgumentNullException(nameof(elem));
+            }
+
             Initialize(elem);
         }
 
-        private void Initialize(XmlElement element)
+        [MemberNotNull(nameof(m_signature))]
+        [MemberNotNull(nameof(_safeCanonicalizationMethods))]
+        private void Initialize(XmlElement? element)
         {
-            _containingDocument = (element == null ? null : element.OwnerDocument);
+            _containingDocument = element?.OwnerDocument;
             _context = element;
             m_signature = new Signature();
             m_signature.SignedXml = this;
@@ -117,7 +131,7 @@ namespace System.Security.Cryptography.Xml
         //
 
         /// <internalonly/>
-        public string SigningKeyName
+        public string? SigningKeyName
         {
             get { return m_strSigningKeyName; }
             set { m_strSigningKeyName = value; }
@@ -150,21 +164,17 @@ namespace System.Security.Cryptography.Xml
             get { return _safeCanonicalizationMethods; }
         }
 
-        public AsymmetricAlgorithm SigningKey
+        public AsymmetricAlgorithm? SigningKey
         {
             get { return _signingKey; }
             set { _signingKey = value; }
         }
 
+        [AllowNull]
         public EncryptedXml EncryptedXml
         {
-            get
-            {
-                if (_exml == null)
-                    _exml = new EncryptedXml(_containingDocument); // default processing rules
-                return _exml;
-            }
-            set { _exml = value; }
+            get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
+            set => _exml = value;
         }
 
         public Signature Signature
@@ -172,22 +182,22 @@ namespace System.Security.Cryptography.Xml
             get { return m_signature; }
         }
 
-        public SignedInfo SignedInfo
+        public SignedInfo? SignedInfo
         {
             get { return m_signature.SignedInfo; }
         }
 
-        public string SignatureMethod
+        public string? SignatureMethod
         {
-            get { return m_signature.SignedInfo.SignatureMethod; }
+            get { return m_signature.SignedInfo!.SignatureMethod; }
         }
 
-        public string SignatureLength
+        public string? SignatureLength
         {
-            get { return m_signature.SignedInfo.SignatureLength; }
+            get { return m_signature.SignedInfo!.SignatureLength; }
         }
 
-        public byte[] SignatureValue
+        public byte[]? SignatureValue
         {
             get { return m_signature.SignatureValue; }
         }
@@ -207,14 +217,16 @@ namespace System.Security.Cryptography.Xml
                 return m_signature.GetXml();
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             m_signature.LoadXml(value);
 
-            if (_context == null)
-            {
-                _context = value;
-            }
+            _context ??= value;
 
             _bCacheValid = false;
         }
@@ -225,7 +237,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddReference(Reference reference)
         {
-            m_signature.SignedInfo.AddReference(reference);
+            m_signature.SignedInfo!.AddReference(reference);
         }
 
         public void AddObject(DataObject dataObject)
@@ -238,13 +250,13 @@ namespace System.Security.Cryptography.Xml
             return CheckSignatureReturningKey(out _);
         }
 
-        public bool CheckSignatureReturningKey(out AsymmetricAlgorithm signingKey)
+        public bool CheckSignatureReturningKey(out AsymmetricAlgorithm? signingKey)
         {
             SignedXmlDebugLog.LogBeginSignatureVerification(this, _context);
 
             signingKey = null;
             bool bRet = false;
-            AsymmetricAlgorithm key;
+            AsymmetricAlgorithm? key;
 
             if (!CheckSignatureFormat())
             {
@@ -319,7 +331,7 @@ namespace System.Security.Cryptography.Xml
                 // Check key usages to make sure it is good for signing.
                 foreach (X509Extension extension in certificate.Extensions)
                 {
-                    if (string.Equals(extension.Oid.Value, "2.5.29.15" /* szOID_KEY_USAGE */, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(extension.Oid!.Value, "2.5.29.15" /* szOID_KEY_USAGE */, StringComparison.OrdinalIgnoreCase))
                     {
                         X509KeyUsageExtension keyUsage = new X509KeyUsageExtension();
                         keyUsage.CopyFrom(extension);
@@ -350,9 +362,9 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            using (AsymmetricAlgorithm publicKey = Utils.GetAnyPublicKey(certificate))
+            using (AsymmetricAlgorithm? publicKey = Utils.GetAnyPublicKey(certificate))
             {
-                if (!CheckSignature(publicKey))
+                if (!CheckSignature(publicKey!))
                 {
                     return false;
                 }
@@ -364,18 +376,18 @@ namespace System.Security.Cryptography.Xml
 
         public void ComputeSignature()
         {
-            SignedXmlDebugLog.LogBeginSignatureComputation(this, _context);
+            SignedXmlDebugLog.LogBeginSignatureComputation(this, _context!);
 
             BuildDigestedReferences();
 
             // Load the key
-            AsymmetricAlgorithm key = SigningKey;
+            AsymmetricAlgorithm? key = SigningKey;
 
             if (key == null)
                 throw new CryptographicException(SR.Cryptography_Xml_LoadKeyFailed);
 
             // Check the signature algorithm associated with the key so that we can accordingly set the signature method
-            if (SignedInfo.SignatureMethod == null)
+            if (SignedInfo!.SignatureMethod == null)
             {
                 if (key is DSA)
                 {
@@ -384,8 +396,7 @@ namespace System.Security.Cryptography.Xml
                 else if (key is RSA)
                 {
                     // Default to RSA-SHA256
-                    if (SignedInfo.SignatureMethod == null)
-                        SignedInfo.SignatureMethod = XmlDsigRSASHA256Url;
+                    SignedInfo.SignatureMethod ??= XmlDsigRSASHA256Url;
                 }
                 else
                 {
@@ -394,10 +405,10 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if there is a signature description class defined in the Config file
-            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
-            HashAlgorithm hashAlg = signatureDescription.CreateDigest();
+            HashAlgorithm? hashAlg = signatureDescription.CreateDigest();
             if (hashAlg == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
 
@@ -411,14 +422,19 @@ namespace System.Security.Cryptography.Xml
             m_signature.SignatureValue = asymmetricSignatureFormatter.CreateSignature(hashAlg);
         }
 
-        public void ComputeSignature(KeyedHashAlgorithm macAlg!!)
+        public void ComputeSignature(KeyedHashAlgorithm macAlg)
         {
-            HMAC hash = macAlg as HMAC;
+            if (macAlg is null)
+            {
+                throw new ArgumentNullException(nameof(macAlg));
+            }
+
+            HMAC? hash = macAlg as HMAC;
             if (hash == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureMethodKeyMismatch);
 
             int signatureLength;
-            if (m_signature.SignedInfo.SignatureLength == null)
+            if (m_signature.SignedInfo!.SignatureLength == null)
                 signatureLength = hash.HashSize;
             else
                 signatureLength = Convert.ToInt32(m_signature.SignedInfo.SignatureLength, null);
@@ -429,7 +445,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidSignatureLength2);
 
             BuildDigestedReferences();
-            SignedInfo.SignatureMethod = hash.HashName switch
+            SignedInfo!.SignatureMethod = hash.HashName switch
             {
                 "SHA1" => SignedXml.XmlDsigHMACSHA1Url,
                 "SHA256" => SignedXml.XmlDsigMoreHMACSHA256Url,
@@ -450,43 +466,41 @@ namespace System.Security.Cryptography.Xml
         // virtual methods
         //
 
-        protected virtual AsymmetricAlgorithm GetPublicKey()
+        protected virtual AsymmetricAlgorithm? GetPublicKey()
         {
             if (KeyInfo == null)
                 throw new CryptographicException(SR.Cryptography_Xml_KeyInfoRequired);
 
             if (_x509Enum != null)
             {
-                AsymmetricAlgorithm key = GetNextCertificatePublicKey();
+                AsymmetricAlgorithm? key = GetNextCertificatePublicKey();
                 if (key != null)
                     return key;
             }
 
-            if (_keyInfoEnum == null)
-                _keyInfoEnum = KeyInfo.GetEnumerator();
+            _keyInfoEnum ??= KeyInfo.GetEnumerator();
 
             // In our implementation, we move to the next KeyInfo clause which is an RSAKeyValue, DSAKeyValue or KeyInfoX509Data
             while (_keyInfoEnum.MoveNext())
             {
-                RSAKeyValue rsaKeyValue = _keyInfoEnum.Current as RSAKeyValue;
-                if (rsaKeyValue != null)
-                    return rsaKeyValue.Key;
-
-                DSAKeyValue dsaKeyValue = _keyInfoEnum.Current as DSAKeyValue;
-                if (dsaKeyValue != null)
-                    return dsaKeyValue.Key;
-
-                KeyInfoX509Data x509Data = _keyInfoEnum.Current as KeyInfoX509Data;
-                if (x509Data != null)
+                switch (_keyInfoEnum.Current)
                 {
-                    _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
-                    if (_x509Collection.Count > 0)
-                    {
-                        _x509Enum = _x509Collection.GetEnumerator();
-                        AsymmetricAlgorithm key = GetNextCertificatePublicKey();
-                        if (key != null)
-                            return key;
-                    }
+                    case RSAKeyValue rsaKeyValue:
+                        return rsaKeyValue.Key;
+
+                    case DSAKeyValue dsaKeyValue:
+                        return dsaKeyValue.Key;
+
+                    case KeyInfoX509Data x509Data:
+                        _x509Collection = Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification);
+                        if (_x509Collection.Count > 0)
+                        {
+                            _x509Enum = _x509Collection.GetEnumerator();
+                            AsymmetricAlgorithm? key = GetNextCertificatePublicKey();
+                            if (key != null)
+                                return key;
+                        }
+                        break;
                 }
             }
 
@@ -500,20 +514,21 @@ namespace System.Security.Cryptography.Xml
             {
                 foreach (KeyInfoClause clause in KeyInfo)
                 {
-                    KeyInfoX509Data x509Data = clause as KeyInfoX509Data;
-                    if (x509Data != null)
+                    if (clause is KeyInfoX509Data x509Data)
+                    {
                         collection.AddRange(Utils.BuildBagOfCerts(x509Data, CertUsageType.Verification));
+                    }
                 }
             }
 
             return collection;
         }
 
-        private AsymmetricAlgorithm GetNextCertificatePublicKey()
+        private AsymmetricAlgorithm? GetNextCertificatePublicKey()
         {
-            while (_x509Enum.MoveNext())
+            while (_x509Enum!.MoveNext())
             {
-                X509Certificate2 certificate = (X509Certificate2)_x509Enum.Current;
+                X509Certificate2? certificate = (X509Certificate2?)_x509Enum.Current;
                 if (certificate != null)
                     return Utils.GetAnyPublicKey(certificate);
             }
@@ -521,12 +536,12 @@ namespace System.Security.Cryptography.Xml
             return null;
         }
 
-        public virtual XmlElement GetIdElement(XmlDocument document, string idValue)
+        public virtual XmlElement? GetIdElement(XmlDocument? document, string idValue)
         {
             return DefaultGetIdElement(document, idValue);
         }
 
-        internal static XmlElement DefaultGetIdElement(XmlDocument document, string idValue)
+        internal static XmlElement? DefaultGetIdElement(XmlDocument? document, string idValue)
         {
             if (document == null)
                 return null;
@@ -545,14 +560,14 @@ namespace System.Security.Cryptography.Xml
             }
 
             // Get the element with idValue
-            XmlElement elem = document.GetElementById(idValue);
+            XmlElement? elem = document.GetElementById(idValue);
 
             if (elem != null)
             {
                 // Have to check for duplicate ID values from the DTD.
 
                 XmlDocument docClone = (XmlDocument)document.CloneNode(true);
-                XmlElement cloneElem = docClone.GetElementById(idValue);
+                XmlElement? cloneElem = docClone.GetElementById(idValue);
 
                 // If it's null here we want to know about it, because it means that
                 // GetElementById failed to work across the cloning, and our uniqueness
@@ -564,7 +579,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     cloneElem.Attributes.RemoveAll();
 
-                    XmlElement cloneElem2 = docClone.GetElementById(idValue);
+                    XmlElement? cloneElem2 = docClone.GetElementById(idValue);
 
                     if (cloneElem2 != null)
                     {
@@ -592,7 +607,7 @@ namespace System.Security.Cryptography.Xml
         //
 
         private bool _bCacheValid;
-        private byte[] _digestedSignedInfo;
+        private byte[]? _digestedSignedInfo;
 
         private static bool DefaultSignatureFormatValidator(SignedXml signedXml)
         {
@@ -618,13 +633,13 @@ namespace System.Security.Cryptography.Xml
         private bool DoesSignatureUseTruncatedHmac()
         {
             // If we're not using the SignatureLength property, then we're not truncating the signature length
-            if (SignedInfo.SignatureLength == null)
+            if (SignedInfo!.SignatureLength == null)
             {
                 return false;
             }
 
             // See if we're signed witn an HMAC algorithm
-            HMAC hmac = CryptoHelpers.CreateFromName<HMAC>(SignatureMethod);
+            HMAC? hmac = CryptoHelpers.CreateFromName<HMAC>(SignatureMethod!);
             if (hmac == null)
             {
                 // We aren't signed with an HMAC algorithm, so we cannot have a truncated HMAC
@@ -651,13 +666,13 @@ namespace System.Security.Cryptography.Xml
         {
             foreach (string safeAlgorithm in SafeCanonicalizationMethods)
             {
-                if (string.Equals(safeAlgorithm, SignedInfo.CanonicalizationMethod, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(safeAlgorithm, SignedInfo!.CanonicalizationMethod, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
             }
 
-            SignedXmlDebugLog.LogUnsafeCanonicalizationMethod(this, SignedInfo.CanonicalizationMethod, SafeCanonicalizationMethods);
+            SignedXmlDebugLog.LogUnsafeCanonicalizationMethod(this, SignedInfo!.CanonicalizationMethod, SafeCanonicalizationMethods);
             return false;
         }
 
@@ -670,7 +685,7 @@ namespace System.Security.Cryptography.Xml
             {
                 Transform transform = transformChain[i];
 
-                if (!IsSafeTransform(transform.Algorithm))
+                if (!IsSafeTransform(transform.Algorithm!))
                 {
                     return false;
                 }
@@ -762,16 +777,16 @@ namespace System.Security.Cryptography.Xml
         private byte[] GetC14NDigest(HashAlgorithm hash)
         {
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
-            if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo.CacheValid)
+            if (isKeyedHashAlgorithm || !_bCacheValid || !SignedInfo!.CacheValid)
             {
-                string baseUri = (_containingDocument == null ? null : _containingDocument.BaseURI);
-                XmlResolver resolver = (_bResolverSet ? _xmlResolver : new XmlSecureResolver(new XmlUrlResolver(), baseUri));
-                XmlDocument doc = Utils.PreProcessElementInput(SignedInfo.GetXml(), resolver, baseUri);
+                string? baseUri = _containingDocument?.BaseURI;
+                XmlResolver? resolver = (_bResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
+                XmlDocument doc = Utils.PreProcessElementInput(SignedInfo!.GetXml(), resolver!, baseUri );
 
                 // Add non default namespaces in scope
-                CanonicalXmlNodeList namespaces = (_context == null ? null : Utils.GetPropagatedAttributes(_context));
+                CanonicalXmlNodeList? namespaces = (_context == null ? null : Utils.GetPropagatedAttributes(_context));
                 SignedXmlDebugLog.LogNamespacePropagation(this, namespaces);
-                Utils.AddNamespaces(doc.DocumentElement, namespaces);
+                Utils.AddNamespaces(doc.DocumentElement!, namespaces);
 
                 Transform c14nMethodTransform = SignedInfo.CanonicalizationMethodObject;
                 c14nMethodTransform.Resolver = resolver;
@@ -784,14 +799,17 @@ namespace System.Security.Cryptography.Xml
 
                 _bCacheValid = !isKeyedHashAlgorithm;
             }
-            return _digestedSignedInfo;
+            return _digestedSignedInfo!;
         }
 
         private int GetReferenceLevel(int index, ArrayList references)
         {
+            Debug.Assert(_refProcessed != null);
+            Debug.Assert(_refLevelCache != null);
+
             if (_refProcessed[index]) return _refLevelCache[index];
             _refProcessed[index] = true;
-            Reference reference = (Reference)references[index];
+            Reference reference = (Reference)references[index]!;
             if (reference.Uri == null || reference.Uri.Length == 0 || (reference.Uri.Length > 0 && reference.Uri[0] != '#'))
             {
                 _refLevelCache[index] = 0;
@@ -808,7 +826,7 @@ namespace System.Security.Cryptography.Xml
                 // If this is pointing to another reference
                 for (int j = 0; j < references.Count; ++j)
                 {
-                    if (((Reference)references[j]).Id == idref)
+                    if (((Reference)references[j]!).Id == idref)
                     {
                         _refLevelCache[index] = GetReferenceLevel(j, references) + 1;
                         return (_refLevelCache[index]);
@@ -824,19 +842,19 @@ namespace System.Security.Cryptography.Xml
 
         private sealed class ReferenceLevelSortOrder : IComparer
         {
-            private ArrayList _references;
+            private ArrayList? _references;
             public ReferenceLevelSortOrder() { }
 
             public ArrayList References
             {
-                get { return _references; }
+                get { return _references!; }
                 set { _references = value; }
             }
 
-            public int Compare(object a, object b)
+            public int Compare(object? a, object? b)
             {
-                Reference referenceA = a as Reference;
-                Reference referenceB = b as Reference;
+                Reference? referenceA = a as Reference;
+                Reference? referenceB = b as Reference;
 
                 // Get the indexes
                 int iIndexA = 0;
@@ -849,8 +867,8 @@ namespace System.Security.Cryptography.Xml
                     i++;
                 }
 
-                int iLevelA = referenceA.SignedXml.GetReferenceLevel(iIndexA, References);
-                int iLevelB = referenceB.SignedXml.GetReferenceLevel(iIndexB, References);
+                int iLevelA = referenceA!.SignedXml!.GetReferenceLevel(iIndexA, References);
+                int iLevelB = referenceB!.SignedXml!.GetReferenceLevel(iIndexB, References);
                 return iLevelA.CompareTo(iLevelB);
             }
         }
@@ -858,7 +876,7 @@ namespace System.Security.Cryptography.Xml
         private void BuildDigestedReferences()
         {
             // Default the DigestMethod and Canonicalization
-            ArrayList references = SignedInfo.References;
+            ArrayList references = SignedInfo!.References;
             // Reset the cache
             _refProcessed = new bool[references.Count];
             _refLevelCache = new int[references.Count];
@@ -881,12 +899,11 @@ namespace System.Security.Cryptography.Xml
             foreach (Reference reference in sortedReferences)
             {
                 // If no DigestMethod has yet been set, default it to sha1
-                if (reference.DigestMethod == null)
-                    reference.DigestMethod = Reference.DefaultDigestMethod;
+                reference.DigestMethod ??= Reference.DefaultDigestMethod;
 
                 SignedXmlDebugLog.LogSigningReference(this, reference);
 
-                reference.UpdateHashValue(_containingDocument, nodeList);
+                reference.UpdateHashValue(_containingDocument!, nodeList);
                 // If this reference has an Id attribute, add it
                 if (reference.Id != null)
                     nodeList.Add(reference.GetXml());
@@ -895,10 +912,10 @@ namespace System.Security.Cryptography.Xml
 
         private bool CheckDigestedReferences()
         {
-            ArrayList references = m_signature.SignedInfo.References;
+            ArrayList references = m_signature.SignedInfo!.References;
             for (int i = 0; i < references.Count; ++i)
             {
-                Reference digestedReference = (Reference)references[i];
+                Reference digestedReference = (Reference)references[i]!;
 
                 if (!ReferenceUsesSafeTransformMethods(digestedReference))
                 {
@@ -906,10 +923,10 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 SignedXmlDebugLog.LogVerifyReference(this, digestedReference);
-                byte[] calculatedHash;
+                byte[]? calculatedHash;
                 try
                 {
-                    calculatedHash = digestedReference.CalculateHashValue(_containingDocument, m_signature.ReferencedItems);
+                    calculatedHash = digestedReference.CalculateHashValue(_containingDocument!, m_signature.ReferencedItems);
                 }
                 catch (CryptoSignedXmlRecursionException)
                 {
@@ -934,7 +951,7 @@ namespace System.Security.Cryptography.Xml
         // This method makes no attempt to disguise the length of either of its inputs. It is assumed the attacker has
         // knowledge of the algorithms used, and thus the output length. Length is difficult to properly blind in modern CPUs.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        private static bool CryptographicEquals(byte[] a, byte[] b)
+        private static bool CryptographicEquals(byte[]? a, byte[]? b)
         {
             System.Diagnostics.Debug.Assert(a != null);
             System.Diagnostics.Debug.Assert(b != null);
@@ -956,7 +973,7 @@ namespace System.Security.Cryptography.Xml
                     // This cannot overflow more than once (and back to 0) because bytes are 1 byte
                     // in length, and result is 4 bytes. The OR propagates all set bytes, so the differences
                     // can't add up and overflow a second time.
-                    result = result | (a[i] - b[i]);
+                    result |= (a[i] - b[i]);
             }
 
             return (0 == result);
@@ -981,20 +998,25 @@ namespace System.Security.Cryptography.Xml
             return formatValid;
         }
 
-        private bool CheckSignedInfo(AsymmetricAlgorithm key!!)
+        private bool CheckSignedInfo(AsymmetricAlgorithm key)
         {
-            SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
 
-            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
+            SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
+
+            SignatureDescription? signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
 
             // Let's see if the key corresponds with the SignatureMethod
-            Type ta = Type.GetType(signatureDescription.KeyAlgorithm);
+            Type ta = Type.GetType(signatureDescription.KeyAlgorithm!)!;
             if (!IsKeyTheCorrectAlgorithm(key, ta))
                 return false;
 
-            HashAlgorithm hashAlgorithm = signatureDescription.CreateDigest();
+            HashAlgorithm? hashAlgorithm = signatureDescription.CreateDigest();
             if (hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
             byte[] hashval = GetC14NDigest(hashAlgorithm);
@@ -1007,15 +1029,20 @@ namespace System.Security.Cryptography.Xml
                                                   asymmetricSignatureDeformatter,
                                                   hashval,
                                                   m_signature.SignatureValue);
-            return asymmetricSignatureDeformatter.VerifySignature(hashval, m_signature.SignatureValue);
+            return asymmetricSignatureDeformatter.VerifySignature(hashval, m_signature.SignatureValue!);
         }
 
-        private bool CheckSignedInfo(KeyedHashAlgorithm macAlg!!)
+        private bool CheckSignedInfo(KeyedHashAlgorithm macAlg)
         {
-            SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
+            if (macAlg is null)
+            {
+                throw new ArgumentNullException(nameof(macAlg));
+            }
+
+            SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo!);
 
             int signatureLength;
-            if (m_signature.SignedInfo.SignatureLength == null)
+            if (m_signature.SignedInfo!.SignatureLength == null)
                 signatureLength = macAlg.HashSize;
             else
                 signatureLength = Convert.ToInt32(m_signature.SignedInfo.SignatureLength, null);
@@ -1033,14 +1060,11 @@ namespace System.Security.Cryptography.Xml
             // Calculate the hash
             byte[] hashValue = GetC14NDigest(macAlg);
             SignedXmlDebugLog.LogVerifySignedInfo(this, macAlg, hashValue, m_signature.SignatureValue);
-            for (int i = 0; i < m_signature.SignatureValue.Length; i++)
-            {
-                if (m_signature.SignatureValue[i] != hashValue[i]) return false;
-            }
-            return true;
+
+            return m_signature.SignatureValue.AsSpan().SequenceEqual(hashValue.AsSpan(0, m_signature.SignatureValue.Length));
         }
 
-        private static XmlElement GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)
+        private static XmlElement? GetSingleReferenceTarget(XmlDocument document, string idAttributeName, string idValue)
         {
             // idValue has already been tested as an NCName (unless overridden for compatibility), so there's no
             // escaping that needs to be done here.
@@ -1055,7 +1079,7 @@ namespace System.Security.Cryptography.Xml
             // In this case, we'll treat it the same as having found nothing across all fallbacks (but shortcut so that we don't
             // fall into a trap of finding a secondary element which wasn't the originally signed one).
 
-            XmlNodeList nodeList = document.SelectNodes(xPath);
+            XmlNodeList? nodeList = document.SelectNodes(xPath);
 
             if (nodeList == null || nodeList.Count == 0)
             {
@@ -1092,7 +1116,7 @@ namespace System.Security.Cryptography.Xml
             //
             while (expectedType != null && expectedType.BaseType != typeof(AsymmetricAlgorithm))
             {
-                expectedType = expectedType.BaseType;
+                expectedType = expectedType.BaseType!;
             }
 
             if (expectedType == null)

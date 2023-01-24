@@ -28,116 +28,24 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-// array is GC protected by caller
-void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
-                           MethodTable* pArrayMT,
-                           MethodTable* pElemMT)
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd)
 {
-    STATIC_CONTRACT_MODE_COOPERATIVE;
+    QCALL_CONTRACT;
 
-    // Ensure that the array element type is fully loaded before executing its code
+    PCODE ctorEntrypoint = NULL;
+
+    BEGIN_QCALL;
+
+    TypeHandle th = pArrayTypeHnd.AsTypeHandle();
+    MethodTable* pElemMT = th.GetArrayElementTypeHandle().AsMethodTable();
+    ctorEntrypoint = pElemMT->GetDefaultConstructor()->GetMultiCallableAddrOfCode();
+
     pElemMT->EnsureInstanceActive();
 
-    //can not use contract here because of SEH
-    _ASSERTE(IsProtectedByGCFrame (arrayRef));
+    END_QCALL;
 
-    SIZE_T offset = ArrayBase::GetDataPtrOffset(pArrayMT);
-    SIZE_T size = pArrayMT->GetComponentSize();
-    SIZE_T cElements = (*arrayRef)->GetNumComponents();
-
-    MethodTable * pCanonMT = pElemMT->GetCanonicalMethodTable();
-    WORD slot = pCanonMT->GetDefaultConstructorSlot();
-
-    PCODE ctorFtn = pCanonMT->GetSlot(slot);
-
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    BEGIN_CALL_TO_MANAGED();
-
-
-    for (SIZE_T i = 0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-#ifdef _DEBUG
-        __asm {
-            mov ECX, thisPtr
-            mov EDX, pElemMT // Instantiation argument if the type is generic
-            call    [ctorFtn]
-            nop                // Mark the fact that we can call managed code
-        }
-#else // _DEBUG
-        typedef void (__fastcall * CtorFtnType)(BYTE*, BYTE*);
-        (*(CtorFtnType)ctorFtn)(thisPtr, (BYTE*)pElemMT);
-#endif // _DEBUG
-
-        offset += size;
-    }
-
-    END_CALL_TO_MANAGED();
-#else // TARGET_X86 && !TARGET_UNIX
-    //
-    // This is quite a bit slower, but it is portable.
-    //
-
-    for (SIZE_T i =0; i < cElements; i++)
-    {
-        // Since GetSlot() is not idempotent and may have returned
-        // a non-optimal entry-point the first time round.
-        if (i == 1)
-        {
-            ctorFtn = pCanonMT->GetSlot(slot);
-        }
-
-        BYTE* thisPtr = (((BYTE*) OBJECTREFToObject (*arrayRef)) + offset);
-
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(ctorFtn);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(thisPtr);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(pElemMT); // Instantiation argument if the type is generic
-        CALL_MANAGED_METHOD_NORET(args);
-
-        offset += size;
-    }
-#endif // !TARGET_X86 || TARGET_UNIX
+    return ctorEntrypoint;
 }
-
-
-FCIMPL1(void, ArrayNative::Initialize, ArrayBase* array)
-{
-    FCALL_CONTRACT;
-
-    if (array == NULL)
-    {
-        FCThrowVoid(kNullReferenceException);
-    }
-
-
-    MethodTable* pArrayMT = array->GetMethodTable();
-
-    TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
-    if (thElem.IsTypeDesc())
-        return;
-
-    MethodTable * pElemMT = thElem.AsMethodTable();
-    if (!pElemMT->HasDefaultConstructor() || !pElemMT->IsValueType())
-        return;
-
-    ARRAYBASEREF arrayRef (array);
-    HELPER_METHOD_FRAME_BEGIN_1(arrayRef);
-
-    ArrayInitializeWorker(&arrayRef, pArrayMT, pElemMT);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 
     // Returns whether you can directly copy an array of srcType into destType.
 FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst)
@@ -228,7 +136,7 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     TypeHandle srcTH = pSrcMT->GetArrayElementTypeHandle();
     TypeHandle destTH = pDestMT->GetArrayElementTypeHandle();
     _ASSERTE(srcTH != destTH);  // Handled by fast path
-    
+
     // Value class boxing
     if (srcTH.IsValueType() && !destTH.IsValueType())
     {
@@ -862,7 +770,7 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
 
     TypeHandle elementType(pElementType->GetType());
-    
+
     CheckElementType(elementType);
 
     CorElementType CorType = elementType.GetSignatureCorElementType();
@@ -936,44 +844,6 @@ Done: ;
 }
 FCIMPLEND
 
-FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
-
-    BASEARRAYREF refThis(refThisUNSAFE);
-
-    TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
-
-    // Legacy behavior
-    if (arrayElementType.IsTypeDesc())
-    {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowRes(kNotSupportedException, W("NotSupported_Type"));
-    }
-
-    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
-    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
-    OBJECTREF Obj;
-
-    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
-    if (pElementTypeMT->IsValueType())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        Obj = pElementTypeMT->Box(pData);
-        HELPER_METHOD_FRAME_END();
-    }
-    else
-    {
-        Obj = ObjectToOBJECTREF(*((Object**)pData));
-    }
-
-    return OBJECTREFToObject(Obj);
-}
-FCIMPLEND
-
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {
     FCALL_CONTRACT;
@@ -983,12 +853,10 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    // Legacy behavior
+    // Legacy behavior (this handles pointers and function pointers)
     if (arrayElementType.IsTypeDesc())
     {
-        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
-        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
-            FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
+        FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
 
     _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
@@ -1055,7 +923,7 @@ FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE
             pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
 
             UINT cbSize = CorTypeInfo::Size(targetType);
-            memcpyNoGCRefs(pData, ArgSlotEndianessFixup(&value, cbSize), cbSize);
+            memcpyNoGCRefs(pData, ArgSlotEndiannessFixup(&value, cbSize), cbSize);
 
             HELPER_METHOD_FRAME_END();
         }
@@ -1080,9 +948,6 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
 
     if (!pField->IsRVA())
         COMPlusThrow(kArgumentException);
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     // Note that we do not check that the field is actually in the PE file that is initializing
     // the array. Basically the data being published is can be accessed by anyone with the proper
@@ -1146,7 +1011,7 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
     } gc;
     gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
     gc.refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(FCALL_RTH_TO_REFLECTCLASS(targetTypeUnsafe));
-    void* data;
+    void* data = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
@@ -1160,9 +1025,6 @@ FCIMPL3_VVI(void*, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structF
 
     DWORD totalSize = pField->LoadSize();
     DWORD targetTypeSize = targetTypeHandle.GetSize();
-
-    // Report the RVA field to the logger.
-    g_IBCLogger.LogRVADataAccess(pField);
 
     data = pField->GetStaticAddressHandle(NULL);
     _ASSERTE(data != NULL);

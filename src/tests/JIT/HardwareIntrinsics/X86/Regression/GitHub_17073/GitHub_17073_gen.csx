@@ -321,8 +321,9 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-class Program
+public class GitHub_17073
 {
     [MethodImpl(MethodImplOptions.NoInlining)] static bool True() => true;
     [MethodImpl(MethodImplOptions.NoInlining)] static bool False() => false;
@@ -335,14 +336,15 @@ class Program
     }
 ");
 
-w.WriteLine("    static int Main()");
+w.WriteLine("    [Fact]");
+w.WriteLine("    public static void Test()");
 w.WriteLine("    {");
 w.WriteLine("        bool r = true;");
 
 foreach (var test in tests)
     test.WriteTestCases(w);
 
-w.WriteLine("        return r ? 100 : 42;");
+w.WriteLine("        Assert.Equal(true, r);");
 w.WriteLine("    }");
 
 foreach (var test in tests)

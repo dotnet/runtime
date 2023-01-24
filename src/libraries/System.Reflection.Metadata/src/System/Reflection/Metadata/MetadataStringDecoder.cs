@@ -41,8 +41,13 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// To cache and reuse existing strings. Create a derived class and override <see cref="GetString(byte*, int)"/>
         /// </remarks>
-        public MetadataStringDecoder(Encoding encoding!!)
+        public MetadataStringDecoder(Encoding encoding)
         {
+            if (encoding is null)
+            {
+                Throw.ArgumentNull(nameof(encoding));
+            }
+
             // Non-enforcement of (encoding is UTF8Encoding) here is by design.
             //
             // This type is not itself aware of any particular encoding. However, the constructor argument that accepts a
@@ -60,7 +65,7 @@ namespace System.Reflection.Metadata
         /// <param name="bytes">Pointer to bytes to decode.</param>
         /// <param name="byteCount">Number of bytes to decode.</param>
         /// <returns>The decoded string.</returns>
-        public unsafe virtual string GetString(byte* bytes, int byteCount)
+        public virtual unsafe string GetString(byte* bytes, int byteCount)
         {
             Debug.Assert(Encoding != null);
 

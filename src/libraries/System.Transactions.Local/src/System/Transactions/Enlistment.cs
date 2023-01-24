@@ -29,7 +29,7 @@ namespace System.Transactions
 
         byte[] GetRecoveryInformation();
 
-        InternalEnlistment InternalEnlistment
+        InternalEnlistment? InternalEnlistment
         {
             get;
             set;
@@ -147,31 +147,13 @@ namespace System.Transactions
 
         internal Enlistment Enlistment => _enlistment;
 
-        internal PreparingEnlistment PreparingEnlistment
-        {
-            get
-            {
-                if (_preparingEnlistment == null)
-                {
-                    // If there is a race here one of the objects would simply be garbage collected.
-                    _preparingEnlistment = new PreparingEnlistment(this);
-                }
-                return _preparingEnlistment;
-            }
-        }
+        internal PreparingEnlistment PreparingEnlistment =>
+            // If there is a race here one of the objects would simply be garbage collected.
+            _preparingEnlistment ??= new PreparingEnlistment(this);
 
-        internal SinglePhaseEnlistment SinglePhaseEnlistment
-        {
-            get
-            {
-                if (_singlePhaseEnlistment == null)
-                {
-                    // If there is a race here one of the objects would simply be garbage collected.
-                    _singlePhaseEnlistment = new SinglePhaseEnlistment(this);
-                }
-                return _singlePhaseEnlistment;
-            }
-        }
+        internal SinglePhaseEnlistment SinglePhaseEnlistment =>
+            // If there is a race here one of the objects would simply be garbage collected.
+            _singlePhaseEnlistment ??= new SinglePhaseEnlistment(this);
 
         internal InternalTransaction Transaction => _transaction;
 
@@ -288,36 +270,28 @@ namespace System.Transactions
             }
         }
 
-        void IEnlistmentNotificationInternal.Prepare(
-            IPromotedEnlistment preparingEnlistment
-            )
+        void IEnlistmentNotificationInternal.Prepare(IPromotedEnlistment preparingEnlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = preparingEnlistment;
             _twoPhaseNotifications.Prepare(PreparingEnlistment);
         }
 
-        void IEnlistmentNotificationInternal.Commit(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.Commit(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Commit(Enlistment);
         }
 
-        void IEnlistmentNotificationInternal.Rollback(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.Rollback(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;
             _twoPhaseNotifications.Rollback(Enlistment);
         }
 
-        void IEnlistmentNotificationInternal.InDoubt(
-            IPromotedEnlistment enlistment
-            )
+        void IEnlistmentNotificationInternal.InDoubt(IPromotedEnlistment enlistment)
         {
             Debug.Assert(_twoPhaseNotifications != null);
             _promotedEnlistment = enlistment;

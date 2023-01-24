@@ -102,12 +102,6 @@ PEImage::~PEImage()
 
     if (m_pMDImport)
         m_pMDImport->Release();
-    if(m_pNativeMDImport)
-        m_pNativeMDImport->Release();
-#ifdef METADATATRACKER_ENABLED
-    if (m_pMDTracker != NULL)
-        m_pMDTracker->Deactivate();
-#endif // METADATATRACKER_ENABLED
 
 }
 
@@ -144,10 +138,10 @@ ULONG PEImage::Release()
         CrstHolder holder(&s_hashLock);
 
         // Decrement and check the refcount - if we hit 0, remove it from the hash and delete it.
-        result=FastInterlockDecrement(&m_refCount);
+        result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %s\n", m_path.GetUTF8()));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
@@ -176,7 +170,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         MODE_ANY;
     }
     CONTRACT_CHECK_END;
-
+#ifdef TARGET_WINDOWS
     CCHECK_START
     {
         // This is not intended to be an exhaustive test, just to provide a sanity check
@@ -203,19 +197,19 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         while (i != path.End())
         {
             // Check for multiple slashes
-            if(*i != '\\')
+            if(*i != DIRECTORY_SEPARATOR_CHAR_A)
             {
 
                 // Check for . or ..
                 SString sParentDir(SString::Ascii, "..");
                 SString sCurrentDir(SString::Ascii, ".");
                 if ((path.Skip(i, sParentDir) || path.Skip(i, sCurrentDir))
-                    && (path.Match(i, '\\')))
+                    && (path.Match(i, DIRECTORY_SEPARATOR_CHAR_A)))
                 {
                     CCHECK_FAIL("Illegal . or ..");
                 }
 
-                if (!path.Find(i, '\\'))
+                if (!path.Find(i, DIRECTORY_SEPARATOR_CHAR_A))
                     break;
             }
 
@@ -223,6 +217,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         }
     }
     CCHECK_END;
+#endif // TARGET_WINDOWS
 
     CHECK_OK;
 }
@@ -296,64 +291,6 @@ IMDInternalImport* PEImage::GetMDImport()
     return m_pMDImport;
 }
 
-IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasReadyToRunHeader());
-        if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
-        if (loadAllowed) THROWS;                         else NOTHROW;
-        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pNativeMDImport == NULL)
-    {
-        if (loadAllowed)
-            OpenNativeMDImport();
-        else
-            return NULL;
-    }
-
-    _ASSERTE(m_pNativeMDImport);
-    return m_pNativeMDImport;
-}
-
-void PEImage::OpenNativeMDImport()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(HasReadyToRunHeader());
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-    if (m_pNativeMDImport==NULL)
-    {
-        IMDInternalImport* m_pNewImport;
-        COUNT_T cMeta=0;
-        const void* pMeta=GetNativeManifestMetadata(&cMeta);
-
-        if(pMeta==NULL)
-            return;
-
-        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                                 cMeta,
-                                                 ofRead,
-                                                 IID_IMDInternalImport,
-                                                 (void **) &m_pNewImport));
-
-        if(FastInterlockCompareExchangePointer(&m_pNativeMDImport, m_pNewImport, NULL))
-            m_pNewImport->Release();
-    }
-    _ASSERTE(m_pNativeMDImport);
-}
-
 void PEImage::OpenMDImport()
 {
     CONTRACTL
@@ -378,19 +315,13 @@ void PEImage::OpenMDImport()
         if(pMeta==NULL)
             return;
 
-#if METADATATRACKER_ENABLED
-        m_pMDTracker = MetaDataTracker::GetOrCreateMetaDataTracker((BYTE *)pMeta,
-                                                               cMeta,
-                                                               GetPath().GetUnicode());
-#endif // METADATATRACKER_ENABLED
-
         IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
                                                  cMeta,
                                                  ofRead,
                                                  IID_IMDInternalImport,
                                                  (void **) &m_pNewImport));
 
-        if(FastInterlockCompareExchangePointer(&m_pMDImport, m_pNewImport, NULL))
+        if(InterlockedCompareExchangeT(&m_pMDImport, m_pNewImport, NULL))
         {
             m_pNewImport->Release();
         }
@@ -505,9 +436,9 @@ LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
         LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
             0,                                 // DWORD dwCommitBlockSize
             ThunkHeapStubManager::g_pManager->GetRangeList(),
-            TRUE);                             // BOOL fMakeExecutable
+            UnlockedLoaderHeap::HeapKind::Executable);
 
-        if (FastInterlockCompareExchangePointer((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
+        if (InterlockedCompareExchangeT((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
         {
             delete pNewHeap;
         }
@@ -669,12 +600,12 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
                         else
                             fileName = pCvInfo->path;
 
-                        size_t fileNameLenght = strlen(fileName);
-                        size_t fullPathLenght = strlen(pCvInfo->path);
-                        memmove(pCvInfo->path, fileName, fileNameLenght);
+                        size_t fileNameLength = strlen(fileName);
+                        size_t fullPathLength = strlen(pCvInfo->path);
+                        memmove(pCvInfo->path, fileName, fileNameLength);
 
                         // NULL out the rest of the path buffer.
-                        for (size_t i = fileNameLenght; i < MAX_PATH_FNAME - 1; i++)
+                        for (size_t i = fileNameLength; i < MAX_PATH_FNAME - 1; i++)
                         {
                             pCvInfo->path[i] = '\0';
                         }
@@ -694,7 +625,7 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // This just gets the image headers into the dump.
     // This is used, for example, for ngen images to ensure we have the debug directory so we
     // can find the managed PDBs.
-    // No lock here as the processs should be suspended.
+    // No lock here as the process should be suspended.
     if (m_pLayouts[IMAGE_FLAT].IsValid() && m_pLayouts[IMAGE_FLAT]!=NULL)
         m_pLayouts[IMAGE_FLAT]->EnumMemoryRegions(flags);
     if (m_pLayouts[IMAGE_LOADED].IsValid() &&  m_pLayouts[IMAGE_LOADED]!=NULL)
@@ -712,11 +643,7 @@ PEImage::PEImage():
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
-#ifdef METADATATRACKER_DATA
-    m_pMDTracker(NULL),
-#endif // METADATATRACKER_DATA
-    m_pMDImport(NULL),
-    m_pNativeMDImport(NULL)
+    m_pMDImport(NULL)
 {
     CONTRACTL
     {

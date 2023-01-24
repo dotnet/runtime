@@ -79,7 +79,7 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) tf,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) tf,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -105,7 +105,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) nm,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -115,7 +115,6 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
-#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -145,7 +144,6 @@ const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp 
 {
     return getRegName((regNumber)reg);
 }
-#endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #if defined(DEBUG)
 
@@ -223,6 +221,17 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, xname, wname) xname,
 #include "register.h"
     };
+    assert((unsigned)reg < ArrLen(regNamesFloat));
+
+    return regNamesFloat[reg];
+
+#elif defined(TARGET_LOONGARCH64)
+
+    static const char* regNamesFloat[] = {
+#define REGDEF(name, rnum, mask, sname) sname,
+#include "register.h"
+    };
+
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
     return regNamesFloat[reg];
@@ -316,6 +325,14 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 }
 #elif defined(TARGET_X86)
 // No register ranges
+
+#elif defined(TARGET_LOONGARCH64)
+                if (REG_A0 <= regNum && regNum <= REG_T8)
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -325,10 +342,12 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
             // We've already printed a register. Is this the end of a range?
             else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
                      || (regNum == REG_R28))                         // last register before FP
-#else                                                                // TARGET_ARM64
+#elif defined(TARGET_LOONGARCH64)
+            else if ((regNum == REG_INT_LAST) || (regNum == REG_A7) || (regNum == REG_T8))
+#else  // TARGET_LOONGARCH64
             // We've already printed a register. Is this the end of a range?
             else if (regNum == REG_INT_LAST)
-#endif                                                               // TARGET_ARM64
+#endif // TARGET_LOONGARCH64
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
@@ -627,7 +646,17 @@ const char* genES2str(BitVecTraits* traits, EXPSET_TP set)
     return temp;
 }
 
-const char* refCntWtd2str(weight_t refCntWtd)
+//------------------------------------------------------------------------
+// refCntWtd2str: Return a string representation of a weighted ref count
+//
+// Arguments:
+//    refCntWtd - weight to format
+//    padForDecimalPlaces - (default: false) If true, pad any integral or non-numeric
+//                          output on the right with three spaces, representing space
+//                          for ".00". This makes "1" line up with "2.34" at the "2" column.
+//                          This is used for formatting the BasicBlock list.
+//
+const char* refCntWtd2str(weight_t refCntWtd, bool padForDecimalPlaces)
 {
     const int    bufSize = 17;
     static char  num1[bufSize];
@@ -636,11 +665,17 @@ const char* refCntWtd2str(weight_t refCntWtd)
 
     char* temp = nump;
 
+    const char* strDecimalPaddingString = "";
+    if (padForDecimalPlaces)
+    {
+        strDecimalPaddingString = "   ";
+    }
+
     nump = (nump == num1) ? num2 : num1;
 
     if (refCntWtd >= BB_MAX_WEIGHT)
     {
-        sprintf_s(temp, bufSize, "MAX   ");
+        sprintf_s(temp, bufSize, "MAX%s", strDecimalPaddingString);
     }
     else
     {
@@ -659,7 +694,7 @@ const char* refCntWtd2str(weight_t refCntWtd)
         {
             if (intPart == scaledWeight)
             {
-                sprintf_s(temp, bufSize, "%lld   ", (long long)intPart);
+                sprintf_s(temp, bufSize, "%lld%s", (long long)intPart, strDecimalPaddingString);
             }
             else
             {
@@ -1349,10 +1384,17 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_GETREFANY:
             case CORINFO_HELP_LDELEMA_REF:
 
                 isPure = true;
+                break;
+
+            // GETREFANY is pure up to the value of the struct argument. We
+            // only support that when it is not an implicit byref.
+            case CORINFO_HELP_GETREFANY:
+#ifndef WINDOWS_AMD64_ABI
+                isPure = true;
+#endif
                 break;
 
             // helpers that return internal handle
@@ -1380,7 +1422,10 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-            case CORINFO_HELP_READYTORUN_STATIC_BASE:
+            case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
+            case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
 
                 // These may invoke static class constructors
@@ -1608,7 +1653,7 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc) : m_pInfos(null
         }
 
         // Ignore lines starting with leading ";" "#" "//".
-        if ((0 == _strnicmp(buffer, ";", 1)) || (0 == _strnicmp(buffer, "#", 1)) || (0 == _strnicmp(buffer, "//", 2)))
+        if ((0 == strncmp(buffer, ";", 1)) || (0 == strncmp(buffer, "#", 1)) || (0 == strncmp(buffer, "//", 2)))
         {
             continue;
         }
@@ -2212,6 +2257,38 @@ bool FloatingPointUtils::hasPreciseReciprocal(float x)
 }
 
 //------------------------------------------------------------------------
+// isAllBitsSet: Determines whether the specified value is AllBitsSet
+//
+// Arguments:
+//    val - value to check for AllBitsSet
+//
+// Return Value:
+//    True if val is AllBitsSet
+//
+
+bool FloatingPointUtils::isAllBitsSet(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return bits == 0xFFFFFFFFU;
+}
+
+//------------------------------------------------------------------------
+// isAllBitsSet: Determines whether the specified value is AllBitsSet
+//
+// Arguments:
+//    val - value to check for AllBitsSet
+//
+// Return Value:
+//    True if val is AllBitsSet
+//
+
+bool FloatingPointUtils::isAllBitsSet(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0xFFFFFFFFFFFFFFFFULL;
+}
+
+//------------------------------------------------------------------------
 // isNegative: Determines whether the specified value is negative
 //
 // Arguments:
@@ -2271,6 +2348,38 @@ bool FloatingPointUtils::isNaN(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
     return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+}
+
+//------------------------------------------------------------------------
+// isNegativeZero: Determines whether the specified value is negative zero (-0.0)
+//
+// Arguments:
+//    val - value to check for (-0.0)
+//
+// Return Value:
+//    True if val is (-0.0)
+//
+
+bool FloatingPointUtils::isNegativeZero(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0x8000000000000000ULL;
+}
+
+//------------------------------------------------------------------------
+// isPositiveZero: Determines whether the specified value is positive zero (+0.0)
+//
+// Arguments:
+//    val - value to check for (+0.0)
+//
+// Return Value:
+//    True if val is (+0.0)
+//
+
+bool FloatingPointUtils::isPositiveZero(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return bits == 0x0000000000000000ULL;
 }
 
 //------------------------------------------------------------------------
@@ -2363,7 +2472,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 // Return Value:
 //    Either val1 or val2
 //
-
 float FloatingPointUtils::minimum(float val1, float val2)
 {
     if (val1 != val2 && !isNaN(val1))
@@ -2371,6 +2479,42 @@ float FloatingPointUtils::minimum(float val1, float val2)
         return val1 < val2 ? val1 : val2;
     }
     return isNegative(val1) ? val1 : val2;
+}
+
+//------------------------------------------------------------------------
+// normalize: Normalize a floating point value.
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    Normalized value.
+//
+// Remarks:
+//   This is a no-op on all host platforms but x86. On x86 floats are returned on
+//   the x87 stack. Since `fld` will automatically quiet signalling NaNs this
+//   means that it is very easy for a float to nondeterministically change bit
+//   representation if it is a snan, depending on whether a function that
+//   returns the value is inlined or not by the C++ compiler. To get around the
+//   nondeterminism we quiet the NaNs ahead of time as a best-effort fix.
+//
+double FloatingPointUtils::normalize(double value)
+{
+#ifdef HOST_X86
+    if (!isNaN(value))
+    {
+        return value;
+    }
+
+    uint64_t bits;
+    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    memcpy(&bits, &value, sizeof(value));
+    bits |= 1ull << 51;
+    memcpy(&value, &bits, sizeof(bits));
+    return value;
+#else
+    return value;
+#endif
 }
 
 namespace MagicDivide

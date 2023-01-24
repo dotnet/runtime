@@ -7,11 +7,15 @@ using Autofac.Extensions.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public class AutofacDependencyInjectionSpecificationTests : DependencyInjectionSpecificationTests
+    public class AutofacDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
-        public override bool SupportsIServiceProviderIsService => false;
+        public override string[] SkippedTests => new[]
+        {
+            "ScopesAreFlatNotHierarchical",
+            "ServiceScopeFactoryIsSingleton"
+        };
 
-        protected override IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection)
+        protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
         {
             var builder = new ContainerBuilder();
             builder.Populate(serviceCollection);

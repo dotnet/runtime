@@ -1,0 +1,8 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <!-- called by xUnit's Assert.Equal -->
+      <Type Name="System.IEquatable`1[[Microsoft.Extensions.FileSystemGlobbing.FilePatternMatch,Microsoft.Extensions.FileSystemGlobbing]]" Dynamic="Required All" />
+    </Assembly>
+  </Application>
+</Directives>

@@ -212,13 +212,13 @@ namespace System.Runtime.InteropServices
         /// <param name="index">The location in the output array to begin writing to.</param>
         /// <param name="count">The number of value types to read from the input array and to write to the output array.</param>
         [CLSCompliant(false)]
-        public void ReadArray<T>(ulong byteOffset, T[] array!!, int index, int count)
+        public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -299,13 +299,13 @@ namespace System.Runtime.InteropServices
         /// <param name="index">The offset in the array to start reading from.</param>
         /// <param name="count">The number of value types to write.</param>
         [CLSCompliant(false)]
-        public void WriteArray<T>(ulong byteOffset, T[] array!!, int index, int count)
+        public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(array);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -405,7 +405,9 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-            return (uint)Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+            return (uint)sizeof(T);
+#pragma warning restore 8500
         }
     }
 }

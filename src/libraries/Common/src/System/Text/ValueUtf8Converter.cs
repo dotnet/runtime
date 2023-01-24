@@ -23,7 +23,7 @@ namespace System.Text
 
         public Span<byte> ConvertAndTerminateString(ReadOnlySpan<char> value)
         {
-            int maxSize = Encoding.UTF8.GetMaxByteCount(value.Length) + 1;
+            int maxSize = checked(Encoding.UTF8.GetMaxByteCount(value.Length) + 1);
             if (_bytes.Length < maxSize)
             {
                 Dispose();

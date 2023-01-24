@@ -214,7 +214,7 @@ public:
 //   the hash function is re-applied.
 //
 //   Inserts choose an empty slot in the current bucket for new entries, if the current bucket
-//   is full, then the seed is refined and a new bucket is choosen, if an empty slot is not found
+//   is full, then the seed is refined and a new bucket is chosen, if an empty slot is not found
 //   after 8 retries, the hash table is expanded, this causes the current array of buckets to
 //   be put in a free list and a new array of buckets is allocated and all non-deleted entries
 //   from the old hash table are rehashed to the new array
@@ -337,7 +337,7 @@ private:
     static void            Leave(HashMap *);        // check valid to leave
 
     typedef Holder<HashMap *, HashMap::Enter, HashMap::Leave> SyncAccessHolder;
-    BOOL            m_fInSyncCode; // test for non-synchronus access
+    BOOL            m_fInSyncCode; // test for non-synchronous access
 #else // !_DEBUG
     // in non DEBUG mode use a no-op helper
     typedef NoOpBaseHolder<HashMap *> SyncAccessHolder;
@@ -365,7 +365,7 @@ private:
     SIZE_T          m_cbPrevSlotsInUse;
     SIZE_T          m_cbInserts;
     SIZE_T          m_cbDeletes;
-    // mode of operation, synchronus or single user
+    // mode of operation, synchronous or single user
     bool            m_fAsyncMode;
 
 #ifdef _DEBUG

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -355,6 +358,39 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void NegativeEnumValue_CultureInvariance()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/68600
+            RemoteExecutor.Invoke(static () =>
+            {
+                SampleEnumInt32 value = (SampleEnumInt32)(-2);
+                string expectedJson = "-2";
+
+                var options = new JsonSerializerOptions
+                {
+                    Converters = { new JsonStringEnumConverter(allowIntegerValues: true) },
+                };
+
+                // Sets the minus sign to -
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+                string actualJson = JsonSerializer.Serialize(value, options);
+                Assert.Equal(expectedJson, actualJson);
+                SampleEnumInt32 result = JsonSerializer.Deserialize<SampleEnumInt32>(actualJson, options);
+                Assert.Equal(value, result);
+
+                // Sets the minus sign to U+2212
+                CultureInfo.CurrentCulture = new CultureInfo("sv-SE");
+
+                actualJson = JsonSerializer.Serialize(value, options);
+                Assert.Equal(expectedJson, actualJson);
+                result = JsonSerializer.Deserialize<SampleEnumInt32>(actualJson, options);
+                Assert.Equal(value, result);
+            }).Dispose();
+        }
+
         public abstract class NumericEnumKeyDictionaryBase<T>
         {
             public abstract Dictionary<T, int> BuildDictionary(int i);
@@ -518,6 +554,86 @@ namespace System.Text.Json.Serialization.Tests
             E = 1 << 4,
             F = 1 << 5,
             G = 1 << 6,
+        }
+
+        [Fact]
+        public static void Honor_EnumNamingPolicy_On_Deserialization()
+        {
+            JsonSerializerOptions options = new()
+            {
+                Converters =
+                {
+                    new JsonStringEnumConverter(namingPolicy: new SimpleSnakeCasePolicy() )
+                }
+            };
+
+            BindingFlags bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""non_public""", options);
+            Assert.Equal(BindingFlags.NonPublic, bindingFlags);
+
+            // Flags supported without naming policy.
+            bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""NonPublic, Public""", options);
+            Assert.Equal(BindingFlags.NonPublic | BindingFlags.Public, bindingFlags);
+
+            // Flags supported with naming policy.
+            bindingFlags = JsonSerializer.Deserialize<BindingFlags>(@"""static, public""", options);
+            Assert.Equal(BindingFlags.Static | BindingFlags.Public, bindingFlags);
+
+            // Null not supported.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BindingFlags>("null", options));
+
+            // Null supported for nullable enum.
+            Assert.Null(JsonSerializer.Deserialize<BindingFlags?>("null", options));
+        }
+
+        [Fact]
+        public static void EnumDictionaryKeyDeserialization()
+        {
+            JsonNamingPolicy snakeCasePolicy = new SimpleSnakeCasePolicy();
+            JsonSerializerOptions options = new()
+            {
+                Converters =
+                {
+                    new JsonStringEnumConverter(namingPolicy: snakeCasePolicy)
+                },
+                DictionaryKeyPolicy = snakeCasePolicy
+            };
+
+            // Baseline.
+            var dict = JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic, Public"": 1}", options);
+            Assert.Equal(1, dict[BindingFlags.NonPublic | BindingFlags.Public]);
+
+            // DictionaryKeyPolicy not honored for dict key deserialization.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""NonPublic0, Public0"": 1}", options));
+
+            // EnumConverter naming policy not honored.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<BindingFlags, int>>(@"{""non_public, static"": 0, ""NonPublic, Public"": 1}", options));
+        }
+
+        [Fact]
+        public static void EnumDictionaryKeySerialization()
+        {
+            JsonSerializerOptions options = new()
+            {
+                DictionaryKeyPolicy = new SimpleSnakeCasePolicy()
+            };
+
+            Dictionary<BindingFlags, int> dict = new()
+            {
+                [BindingFlags.NonPublic | BindingFlags.Public] = 1,
+                [BindingFlags.Static] = 2,
+            };
+
+            string expected = @"{
+    ""public, non_public"": 1,
+    ""static"": 2
+}";
+
+            JsonTestHelper.AssertJsonEqual(expected, JsonSerializer.Serialize(dict, options));
+        }
+
+        private class ZeroAppenderPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name + "0";
         }
     }
 }

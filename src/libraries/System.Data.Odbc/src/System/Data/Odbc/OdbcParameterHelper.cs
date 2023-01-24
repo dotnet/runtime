@@ -139,8 +139,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return _sourceColumn ?? string.Empty;
             }
             set
             {
@@ -216,7 +215,7 @@ namespace System.Data.Odbc
             return ParameterName;
         }
 
-        private byte ValuePrecisionCore(object? value)
+        private static byte ValuePrecisionCore(object? value)
         {
             if (value is decimal)
             {
@@ -225,7 +224,7 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private byte ValueScaleCore(object? value)
+        private static byte ValueScaleCore(object? value)
         {
             if (value is decimal)
             {
@@ -234,7 +233,7 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private int ValueSizeCore(object? value)
+        private static int ValueSizeCore(object? value)
         {
             if (!ADP.IsNull(value))
             {
@@ -243,8 +242,8 @@ namespace System.Data.Odbc
                     string svalue => svalue.Length,
                     byte[] bvalue => bvalue.Length,
                     char[] cvalue => cvalue.Length,
-                    byte _ => 1,
-                    char _ => 1,
+                    byte => 1,
+                    char => 1,
                     _ => 0
                 };
             }

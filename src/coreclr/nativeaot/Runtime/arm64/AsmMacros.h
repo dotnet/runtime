@@ -96,9 +96,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN RhpGcAlloc
     EXTERN RhExceptionHandling_FailedAllocation
     EXTERN RhDebugBreak
-    EXTERN RhpWaitForSuspend2
     EXTERN RhpWaitForGC2
-    EXTERN RhpReversePInvokeAttachOrTrapThread2
     EXTERN RhThrowHwEx
     EXTERN RhThrowEx
     EXTERN RhRethrow
@@ -109,6 +107,14 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN g_ephemeral_low
     EXTERN g_ephemeral_high
     EXTERN g_card_table
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    EXTERN g_card_bundle_table
+#endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    EXTERN g_write_watch_table
+#endif
 
 
 ;; -----------------------------------------------------------------------------
@@ -146,6 +152,15 @@ MovInstr SETS "movk"
         ENDIF
 
         $MovInstr $Reg, #(($ConstantLo):AND:0xffff)
+    MEND
+
+;;-----------------------------------------------------------------------------
+;; Macro for loading a 64bit value of a global variable into a register
+    MACRO
+        PREPARE_EXTERNAL_VAR_INDIRECT $Name, $Reg
+
+        adrp $Reg, $Name
+        ldr  $Reg, [$Reg, $Name]
     MEND
 
 ;; -----------------------------------------------------------------------------
@@ -215,7 +230,7 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 
     ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
     ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-    ;; to improve density, or to reduce distance betweeen the constant pool and its use.
+    ;; to improve density, or to reduce distance between the constant pool and its use.
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
         EXTERN tls_CurrentThread
@@ -251,7 +266,7 @@ __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 ;;
 
     MACRO
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
 
         dmb         ish
     MEND

@@ -657,7 +657,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsReverseDelegateStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -983,7 +983,7 @@ public:
         //
         // Native Signature
         //
-        SString strNativeSignature(SString::Utf8);
+        SString strNativeSignature;
         if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
@@ -991,7 +991,7 @@ public:
         }
         else
         {
-            // Forward interop. Use StubTarget siganture
+            // Forward interop. Use StubTarget signature
             PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
             DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
 
@@ -1008,18 +1008,16 @@ public:
         SString strILStubCode;
         strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
 
-        SString codeSizeFormat;
-        codeSizeFormat.LoadResource(CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
-        strILStubCode.AppendPrintf(W("// %s\t%d (0x%04x)\n"), codeSizeFormat.GetUnicode(), cbCode, cbCode);
-        strILStubCode.AppendPrintf(W(".maxstack %d \n"), maxStack);
-        strILStubCode.AppendPrintf(W(".locals %s\n"), strLocalSig.GetUnicode());
+        strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);
+        strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
+        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8());
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 
         if (pConvertToHRTryCatchBounds->cbTryLength != 0 && pConvertToHRTryCatchBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n",
                 pConvertToHRTryCatchBounds->dwTryBeginOffset,
                 pConvertToHRTryCatchBounds->dwTryBeginOffset + pConvertToHRTryCatchBounds->cbTryLength,
                 pConvertToHRTryCatchBounds->dwHandlerBeginOffset,
@@ -1029,7 +1027,7 @@ public:
         if (pCleanupTryFinallyBounds->cbTryLength != 0 && pCleanupTryFinallyBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n",
                 pCleanupTryFinallyBounds->dwTryBeginOffset,
                 pCleanupTryFinallyBounds->dwTryBeginOffset + pCleanupTryFinallyBounds->cbTryLength,
                 pCleanupTryFinallyBounds->dwHandlerBeginOffset,
@@ -2251,18 +2249,8 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     // in StubHelpers::ProfilerEnterCallback().
     if (SF_IsDelegateStub(dwStubFlags))
     {
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            pcsEmit->EmitLoadThis();
-        }
-        else
-        {
-            EmitLoadStubContext(pcsEmit, dwStubFlags); // load UMEntryThunk*
-            pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
-            pcsEmit->EmitADD();
-            pcsEmit->EmitLDIND_I();      // get OBJECTHANDLE
-            pcsEmit->EmitLDIND_REF();    // get Delegate object
-        }
+        _ASSERTE(SF_IsForwardStub(dwStubFlags));
+        pcsEmit->EmitLoadThis();
     }
     else
     {
@@ -2282,15 +2270,8 @@ void NDirectStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
     STANDARD_VM_CONTRACT;
 
     pcsEmit->EmitLDLOC(dwMethodDescLocalNum);
-    if (SF_IsReverseStub(dwStubFlags))
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
-    else
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
+    _ASSERTE(SF_IsForwardStub(dwStubFlags));
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_END_TRANSITION_CALLBACK, 2, 0);
 }
 #endif // PROFILING_SUPPPORTED
@@ -2983,7 +2964,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
-void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
+void PInvokeStaticSigInfo::ThrowError(UINT errorResourceID)
 {
     CONTRACTL
     {
@@ -3345,6 +3326,12 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
+                if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
+                {
+                    // Int128 cannot be marshalled by value at this time
+                    return TRUE;
+                }
+
                 // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
@@ -3385,7 +3372,7 @@ BOOL NDirect::MarshalingRequired(
 
             default:
             {
-                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_FNPTR)
+                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_FNPTR)
                 {
 
                     if (i > 0)
@@ -4138,7 +4125,8 @@ namespace
         //
         for (int i = 0; i < pParams->m_nParamTokens; ++i)
         {
-            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            if (paramInfos[i].cbNativeType > 0)
+                memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
             pBlobParams += paramInfos[i].cbNativeType;
         }
 
@@ -4647,8 +4635,9 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
+        StackSString buffer;
+        buffer.SetAndConvertToUTF8(methodName);
+        LPCUTF8 szMethodNameUTF8 = buffer.GetUTF8();
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
             szMethodNameUTF8,
             pStubSig,
@@ -4756,11 +4745,25 @@ namespace
             RemoveILStubCacheEntry();
         }
 
+        inline bool CreatedTheAssociatedPublishedStubMD()
+        {
+            return m_bILStubCreator;
+        }
+
         inline void GetStubMethodDesc()
         {
             WRAPPER_NO_CONTRACT;
 
+            // The creator flag represents ownership of the associated stub MD and indicates that the
+            // stub MD has not been removed from the cache, so the lookup below is guaranteed to return
+            // this owned published stub MD.
+#ifdef _DEBUG
+            MethodDesc* pPreexistingStubMD = m_pStubMD;
+            bool createdThePreexistingMD = m_bILStubCreator;
+#endif // _DEBUG
+
             m_pStubMD = ::GetStubMethodDesc(m_pTargetMD, m_pParams, m_pHashParams, &m_amTracker, m_bILStubCreator, m_pStubMD);
+            _ASSERTE(!createdThePreexistingMD || (m_bILStubCreator && (m_pStubMD == pPreexistingStubMD)));
         }
 
         inline void RemoveILStubCacheEntry()
@@ -4787,20 +4790,6 @@ namespace
             m_amTracker.SuppressRelease();
         }
 
-        DEBUG_NOINLINE static void HolderEnter(ILStubCreatorHelper *pThis)
-        {
-            WRAPPER_NO_CONTRACT;
-            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-            pThis->GetStubMethodDesc();
-        }
-
-        DEBUG_NOINLINE static void HolderLeave(ILStubCreatorHelper *pThis)
-        {
-            WRAPPER_NO_CONTRACT;
-            ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-            pThis->RemoveILStubCacheEntry();
-        }
-
     private:
         MethodDesc*                      m_pTargetMD;
         NDirectStubParameters*           m_pParams;
@@ -4810,8 +4799,6 @@ namespace
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
-
-    typedef Wrapper<ILStubCreatorHelper*, ILStubCreatorHelper::HolderEnter, ILStubCreatorHelper::HolderLeave> ILStubCreatorHelperHolder;
 
     MethodDesc* CreateInteropILStub(
                             ILStubState*             pss,
@@ -4886,8 +4873,8 @@ namespace
                                 pSigDesc->m_pMT
                                 );
 
-        // The following two ILStubCreatorHelperHolder are to recover the status when an
-        // exception happen during the generation of the IL stubs. We need to free the
+        // The following ILStubCreatorHelper is to recover the status when an
+        // exception happens during the generation of the IL stubs. We need to free the
         // memory allocated and restore the ILStubCache.
         //
         // The following block is logically divided into two phases. The first phase is
@@ -4897,7 +4884,7 @@ namespace
         //
         // ilStubCreatorHelper contains an instance of AllocMemTracker which tracks the
         // allocated memory during the creation of MethodDesc so that we are able to remove
-        // them when releasing the ILStubCreatorHelperHolder or destructing ILStubCreatorHelper
+        // them when destructing ILStubCreatorHelper
 
         // When removing IL Stub from Cache, we have a constraint that only the thread which
         // creates the stub can remove it. Otherwise, any thread hits cache and gets the stub will
@@ -4910,10 +4897,8 @@ namespace
             ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
 
             {
-                // The holder will free the allocated MethodDesc and restore the ILStubCache
-                // if exception happen.
-                ILStubCreatorHelperHolder pCreateOrGetStubHolder(&ilStubCreatorHelper);
-                pStubMD = pCreateOrGetStubHolder->GetStubMD();
+                ilStubCreatorHelper.GetStubMethodDesc();
+                pStubMD = ilStubCreatorHelper.GetStubMD();
 
                 ///////////////////////////////
                 //
@@ -4927,16 +4912,11 @@ namespace
 
                     ListLockEntryLockHolder pEntryLock(pEntry, FALSE);
 
-                    // We can release the holder for the first phase now
-                    pCreateOrGetStubHolder.SuppressRelease();
-
                     // We have the entry lock we need to use, so we can release the global lock.
                     pILStubLock.Release();
 
                     {
-                        // The holder will free the allocated MethodDesc and restore the ILStubCache
-                        // if exception happen. The reason to get the holder again is to
-                        ILStubCreatorHelperHolder pGenILHolder(&ilStubCreatorHelper);
+                        ilStubCreatorHelper.GetStubMethodDesc();
 
                         if (!pEntryLock.DeadlockAwareAcquire())
                         {
@@ -4961,11 +4941,11 @@ namespace
                             pILStubLock.Acquire();
 
                             // Assure that pStubMD we have now has not been destroyed by other threads
-                            pGenILHolder->GetStubMethodDesc();
+                            ilStubCreatorHelper.GetStubMethodDesc();
 
-                            while (pStubMD != pGenILHolder->GetStubMD())
+                            while (pStubMD != ilStubCreatorHelper.GetStubMD())
                             {
-                                pStubMD = pGenILHolder->GetStubMD();
+                                pStubMD = ilStubCreatorHelper.GetStubMD();
 
                                 pEntry.Assign(ListLockEntry::Find(pILStubLock, pStubMD, "il stub gen lock"));
                                 pEntryLock.Assign(pEntry, FALSE);
@@ -4991,7 +4971,7 @@ namespace
 
                                 pILStubLock.Acquire();
 
-                                pGenILHolder->GetStubMethodDesc();
+                                ilStubCreatorHelper.GetStubMethodDesc();
                             }
                         }
 
@@ -5075,22 +5055,38 @@ namespace
                                 sgh.SuppressRelease();
                             }
 
-                            if (pGeneratedNewStub)
-                            {
-                                *pGeneratedNewStub = true;
-                            }
-
                             pEntry->m_hrResultCode = S_OK;
                             break;
                         }
 
                         // Link the MethodDesc onto the method table with the lock taken
                         AddMethodDescChunkWithLockTaken(&params, pStubMD);
-
-                        pGenILHolder.SuppressRelease();
                     }
                 }
             }
+
+            // Callers use the new stub indicator to distinguish between 1) the case where a new stub
+            // MD was generated during this call and 2) the case where this function attached to a stub
+            // MD that was generated by some other call (either a call that completed earlier or a call
+            // on a racing thread). In particular, reliably detecting case (1) is crucial because it is
+            // the only case where this call permanently publishes a new stub MD into the cache,
+            // meaning it is the only case where the caller cannot safely free any allocations (such as
+            // a signature buffer) which the stub MD might reference.
+            //
+            // Set the indicator if and only if the stub MD that will be imminiently returned to the
+            // caller was created by the code above (and will therefore become a permanent member of
+            // the cache when the SuppressRelease occurs below). Note that, in the presence of racing
+            // threads, the current call may or may not have carried out IL generation for the stub;
+            // the only important thing is whether the current call was the one that created the stub
+            // MD earlier on.
+            if (ilStubCreatorHelper.CreatedTheAssociatedPublishedStubMD())
+            {
+                if (pGeneratedNewStub)
+                {
+                    *pGeneratedNewStub = true;
+                }
+            }
+
             ilStubCreatorHelper.SuppressRelease();
         }
 
@@ -5449,8 +5445,6 @@ namespace
         }
         CONTRACT_END;
 
-        g_IBCLogger.LogNDirectCodeAccess(pMD);
-
         RETURN pMD->FindEntryPoint(hMod);
     }
 
@@ -5476,7 +5470,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetNDirectTarget(pvTarget);
@@ -5654,7 +5648,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsGenericComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
+        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
     CONTRACT_END;
 
@@ -5668,7 +5662,7 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     }
 #ifdef FEATURE_COMINTEROP
     else
-    if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
+    if (pMD->IsComPlusCall())
     {
         pStub = ComPlusCall::GetStubForILStub(pMD, &pStubMD);
     }
@@ -5776,7 +5770,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     NDirectWriteableData* pWriteableData = GetWriteableData();
-    g_IBCLogger.LogNDirectCodeAccess(this);
     pWriteableData->m_pNDirectTarget = pTarget;
 }
 

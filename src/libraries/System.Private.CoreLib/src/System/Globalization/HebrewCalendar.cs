@@ -51,7 +51,7 @@ namespace System.Globalization
     ///     Gregorian   1583/01/01  2239/09/29
     ///     Hebrew      5343/04/07  5999/13/29
     ///
-    /// Includes CHebrew implemetation;i.e All the code necessary for converting
+    /// Includes CHebrew implementation;i.e All the code necessary for converting
     /// Gregorian to Hebrew Lunar from 1583 to 2239.
     /// </remarks>
     public class HebrewCalendar : Calendar
@@ -389,10 +389,8 @@ namespace System.Globalization
             // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
-            if (index < 0 || index > TableSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index, nameof(gregorianYear));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, TableSize, nameof(gregorianYear));
 
             index *= 2;
             lunarDate.day = HebrewTable[index];
@@ -871,10 +869,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {

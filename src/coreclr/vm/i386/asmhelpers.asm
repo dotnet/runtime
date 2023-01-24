@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ;
 ; FILE: asmhelpers.asm
 ;
@@ -240,7 +235,7 @@ _RestoreFPUContext@4 ENDP
 
 ; Register CLR exception handlers defined on the C++ side with SAFESEH.
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
-; otherwise it's possible that the resulting .obj will completly be ignored by the linker and these
+; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler
@@ -634,7 +629,7 @@ else
 FASTCALL_FUNC HelperMethodFrameRestoreState,4
     mov         eax, ecx        ; eax = MachState*
 endif
-    ; restore the registers from the m_MachState stucture.  Note that
+    ; restore the registers from the m_MachState structure.  Note that
     ; we only do this for register that where not saved on the stack
     ; at the time the machine state snapshot was taken.
 
@@ -803,27 +798,6 @@ _NDirectImportThunk@0 proc public
         ; original DLL call.
         jmp     eax     ; Jump to DLL target
 _NDirectImportThunk@0 endp
-
-;==========================================================================
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call the prestub.
-_PrecodeFixupThunk@0 proc public
-
-        pop     eax         ; Pop the return address. It points right after the call instruction in the precode.
-        push    esi
-        push    edi
-
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        movzx   esi,byte ptr [eax+2]    ; m_PrecodeChunkIndex
-        movzx   edi,byte ptr [eax+1]    ; m_MethodDescChunkIndex
-        mov     eax,dword ptr [eax+esi*8+3]
-        lea     eax,[eax+edi*4]
-
-        pop     edi
-        pop     esi
-        jmp     _ThePreStub@0
-
-_PrecodeFixupThunk@0 endp
 
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
@@ -1525,12 +1499,6 @@ ifdef FEATURE_TIERED_COMPILATION
 EXTERN _OnCallCountThresholdReached@8:proc
 
 _OnCallCountThresholdReachedStub@0 proc public
-    ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-    pop     eax
-    jmp     _OnCallCountThresholdReachedStub2@0
-_OnCallCountThresholdReachedStub@0 endp
-
-_OnCallCountThresholdReachedStub2@0 proc public
     STUB_PROLOG
 
     mov     esi, esp
@@ -1545,7 +1513,7 @@ _OnCallCountThresholdReachedStub2@0 proc public
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
-_OnCallCountThresholdReachedStub2@0 endp
+_OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
 

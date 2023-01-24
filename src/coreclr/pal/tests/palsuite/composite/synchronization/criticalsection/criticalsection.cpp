@@ -5,9 +5,9 @@
 **
 ** Source: criticalsection.c
 **
-** Purpose: Test Critical Section Reengineering PAL Effort 
+** Purpose: Test Critical Section Reengineering PAL Effort
 **
-** PseudoCode:  
+** PseudoCode:
 	Preparation:
 		Create PROCESS_COUNT processes.
 		In each process create a Critical Section
@@ -15,33 +15,33 @@
 	Test:
 		Create THREAD_COUNT threads.
 		In a loop repeated REPEAT_COUNT times:
-			Enter Critical Section 
+			Enter Critical Section
 				Do Work
-			Leave Critical Section 
+			Leave Critical Section
 		The main thread waits for all of the created threads to exit (WFMO wait all on the created thread handles) and call DeleteCriticalSection
 
 	Parameters:
 		PROCESS_COUNT: Number of processes
 		THREAD_COUNT: Number of threads in each process
 		REPEAT_COUNT: The number of times to execute the loop..
-	
+
 	Statistics Captured:
 		Total elapsed time
 		MTBF
 
      Scenario:
-     			Single Process with Multiple threads.  Main thread creates critical section.  
-     			All other threads call EnterCriticalSection.   When thread enters critical section 
-     			it does some work and leaves critical section.  
-     			
-** Dependencies: 
+     			Single Process with Multiple threads.  Main thread creates critical section.
+     			All other threads call EnterCriticalSection.   When thread enters critical section
+     			it does some work and leaves critical section.
+
+** Dependencies:
 			CreateThread
 **	              InitializeCriticalSection
 **    	       EnterCriticalSection
 **           	LeaveCriticalSection
 **               	DeleteCriticalSection
 **              	WaitForSingleObject
-**                
+**
 ** Author: rameshg
 **
 **
@@ -51,7 +51,7 @@
 #include "resultbuffer.h"
 
 //Global Variables
-DWORD dwThreadId;  
+DWORD dwThreadId;
 long long GLOBAL_COUNTER ;
 HANDLE g_hEvent;
 
@@ -71,7 +71,7 @@ struct statistics{
     unsigned int processId;
     unsigned int operationsFailed;
     unsigned int operationsPassed;
-    unsigned int operationsTotal; 
+    unsigned int operationsTotal;
     DWORD        operationTime; //Milliseconds
     unsigned int relationId;
 };
@@ -125,8 +125,8 @@ InitializeCriticalSection ( &CriticalSectionM );
 VOID
 cleanup(VOID)
 {
-    /* 
-     * Clean up Critical Section object 
+    /*
+     * Clean up Critical Section object
      */
     DeleteCriticalSection(&CriticalSectionM);
     PAL_Terminate();
@@ -134,7 +134,7 @@ cleanup(VOID)
 
 
 /*function that increments a counter*/
-VOID 
+VOID
 incrementCounter(VOID)
 {
 
@@ -142,17 +142,17 @@ incrementCounter(VOID)
 		GLOBAL_COUNTER=0;
 
 	GLOBAL_COUNTER++;
-		
+
 }
 
-/* 
- * Enter and Leave Critical Section 
+/*
+ * Enter and Leave Critical Section
  */
 DWORD
-PALAPI 
+PALAPI
 enterandleavecs( LPVOID lpParam )
 {
-       
+
 	struct statistics stats;
 	int loopcount = REPEAT_COUNT;
 	int i;
@@ -160,7 +160,7 @@ enterandleavecs( LPVOID lpParam )
 
 	int Id=(int)lpParam;
 
-	//initialize strucutre to hold thread level statistics
+	//initialize structure to hold thread level statistics
 	stats.relationId = RELATION_ID;
 	stats.processId = USE_PROCESS_COUNT;
 	stats.operationsFailed = 0;
@@ -172,20 +172,20 @@ enterandleavecs( LPVOID lpParam )
 	if (WAIT_OBJECT_0 != WaitForSingleObject(g_hEvent,INFINITE))
 		{
 		Fail ("readfile: Wait for Single Object (g_hEvent) failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError()); 
+	       "GetLastError returned %d\n", GetLastError());
 		}
-	
+
 	//Collect operation start time
 	dwStart = GetTickCount();
-	
+
 	//Operation starts loopcount times
 	for(i = 0; i < loopcount; i++)
 	{
 
 		EnterCriticalSection(&CriticalSectionM);
 		/*
-		*Do Some Thing once you enter critical section 
-		*/		
+		*Do Some Thing once you enter critical section
+		*/
 		incrementCounter();
 		LeaveCriticalSection(&CriticalSectionM);
 
@@ -204,8 +204,8 @@ enterandleavecs( LPVOID lpParam )
 	{
 		Fail("Error while writing to shared memory, Thread Id is[%d] and Process id is [%d]\n", Id, USE_PROCESS_COUNT);
 	}
-	
-	
+
+
     return 0;
 }
 
@@ -248,7 +248,7 @@ if(GetParameters(argc, argv))
 _snprintf(processFileName, MAX_PATH_FNAME, "%d_process_criticalsection_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
 hProcessFile = fopen(processFileName, "w+");
 if(hProcessFile == NULL)
-    { 
+    {
         Fail("Error in opening file to write process results for process [%d]\n", USE_PROCESS_COUNT);
     }
 
@@ -260,12 +260,12 @@ processStats.relationId = RELATION_ID;  //Will change later
 //Start Process Time Capture
 dwStart = GetTickCount();
 
-//setup file for thread result collection 
+//setup file for thread result collection
 statisticsSize = sizeof(struct statistics);
 _snprintf(fileName, MAX_PATH_FNAME, "%d_thread_criticalsection_%d_.txt", USE_PROCESS_COUNT, RELATION_ID);
 hFile = fopen(fileName, "w+");
 if(hFile == NULL)
-{ 
+{
     Fail("Error in opening file for write for process [%d]\n", USE_PROCESS_COUNT);
 }
 
@@ -274,28 +274,28 @@ if(hFile == NULL)
 resultBuffer = new ResultBuffer( THREAD_COUNT, statisticsSize);
 
 /*
-*	Call the Setup Routine 
+*	Call the Setup Routine
 */
-setup();    
+setup();
 
 //Create Thread Count Worker Threads
 
 while (i< THREAD_COUNT)
 {
     dwThrdParam = i;
-	
+
     hThread[i] = CreateThread(
-	NULL,         
-	0,            
-	enterandleavecs,     
-	(LPVOID)dwThrdParam,     
-	0,           
+	NULL,
+	0,
+	enterandleavecs,
+	(LPVOID)dwThrdParam,
+	0,
 	&dwThreadId);
 
-    if ( NULL == hThread[i] ) 
+    if ( NULL == hThread[i] )
     {
 	Fail ( "CreateThread() returned NULL.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());   
+	       "GetLastError returned %d\n", GetLastError());
     }
     i++;
 }
@@ -307,17 +307,17 @@ while (i< THREAD_COUNT)
 if (0==SetEvent(g_hEvent))
 {
 	Fail ( "SetEvent returned Zero.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());  
+	       "GetLastError returned %d\n", GetLastError());
 }
 
 /*
  * Wait for worker threads to complete
- * 
+ *
  */
 if ( WAIT_OBJECT_0 != WaitForMultipleObjects (THREAD_COUNT,hThread,TRUE, INFINITE))
 {
 	Fail ( "WaitForMultipleObject Failed.  Failing test.\n"
-	       "GetLastError returned %d\n", GetLastError());  
+	       "GetLastError returned %d\n", GetLastError());
 }
 
 
@@ -326,7 +326,7 @@ processStats.operationTime = GetTickCount() - dwStart;
 
 //Write Process Result Contents to File
 if(hProcessFile!= NULL)
-    { 
+    {
             fprintf(hProcessFile, "%d,%lu,%d\n", processStats.processId, processStats.operationTime, processStats.relationId );
     }
 
@@ -339,9 +339,9 @@ if (0!=fclose(hProcessFile))
 
 /*Write Threads Results to a file*/
 if(hFile!= NULL)
-{ 
+{
     for( i = 0; i < THREAD_COUNT; i++ )
-    {  
+    {
         buffer = (struct statistics *)resultBuffer->getResultBuffer(i);
         fprintf(hFile, "%d,%d,%d,%d,%lu,%d\n", buffer->processId, buffer->operationsFailed, buffer->operationsPassed, buffer->operationsTotal, buffer->operationTime, buffer->relationId );
         //Trace("Iteration %d over\n", i);
@@ -355,7 +355,7 @@ if (0!=fclose(hFile))
 }
 
     /* Logging for the test case over, clean up the handles */
-    //Trace("Contents of the buffer are [%s]\n", resultBuffer->getResultBuffer());	
+    //Trace("Contents of the buffer are [%s]\n", resultBuffer->getResultBuffer());
 
 
 //Call Cleanup for Test Case
@@ -370,43 +370,43 @@ return (PASS);
 int GetParameters( int argc, char **argv)
 {
 
-	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?")) 
+	if( (argc != 5) || ((argc == 1) && !strcmp(argv[1],"/?"))
        || !strcmp(argv[1],"/h") || !strcmp(argv[1],"/H"))
     {
         printf("PAL -Composite Critical Section Test\n");
         printf("Usage:\n");
-	 printf("\t[PROCESS_COUNT] Greater than or Equal to  1 \n"); 
-	 printf("\t[WORKER_THREAD_MULTIPLIER_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n"); 
+	 printf("\t[PROCESS_COUNT] Greater than or Equal to  1 \n");
+	 printf("\t[WORKER_THREAD_MULTIPLIER_COUNT]  Greater than or Equal to 1 and Less than or Equal to 64 \n");
         printf("\t[REPEAT_COUNT] Greater than or Equal to 1\n");
-	 printf("\t[RELATION_ID  [Greater than or Equal to 1]\n"); 
+	 printf("\t[RELATION_ID  [Greater than or Equal to 1]\n");
         return -1;
     }
 
 //  Trace("Args 1 is [%s], Arg 2 is [%s], Arg 3 is [%s]\n", argv[1], argv[2], argv[3]);
-    
+
     USE_PROCESS_COUNT = atoi(argv[1]);
-    if( USE_PROCESS_COUNT < 0) 
+    if( USE_PROCESS_COUNT < 0)
     {
         printf("\nPROCESS_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
     THREAD_COUNT = atoi(argv[2]);
-    if( THREAD_COUNT < 1 || THREAD_COUNT > 64) 
+    if( THREAD_COUNT < 1 || THREAD_COUNT > 64)
     {
         printf("\nTHREAD_COUNT to be greater than or equal to 1 or less than or equal to 64\n");
         return -1;
     }
 
     REPEAT_COUNT = atoi(argv[3]);
-    if( REPEAT_COUNT < 1) 
+    if( REPEAT_COUNT < 1)
     {
         printf("\nREPEAT_COUNT to greater than or equal to 1\n");
         return -1;
     }
 
     RELATION_ID = atoi(argv[4]);
-    if( RELATION_ID < 1) 
+    if( RELATION_ID < 1)
     {
         printf("\nMain Process:Invalid RELATION_ID number, Pass greater than 1\n");
         return -1;

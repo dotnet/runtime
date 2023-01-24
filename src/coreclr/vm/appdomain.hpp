@@ -40,6 +40,7 @@ class SystemDomain;
 class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
+class FrozenObjectHeapManager;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
@@ -469,7 +470,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -536,43 +537,25 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
+    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
+
     // The buckets of object handles.
+    // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
+    // synchronized by m_Crst
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
+    // these fields are synchronized by m_Crst
     PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
-#ifdef _DEBUG
-
-    // these functions are present to enforce that there is a locking mechanism in place
-    // for each PinnedHeapHandleTable even though the code itself does not do the locking
-    // you must tell the table which lock you intend to use and it will verify that it has
-    // in fact been taken before performing any operations
-
-public:
-    void RegisterCrstDebug(CrstBase *pCrst)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // this function must be called exactly once
-        _ASSERTE(pCrst != NULL);
-        _ASSERTE(m_pCrstDebug == NULL);
-        m_pCrstDebug = pCrst;
-    }
-
-private:
-    // we will assert that this Crst is held before using the object
-    CrstBase *m_pCrstDebug;
-
-#endif
-
+    CrstExplicitInit m_Crst;
 };
 
 class PinnedHeapHandleBlockHolder;
@@ -588,7 +571,14 @@ class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoN
 public:
     FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
-        WRAPPER_NO_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
         m_Data = pOwner->AllocateHandles(nCount);
         m_Count=nCount;
         m_pTable=pOwner;
@@ -671,7 +661,7 @@ private:
 
 //--------------------------------------------------------------------------------------
 // Base class for domains. It provides an abstract way of finding the first assembly and
-// for creating assemblies in the the domain. The system domain only has one assembly, it
+// for creating assemblies in the domain. The system domain only has one assembly, it
 // contains the classes that are logically shared between domains. All other domains can
 // have multiple assemblies. Iteration is done be getting the first assembly and then
 // calling the Next() method on the assembly.
@@ -761,7 +751,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 // The PendingLoadQueue is a per thread data structure which serves two purposes.  First, it
 // holds a "load limit" which automatically restricts the level of recursive loads to be
 // one less than the current load which is preceding.  This, together with the AppDomain
-// LoadLock level behavior, will prevent any deadlocks from occuring due to circular
+// LoadLock level behavior, will prevent any deadlocks from occurring due to circular
 // dependencies.  (Note that it is important that the loading logic understands this restriction,
 // and any given level of loading must deal with the fact that any recursive loads will be partially
 // unfulfilled in a specific way.)
@@ -1074,12 +1064,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return ::CreateRefcountedHandle(m_handleStore, object);
     }
-
-    OBJECTHANDLE CreateNativeComWeakHandle(OBJECTREF object, NativeComWeakHandleInfo* pComWeakHandleInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateNativeComWeakHandle(m_handleStore, object, pComWeakHandleInfo);
-    }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
@@ -1104,6 +1088,23 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
+    CrstExplicitInit* GetStaticBoxInitLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_crstStaticBoxInitLock;
+    }
+
+    static CrstStatic* GetMethodTableExposedClassObjectLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_MethodTableExposedClassObjectCrst;
+    }
+
+    void AssertLoadLockHeld()
+    {
+        _ASSERTE(m_FileLoadLock.HasLock());
+    }
+
 protected:
 
     //****************************************************************************************
@@ -1117,6 +1118,7 @@ protected:
     CrstExplicitInit m_DomainLocalBlockCrst;
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
+    CrstExplicitInit m_crstStaticBoxInitLock;
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
@@ -1134,16 +1136,13 @@ protected:
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
-    // The pinned heap handle table critical section.
-    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
-
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
 #endif // FEATURE_COMINTEROP
 
     // Protects allocation of slot IDs for thread statics
-    static CrstStatic   m_SpecialStaticsCrst;
+    static CrstStatic m_MethodTableExposedClassObjectCrst;
 
 public:
     // Only call this routine when you can guarantee there are no
@@ -1234,7 +1233,7 @@ public:
 #endif // DACCESS_COMPILE
 
 private:
-    // I have yet to figure out an efficent way to get the number of handles
+    // I have yet to figure out an efficient way to get the number of handles
     // of a particular type that's currently used by the process without
     // spending more time looking at the handle table code. We know that
     // our only customer (asp.net) in Dev10 is not going to create many of
@@ -1269,8 +1268,7 @@ public:
 
 #ifdef DACCESS_COMPILE
 public:
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                   bool enumThis);
+    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis) = 0;
 #endif
 
 };  // class BaseDomain
@@ -1453,7 +1451,6 @@ public:
 //
 struct FailedAssembly {
     SString displayName;
-    SString location;
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1467,7 +1464,6 @@ struct FailedAssembly {
         CONTRACTL_END;
 
         displayName.SetASCII(pSpec->GetName());
-        location.Set(pSpec->GetCodeBase());
         error = ex->GetHR();
 
         //
@@ -1478,8 +1474,6 @@ struct FailedAssembly {
         //
     }
 };
-
-class AppDomainIterator;
 
 const DWORD DefaultADID = 1;
 
@@ -1967,12 +1961,6 @@ public:
     RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMWRAPPERS
 
-    TPIndex GetTPIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_tpIndex;
-    }
-
     DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
@@ -1991,29 +1979,6 @@ public:
 
     static void ExceptionUnwind(Frame *pFrame);
 
-#ifdef _DEBUG
-
-    BOOL IsHeldByIterator()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwIterHolders>0;
-    }
-
-    void IteratorRelease()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwIterHolders);
-        FastInterlockDecrement(&m_dwIterHolders);
-    }
-
-
-    void IteratorAcquire()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_dwIterHolders);
-    }
-
-#endif
     BOOL IsActive()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2033,7 +1998,6 @@ public:
         return m_Stage > STAGE_CREATING;
 #endif
     }
-
 
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
@@ -2154,7 +2118,7 @@ private:
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
         Stage lastStage=m_Stage;
         while (lastStage !=stage)
-            lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
+            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
@@ -2204,7 +2168,7 @@ private:
     // General purpose flags.
     DWORD           m_dwFlags;
 
-    // When an application domain is created the ref count is artifically incremented
+    // When an application domain is created the ref count is artificially incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 
@@ -2221,16 +2185,9 @@ private:
     RCWRefCache *m_pRCWRefCache;
 #endif // FEATURE_COMWRAPPERS
 
-    // The thread-pool index of this app domain among existing app domains (starting from 1)
-    TPIndex m_tpIndex;
-
     Volatile<Stage> m_Stage;
 
     ArrayList        m_failedAssemblies;
-
-#ifdef _DEBUG
-    Volatile<LONG> m_dwIterHolders;
-#endif
 
     //
     // DAC iterator for failed assembly loads
@@ -2368,8 +2325,6 @@ typedef VPTR(class SystemDomain) PTR_SystemDomain;
 class SystemDomain : public BaseDomain
 {
     friend class AppDomainNative;
-    friend class AppDomainIterator;
-    friend class UnsafeAppDomainIterator;
     friend class ClrDataAccess;
 
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)
@@ -2409,6 +2364,7 @@ public:
     void Init();
     void Stop();
     static void LazyInitGlobalStringLiteralMap();
+    static void LazyInitFrozenObjectsHeap();
 
     //****************************************************************************************
     //
@@ -2481,6 +2437,15 @@ public:
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
     }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (m_FrozenObjectHeapManager == NULL)
+        {
+            LazyInitFrozenObjectsHeap();
+        }
+        return m_FrozenObjectHeapManager;
+    }
 #endif // DACCESS_COMPILE
 
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT)
@@ -2491,8 +2456,6 @@ public:
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
-    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
-    static MethodTable* GetCallersType(StackCrawlMark* stackMark);
     static Module* GetCallersModule(StackCrawlMark* stackMark);
     static Assembly* GetCallersAssembly(StackCrawlMark* stackMark);
 
@@ -2652,8 +2615,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-
-    static DWORD        m_dwLowestFreeIndex;
+    static FrozenObjectHeapManager *m_FrozenObjectHeapManager;
 #endif // DACCESS_COMPILE
 
 public:
@@ -2687,132 +2649,6 @@ public:
 #endif
 
 };  // class SystemDomain
-
-
-//
-// an UnsafeAppDomainIterator is used to iterate over all existing domains
-//
-// The iteration is guaranteed to include all domains that exist at the
-// start & end of the iteration. This iterator is considered unsafe because it does not
-// reference count the various appdomains, and can only be used when the runtime is stopped,
-// or external synchronization is used. (and therefore no other thread may cause the appdomain list to change.)
-// In CoreCLR, this iterator doesn't use a list as there is at most 1 AppDomain, and instead will find the only AppDomain, or not.
-//
-class UnsafeAppDomainIterator
-{
-    friend class SystemDomain;
-public:
-    UnsafeAppDomainIterator(BOOL bOnlyActive)
-    {
-        m_bOnlyActive = bOnlyActive;
-    }
-
-    void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_iterationCount = 0;
-        m_pCurrent = NULL;
-    }
-
-    BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_iterationCount == 0)
-        {
-            m_iterationCount++;
-            m_pCurrent = AppDomain::GetCurrentDomain();
-            if (m_pCurrent != NULL &&
-                (m_bOnlyActive ?
-                 m_pCurrent->IsActive() : m_pCurrent->IsValid()))
-            {
-                return TRUE;
-            }
-        }
-
-        m_pCurrent = NULL;
-        return FALSE;
-    }
-
-    AppDomain * GetDomain()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pCurrent;
-    }
-
-  private:
-
-    int                 m_iterationCount;
-    AppDomain *         m_pCurrent;
-    BOOL                m_bOnlyActive;
-};  // class UnsafeAppDomainIterator
-
-//
-// an AppDomainIterator is used to iterate over all existing domains.
-//
-// The iteration is guaranteed to include all domains that exist at the
-// start & end of the iteration.  Any domains added or deleted during
-// iteration may or may not be included.  The iterator also guarantees
-// that the current iterated appdomain (GetDomain()) will not be deleted.
-//
-
-class AppDomainIterator : public UnsafeAppDomainIterator
-{
-    friend class SystemDomain;
-
-  public:
-    AppDomainIterator(BOOL bOnlyActive) : UnsafeAppDomainIterator(bOnlyActive)
-    {
-        WRAPPER_NO_CONTRACT;
-        Init();
-    }
-
-    ~AppDomainIterator()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE
-        if (GetDomain() != NULL)
-        {
-#ifdef _DEBUG
-            GetDomain()->IteratorRelease();
-#endif
-            GetDomain()->Release();
-        }
-#endif
-    }
-
-    BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE
-        if (GetDomain() != NULL)
-        {
-#ifdef _DEBUG
-            GetDomain()->IteratorRelease();
-#endif
-            GetDomain()->Release();
-        }
-
-        SystemDomain::LockHolder lh;
-#endif
-
-        if (UnsafeAppDomainIterator::Next())
-        {
-#ifndef DACCESS_COMPILE
-            GetDomain()->AddRef();
-#ifdef _DEBUG
-            GetDomain()->IteratorAcquire();
-#endif
-#endif
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-};  // class AppDomainIterator
 
 #include "comreflectioncache.inl"
 

@@ -31,7 +31,7 @@ struct MachState
     MachState()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        INDEBUG(memset(this, 0xCC, sizeof(MachState));)
+        INDEBUG(memset((void*)this, 0xCC, sizeof(MachState));)
     }
 
     bool   isValid()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(dac_cast<TADDR>(_pRetAddr) != INVALID_POINTER_CC); return(_pRetAddr != 0); }
@@ -176,7 +176,7 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
 
 // CAPTURE_STATE captures just enough register state so that the state of the
-// processor can be deterined just after the the routine that has CAPTURE_STATE in
+// processor can be deterined just after the routine that has CAPTURE_STATE in
 // it returns.
 
 #define CAPTURE_STATE(machState, ret)                           \

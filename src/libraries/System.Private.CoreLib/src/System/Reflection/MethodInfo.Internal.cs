@@ -5,11 +5,6 @@ namespace System.Reflection
 {
     public abstract partial class MethodInfo : MethodBase
     {
-#if CORERT
-        public // Needs to be public so that Reflection.Core can see it.
-#else
-        internal
-#endif
-        virtual int GenericParameterCount => GetGenericArguments().Length;
+        internal virtual int GenericParameterCount => GetGenericArguments().Length;
     }
 }

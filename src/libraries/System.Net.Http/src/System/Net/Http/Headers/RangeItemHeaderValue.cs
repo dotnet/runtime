@@ -29,17 +29,17 @@ namespace System.Net.Http.Headers
             {
                 throw new ArgumentException(SR.net_http_headers_invalid_range);
             }
-            if (from.HasValue && (from.Value < 0))
+            if (from.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(from));
+                ArgumentOutOfRangeException.ThrowIfNegative(from.GetValueOrDefault(), nameof(from));
             }
-            if (to.HasValue && (to.Value < 0))
+            if (to.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(to));
+                ArgumentOutOfRangeException.ThrowIfNegative(to.GetValueOrDefault(), nameof(to));
             }
-            if (from.HasValue && to.HasValue && (from.Value > to.Value))
+            if (from.HasValue && to.HasValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(from));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(from.GetValueOrDefault(), to.GetValueOrDefault(), nameof(from));
             }
 
             _from = from;
@@ -130,7 +130,7 @@ namespace System.Net.Http.Headers
 
                 rangeCollection.Add(range!);
 
-                current = current + rangeLength;
+                current += rangeLength;
                 current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out bool separatorFound);
 
                 // If the string is not consumed, we must have a delimiter, otherwise the string is not a valid
@@ -172,8 +172,8 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            current = current + fromLength;
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += fromLength;
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             // After the first value, the '-' character must follow.
             if ((current == input.Length) || (input[current] != '-'))
@@ -183,7 +183,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // skip the '-' character
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             int toStartIndex = current;
             int toLength = 0;
@@ -198,8 +198,8 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                current = current + toLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += toLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             if ((fromLength == 0) && (toLength == 0))

@@ -4,8 +4,6 @@
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <!-- IncludeBuildOutput needs to be set to true to make NuGet include the passed in debug symbol files. -->
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
     <IsPackable>true</IsPackable>
     <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
     <!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files.  Separate symbol files do not exist that need to be packed. -->

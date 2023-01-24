@@ -19,8 +19,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     ZeroMemory(buff, bufflen * sizeof(char));
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset,
                              ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
+
     buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n Method Name \"%s\"",
-                             mc->repGetMethodName(info.ftn, nullptr));
+                             getMethodName(mc, info.ftn).c_str());
     WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
 
     ULONG              hotCodeSize;
@@ -37,9 +38,23 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 
     cr->repAllocMem(&hotCodeSize, &coldCodeSize, &roDataSize, &xcptnsCount, &flag, &hotCodeBlock, &coldCodeBlock,
                     &roDataBlock, &orig_hotCodeBlock, &orig_coldCodeBlock, &orig_roDataBlock);
-    cr->applyRelocs(hotCodeBlock, hotCodeSize, orig_hotCodeBlock);
-    cr->applyRelocs(coldCodeBlock, coldCodeSize, orig_coldCodeBlock);
-    cr->applyRelocs(roDataBlock, roDataSize, orig_roDataBlock);
+
+    RelocContext rc;
+
+    rc.mc                      = mc;
+    rc.hotCodeAddress          = (size_t)hotCodeBlock;
+    rc.hotCodeSize             = hotCodeSize;
+    rc.coldCodeAddress         = (size_t)coldCodeBlock;
+    rc.coldCodeSize            = coldCodeSize;
+    rc.roDataAddress           = (size_t)roDataBlock;
+    rc.roDataSize              = roDataSize;
+    rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock;
+    rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock;
+    rc.originalRoDataAddress   = (size_t)orig_roDataBlock;
+
+    cr->applyRelocs(&rc, hotCodeBlock, hotCodeSize, orig_hotCodeBlock);
+    cr->applyRelocs(&rc, coldCodeBlock, coldCodeSize, orig_coldCodeBlock);
+    cr->applyRelocs(&rc, roDataBlock, roDataSize, orig_roDataBlock);
 
 #ifdef USE_MSVCDIS
 
@@ -67,8 +82,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 
         WCHAR instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
-        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %S",
-                                 (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonic);
+        std::string instrMnemonicUtf8 = ConvertToUtf8(instrMnemonic);
+        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %s",
+                                 (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
         buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "   ; ");
         for (unsigned int i = 0; i < instrSize; i++)
             buff_offset +=

@@ -964,7 +964,7 @@ inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection(IMAGE_NT_HEADERS * p
 
     return dac_cast<PTR_IMAGE_SECTION_HEADER>(
         dac_cast<TADDR>(pNTHeaders) +
-        FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) +
+        offsetof(IMAGE_NT_HEADERS, OptionalHeader) +
         VAL16(pNTHeaders->FileHeader.SizeOfOptionalHeader));
 }
 

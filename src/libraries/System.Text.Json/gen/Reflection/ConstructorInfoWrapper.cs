@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class ConstructorInfoWrapper : ConstructorInfo
+    internal sealed class ConstructorInfoWrapper : ConstructorInfo
     {
         private readonly IMethodSymbol _ctor;
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 
         public ConstructorInfoWrapper(IMethodSymbol ctor, MetadataLoadContextInternal metadataLoadContext)
         {
+            Debug.Assert(ctor != null);
             _ctor = ctor;
             _metadataLoadContext = metadataLoadContext;
         }
@@ -78,12 +80,12 @@ namespace System.Text.Json.Reflection
             return parameters.ToArray();
         }
 
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }

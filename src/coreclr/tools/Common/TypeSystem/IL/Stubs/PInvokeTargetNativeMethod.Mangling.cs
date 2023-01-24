@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    partial class PInvokeTargetNativeMethod : IPrefixMangledMethod
+    public partial class PInvokeTargetNativeMethod : IPrefixMangledMethod
     {
         MethodDesc IPrefixMangledMethod.BaseMethod
         {

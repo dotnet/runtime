@@ -26,7 +26,6 @@ namespace System.Net.Mime
         // characters allowed inside of comments
         internal static readonly bool[] Ctext = CreateCharactersAllowedInComments();
 
-        internal const int Ascii7bitMaxValue = 127;
         internal const char Quote = '\"';
         internal const char Space = ' ';
         internal const char Tab = '\t';
@@ -199,7 +198,7 @@ namespace System.Net.Mime
                 ++offset;
             }
             int start = offset;
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = builder ?? new StringBuilder();
             for (; offset < data.Length; offset++)
             {
                 if (data[offset] == '\\')
@@ -226,11 +225,11 @@ namespace System.Net.Mime
                 {
                     //if data contains Unicode and Unicode is permitted, then
                     //it is valid in a quoted string in a header.
-                    if (data[offset] <= Ascii7bitMaxValue && !Qtext[data[offset]])
+                    if (Ascii.IsValid(data[offset]) && !Qtext[data[offset]])
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
                 //not permitting Unicode, in which case Unicode is a formatting error
-                else if (data[offset] > Ascii7bitMaxValue || !Qtext[data[offset]])
+                else if (!Ascii.IsValid(data[offset]) || !Qtext[data[offset]])
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -243,20 +242,20 @@ namespace System.Net.Mime
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
 
-        internal static string? ReadParameterAttribute(string data, ref int offset, StringBuilder? builder)
+        internal static string? ReadParameterAttribute(string data, ref int offset)
         {
             if (!SkipCFWS(data, ref offset))
                 return null; //
 
-            return ReadToken(data, ref offset, null);
+            return ReadToken(data, ref offset);
         }
 
-        internal static string ReadToken(string data, ref int offset, StringBuilder? builder)
+        internal static string ReadToken(string data, ref int offset)
         {
             int start = offset;
             for (; offset < data.Length; offset++)
             {
-                if (data[offset] > Ascii7bitMaxValue)
+                if (!Ascii.IsValid(data[offset]))
                 {
                     throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[offset]));
                 }
@@ -278,7 +277,7 @@ namespace System.Net.Mime
 
         internal static string? GetDateTimeString(DateTime value, StringBuilder? builder)
         {
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = builder ?? new StringBuilder();
             localBuilder.Append(value.Day);
             localBuilder.Append(' ');
             localBuilder.Append(s_months[value.Month]);
@@ -367,7 +366,7 @@ namespace System.Net.Mime
 
         private static bool CheckForUnicode(char ch, bool allowUnicode)
         {
-            if (ch < Ascii7bitMaxValue)
+            if (Ascii.IsValid(ch))
             {
                 return false;
             }
@@ -379,23 +378,12 @@ namespace System.Net.Mime
             return true;
         }
 
-        internal static bool IsAllowedWhiteSpace(char c)
-        {
+        internal static bool IsAllowedWhiteSpace(char c) =>
             // all allowed whitespace characters
-            return c == Tab || c == Space || c == CR || c == LF;
-        }
+            c == Tab || c == Space || c == CR || c == LF;
 
-        internal static bool HasCROrLF(string data)
-        {
-            for (int i = 0; i < data.Length; i++)
-            {
-                if (data[i] == '\r' || data[i] == '\n')
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        internal static bool HasCROrLF(string data) =>
+            data.AsSpan().IndexOfAny(CR, LF) >= 0;
 
         // Is there a FWS ("\r\n " or "\r\n\t") starting at the given index?
         internal static bool IsFWSAt(string data, int index)

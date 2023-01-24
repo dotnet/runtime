@@ -100,6 +100,11 @@ CorInfoInline MyICJI::canInline(CORINFO_METHOD_HANDLE callerHnd,    /* IN  */
     return result;
 }
 
+void MyICJI::beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,
+                           CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    // do nothing
+}
 // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
 // inlining results when it returns INLINE_FAIL and INLINE_NEVER.  All other results are reported by the
 // JIT.
@@ -210,8 +215,7 @@ CORINFO_CLASS_HANDLE MyICJI::getDefaultEqualityComparerClass(CORINFO_CLASS_HANDL
 void MyICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     jitInstance->mc->cr->AddCall("expandRawHandleIntrinsic");
-    LogError("Hit unimplemented expandRawHandleIntrinsic");
-    DebugBreakorAV(129);
+    jitInstance->mc->repExpandRawHandleIntrinsic(pResolvedToken, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
@@ -373,13 +377,25 @@ bool MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
-const char16_t* MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
-                                         unsigned              metaTOK, /* IN  */
-                                         int*                  length   /* OUT */
-                                         )
+int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
+                             unsigned              metaTOK,   /* IN  */
+                             char16_t*             buffer,    /* OUT */
+                             int                   bufferSize,/* IN  */
+                             int                   startIndex
+                             )
 {
     jitInstance->mc->cr->AddCall("getStringLiteral");
-    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize, startIndex);
+}
+
+size_t MyICJI::printObjectDescription(CORINFO_OBJECT_HANDLE handle,             /* IN  */
+                                      char*                 buffer,             /* OUT */
+                                      size_t                bufferSize,         /* IN  */
+                                      size_t*               pRequiredBufferSize /* OUT */
+                                     )
+{
+    jitInstance->mc->cr->AddCall("printObjectDescription");
+    return jitInstance->mc->repPrintObjectDescription(handle, buffer, bufferSize, pRequiredBufferSize);
 }
 
 /**********************************************************************************/
@@ -396,14 +412,6 @@ CorInfoType MyICJI::asCorInfoType(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repAsCorInfoType(cls);
 }
 
-// for completeness
-const char* MyICJI::getClassName(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getClassName");
-    const char* result = jitInstance->mc->repGetClassName(cls);
-    return result;
-}
-
 const char* MyICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
     jitInstance->mc->cr->AddCall("getClassNameFromMetadata");
@@ -418,32 +426,10 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
     return result;
 }
 
-// Append a (possibly truncated) representation of the type cls to the preallocated buffer ppBuf of length pnBufLen
-// If fNamespace=TRUE, include the namespace/enclosing classes
-// If fFullInst=TRUE (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters
-// If fAssembly=TRUE, suffix with a comma and the full assembly qualification
-// return size of representation
-int MyICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                            int*                                    pnBufLen,
-                            CORINFO_CLASS_HANDLE                    cls,
-                            bool                                    fNamespace,
-                            bool                                    fFullInst,
-                            bool                                    fAssembly)
+size_t MyICJI::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("appendClassName");
-    const WCHAR* result = jitInstance->mc->repAppendClassName(cls, fNamespace, fFullInst, fAssembly);
-    int          nLen   = 0;
-    if (ppBuf != nullptr && result != nullptr)
-    {
-        nLen = (int)wcslen(result);
-        if (*pnBufLen > nLen)
-        {
-            wcscpy_s((WCHAR*)*ppBuf, *pnBufLen, result);
-            (*ppBuf) += nLen;
-            (*pnBufLen) -= nLen;
-        }
-    }
-    return nLen;
+    jitInstance->mc->cr->AddCall("printClassName");
+    return jitInstance->mc->repPrintClassName(cls, buffer, bufferSize, pRequiredBufferSize);
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &
@@ -647,6 +633,34 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+CORINFO_OBJECT_HANDLE MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
+    CORINFO_OBJECT_HANDLE result = jitInstance->mc->repGetRuntimeTypePointer(cls);
+    return result;
+}
+
+bool MyICJI::isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
+{
+    jitInstance->mc->cr->AddCall("isObjectImmutable");
+    bool result = jitInstance->mc->repIsObjectImmutable(objPtr);
+    return result;
+}
+
+bool MyICJI::getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value)
+{
+    jitInstance->mc->cr->AddCall("getStringChar");
+    bool result = jitInstance->mc->repGetStringChar(strObj, index, value);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
+{
+    jitInstance->mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(objPtr);
+    return result;
+}
+
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,
@@ -657,17 +671,12 @@ bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 void MyICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                             mdToken                 targetConstraint,
                                              CORINFO_CLASS_HANDLE    delegateType,
                                              CORINFO_LOOKUP*         pLookup)
 {
     jitInstance->mc->cr->AddCall("getReadyToRunDelegateCtorHelper");
-    jitInstance->mc->repGetReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
-}
-
-const char* MyICJI::getHelperName(CorInfoHelpFunc funcNum)
-{
-    jitInstance->mc->cr->AddCall("getHelperName");
-    return jitInstance->mc->repGetHelperName(funcNum);
+    jitInstance->mc->repGetReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 // This function tries to initialize the class (run the class constructor).
@@ -771,6 +780,17 @@ bool MyICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE 
     return jitInstance->mc->repIsMoreSpecificType(cls1, cls2);
 }
 
+// Returns TypeCompareState::Must if cls is known to be an enum.
+// For enums with known exact type returns the underlying
+// type in underlyingType when the provided pointer is
+// non-NULL.
+// Returns TypeCompareState::May when a runtime check is required.
+TypeCompareState MyICJI::isEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE* underlyingType)
+{
+    jitInstance->mc->cr->AddCall("isEnum");
+    return jitInstance->mc->repIsEnum(cls, underlyingType);
+}
+
 // Given a class handle, returns the Parent type.
 // For COMObjectType, it returns Class Handle of System.Object.
 // Returns 0 if System.Object is passed in.
@@ -844,15 +864,10 @@ CorInfoIsAccessAllowedResult MyICJI::canAccessClass(CORINFO_RESOLVED_TOKEN* pRes
 //
 /**********************************************************************************/
 
-// this function is for debugging only.  It returns the field name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* MyICJI::getFieldName(CORINFO_FIELD_HANDLE ftn,       /* IN */
-                                 const char**         moduleName /* OUT */
-                                 )
+size_t MyICJI::printFieldName(CORINFO_FIELD_HANDLE field, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("getFieldName");
-    return jitInstance->mc->repGetFieldName(ftn, moduleName);
+    jitInstance->mc->cr->AddCall("printFieldName");
+    return jitInstance->mc->repPrintFieldName(field, buffer, bufferSize, pRequiredBufferSize);
 }
 
 // return class it belongs to
@@ -898,6 +913,12 @@ bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
     jitInstance->mc->cr->AddCall("isFieldStatic");
     return jitInstance->mc->repIsFieldStatic(fldHnd);
+}
+
+int MyICJI::getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
+{
+    jitInstance->mc->cr->AddCall("getArrayOrStringLength");
+    return jitInstance->mc->repGetArrayOrStringLength(objHnd);
 }
 
 /*********************************************************************************/
@@ -954,7 +975,7 @@ void MyICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of
     freeArray(pMap); // see note in recSetBoundaries... we own this array and own destroying it.
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.
@@ -999,6 +1020,18 @@ void MyICJI::setVars(CORINFO_METHOD_HANDLE         ftn,   // [IN] method of inte
     jitInstance->mc->cr->AddCall("setVars");
     jitInstance->mc->cr->recSetVars(ftn, cVars, vars);
     freeArray(vars); // See note in recSetVars... we own destroying this array
+}
+
+void MyICJI::reportRichMappings(
+    ICorDebugInfo::InlineTreeNode*    inlineTreeNodes,
+    uint32_t                          numInlineTreeNodes,
+    ICorDebugInfo::RichOffsetMapping* mappings,
+    uint32_t                          numMappings)
+{
+    jitInstance->mc->cr->AddCall("reportRichMappings");
+    // TODO: record these mappings
+    freeArray(inlineTreeNodes);
+    freeArray(mappings);
 }
 
 /*-------------------------- Misc ---------------------------------------*/
@@ -1055,6 +1088,15 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     if (exceptionCode != 0)
         ThrowException(exceptionCode);
     return value;
+}
+
+int MyICJI::getExactClasses(CORINFO_CLASS_HANDLE    baseType,        /* IN */
+                            int                     maxExactClasses, /* IN */
+                            CORINFO_CLASS_HANDLE*   exactClsRet      /* OUT */
+                            )
+{
+    jitInstance->mc->cr->AddCall("getExactClasses");
+    return jitInstance->mc->repGetExactClasses(baseType, maxExactClasses, exactClsRet);
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
@@ -1153,13 +1195,15 @@ const char16_t* MyICJI::getJitTimeLogFilename()
     // we have the ability to replay this, but we treat it in this case as EE context
     //  return jitInstance->eec->jitTimeLogFilename;
 
-    // We want to be able to set COMPLUS_JitTimeLogFile when replaying, to collect JIT
+    // We want to be able to set DOTNET_JitTimeLogFile or COMPlus_JitTimeLogFile when replaying, to collect JIT
     // statistics. So, just do a getenv() call. This isn't quite as thorough as
     // the normal CLR config value functions (which also check the registry), and we've
     // also hard-coded the variable name here instead of using:
     //      CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
     // like in the VM, but it works for our purposes.
-    return (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
+    const char16_t* dotnetVar = (const char16_t*)GetEnvironmentVariableWithDefaultW(W("DOTNET_JitTimeLogFile"));
+    return dotnetVar != nullptr ? dotnetVar :
+        (const char16_t*)GetEnvironmentVariableWithDefaultW(W("COMPlus_JitTimeLogFile"));
 }
 
 /*********************************************************************************/
@@ -1177,15 +1221,10 @@ mdMethodDef MyICJI::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
     return result;
 }
 
-// this function is for debugging only.  It returns the method name
-// and if 'moduleName' is non-null, it sets it to something that will
-// says which method (a class name, or a module name)
-const char* MyICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
-                                  const char**          moduleName /* OUT */
-                                  )
+size_t MyICJI::printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
 {
-    jitInstance->mc->cr->AddCall("getMethodName");
-    return jitInstance->mc->repGetMethodName(ftn, moduleName);
+    jitInstance->mc->cr->AddCall("printMethodName");
+    return jitInstance->mc->repPrintMethodName(ftn, buffer, bufferSize, pRequiredBufferSize);
 }
 
 const char* MyICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                /* IN */
@@ -1442,11 +1481,10 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-// return the data's address (for static fields only)
-void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    jitInstance->mc->cr->AddCall("getFieldAddress");
-    return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
+    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 }
 
 // return the class handle for the current value of a static field
@@ -1491,15 +1529,6 @@ uint32_t MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** p
 {
     jitInstance->mc->cr->AddCall("getFieldThreadLocalStoreID");
     return jitInstance->mc->repGetFieldThreadLocalStoreID(field, ppIndirection);
-}
-
-// Adds an active dependency from the context method's module to the given module
-// This is internal callback for the EE. JIT should not call it directly.
-void MyICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)
-{
-    jitInstance->mc->cr->AddCall("addActiveDependency");
-    LogError("Hit unimplemented addActiveDependency");
-    DebugBreakorAV(116);
 }
 
 CORINFO_METHOD_HANDLE MyICJI::GetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
@@ -1562,13 +1591,6 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
         jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
     }
     return ret;
-}
-
-bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
-    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
-    return result;
 }
 
 // Runs the given function with the given parameter under an error trap
@@ -1770,7 +1792,7 @@ bool MyICJI::logMsg(unsigned level, const char* fmt, va_list args)
 }
 
 // do an assert.  will return true if the code should retry (DebugBreak)
-// returns false, if the assert should be igored.
+// returns false, if the assert should be ignored.
 int MyICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
 {
     jitInstance->mc->cr->AddCall("doAssert");

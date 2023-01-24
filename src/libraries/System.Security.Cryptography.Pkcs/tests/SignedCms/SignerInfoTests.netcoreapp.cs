@@ -430,7 +430,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
 
-            // Detatch one counter signer
+            // Detach one counter signer
             SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
             cms.SignerInfos[0].RemoveCounterSignature(0);
 
@@ -448,7 +448,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
 
-            // Detatch signer (and its counter signers)
+            // Detach signer (and its counter signers)
             SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
             cms.RemoveSignature(0);
 

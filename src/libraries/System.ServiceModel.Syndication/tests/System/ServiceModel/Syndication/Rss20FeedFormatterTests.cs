@@ -1313,7 +1313,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 TextSyndicationContent content = Assert.IsType<TextSyndicationContent>(item.Content);
                 Assert.Empty(content.AttributeExtensions);
-                Assert.Equal("overriden", content.Text);
+                Assert.Equal("overridden", content.Text);
                 Assert.Equal("text", content.Type);
 
                 Assert.Equal(2, item.Contributors.Count);
@@ -1942,7 +1942,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 reader.Skip();
 
-                content = new TextSyndicationContent("overriden");
+                content = new TextSyndicationContent("overridden");
                 return true;
             }
 

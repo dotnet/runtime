@@ -59,9 +59,11 @@ namespace System.Reflection
             typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
+        [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+            string interfaceParameter, string proxyParameter)
         {
             Debug.Assert(baseType != null);
             Debug.Assert(interfaceType != null);
@@ -70,7 +72,7 @@ namespace System.Reflection
             Debug.Assert(alc != null);
 
             ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetValue(alc, static x => new ProxyAssembly(x));
-            GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType);
+            GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
 
@@ -113,6 +115,7 @@ namespace System.Reflection
             private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
+            [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
                 string name;
@@ -134,22 +137,13 @@ namespace System.Reflection
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
             // This attribute is both defined and referenced in the dynamic assembly to
             // allow access to internal types in other assemblies.
-            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor
-            {
-                get
-                {
-                    if (_ignoresAccessChecksToAttributeConstructor == null)
-                    {
-                        _ignoresAccessChecksToAttributeConstructor = IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
-                    }
-
-                    return _ignoresAccessChecksToAttributeConstructor;
-                }
-            }
+            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor =>
+                _ignoresAccessChecksToAttributeConstructor ??= IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
 
             public GeneratedTypeInfo GetProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+                string interfaceParameter, string proxyParameter)
             {
                 lock (_baseTypeAndInterfaceToGeneratedProxyType)
                 {
@@ -161,7 +155,7 @@ namespace System.Reflection
 
                     if (!interfaceToProxy.TryGetValue(interfaceType, out GeneratedTypeInfo? generatedProxy))
                     {
-                        generatedProxy = GenerateProxyType(baseType, interfaceType);
+                        generatedProxy = GenerateProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
                         interfaceToProxy[interfaceType] = generatedProxy;
                     }
 
@@ -174,7 +168,8 @@ namespace System.Reflection
                 Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
             private GeneratedTypeInfo GenerateProxyType(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+                string interfaceParameter, string proxyParameter)
             {
                 // Parameter validation is deferred until the point we need to create the proxy.
                 // This prevents unnecessary overhead revalidating cached proxy types.
@@ -182,34 +177,35 @@ namespace System.Reflection
                 // The interface type must be an interface, not a class
                 if (!interfaceType.IsInterface)
                 {
-                    // "T" is the generic parameter seen via the public contract
-                    throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
+                    throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), interfaceParameter);
                 }
 
                 // The base type cannot be sealed because the proxy needs to subclass it.
                 if (baseType.IsSealed)
                 {
-                    // "TProxy" is the generic parameter seen via the public contract
-                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), "TProxy");
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), proxyParameter);
                 }
 
                 // The base type cannot be abstract
                 if (baseType.IsAbstract)
                 {
-                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), proxyParameter);
                 }
 
                 // The base type must have a public default ctor
                 if (baseType.GetConstructor(Type.EmptyTypes) == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
+                    throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), proxyParameter);
                 }
 
                 // Create a type that derives from 'baseType' provided by caller
                 ProxyBuilder pb = CreateProxy("generatedProxy", baseType);
 
                 foreach (Type t in interfaceType.GetInterfaces())
+                    // interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.
+#pragma warning disable IL2072
                     pb.AddInterfaceImpl(t);
+#pragma warning restore IL2072
 
                 pb.AddInterfaceImpl(interfaceType);
 
@@ -315,7 +311,7 @@ namespace System.Reflection
             internal GeneratedTypeInfo CreateType()
             {
                 this.Complete();
-                return new GeneratedTypeInfo(_tb.CreateType()!, _methodInfos.ToArray());
+                return new GeneratedTypeInfo(_tb.CreateType(), _methodInfos.ToArray());
             }
 
             internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
@@ -351,8 +347,8 @@ namespace System.Reflection
 
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
-                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overriden
-                    // ("methods that cannot be overriden" includes default implementation of other interface methods).
+                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overridden
+                    // ("methods that cannot be overridden" includes default implementation of other interface methods).
                     if (!mi.IsVirtual || mi.IsFinal)
                         continue;
 
@@ -382,7 +378,7 @@ namespace System.Reflection
                 {
                     PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static property, non-virtual property,
+                    // If we didn't make an overridden accessor above, this was a static property, non-virtual property,
                     // or a default implementation of a property of a different interface. In any case, we don't need
                     // to redeclare it.
                     if (ai.GetMethodBuilder == null && ai.SetMethodBuilder == null)
@@ -399,7 +395,7 @@ namespace System.Reflection
                 {
                     EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static event, non-virtual event,
+                    // If we didn't make an overridden accessor above, this was a static event, non-virtual event,
                     // or a default implementation of an event of a different interface. In any case, we don't
                     // need to redeclare it.
                     if (ai.AddMethodBuilder == null && ai.RemoveMethodBuilder == null && ai.RaiseMethodBuilder == null)

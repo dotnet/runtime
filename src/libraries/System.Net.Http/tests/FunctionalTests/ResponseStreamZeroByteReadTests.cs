@@ -6,7 +6,6 @@ using System.IO;
 using System.IO.Tests;
 using System.Linq;
 using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -48,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await stream.WriteAsync(Encoding.ASCII.GetBytes($"{data.Length:X}\r\n"));
             await stream.WriteAsync(data);
-            await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+            await stream.WriteAsync("\r\n"u8.ToArray());
         }
     }
 
@@ -62,12 +61,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 await stream.WriteAsync(Encoding.ASCII.GetBytes($"1\r\n"));
                 await stream.WriteAsync(data.AsMemory(i, 1));
-                await stream.WriteAsync(Encoding.ASCII.GetBytes("\r\n"));
+                await stream.WriteAsync("\r\n"u8.ToArray());
             }
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public abstract class Http1ResponseStreamZeroByteReadTestBase
     {
         protected abstract string GetResponseHeaders();
@@ -82,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
         public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
@@ -97,11 +96,8 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
 
-                using var handler = new SocketsHttpHandler
-                {
-                    ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); }
-                };
-                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+                using var handler = TestHelper.CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.ConnectCallback = delegate { return ValueTask.FromResult(httpConnection); };
 
                 using var client = new HttpClient(handler);
 
@@ -118,29 +114,29 @@ namespace System.Net.Http.Functional.Tests
                             cert,
                             clientCertificateRequired: true,
                             enabledSslProtocols: SslProtocols.Tls12,
-                            checkCertificateRevocation: false).WaitAsync(TimeSpan.FromSeconds(10));
+                            checkCertificateRevocation: false).WaitAsync(TestHelper.PassingTestTimeout);
                     }
                 }
 
-                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TimeSpan.FromSeconds(10));
+                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TestHelper.PassingTestTimeout);
                 await server.WriteAsync(Encoding.ASCII.GetBytes(GetResponseHeaders()));
 
-                using HttpResponseMessage response = await clientTask.WaitAsync(TimeSpan.FromSeconds(10));
+                using HttpResponseMessage response = await clientTask.WaitAsync(TestHelper.PassingTestTimeout);
                 using Stream clientStream = response.Content.ReadAsStream();
                 Assert.False(sawZeroByteRead.Task.IsCompleted);
 
-                Task<int> zeroByteReadTask = Task.Run(() => StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None) );
+                Task<int> zeroByteReadTask = Task.Run(() => StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None));
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 // The zero-byte read should block until data is actually available
-                await sawZeroByteRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await sawZeroByteRead.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 Assert.False(zeroByteReadTask.IsCompleted);
 
-                byte[] data = Encoding.UTF8.GetBytes("Hello");
+                byte[] data = "Hello"u8.ToArray();
                 await WriteAsync(server, data);
                 await server.FlushAsync();
 
-                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TestHelper.PassingTestTimeout));
 
                 // Now that data is available, a zero-byte read should complete synchronously
                 zeroByteReadTask = StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None);
@@ -151,7 +147,7 @@ namespace System.Net.Http.Functional.Tests
                 int read = 0;
                 while (read < data.Length)
                 {
-                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TestHelper.PassingTestTimeout);
                 }
 
                 Assert.Equal(data.Length, read);
@@ -209,24 +205,13 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    public sealed class Http3ResponseStreamZeroByteReadTest_MsQuic : ResponseStreamZeroByteReadTestBase
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class Http3ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
     {
-        public Http3ResponseStreamZeroByteReadTest_MsQuic(ITestOutputHelper output) : base(output) { }
+        public Http3ResponseStreamZeroByteReadTest(ITestOutputHelper output) : base(output) { }
 
         protected override Version UseVersion => HttpVersion.Version30;
-
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
-    }
-
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
-    public sealed class Http3ResponseStreamZeroByteReadTest_Mock : ResponseStreamZeroByteReadTestBase
-    {
-        public Http3ResponseStreamZeroByteReadTest_Mock(ITestOutputHelper output) : base(output) { }
-
-        protected override Version UseVersion => HttpVersion.Version30;
-
-        protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

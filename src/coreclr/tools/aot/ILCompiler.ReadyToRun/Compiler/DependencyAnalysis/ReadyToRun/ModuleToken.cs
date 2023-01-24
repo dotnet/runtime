@@ -17,21 +17,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public struct ModuleToken : IEquatable<ModuleToken>
     {
-        public readonly EcmaModule Module;
+        public readonly IEcmaModule Module;
         public readonly mdToken Token;
 
-        public ModuleToken(EcmaModule module, mdToken token)
+        public ModuleToken(IEcmaModule module, mdToken token)
         {
             Module = module;
             Token = token;
         }
-        public ModuleToken(EcmaModule module, EntityHandle entityHandle)
+        public ModuleToken(IEcmaModule module, EntityHandle entityHandle)
         {
             Module = module;
             Token = (mdToken)MetadataTokens.GetToken(entityHandle);
         }
 
-        public ModuleToken(EcmaModule module, Handle handle)
+        public ModuleToken(IEcmaModule module, Handle handle)
         {
             Module = module;
             Token = (mdToken)MetadataTokens.GetToken(handle);
@@ -71,11 +71,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return Module.CompareTo(other.Module);
-        }
-
-        public SignatureContext SignatureContext(ModuleTokenResolver resolver)
-        {
-            return new SignatureContext(Module, resolver);
         }
 
         public MetadataReader MetadataReader => Module.MetadataReader;

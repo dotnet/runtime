@@ -29,8 +29,10 @@ namespace System.Net.Mail
         {
         }
 
-        internal SmtpTransport(SmtpClient client, ISmtpAuthenticationModule[] authenticationModules!!)
+        internal SmtpTransport(SmtpClient client, ISmtpAuthenticationModule[] authenticationModules)
         {
+            ArgumentNullException.ThrowIfNull(authenticationModules);
+
             _client = client;
             _authenticationModules = authenticationModules;
         }
@@ -139,14 +141,17 @@ namespace System.Net.Mail
             return result;
         }
 
-        internal void EndGetConnection(IAsyncResult result)
+        internal static void EndGetConnection(IAsyncResult result)
         {
-            _connection!.EndGetConnection(result);
+            SmtpConnection.EndGetConnection(result);
         }
 
-        internal IAsyncResult BeginSendMail(MailAddress sender!!, MailAddressCollection recipients!!,
+        internal IAsyncResult BeginSendMail(MailAddress sender, MailAddressCollection recipients,
             string deliveryNotify, bool allowUnicode, AsyncCallback? callback, object? state)
         {
+            ArgumentNullException.ThrowIfNull(sender);
+            ArgumentNullException.ThrowIfNull(recipients);
+
             SendMailAsyncResult result = new SendMailAsyncResult(_connection!, sender, recipients,
                 allowUnicode, _connection!.DSNEnabled ? deliveryNotify : null,
                 callback, state);
@@ -174,7 +179,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailWriter EndSendMail(IAsyncResult result)
+        internal static MailWriter EndSendMail(IAsyncResult result)
         {
             try
             {
@@ -185,9 +190,12 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailWriter SendMail(MailAddress sender!!, MailAddressCollection recipients!!, string deliveryNotify,
+        internal MailWriter SendMail(MailAddress sender, MailAddressCollection recipients, string deliveryNotify,
             bool allowUnicode, out SmtpFailedRecipientException? exception)
         {
+            ArgumentNullException.ThrowIfNull(sender);
+            ArgumentNullException.ThrowIfNull(recipients);
+
             MailCommand.Send(_connection!, SmtpCommands.Mail, sender, allowUnicode);
             _failedRecipientExceptions.Clear();
 

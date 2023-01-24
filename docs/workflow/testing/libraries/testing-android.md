@@ -14,7 +14,7 @@ To manage the dependencies, you can install them via terminal or using Android S
 
 OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
-sudo apt-get install openjdk-8 zip unzip
+sudo apt-get install openjdk-8-jdk zip unzip
 ```
 
 Android SDK and NDK can be automatically installed via the following script:
@@ -22,7 +22,7 @@ Android SDK and NDK can be automatically installed via the following script:
 #!/usr/bin/env bash
 set -e
 
-NDK_VER=r21b
+NDK_VER=r23c
 SDK_VER=6200805_latest
 SDK_API_LEVEL=29
 SDK_BUILD_TOOLS=29.0.3
@@ -39,7 +39,7 @@ fi
 
 # download Android NDK
 export ANDROID_NDK_ROOT=~/android-ndk-${NDK_VER}
-curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-${HOST_OS}-x86_64.zip -L --output ~/andk.zip
+curl https://dl.google.com/android/repository/android-ndk-${NDK_VER}-${HOST_OS}.zip -L --output ~/andk.zip
 unzip ~/andk.zip -d $(dirname ${ANDROID_NDK_ROOT}) && rm -rf ~/andk.zip
 
 # download Android SDK, accept licenses and download additional packages such as
@@ -68,11 +68,11 @@ export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>
 
 Now we're ready to build everything for Android:
 ```
-./build.sh mono+libs -os Android -arch x64
+./build.sh mono+libs -os android -arch x64
 ```
 and even run tests one by one for each library:
 ```
-./build.sh libs.tests -os Android -arch x64 -test
+./build.sh libs.tests -os android -arch x64 -test
 ```
 Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device is plugged in and unlocked.
 `AVD Manager` tool recommends to install `x86` images by default so if you follow that recommendation make sure `-arch x86` was used for the build script.
@@ -80,7 +80,7 @@ Make sure an emulator is booted (see [`AVD Manager`](#avd-manager)) or a device 
 ### Running individual test suites
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=Android /p:TargetArchitecture=x64
+./dotnet.sh build /t:Test src/libraries/System.Numerics.Vectors/tests /p:TargetOS=android /p:TargetArchitecture=x64
 ```
 
 ### Running the functional tests
@@ -89,7 +89,7 @@ There are [functional tests](https://github.com/dotnet/runtime/tree/main/src/tes
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=Android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently functional tests are expected to return `42` as a success code so please be careful when adding a new one.
@@ -147,7 +147,7 @@ ${ANDROID_SDK_ROOT}/emulator/emulator -avd ${EMULATOR_NAME_X64} &
 The emulator can be launched with a variety of options. Run `emulator -help` to see the full list.
 
 ### Existing Limitations
-- `-os Android` is not supported for Windows yet (`WSL` can be used instead)
+- `-os android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
 - AOT and Interpreter modes are not supported yet
 

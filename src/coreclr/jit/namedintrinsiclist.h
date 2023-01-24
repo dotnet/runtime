@@ -15,6 +15,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Enum_HasFlag,
 
+    NI_System_BitConverter_DoubleToInt64Bits,
+    NI_System_BitConverter_Int32BitsToSingle,
+    NI_System_BitConverter_Int64BitsToDouble,
+    NI_System_BitConverter_SingleToInt32Bits,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -55,7 +60,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_GC_KeepAlive,
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
+    NI_System_Type_get_IsEnum,
+    NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
+    NI_System_Type_get_IsByRefLike,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
@@ -75,16 +83,17 @@ enum NamedIntrinsic : unsigned short
     NI_Array_Get,
     NI_Array_Set,
 
-    NI_System_ByReference_ctor,
-    NI_System_ByReference_get_Value,
     NI_System_Activator_AllocatorOf,
     NI_System_Activator_DefaultConstructorOf,
-    NI_System_Object_MethodTableOf,
     NI_System_EETypePtr_EETypePtrOf,
+
+    NI_Internal_Runtime_MethodTable_Of,
 
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+
+    NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
     NI_System_String_get_Chars,
@@ -92,7 +101,9 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_op_Implicit,
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
+    NI_System_Span_get_Length,
     NI_System_ReadOnlySpan_get_Item,
+    NI_System_ReadOnlySpan_get_Length,
 
     NI_System_MemoryExtensions_AsSpan,
     NI_System_MemoryExtensions_Equals,
@@ -105,7 +116,9 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
     NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
@@ -141,6 +154,40 @@ enum NamedIntrinsic : unsigned short
     NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
+#if defined(FEATURE_SIMD)
+    NI_SIMD_UpperRestore,
+    NI_SIMD_UpperSave,
+#endif // FEATURE_SIMD
+
+    NI_SRCS_UNSAFE_START,
+
+    NI_SRCS_UNSAFE_Add,
+    NI_SRCS_UNSAFE_AddByteOffset,
+    NI_SRCS_UNSAFE_AreSame,
+    NI_SRCS_UNSAFE_As,
+    NI_SRCS_UNSAFE_AsPointer,
+    NI_SRCS_UNSAFE_AsRef,
+    NI_SRCS_UNSAFE_ByteOffset,
+    NI_SRCS_UNSAFE_Copy,
+    NI_SRCS_UNSAFE_CopyBlock,
+    NI_SRCS_UNSAFE_CopyBlockUnaligned,
+    NI_SRCS_UNSAFE_InitBlock,
+    NI_SRCS_UNSAFE_InitBlockUnaligned,
+    NI_SRCS_UNSAFE_IsAddressGreaterThan,
+    NI_SRCS_UNSAFE_IsAddressLessThan,
+    NI_SRCS_UNSAFE_IsNullRef,
+    NI_SRCS_UNSAFE_NullRef,
+    NI_SRCS_UNSAFE_Read,
+    NI_SRCS_UNSAFE_ReadUnaligned,
+    NI_SRCS_UNSAFE_SizeOf,
+    NI_SRCS_UNSAFE_SkipInit,
+    NI_SRCS_UNSAFE_Subtract,
+    NI_SRCS_UNSAFE_SubtractByteOffset,
+    NI_SRCS_UNSAFE_Unbox,
+    NI_SRCS_UNSAFE_Write,
+    NI_SRCS_UNSAFE_WriteUnaligned,
+
+    NI_SRCS_UNSAFE_END,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

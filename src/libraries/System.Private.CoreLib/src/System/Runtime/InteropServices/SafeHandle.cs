@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
@@ -13,6 +14,13 @@ namespace System.Runtime.InteropServices
     /// <summary>Represents a wrapper class for operating system handles.</summary>
     public abstract partial class SafeHandle : CriticalFinalizerObject, IDisposable
     {
+#if DEBUG
+        /// <summary>Indicates whether debug tracking and logging of SafeHandle finalization is enabled.</summary>
+        private static readonly bool s_logFinalization = Environment.GetEnvironmentVariable("DEBUG_SAFEHANDLE_FINALIZATION") == "1";
+        /// <summary>Debug counter for the number of SafeHandles that have been finalized.</summary>
+        private static long s_safeHandlesFinalized;
+#endif
+
         // IMPORTANT:
         // - Do not add or rearrange fields as the EE depends on this layout,
         //   as well as on the values of the StateBits flags.
@@ -20,6 +28,9 @@ namespace System.Runtime.InteropServices
         //   code, so this managed code must not assume it is the only code
         //   manipulating _state.
 
+#if DEBUG
+        private readonly string? _ctorStackTrace;
+#endif
         /// <summary>Specifies the handle to be wrapped.</summary>
         protected IntPtr handle;
         /// <summary>Combined ref count and closed/disposed flags (so we can atomically modify them).</summary>
@@ -60,11 +71,18 @@ namespace System.Runtime.InteropServices
             {
                 GC.SuppressFinalize(this);
             }
+#if DEBUG
+            else if (s_logFinalization)
+            {
+                int lastError = Marshal.GetLastPInvokeError();
+                _ctorStackTrace = Environment.StackTrace;
+                Marshal.SetLastPInvokeError(lastError);
+            }
+#endif
 
             _fullyInitialized = true;
         }
 
-#if !CORERT // CoreRT doesn't correctly support CriticalFinalizerObject
         ~SafeHandle()
         {
             if (_fullyInitialized)
@@ -72,7 +90,6 @@ namespace System.Runtime.InteropServices
                 Dispose(disposing: false);
             }
         }
-#endif
 
         internal bool OwnsHandle => _ownsHandle;
 
@@ -94,6 +111,13 @@ namespace System.Runtime.InteropServices
 
         protected virtual void Dispose(bool disposing)
         {
+#if DEBUG
+            if (!disposing && _ctorStackTrace is not null)
+            {
+                long count = Interlocked.Increment(ref s_safeHandlesFinalized);
+                Internal.Console.WriteLine($"{Environment.NewLine}*** #{count} {GetType()} (0x{handle.ToInt64():x}) finalized! Ctor stack:{Environment.NewLine}{_ctorStackTrace}{Environment.NewLine}");
+            }
+#endif
             Debug.Assert(_fullyInitialized);
             InternalRelease(disposeOrFinalizeOperation: true);
         }
@@ -145,10 +169,7 @@ namespace System.Runtime.InteropServices
                 // update predicated on the initial state (a conditional write).
                 // Check for closed state.
                 oldState = _state;
-                if ((oldState & StateBits.Closed) != 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.Closed) != 0, this);
 
                 // Not closed, let's propose an update (to the ref count, just add
                 // StateBits.RefCountOne to the state to effectively add 1 to the ref count).
@@ -179,7 +200,7 @@ namespace System.Runtime.InteropServices
             // See AddRef above for the design of the synchronization here. Basically we
             // will try to decrement the current ref count and, if that would take us to
             // zero refs, set the closed state on the handle as well.
-            bool performRelease = false;
+            bool performRelease;
 
             // Might have to perform the following steps multiple times due to
             // interference from other AddRef's and Release's.
@@ -205,10 +226,7 @@ namespace System.Runtime.InteropServices
                 // unbalanced AddRef and Releases). (We might see a closed state before
                 // hitting zero though -- that can happen if SetHandleAsInvalid is
                 // used).
-                if ((oldState & StateBits.RefCount) == 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.RefCount) == 0, this);
 
                 // If we're proposing a decrement to zero and the handle is not closed
                 // and we own the handle then we need to release the handle upon a
@@ -222,7 +240,7 @@ namespace System.Runtime.InteropServices
 
                 // Attempt the update to the new state, fail and retry if the initial
                 // state has been modified in the meantime. Decrement the ref count by
-                // substracting StateBits.RefCountOne from the state then OR in the bits for
+                // subtracting StateBits.RefCountOne from the state then OR in the bits for
                 // Dispose (if that's the reason for the Release) and closed (if the
                 // initial ref count was 1).
                 newState = oldState - StateBits.RefCountOne;

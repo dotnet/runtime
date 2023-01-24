@@ -17,7 +17,6 @@
 #include "thread.h"
 #include "holder.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
@@ -38,9 +37,13 @@ ThreadStore * GetThreadStore()
 }
 
 ThreadStore::Iterator::Iterator() :
-    m_readHolder(&GetThreadStore()->m_Lock),
     m_pCurrentPosition(GetThreadStore()->m_ThreadList.GetHead())
 {
+    // GC threads may access threadstore without locking as
+    // the lock taken during suspension effectively held by the entire GC.
+    // Others must take a lock.
+    ASSERT(GetThreadStore()->m_Lock.OwnedByCurrentThread() ||
+        (ThreadStore::GetCurrentThread()->IsGCSpecial() && GCHeapUtilities::IsGCInProgress()));
 }
 
 ThreadStore::Iterator::~Iterator()
@@ -66,13 +69,14 @@ PTR_Thread ThreadStore::GetSuspendingThread()
 
 ThreadStore::ThreadStore() :
     m_ThreadList(),
-    m_Lock(true /* writers (i.e. attaching/detaching threads) should wait on GC event */)
+    m_Lock(CrstThreadStore)
 {
     SaveCurrentThreadOffsetForDAC();
 }
 
 ThreadStore::~ThreadStore()
 {
+    m_Lock.Destroy();
 }
 
 // static
@@ -82,7 +86,7 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
+    if (!PalRegisterHijackCallback(Thread::HijackCallback))
         return NULL;
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
@@ -123,15 +127,11 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pAttachingThread->Construct();
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
 
-    // The runtime holds the thread store lock for the duration of thread suspension for GC, so let's check to
-    // see if that's going on and, if so, use a proper wait instead of the RWL's spinning.  NOTE: when we are
-    // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to
-    // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
-    if (fAcquireThreadStoreLock && (RhpTrapThreads != (uint32_t)TrapThreadsFlags::None))
-        RedhawkGCInterface::WaitForGCCompletion();
+    // fAcquireThreadStoreLock is false when threads are created/attached for GC purpose
+    // in such case the lock is already held and GC takes care to ensure safe access to the threadstore
 
     ThreadStore* pTS = GetThreadStore();
-    ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);
+    CrstHolderWithState threadStoreLock(&pTS->m_Lock, fAcquireThreadStoreLock);
 
     //
     // Set thread state to be attached
@@ -159,72 +159,102 @@ void ThreadStore::DetachCurrentThread()
         return;
     }
 
+    // Unregister from OS notifications
+    // This can return false if detach notification is spurious and does not belong to this thread.
     if (!PalDetachThread(pDetachingThread))
     {
         return;
     }
 
+    // Run pre-mortem callbacks while we still can run managed code and not holding locks.
+    // NOTE: background GC threads are attached/suspendable threads, but should not run ordinary
+    // managed code. Make sure that does not happen here.
+    if (g_threadExitCallback != NULL && !pDetachingThread->IsGCSpecial())
+    {
+        g_threadExitCallback();
+    }
+
+    // The following makes the thread no longer able to run managed code or participate in GC.
+    // We need to hold threadstore lock while doing that.
     {
         ThreadStore* pTS = GetThreadStore();
-        ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
+        // Note that when process is shutting down, the threads may be rudely terminated,
+        // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
+        CrstHolder threadStoreLock(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
+        // remove the thread from the list of managed threads.
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
     }
 
+    // post-mortem clean up.
     pDetachingThread->Destroy();
 }
 
-// Used by GC to prevent new threads during a GC.  New threads must take a write lock to
-// modify the list, but they won't be allowed to until all outstanding read locks are
-// released.  This way, the GC always enumerates a consistent set of threads each time
-// it enumerates threads between SuspendAllThreads and ResumeAllThreads.
-//
-// @TODO: Investigate if this requirement is actually necessary.  Threads already may
-// not enter managed code during GC, so if new threads are added to the thread store,
-// but haven't yet entered managed code, is that really a problem?
-//
-// @TODO: Investigate the suspend/resume algorithm's dependence on this lock's side-
-// effect of being a memory barrier.
+// Used by GC to prevent new threads during a GC and
+// to ensure that only one thread performs suspension.
 void ThreadStore::LockThreadStore()
 {
-    m_Lock.AcquireReadLock();
+    m_Lock.Enter();
 }
 
 void ThreadStore::UnlockThreadStore()
 {
-    m_Lock.ReleaseReadLock();
+    m_Lock.Leave();
+}
+
+// exponential spinwait with an approximate time limit for waiting in microsecond range.
+// when iteration == -1, only usecLimit is used
+void SpinWait(int iteration, int usecLimit)
+{
+    int64_t startTicks = PalQueryPerformanceCounter();
+    int64_t ticksPerSecond = PalQueryPerformanceFrequency();
+    int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
+
+    int l = min((unsigned)iteration, 30);
+    for (int i = 0; i < l; i++)
+    {
+        for (int j = 0; j < (1 << i); j++)
+        {
+            System_YieldProcessor();
+        }
+
+        int64_t currentTicks = PalQueryPerformanceCounter();
+        if (currentTicks > endTicks)
+        {
+            break;
+        }
+    }
 }
 
 void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
     Thread * pThisThread = GetCurrentThreadIfAvailable();
-
-    LockThreadStore();
-
     RhpSuspendingThread = pThisThread;
 
     if (waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
     }
-    m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
-
-    // Set each module's loop hijack flag
-    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
 
-    bool keepWaiting;
-    YieldProcessorNormalizationInfo normalizationInfo;
-    do
+    int retries = 0;
+    int prevRemaining = 0;
+    int remaining = 0;
+    bool observeOnly = false;
+
+    while(true)
     {
-        keepWaiting = false;
+        prevRemaining = remaining;
+        remaining = 0;
+
         FOREACH_THREAD(pTargetThread)
         {
             if (pTargetThread == pThisThread)
@@ -232,40 +262,50 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
-                // We drive all threads to preemptive mode by hijacking them with both a
-                // return-address hijack and loop hijacks.
-                keepWaiting = true;
-                pTargetThread->Hijack();
-            }
-            else if (pTargetThread->DangerousCrossThreadIsHijacked())
-            {
-                // Once a thread is safely in preemptive mode, we must wait until it is also
-                // unhijacked.  This is done because, otherwise, we might race on into the
-                // stackwalk and find the hijack still on the stack, which will cause the
-                // stackwalking code to crash.
-                keepWaiting = true;
+                remaining++;
+                if (!observeOnly)
+                {
+                    pTargetThread->Hijack();
+                }
             }
         }
         END_FOREACH_THREAD
 
-        if (keepWaiting)
+        if (!remaining)
+            break;
+
+        // if we see progress or have just done a hijacking pass
+        // do not hijack in the next iteration
+        if (remaining < prevRemaining || !observeOnly)
         {
-            if (PalSwitchToThread() == 0 && g_RhNumberOfProcessors > 1)
+            // 5 usec delay, then check for more progress
+            SpinWait(-1, 5);
+            observeOnly = true;
+        }
+        else
+        {
+            SpinWait(retries++, 100);
+            observeOnly = false;
+
+            // make sure our spining is not starving other threads, but not too often,
+            // this can cause a 1-15 msec delay, depending on OS, and that is a lot while
+            // very rarely needed, since threads are supposed to be releasing their CPUs
+            if ((retries & 127) == 0)
             {
-                // No threads are scheduled on this processor.  Perhaps we're waiting for a thread
-                // that's scheduled on another processor.  If so, let's give it a little time
-                // to make forward progress.
-                // Note that we do not call Sleep, because the minimum granularity of Sleep is much
-                // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
-                // cycles.
-    	        // @TODO: need tuning for spin
-                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
+                PalSwitchToThread();
             }
         }
+    }
 
-    } while (keepWaiting);
-
-    m_SuspendCompleteEvent.Set();
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
@@ -276,27 +316,24 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     END_FOREACH_THREAD
 
-    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 
-    // Reset module's hijackLoops flag
-    GetRuntimeInstance()->SetLoopHijackFlags(0);
+    RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
     }
-    UnlockThreadStore();
 } // ResumeAllThreads
-
-void ThreadStore::WaitForSuspendComplete()
-{
-    uint32_t waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
-    if (waitResult == WAIT_FAILED)
-        RhFailFast();
-}
-
-#ifndef DACCESS_COMPILE
 
 void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
 {
@@ -370,24 +407,11 @@ COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
     GetThreadStore()->CancelThreadAbort((Thread*)thread);
 }
 
-#endif // DACCESS_COMPILE
-
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread;
-DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
-{
-    { 0 },                              // m_rgbAllocContextBuffer
-    Thread::TSF_Unknown,                // m_ThreadStateFlags
-    TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pHackPInvokeTunnel
-    0,                                  // m_pCachedTransitionFrame
-    0,                                  // m_pNext
-    INVALID_HANDLE_VALUE,               // m_hPalThread
-    0,                                  // m_ppvHijackedReturnAddressLocation
-    0,                                  // m_pvHijackedReturnAddress
-    0,                                  // all other fields are initialized by zeroes
-};
+#ifndef _MSC_VER
+__thread ThreadBuffer tls_CurrentThread;
+#endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {
@@ -488,7 +512,7 @@ bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pW
     }
 
     // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->get_ComponentSize() != POINTER_SIZE))
+    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
         goto Error;
 
     // Input array was not big enough.  We don't even partially fill it.

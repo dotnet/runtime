@@ -106,7 +106,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 gsize*
 sgen_get_complex_descriptor (SgenDescriptor desc)
 {
-	return (gsize*) sgen_array_list_get_slot (&complex_descriptors, desc >> LOW_TYPE_BITS);
+	return (gsize*) sgen_array_list_get_slot (&complex_descriptors, (guint32)(desc >> LOW_TYPE_BITS));
 }
 
 /*
@@ -131,7 +131,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	if (first_set < 0) {
 		SGEN_LOG (6, "Ptrfree descriptor %" PRIu64 ", size: %zu", (uint64_t)desc, stored_size);
 		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE)
-			return DESC_TYPE_SMALL_PTRFREE | stored_size;
+			return (SgenDescriptor)(DESC_TYPE_SMALL_PTRFREE | stored_size);
 		return DESC_TYPE_COMPLEX_PTRFREE;
 	}
 
@@ -141,7 +141,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 
 	/* we know the 2-word header is ptr-free */
 	if (last_set < BITMAP_NUM_BITS + OBJECT_HEADER_WORDS && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
-		desc = DESC_TYPE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
+		desc = (SgenDescriptor)(DESC_TYPE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS));
 		SGEN_LOG (6, "Largebitmap descriptor %" PRIu64 ", size: %zu, last set: %d", (uint64_t)desc, stored_size, last_set);
 		return desc;
 	}
@@ -152,7 +152,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 * It may be better to use nibbles.
 		 */
 		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
-			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
+			desc = (SgenDescriptor)(DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24));
 			SGEN_LOG (6, "Runlen descriptor %" PRIu64 ", size: %zu, first set: %d, num set: %d", (uint64_t)desc, stored_size, first_set, num_set);
 			return desc;
 		}
@@ -180,7 +180,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 
 	if (first_set < 0) {
 		if (elem_size <= MAX_ELEMENT_SIZE)
-			return desc | VECTOR_SUBTYPE_PTRFREE | (elem_size << VECTOR_ELSIZE_SHIFT);
+			return (SgenDescriptor)(desc | VECTOR_SUBTYPE_PTRFREE | (elem_size << VECTOR_ELSIZE_SHIFT));
 		return DESC_TYPE_COMPLEX_PTRFREE;
 	}
 
@@ -196,7 +196,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 		/* FIXME: try run-len first */
 		/* Note: we can't skip the object header here, because it's not present */
 		if (last_set < VECTOR_BITMAP_SIZE) {
-			return desc | VECTOR_SUBTYPE_BITMAP | (*elem_bitmap << 16);
+			return (SgenDescriptor)(desc | VECTOR_SUBTYPE_BITMAP | (*elem_bitmap << 16));
 		}
 	}
 	/* it's am array of complex structs ... */
@@ -270,7 +270,7 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 	if (numbits == 0) {
 		return MAKE_ROOT_DESC (ROOT_DESC_BITMAP, 0);
 	} else if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
-		return MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
+		return (SgenDescriptor)(MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]));
 	} else {
 		SgenDescriptor complex = alloc_complex_descriptor (bitmap, numbits);
 		return MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
@@ -325,7 +325,7 @@ sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker)
 void*
 sgen_get_complex_descriptor_bitmap (SgenDescriptor desc)
 {
-	return (void*) sgen_array_list_get_slot (&complex_descriptors, desc >> ROOT_DESC_TYPE_SHIFT);
+	return (void*) sgen_array_list_get_slot (&complex_descriptors, (guint32)(desc >> ROOT_DESC_TYPE_SHIFT));
 }
 
 SgenUserRootMarkFunc

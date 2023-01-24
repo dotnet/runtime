@@ -6,7 +6,7 @@
 # Firewall configuration
 $script:firewallGroup = "Libraries Testing"
 $script:firewallRules = @(
-    @{Name = "LibariesNet - HTTP 80"; Port = 80},
+    @{Name = "LibrariesNet - HTTP 80"; Port = 80},
     @{Name = "LibrariesNet - HTTP 443"; Port = 443}
 )
 

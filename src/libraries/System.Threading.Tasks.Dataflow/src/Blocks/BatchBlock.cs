@@ -68,7 +68,7 @@ namespace System.Threading.Tasks.Dataflow
                 onItemsRemoved, itemCountingFunc);
 
             // Initialize target
-            _target = new BatchBlockTargetCore(this, batchSize, batch => _source.AddMessage(batch), dataflowBlockOptions);
+            _target = new BatchBlockTargetCore(this, batchSize, _source.AddMessage, dataflowBlockOptions);
 
             // When the target is done, let the source know it won't be getting any more data
             _target.Completion.ContinueWith(delegate { _source.Complete(); },
@@ -99,8 +99,13 @@ namespace System.Threading.Tasks.Dataflow
         public void Complete() { _target.Complete(exception: null, dropPendingMessages: false, releaseReservedMessages: false); }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             _target.Complete(exception, dropPendingMessages: true, releaseReservedMessages: false);
         }
 
@@ -1096,7 +1101,7 @@ namespace System.Threading.Tasks.Dataflow
                         catch (Exception e)
                         {
                             if (throwOnFirstException) throw;
-                            if (exceptions == null) exceptions = new List<Exception>(1);
+                            exceptions ??= new List<Exception>(1);
                             exceptions.Add(e);
                         }
                     }
@@ -1174,9 +1179,9 @@ namespace System.Threading.Tasks.Dataflow
                 /// <summary>Gets the messages waiting to be processed.</summary>
                 public IEnumerable<T> InputQueue { get { return _target._messages.ToList(); } }
                 /// <summary>Gets the task being used for input processing.</summary>
-                public Task? TaskForInputProcessing { get { return _target._nonGreedyState != null ? _target._nonGreedyState.TaskForInputProcessing : null; } }
+                public Task? TaskForInputProcessing { get { return _target._nonGreedyState?.TaskForInputProcessing; } }
                 /// <summary>Gets the collection of postponed messages.</summary>
-                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState != null ? _target._nonGreedyState.PostponedMessages : null; } }
+                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState?.PostponedMessages; } }
                 /// <summary>Gets whether the block is declining further messages.</summary>
                 public bool IsDecliningPermanently { get { return _target._decliningPermanently; } }
                 /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

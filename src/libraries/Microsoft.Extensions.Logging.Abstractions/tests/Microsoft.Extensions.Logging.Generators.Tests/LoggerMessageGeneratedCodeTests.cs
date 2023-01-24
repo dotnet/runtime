@@ -15,6 +15,28 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     public class LoggerMessageGeneratedCodeTests
     {
         [Fact]
+        public void FindsLoggerFieldInBaseClass()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new DerivedClass(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerFieldInAnotherParialClass()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new PartialClassWithLoggerField(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
         public void BasicTests()
         {
             var logger = new MockLogger();

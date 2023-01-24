@@ -109,7 +109,7 @@ namespace Internal.TypeSystem
 
         protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
         {
-            // NOTE: We're ignoring the containing type for compatiblity with SigFormat.cpp
+            // NOTE: We're ignoring the containing type for compatibility with SigFormat.cpp
             sb.Append(GetTypeName(nestedType));
         }
     }

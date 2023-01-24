@@ -222,7 +222,7 @@ lock_word_decrement_nest (LockWord lw)
 static gint32
 lock_word_get_owner (LockWord lw)
 {
-	return lw.lock_word >> LOCK_WORD_OWNER_SHIFT;
+	return (gint32)(lw.lock_word >> LOCK_WORD_OWNER_SHIFT);
 }
 
 static LockWord
@@ -340,9 +340,6 @@ mon_finalize (MonoThreadsSync *mon)
 
 	mon->data = monitor_freelist;
 	monitor_freelist = mon;
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_sync_blocks);
-#endif
 }
 
 /* LOCKING: this is called with monitor_mutex held */
@@ -407,14 +404,11 @@ mon_new (gsize id)
 	new_ = monitor_freelist;
 	monitor_freelist = (MonoThreadsSync *)new_->data;
 
-	new_->status = mon_status_set_owner (0, id);
+	new_->status = mon_status_set_owner (0, (guint32)id);
 	new_->status = mon_status_init_entry_count (new_->status);
 	new_->nest = 1;
 	new_->data = NULL;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_sync_blocks);
-#endif
 	return new_;
 }
 
@@ -521,6 +515,12 @@ mono_monitor_inflate (MonoObject *obj)
 
 #define MONO_OBJECT_ALIGNMENT_SHIFT	3
 
+/*
+ * Wang's address-based hash function:
+ *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
+ */
+#define HASH_OBJECT(obj) (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u
+
 int
 mono_object_hash_internal (MonoObject* obj)
 {
@@ -548,11 +548,14 @@ mono_object_hash_internal (MonoObject* obj)
 	 * another thread computes the hash at the same time, because it'll end up
 	 * with the same value.
 	 */
-	hash = (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+	hash = HASH_OBJECT(obj);
 #if SIZEOF_VOID_P == 4
 	/* clear the top bits as they can be discarded */
 	hash &= ~(LOCK_WORD_STATUS_MASK << (32 - LOCK_WORD_STATUS_BITS));
 #endif
+	if (hash == 0) {
+		hash = 1;
+	}
 	if (lock_word_is_free (lw)) {
 		LockWord old_lw;
 		lw = lock_word_new_thin_hash (hash);
@@ -587,19 +590,48 @@ mono_object_hash_internal (MonoObject* obj)
 
 #else
 
-/*
- * Wang's address-based hash function:
- *   http://www.concentric.net/~Ttwang/tech/addrhash.htm
- */
-	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
+	unsigned int hash = HASH_OBJECT(obj);
+	if (hash == 0) {
+		hash = 1;
+	}
+	return hash;
+
 #endif
 
 }
 
 int
-mono_object_hash_icall (MonoObjectHandle obj, MonoError* error)
+mono_object_try_get_hash_internal (MonoObject* obj)
 {
-	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
+#ifdef HAVE_MOVING_COLLECTOR
+
+	LockWord lw;
+	if (!obj)
+		return 0;
+	lw.sync = obj->synchronisation;
+
+	LOCK_DEBUG (g_message("%s: (%d) Get hash for object %p; LW = %p", __func__, mono_thread_info_get_small_id (), obj, obj->synchronisation));
+
+	if (lock_word_has_hash (lw)) {
+		if (lock_word_is_inflated (lw)) {
+			return lock_word_get_inflated_lock (lw)->hash_code;
+		} else {
+			return lock_word_get_hash (lw);
+		}
+	}
+
+	return 0;
+
+#else
+
+	unsigned int hash = HASH_OBJECT(obj);
+	if (hash == 0) {
+		hash = 1;
+	}
+	return hash;
+
+#endif
+
 }
 
 /*
@@ -754,7 +786,7 @@ signal_monitor (gpointer mon_untyped)
 	mono_coop_mutex_unlock (mon->entry_mutex);
 }
 
-static gint64 thread_contentions; /* for Monitor.LockContentionCount, otherwise mono_perfcounters struct is used */
+static gint64 thread_contentions; /* for Monitor.LockContentionCount */
 
 /* If allow_interruption==TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
@@ -768,7 +800,7 @@ mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_int
 	guint32 waitms;
 	guint32 new_status, old_status, tmp_status;
 	MonoInternalThread *thread;
-	gboolean interrupted, timedout;
+	gboolean interrupted, timedout = FALSE;
 
 	LOCK_DEBUG (g_message("%s: (%d) Trying to lock object %p (%d ms)", __func__, id, obj, ms));
 
@@ -810,11 +842,7 @@ retry:
 	}
 
 	/* The object must be locked by someone else... */
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_contentions);
-#else
 	mono_atomic_inc_i64 (&thread_contentions);
-#endif
 
 	/* If ms is 0 we don't block, but just fail straight away */
 	if (ms == 0) {
@@ -875,10 +903,6 @@ retry_contended:
 	}
 	waitms = ms;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_len);
-	mono_atomic_inc_i32 (&mono_perfcounters->thread_queue_max);
-#endif
 	thread = mono_thread_internal_current ();
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
@@ -898,9 +922,6 @@ retry_contended:
 	mon_add_entry_count (mon, -1);
 	mono_coop_mutex_unlock (mon->entry_mutex);
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->thread_queue_len);
-#endif
 
 	if (timedout || (interrupted && allow_interruption)) {
 		/* we're done */
@@ -922,7 +943,7 @@ retry_contended:
 				if (delta >= ms) {
 					ms = 0;
 				} else {
-					ms -= delta;
+					ms -= GINT64_TO_UINT32 (delta);
 				}
 			}
 			/* retry from the top */
@@ -1003,7 +1024,7 @@ MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj)
 {
 	const int timeout_milliseconds = MONO_INFINITE_WAIT;
-	const gboolean allow_interruption = TRUE;
+	const MonoBoolean allow_interruption = TRUE;
 	MonoError * const error = NULL;
 	MonoBoolean lock_taken;
 
@@ -1133,9 +1154,9 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 		if (error) {
 			mono_error_set_argument_null (error, "obj", "");
 		} else {
-			ERROR_DECL (error);
-			mono_error_set_argument_null (error, "obj", "");
-			mono_error_set_pending_exception (error);
+			ERROR_DECL (null_error);
+			mono_error_set_argument_null (null_error, "obj", "");
+			mono_error_set_pending_exception (null_error);
 		}
 		return FALSE;
 	}
@@ -1175,7 +1196,7 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 
 	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
 	*lockTaken = res == 1;
-	return res;
+	return !!res;
 }
 
 void
@@ -1326,7 +1347,7 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 	HANDLE event;
 	guint32 nest;
 	MonoW32HandleWaitRet ret;
-	gboolean success = FALSE;
+	MonoBoolean success = FALSE;
 	gint32 regain;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	int const id = mono_thread_info_get_small_id ();
@@ -1347,7 +1368,6 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 
 	event = mono_w32event_create (FALSE, FALSE);
 	if (event == NULL) {
-		ERROR_DECL (error);
 		mono_error_set_synchronization_lock (error, "Failed to set up wait event");
 		mono_error_set_pending_exception (error);
 		return FALSE;
@@ -1470,9 +1490,5 @@ ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObjectHandle obj, MonoErro
 gint64
 ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	return mono_perfcounters->thread_contentions;
-#else
 	return thread_contentions;
-#endif
 }

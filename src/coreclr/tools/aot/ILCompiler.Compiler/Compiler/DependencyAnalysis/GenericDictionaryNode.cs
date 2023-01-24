@@ -7,6 +7,8 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -15,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    public abstract class GenericDictionaryNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public abstract class GenericDictionaryNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly NodeFactory _factory;
 
@@ -28,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public abstract Instantiation MethodInstantiation { get; }
 
         public abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
-        
+
         public sealed override bool StaticDependenciesAreComputed => true;
 
         public sealed override bool IsShareable => true;
@@ -41,14 +43,15 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolDefinitionNode.Offset => HeaderSize;
 
-        public override ObjectNodeSection Section => GetDictionaryLayout(_factory).DictionarySection(_factory);
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
+            => GetDictionaryLayout(_factory).DictionarySection(_factory);
 
         public GenericDictionaryNode(NodeFactory factory)
         {
             _factory = factory;
         }
 
-        public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
@@ -102,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override int HeaderSize => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
-        public override Instantiation MethodInstantiation => new Instantiation();
+        public override Instantiation MethodInstantiation => default(Instantiation);
         protected override TypeSystemContext Context => _owningType.Context;
         public override TypeSystemEntity OwningEntity => _owningType;
         public TypeDesc OwningType => _owningType;
@@ -196,6 +199,13 @@ namespace ILCompiler.DependencyAnalysis
         protected override TypeSystemContext Context => _owningMethod.Context;
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public MethodDesc OwningMethod => _owningMethod;
+        public override bool HasConditionalStaticDependencies => true;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            CombinedDependencyList list = null;
+            factory.MetadataManager.GetConditionalDependenciesDueToMethodGenericDictionary(ref list, factory, _owningMethod);
+            return list ?? (IEnumerable<CombinedDependencyListEntry>)System.Array.Empty<CombinedDependencyListEntry>();
+        }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

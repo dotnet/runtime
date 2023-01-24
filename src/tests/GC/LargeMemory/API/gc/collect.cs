@@ -25,7 +25,7 @@ public sealed class CollectTest {
             CreateLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception:");
             Console.WriteLine(e);

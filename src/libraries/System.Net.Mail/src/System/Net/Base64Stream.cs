@@ -33,7 +33,7 @@ namespace System.Net
 
         private readonly Base64WriteStateInfo _writeState;
         private ReadStateInfo? _readState;
-        private readonly IByteEncoder _encoder;
+        private readonly Base64Encoder _encoder;
 
         //bytes with this value in the decode map are invalid
         private const byte InvalidBase64Value = 255;
@@ -50,7 +50,7 @@ namespace System.Net
             _encoder = new Base64Encoder(_writeState, writeStateInfo.MaxLineLength);
         }
 
-        private ReadStateInfo ReadState => _readState ?? (_readState = new ReadStateInfo());
+        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState
         {
@@ -156,13 +156,17 @@ namespace System.Net
 
         public string GetEncodedString() => _encoder.GetEncodedString();
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             return ReadAsyncResult.End(asyncResult);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult!!)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             WriteAsyncResult.End(asyncResult);
         }
 

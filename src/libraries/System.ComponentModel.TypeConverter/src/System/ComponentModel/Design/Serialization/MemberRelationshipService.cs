@@ -69,14 +69,20 @@ namespace System.ComponentModel.Design.Serialization
         /// Also sets a relationship between two objects. Null can be passed as the property value, in which
         /// case the relationship will be cleared.
         /// </summary>
-        public MemberRelationship this[object sourceOwner!!, MemberDescriptor sourceMember!!]
+        public MemberRelationship this[object sourceOwner, MemberDescriptor sourceMember]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(sourceOwner);
+                ArgumentNullException.ThrowIfNull(sourceMember);
+
                 return GetRelationship(new MemberRelationship(sourceOwner, sourceMember));
             }
             set
             {
+                ArgumentNullException.ThrowIfNull(sourceOwner);
+                ArgumentNullException.ThrowIfNull(sourceMember);
+
                 SetRelationship(new MemberRelationship(sourceOwner, sourceMember), value);
             }
         }
@@ -114,16 +120,8 @@ namespace System.ComponentModel.Design.Serialization
             Justification = "GetComponentName is only used to create a nice exception message, and has a fallback when null is returned.")]
         private static void ThrowRelationshipNotSupported(MemberRelationship source, MemberRelationship relationship)
         {
-            string? sourceName = TypeDescriptor.GetComponentName(source.Owner!);
-            string? relName = TypeDescriptor.GetComponentName(relationship.Owner!);
-            if (sourceName == null)
-            {
-                sourceName = source.Owner!.ToString();
-            }
-            if (relName == null)
-            {
-                relName = relationship.Owner!.ToString();
-            }
+            string? sourceName = TypeDescriptor.GetComponentName(source.Owner!) ?? source.Owner!.ToString();
+            string? relName = TypeDescriptor.GetComponentName(relationship.Owner!) ?? relationship.Owner!.ToString();
             throw new ArgumentException(SR.Format(SR.MemberRelationshipService_RelationshipNotSupported, sourceName, source.Member.Name, relName, relationship.Member.Name));
         }
 
@@ -179,8 +177,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new member relationship.
         /// </summary>
-        public MemberRelationship(object owner!!, MemberDescriptor member!!)
+        public MemberRelationship(object owner, MemberDescriptor member)
         {
+            ArgumentNullException.ThrowIfNull(owner);
+            ArgumentNullException.ThrowIfNull(member);
+
             Owner = owner;
             Member = member;
         }

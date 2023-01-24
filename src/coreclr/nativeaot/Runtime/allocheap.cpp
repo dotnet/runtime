@@ -231,7 +231,7 @@ bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint
         {
 #ifndef STRESS_MEMACCESSMGR
             // Create or update the alloc cache, used to speed up new allocations.
-            // If there is available commited memory and either m_pNextFree is
+            // If there is available committed memory and either m_pNextFree is
             // being updated past a page boundary or the current cache is empty,
             // then update the cache.
             if (ALIGN_DOWN(m_pNextFree, OS_PAGE_SIZE) != ALIGN_DOWN(pNextFree, OS_PAGE_SIZE) ||

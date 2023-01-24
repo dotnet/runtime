@@ -3,11 +3,11 @@
 // Sig ::= MethodDefSig | MethodRefSig | StandAloneMethodSig | FieldSig | PropertySig | LocalVarSig
 // MethodDefSig ::= [[HASTHIS] [EXPLICITTHIS]] (DEFAULT|VARARG|GENERIC GenParamCount) ParamCount RetType Param*
 // MethodRefSig ::= [[HASTHIS] [EXPLICITTHIS]] VARARG ParamCount RetType Param* [SENTINEL Param+]
-// StandAloneMethodSig ::= [[HASTHIS] [EXPLICITTHIS]] (DEFAULT|VARARG|C|STDCALL|THISCALL|FASTCALL) 
+// StandAloneMethodSig ::= [[HASTHIS] [EXPLICITTHIS]] (DEFAULT|VARARG|C|STDCALL|THISCALL|FASTCALL)
 // ParamCount RetType Param* [SENTINEL Param+]
 // FieldSig ::= FIELD CustomMod* Type
 // PropertySig ::= PROPERTY [HASTHIS] ParamCount CustomMod* Type Param*
-// LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+ 
+// LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+
 
 // -------------
 
@@ -18,7 +18,7 @@
 // Type ::= ( BOOLEAN | CHAR | I1 | U1 | U2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U |
 // | VALUETYPE TypeDefOrRefEncoded
 // | CLASS TypeDefOrRefEncoded
-// | STRING 
+// | STRING
 // | OBJECT
 // | PTR CustomMod* VOID
 // | PTR CustomMod* Type
@@ -118,7 +118,7 @@ private:
 	sig_byte *pbCur;
 	sig_byte *pbEnd;
 
-public: 
+public:
 	bool Parse(sig_byte *blob, sig_count len);
 
 private:
@@ -161,7 +161,7 @@ protected:
 	virtual void NotifyEndParam() {}
 
  	// sentinel indication the location of the "..." in the method signature
-	virtual void NotifySentinal() {}
+	virtual void NotifySentinel() {}
 
  	// number of generic parameters in this method signature (if any)
 	virtual void NotifyGenericParamCount(sig_count) {}
@@ -209,8 +209,8 @@ protected:
 	virtual void NotifySize(sig_count) {}
 
  	// BUG BUG lower bounds can be negative, how can this be encoded?
- 	// number of dimensions with specified lower bounds followed by lower bound of each 
-	virtual void NotifyNumLoBounds(sig_count) {} 
+ 	// number of dimensions with specified lower bounds followed by lower bound of each
+	virtual void NotifyNumLoBounds(sig_count) {}
 	virtual void NotifyLoBound(sig_count) {}
 
  	//----------------------------------------------------
@@ -247,10 +247,10 @@ protected:
 	virtual void NotifyTypeGenericInst(sig_elem_type elem_type, sig_index_type indexType, sig_index index, sig_mem_number number) {}
 
  	// the type is the type of the nth generic type parameter for the class
-	virtual void NotifyTypeGenericTypeVariable(sig_mem_number number) {} 
+	virtual void NotifyTypeGenericTypeVariable(sig_mem_number number) {}
 
  	// the type is the type of the nth generic type parameter for the member
-	virtual void NotifyTypeGenericMemberVariable(sig_mem_number number) {} 
+	virtual void NotifyTypeGenericMemberVariable(sig_mem_number number) {}
 
  	// the type will be a value type
 	virtual void NotifyTypeValueType() {}
@@ -295,19 +295,19 @@ bool SigParser::Parse(sig_byte *pb, sig_count cbBuffer)
 		case SIG_METHOD_VARARG: // vararg calling convention
 			return ParseMethod(elem_type);
 			break;
- 
+
  		case SIG_FIELD: // encodes a field
  			return ParseField(elem_type);
  			break;
- 
+
  		case SIG_LOCAL_SIG: // used for the .locals directive
  			return ParseLocals(elem_type);
  			break;
- 
+
 		case SIG_PROPERTY: // used to encode a property
  			return ParseProperty(elem_type);
  			break;
- 
+
  		default:
  			// unknown signature
  			break;
@@ -347,7 +347,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 			return false;
 		}
 
-		NotifyGenericParamCount(gen_param_count); 
+		NotifyGenericParamCount(gen_param_count);
 	}
 
 	if (!ParseNumber(¶m_count))
@@ -362,7 +362,7 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 		return false;
 	}
 
-	bool fEncounteredSentinal = false;
+	bool fEncounteredSentinel = false;
 
 	for (sig_count i = 0; i < param_count; i++)
 	{
@@ -373,13 +373,13 @@ bool SigParser::ParseMethod(sig_elem_type elem_type)
 
 		if (*pbCur == ELEMENT_TYPE_SENTINEL)
 		{
-			if (fEncounteredSentinal)
+			if (fEncounteredSentinel)
 			{
 				return false;
 			}
 
-			fEncounteredSentinal = true;
-			NotifySentinal();
+			fEncounteredSentinel = true;
+			NotifySentinel();
 			pbCur++;
 		}
 
@@ -458,7 +458,7 @@ bool SigParser::ParseProperty(sig_elem_type elem_type)
 
 bool SigParser::ParseLocals(sig_elem_type elem_type)
 {
- 	// LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+ 
+ 	// LocalVarSig ::= LOCAL_SIG Count (TYPEDBYREF | ([CustomMod] [Constraint])* [BYREF] Type)+
 
 	NotifyBeginLocals(elem_type);
 
@@ -530,7 +530,7 @@ bool SigParser::ParseLocal()
 
 
 bool SigParser::ParseOptionalCustomModsOrConstraint()
-{ 
+{
 	for (;;)
 	{
 		if (pbCur >= pbEnd)
@@ -579,7 +579,7 @@ bool SigParser::ParseOptionalCustomMods()
 				{
 					return false;
 				}
-				break; 
+				break;
 
 			default:
 				return true;
@@ -698,7 +698,7 @@ bool SigParser::ParseRetType()
 		return false;
 	}
 
-	Success: 
+	Success:
 	NotifyEndRetType();
 	return true;
 }
@@ -753,7 +753,7 @@ bool SigParser::ParseArrayShape()
 	}
 
 	NotifyEndArrayShape();
-	return true; 
+	return true;
 }
 
 bool SigParser::ParseType()
@@ -761,7 +761,7 @@ bool SigParser::ParseType()
 	// Type ::= ( BOOLEAN | CHAR | I1 | U1 | U2 | U2 | I4 | U4 | I8 | U8 | R4 | R8 | I | U |
 	// 	 | VALUETYPE TypeDefOrRefEncoded
 	// 	 | CLASS TypeDefOrRefEncoded
-	// 	 | STRING 
+	// 	 | STRING
 	// 	 | OBJECT
 	// 	 | PTR CustomMod* VOID
 	// 	 | PTR CustomMod* Type
@@ -788,15 +788,15 @@ bool SigParser::ParseType()
 		case ELEMENT_TYPE_BOOLEAN:
 		case ELEMENT_TYPE_CHAR:
 		case ELEMENT_TYPE_I1:
-		case ELEMENT_TYPE_U1: 
-		case ELEMENT_TYPE_U2: 
-		case ELEMENT_TYPE_I2: 
-		case ELEMENT_TYPE_I4: 
-		case ELEMENT_TYPE_U4: 
-		case ELEMENT_TYPE_I8: 
-		case ELEMENT_TYPE_U8: 
-		case ELEMENT_TYPE_R4: 
-		case ELEMENT_TYPE_R8: 
+		case ELEMENT_TYPE_U1:
+		case ELEMENT_TYPE_U2:
+		case ELEMENT_TYPE_I2:
+		case ELEMENT_TYPE_I4:
+		case ELEMENT_TYPE_U4:
+		case ELEMENT_TYPE_I8:
+		case ELEMENT_TYPE_U8:
+		case ELEMENT_TYPE_R4:
+		case ELEMENT_TYPE_R8:
 		case ELEMENT_TYPE_I:
 		case ELEMENT_TYPE_U:
 		case ELEMENT_TYPE_STRING:
@@ -835,7 +835,7 @@ bool SigParser::ParseType()
 
 			break;
 
-		case ELEMENT_TYPE_CLASS: 
+		case ELEMENT_TYPE_CLASS:
 			// CLASS TypeDefOrRefEncoded
 			NotifyTypeClass();
 
@@ -844,10 +844,10 @@ bool SigParser::ParseType()
 				return false;
 			}
 
-			NotifyTypeDefOrRef(indexType, index); 
+			NotifyTypeDefOrRef(indexType, index);
 			break;
 
-		case ELEMENT_TYPE_VALUETYPE: 
+		case ELEMENT_TYPE_VALUETYPE:
 			//VALUETYPE TypeDefOrRefEncoded
 			NotifyTypeValueType();
 
@@ -856,7 +856,7 @@ bool SigParser::ParseType()
 				return false;
 			}
 
-			NotifyTypeDefOrRef(indexType, index); 
+			NotifyTypeDefOrRef(indexType, index);
 			break;
 
 		case ELEMENT_TYPE_FNPTR:
@@ -1030,11 +1030,11 @@ bool SigParser::ParseNumber(sig_count *pOut)
 
 	// must be a 4 byte encoding
 
-	if ( (b1 & 0x20) != 0) 
+	if ( (b1 & 0x20) != 0)
 	{
 		// 4 byte encoding has this bit clear -- error if not
 		return false;
-	} 
+	}
 
 	if (!ParseByte(&b3))
 	{

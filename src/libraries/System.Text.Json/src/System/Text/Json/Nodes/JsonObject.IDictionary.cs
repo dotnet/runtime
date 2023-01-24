@@ -1,16 +1,17 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization.Converters;
+using System.Threading;
 
 namespace System.Text.Json.Nodes
 {
     public partial class JsonObject : IDictionary<string, JsonNode?>
     {
-        private JsonPropertyDictionary<JsonNode>? _dictionary;
+        private JsonPropertyDictionary<JsonNode?>? _dictionary;
 
         /// <summary>
         ///   Adds an element with the provided property name and value to the <see cref="JsonObject"/>.
@@ -113,8 +114,13 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="propertyName"/> is <see langword="null"/>.
         /// </exception>
-        public bool Remove(string propertyName!!)
+        public bool Remove(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             InitializeIfRequired();
             Debug.Assert(_dictionary != null);
 
@@ -256,32 +262,47 @@ namespace System.Text.Json.Nodes
 
         private void InitializeIfRequired()
         {
-            if (_dictionary != null)
+            if (_dictionary is null)
             {
-                return;
+                InitializeCore();
             }
 
-            bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-            var dictionary = new JsonPropertyDictionary<JsonNode>(caseInsensitive);
-            if (_jsonElement.HasValue)
+            void InitializeCore()
             {
-                JsonElement jElement = _jsonElement.Value;
+                // Even though _dictionary initialization can be subject to races,
+                // ensure that contending threads use a coherent view of jsonElement.
 
-                foreach (JsonProperty jElementProperty in jElement.EnumerateObject())
+                // Because JsonElement cannot be read atomically there might be torn reads,
+                // however the order of read/write operations guarantees that that's only
+                // possible if the value of _dictionary is non-null.
+                JsonElement? jsonElement = _jsonElement;
+                Interlocked.MemoryBarrier();
+                JsonPropertyDictionary<JsonNode?>? dictionary = _dictionary;
+
+                if (dictionary is null)
                 {
-                    JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
-                    if (node != null)
+                    bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
+                    dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
+                    if (jsonElement.HasValue)
                     {
-                        node.Parent = this;
+                        foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
+                        {
+                            JsonNode? node = JsonNodeConverter.Create(jElementProperty.Value, Options);
+                            if (node != null)
+                            {
+                                node.Parent = this;
+                            }
+
+                            dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                        }
                     }
 
-                    dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                    // Ensure _jsonElement is written to after _dictionary
+                    _dictionary = dictionary;
+                    Interlocked.MemoryBarrier();
+                    _jsonElement = null;
                 }
-
-                _jsonElement = null;
             }
-
-            _dictionary = dictionary;
         }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,8 +42,10 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal static readonly char[] ReservedToName = new char[] { '\t', '\r', '\n', '=', ';', ',' };
-        internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
+        private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
+
+        private static readonly IndexOfAnyValues<char> s_domainChars =
+            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -200,7 +203,7 @@ namespace System.Net
             }
             set
             {
-                if (value == true)
+                if (value)
                 {
                     m_expires = DateTime.Now;
                 }
@@ -229,13 +232,17 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value ?? "<null>"));
                 }
             }
         }
         internal bool InternalSetName(string? value)
         {
-            if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1 || value[0] == ' ' || value[value.Length - 1] == ' ')
+            if (string.IsNullOrEmpty(value)
+                || value.StartsWith('$')
+                || value.StartsWith(' ')
+                || value.EndsWith(' ')
+                || value.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 m_name = string.Empty;
                 return false;
@@ -339,29 +346,33 @@ namespace System.Net
             }
 
             // Check the name
-            if (string.IsNullOrEmpty(m_name) || m_name[0] == '$' || m_name.IndexOfAny(ReservedToName) != -1 || m_name[0] == ' ' || m_name[m_name.Length - 1] == ' ')
+            if (string.IsNullOrEmpty(m_name) ||
+                m_name.StartsWith('$') ||
+                m_name.StartsWith(' ') ||
+                m_name.EndsWith(' ') ||
+                m_name.AsSpan().IndexOfAny(s_reservedToNameChars) >= 0)
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name == null ? "<null>" : m_name));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name ?? "<null>"));
                 }
                 return false;
             }
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value[0] == '\"' && m_value[m_value.Length - 1] == '\"') && m_value.IndexOfAny(ReservedToValue) != -1))
+                (!(m_value.Length > 2 && m_value.StartsWith('\"') && m_value.EndsWith('\"')) && m_value.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value == null ? "<null>" : m_value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value ?? "<null>"));
                 }
                 return false;
             }
 
             // Check Comment syntax
-            if (Comment != null && !(Comment.Length > 2 && Comment[0] == '\"' && Comment[Comment.Length - 1] == '\"')
-                && (Comment.IndexOfAny(ReservedToValue) != -1))
+            if (Comment != null && !(Comment.Length > 2 && Comment.StartsWith('\"') && Comment.EndsWith('\"'))
+                && (Comment.AsSpan().IndexOfAny(';', ',') >= 0))
             {
                 if (shouldThrow)
                 {
@@ -371,8 +382,8 @@ namespace System.Net
             }
 
             // Check Path syntax
-            if (Path != null && !(Path.Length > 2 && Path[0] == '\"' && Path[Path.Length - 1] == '\"')
-                && (Path.IndexOfAny(ReservedToValue) != -1))
+            if (Path != null && !(Path.Length > 2 && Path.StartsWith('\"') && Path.EndsWith('\"'))
+                && (Path.AsSpan().IndexOfAny(';', ',') != -1))
             {
                 if (shouldThrow)
                 {
@@ -384,7 +395,7 @@ namespace System.Net
             // Check/set domain
             //
             // If domain is implicit => assume a) uri is valid, b) just set domain to uri hostname.
-            if (setDefault && m_domain_implicit == true)
+            if (setDefault && m_domain_implicit)
             {
                 m_domain = host;
             }
@@ -405,7 +416,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain ?? "<null>"));
                         }
                         return false;
                     }
@@ -483,7 +494,7 @@ namespace System.Net
             }
 
             // Check/Set Path
-            if (setDefault && m_path_implicit == true)
+            if (setDefault && m_path_implicit)
             {
                 // This code assumes that the URI path is always valid and contains at least one '/'.
                 switch (m_cookieVariant)
@@ -498,7 +509,7 @@ namespace System.Net
                         // Note: Normally Uri.AbsolutePath contains at least one "/" after parsing,
                         //       but it's possible construct Uri with an empty path using a custom UriParser
                         int lastSlash;
-                        if (path.Length == 0 || path[0] != '/' || (lastSlash = path.LastIndexOf('/')) == 0)
+                        if (!path.StartsWith('/') || (lastSlash = path.LastIndexOf('/')) == 0)
                         {
                             m_path = "/";
                             break;
@@ -552,26 +563,9 @@ namespace System.Net
 
         // Very primitive test to make sure that the name does not have illegal characters
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
-        private static bool DomainCharsTest(string name)
-        {
-            if (name == null || name.Length == 0)
-            {
-                return false;
-            }
-            for (int i = 0; i < name.Length; ++i)
-            {
-                char ch = name[i];
-                if (!((ch >= '0' && ch <= '9') ||
-                      (ch == '.' || ch == '-') ||
-                      (ch >= 'a' && ch <= 'z') ||
-                      (ch >= 'A' && ch <= 'Z') ||
-                      (ch == '_')))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+        private static bool DomainCharsTest(string name) =>
+            !string.IsNullOrEmpty(name) &&
+            name.AsSpan().IndexOfAnyExcept(s_domainChars) < 0;
 
         [AllowNull]
         public string Port
@@ -582,44 +576,41 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    // Therefore; the effective port value is implicit.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
                 {
+                    // "Port" value is present, so we use the provided value rather than an implicit one.
+                    m_port_implicit = false;
                     // Parse port list
-                    if (value[0] != '\"' || value[value.Length - 1] != '\"')
+                    if (!value.StartsWith('\"') || !value.EndsWith('\"'))
                     {
                         throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                     }
-                    string[] ports = value.Split(PortSplitDelimiters);
-
-                    List<int> portList = new List<int>();
-                    int port;
+                    string[] ports = value.Split(PortSplitDelimiters, StringSplitOptions.RemoveEmptyEntries);
+                    int[] parsedPorts = new int[ports.Length];
 
                     for (int i = 0; i < ports.Length; ++i)
                     {
-                        // Skip spaces
-                        if (ports[i] != string.Empty)
+                        if (!int.TryParse(ports[i], out int port))
                         {
-                            if (!int.TryParse(ports[i], out port))
-                            {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
-                            }
-
-                            // valid values for port 0 - 0xFFFF
-                            if ((port < 0) || (port > 0xFFFF))
-                            {
-                                throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
-                            }
-
-                            portList.Add(port);
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                         }
+
+                        // valid values for port 0 - 0xFFFF
+                        if ((port < 0) || (port > 0xFFFF))
+                        {
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
+                        }
+
+                        parsedPorts[i] = port;
                     }
-                    m_port_list = portList.ToArray();
+                    m_port_list = parsedPorts;
                     m_port = value;
                     m_version = MaxSupportedVersion;
                     m_cookieVariant = CookieVariant.Rfc2965;
@@ -697,10 +688,7 @@ namespace System.Net
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 m_version = value;
                 if (value > 0 && m_cookieVariant < CookieVariant.Rfc2109)
                 {

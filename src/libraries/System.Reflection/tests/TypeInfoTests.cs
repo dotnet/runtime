@@ -458,6 +458,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetEnumValuesAsUnderlyingType_Int()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(IntEnum), new int[] { 1, 2, 10, 18, 45 });
+        }
+
+        [Fact]
+        public static void GetEnumValuesAsUnderlyingType_UInt()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(UIntEnum), new uint[] { 1, 10 });
+        }
+
+        private static void GetEnumValuesAsUnderlyingType(Type enumType, Array expected)
+        {
+            Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValuesAsUnderlyingType());
+        }
+
+
+        [Fact]
         public void GetEnumValues_TypeNotEnum_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
@@ -593,6 +611,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67568", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
@@ -682,7 +701,7 @@ namespace System.Reflection.Tests
             Assert.True(a1.IsAssignableTo(ie));
         }
 
-        public static IEnumerable<object[]> IsEquivilentTo_TestData()
+        public static IEnumerable<object[]> IsEquivalentTo_TestData()
         {
             yield return new object[] { typeof(string), typeof(string), true };
             yield return new object[] { typeof(object), typeof(string), false };
@@ -693,7 +712,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IsEquivilentTo_TestData))]
+        [MemberData(nameof(IsEquivalentTo_TestData))]
         public void IsEquivalentTo(Type type, Type other, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsEquivalentTo(other));
@@ -1455,7 +1474,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int), "System")]
         [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[][]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_Struct*), "System.Reflection.Tests")]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
@@ -1655,6 +1675,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
         {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
@@ -1843,6 +1864,10 @@ namespace System.Reflection.Tests
             [FieldOffset(1)]
             public short y;
         }
+    }
+    public struct TI_Struct
+    {
+        public int _field;
     }
     public class TI_BaseClass
     {

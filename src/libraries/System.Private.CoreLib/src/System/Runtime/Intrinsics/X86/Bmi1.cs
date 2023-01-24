@@ -26,49 +26,49 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _andn_u64 (unsigned __int64 a, unsigned __int64 b)
             ///   ANDN r64a, r64b, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong AndNot(ulong left, ulong right) => AndNot(left, right);
 
             /// <summary>
             /// unsigned __int64 _bextr_u64 (unsigned __int64 a, unsigned int start, unsigned int len)
             ///   BEXTR r64a, reg/m64, r64b
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong BitFieldExtract(ulong value, byte start, byte length) => BitFieldExtract(value, (ushort)(start | (length << 8)));
 
             /// <summary>
             /// unsigned __int64 _bextr2_u64 (unsigned __int64 a, unsigned __int64 control)
             ///   BEXTR r64a, reg/m64, r64b
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong BitFieldExtract(ulong value, ushort control) => BitFieldExtract(value, control);
 
             /// <summary>
             /// unsigned __int64 _blsi_u64 (unsigned __int64 a)
             ///   BLSI reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ExtractLowestSetBit(ulong value) => ExtractLowestSetBit(value);
 
             /// <summary>
             /// unsigned __int64 _blsmsk_u64 (unsigned __int64 a)
             ///   BLSMSK reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong GetMaskUpToLowestSetBit(ulong value) => GetMaskUpToLowestSetBit(value);
 
             /// <summary>
             /// unsigned __int64 _blsr_u64 (unsigned __int64 a)
             ///   BLSR reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ResetLowestSetBit(ulong value) => ResetLowestSetBit(value);
 
             /// <summary>
             /// __int64 _mm_tzcnt_64 (unsigned __int64 a)
             ///   TZCNT reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong TrailingZeroCount(ulong value) => TrailingZeroCount(value);
         }

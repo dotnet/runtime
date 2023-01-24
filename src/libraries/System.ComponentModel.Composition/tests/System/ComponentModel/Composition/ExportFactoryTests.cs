@@ -27,7 +27,7 @@ namespace Tests.Integration
         }
 
         [Export(typeof(IId))]
-        [ExportMetadata("IdType", "PostiveIncrement")]
+        [ExportMetadata("IdType", "PositiveIncrement")]
         public class UniqueExport : IId, IDisposable
         {
             private static int lastId = 0;
@@ -119,7 +119,7 @@ namespace Tests.Integration
             {
                 var val = VerifyExportFactory((ExportFactory<IId>)creator);
 
-                Assert.Equal("PostiveIncrement", creator.Metadata.IdType);
+                Assert.Equal("PositiveIncrement", creator.Metadata.IdType);
                 Assert.Equal(AttributedModelServices.GetTypeIdentity(typeof(ComposablePartDefinition)), creator.Metadata.ExportTypeIdentity);
 
                 return val;
@@ -338,7 +338,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        public void ExportFactory_SimpleRejectionRecurrection_ShouldWork()
+        public void ExportFactory_SimpleRejectionResurrection_ShouldWork()
         {
             var importTypeCat = new TypeCatalog(typeof(PartImporter<SimpleExport>));
             var aggCatalog = new AggregateCatalog(importTypeCat);

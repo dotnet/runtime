@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -55,8 +56,7 @@ namespace System.Reflection
             return
                 o is RuntimePropertyInfo m &&
                 m.m_token == m_token &&
-                RuntimeTypeHandle.GetModule(m_declaringType).Equals(
-                    RuntimeTypeHandle.GetModule(m.m_declaringType));
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
 
         internal Signature Signature
@@ -83,7 +83,7 @@ namespace System.Reflection
             //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
-            //             down side of treating overriding and overriden properties as different properties
+            //             down side of treating overriding and overridden properties as different properties
             //             in some cases. But PopulateProperties in rttype.cs should have taken care of that
             //             by comparing VTable slots.
             //
@@ -137,16 +137,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -175,6 +179,16 @@ namespace System.Reflection
         public override Module Module => GetRuntimeModule();
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported && obj is RuntimePropertyInfo rpi &&
+                rpi.m_token == m_token &&
+                ReferenceEquals(rpi.m_declaringType, m_declaringType) &&
+                ReferenceEquals(rpi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region PropertyInfo Overrides

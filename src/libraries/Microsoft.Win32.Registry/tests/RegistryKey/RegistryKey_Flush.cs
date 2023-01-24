@@ -17,7 +17,7 @@ namespace Microsoft.Win32.RegistryTests
         on an application's performance. An application should only call RegFlushKey if it requires absolute certainty that registry changes are on
         disk.
 
-        In general, RegFlushKey rarely, if ever, need be used. Windows 95/98: No registry subkey or value name may exceed 255 characters.
+        In general, RegFlushKey rarely, if ever, need be used.
         **/
 
         [Fact]

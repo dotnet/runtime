@@ -55,18 +55,11 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/5678"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
-            if ((to < 0) || (to > length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(to);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(to, length);
+            ArgumentOutOfRangeException.ThrowIfNegative(from);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
 
             _from = from;
             _to = to;
@@ -78,10 +71,7 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes */1234"
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             _length = length;
             _unit = HeaderUtilities.BytesUnit;
@@ -91,14 +81,9 @@ namespace System.Net.Http.Headers
         {
             // Scenario: "Content-Range: bytes 12-34/*"
 
-            if (to < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(to));
-            }
-            if ((from < 0) || (from > to))
-            {
-                throw new ArgumentOutOfRangeException(nameof(from));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(to);
+            ArgumentOutOfRangeException.ThrowIfNegative(from);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(from, to);
 
             _from = from;
             _to = to;
@@ -143,7 +128,7 @@ namespace System.Net.Http.Headers
 
             if (HasLength)
             {
-                result = result ^ _length.GetHashCode();
+                result ^= _length.GetHashCode();
             }
 
             return result;
@@ -151,16 +136,16 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.Append(_unit);
             sb.Append(' ');
 
             if (HasRange)
             {
-                sb.Append(_from!.Value);
+                sb.AppendSpanFormattable(_from!.Value);
                 sb.Append('-');
                 Debug.Assert(_to.HasValue);
-                sb.Append(_to.Value);
+                sb.AppendSpanFormattable(_to.Value);
             }
             else
             {
@@ -170,17 +155,17 @@ namespace System.Net.Http.Headers
             sb.Append('/');
             if (HasLength)
             {
-                sb.Append(_length!.Value);
+                sb.AppendSpanFormattable(_length!.Value);
             }
             else
             {
                 sb.Append('*');
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
-        public static ContentRangeHeaderValue Parse(string? input)
+        public static ContentRangeHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentRangeHeaderValue)GenericHeaderParser.ContentRangeParser.ParseValue(input, null, ref index);
@@ -227,7 +212,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            current = current + separatorLength;
+            current += separatorLength;
 
             if (current == input.Length)
             {
@@ -251,7 +236,7 @@ namespace System.Net.Http.Headers
             }
 
             current++; // Skip '/' separator
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (current == input.Length)
             {
@@ -293,10 +278,10 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + lengthLength;
+                current += lengthLength;
             }
 
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             return true;
         }
 
@@ -323,8 +308,8 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + fromLength;
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += fromLength;
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 // After the first value, the '-' character must follow.
                 if ((current == input.Length) || (input[current] != '-'))
@@ -334,7 +319,7 @@ namespace System.Net.Http.Headers
                 }
 
                 current++; // skip the '-' character
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
 
                 if (current == input.Length)
                 {
@@ -350,10 +335,10 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                current = current + toLength;
+                current += toLength;
             }
 
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
             return true;
         }
 

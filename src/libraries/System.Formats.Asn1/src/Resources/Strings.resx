@@ -99,6 +99,9 @@
   <data name="Argument_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
     <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
   <data name="AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
     <value>Encode cannot be called while a Sequence, Set-Of, or Octet String is still open.</value>
   </data>

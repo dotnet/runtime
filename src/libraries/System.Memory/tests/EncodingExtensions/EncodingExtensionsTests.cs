@@ -74,7 +74,7 @@ namespace System.Text.Tests
 
             // First, a small input with no flushing and no leftover data.
 
-            ReadOnlySpan<byte> inputData = Encoding.UTF8.GetBytes("Hello");
+            ReadOnlySpan<byte> inputData = "Hello"u8;
             EncodingExtensions.Convert(decoder, inputData, writer, flush: false, out long charsUsed, out bool completed);
             Assert.Equal(5, charsUsed);
             Assert.True(completed);
@@ -236,7 +236,7 @@ namespace System.Text.Tests
 
             // Now make sure all of the data was decoded properly.
 
-            Assert.Equal(Encoding.UTF8.GetBytes("\u0020\ud7ff\U00100000\ufffd"), writer.WrittenSpan.ToArray());
+            Assert.Equal("\u0020\ud7ff\U00100000\ufffd"u8.ToArray(), writer.WrittenSpan.ToArray());
         }
 
         [Fact]
@@ -252,7 +252,7 @@ namespace System.Text.Tests
             // First try the single-segment code path.
 
             ReadOnlySequence<char> sequence = new ReadOnlySequence<char>("Hello!".ToCharArray());
-            Assert.Equal(Encoding.UTF8.GetBytes("Hello!"), EncodingExtensions.GetBytes(Encoding.UTF8, sequence));
+            Assert.Equal("Hello!"u8.ToArray(), EncodingExtensions.GetBytes(Encoding.UTF8, sequence));
 
             // Next try the multi-segment code path.
             // We've intentionally split multi-char subsequences here to test flushing mechanisms.
@@ -266,7 +266,7 @@ namespace System.Text.Tests
                 new char[] { '\udfff' }, // (cont.)
                 new char[] { '\ud800' }); // leftover data (should be replaced)
 
-            Assert.Equal(Encoding.UTF8.GetBytes("\u0020\u0061\u0080\U00010000\U0010FFFF\ufffd"), EncodingExtensions.GetBytes(Encoding.UTF8, sequence));
+            Assert.Equal("\u0020\u0061\u0080\U00010000\U0010FFFF\ufffd"u8.ToArray(), EncodingExtensions.GetBytes(Encoding.UTF8, sequence));
         }
 
         [Fact]
@@ -278,7 +278,7 @@ namespace System.Text.Tests
             long bytesWritten = EncodingExtensions.GetBytes(Encoding.UTF8, sequence, writer);
 
             Assert.Equal(5, bytesWritten);
-            Assert.Equal(Encoding.UTF8.GetBytes("Hello"), writer.WrittenSpan.ToArray());
+            Assert.Equal("Hello"u8.ToArray(), writer.WrittenSpan.ToArray());
         }
 
         [Fact]
@@ -320,7 +320,7 @@ namespace System.Text.Tests
 
             ReadOnlySequence<char> sequence = new ReadOnlySequence<char>("Hello!".ToCharArray());
             Assert.Equal(
-                expected: Encoding.UTF8.GetBytes("Hello!"),
+                expected: "Hello!"u8.ToArray(),
                 actual: destination.Slice(0, EncodingExtensions.GetBytes(Encoding.UTF8, sequence, destination)).ToArray());
 
             // Next try the multi-segment code path.
@@ -336,7 +336,7 @@ namespace System.Text.Tests
                 new char[] { '\ud800' }); // leftover data (should be replaced)
 
             Assert.Equal(
-                expected: Encoding.UTF8.GetBytes("\u0020\u0061\u0080\U00010000\U0010FFFF\ufffd"),
+                expected: "\u0020\u0061\u0080\U00010000\U0010FFFF\ufffd"u8.ToArray(),
                 actual: destination.Slice(0, EncodingExtensions.GetBytes(Encoding.UTF8, sequence, destination)).ToArray());
         }
 
@@ -359,7 +359,7 @@ namespace System.Text.Tests
             ReadOnlySpan<char> inputData = "Hello";
             long bytesWritten = EncodingExtensions.GetBytes(Encoding.UTF8, inputData, writer);
             Assert.Equal(5, bytesWritten);
-            Assert.Equal(Encoding.UTF8.GetBytes("Hello"), writer.WrittenSpan.ToArray());
+            Assert.Equal("Hello"u8.ToArray(), writer.WrittenSpan.ToArray());
 
             // Then, a large input that goes through the chunked path.
             // We alternate between 1-char and 2-char sequences so that the input will be split in
@@ -399,7 +399,7 @@ namespace System.Text.Tests
         {
             // First try the single-segment code path.
 
-            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("Hello!"));
+            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>("Hello!"u8.ToArray());
             Assert.Equal("Hello!", EncodingExtensions.GetString(Encoding.UTF8, sequence));
 
             // Next try the multi-segment code path.
@@ -427,7 +427,7 @@ namespace System.Text.Tests
         [Fact]
         public static void GetChars_Encoding_ReadOnlySequence_IBufferWriter_SingleSegment()
         {
-            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("Hello"));
+            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>("Hello"u8.ToArray());
             ArrayBufferWriter<char> writer = new ArrayBufferWriter<char>();
 
             long charsWritten = EncodingExtensions.GetChars(Encoding.UTF8, sequence, writer);
@@ -466,7 +466,7 @@ namespace System.Text.Tests
 
             // First try the single-segment code path.
 
-            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes("Hello!"));
+            ReadOnlySequence<byte> sequence = new ReadOnlySequence<byte>("Hello!"u8.ToArray());
             Assert.Equal("Hello!", destination.Slice(0, EncodingExtensions.GetChars(Encoding.UTF8, sequence, destination)).ToString());
 
             // Next try the multi-segment code path.
@@ -507,7 +507,7 @@ namespace System.Text.Tests
 
             // First, a small input that goes through the one-shot code path.
 
-            ReadOnlySpan<byte> inputData = Encoding.UTF8.GetBytes("Hello");
+            ReadOnlySpan<byte> inputData = "Hello"u8;
             long charsWritten = EncodingExtensions.GetChars(Encoding.UTF8, inputData, writer);
             Assert.Equal(5, charsWritten);
             Assert.Equal("Hello", writer.WrittenSpan.ToString());

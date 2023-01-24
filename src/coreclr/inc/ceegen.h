@@ -82,7 +82,7 @@ typedef DWORD StringRef;
                        | Low -level file writer |    +----------------------------+
                        | Knows how to do        |    |        ICeeFileGen         |
                        | pointer relocs         |    |                            |
-                       |                        |    | C-style inteface. Deals    |
+                       |                        |    | C-style interface. Deals    |
                        +------------------------+    | with HCEEFILE, HCEESECTION |
                                                      | etc. It is mostly just a   |
                                                      | thin wrapper for a         |

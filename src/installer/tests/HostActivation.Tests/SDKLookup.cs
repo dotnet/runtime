@@ -39,16 +39,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Global_Json_Single_Digit_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.4-global-dummy
-            CopyGlobalJson("SingleDigit-global.json");
+            string globalJsonPath = CopyGlobalJson("SingleDigit-global.json");
+            string requestedVersion = "9999.3.4-global-dummy";
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: empty
-            // Expected: no compatible version and a specific error messages
+            // Expected: no compatible version, no SDKs found
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
-                .And.HaveStdErrContaining("aka.ms/dotnet-download")
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(false)
+                .And.HaveStdErrContaining("aka.ms/dotnet/download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions
@@ -56,22 +57,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy
-            // Expected: no compatible version and a specific error message
+            // Expected: no compatible version
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.3");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3
-            // Expected: no compatible version and a specific error message
+            // Expected: no compatible version
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.4");
@@ -129,37 +130,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Global_Json_Two_Part_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.304-global-dummy
-            CopyGlobalJson("TwoPart-global.json");
+            string globalJsonPath = CopyGlobalJson("TwoPart-global.json");
+            string requestedVersion = "9999.3.304-global-dummy";
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: empty
-            // Expected: no compatible version and a specific error messages
+            // Expected: no compatible version, no SDKs found
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(false);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.57", "9999.3.4-dummy");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy
-            // Expected: no compatible version and a specific error message
+            // Expected: no compatible version
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.300", "9999.7.304-global-dummy");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy
-            // Expected: no compatible version and a specific error message
+            // Expected: no compatible version
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.304");
@@ -227,11 +229,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Specified SDK version: none
             // Exe: -1.-1.-1
-            // Expected: no compatible version and a specific error messages
+            // Expected: no compatible version, no SDKs found
             RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
-                .And.HaveStdErrContaining("Install a .NET SDK from");
+                .And.FindAnySdk(false);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.0.4");
@@ -391,16 +392,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (expected == null)
             {
                 result
-                    .Should()
-                    .Fail()
-                    .And.HaveStdErrContaining($"A compatible installed .NET SDK for global.json version [{requested}] from [{globalJson}] was not found")
-                    .And.HaveStdErrContaining($"Install the [{requested}] .NET SDK or update [{globalJson}] with an installed .NET SDK:");
+                    .Should().Fail()
+                    .And.NotFindCompatibleSdk(globalJson, requested);
             }
             else
             {
                 result
-                    .Should()
-                    .Pass()
+                    .Should().Pass()
                     .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(ExecutableDotNet.BinPath, "sdk", expected)}]");
             }
         }
@@ -990,7 +988,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // This method adds a list of new sdk version folders in the specified directory.
-        // The actual contents are 'fake' and the mininum required for SDK discovery.
+        // The actual contents are 'fake' and the minimum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
         private void AddAvailableSdkVersions(params string[] availableVersions)
         {
@@ -1001,12 +999,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         // Put a global.json file in the cwd in order to specify a CLI
-        private void CopyGlobalJson(string globalJsonFileName)
+        private string CopyGlobalJson(string globalJsonFileName)
         {
             string destFile = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
             string srcFile = Path.Combine(SharedState.TestAssetsPath, globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);
+            return destFile;
         }
 
         private static string FormatGlobalJson(string version = null, string policy = null, bool? allowPrerelease = null)
@@ -1051,12 +1050,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public string TestAssetsPath { get; }
 
+            private readonly TestArtifact _baseDirArtifact;
+
             public SharedTestState()
             {
                 // The dotnetSDKLookup dir will contain some folders and files that will be
                 // necessary to perform the tests
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
                 BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+                _baseDirArtifact = new TestArtifact(BaseDir);
 
                 // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
                 //     All dirs will be placed inside the base folder
@@ -1085,10 +1087,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 if (disposing)
                 {
-                    if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDir))
-                    {
-                        Directory.Delete(BaseDir, true);
-                    }
+                    _baseDirArtifact.Dispose();
                 }
             }
         }

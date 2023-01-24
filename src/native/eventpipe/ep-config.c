@@ -173,7 +173,7 @@ ep_config_init (EventPipeConfiguration *config)
 	ep_raise_error_if_nok (ep_rt_provider_list_is_valid (&config->provider_list));
 
 	EP_LOCK_ENTER (section1)
-		config->config_provider = provider_create_register (ep_config_get_default_provider_name_utf8 (), NULL, NULL, NULL, provider_callback_data_queue);
+		config->config_provider = provider_create_register (ep_config_get_default_provider_name_utf8 (), NULL, NULL, provider_callback_data_queue);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (config->config_provider != NULL);
@@ -192,7 +192,7 @@ ep_config_init (EventPipeConfiguration *config)
 		0, /* event_version */
 		EP_EVENT_LEVEL_LOGALWAYS,
 		false, /* need_stack */
-		NULL, /* meatadata */
+		NULL, /* metadata */
 		0); /* metadata_len */
 	ep_raise_error_if_nok (config->metadata_event != NULL);
 
@@ -239,7 +239,6 @@ ep_config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
@@ -250,7 +249,7 @@ ep_config_create_provider (
 
 	EventPipeProvider *provider = NULL;
 	EP_LOCK_ENTER (section1)
-		provider = config_create_provider (config, provider_name, callback_func, callback_data_free_func, callback_data, provider_callback_data_queue);
+		provider = config_create_provider (config, provider_name, callback_func, callback_data, provider_callback_data_queue);
 		ep_raise_error_if_nok_holding_lock (provider != NULL, section1);
 	EP_LOCK_EXIT (section1)
 
@@ -358,26 +357,24 @@ ep_config_build_event_metadata_event (
 	uint32_t payload_data_len = ep_event_get_metadata_len (source_event);
 	uint32_t provider_name_len = (uint32_t)((ep_rt_utf16_string_len (provider_name_utf16) + 1) * sizeof (ep_char16_t));
 	uint32_t instance_payload_size = sizeof (metadata_id) + provider_name_len + payload_data_len;
-	
+
 	// Allocate the payload.
 	instance_payload = ep_rt_byte_array_alloc (instance_payload_size);
 	ep_raise_error_if_nok (instance_payload != NULL);
-	
+
 	// Fill the buffer with the payload.
 	uint8_t *current;
 	current = instance_payload;
 
-	memcpy(current, &metadata_id, sizeof(metadata_id));
-	current += sizeof(metadata_id);
+	ep_write_buffer_uint32_t (&current, metadata_id);
 
-	memcpy(current, provider_name_utf16, provider_name_len);
-	current += provider_name_len;
+	ep_write_buffer_string_utf16_t (&current, provider_name_utf16, provider_name_len);
 
 	// Write the incoming payload data.
 	memcpy(current, payload_data, payload_data_len);
 
 	// Construct the metadata event instance.
-	instance = ep_event_metdata_event_alloc (
+	instance = ep_event_metadata_event_alloc (
 		config->metadata_event,
 		ep_rt_current_processor_get_number (),
 		ep_rt_thread_id_t_to_uint64_t (ep_rt_current_thread_get_id ()),
@@ -463,7 +460,6 @@ config_create_provider (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
@@ -471,8 +467,8 @@ config_create_provider (
 	EP_ASSERT (provider_name != NULL);
 
 	ep_requires_lock_held ();
-	
-	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data_free_func, callback_data);
+
+	EventPipeProvider *provider = ep_provider_alloc (config, provider_name, callback_func, callback_data);
 	ep_raise_error_if_nok (provider != NULL);
 
 	config_register_provider (config, provider, provider_callback_data_queue);
@@ -595,7 +591,7 @@ config_enable_disable (
  */
 
 EventPipeEventMetadataEvent *
-ep_event_metdata_event_alloc (
+ep_event_metadata_event_alloc (
 	EventPipeEvent *ep_event,
 	uint32_t proc_num,
 	uint64_t thread_id,
@@ -624,13 +620,13 @@ ep_on_exit:
 	return instance;
 
 ep_on_error:
-	ep_event_metdata_event_free (instance);
+	ep_event_metadata_event_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
 }
 
 void
-ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event)
+ep_event_metadata_event_free (EventPipeEventMetadataEvent *metadata_event)
 {
 	ep_return_void_if_nok (metadata_event != NULL);
 
@@ -642,7 +638,7 @@ ep_event_metdata_event_free (EventPipeEventMetadataEvent *metadata_event)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_configuration;
 const char quiet_linker_empty_file_warning_eventpipe_configuration = 0;
 #endif

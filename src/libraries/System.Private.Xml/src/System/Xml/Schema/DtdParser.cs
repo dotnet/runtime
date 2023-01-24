@@ -161,7 +161,7 @@ namespace System.Xml
 
         // scanning function for the next token
         private ScanningFunction _scanningFunction;
-        private ScanningFunction _nextScaningFunction;
+        private ScanningFunction _nextScanningFunction;
         private ScanningFunction _savedScanningFunction; // this one is used only for adding spaces around parameter entities
 
         // flag if whitespace seen before token
@@ -430,7 +430,7 @@ namespace System.Xml
             LoadParsingBuffer();
 
             _scanningFunction = ScanningFunction.QName;
-            _nextScaningFunction = ScanningFunction.Doctype1;
+            _nextScanningFunction = ScanningFunction.Doctype1;
 
             // doctype name
             if (GetToken(false) != Token.QName)
@@ -1317,10 +1317,7 @@ namespace System.Xml
             SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
-                if (_undeclaredNotations != null)
-                {
-                    _undeclaredNotations.Remove(notationName.Name);
-                }
+                _undeclaredNotations?.Remove(notationName.Name);
                 notation = new SchemaNotation(notationName);
                 _schemaInfo.Notations.Add(notation.Name.Name, notation);
             }
@@ -1358,10 +1355,7 @@ namespace System.Xml
 
         private void AddUndeclaredNotation(string notationName)
         {
-            if (_undeclaredNotations == null)
-            {
-                _undeclaredNotations = new Dictionary<string, UndeclaredNotation>();
-            }
+            _undeclaredNotations ??= new Dictionary<string, UndeclaredNotation>();
             UndeclaredNotation un = new UndeclaredNotation(notationName, LineNo, LinePos - notationName.Length);
             UndeclaredNotation? loggedUn;
             if (_undeclaredNotations.TryGetValue(notationName, out loggedUn))
@@ -1715,7 +1709,7 @@ namespace System.Xml
                                             }
                                             _curPos += 9;
                                             _scanningFunction = ScanningFunction.QName;
-                                            _nextScaningFunction = ScanningFunction.Element1;
+                                            _nextScanningFunction = ScanningFunction.Element1;
                                             return Token.ElementDecl;
                                         }
                                         else if (_chars[_curPos + 3] == 'N')
@@ -1756,7 +1750,7 @@ namespace System.Xml
                                         }
                                         _curPos += 9;
                                         _scanningFunction = ScanningFunction.QName;
-                                        _nextScaningFunction = ScanningFunction.Attlist1;
+                                        _nextScanningFunction = ScanningFunction.Attlist1;
                                         return Token.AttlistDecl;
 
                                     case 'N':
@@ -1773,7 +1767,7 @@ namespace System.Xml
                                         }
                                         _curPos += 10;
                                         _scanningFunction = ScanningFunction.Name;
-                                        _nextScaningFunction = ScanningFunction.Notation1;
+                                        _nextScanningFunction = ScanningFunction.Notation1;
                                         return Token.NotationDecl;
 
                                     case '[':
@@ -1856,21 +1850,21 @@ namespace System.Xml
         private Token ScanNameExpected()
         {
             ScanName();
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
             return Token.Name;
         }
 
         private Token ScanQNameExpected()
         {
             ScanQName();
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
             return Token.QName;
         }
 
         private Token ScanNmtokenExpected()
         {
             ScanNmtoken();
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
             return Token.Nmtoken;
         }
 
@@ -1883,7 +1877,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.Doctype2;
+                    _nextScanningFunction = ScanningFunction.Doctype2;
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
@@ -1891,7 +1885,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.Doctype2;
+                    _nextScanningFunction = ScanningFunction.Doctype2;
                     _scanningFunction = ScanningFunction.SystemId;
                     return Token.SYSTEM;
                 case '[':
@@ -1995,9 +1989,8 @@ namespace System.Xml
                         Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
                 }
-                if (_chars[_curPos + 1] == 'P' && _chars[_curPos + 2] == 'C' &&
-                     _chars[_curPos + 3] == 'D' && _chars[_curPos + 4] == 'A' &&
-                     _chars[_curPos + 5] == 'T' && _chars[_curPos + 6] == 'A')
+
+                if (_chars.AsSpan(_curPos + 1).StartsWith("PCDATA"))
                 {
                     _curPos += 7;
                     _scanningFunction = ScanningFunction.Element6;
@@ -2094,7 +2087,7 @@ namespace System.Xml
                     return Token.RightParen;
                 case '|':
                     _curPos++;
-                    _nextScaningFunction = ScanningFunction.Element6;
+                    _nextScanningFunction = ScanningFunction.Element6;
                     _scanningFunction = ScanningFunction.QName;
                     return Token.Or;
                 default:
@@ -2142,7 +2135,7 @@ namespace System.Xml
                     case '(':
                         _curPos++;
                         _scanningFunction = ScanningFunction.Nmtoken;
-                        _nextScaningFunction = ScanningFunction.Attlist5;
+                        _nextScanningFunction = ScanningFunction.Attlist5;
                         return Token.LeftParen;
                     case 'C':
                         if (_charsUsed - _curPos < 5)
@@ -2271,7 +2264,7 @@ namespace System.Xml
             {
                 _curPos++;
                 _scanningFunction = ScanningFunction.Name;
-                _nextScaningFunction = ScanningFunction.Attlist4;
+                _nextScanningFunction = ScanningFunction.Attlist4;
                 return Token.LeftParen;
             }
             else
@@ -2292,7 +2285,7 @@ namespace System.Xml
                 case '|':
                     _curPos++;
                     _scanningFunction = ScanningFunction.Name;
-                    _nextScaningFunction = ScanningFunction.Attlist4;
+                    _nextScanningFunction = ScanningFunction.Attlist4;
                     return Token.Or;
                 default:
                     ThrowUnexpectedToken(_curPos, ")", "|");
@@ -2311,7 +2304,7 @@ namespace System.Xml
                 case '|':
                     _curPos++;
                     _scanningFunction = ScanningFunction.Nmtoken;
-                    _nextScaningFunction = ScanningFunction.Attlist5;
+                    _nextScanningFunction = ScanningFunction.Attlist5;
                     return Token.Or;
                 default:
                     ThrowUnexpectedToken(_curPos, ")", "|");
@@ -2663,7 +2656,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.ClosingTag;
+                    _nextScanningFunction = ScanningFunction.ClosingTag;
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
@@ -2671,7 +2664,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.ClosingTag;
+                    _nextScanningFunction = ScanningFunction.ClosingTag;
                     _scanningFunction = ScanningFunction.SystemId;
                     return Token.SYSTEM;
                 default:
@@ -2689,7 +2682,7 @@ namespace System.Xml
 
             ScanLiteral(LiteralType.SystemOrPublicID);
 
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
             return Token.Literal;
         }
 
@@ -2698,7 +2691,7 @@ namespace System.Xml
             if (_chars[_curPos] == '%')
             {
                 _curPos++;
-                _nextScaningFunction = ScanningFunction.Entity2;
+                _nextScanningFunction = ScanningFunction.Entity2;
                 _scanningFunction = ScanningFunction.Name;
                 return Token.Percent;
             }
@@ -2719,7 +2712,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.Entity3;
+                    _nextScanningFunction = ScanningFunction.Entity3;
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
@@ -2727,7 +2720,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
-                    _nextScaningFunction = ScanningFunction.Entity3;
+                    _nextScanningFunction = ScanningFunction.Entity3;
                     _scanningFunction = ScanningFunction.SystemId;
                     return Token.SYSTEM;
 
@@ -2758,7 +2751,7 @@ namespace System.Xml
                 {
                     _curPos += 5;
                     _scanningFunction = ScanningFunction.Name;
-                    _nextScaningFunction = ScanningFunction.ClosingTag;
+                    _nextScanningFunction = ScanningFunction.ClosingTag;
                     return Token.NData;
                 }
             }
@@ -2784,12 +2777,12 @@ namespace System.Xml
         {
             if (_chars[_curPos] != '"' && _chars[_curPos] != '\'')
             {
-                _scanningFunction = _nextScaningFunction;
+                _scanningFunction = _nextScanningFunction;
                 return Token.None;
             }
 
             ScanLiteral(LiteralType.SystemOrPublicID);
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
 
             return Token.Literal;
         }
@@ -2821,7 +2814,7 @@ namespace System.Xml
                         {
                             goto default;
                         }
-                        _nextScaningFunction = ScanningFunction.SubsetContent;
+                        _nextScanningFunction = ScanningFunction.SubsetContent;
                         _scanningFunction = ScanningFunction.CondSection2;
                         _curPos += 6;
                         return Token.INCLUDE;
@@ -2832,7 +2825,7 @@ namespace System.Xml
                         {
                             goto default;
                         }
-                        _nextScaningFunction = ScanningFunction.CondSection3;
+                        _nextScanningFunction = ScanningFunction.CondSection3;
                         _scanningFunction = ScanningFunction.CondSection2;
                         _curPos += 5;
                         return Token.IGNORE;
@@ -2855,7 +2848,7 @@ namespace System.Xml
                 ThrowUnexpectedToken(_curPos, "[");
             }
             _curPos++;
-            _scanningFunction = _nextScaningFunction;
+            _scanningFunction = _nextScanningFunction;
             return Token.LeftBracket;
         }
 
@@ -3127,9 +3120,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'U' || _chars[_curPos + 2] != 'B' ||
-                 _chars[_curPos + 3] != 'L' || _chars[_curPos + 4] != 'I' ||
-                 _chars[_curPos + 5] != 'C')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("UBLIC"))
             {
                 return false;
             }
@@ -3147,9 +3139,8 @@ namespace System.Xml
                     return false;
                 }
             }
-            if (_chars[_curPos + 1] != 'Y' || _chars[_curPos + 2] != 'S' ||
-                 _chars[_curPos + 3] != 'T' || _chars[_curPos + 4] != 'E' ||
-                 _chars[_curPos + 5] != 'M')
+
+            if (!_chars.AsSpan(_curPos + 1).StartsWith("YSTEM"))
             {
                 return false;
             }
@@ -3424,13 +3415,10 @@ namespace System.Xml
         {
             Debug.Assert(_validate);
             IValidationEventHandling? eventHandling = _readerAdapterWithValidation!.ValidationEventHandling;
-            if (eventHandling != null)
-            {
-                eventHandling.SendEvent(e, severity);
-            }
+            eventHandling?.SendEvent(e, severity);
         }
 
-        private bool IsAttributeValueType(Token token)
+        private static bool IsAttributeValueType(Token token)
         {
             return (int)token >= (int)Token.CDATA && (int)token <= (int)Token.NOTATION;
         }
@@ -3476,7 +3464,7 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
@@ -3484,14 +3472,14 @@ namespace System.Xml
         {
             _curPos = curPos;
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, args, (int)LineNo, (int)LinePos, baseUri?.ToString()));
         }
 
         [DoesNotReturn]
         private void Throw(string res, string arg, int lineNo, int linePos)
         {
             Uri? baseUri = _readerAdapter.BaseUri;
-            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri == null ? null : baseUri.ToString()));
+            _readerAdapter.Throw(new XmlException(res, arg, (int)lineNo, (int)linePos, baseUri?.ToString()));
         }
 
         private void ThrowInvalidChar(int pos, string data, int invCharPos)
@@ -3596,10 +3584,7 @@ namespace System.Xml
                     }
                     if (j > i + 1)
                     {
-                        if (norValue == null)
-                        {
-                            norValue = new StringBuilder(len);
-                        }
+                        norValue ??= new StringBuilder(len);
                         norValue.Append(value, startPos, i - startPos + 1);
                         startPos = j;
                         i = j - 1;

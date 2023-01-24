@@ -31,7 +31,6 @@ void Compiler::fgInit()
     fgHaveValidEdgeWeights   = false;
     fgSlopUsedInEdgeWeights  = false;
     fgRangeUsedInEdgeWeights = true;
-    fgNeedsUpdateFlowGraph   = false;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
@@ -62,8 +61,10 @@ void Compiler::fgInit()
 
 #ifdef DEBUG
     fgBBcountAtCodegen = 0;
+    fgBBOrder          = nullptr;
 #endif // DEBUG
 
+    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -87,10 +88,12 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;
+    fgIsDoingEarlyLiveness = false;
+    fgDidEarlyLiveness     = false;
 
     /* Statement list is not threaded yet */
 
-    fgStmtListThreaded = false;
+    fgNodeThreading = NodeThreading::None;
 
     // Initialize the logic for adding code. This is used to insert code such
     // as the code that raises an exception when an array range check fails.
@@ -120,6 +123,8 @@ void Compiler::fgInit()
 
     /* This is set by fgComputeReachability */
     fgEnterBlks = BlockSetOps::UninitVal();
+
+    fgUsedSharedTemps = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     fgAlwaysBlks = BlockSetOps::UninitVal();
@@ -164,10 +169,6 @@ void Compiler::fgInit()
     }
 #endif // DEBUG
 
-    if (!compIsForInlining())
-    {
-        m_promotedStructDeathVars = nullptr;
-    }
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
@@ -181,11 +182,12 @@ void Compiler::fgInit()
     fgPgoBlockCounts             = 0;
     fgPgoEdgeCounts              = 0;
     fgPgoClassProfiles           = 0;
+    fgPgoMethodProfiles          = 0;
     fgPgoInlineePgo              = 0;
     fgPgoInlineeNoPgo            = 0;
     fgPgoInlineeNoPgoSingleBlock = 0;
     fgCountInstrumentor          = nullptr;
-    fgClassInstrumentor          = nullptr;
+    fgHistogramInstrumentor      = nullptr;
     fgPredListSortVector         = nullptr;
 }
 
@@ -230,7 +232,7 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 // fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
 //
 // Returns:
-//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//   True, if a new basic block was allocated.
 //
 // Notes:
 //   This should be called before adding on-entry initialization code to
@@ -248,12 +250,12 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
 //
 //   Can be called at any time, and can be called multiple times.
 //
-void Compiler::fgEnsureFirstBBisScratch()
+bool Compiler::fgEnsureFirstBBisScratch()
 {
     // Have we already allocated a scratch block?
     if (fgFirstBBisScratch())
     {
-        return;
+        return false;
     }
 
     assert(fgFirstBBScratch == nullptr);
@@ -302,6 +304,8 @@ void Compiler::fgEnsureFirstBBisScratch()
         printf("New scratch " FMT_BB "\n", block->bbNum);
     }
 #endif
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -888,8 +892,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const BYTE* codeBegp = codeAddr;
     const BYTE* codeEndp = codeAddr + codeSize;
     unsigned    varNum;
-    var_types   varType = DUMMY_INIT(TYP_UNDEF); // TYP_ type
-    typeInfo    ti;                              // Verifier type.
+    var_types   varType      = DUMMY_INIT(TYP_UNDEF); // TYP_ type
     bool        typeIsNormed = false;
     FgStack     pushedStack;
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
@@ -909,7 +912,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     {
         // Set default values for profile (to avoid NoteFailed in CALLEE_IL_CODE_SIZE's handler)
         // these will be overridden later.
-        compInlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+        compInlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, true);
         compInlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
         // Observe force inline state and code size.
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
@@ -1048,7 +1051,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             {
                 if (makeInlineObservations)
                 {
-                    int toSkip = impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, true);
+                    int toSkip =
+                        impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, BoxPatterns::MakeInlineObservation);
                     if (toSkip > 0)
                     {
                         // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that
@@ -1160,18 +1164,40 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
 
                             // These are foldable if the first argument is a constant
+                            case NI_System_Type_get_IsEnum:
+                            case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
+                            case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
                             case NI_System_Numerics_BitOperations_PopCount:
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_Create:
-                            case NI_Vector256_Create:
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
                             case NI_Vector64_Create:
+                            case NI_Vector64_CreateScalar:
+                            case NI_Vector64_CreateScalarUnsafe:
+#endif // TARGET_ARM64
+                            case NI_Vector2_Create:
+                            case NI_Vector2_CreateBroadcast:
+                            case NI_Vector3_Create:
+                            case NI_Vector3_CreateBroadcast:
+                            case NI_Vector3_CreateFromVector2:
+                            case NI_Vector4_Create:
+                            case NI_Vector4_CreateBroadcast:
+                            case NI_Vector4_CreateFromVector2:
+                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
-#endif
+                            case NI_Vector128_CreateScalar:
+                            case NI_Vector128_CreateScalarUnsafe:
+                            case NI_VectorT128_CreateBroadcast:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_Create:
+                            case NI_Vector256_CreateScalar:
+                            case NI_Vector256_CreateScalarUnsafe:
+                            case NI_VectorT256_CreateBroadcast:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
                             {
                                 // Top() in order to keep it as is in case of foldableIntrinsic
                                 if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
@@ -1199,35 +1225,320 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                             case NI_IsSupported_True:
                             case NI_IsSupported_False:
+                            case NI_IsSupported_Type:
                             {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             }
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_get_Count:
-                            case NI_Vector256_get_Count:
+
+                            case NI_Vector_GetCount:
+                            {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
-                                // TODO: check if it's a loop condition - we unroll such loops.
+                                // TODO: for FEATURE_SIMD check if it's a loop condition - we unroll such loops.
                                 break;
-                            case NI_Vector256_get_Zero:
-                            case NI_Vector256_get_AllBitsSet:
+                            }
+
+                            case NI_SRCS_UNSAFE_Add:
+                            case NI_SRCS_UNSAFE_AddByteOffset:
+                            case NI_SRCS_UNSAFE_AreSame:
+                            case NI_SRCS_UNSAFE_ByteOffset:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsNullRef:
+                            case NI_SRCS_UNSAFE_Subtract:
+                            case NI_SRCS_UNSAFE_SubtractByteOffset:
+                            {
+                                // These are effectively primitive binary operations so the
+                                // handling roughly mirrors the handling for CEE_ADD and
+                                // friends that exists elsewhere in this method
+
+                                if (!preciseScan)
+                                {
+                                    switch (ni)
+                                    {
+                                        case NI_SRCS_UNSAFE_AreSame:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsNullRef:
+                                        {
+                                            fgObserveInlineConstants(opcode, pushedStack, isInlining);
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Unlike the normal binary operation handling, this is an intrinsic call that will
+                                    // get replaced
+                                    // with simple IR, so we care about `const op const` as well.
+
+                                    FgStack::FgSlot arg0;
+
+                                    bool isArg0Arg, isArg0Const, isArg1Const;
+                                    bool isArg1Arg, isArg0ConstArg, isArg1ConstArg;
+
+                                    if (ni == NI_SRCS_UNSAFE_IsNullRef)
+                                    {
+                                        // IsNullRef is unary, but it always compares against 0
+
+                                        arg0 = pushedStack.Top(0);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        isArg1Arg      = false;
+                                        isArg1Const    = true;
+                                        isArg1ConstArg = false;
+                                    }
+                                    else
+                                    {
+                                        arg0 = pushedStack.Top(1);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        FgStack::FgSlot arg1 = pushedStack.Top(0);
+
+                                        isArg1Arg      = FgStack::IsArgument(arg0);
+                                        isArg1Const    = FgStack::IsConstant(arg1);
+                                        isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
+                                    }
+
+                                    // Const op ConstArg -> ConstArg
+                                    if (isArg0Const && isArg1ConstArg)
+                                    {
+                                        // keep stack unchanged
+                                        foldableIntrinsic = true;
+                                    }
+                                    // ConstArg op Const    -> ConstArg
+                                    // ConstArg op ConstArg -> ConstArg
+                                    else if (isArg0ConstArg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        if (isArg1Const)
+                                        {
+                                            pushedStack.Push(arg0);
+                                        }
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Const op Const -> Const
+                                    else if (isArg0Const && isArg1Const)
+                                    {
+                                        // both are constants so we still want to track this as foldable, unlike
+                                        // what is done for the regulary binary operator handling, since we have
+                                        // a CEE_CALL node and not something more primitive
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Arg op ConstArg
+                                    // Arg op Const
+                                    else if (isArg0Arg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        // "Arg op CNS" --> keep arg0 in the stack for the next ops
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling pushes arg0
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+                                    // ConstArg op Arg
+                                    // Const    op Arg
+                                    else if (isArg1Arg && (isArg0Const || isArg0ConstArg))
+                                    {
+                                        // "CNS op ARG" --> keep arg1 in the stack for the next ops
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling keeps arg1
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+
+                                    // X op ConstArg
+                                    if (isArg1ConstArg)
+                                    {
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+                                    }
+                                }
+
+                                break;
+                            }
+
+                            case NI_SRCS_UNSAFE_AsPointer:
+                            {
+                                // These are effectively primitive unary operations so the
+                                // handling roughly mirrors the handling for CEE_CONV_U and
+                                // friends that exists elsewhere in this method
+
+                                FgStack::FgSlot arg = pushedStack.Top();
+
+                                if (FgStack::IsConstArgument(arg, impInlineInfo))
+                                {
+                                    foldableIntrinsic = true;
+                                }
+                                else if (FgStack::IsArgument(arg))
+                                {
+                                    handled = true;
+                                }
+                                else if (FgStack::IsConstant(arg))
+                                {
+                                    // input is a constant so we still want to track this as foldable, unlike
+                                    // what is done for the regulary unary operator handling, since we have
+                                    // a CEE_CALL node and not something more primitive
+                                    foldableIntrinsic = true;
+                                }
+
+                                break;
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_As:
+                            case NI_Vector64_AsByte:
+                            case NI_Vector64_AsDouble:
+                            case NI_Vector64_AsInt16:
+                            case NI_Vector64_AsInt32:
+                            case NI_Vector64_AsInt64:
+                            case NI_Vector64_AsNInt:
+                            case NI_Vector64_AsNUInt:
+                            case NI_Vector64_AsSByte:
+                            case NI_Vector64_AsSingle:
+                            case NI_Vector64_AsUInt16:
+                            case NI_Vector64_AsUInt32:
+                            case NI_Vector64_AsUInt64:
+                            case NI_Vector64_op_UnaryPlus:
+#endif // TARGET_XARCH
+                            case NI_Vector128_As:
+                            case NI_Vector128_AsByte:
+                            case NI_Vector128_AsDouble:
+                            case NI_Vector128_AsInt16:
+                            case NI_Vector128_AsInt32:
+                            case NI_Vector128_AsInt64:
+                            case NI_Vector128_AsNInt:
+                            case NI_Vector128_AsNUInt:
+                            case NI_Vector128_AsSByte:
+                            case NI_Vector128_AsSingle:
+                            case NI_Vector128_AsUInt16:
+                            case NI_Vector128_AsUInt32:
+                            case NI_Vector128_AsUInt64:
+                            case NI_Vector128_AsVector4:
+                            case NI_Vector128_op_UnaryPlus:
+                            case NI_VectorT128_As:
+                            case NI_VectorT128_AsVectorByte:
+                            case NI_VectorT128_AsVectorDouble:
+                            case NI_VectorT128_AsVectorInt16:
+                            case NI_VectorT128_AsVectorInt32:
+                            case NI_VectorT128_AsVectorInt64:
+                            case NI_VectorT128_AsVectorNInt:
+                            case NI_VectorT128_AsVectorNUInt:
+                            case NI_VectorT128_AsVectorSByte:
+                            case NI_VectorT128_AsVectorSingle:
+                            case NI_VectorT128_AsVectorUInt16:
+                            case NI_VectorT128_AsVectorUInt32:
+                            case NI_VectorT128_AsVectorUInt64:
+                            case NI_VectorT128_op_UnaryPlus:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_As:
+                            case NI_Vector256_AsByte:
+                            case NI_Vector256_AsDouble:
+                            case NI_Vector256_AsInt16:
+                            case NI_Vector256_AsInt32:
+                            case NI_Vector256_AsInt64:
+                            case NI_Vector256_AsNInt:
+                            case NI_Vector256_AsNUInt:
+                            case NI_Vector256_AsSByte:
+                            case NI_Vector256_AsSingle:
+                            case NI_Vector256_AsUInt16:
+                            case NI_Vector256_AsUInt32:
+                            case NI_Vector256_AsUInt64:
+                            case NI_Vector256_op_UnaryPlus:
+                            case NI_VectorT256_As:
+                            case NI_VectorT256_AsVectorByte:
+                            case NI_VectorT256_AsVectorDouble:
+                            case NI_VectorT256_AsVectorInt16:
+                            case NI_VectorT256_AsVectorInt32:
+                            case NI_VectorT256_AsVectorInt64:
+                            case NI_VectorT256_AsVectorNInt:
+                            case NI_VectorT256_AsVectorNUInt:
+                            case NI_VectorT256_AsVectorSByte:
+                            case NI_VectorT256_AsVectorSingle:
+                            case NI_VectorT256_AsVectorUInt16:
+                            case NI_VectorT256_AsVectorUInt32:
+                            case NI_VectorT256_AsVectorUInt64:
+                            case NI_VectorT256_op_UnaryPlus:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            case NI_SRCS_UNSAFE_As:
+                            case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_SkipInit:
+                            {
+                                // TODO-CQ: These are no-ops in that they never produce any IR
+                                // and simply return op1 untouched. We should really track them
+                                // as such and adjust the multiplier even more, but we'll settle
+                                // for marking it as foldable until additional work can happen.
+
                                 foldableIntrinsic = true;
-                                pushedStack.PushUnknown();
                                 break;
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector64_get_Count:
-                            case NI_Vector128_get_Count:
-                                foldableIntrinsic = true;
-                                pushedStack.PushConstant();
-                                break;
-                            case NI_Vector128_get_Zero:
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_One:
+                            case NI_Vector64_get_Zero:
+#endif // TARGET_ARM64
+                            case NI_Vector2_get_One:
+                            case NI_Vector2_get_Zero:
+                            case NI_Vector3_get_One:
+                            case NI_Vector3_get_Zero:
+                            case NI_Vector4_get_One:
+                            case NI_Vector4_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_One:
+                            case NI_Vector128_get_Zero:
+                            case NI_VectorT128_get_AllBitsSet:
+                            case NI_VectorT128_get_One:
+                            case NI_VectorT128_get_Zero:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_One:
+                            case NI_Vector256_get_Zero:
+                            case NI_VectorT256_get_AllBitsSet:
+                            case NI_VectorT256_get_One:
+                            case NI_VectorT256_get_Zero:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            {
+                                // These always produce a vector constant
+
                                 foldableIntrinsic = true;
-                                pushedStack.PushUnknown();
+
+                                // TODO-CQ: We should really push a constant onto the stack
+                                // However, this isn't trivially possible without the inliner
+                                // understanding a new type of "vector constant" so it doesn't
+                                // negatively impact other possible checks/handling
+
                                 break;
-#endif
+                            }
+
+                            case NI_SRCS_UNSAFE_NullRef:
+                            case NI_SRCS_UNSAFE_SizeOf:
+                            {
+                                // These always produce a constant
+
+                                foldableIntrinsic = true;
+                                pushedStack.PushConstant();
+
+                                break;
+                            }
 
                             default:
                             {
@@ -1908,7 +2219,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     if (opcode == CEE_LDLOCA || opcode == CEE_LDLOCA_S)
                     {
                         varType = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclVerTypeInfo;
 
                         impInlineInfo->lclVarInfo[varNum + impInlineInfo->argCnt].lclHasLdlocaOp = true;
                     }
@@ -1917,7 +2227,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         noway_assert(opcode == CEE_LDARGA || opcode == CEE_LDARGA_S);
 
                         varType = impInlineInfo->lclVarInfo[varNum].lclTypeInfo;
-                        ti      = impInlineInfo->lclVarInfo[varNum].lclVerTypeInfo;
 
                         impInlineInfo->inlArgInfo[varNum].argHasLdargaOp = true;
 
@@ -1949,7 +2258,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
 
                     varType = (var_types)lvaTable[varNum].lvType;
-                    ti      = lvaTable[varNum].lvVerTypeInfo;
 
                     // Determine if the next instruction will consume
                     // the address. If so we won't mark this var as
@@ -1989,7 +2297,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     }
                 } // isInlining
 
-                typeIsNormed = ti.IsValueClass() && !varTypeIsStruct(varType);
+                typeIsNormed = !varTypeIsGC(varType) && !varTypeIsStruct(varType);
             }
             break;
 
@@ -2193,7 +2501,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     // about the possible values or types.
     //
     // For inlinees we do this over in impInlineFetchLocal and
-    // impInlineFetchArg (here args are included as we somtimes get
+    // impInlineFetchArg (here args are included as we sometimes get
     // new information about the types of inlinee args).
     if (!isInlining)
     {
@@ -2221,7 +2529,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 // Notes:
 //    Modifies lvaArg0Var to refer to a temp if the value of 'this' can
 //    change. The original this (info.compThisArg) then remains
-//    unmodified in the method.  fgAddInternal is reponsible for
+//    unmodified in the method.  fgAddInternal is responsible for
 //    adding the code to copy the initial this into the temp.
 
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
@@ -2231,6 +2539,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     // Optionally enable adjustment during stress.
     if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
+        JITDUMP("JitStress: creating modifiable `this`\n");
         thisVarDsc->lvHasILStoreOp = true;
     }
 
@@ -2248,13 +2557,8 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
         arg0varDsc->SetDoNotEnregReason(thisVarDsc->GetDoNotEnregReason());
 #endif
         arg0varDsc->lvHasILStoreOp = thisVarDsc->lvHasILStoreOp;
-        arg0varDsc->lvVerTypeInfo  = thisVarDsc->lvVerTypeInfo;
 
-        // Clear the TI_FLAG_THIS_PTR in the original 'this' pointer.
-        noway_assert(arg0varDsc->lvVerTypeInfo.IsThisPtr());
-        thisVarDsc->lvVerTypeInfo.ClearThisPtr();
-        // Note that here we don't clear `m_doNotEnregReason` and it stays
-        // `doNotEnreg` with `AddrExposed` reason.
+        // Note that here we don't clear `m_doNotEnregReason` and it stays `doNotEnreg` with `AddrExposed` reason.
         thisVarDsc->CleanAddressExposed();
         thisVarDsc->lvHasILStoreOp = false;
     }
@@ -2707,7 +3011,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
             case CEE_VOLATILE:
             case CEE_UNALIGNED:
                 // fgFindJumpTargets should have ruled out this possibility
-                //   (i.e. a prefix opcodes as last intruction in a block)
+                //   (i.e. a prefix opcodes as last instruction in a block)
                 noway_assert(codeAddr < codeEndp);
 
                 if (jumpTarget->bitVectTest((UINT)(codeAddr - codeBegp)))
@@ -3254,14 +3558,6 @@ void Compiler::fgFindBasicBlocks()
             BADCODE("Handler Clause is invalid");
         }
 
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-        // This will change the block weight from 0 to 1
-        // and clear the rarely run flag
-        hndBegBB->makeBlockHot();
-#else
-        hndBegBB->bbSetRunRarely();   // handler entry points are rarely executed
-#endif
-
         if (hndEndOff < info.compILCodeSize)
         {
             hndEndBB = fgLookupBB(hndEndOff);
@@ -3272,14 +3568,6 @@ void Compiler::fgFindBasicBlocks()
             filtBB = HBtab->ebdFilter = fgLookupBB(clause.FilterOffset);
             filtBB->bbCatchTyp        = BBCT_FILTER;
             hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
-
-#if HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION
-            // This will change the block weight from 0 to 1
-            // and clear the rarely run flag
-            filtBB->makeBlockHot();
-#else
-            filtBB->bbSetRunRarely(); // filter entry points are rarely executed
-#endif
 
             // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
             for (block = filtBB; /**/; block = block->bbNext)
@@ -3589,7 +3877,8 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n");
+                JITDUMP("\nHandler block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                        blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
             }
@@ -3635,6 +3924,11 @@ void Compiler::fgFixEntryFlowForOSR()
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
     fgFirstBB->bbJumpDest = osrEntry;
     fgAddRefPred(osrEntry, fgFirstBB);
+
+    // Give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    fgFirstBB->inheritWeight(fgOSREntryBB);
 
     JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, osrEntry->bbNum);
@@ -4693,33 +4987,10 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         bool skipUnmarkLoop = false;
 
-        // If block is the backedge for a loop and succBlock precedes block
-        // then the succBlock becomes the new LOOP HEAD
-        // NOTE: there's an assumption here that the blocks are numbered in increasing bbNext order.
-        // NOTE 2: if fgDomsComputed is false, then we can't check reachability. However, if this is
-        // the case, then the loop structures probably are also invalid, and shouldn't be used. This
-        // can be the case late in compilation (such as Lower), where remnants of earlier created
-        // structures exist, but haven't been maintained.
-        if (block->isLoopHead() && (succBlock->bbNum <= block->bbNum))
+        if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
         {
-            succBlock->bbFlags |= BBF_LOOP_HEAD;
-
-            if (block->isLoopAlign())
-            {
-                loopAlignCandidates++;
-                succBlock->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for " FMT_LP "\n ", block->bbNum,
-                        succBlock->bbNum, block->bbNatLoopNum);
-            }
-
-            if (fgDomsComputed && fgReachable(succBlock, block))
-            {
-                // Mark all the reachable blocks between 'succBlock' and 'bPrev'
-                optScaleLoopBlocks(succBlock, bPrev);
-            }
-        }
-        else if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
-        {
+            // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
+            // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
             skipUnmarkLoop = true;
         }
 
@@ -4953,7 +5224,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     // When adding a new jmpBlk we will set the bbWeight and bbFlags
                     //
-                    if (fgHaveValidEdgeWeights && fgHaveProfileData())
+                    if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
                         noway_assert(fgComputePredsDone);
 
@@ -5078,50 +5349,33 @@ bool Compiler::fgRenumberBlocks()
     }
 #endif // DEBUG
 
-    bool        renumbered  = false;
-    bool        newMaxBBNum = false;
-    BasicBlock* block;
+    bool     renumbered  = false;
+    bool     newMaxBBNum = false;
+    unsigned num         = fgBBNumMin;
 
-    unsigned numStart = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : 0);
-    unsigned num;
-
-    for (block = fgFirstBB, num = numStart; block != nullptr; block = block->bbNext, num++)
+    for (BasicBlock* block : Blocks())
     {
         noway_assert((block->bbFlags & BBF_REMOVED) == 0);
 
         if (block->bbNum != num)
         {
-            renumbered = true;
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
-            }
-#endif // DEBUG
+            JITDUMP("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
+            renumbered   = true;
             block->bbNum = num;
         }
 
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - numStart + 1;
-            if (compIsForInlining())
+            fgBBcount = num - fgBBNumMin + 1;
+            if (fgBBNumMax != num)
             {
-                if (impInlineInfo->InlinerCompiler->fgBBNumMax != num)
-                {
-                    impInlineInfo->InlinerCompiler->fgBBNumMax = num;
-                    newMaxBBNum                                = true;
-                }
-            }
-            else
-            {
-                if (fgBBNumMax != num)
-                {
-                    fgBBNumMax  = num;
-                    newMaxBBNum = true;
-                }
+                fgBBNumMax  = num;
+                newMaxBBNum = true;
             }
         }
+
+        num++;
     }
 
     // If we renumbered, then we may need to reorder some pred lists.
@@ -5454,7 +5708,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // 4. A and X share the 'last' block. There are two sub-cases:
     //    (a) A is a larger range than X (such that the beginning of A precedes the
     //        beginning of X): in this case, we are moving the tail of A. We set the
-    //        'last' block of A to the the block preceding the beginning block of X.
+    //        'last' block of A to the block preceding the beginning block of X.
     //    (b) A is a smaller range than X. Thus, we are moving the entirety of A along
     //        with X. In this case, nothing in the EH record for A needs to change.
     // 5. A and X share the 'beginning' block (but aren't the same range, as in #3).
@@ -6545,6 +6799,58 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 
     /* If afterBlk falls through, we insert a jump around newBlk */
     fgConnectFallThrough(afterBlk, newBlk->bbNext);
+
+    // If the loop table is valid, add this block to the appropriate loop.
+    // Note we don't verify (via flow) that this block actually belongs
+    // to the loop, just that it is lexically within the span of blocks
+    // in the loop.
+    //
+    if (optLoopTableValid)
+    {
+        BasicBlock* const bbPrev = newBlk->bbPrev;
+        BasicBlock* const bbNext = newBlk->bbNext;
+
+        if ((bbPrev != nullptr) && (bbNext != nullptr))
+        {
+            BasicBlock::loopNumber const prevLoopNum = bbPrev->bbNatLoopNum;
+            BasicBlock::loopNumber const nextLoopNum = bbNext->bbNatLoopNum;
+
+            if ((prevLoopNum != BasicBlock::NOT_IN_LOOP) && (nextLoopNum != BasicBlock::NOT_IN_LOOP))
+            {
+                if (prevLoopNum == nextLoopNum)
+                {
+                    newBlk->bbNatLoopNum = prevLoopNum;
+                }
+                else
+                {
+                    BasicBlock::loopNumber const prevParentLoopNum = optLoopTable[prevLoopNum].lpParent;
+                    BasicBlock::loopNumber const nextParentLoopNum = optLoopTable[nextLoopNum].lpParent;
+
+                    if (nextParentLoopNum == prevLoopNum)
+                    {
+                        // next is in child loop
+                        newBlk->bbNatLoopNum = prevLoopNum;
+                    }
+                    else if (prevParentLoopNum == nextLoopNum)
+                    {
+                        // prev is in child loop
+                        newBlk->bbNatLoopNum = nextLoopNum;
+                    }
+                    else
+                    {
+                        // next and prev are siblings
+                        assert(prevParentLoopNum == nextParentLoopNum);
+                        newBlk->bbNatLoopNum = prevParentLoopNum;
+                    }
+                }
+            }
+        }
+
+        if (newBlk->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+            JITDUMP("Marked " FMT_BB " as lying within " FMT_LP "\n", newBlk->bbNum, newBlk->bbNatLoopNum);
+        }
+    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();

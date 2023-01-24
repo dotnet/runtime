@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Location.Paths
 {
@@ -18,8 +17,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Expected: Selects all element ancestors of the context node.
         /// ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesTest11()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest11(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -69,7 +71,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -77,8 +79,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Expected: Selects all para element ancestors of the context node.
         /// ancestor::para
         /// </summary>
-        [Fact]
-        public static void AxesTest12()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest12(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -104,15 +109,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all element ancestors of the context node.
-        /// ancestor::node()
+        /// ancestor::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest13()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest13(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -165,15 +173,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Error (the ancestor axis can not be combined with other axes).
         /// ancestor::*/child::*
         /// </summary>
-        [Fact]
-        public static void AxesTest14()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest14(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -245,30 +256,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Empty node list.
         /// ancestor (assuming context node is root node)
         /// </summary>
-        [Fact]
-        public static void AxesTest15()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest15(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var testExpression = @"ancestor::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: Selects the element ancestors of the context node and the context node itself.
         /// ancestor-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesTest16()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest16(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -322,15 +339,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the para element ancestors of the context node and the context node itself.
         /// ancestor-or-self::para (assuming context node is a para element)
         /// </summary>
-        [Fact]
-        public static void AxesTest17()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest17(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para";
@@ -356,15 +376,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the para element ancestors of the context node.
         /// ancestor-or-self::para (assuming context node is not a para element)
         /// </summary>
-        [Fact]
-        public static void AxesTest18()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest18(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -390,15 +413,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the element ancestors of the context node and the context node itself.
-        /// ancestor-or-self::node()
+        /// ancestor-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest19()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest19(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -459,15 +485,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected error(the ancestor axis can not be combined with other axes).
         /// ancestor-or-self::*/child::*
         /// </summary>
-        [Fact]
-        public static void AxesTest110()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest110(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -556,15 +585,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all attributes of the context node.
         /// attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest111()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest111(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -596,15 +628,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all attributes of the context node.
-        /// attribute::node()
+        /// attribute::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest112()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest112(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -636,15 +671,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Empty node list.
         /// attribute::node() (assuming context node is an attribute node)
         /// </summary>
-        [Fact]
-        public static void AxesTest113()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest113(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin/@Attr1";
@@ -652,15 +690,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the name attribute of the context node.
         /// attribute::name
         /// </summary>
-        [Fact]
-        public static void AxesTest114()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest114(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title";
@@ -676,15 +717,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all element children of the context node.
         /// child::*
         /// </summary>
-        [Fact]
-        public static void AxesTest115()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest115(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -729,15 +773,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the para element children of the context node
         /// child::para
         /// </summary>
-        [Fact]
-        public static void AxesTest116()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest116(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -745,15 +792,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all children of the context node.
-        /// child::node()
+        /// child::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest117()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest117(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -803,15 +853,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all element descendants of the context node.
         /// descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesTest118()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest118(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -863,15 +916,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all descendants of the context node.
-        /// descendant::node()
+        /// descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest119()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest119(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -938,15 +994,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all para element descendants of the context node.
         /// descendant::para
         /// </summary>
-        [Fact]
-        public static void AxesTest120()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest120(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -981,15 +1040,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the para element descendants of the context node and the context node itself.
         /// descendant-or-self::para  (assuming context node is a para element)
         /// </summary>
-        [Fact]
-        public static void AxesTest121()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest121(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -1015,15 +1077,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the para element descendants of the context node.
         /// descendant-or-self::para  (assuming context node is not a para element)
         /// </summary>
-        [Fact]
-        public static void AxesTest122()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest122(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1058,15 +1123,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the element descendants of the context node and the context node itself.
-        /// descendant-or-self::node()
+        /// descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest123()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest123(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1143,14 +1211,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest124()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest124(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1176,14 +1247,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest125()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest125(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1200,15 +1274,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects parent node of the context node (if it is an element node).
         /// parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest126()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest126(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -1226,45 +1303,54 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Empty node list.
         /// parent::* (assuming context node is root node)
         /// </summary>
-        [Fact]
-        public static void AxesTest127()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest127(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var testExpression = @"parent::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: Error.
         /// child::*/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest128()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest128(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var testExpression = @"child::*/parent::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: Selects parent node of the context node, if this node is a para element.
         /// parent::para
         /// </summary>
-        [Fact]
-        public static void AxesTest129()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest129(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para";
@@ -1281,15 +1367,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects parent node of the context node.
-        /// parent::node()
+        /// parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest130()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest130(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -1307,14 +1396,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesTest131()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest131(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1340,14 +1432,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest132()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest132(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1373,15 +1468,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the context node (if it is an element node).
         /// self::*
         /// </summary>
-        [Fact]
-        public static void AxesTest133()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest133(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1399,15 +1497,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the context node if the context node is a para element.
         /// self::para
         /// </summary>
-        [Fact]
-        public static void AxesTest134()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest134(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -1424,15 +1525,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the context node.
-        /// self::node()
+        /// self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest135()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest135(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1450,15 +1554,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the document root.
         /// /
         /// </summary>
-        [Fact]
-        public static void AxesTest136()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest136(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1473,15 +1580,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all the para elements in the document.
         /// /descendant::para
         /// </summary>
-        [Fact]
-        public static void AxesTest137()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest137(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1516,15 +1626,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// context node is leaf node and has some nodes following it in the document order
         /// following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest138()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest138(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -1550,15 +1663,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following (last node in the doc order)
         /// following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest139()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest139(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap[2]/Title/text()";
@@ -1566,15 +1682,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following (attribute)
         /// following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest140()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest140(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr1";
@@ -1609,15 +1728,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// BVT for namespace
         /// NS1: //namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest141()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest141(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::*";
@@ -1872,14 +1994,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NS2: namespace::*/following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest142()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest142(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -2036,30 +2161,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following (root node)
         /// following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest143()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest143(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var testExpression = @"following::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (try to access a child)
         /// following::Para
         /// </summary>
-        [Fact]
-        public static void AxesTest144()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest144(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap";
@@ -2067,15 +2198,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following (try to access an attribute)
         /// following::Origin/Para/@Attr1
         /// </summary>
-        [Fact]
-        public static void AxesTest145()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest145(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title";
@@ -2083,21 +2217,24 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// following (try to access a namespace node)
         /// following::xmlns:NSbook
         /// </summary>
-        [Fact]
-        public static void AxesTest146()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest146(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
             var testExpression = @"following::xmlns:NSbook";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
@@ -2105,188 +2242,227 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// following (condition on attr, true)
         /// following::*[@Attr1="value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest147()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest147(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr1=""value1""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on attr, false)
         /// following::*[@Attr1="value2"]
         /// </summary>
-        [Fact]
-        public static void AxesTest148()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest148(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr1=""value2""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on attr, non-existent)
         /// following::*[@Attr5="value5"]
         /// </summary>
-        [Fact]
-        public static void AxesTest149()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest149(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr5=""value5""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on value, true)
         /// following::*[.="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest150()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest150(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[.=""XPath test""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on value, false)
         /// following::*[.="XPath tests"]
         /// </summary>
-        [Fact]
-        public static void AxesTest151()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest151(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[.=""XPath tests""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on value, non-existent)
         /// following::Origin[.="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest152()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest152(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::Origin[.=""XPath test""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on attr and value, true)
         /// following::*[.="XPath test"] [@Attr1= "value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest153()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest153(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[.=""XPath test""] [@Attr1= ""value1""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on attr and value, false)
         /// following::*[.="XPath tests"][ @Attr1= "value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest154()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest154(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[.=""XPath tests""][ @Attr1= ""value1""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on attr and value, non-existent)
         /// following::*[.="XPath test"][@Attrib1= "value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest155()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest155(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[.=""XPath test""][@Attrib1= ""value1""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on multiple attrs, true)
         /// following::*[@Attr1="value1"][@Attr2="value2"]
         /// </summary>
-        [Fact]
-        public static void AxesTest156()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest156(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr1=""value1""][@Attr2=""value2""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on multiple attrs, false)
         /// following::*[@Attr1="value1"][@Attr2="value3"]
         /// </summary>
-        [Fact]
-        public static void AxesTest157()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest157(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr1=""value1""][@Attr2=""value3""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following (condition on multiple attrs, non-existent)
         /// following::*[@Attr1="value1"][@Attr5="value5"]
         /// </summary>
-        [Fact]
-        public static void AxesTest158()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest158(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var testExpression = @"following::*[@Attr1=""value1""][@Attr5=""value5""]";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// preceding (element other than root)
         /// preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesTest159()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest159(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Title";
@@ -2312,30 +2488,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (root node)
         /// preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesTest160()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest160(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var testExpression = @"preceding::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// preceding (context node = attribute)
         /// preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesTest161()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest161(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr2";
@@ -2343,15 +2525,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (try to get an attribute)
         /// preceding::Title/@Attr1
         /// </summary>
-        [Fact]
-        public static void AxesTest162()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest162(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2367,21 +2552,24 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (try to get a namespace node)
         /// preceding::xmlns:NSbook
         /// </summary>
-        [Fact]
-        public static void AxesTest163()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest163(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/moviesection";
             var testExpression = @"preceding::xmlns:NSbook";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
@@ -2389,8 +2577,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// preceding (try to access an ancestor)
         /// preceding::Chap
         /// </summary>
-        [Fact]
-        public static void AxesTest164()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest164(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2398,15 +2589,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (last node in doc order)
         /// preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesTest165()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest165(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap[2]/Title";
@@ -2486,15 +2680,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr, true)
         /// preceding::*[@Attr1="value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest166()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest166(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2512,15 +2709,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr, false)
         /// preceding::*[@Attr1="value2"]
         /// </summary>
-        [Fact]
-        public static void AxesTest167()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest167(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2528,15 +2728,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr, non-existent)
         /// preceding::*[@Attr5="value5"]
         /// </summary>
-        [Fact]
-        public static void AxesTest168()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest168(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2544,15 +2747,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on value, true)
         /// preceding::*[.="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest169()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest169(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2570,15 +2776,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on value, false)
         /// preceding::*[.="XPath tests"]
         /// </summary>
-        [Fact]
-        public static void AxesTest170()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest170(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2586,15 +2795,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition value, non-existent)
         /// preceding::Chap[.="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest171()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest171(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para";
@@ -2602,15 +2814,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr and value, true)
         /// preceding::*[name="This is the name"][.="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest172()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest172(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2618,15 +2833,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr and value, false)
         /// preceding::*[name="This is the name, false!"][.="XPath tests"]
         /// </summary>
-        [Fact]
-        public static void AxesTest173()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest173(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2634,15 +2852,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on attr and value, non-existent)
         /// preceding::*[desc="This is the name"][ .="XPath test"]
         /// </summary>
-        [Fact]
-        public static void AxesTest174()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest174(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2650,15 +2871,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on multiple attrs, true)
         /// preceding::*[@Attr1="value1"][@Attr2="value2"]
         /// </summary>
-        [Fact]
-        public static void AxesTest175()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest175(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2685,15 +2909,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on multiple attr, false)
         /// preceding::*[@Attr1="value2"][@Attr2="value1"]
         /// </summary>
-        [Fact]
-        public static void AxesTest176()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest176(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2701,15 +2928,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding (condition on multiple attr, non-existent)
         /// preceding::*[@Attr5="value5"][@Attr2="value2"]
         /// </summary>
-        [Fact]
-        public static void AxesTest177()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest177(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para[2]";
@@ -2717,15 +2947,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (select an existing parent)
         /// parent::Test1
         /// </summary>
-        [Fact]
-        public static void AxesTest178()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest178(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "//Child1";
@@ -2743,15 +2976,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (select non-existing parent)
         /// parent::Doc
         /// </summary>
-        [Fact]
-        public static void AxesTest179()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest179(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "//Child1";
@@ -2759,30 +2995,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (root node)
         /// parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest180()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest180(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var testExpression = @"parent::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// parent (attribute)
         /// parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest181()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest181(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/@Attr1";
@@ -2800,15 +3042,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (namespace node)
         /// namespace::NSbook/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest182()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest182(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -2826,15 +3071,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attribute, true)
         /// parent::*[@Attr1="First"]
         /// </summary>
-        [Fact]
-        public static void AxesTest183()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest183(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -2852,15 +3100,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attr, false)
         /// parent::*[@Attr1="Second"]
         /// </summary>
-        [Fact]
-        public static void AxesTest184()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest184(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -2868,15 +3119,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attr, non-existent)
         /// parent::*[@Attr6="Last"]
         /// </summary>
-        [Fact]
-        public static void AxesTest185()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest185(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -2884,15 +3138,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on value, true)
         /// parent::*[.="First paragraph  End of first paragraph  "]
         /// </summary>
-        [Fact]
-        public static void AxesTest186()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest186(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -2900,15 +3157,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on value, false)
         /// parent::*[.="FirstparagraphEndoffirstparagraph"]
         /// </summary>
-        [Fact]
-        public static void AxesTest187()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest187(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -2916,15 +3176,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on multiple attributes, true)
         /// parent::*[@Attr1="First"][@Attr2="Second"]
         /// </summary>
-        [Fact]
-        public static void AxesTest189()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest189(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -2942,15 +3205,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on multiple attr, false)
         /// parent::*[@Attr1="First"][@Attr2="Last"]
         /// </summary>
-        [Fact]
-        public static void AxesTest190()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest190(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -2958,15 +3224,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on multiple attr, non-existent)
         /// parent::*[@Attr1="First"][@Attr6="Last"]
         /// </summary>
-        [Fact]
-        public static void AxesTest191()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest191(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -2974,15 +3243,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attr and value, true)
         /// parent::*[@Attr1="only one"][.="only one"]
         /// </summary>
-        [Fact]
-        public static void AxesTest192()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest192(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -2990,15 +3262,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attr and value, false)
         /// parent::*[@Attr1="only one"][.="only two"]
         /// </summary>
-        [Fact]
-        public static void AxesTest193()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest193(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3006,15 +3281,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent (condition on attr and value, non-existent)
         /// parent::*[@Attr6="Last"][.="onlyone"]
         /// </summary>
-        [Fact]
-        public static void AxesTest194()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest194(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3022,15 +3300,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (select an existing ancestor)
         /// ancestor::Doc
         /// </summary>
-        [Fact]
-        public static void AxesTest195()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest195(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "//Child1";
@@ -3047,30 +3328,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (root node)
         /// ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesTest196()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest196(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var testExpression = @"ancestor::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// ancestor (attribute)
         /// ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesTest197()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest197(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/@Attr1";
@@ -3097,15 +3384,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (namespace node)
         /// NS3: namespace::NSbook/ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesTest198()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest198(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -3133,15 +3423,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (try to select a non-existent ancestor)
         /// ancestor::Test1
         /// </summary>
-        [Fact]
-        public static void AxesTest199()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest199(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3149,15 +3442,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attribute, true)
         /// ancestor::*[@Attr1="First"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1100()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1100(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -3175,15 +3471,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attr, false)
         /// ancestor::*[@Attr1="Second"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1101()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1101(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -3191,15 +3490,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attr, non-existent)
         /// ancestor::*[@Attr6="Last"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1102()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1102(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1";
@@ -3207,15 +3509,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on value, true)
         /// ancestor::*[.="First paragraph  End of first paragraph  "]
         /// </summary>
-        [Fact]
-        public static void AxesTest1103()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1103(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -3223,15 +3528,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on value, false)
         /// ancestor::*[.="FirstparagraphEndoffirstparagraph"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1104()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1104(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Para/Origin";
@@ -3239,15 +3547,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on multiple attributes, true)
         /// ancestor::*[@Attr1="First"][@Attr2="Second"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1106()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1106(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -3265,15 +3576,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on multiple attr, false)
         /// ancestor::*[@Attr1="First"][@Attr2="Third"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1107()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1107(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -3281,15 +3595,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on multiple attr, non-existent)
         /// ancestor::*[@Attr1="First"][@Attr6="Last"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1108()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1108(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child2";
@@ -3297,15 +3614,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attr and value, true)
         /// ancestor::*[@Attr1="only one"][.="only one"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1109()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1109(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3313,15 +3633,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attr and value, false)
         /// ancestor::*[@Attr1="only one"][.="only two"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1110()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1110(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3329,15 +3652,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor (condition on attr and value, non-existent)
         /// ancestor::*[@Attr6="Last"][.="only one"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1111()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1111(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test2/Child1";
@@ -3345,15 +3671,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Should return nothing.
         /// parent::foo
         /// </summary>
-        [Fact]
-        public static void AxesTest1112()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1112(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3361,15 +3690,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all text nodes after first book.  CDATA is grouped into text nodes so CDATA should also be returned.
-        /// book[1]/following::text()
+        /// book[1]/following::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1113()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1113(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3706,15 +4038,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all comment nodes after and not a descendant of the first book.
-        /// book[1]/following::comment()
+        /// book[1]/following::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1114()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1114(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3728,15 +4063,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all PI nodes that follow the first book.
-        /// book[1]/following::processing-instruction()
+        /// book[1]/following::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1115()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1115(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3760,21 +4098,24 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return ERROR.
         /// book[2]/following::@*
         /// </summary>
-        [Fact]
-        public static void AxesTest1116()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1116(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"book[2]/following::@*";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
@@ -3782,23 +4123,29 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Return ERROR.
         /// book[3]/preceding::@*
         /// </summary>
-        [Fact]
-        public static void AxesTest1117()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1117(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"book[3]/preceding::@*";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node-list.
-        /// book[1]/title/following-sibling::text()
+        /// book[1]/title/following-sibling::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1118()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1118(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3809,15 +4156,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return comment node sibling of the first book element.
-        /// book[1]/following-sibling::comment()
+        /// book[1]/following-sibling::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1119()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1119(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3831,15 +4181,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return PI nodes that are siblings of and after the first book.
-        /// book[1]/following-sibling::processing-instruction()
+        /// book[1]/following-sibling::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1120()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1120(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -3855,15 +4208,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all siblings of the first book no-matter what type.
-        /// book[1]/following-sibling::node()
+        /// book[1]/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1121()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1121(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4078,21 +4434,24 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return ERROR.
         /// book[2]/following-sibling::@*
         /// </summary>
-        [Fact]
-        public static void AxesTest1122()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1122(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"book[2]/following-sibling::@*";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
@@ -4100,8 +4459,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Return empty node-list.
         /// book[last()]/@*/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1123()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1123(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4109,15 +4471,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return first and second book elements..
         /// book[3]/preceding-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1124()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1124(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4147,15 +4512,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node-list.
         /// book[1]/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1125()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1125(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4163,15 +4531,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all comments that are siblings of last book element.
-        /// book[last()]/preceding-sibling::comment()
+        /// book[last()]/preceding-sibling::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1126()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1126(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4191,15 +4562,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all PI siblings of last my:book element.
-        /// *[last()]/preceding-sibling::processing-instruction()
+        /// *[last()]/preceding-sibling::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1127()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1127(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4215,15 +4589,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return any node that is before first book and at the same level (sibling).
-        /// book[1]/preceding-sibling::node()
+        /// book[1]/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1128()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1128(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4239,15 +4616,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return second book element (History of Trenton).
-        /// book[3]/preceding-sibling::book[1]/title/text()
+        /// book[3]/preceding-sibling::book[1]/title/text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1129()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1129(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4256,15 +4636,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "History of Trenton"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node-list.
         /// book[3]/@*/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1130()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1130(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4272,15 +4655,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node list.
-        /// preceding::node()
+        /// preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1131()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1131(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4294,15 +4680,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node list.
-        /// preceding-sibling::node()
+        /// preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1132()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1132(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4316,15 +4705,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return first book in document order.
         /// book/preceding-sibling::*[last()]
         /// </summary>
-        [Fact]
-        public static void AxesTest1133()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1133(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -4343,15 +4735,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return nodes after the first book except descendants, attribute::, and namespaces.
-        /// book[1]/following::node()
+        /// book[1]/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1134()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1134(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -5719,15 +6114,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all elements after the last book node.
         /// book[last()]/@*/following::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1135()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1135(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -5974,15 +6372,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return text nodes in the first and second book and their descendants.
-        /// book[3]/preceding::text()
+        /// book[3]/preceding::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1136()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1136(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6043,15 +6444,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all comment nodes from beginning of document to the third book.
-        /// book[3]/preceding::comment()
+        /// book[3]/preceding::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1137()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1137(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6077,15 +6481,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all PI's in the document header (empty node-list for this case).
-        /// //*[last()]/preceding::processing-instruction()
+        /// //*[last()]/preceding::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1138()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1138(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/preceding::processing-instruction()";
@@ -6108,15 +6515,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Return any node that is before the first book.
-        /// book[1]/preceding::node()
+        /// book[1]/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1139()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1139(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6138,15 +6548,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return all magazine elements after first book.
         /// book[1]/following-sibling::magazine
         /// </summary>
-        [Fact]
-        public static void AxesTest1140()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1140(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6215,15 +6628,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return empty node-list.
         /// *[last()]/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1141()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1141(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6231,15 +6647,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return comment node sibling of the first book element.
-        /// book[1]/following-sibling::comment()
+        /// book[1]/following-sibling::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1142()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1142(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6253,15 +6672,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Return PI nodes that are siblings of and after the first book.
-        /// book[1]/following-sibling::processing-instruction()
+        /// book[1]/following-sibling::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1143()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1143(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var startingNodePath = "/bookstore";
@@ -6277,43 +6699,52 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Should give an error for expressions ending in '/'
         /// /bookstore/book/
         /// </summary>
-        [Fact]
-        public static void AxesTest1144()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1144(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/book/";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression);
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression);
         }
 
         /// <summary>
         /// following-sibling axis is empty for attribute nodes
         /// /Doc/Test1/@Attr1/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1145()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1145(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var testExpression = @"/Doc/Test1/@Attr1/following-sibling::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// following-sibling axis is empty for namespace nodes
         /// NS4: namespace::NSbook/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1146()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1146(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -6321,30 +6752,36 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding-sibling axis should be empty for attribute nodes
         /// /Doc/Test1/@Attr2/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1147()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1147(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var testExpression = @"/Doc/Test1/@Attr2/preceding-sibling::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// preceding-sibling is empty for namespace nodes
         /// NS5: namespace::NSbook/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1148()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1148(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -6352,15 +6789,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Try to get a descendant. Descendants of the context node are not on the following axis
         /// following::Test1
         /// </summary>
-        [Fact]
-        public static void AxesTest1149()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1149(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc";
@@ -6368,15 +6808,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Attribute axis is empty if the context node is not an element. Context node =attribute
         /// attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1150()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1150(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/@Attr1";
@@ -6384,15 +6827,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Attribute axis is empty if the context node is not an element. Context node = text
         /// attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1151()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1151(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
             var startingNodePath = "/Doc/Test1/Child1/text()";
@@ -6400,15 +6846,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Attribute axis is empty if the context node is not an element. Context node = comment
         /// attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1152()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1152(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/comment()";
@@ -6416,15 +6865,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Attribute axis is empty if the context node is not an element. Context node = namespace node
         /// NS6: namespace::NSbook/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1153()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1153(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -6432,74 +6884,89 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// namespace axis should be empty if the context node is not an element (attribute in this case)
         /// NS7: //@*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1154()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1154(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//@*/namespace::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// namespace axis should be empty if the context node is not an element (text in this case)
         /// NS8: //text()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1155()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1155(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//text()/namespace::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// namespace axis should be empty if the context node is not an element (PI in this case)
         /// NS9: //processing-instruction()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1156()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1156(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//processing-instruction()/namespace::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// namespace axis should be empty if the context node is not an element (comment in this case)
         /// NS10: //comment()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1157()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1157(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//comment()/namespace::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NS11: namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1158()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1158(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/store/booksection/book/namespace::*";
@@ -6538,15 +7005,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// a node for xml is declared implicitly
         /// NS12: namespace::xml
         /// </summary>
-        [Fact]
-        public static void AxesTest1159()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1159(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/store/booksection/book/namespace::xml";
@@ -6569,15 +7039,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// check that namespace node has the element node as its parent node
         /// NS13: /store/booksection/namespace::NSbook/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1160()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1160(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/store/booksection/namespace::NSbook/parent::*";
@@ -6594,15 +7067,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// namespace declared in an ancestor
         /// NS15: /store/booksection/book/namespace::NSbook
         /// </summary>
-        [Fact]
-        public static void AxesTest1161()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1161(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/store/booksection/book/namespace::NSbook";
@@ -6625,15 +7101,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// namespace declared in the ancestors twice. Check that the last one overwrites the previous one.
         /// NS16: string(/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie)
         /// </summary>
-        [Fact]
-        public static void AxesTest1162()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1162(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"string(/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie)";
@@ -6642,15 +7121,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             namespaceManager.AddNamespace("NSmovie", "http://documentry.htm");
             var expected = @"http://documentry.htm";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// namespace declared in the ancestors twice. Check that the last one overwrites the previous one.
         /// NS17: /store/moviesection/documentry/NSmovie:movie/namespace::NSmovie
         /// </summary>
-        [Fact]
-        public static void AxesTest1163()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1163(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/store/moviesection/documentry/NSmovie:movie/namespace::NSmovie";
@@ -6668,57 +7150,69 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// string value of the namespace node is the namespace URI that is bound to the prefix.
         /// NS18: string(/store/moviesection/namespace::*[1])
         /// </summary>
-        [Fact]
-        public static void AxesTest1164()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1164(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"string(/store/moviesection/namespace::*[1])";
             var expected = @"http://movie.htm";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// the namespace-uri() should always be a null string
         /// NS19: namespace-uri(/store/moviesection/namespace::*[1])
         /// </summary>
-        [Fact]
-        public static void AxesTest1165()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1165(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"namespace-uri(/store/moviesection/namespace::*[1])";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// the namespace-uri() should always be a null string, node has a default NS
         /// NS20: namespace-uri(/store/moviesection/namespace::*[1])
         /// </summary>
-        [Fact]
-        public static void AxesTest1166()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1166(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"namespace-uri(/store/moviesection/namespace::*[1])";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// the namespace-uri() should always be a null string, node has a prefix
         /// NS21: namespace-uri(/store/moviesection/namespace::*[1])
         /// </summary>
-        [Fact]
-        public static void AxesTest1167()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1167(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"namespace-uri(/store/moviesection/NSMovie:*/namespace::*[1])";
@@ -6727,14 +7221,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             namespaceManager.AddNamespace("NSMovie", "http://movie.htm");
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// NS22: //namespace::cnn
         /// </summary>
-        [Fact]
-        public static void AxesTest1168()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1168(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//namespace::cnn";
@@ -6757,15 +7254,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// select all elements that have the default namespace child, should return all main companies
         /// NS23: //* [namespace::*="http://companies_default.htm"]
         /// </summary>
-        [Fact]
-        public static void AxesTest1169()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1169(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//* [namespace::*=""http://companies_default.htm""]";
@@ -6783,14 +7283,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NS24: //company[2]/aol:company/tw:company/namespace::cnn
         /// </summary>
-        [Fact]
-        public static void AxesTest1170()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1170(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//company[2]/aol:company/tw:company/namespace::cnn";
@@ -6809,14 +7312,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// NS25: //company[2]/aol:company/tw:company/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1171()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1171(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//company[2]/aol:company/tw:company/namespace::*";
@@ -6859,15 +7365,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Prefixes are redefined, checks that this is done correctly
-        /// NS26: //prefix:*//namespace::node()
+        /// NS26: //prefix:*//namespace::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1172()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1172(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var testExpression = @"//prefix:*//namespace::node()";
@@ -6909,15 +7418,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Default namespace is redefined, checks that this is done correctly
-        /// NS27: //namespace::node()
+        /// NS27: //namespace::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1173()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1173(Utils.NavigatorKind kind)
         {
             var xml = "ns_default.xml";
             var testExpression = @"//namespace::node()";
@@ -7032,15 +7544,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// All namespace nodes belong to the null namespace
         /// NS28: //namespace::prefix:*
         /// </summary>
-        [Fact]
-        public static void AxesTest1174()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1174(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//namespace::prefix:*";
@@ -7050,15 +7565,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// All namespace nodes belong to the null namespace
         /// NS29: //namespace::prefix:*
         /// </summary>
-        [Fact]
-        public static void AxesTest1175()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1175(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var testExpression = @"//namespace::prefix:*";
@@ -7068,15 +7586,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Default namespace should be cleared by the xmlns="""" declaration
         /// NS30: //node()[namespace-uri()=""]
         /// </summary>
-        [Fact]
-        public static void AxesTest1176()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1176(Utils.NavigatorKind kind)
         {
             var xml = "ns_default.xml";
             var testExpression = @"//node()[namespace-uri()=""""]";
@@ -7130,14 +7651,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// preceding, predicate uses position()
+        /// preceding, predicate uses position(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1177()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1177(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/book[7]/preceding::book[1]";
@@ -7154,14 +7678,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// preceding-sibling, predicate uses position()
+        /// preceding-sibling, predicate uses position(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1178()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1178(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/book[7]/preceding-sibling::book[1]";
@@ -7178,15 +7705,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// Verify that . is equivalent to self::node()
-        /// . = self::node()
+        /// Verify that . is equivalent to self::node(Utils.NavigatorKind kind)
+        /// . = self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1179()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1179(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/magazine/.";
@@ -7254,15 +7784,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// verify that .. is equivalent to parent::node()
-        /// .. = parent::node()
+        /// verify that .. is equivalent to parent::node(Utils.NavigatorKind kind)
+        /// .. = parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1180()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1180(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/magazine/title/..";
@@ -7310,15 +7843,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Nodes are not repeated in a node-set. Magazine nodes should not be repeated
         /// /bookstore/book/following-sibling::magazine
         /// </summary>
-        [Fact]
-        public static void AxesTest1181()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1181(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/book/following-sibling::magazine";
@@ -7386,15 +7922,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Nodes are not repeated in a node-set. Uses node() to get nodes of all types
-        /// /bookstore/book/following-sibling::node()
+        /// /bookstore/book/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1182()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1182(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/bookstore/book/following-sibling::node()";
@@ -7592,15 +8131,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines following with child axis
         /// following::book/child::title
         /// </summary>
-        [Fact]
-        public static void AxesTest1195()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1195(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -7662,15 +8204,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with descendant axis
         /// following::book/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1196()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1196(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8221,15 +8766,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with parent axis
         /// following::book/parent::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1197()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1197(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8248,15 +8796,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with ancestor axis
         /// following::book/title/ancestor::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1198()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1198(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8275,15 +8826,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with following-sibling axis
         /// following::book/following-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1199()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1199(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8345,15 +8899,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with preceding-sibling axis
         /// following::book/preceding-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1200()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1200(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8426,15 +8983,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with following axis
         /// following::book/following::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1201()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1201(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8496,15 +9056,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with preceding axis
         /// following::book/preceding::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1202()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1202(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8577,15 +9140,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with attribute axis
         /// following::magazine/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1203()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1203(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8689,15 +9255,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with namespace axis
         /// NS31: following::NSmovie:*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1204()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1204(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -8740,16 +9309,19 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with self axis
-        /// following::book/self::node()
+        /// following::book/self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1205()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1205(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -8822,15 +9394,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with descendant-or-self axis
-        /// following::book/descendant-or-self::node()
+        /// following::book/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1206()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1206(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]";
@@ -9626,15 +10201,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with ancestor-or-self axis
         /// following::book/ancestor-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1207()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1207(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book";
@@ -9664,15 +10242,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following with namespace axis
         /// NS32: following::node()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1208()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1208(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "//prefix:*";
@@ -9723,7 +10304,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -9731,8 +10312,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines preceding with child axis
         /// preceding::book/child::title
         /// </summary>
-        [Fact]
-        public static void AxesTest1209()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1209(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -9749,15 +10333,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with descendant axis
         /// preceding::book/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1210()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1210(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -9830,15 +10417,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with parent axis
         /// preceding::book/parent::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1211()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1211(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -9857,15 +10447,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with ancestor axis
         /// preceding::book/title/ancestor::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1212()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1212(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -9884,15 +10477,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with following-sibling axis
         /// preceding::book/following-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1213()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1213(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -9965,15 +10561,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with preceding-sibling axis
         /// preceding::book/preceding-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1214()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1214(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[3]";
@@ -9992,15 +10591,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with following axis
         /// preceding::book/following::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1215()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1215(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -10073,15 +10675,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with preceding axis
         /// preceding::book/preceding::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1216()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1216(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[3]";
@@ -10100,15 +10705,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with attribute axis
         /// preceding::magazine/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1217()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1217(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[7]";
@@ -10212,15 +10820,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with namespace axis
         /// NS33: preceding::NSbook:book/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1218()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1218(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/book[1]";
@@ -10263,7 +10874,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -10271,8 +10882,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines preceding with namespace axis
         /// NS34: preceding::prefix1:elem/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1219()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1219(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "//prefix:*";
@@ -10316,7 +10930,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -10324,8 +10938,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines preceding with namespace axis
         /// NS35: preceding::prefix1:elem/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1220()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1220(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "//prefix:*";
@@ -10337,16 +10954,19 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with self axis
-        /// preceding::book/self::node()
+        /// preceding::book/self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1221()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1221(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -10365,15 +10985,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with descendant-or-self axis
-        /// preceding::book/descendant-or-self::node()
+        /// preceding::book/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1222()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1222(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -10482,15 +11105,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding with ancestor-or-self axis
         /// preceding::book/ancestor-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1223()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1223(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]";
@@ -10520,15 +11146,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with child axis
         /// parent::book/child::author
         /// </summary>
-        [Fact]
-        public static void AxesTest1224()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1224(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book/title";
@@ -10545,15 +11174,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with descendant axis
         /// parent::*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1225()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1225(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/title";
@@ -10626,15 +11258,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with parent axis
         /// parent::*/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1226()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1226(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/author";
@@ -10653,15 +11288,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with ancestor axis
         /// parent::author/ancestor::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1227()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1227(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]/author/last-name";
@@ -10680,15 +11318,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with following-sibling axis
         /// parent::*/following-sibling::magazine
         /// </summary>
-        [Fact]
-        public static void AxesTest1228()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1228(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/author";
@@ -10757,15 +11398,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with following axis
         /// parent::book/following::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1229()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1229(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/title";
@@ -10838,15 +11482,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with preceding axis
         /// parent::*/preceding::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1230()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1230(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[7]/title";
@@ -10919,15 +11566,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with preceding-sibling axis
         /// parent::*/preceding-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1231()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1231(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[7]/title";
@@ -11000,15 +11650,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with attribute axis
         /// parent::*/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1232()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1232(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[1]/title";
@@ -11032,15 +11685,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with namespace axis
         /// NS36: parent::*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1233()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1233(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/NSbook:book[1]/NSbook:title";
@@ -11067,7 +11723,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -11075,8 +11731,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines parent with namespace axis
         /// NS37: parent::*[local-name()="elem"]/namespace::prefix
         /// </summary>
-        [Fact]
-        public static void AxesTest1234()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1234(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "//prefix:*";
@@ -11095,16 +11754,19 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with self axis
-        /// parent::book/self::node()
+        /// parent::book/self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1235()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1235(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/title";
@@ -11123,15 +11785,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with descendant-or-self axis
-        /// parent::book/descendant-or-self::node()
+        /// parent::book/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1236()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1236(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/title";
@@ -11256,15 +11921,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines parent with ancestor-or-self axis
         /// parent::*/ancestor-or-self::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1237()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1237(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]/author/last-name";
@@ -11283,15 +11951,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with child axis
         /// ancestor::book/child::author
         /// </summary>
-        [Fact]
-        public static void AxesTest1238()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1238(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/title";
@@ -11308,15 +11979,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with descendant axis
         /// ancestor::*/descendant::magazine
         /// </summary>
-        [Fact]
-        public static void AxesTest1239()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1239(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/title";
@@ -11385,15 +12059,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with parent axis
         /// ancestor::*/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1240()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1240(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/author";
@@ -11412,15 +12089,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with ancestor axis
         /// ancestor::book/ancestor::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1241()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1241(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]/author/last-name";
@@ -11439,15 +12119,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with following-sibling axis
         /// ancestor::book/following-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1242()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1242(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]/author/last-name";
@@ -11487,15 +12170,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with following axis
         /// ancestor::*/following::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1243()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1243(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[1]/title/text()";
@@ -11568,15 +12254,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with preceding axis
         /// ancestor::*/preceding::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1244()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1244(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[7]/title";
@@ -11649,15 +12338,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with preceding-sibling axis
         /// ancestor::*/preceding-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesTest1245()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1245(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[7]/title";
@@ -11730,15 +12422,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with attribute axis
         /// ancestor::magazine/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1246()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1246(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[1]/title";
@@ -11762,15 +12457,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with namespace axis
         /// NS38: ancestor::*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1247()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1247(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/NSbook:book[1]/NSbook:title";
@@ -11821,7 +12519,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -11829,8 +12527,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines ancestor with namespace axis
         /// NS39: ancestor::store/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1248()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1248(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/default:store/default:booksection/NSbook:book[1]/NSbook:title";
@@ -11842,16 +12543,19 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with self axis
-        /// ancestor::book/self::node()
+        /// ancestor::book/self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1249()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1249(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/title";
@@ -11870,15 +12574,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with descendant-or-self axis
-        /// ancestor::book/descendant-or-self::node()
+        /// ancestor::book/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1250()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1250(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[2]/title";
@@ -12003,15 +12710,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor with ancestor-or-self axis
         /// ancestor::*/ancestor-or-self::bookstore
         /// </summary>
-        [Fact]
-        public static void AxesTest1251()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1251(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]/author/last-name";
@@ -12030,14 +12740,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// following-sibling::node()
+        /// following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1252()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1252(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr1";
@@ -12045,14 +12758,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// attr node on following axis
         /// </summary>
-        [Fact]
-        public static void AxesTest1253()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1253(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr1";
@@ -12100,14 +12816,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// attr node on following axis
         /// </summary>
-        [Fact]
-        public static void AxesTest1254()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1254(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr1";
@@ -12115,14 +12834,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// attr node on following axis
         /// </summary>
-        [Fact]
-        public static void AxesTest1255()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1255(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
             var startingNodePath = "/Doc/Chap/Title/@Attr1";
@@ -12132,14 +12854,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// //*[last()]/preceding::processing-instruction()
+        /// //*[last()]/preceding::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1256()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1256(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/preceding::processing-instruction()";
@@ -12162,14 +12887,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[last()]/preceding-sibling::processing-instruction()
+        /// //*[last()]/preceding-sibling::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1257()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1257(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/preceding-sibling::processing-instruction()";
@@ -12192,14 +12920,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[1]/following::processing-instruction()
+        /// //*[1]/following::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1258()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1258(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[1]/following::processing-instruction()";
@@ -12222,14 +12953,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[1]/descendant-or-self::processing-instruction()
+        /// //*[1]/descendant-or-self::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1259()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1259(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[1]/descendant-or-self::processing-instruction()";
@@ -12252,28 +12986,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[last()]/parent::processing-instruction()
+        /// //*[last()]/parent::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1260()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1260(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/parent::processing-instruction()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[1]/following::processing-instruction()
+        /// //*[1]/following::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1261()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1261(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[1]/following::processing-instruction()";
@@ -12296,14 +13036,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[1]/following-sibling::processing-instruction()
+        /// //*[1]/following-sibling::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1262()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1262(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[1]/following-sibling::processing-instruction()";
@@ -12318,14 +13061,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[last()]/child::processing-instruction()
+        /// //*[last()]/child::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1263()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1263(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/child::processing-instruction()";
@@ -12340,43 +13086,52 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[last()]/ancestor::processing-instruction()
+        /// //*[last()]/ancestor::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1264()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1264(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/ancestor::processing-instruction()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //*[last()]/ancestor-or-self::processing-instruction()
+        /// //*[last()]/ancestor-or-self::processing-instruction(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1265()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1265(Utils.NavigatorKind kind)
         {
             var xml = "books_2.xml";
             var testExpression = @"//*[last()]/ancestor-or-self::processing-instruction()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Test to verify that namespace nodes are before attribute nodes in document order
         /// NS40: namespace::* | attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1266()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1266(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/def:store/def:booksection/bk:book";
@@ -12426,7 +13181,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -12434,8 +13189,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Adhoc
         /// //NSbook:* | //NSmovie
         /// </summary>
-        [Fact]
-        public static void AxesTest1267()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1267(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:* | //NSmovie:*";
@@ -12515,14 +13273,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// //NSbook:*
         /// </summary>
-        [Fact]
-        public static void AxesTest1268()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1268(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:*";
@@ -12578,14 +13339,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// /bookstore/NSbook:*/NSbook:*
         /// </summary>
-        [Fact]
-        public static void AxesTest1269()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1269(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"/bookstore/NSbook:*/NSbook:*";
@@ -12596,14 +13360,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// //*//*
         /// </summary>
-        [Fact]
-        public static void AxesTest1270()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1270(Utils.NavigatorKind kind)
         {
             var xml = "test1.xml";
             var testExpression = @"//*//*";
@@ -12626,15 +13393,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// //*//*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void AxesTest1271()
+        public static void AxesTest1271(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//*//*";
@@ -13726,15 +14496,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //node()//node()
+        /// //node()//node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void AxesTest1272()
+        public static void AxesTest1272(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//node()//node()";
@@ -15168,14 +15941,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// /*//node()
+        /// /*//node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1273()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1273(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"/*//node()";
@@ -16609,15 +17385,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 72400
         /// NSXX: namespace::* | attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1274()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1274(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/def:store/def:booksection/def:book";
@@ -16667,7 +17446,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -16675,8 +17454,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 72400
         /// NSXX: namespace::xml | attribute::inventory
         /// </summary>
-        [Fact]
-        public static void AxesTest1275()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1275(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/def:store/def:booksection/def:book";
@@ -16704,7 +17486,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -16712,8 +17494,11 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Regression case for 72400
         /// NSXX: namespace::* | attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesTest1276()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1276(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem";
@@ -16737,14 +17522,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// variations/node()
+        /// variations/node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1277()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1277(Utils.NavigatorKind kind)
         {
             var xml = "test63733.xml";
             var testExpression = @"variations/node()";
@@ -16762,14 +17550,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.SignificantWhitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //node()
+        /// //node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1278()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1278(Utils.NavigatorKind kind)
         {
             var xml = "space.xml";
             var testExpression = @"//node()";
@@ -16912,14 +17703,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// //text()
+        /// //text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesTest1279()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void AxesTest1279(Utils.NavigatorKind kind)
         {
             var xml = "space.xml";
             var testExpression = @"//text()";
@@ -16961,7 +17755,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
     }
 }

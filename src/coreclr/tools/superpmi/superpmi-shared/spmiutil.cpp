@@ -233,7 +233,7 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 #endif // !TARGET_UNIX
 
     WCHAR randomString[randomStringLength + 1];
-    swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
+    FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
     wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
 
     // Append extension
@@ -251,6 +251,8 @@ static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTUR
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
 static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+static SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unsupported architecture
 #endif
@@ -332,4 +334,93 @@ void PutThumb2BlRel24(UINT16* p, INT32 imm24)
 
     p[0] = Opcode0;
     p[1] = Opcode1;
+}
+
+// GetArm64MovConstant / GetArm64MovkConstant: Decode arm64 mov / movk instructions, e.g.:
+//    d29ff600 mov     x0, #65456
+//    f2ab8640 movk    x0, #23602, lsl #16
+//    f2c04bc0 movk    x0, #606, lsl #32
+//
+// This is used in the NearDiffer to determine if a sequence of mov/movk is actually an address.
+//
+// Return `true` if the instruction pointed to by `p` is a mov/movk, `false` otherwise.
+// If true, fill out the target register in `*pReg`, constant in `*pCon`, and (for movk) shift value in `*pShift`.
+
+bool GetArm64MovConstant(UINT32* p, unsigned* pReg, unsigned* pCon)
+{
+    UINT32 instr = *p;
+    if ((instr & 0xffe00000) == 0xd2800000)
+    {
+        *pReg = instr & 0x1f;
+        *pCon = (instr >> 5) & 0xffff;
+        return true;
+    }
+
+    return false;
+}
+
+bool GetArm64MovkConstant(UINT32* p, unsigned* pReg, unsigned* pCon, unsigned* pShift)
+{
+    UINT32 instr = *p;
+    if ((instr & 0xff800000) == 0xf2800000)
+    {
+        *pReg = instr & 0x1f;
+        *pCon = (instr >> 5) & 0xffff;
+        *pShift = ((instr >> 21) & 0x3) * 16;
+        return true;
+    }
+
+    return false;
+}
+
+// PutArm64MovkConstant: set the constant field in an Arm64 `movk` instruction
+void PutArm64MovkConstant(UINT32* p, unsigned con)
+{
+    *p = (*p & ~(0xffff << 5)) | ((con & 0xffff) << 5);
+}
+
+template<typename TPrint>
+static std::string getFromPrinter(TPrint print)
+{
+    char buffer[256];
+
+    size_t requiredBufferSize;
+    print(buffer, sizeof(buffer), &requiredBufferSize);
+
+    if (requiredBufferSize <= sizeof(buffer))
+    {
+        return std::string(buffer);
+    }
+    else
+    {
+        std::vector<char> vec(requiredBufferSize);
+        size_t printed = print(vec.data(), requiredBufferSize, nullptr);
+        assert(printed == requiredBufferSize - 1);
+        return std::string(vec.data());
+    }
+}
+
+std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintMethodName(methHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
+{
+    return getFromPrinter([&](char* buffer, size_t bufferSize, size_t* requiredBufferSize) {
+        return mc->repPrintClassName(clsHnd, buffer, bufferSize, requiredBufferSize);
+        });
+}
+
+std::string ConvertToUtf8(const WCHAR* str)
+{
+    unsigned len = WszWideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    if (len == 0)
+        return{};
+
+    std::vector<char> buf(len + 1);
+    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    return std::string{ buf.data() };
 }

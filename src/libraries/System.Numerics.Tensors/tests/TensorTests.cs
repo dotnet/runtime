@@ -286,7 +286,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, tensor.Dimensions[2]);
         }
 
-        [Theory()]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [MemberData(nameof(GetSingleTensorConstructors))]
         public void ConstructTensorFromArrayRank3WithLowerBounds(TensorConstructor tensorConstructor)
         {

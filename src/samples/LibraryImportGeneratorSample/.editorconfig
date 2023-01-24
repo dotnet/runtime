@@ -1,4 +1,4 @@
 ﻿[*.cs]
 
-# DLLIMPORTGENANALYZER015: Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-dotnet_diagnostic.DLLIMPORTGENANALYZER015.severity = default
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+dotnet_diagnostic.SYSLIB1054.severity = default

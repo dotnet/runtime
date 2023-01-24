@@ -5,11 +5,10 @@ using System.Diagnostics;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.XPath
 {
-    using T = XmlQueryTypeFactory;
-
     internal class XPathQilFactory : QilPatternFactory
     {
         public XPathQilFactory(QilFactory f, bool debug) : base(f, debug)
@@ -35,7 +34,7 @@ namespace System.Xml.Xsl.XPath
             return For(Filter(i, Eq(PositionOf(i), Int32(1))));
         }
 
-        public bool IsAnyType(QilNode n)
+        public static bool IsAnyType(QilNode n)
         {
             XmlQueryType? xt = n.XmlType;
             bool result = !(xt!.IsStrict || xt.IsNode);
@@ -44,49 +43,49 @@ namespace System.Xml.Xsl.XPath
         }
 
         [Conditional("DEBUG")]
-        public void CheckNode(QilNode n)
+        public static void CheckNode(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");
         }
 
         [Conditional("DEBUG")]
-        public void CheckNodeSet(QilNode n)
+        public static void CheckNodeSet(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsNode, "Must be a node-set");
         }
 
         [Conditional("DEBUG")]
-        public void CheckNodeNotRtf(QilNode n)
+        public static void CheckNodeNotRtf(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode && n.XmlType.IsNotRtf, "Must be a singleton node and not an Rtf");
         }
 
         [Conditional("DEBUG")]
-        public void CheckString(QilNode n)
+        public static void CheckString(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringX), "Must be a singleton string");
         }
 
         [Conditional("DEBUG")]
-        public void CheckStringS(QilNode n)
+        public static void CheckStringS(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringXS), "Must be a sequence of strings");
         }
 
         [Conditional("DEBUG")]
-        public void CheckDouble(QilNode n)
+        public static void CheckDouble(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.DoubleX), "Must be a singleton Double");
         }
 
         [Conditional("DEBUG")]
-        public void CheckBool(QilNode n)
+        public static void CheckBool(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.BooleanX), "Must be a singleton Bool");
         }
 
         // Return true if inferred type of the given expression is never a subtype of T.NodeS
-        public bool CannotBeNodeSet(QilNode n)
+        public static bool CannotBeNodeSet(QilNode n)
         {
             XmlQueryType xt = n.XmlType!;
             // Do not report compile error if n is a VarPar, whose inferred type forbids nodes (SQLBUDT 339398)
@@ -166,7 +165,7 @@ namespace System.Xml.Xsl.XPath
 
         #region Type Conversions
         [Conditional("DEBUG")]
-        private void ExpectAny(QilNode n)
+        private static void ExpectAny(QilNode n)
         {
             Debug.Assert(IsAnyType(n), $"Unexpected expression type: {n.XmlType}");
         }

@@ -28,7 +28,7 @@ internal static partial class Interop
             return true;
         }
 
-        if (resultCode == Interop.Globalization.ResultCode.InsufficentBuffer)
+        if (resultCode == Interop.Globalization.ResultCode.InsufficientBuffer)
         {
             // Increase the string size and try again
             buffer = new char[MaxHeapSize];

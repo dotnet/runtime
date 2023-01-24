@@ -35,6 +35,8 @@ IErrorInfo *COMException::GetErrorInfo()
     return pErrorInfo;
 }
 
+#ifdef FEATURE_COMINTEROP
+
 void COMException::GetMessage(SString &string)
 {
     STATIC_CONTRACT_THROWS;
@@ -48,3 +50,4 @@ void COMException::GetMessage(SString &string)
     }
 }
 
+#endif // FEATURE_COMINTEROP

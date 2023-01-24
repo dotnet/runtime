@@ -19,7 +19,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-public static class MountHelper
+public static partial class MountHelper
 {
     [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
     private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
@@ -60,7 +60,7 @@ public static class MountHelper
         // Reduce the risk we accidentally stop running these altogether
         // on Windows, due to a bug in CreateSymbolicLink
         if (!success && PlatformDetection.IsWindows)
-            Assert.True(!PlatformDetection.IsWindowsAndElevated);
+            Assert.False(PlatformDetection.IsPrivilegedProcess);
 
         return success;
     });
@@ -83,7 +83,7 @@ public static class MountHelper
 
         bool isWindows = OperatingSystem.IsWindows();
 #endif
-        Process symLinkProcess = new Process();
+        using Process symLinkProcess = new Process();
         if (isWindows)
         {
             symLinkProcess.StartInfo.FileName = "cmd";
@@ -107,7 +107,7 @@ public static class MountHelper
     /// <summary>On Windows, creates a junction using command line tools.</summary>
     public static bool CreateJunction(string junctionPath, string targetPath)
     {
-        if (!OperatingSystem.IsWindows())
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             throw new PlatformNotSupportedException();
         }
@@ -127,13 +127,13 @@ public static class MountHelper
         StringBuilder sb = new StringBuilder(1024);
         r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
 
         string uniqueName = sb.ToString();
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
         r = SetVolumeMountPoint(mountPoint, uniqueName);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
     }
 
@@ -145,7 +145,7 @@ public static class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
     }
 
     private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
@@ -157,17 +157,21 @@ public static class MountHelper
             RedirectStandardOutput = true
         };
 
+#if NETFRAMEWORK
+        info.Arguments = String.Join(" ", arguments);
+#else
         foreach (var argument in arguments)
         {
             info.ArgumentList.Add(argument);
         }
+#endif
 
         return info;
     }
 
     private static bool RunProcess(ProcessStartInfo startInfo)
     {
-        var process = Process.Start(startInfo);
+        using Process process = Process.Start(startInfo);
         process.WaitForExit();
         return process.ExitCode == 0;
     }

@@ -20,7 +20,7 @@ Our default, somewhat-arbitrary initial goal for a library is 90% code coverage.
 
 ## Issues
 
-Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [up-for-grabs](https://github.com/dotnet/runtime/labels/up-for-grabs).
+Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted).
 
 An issue need not be addressed in its entirety. We happily accept contributions that improve our tests and work towards improving code coverage numbers even if they only incrementally improve the situation.
 
@@ -38,13 +38,17 @@ You can also build and test with code coverage for a particular test project rat
 
     dotnet build /t:Test /p:Coverage=true
 
+By default, coverage is only provided for the library being tested.  However, if you want coverage data also gathered for the tests themselves, you can add `/p:CoverageIncludeTests=true`:
+
+    dotnet build /t:test /p:Coverage=true /p:CoverageIncludeTests=true
+
 The results for this one library will then be available in this index.htm file, where $(OutDir) is the directory where the binaries were generated.
 
     $(OutDir)\report\index.htm
 
 For example, to build, test, and get code coverage results for the System.Diagnostics.Debug library, from the root of the repo one can do:
 
-    dotnet build src\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
+    dotnet build src\libraries\System.Diagnostics.Debug\tests /t:Test /p:Coverage=true
 
 And then once the run completes:
 

@@ -24,586 +24,584 @@ namespace System.Globalization
 
     internal static partial class IcuLocaleData
     {
-        private static ReadOnlySpan<byte> CultureNames => new byte[]
-        {
-            (byte)'a', (byte)'a', (byte)'-', (byte)'d', (byte)'j',  // aa, aa-dj
-            (byte)'a', (byte)'a', (byte)'-', (byte)'e', (byte)'r',  // aa-er
-            (byte)'a', (byte)'a', (byte)'-', (byte)'e', (byte)'t',  // aa-et
-            (byte)'a', (byte)'f', (byte)'-', (byte)'n', (byte)'a',  // af, af-na
-            (byte)'a', (byte)'f', (byte)'-', (byte)'z', (byte)'a',  // af-za
-            (byte)'a', (byte)'g', (byte)'q', (byte)'-', (byte)'c', (byte)'m',  // agq, agq-cm
-            (byte)'a', (byte)'k', (byte)'-', (byte)'g', (byte)'h',  // ak, ak-gh
-            (byte)'a', (byte)'m', (byte)'-', (byte)'e', (byte)'t',  // am, am-et
-            (byte)'a', (byte)'r', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // ar, ar-001
-            (byte)'a', (byte)'r', (byte)'-', (byte)'a', (byte)'e',  // ar-ae
-            (byte)'a', (byte)'r', (byte)'-', (byte)'b', (byte)'h',  // ar-bh
-            (byte)'a', (byte)'r', (byte)'-', (byte)'d', (byte)'j',  // ar-dj
-            (byte)'a', (byte)'r', (byte)'-', (byte)'d', (byte)'z',  // ar-dz
-            (byte)'a', (byte)'r', (byte)'-', (byte)'e', (byte)'g',  // ar-eg
-            (byte)'a', (byte)'r', (byte)'-', (byte)'e', (byte)'r',  // ar-er
-            (byte)'a', (byte)'r', (byte)'-', (byte)'i', (byte)'l',  // ar-il
-            (byte)'a', (byte)'r', (byte)'-', (byte)'i', (byte)'q',  // ar-iq
-            (byte)'a', (byte)'r', (byte)'-', (byte)'j', (byte)'o',  // ar-jo
-            (byte)'a', (byte)'r', (byte)'-', (byte)'k', (byte)'m',  // ar-km
-            (byte)'a', (byte)'r', (byte)'-', (byte)'k', (byte)'w',  // ar-kw
-            (byte)'a', (byte)'r', (byte)'-', (byte)'l', (byte)'b',  // ar-lb
-            (byte)'a', (byte)'r', (byte)'-', (byte)'l', (byte)'y',  // ar-ly
-            (byte)'a', (byte)'r', (byte)'-', (byte)'m', (byte)'a',  // ar-ma
-            (byte)'a', (byte)'r', (byte)'-', (byte)'m', (byte)'r',  // ar-mr
-            (byte)'a', (byte)'r', (byte)'-', (byte)'o', (byte)'m',  // ar-om
-            (byte)'a', (byte)'r', (byte)'-', (byte)'p', (byte)'s',  // ar-ps
-            (byte)'a', (byte)'r', (byte)'-', (byte)'q', (byte)'a',  // ar-qa
-            (byte)'a', (byte)'r', (byte)'-', (byte)'s', (byte)'a',  // ar-sa
-            (byte)'a', (byte)'r', (byte)'-', (byte)'s', (byte)'d',  // ar-sd
-            (byte)'a', (byte)'r', (byte)'-', (byte)'s', (byte)'o',  // ar-so
-            (byte)'a', (byte)'r', (byte)'-', (byte)'s', (byte)'s',  // ar-ss
-            (byte)'a', (byte)'r', (byte)'-', (byte)'s', (byte)'y',  // ar-sy
-            (byte)'a', (byte)'r', (byte)'-', (byte)'t', (byte)'d',  // ar-td
-            (byte)'a', (byte)'r', (byte)'-', (byte)'t', (byte)'n',  // ar-tn
-            (byte)'a', (byte)'r', (byte)'-', (byte)'y', (byte)'e',  // ar-ye
-            (byte)'a', (byte)'r', (byte)'n', (byte)'-', (byte)'c', (byte)'l',  // arn, arn-cl
-            (byte)'a', (byte)'s', (byte)'-', (byte)'i', (byte)'n',  // as, as-in
-            (byte)'a', (byte)'s', (byte)'a', (byte)'-', (byte)'t', (byte)'z',  // asa, asa-tz
-            (byte)'a', (byte)'s', (byte)'t', (byte)'-', (byte)'e', (byte)'s',  // ast, ast-es
-            (byte)'a', (byte)'z', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'a', (byte)'z',  // az, az-cyrl, az-cyrl-az
-            (byte)'a', (byte)'z', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'a', (byte)'z',  // az-latn, az-latn-az
-            (byte)'b', (byte)'a', (byte)'-', (byte)'r', (byte)'u',  // ba, ba-ru
-            (byte)'b', (byte)'a', (byte)'s', (byte)'-', (byte)'c', (byte)'m',  // bas, bas-cm
-            (byte)'b', (byte)'e', (byte)'-', (byte)'b', (byte)'y',  // be, be-by
-            (byte)'b', (byte)'e', (byte)'m', (byte)'-', (byte)'z', (byte)'m',  // bem, bem-zm
-            (byte)'b', (byte)'e', (byte)'z', (byte)'-', (byte)'t', (byte)'z',  // bez, bez-tz
-            (byte)'b', (byte)'g', (byte)'-', (byte)'b', (byte)'g',  // bg, bg-bg
-            (byte)'b', (byte)'i', (byte)'n', (byte)'-', (byte)'n', (byte)'g',  // bin, bin-ng
-            (byte)'b', (byte)'m', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'m', (byte)'l',  // bm, bm-latn, bm-latn-ml
-            (byte)'b', (byte)'n', (byte)'-', (byte)'b', (byte)'d',  // bn, bn-bd
-            (byte)'b', (byte)'n', (byte)'-', (byte)'i', (byte)'n',  // bn-in
-            (byte)'b', (byte)'o', (byte)'-', (byte)'c', (byte)'n',  // bo, bo-cn
-            (byte)'b', (byte)'o', (byte)'-', (byte)'i', (byte)'n',  // bo-in
-            (byte)'b', (byte)'r', (byte)'-', (byte)'f', (byte)'r',  // br, br-fr
-            (byte)'b', (byte)'r', (byte)'x', (byte)'-', (byte)'i', (byte)'n',  // brx, brx-in
-            (byte)'b', (byte)'s', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'b', (byte)'a',  // bs, bs-cyrl, bs-cyrl-ba
-            (byte)'b', (byte)'s', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'b', (byte)'a',  // bs-latn, bs-latn-ba
-            (byte)'b', (byte)'y', (byte)'n', (byte)'-', (byte)'e', (byte)'r',  // byn, byn-er
-            (byte)'c', (byte)'a', (byte)'-', (byte)'a', (byte)'d',  // ca, ca-ad
-            (byte)'c', (byte)'a', (byte)'-', (byte)'e', (byte)'s', (byte)'-', (byte)'v', (byte)'a', (byte)'l', (byte)'e', (byte)'n', (byte)'c', (byte)'i', (byte)'a',  // ca-es, ca-es-valencia
-            (byte)'c', (byte)'a', (byte)'-', (byte)'f', (byte)'r',  // ca-fr
-            (byte)'c', (byte)'a', (byte)'-', (byte)'i', (byte)'t',  // ca-it
-            (byte)'c', (byte)'e', (byte)'-', (byte)'r', (byte)'u',  // ce, ce-ru
-            (byte)'c', (byte)'g', (byte)'g', (byte)'-', (byte)'u', (byte)'g',  // cgg, cgg-ug
-            (byte)'c', (byte)'h', (byte)'r', (byte)'-', (byte)'c', (byte)'h', (byte)'e', (byte)'r', (byte)'-', (byte)'u', (byte)'s',  // chr, chr-cher, chr-cher-us
-            (byte)'c', (byte)'o', (byte)'-', (byte)'f', (byte)'r',  // co, co-fr
-            (byte)'c', (byte)'s', (byte)'-', (byte)'c', (byte)'z',  // cs, cs-cz
-            (byte)'c', (byte)'u', (byte)'-', (byte)'r', (byte)'u',  // cu, cu-ru
-            (byte)'c', (byte)'y', (byte)'-', (byte)'g', (byte)'b',  // cy, cy-gb
-            (byte)'d', (byte)'a', (byte)'-', (byte)'d', (byte)'k',  // da, da-dk
-            (byte)'d', (byte)'a', (byte)'-', (byte)'g', (byte)'l',  // da-gl
-            (byte)'d', (byte)'a', (byte)'v', (byte)'-', (byte)'k', (byte)'e',  // dav, dav-ke
-            (byte)'d', (byte)'e', (byte)'-', (byte)'a', (byte)'t',  // de, de-at
-            (byte)'d', (byte)'e', (byte)'-', (byte)'b', (byte)'e',  // de-be
-            (byte)'d', (byte)'e', (byte)'-', (byte)'c', (byte)'h',  // de-ch
-            (byte)'d', (byte)'e', (byte)'-', (byte)'d', (byte)'e', (byte)'_', (byte)'p', (byte)'h', (byte)'o', (byte)'n', (byte)'e', (byte)'b',  // de-de, de-de_phoneb
-            (byte)'d', (byte)'e', (byte)'-', (byte)'i', (byte)'t',  // de-it
-            (byte)'d', (byte)'e', (byte)'-', (byte)'l', (byte)'i',  // de-li
-            (byte)'d', (byte)'e', (byte)'-', (byte)'l', (byte)'u',  // de-lu
-            (byte)'d', (byte)'j', (byte)'e', (byte)'-', (byte)'n', (byte)'e',  // dje, dje-ne
-            (byte)'d', (byte)'s', (byte)'b', (byte)'-', (byte)'d', (byte)'e',  // dsb, dsb-de
-            (byte)'d', (byte)'u', (byte)'a', (byte)'-', (byte)'c', (byte)'m',  // dua, dua-cm
-            (byte)'d', (byte)'v', (byte)'-', (byte)'m', (byte)'v',  // dv, dv-mv
-            (byte)'d', (byte)'y', (byte)'o', (byte)'-', (byte)'s', (byte)'n',  // dyo, dyo-sn
-            (byte)'d', (byte)'z', (byte)'-', (byte)'b', (byte)'t',  // dz, dz-bt
-            (byte)'e', (byte)'b', (byte)'u', (byte)'-', (byte)'k', (byte)'e',  // ebu, ebu-ke
-            (byte)'e', (byte)'e', (byte)'-', (byte)'g', (byte)'h',  // ee, ee-gh
-            (byte)'e', (byte)'e', (byte)'-', (byte)'t', (byte)'g',  // ee-tg
-            (byte)'e', (byte)'l', (byte)'-', (byte)'c', (byte)'y',  // el, el-cy
-            (byte)'e', (byte)'l', (byte)'-', (byte)'g', (byte)'r',  // el-gr
-            (byte)'e', (byte)'n', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // en, en-001
-            (byte)'e', (byte)'n', (byte)'-', (byte)'0', (byte)'2', (byte)'9',  // en-029
-            (byte)'e', (byte)'n', (byte)'-', (byte)'1', (byte)'5', (byte)'0',  // en-150
-            (byte)'e', (byte)'n', (byte)'-', (byte)'a', (byte)'g',  // en-ag
-            (byte)'e', (byte)'n', (byte)'-', (byte)'a', (byte)'i',  // en-ai
-            (byte)'e', (byte)'n', (byte)'-', (byte)'a', (byte)'s',  // en-as
-            (byte)'e', (byte)'n', (byte)'-', (byte)'a', (byte)'t',  // en-at
-            (byte)'e', (byte)'n', (byte)'-', (byte)'a', (byte)'u',  // en-au
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'b',  // en-bb
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'e',  // en-be
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'i',  // en-bi
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'m',  // en-bm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'s',  // en-bs
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'w',  // en-bw
-            (byte)'e', (byte)'n', (byte)'-', (byte)'b', (byte)'z',  // en-bz
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'a',  // en-ca
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'c',  // en-cc
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'h',  // en-ch
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'k',  // en-ck
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'m',  // en-cm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'x',  // en-cx
-            (byte)'e', (byte)'n', (byte)'-', (byte)'c', (byte)'y',  // en-cy
-            (byte)'e', (byte)'n', (byte)'-', (byte)'d', (byte)'e',  // en-de
-            (byte)'e', (byte)'n', (byte)'-', (byte)'d', (byte)'k',  // en-dk
-            (byte)'e', (byte)'n', (byte)'-', (byte)'d', (byte)'m',  // en-dm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'e', (byte)'r',  // en-er
-            (byte)'e', (byte)'n', (byte)'-', (byte)'f', (byte)'i',  // en-fi
-            (byte)'e', (byte)'n', (byte)'-', (byte)'f', (byte)'j',  // en-fj
-            (byte)'e', (byte)'n', (byte)'-', (byte)'f', (byte)'k',  // en-fk
-            (byte)'e', (byte)'n', (byte)'-', (byte)'f', (byte)'m',  // en-fm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'b',  // en-gb
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'d',  // en-gd
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'g',  // en-gg
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'h',  // en-gh
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'i',  // en-gi
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'m',  // en-gm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'u',  // en-gu
-            (byte)'e', (byte)'n', (byte)'-', (byte)'g', (byte)'y',  // en-gy
-            (byte)'e', (byte)'n', (byte)'-', (byte)'h', (byte)'k',  // en-hk
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'d',  // en-id
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'e',  // en-ie
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'l',  // en-il
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'m',  // en-im
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'n',  // en-in
-            (byte)'e', (byte)'n', (byte)'-', (byte)'i', (byte)'o',  // en-io
-            (byte)'e', (byte)'n', (byte)'-', (byte)'j', (byte)'e',  // en-je
-            (byte)'e', (byte)'n', (byte)'-', (byte)'j', (byte)'m',  // en-jm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'k', (byte)'e',  // en-ke
-            (byte)'e', (byte)'n', (byte)'-', (byte)'k', (byte)'i',  // en-ki
-            (byte)'e', (byte)'n', (byte)'-', (byte)'k', (byte)'n',  // en-kn
-            (byte)'e', (byte)'n', (byte)'-', (byte)'k', (byte)'y',  // en-ky
-            (byte)'e', (byte)'n', (byte)'-', (byte)'l', (byte)'c',  // en-lc
-            (byte)'e', (byte)'n', (byte)'-', (byte)'l', (byte)'r',  // en-lr
-            (byte)'e', (byte)'n', (byte)'-', (byte)'l', (byte)'s',  // en-ls
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'g',  // en-mg
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'h',  // en-mh
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'o',  // en-mo
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'p',  // en-mp
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'s',  // en-ms
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'t',  // en-mt
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'u',  // en-mu
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'w',  // en-mw
-            (byte)'e', (byte)'n', (byte)'-', (byte)'m', (byte)'y',  // en-my
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'a',  // en-na
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'f',  // en-nf
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'g',  // en-ng
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'l',  // en-nl
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'r',  // en-nr
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'u',  // en-nu
-            (byte)'e', (byte)'n', (byte)'-', (byte)'n', (byte)'z',  // en-nz
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'g',  // en-pg
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'h',  // en-ph
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'k',  // en-pk
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'n',  // en-pn
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'r',  // en-pr
-            (byte)'e', (byte)'n', (byte)'-', (byte)'p', (byte)'w',  // en-pw
-            (byte)'e', (byte)'n', (byte)'-', (byte)'r', (byte)'w',  // en-rw
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'b',  // en-sb
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'c',  // en-sc
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'d',  // en-sd
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'e',  // en-se
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'g',  // en-sg
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'h',  // en-sh
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'i',  // en-si
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'l',  // en-sl
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'s',  // en-ss
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'x',  // en-sx
-            (byte)'e', (byte)'n', (byte)'-', (byte)'s', (byte)'z',  // en-sz
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'c',  // en-tc
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'k',  // en-tk
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'o',  // en-to
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'t',  // en-tt
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'v',  // en-tv
-            (byte)'e', (byte)'n', (byte)'-', (byte)'t', (byte)'z',  // en-tz
-            (byte)'e', (byte)'n', (byte)'-', (byte)'u', (byte)'g',  // en-ug
-            (byte)'e', (byte)'n', (byte)'-', (byte)'u', (byte)'m',  // en-um
-            (byte)'e', (byte)'n', (byte)'-', (byte)'u', (byte)'s',  // en-us
-            (byte)'e', (byte)'n', (byte)'-', (byte)'v', (byte)'c',  // en-vc
-            (byte)'e', (byte)'n', (byte)'-', (byte)'v', (byte)'g',  // en-vg
-            (byte)'e', (byte)'n', (byte)'-', (byte)'v', (byte)'i',  // en-vi
-            (byte)'e', (byte)'n', (byte)'-', (byte)'v', (byte)'u',  // en-vu
-            (byte)'e', (byte)'n', (byte)'-', (byte)'w', (byte)'s',  // en-ws
-            (byte)'e', (byte)'n', (byte)'-', (byte)'z', (byte)'a',  // en-za
-            (byte)'e', (byte)'n', (byte)'-', (byte)'z', (byte)'m',  // en-zm
-            (byte)'e', (byte)'n', (byte)'-', (byte)'z', (byte)'w',  // en-zw
-            (byte)'e', (byte)'o', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // eo, eo-001
-            (byte)'e', (byte)'s', (byte)'-', (byte)'4', (byte)'1', (byte)'9',  // es, es-419
-            (byte)'e', (byte)'s', (byte)'-', (byte)'a', (byte)'r',  // es-ar
-            (byte)'e', (byte)'s', (byte)'-', (byte)'b', (byte)'o',  // es-bo
-            (byte)'e', (byte)'s', (byte)'-', (byte)'b', (byte)'r',  // es-br
-            (byte)'e', (byte)'s', (byte)'-', (byte)'c', (byte)'l',  // es-cl
-            (byte)'e', (byte)'s', (byte)'-', (byte)'c', (byte)'o',  // es-co
-            (byte)'e', (byte)'s', (byte)'-', (byte)'c', (byte)'r',  // es-cr
-            (byte)'e', (byte)'s', (byte)'-', (byte)'c', (byte)'u',  // es-cu
-            (byte)'e', (byte)'s', (byte)'-', (byte)'d', (byte)'o',  // es-do
-            (byte)'e', (byte)'s', (byte)'-', (byte)'e', (byte)'c',  // es-ec
-            (byte)'e', (byte)'s', (byte)'-', (byte)'e', (byte)'s', (byte)'_', (byte)'t', (byte)'r', (byte)'a', (byte)'d', (byte)'n', (byte)'l',  // es-es, es-es_tradnl
-            (byte)'e', (byte)'s', (byte)'-', (byte)'g', (byte)'q',  // es-gq
-            (byte)'e', (byte)'s', (byte)'-', (byte)'g', (byte)'t',  // es-gt
-            (byte)'e', (byte)'s', (byte)'-', (byte)'h', (byte)'n',  // es-hn
-            (byte)'e', (byte)'s', (byte)'-', (byte)'m', (byte)'x',  // es-mx
-            (byte)'e', (byte)'s', (byte)'-', (byte)'n', (byte)'i',  // es-ni
-            (byte)'e', (byte)'s', (byte)'-', (byte)'p', (byte)'a',  // es-pa
-            (byte)'e', (byte)'s', (byte)'-', (byte)'p', (byte)'e',  // es-pe
-            (byte)'e', (byte)'s', (byte)'-', (byte)'p', (byte)'h',  // es-ph
-            (byte)'e', (byte)'s', (byte)'-', (byte)'p', (byte)'r',  // es-pr
-            (byte)'e', (byte)'s', (byte)'-', (byte)'p', (byte)'y',  // es-py
-            (byte)'e', (byte)'s', (byte)'-', (byte)'s', (byte)'v',  // es-sv
-            (byte)'e', (byte)'s', (byte)'-', (byte)'u', (byte)'s',  // es-us
-            (byte)'e', (byte)'s', (byte)'-', (byte)'u', (byte)'y',  // es-uy
-            (byte)'e', (byte)'s', (byte)'-', (byte)'v', (byte)'e',  // es-ve
-            (byte)'e', (byte)'t', (byte)'-', (byte)'e', (byte)'e',  // et, et-ee
-            (byte)'e', (byte)'u', (byte)'-', (byte)'e', (byte)'s',  // eu, eu-es
-            (byte)'e', (byte)'w', (byte)'o', (byte)'-', (byte)'c', (byte)'m',  // ewo, ewo-cm
-            (byte)'f', (byte)'a', (byte)'-', (byte)'i', (byte)'r',  // fa, fa-ir
-            (byte)'f', (byte)'f', (byte)'-', (byte)'c', (byte)'m',  // ff, ff-cm
-            (byte)'f', (byte)'f', (byte)'-', (byte)'g', (byte)'n',  // ff-gn
-            (byte)'f', (byte)'f', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'s', (byte)'n',  // ff-latn, ff-latn-sn
-            (byte)'f', (byte)'f', (byte)'-', (byte)'m', (byte)'r',  // ff-mr
-            (byte)'f', (byte)'f', (byte)'-', (byte)'n', (byte)'g',  // ff-ng
-            (byte)'f', (byte)'i', (byte)'-', (byte)'f', (byte)'i',  // fi, fi-fi
-            (byte)'f', (byte)'i', (byte)'l', (byte)'-', (byte)'p', (byte)'h',  // fil, fil-ph
-            (byte)'f', (byte)'o', (byte)'-', (byte)'d', (byte)'k',  // fo, fo-dk
-            (byte)'f', (byte)'o', (byte)'-', (byte)'f', (byte)'o',  // fo-fo
-            (byte)'f', (byte)'r', (byte)'-', (byte)'0', (byte)'2', (byte)'9',  // fr, fr-029
-            (byte)'f', (byte)'r', (byte)'-', (byte)'b', (byte)'e',  // fr-be
-            (byte)'f', (byte)'r', (byte)'-', (byte)'b', (byte)'f',  // fr-bf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'b', (byte)'i',  // fr-bi
-            (byte)'f', (byte)'r', (byte)'-', (byte)'b', (byte)'j',  // fr-bj
-            (byte)'f', (byte)'r', (byte)'-', (byte)'b', (byte)'l',  // fr-bl
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'a',  // fr-ca
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'d',  // fr-cd
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'f',  // fr-cf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'g',  // fr-cg
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'h',  // fr-ch
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'i',  // fr-ci
-            (byte)'f', (byte)'r', (byte)'-', (byte)'c', (byte)'m',  // fr-cm
-            (byte)'f', (byte)'r', (byte)'-', (byte)'d', (byte)'j',  // fr-dj
-            (byte)'f', (byte)'r', (byte)'-', (byte)'d', (byte)'z',  // fr-dz
-            (byte)'f', (byte)'r', (byte)'-', (byte)'f', (byte)'r',  // fr-fr
-            (byte)'f', (byte)'r', (byte)'-', (byte)'g', (byte)'a',  // fr-ga
-            (byte)'f', (byte)'r', (byte)'-', (byte)'g', (byte)'f',  // fr-gf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'g', (byte)'n',  // fr-gn
-            (byte)'f', (byte)'r', (byte)'-', (byte)'g', (byte)'p',  // fr-gp
-            (byte)'f', (byte)'r', (byte)'-', (byte)'g', (byte)'q',  // fr-gq
-            (byte)'f', (byte)'r', (byte)'-', (byte)'h', (byte)'t',  // fr-ht
-            (byte)'f', (byte)'r', (byte)'-', (byte)'k', (byte)'m',  // fr-km
-            (byte)'f', (byte)'r', (byte)'-', (byte)'l', (byte)'u',  // fr-lu
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'a',  // fr-ma
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'c',  // fr-mc
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'f',  // fr-mf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'g',  // fr-mg
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'l',  // fr-ml
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'q',  // fr-mq
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'r',  // fr-mr
-            (byte)'f', (byte)'r', (byte)'-', (byte)'m', (byte)'u',  // fr-mu
-            (byte)'f', (byte)'r', (byte)'-', (byte)'n', (byte)'c',  // fr-nc
-            (byte)'f', (byte)'r', (byte)'-', (byte)'n', (byte)'e',  // fr-ne
-            (byte)'f', (byte)'r', (byte)'-', (byte)'p', (byte)'f',  // fr-pf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'p', (byte)'m',  // fr-pm
-            (byte)'f', (byte)'r', (byte)'-', (byte)'r', (byte)'e',  // fr-re
-            (byte)'f', (byte)'r', (byte)'-', (byte)'r', (byte)'w',  // fr-rw
-            (byte)'f', (byte)'r', (byte)'-', (byte)'s', (byte)'c',  // fr-sc
-            (byte)'f', (byte)'r', (byte)'-', (byte)'s', (byte)'n',  // fr-sn
-            (byte)'f', (byte)'r', (byte)'-', (byte)'s', (byte)'y',  // fr-sy
-            (byte)'f', (byte)'r', (byte)'-', (byte)'t', (byte)'d',  // fr-td
-            (byte)'f', (byte)'r', (byte)'-', (byte)'t', (byte)'g',  // fr-tg
-            (byte)'f', (byte)'r', (byte)'-', (byte)'t', (byte)'n',  // fr-tn
-            (byte)'f', (byte)'r', (byte)'-', (byte)'v', (byte)'u',  // fr-vu
-            (byte)'f', (byte)'r', (byte)'-', (byte)'w', (byte)'f',  // fr-wf
-            (byte)'f', (byte)'r', (byte)'-', (byte)'y', (byte)'t',  // fr-yt
-            (byte)'f', (byte)'u', (byte)'r', (byte)'-', (byte)'i', (byte)'t',  // fur, fur-it
-            (byte)'f', (byte)'y', (byte)'-', (byte)'n', (byte)'l',  // fy, fy-nl
-            (byte)'g', (byte)'a', (byte)'-', (byte)'i', (byte)'e',  // ga, ga-ie
-            (byte)'g', (byte)'d', (byte)'-', (byte)'g', (byte)'b',  // gd, gd-gb
-            (byte)'g', (byte)'l', (byte)'-', (byte)'e', (byte)'s',  // gl, gl-es
-            (byte)'g', (byte)'n', (byte)'-', (byte)'p', (byte)'y',  // gn, gn-py
-            (byte)'g', (byte)'s', (byte)'w', (byte)'-', (byte)'c', (byte)'h',  // gsw, gsw-ch
-            (byte)'g', (byte)'s', (byte)'w', (byte)'-', (byte)'f', (byte)'r',  // gsw-fr
-            (byte)'g', (byte)'s', (byte)'w', (byte)'-', (byte)'l', (byte)'i',  // gsw-li
-            (byte)'g', (byte)'u', (byte)'-', (byte)'i', (byte)'n',  // gu, gu-in
-            (byte)'g', (byte)'u', (byte)'z', (byte)'-', (byte)'k', (byte)'e',  // guz, guz-ke
-            (byte)'g', (byte)'v', (byte)'-', (byte)'i', (byte)'m',  // gv, gv-im
-            (byte)'h', (byte)'a', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'g', (byte)'h',  // ha, ha-latn, ha-latn-gh
-            (byte)'h', (byte)'a', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'n', (byte)'e',  // ha-latn-ne
-            (byte)'h', (byte)'a', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'n', (byte)'g',  // ha-latn-ng
-            (byte)'h', (byte)'a', (byte)'w', (byte)'-', (byte)'u', (byte)'s',  // haw, haw-us
-            (byte)'h', (byte)'e', (byte)'-', (byte)'i', (byte)'l',  // he, he-il
-            (byte)'h', (byte)'i', (byte)'-', (byte)'i', (byte)'n',  // hi, hi-in
-            (byte)'h', (byte)'r', (byte)'-', (byte)'b', (byte)'a',  // hr, hr-ba
-            (byte)'h', (byte)'r', (byte)'-', (byte)'h', (byte)'r',  // hr-hr
-            (byte)'h', (byte)'s', (byte)'b', (byte)'-', (byte)'d', (byte)'e',  // hsb, hsb-de
-            (byte)'h', (byte)'u', (byte)'-', (byte)'h', (byte)'u', (byte)'_', (byte)'t', (byte)'e', (byte)'c', (byte)'h', (byte)'n', (byte)'l',  // hu, hu-hu, hu-hu_technl
-            (byte)'h', (byte)'y', (byte)'-', (byte)'a', (byte)'m',  // hy, hy-am
-            (byte)'i', (byte)'a', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // ia, ia-001
-            (byte)'i', (byte)'a', (byte)'-', (byte)'f', (byte)'r',  // ia-fr
-            (byte)'i', (byte)'b', (byte)'b', (byte)'-', (byte)'n', (byte)'g',  // ibb, ibb-ng
-            (byte)'i', (byte)'d', (byte)'-', (byte)'i', (byte)'d',  // id, id-id
-            (byte)'i', (byte)'g', (byte)'-', (byte)'n', (byte)'g',  // ig, ig-ng
-            (byte)'i', (byte)'i', (byte)'-', (byte)'c', (byte)'n',  // ii, ii-cn
-            (byte)'i', (byte)'s', (byte)'-', (byte)'i', (byte)'s',  // is, is-is
-            (byte)'i', (byte)'t', (byte)'-', (byte)'c', (byte)'h',  // it, it-ch
-            (byte)'i', (byte)'t', (byte)'-', (byte)'i', (byte)'t',  // it-it
-            (byte)'i', (byte)'t', (byte)'-', (byte)'s', (byte)'m',  // it-sm
-            (byte)'i', (byte)'u', (byte)'-', (byte)'c', (byte)'a', (byte)'n', (byte)'s', (byte)'-', (byte)'c', (byte)'a',  // iu, iu-cans, iu-cans-ca
-            (byte)'i', (byte)'u', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'c', (byte)'a',  // iu-latn, iu-latn-ca
-            (byte)'j', (byte)'a', (byte)'-', (byte)'j', (byte)'p', (byte)'_', (byte)'r', (byte)'a', (byte)'d', (byte)'s', (byte)'t', (byte)'r',  // ja, ja-jp, ja-jp_radstr
-            (byte)'j', (byte)'g', (byte)'o', (byte)'-', (byte)'c', (byte)'m',  // jgo, jgo-cm
-            (byte)'j', (byte)'m', (byte)'c', (byte)'-', (byte)'t', (byte)'z',  // jmc, jmc-tz
-            (byte)'j', (byte)'v', (byte)'-', (byte)'j', (byte)'a', (byte)'v', (byte)'a', (byte)'-', (byte)'i', (byte)'d',  // jv, jv-java, jv-java-id
-            (byte)'j', (byte)'v', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'i', (byte)'d',  // jv-latn, jv-latn-id
-            (byte)'k', (byte)'a', (byte)'-', (byte)'g', (byte)'e', (byte)'_', (byte)'m', (byte)'o', (byte)'d', (byte)'e', (byte)'r', (byte)'n',  // ka, ka-ge, ka-ge_modern
-            (byte)'k', (byte)'a', (byte)'b', (byte)'-', (byte)'d', (byte)'z',  // kab, kab-dz
-            (byte)'k', (byte)'a', (byte)'m', (byte)'-', (byte)'k', (byte)'e',  // kam, kam-ke
-            (byte)'k', (byte)'d', (byte)'e', (byte)'-', (byte)'t', (byte)'z',  // kde, kde-tz
-            (byte)'k', (byte)'e', (byte)'a', (byte)'-', (byte)'c', (byte)'v',  // kea, kea-cv
-            (byte)'k', (byte)'h', (byte)'q', (byte)'-', (byte)'m', (byte)'l',  // khq, khq-ml
-            (byte)'k', (byte)'i', (byte)'-', (byte)'k', (byte)'e',  // ki, ki-ke
-            (byte)'k', (byte)'k', (byte)'-', (byte)'k', (byte)'z',  // kk, kk-kz
-            (byte)'k', (byte)'k', (byte)'j', (byte)'-', (byte)'c', (byte)'m',  // kkj, kkj-cm
-            (byte)'k', (byte)'l', (byte)'-', (byte)'g', (byte)'l',  // kl, kl-gl
-            (byte)'k', (byte)'l', (byte)'n', (byte)'-', (byte)'k', (byte)'e',  // kln, kln-ke
-            (byte)'k', (byte)'m', (byte)'-', (byte)'k', (byte)'h',  // km, km-kh
-            (byte)'k', (byte)'n', (byte)'-', (byte)'i', (byte)'n',  // kn, kn-in
-            (byte)'k', (byte)'o', (byte)'-', (byte)'k', (byte)'p',  // ko, ko-kp
-            (byte)'k', (byte)'o', (byte)'-', (byte)'k', (byte)'r',  // ko-kr
-            (byte)'k', (byte)'o', (byte)'k', (byte)'-', (byte)'i', (byte)'n',  // kok, kok-in
-            (byte)'k', (byte)'r', (byte)'-', (byte)'n', (byte)'g',  // kr, kr-ng
-            (byte)'k', (byte)'s', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'i', (byte)'n',  // ks, ks-arab, ks-arab-in
-            (byte)'k', (byte)'s', (byte)'-', (byte)'d', (byte)'e', (byte)'v', (byte)'a', (byte)'-', (byte)'i', (byte)'n',  // ks-deva, ks-deva-in
-            (byte)'k', (byte)'s', (byte)'b', (byte)'-', (byte)'t', (byte)'z',  // ksb, ksb-tz
-            (byte)'k', (byte)'s', (byte)'f', (byte)'-', (byte)'c', (byte)'m',  // ksf, ksf-cm
-            (byte)'k', (byte)'s', (byte)'h', (byte)'-', (byte)'d', (byte)'e',  // ksh, ksh-de
-            (byte)'k', (byte)'u', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'i', (byte)'q',  // ku, ku-arab, ku-arab-iq
-            (byte)'k', (byte)'u', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'i', (byte)'r',  // ku-arab-ir
-            (byte)'k', (byte)'w', (byte)'-', (byte)'g', (byte)'b',  // kw, kw-gb
-            (byte)'k', (byte)'y', (byte)'-', (byte)'k', (byte)'g',  // ky, ky-kg
-            (byte)'l', (byte)'a', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // la, la-001
-            (byte)'l', (byte)'a', (byte)'g', (byte)'-', (byte)'t', (byte)'z',  // lag, lag-tz
-            (byte)'l', (byte)'b', (byte)'-', (byte)'l', (byte)'u',  // lb, lb-lu
-            (byte)'l', (byte)'g', (byte)'-', (byte)'u', (byte)'g',  // lg, lg-ug
-            (byte)'l', (byte)'k', (byte)'t', (byte)'-', (byte)'u', (byte)'s',  // lkt, lkt-us
-            (byte)'l', (byte)'n', (byte)'-', (byte)'a', (byte)'o',  // ln, ln-ao
-            (byte)'l', (byte)'n', (byte)'-', (byte)'c', (byte)'d',  // ln-cd
-            (byte)'l', (byte)'n', (byte)'-', (byte)'c', (byte)'f',  // ln-cf
-            (byte)'l', (byte)'n', (byte)'-', (byte)'c', (byte)'g',  // ln-cg
-            (byte)'l', (byte)'o', (byte)'-', (byte)'l', (byte)'a',  // lo, lo-la
-            (byte)'l', (byte)'r', (byte)'c', (byte)'-', (byte)'i', (byte)'q',  // lrc, lrc-iq
-            (byte)'l', (byte)'r', (byte)'c', (byte)'-', (byte)'i', (byte)'r',  // lrc-ir
-            (byte)'l', (byte)'t', (byte)'-', (byte)'l', (byte)'t',  // lt, lt-lt
-            (byte)'l', (byte)'u', (byte)'-', (byte)'c', (byte)'d',  // lu, lu-cd
-            (byte)'l', (byte)'u', (byte)'o', (byte)'-', (byte)'k', (byte)'e',  // luo, luo-ke
-            (byte)'l', (byte)'u', (byte)'y', (byte)'-', (byte)'k', (byte)'e',  // luy, luy-ke
-            (byte)'l', (byte)'v', (byte)'-', (byte)'l', (byte)'v',  // lv, lv-lv
-            (byte)'m', (byte)'a', (byte)'s', (byte)'-', (byte)'k', (byte)'e',  // mas, mas-ke
-            (byte)'m', (byte)'a', (byte)'s', (byte)'-', (byte)'t', (byte)'z',  // mas-tz
-            (byte)'m', (byte)'e', (byte)'r', (byte)'-', (byte)'k', (byte)'e',  // mer, mer-ke
-            (byte)'m', (byte)'f', (byte)'e', (byte)'-', (byte)'m', (byte)'u',  // mfe, mfe-mu
-            (byte)'m', (byte)'g', (byte)'-', (byte)'m', (byte)'g',  // mg, mg-mg
-            (byte)'m', (byte)'g', (byte)'h', (byte)'-', (byte)'m', (byte)'z',  // mgh, mgh-mz
-            (byte)'m', (byte)'g', (byte)'o', (byte)'-', (byte)'c', (byte)'m',  // mgo, mgo-cm
-            (byte)'m', (byte)'i', (byte)'-', (byte)'n', (byte)'z',  // mi, mi-nz
-            (byte)'m', (byte)'k', (byte)'-', (byte)'m', (byte)'k',  // mk, mk-mk
-            (byte)'m', (byte)'l', (byte)'-', (byte)'i', (byte)'n',  // ml, ml-in
-            (byte)'m', (byte)'n', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l',  // mn, mn-cyrl
-            (byte)'m', (byte)'n', (byte)'-', (byte)'m', (byte)'n',  // mn-mn
-            (byte)'m', (byte)'n', (byte)'-', (byte)'m', (byte)'o', (byte)'n', (byte)'g', (byte)'-', (byte)'c', (byte)'n',  // mn-mong, mn-mong-cn
-            (byte)'m', (byte)'n', (byte)'-', (byte)'m', (byte)'o', (byte)'n', (byte)'g', (byte)'-', (byte)'m', (byte)'n',  // mn-mong-mn
-            (byte)'m', (byte)'n', (byte)'i', (byte)'-', (byte)'i', (byte)'n',  // mni, mni-in
-            (byte)'m', (byte)'o', (byte)'h', (byte)'-', (byte)'c', (byte)'a',  // moh, moh-ca
-            (byte)'m', (byte)'r', (byte)'-', (byte)'i', (byte)'n',  // mr, mr-in
-            (byte)'m', (byte)'s', (byte)'-', (byte)'b', (byte)'n',  // ms, ms-bn
-            (byte)'m', (byte)'s', (byte)'-', (byte)'m', (byte)'y',  // ms-my
-            (byte)'m', (byte)'s', (byte)'-', (byte)'s', (byte)'g',  // ms-sg
-            (byte)'m', (byte)'t', (byte)'-', (byte)'m', (byte)'t',  // mt, mt-mt
-            (byte)'m', (byte)'u', (byte)'a', (byte)'-', (byte)'c', (byte)'m',  // mua, mua-cm
-            (byte)'m', (byte)'y', (byte)'-', (byte)'m', (byte)'m',  // my, my-mm
-            (byte)'m', (byte)'z', (byte)'n', (byte)'-', (byte)'i', (byte)'r',  // mzn, mzn-ir
-            (byte)'n', (byte)'a', (byte)'q', (byte)'-', (byte)'n', (byte)'a',  // naq, naq-na
-            (byte)'n', (byte)'b', (byte)'-', (byte)'n', (byte)'o',  // nb, nb-no
-            (byte)'n', (byte)'b', (byte)'-', (byte)'s', (byte)'j',  // nb-sj
-            (byte)'n', (byte)'d', (byte)'-', (byte)'z', (byte)'w',  // nd, nd-zw
-            (byte)'n', (byte)'d', (byte)'s', (byte)'-', (byte)'d', (byte)'e',  // nds, nds-de
-            (byte)'n', (byte)'d', (byte)'s', (byte)'-', (byte)'n', (byte)'l',  // nds-nl
-            (byte)'n', (byte)'e', (byte)'-', (byte)'i', (byte)'n',  // ne, ne-in
-            (byte)'n', (byte)'e', (byte)'-', (byte)'n', (byte)'p',  // ne-np
-            (byte)'n', (byte)'l', (byte)'-', (byte)'a', (byte)'w',  // nl, nl-aw
-            (byte)'n', (byte)'l', (byte)'-', (byte)'b', (byte)'e',  // nl-be
-            (byte)'n', (byte)'l', (byte)'-', (byte)'b', (byte)'q',  // nl-bq
-            (byte)'n', (byte)'l', (byte)'-', (byte)'c', (byte)'w',  // nl-cw
-            (byte)'n', (byte)'l', (byte)'-', (byte)'n', (byte)'l',  // nl-nl
-            (byte)'n', (byte)'l', (byte)'-', (byte)'s', (byte)'r',  // nl-sr
-            (byte)'n', (byte)'l', (byte)'-', (byte)'s', (byte)'x',  // nl-sx
-            (byte)'n', (byte)'m', (byte)'g', (byte)'-', (byte)'c', (byte)'m',  // nmg, nmg-cm
-            (byte)'n', (byte)'n', (byte)'-', (byte)'n', (byte)'o',  // nn, nn-no
-            (byte)'n', (byte)'n', (byte)'h', (byte)'-', (byte)'c', (byte)'m',  // nnh, nnh-cm
-            (byte)'n', (byte)'o',  // no
-            (byte)'n', (byte)'q', (byte)'o', (byte)'-', (byte)'g', (byte)'n',  // nqo, nqo-gn
-            (byte)'n', (byte)'r', (byte)'-', (byte)'z', (byte)'a',  // nr, nr-za
-            (byte)'n', (byte)'s', (byte)'o', (byte)'-', (byte)'z', (byte)'a',  // nso, nso-za
-            (byte)'n', (byte)'u', (byte)'s', (byte)'-', (byte)'s', (byte)'s',  // nus, nus-ss
-            (byte)'n', (byte)'y', (byte)'n', (byte)'-', (byte)'u', (byte)'g',  // nyn, nyn-ug
-            (byte)'o', (byte)'c', (byte)'-', (byte)'f', (byte)'r',  // oc, oc-fr
-            (byte)'o', (byte)'m', (byte)'-', (byte)'e', (byte)'t',  // om, om-et
-            (byte)'o', (byte)'m', (byte)'-', (byte)'k', (byte)'e',  // om-ke
-            (byte)'o', (byte)'r', (byte)'-', (byte)'i', (byte)'n',  // or, or-in
-            (byte)'o', (byte)'s', (byte)'-', (byte)'g', (byte)'e',  // os, os-ge
-            (byte)'o', (byte)'s', (byte)'-', (byte)'r', (byte)'u',  // os-ru
-            (byte)'p', (byte)'a', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'p', (byte)'k',  // pa, pa-arab, pa-arab-pk
-            (byte)'p', (byte)'a', (byte)'-', (byte)'i', (byte)'n',  // pa-in
-            (byte)'p', (byte)'a', (byte)'p', (byte)'-', (byte)'0', (byte)'2', (byte)'9',  // pap, pap-029
-            (byte)'p', (byte)'l', (byte)'-', (byte)'p', (byte)'l',  // pl, pl-pl
-            (byte)'p', (byte)'r', (byte)'g', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // prg, prg-001
-            (byte)'p', (byte)'r', (byte)'s', (byte)'-', (byte)'a', (byte)'f',  // prs, prs-af
-            (byte)'p', (byte)'s', (byte)'-', (byte)'a', (byte)'f',  // ps, ps-af
-            (byte)'p', (byte)'t', (byte)'-', (byte)'a', (byte)'o',  // pt, pt-ao
-            (byte)'p', (byte)'t', (byte)'-', (byte)'b', (byte)'r',  // pt-br
-            (byte)'p', (byte)'t', (byte)'-', (byte)'c', (byte)'h',  // pt-ch
-            (byte)'p', (byte)'t', (byte)'-', (byte)'c', (byte)'v',  // pt-cv
-            (byte)'p', (byte)'t', (byte)'-', (byte)'g', (byte)'q',  // pt-gq
-            (byte)'p', (byte)'t', (byte)'-', (byte)'g', (byte)'w',  // pt-gw
-            (byte)'p', (byte)'t', (byte)'-', (byte)'l', (byte)'u',  // pt-lu
-            (byte)'p', (byte)'t', (byte)'-', (byte)'m', (byte)'o',  // pt-mo
-            (byte)'p', (byte)'t', (byte)'-', (byte)'m', (byte)'z',  // pt-mz
-            (byte)'p', (byte)'t', (byte)'-', (byte)'p', (byte)'t',  // pt-pt
-            (byte)'p', (byte)'t', (byte)'-', (byte)'s', (byte)'t',  // pt-st
-            (byte)'p', (byte)'t', (byte)'-', (byte)'t', (byte)'l',  // pt-tl
-            (byte)'q', (byte)'p', (byte)'s', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'x', (byte)'-', (byte)'s', (byte)'h',  // qps-latn-x-sh
-            (byte)'q', (byte)'p', (byte)'s', (byte)'-', (byte)'p', (byte)'l', (byte)'o', (byte)'c', (byte)'a',  // qps-ploc, qps-ploca
-            (byte)'q', (byte)'p', (byte)'s', (byte)'-', (byte)'p', (byte)'l', (byte)'o', (byte)'c', (byte)'m',  // qps-plocm
-            (byte)'q', (byte)'u', (byte)'c', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'g', (byte)'t',  // quc, quc-latn, quc-latn-gt
-            (byte)'q', (byte)'u', (byte)'z', (byte)'-', (byte)'b', (byte)'o',  // quz, quz-bo
-            (byte)'q', (byte)'u', (byte)'z', (byte)'-', (byte)'e', (byte)'c',  // quz-ec
-            (byte)'q', (byte)'u', (byte)'z', (byte)'-', (byte)'p', (byte)'e',  // quz-pe
-            (byte)'r', (byte)'m', (byte)'-', (byte)'c', (byte)'h',  // rm, rm-ch
-            (byte)'r', (byte)'n', (byte)'-', (byte)'b', (byte)'i',  // rn, rn-bi
-            (byte)'r', (byte)'o', (byte)'-', (byte)'m', (byte)'d',  // ro, ro-md
-            (byte)'r', (byte)'o', (byte)'-', (byte)'r', (byte)'o',  // ro-ro
-            (byte)'r', (byte)'o', (byte)'f', (byte)'-', (byte)'t', (byte)'z',  // rof, rof-tz
-            (byte)'r', (byte)'u', (byte)'-', (byte)'b', (byte)'y',  // ru, ru-by
-            (byte)'r', (byte)'u', (byte)'-', (byte)'k', (byte)'g',  // ru-kg
-            (byte)'r', (byte)'u', (byte)'-', (byte)'k', (byte)'z',  // ru-kz
-            (byte)'r', (byte)'u', (byte)'-', (byte)'m', (byte)'d',  // ru-md
-            (byte)'r', (byte)'u', (byte)'-', (byte)'r', (byte)'u',  // ru-ru
-            (byte)'r', (byte)'u', (byte)'-', (byte)'u', (byte)'a',  // ru-ua
-            (byte)'r', (byte)'w', (byte)'-', (byte)'r', (byte)'w',  // rw, rw-rw
-            (byte)'r', (byte)'w', (byte)'k', (byte)'-', (byte)'t', (byte)'z',  // rwk, rwk-tz
-            (byte)'s', (byte)'a', (byte)'-', (byte)'i', (byte)'n',  // sa, sa-in
-            (byte)'s', (byte)'a', (byte)'h', (byte)'-', (byte)'r', (byte)'u',  // sah, sah-ru
-            (byte)'s', (byte)'a', (byte)'q', (byte)'-', (byte)'k', (byte)'e',  // saq, saq-ke
-            (byte)'s', (byte)'b', (byte)'p', (byte)'-', (byte)'t', (byte)'z',  // sbp, sbp-tz
-            (byte)'s', (byte)'d', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'p', (byte)'k',  // sd, sd-arab, sd-arab-pk
-            (byte)'s', (byte)'d', (byte)'-', (byte)'d', (byte)'e', (byte)'v', (byte)'a', (byte)'-', (byte)'i', (byte)'n',  // sd-deva, sd-deva-in
-            (byte)'s', (byte)'e', (byte)'-', (byte)'f', (byte)'i',  // se, se-fi
-            (byte)'s', (byte)'e', (byte)'-', (byte)'n', (byte)'o',  // se-no
-            (byte)'s', (byte)'e', (byte)'-', (byte)'s', (byte)'e',  // se-se
-            (byte)'s', (byte)'e', (byte)'h', (byte)'-', (byte)'m', (byte)'z',  // seh, seh-mz
-            (byte)'s', (byte)'e', (byte)'s', (byte)'-', (byte)'m', (byte)'l',  // ses, ses-ml
-            (byte)'s', (byte)'g', (byte)'-', (byte)'c', (byte)'f',  // sg, sg-cf
-            (byte)'s', (byte)'h', (byte)'i', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'m', (byte)'a',  // shi, shi-latn, shi-latn-ma
-            (byte)'s', (byte)'h', (byte)'i', (byte)'-', (byte)'t', (byte)'f', (byte)'n', (byte)'g', (byte)'-', (byte)'m', (byte)'a',  // shi-tfng, shi-tfng-ma
-            (byte)'s', (byte)'i', (byte)'-', (byte)'l', (byte)'k',  // si, si-lk
-            (byte)'s', (byte)'k', (byte)'-', (byte)'s', (byte)'k',  // sk, sk-sk
-            (byte)'s', (byte)'l', (byte)'-', (byte)'s', (byte)'i',  // sl, sl-si
-            (byte)'s', (byte)'m', (byte)'a', (byte)'-', (byte)'n', (byte)'o',  // sma, sma-no
-            (byte)'s', (byte)'m', (byte)'a', (byte)'-', (byte)'s', (byte)'e',  // sma-se
-            (byte)'s', (byte)'m', (byte)'j', (byte)'-', (byte)'n', (byte)'o',  // smj, smj-no
-            (byte)'s', (byte)'m', (byte)'j', (byte)'-', (byte)'s', (byte)'e',  // smj-se
-            (byte)'s', (byte)'m', (byte)'n', (byte)'-', (byte)'f', (byte)'i',  // smn, smn-fi
-            (byte)'s', (byte)'m', (byte)'s', (byte)'-', (byte)'f', (byte)'i',  // sms, sms-fi
-            (byte)'s', (byte)'n', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'z', (byte)'w',  // sn, sn-latn, sn-latn-zw
-            (byte)'s', (byte)'o', (byte)'-', (byte)'d', (byte)'j',  // so, so-dj
-            (byte)'s', (byte)'o', (byte)'-', (byte)'e', (byte)'t',  // so-et
-            (byte)'s', (byte)'o', (byte)'-', (byte)'k', (byte)'e',  // so-ke
-            (byte)'s', (byte)'o', (byte)'-', (byte)'s', (byte)'o',  // so-so
-            (byte)'s', (byte)'q', (byte)'-', (byte)'a', (byte)'l',  // sq, sq-al
-            (byte)'s', (byte)'q', (byte)'-', (byte)'m', (byte)'k',  // sq-mk
-            (byte)'s', (byte)'q', (byte)'-', (byte)'x', (byte)'k',  // sq-xk
-            (byte)'s', (byte)'r', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'b', (byte)'a',  // sr, sr-cyrl, sr-cyrl-ba
-            (byte)'s', (byte)'r', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'c', (byte)'s',  // sr-cyrl-cs
-            (byte)'s', (byte)'r', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'m', (byte)'e',  // sr-cyrl-me
-            (byte)'s', (byte)'r', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'r', (byte)'s',  // sr-cyrl-rs
-            (byte)'s', (byte)'r', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'x', (byte)'k',  // sr-cyrl-xk
-            (byte)'s', (byte)'r', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'b', (byte)'a',  // sr-latn, sr-latn-ba
-            (byte)'s', (byte)'r', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'c', (byte)'s',  // sr-latn-cs
-            (byte)'s', (byte)'r', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'m', (byte)'e',  // sr-latn-me
-            (byte)'s', (byte)'r', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'r', (byte)'s',  // sr-latn-rs
-            (byte)'s', (byte)'r', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'x', (byte)'k',  // sr-latn-xk
-            (byte)'s', (byte)'s', (byte)'-', (byte)'s', (byte)'z',  // ss, ss-sz
-            (byte)'s', (byte)'s', (byte)'-', (byte)'z', (byte)'a',  // ss-za
-            (byte)'s', (byte)'s', (byte)'y', (byte)'-', (byte)'e', (byte)'r',  // ssy, ssy-er
-            (byte)'s', (byte)'t', (byte)'-', (byte)'l', (byte)'s',  // st, st-ls
-            (byte)'s', (byte)'t', (byte)'-', (byte)'z', (byte)'a',  // st-za
-            (byte)'s', (byte)'v', (byte)'-', (byte)'a', (byte)'x',  // sv, sv-ax
-            (byte)'s', (byte)'v', (byte)'-', (byte)'f', (byte)'i',  // sv-fi
-            (byte)'s', (byte)'v', (byte)'-', (byte)'s', (byte)'e',  // sv-se
-            (byte)'s', (byte)'w', (byte)'-', (byte)'c', (byte)'d',  // sw, sw-cd
-            (byte)'s', (byte)'w', (byte)'-', (byte)'k', (byte)'e',  // sw-ke
-            (byte)'s', (byte)'w', (byte)'-', (byte)'t', (byte)'z',  // sw-tz
-            (byte)'s', (byte)'w', (byte)'-', (byte)'u', (byte)'g',  // sw-ug
-            (byte)'s', (byte)'w', (byte)'c', (byte)'-', (byte)'c', (byte)'d',  // swc, swc-cd
-            (byte)'s', (byte)'y', (byte)'r', (byte)'-', (byte)'s', (byte)'y',  // syr, syr-sy
-            (byte)'t', (byte)'a', (byte)'-', (byte)'i', (byte)'n',  // ta, ta-in
-            (byte)'t', (byte)'a', (byte)'-', (byte)'l', (byte)'k',  // ta-lk
-            (byte)'t', (byte)'a', (byte)'-', (byte)'m', (byte)'y',  // ta-my
-            (byte)'t', (byte)'a', (byte)'-', (byte)'s', (byte)'g',  // ta-sg
-            (byte)'t', (byte)'e', (byte)'-', (byte)'i', (byte)'n',  // te, te-in
-            (byte)'t', (byte)'e', (byte)'o', (byte)'-', (byte)'k', (byte)'e',  // teo, teo-ke
-            (byte)'t', (byte)'e', (byte)'o', (byte)'-', (byte)'u', (byte)'g',  // teo-ug
-            (byte)'t', (byte)'g', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'t', (byte)'j',  // tg, tg-cyrl, tg-cyrl-tj
-            (byte)'t', (byte)'h', (byte)'-', (byte)'t', (byte)'h',  // th, th-th
-            (byte)'t', (byte)'i', (byte)'-', (byte)'e', (byte)'r',  // ti, ti-er
-            (byte)'t', (byte)'i', (byte)'-', (byte)'e', (byte)'t',  // ti-et
-            (byte)'t', (byte)'i', (byte)'g', (byte)'-', (byte)'e', (byte)'r',  // tig, tig-er
-            (byte)'t', (byte)'k', (byte)'-', (byte)'t', (byte)'m',  // tk, tk-tm
-            (byte)'t', (byte)'n', (byte)'-', (byte)'b', (byte)'w',  // tn, tn-bw
-            (byte)'t', (byte)'n', (byte)'-', (byte)'z', (byte)'a',  // tn-za
-            (byte)'t', (byte)'o', (byte)'-', (byte)'t', (byte)'o',  // to, to-to
-            (byte)'t', (byte)'r', (byte)'-', (byte)'c', (byte)'y',  // tr, tr-cy
-            (byte)'t', (byte)'r', (byte)'-', (byte)'t', (byte)'r',  // tr-tr
-            (byte)'t', (byte)'s', (byte)'-', (byte)'z', (byte)'a',  // ts, ts-za
-            (byte)'t', (byte)'t', (byte)'-', (byte)'r', (byte)'u',  // tt, tt-ru
-            (byte)'t', (byte)'w', (byte)'q', (byte)'-', (byte)'n', (byte)'e',  // twq, twq-ne
-            (byte)'t', (byte)'z', (byte)'m', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'m', (byte)'a',  // tzm, tzm-arab, tzm-arab-ma
-            (byte)'t', (byte)'z', (byte)'m', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'d', (byte)'z',  // tzm-latn, tzm-latn-dz
-            (byte)'t', (byte)'z', (byte)'m', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'m', (byte)'a',  // tzm-latn-ma
-            (byte)'t', (byte)'z', (byte)'m', (byte)'-', (byte)'t', (byte)'f', (byte)'n', (byte)'g', (byte)'-', (byte)'m', (byte)'a',  // tzm-tfng, tzm-tfng-ma
-            (byte)'u', (byte)'g', (byte)'-', (byte)'c', (byte)'n',  // ug, ug-cn
-            (byte)'u', (byte)'k', (byte)'-', (byte)'u', (byte)'a',  // uk, uk-ua
-            (byte)'u', (byte)'r', (byte)'-', (byte)'i', (byte)'n',  // ur, ur-in
-            (byte)'u', (byte)'r', (byte)'-', (byte)'p', (byte)'k',  // ur-pk
-            (byte)'u', (byte)'z', (byte)'-', (byte)'a', (byte)'r', (byte)'a', (byte)'b', (byte)'-', (byte)'a', (byte)'f',  // uz, uz-arab, uz-arab-af
-            (byte)'u', (byte)'z', (byte)'-', (byte)'c', (byte)'y', (byte)'r', (byte)'l', (byte)'-', (byte)'u', (byte)'z',  // uz-cyrl, uz-cyrl-uz
-            (byte)'u', (byte)'z', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'u', (byte)'z',  // uz-latn, uz-latn-uz
-            (byte)'v', (byte)'a', (byte)'i', (byte)'-', (byte)'l', (byte)'a', (byte)'t', (byte)'n', (byte)'-', (byte)'l', (byte)'r',  // vai, vai-latn, vai-latn-lr
-            (byte)'v', (byte)'a', (byte)'i', (byte)'-', (byte)'v', (byte)'a', (byte)'i', (byte)'i', (byte)'-', (byte)'l', (byte)'r',  // vai-vaii, vai-vaii-lr
-            (byte)'v', (byte)'e', (byte)'-', (byte)'z', (byte)'a',  // ve, ve-za
-            (byte)'v', (byte)'i', (byte)'-', (byte)'v', (byte)'n',  // vi, vi-vn
-            (byte)'v', (byte)'o', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // vo, vo-001
-            (byte)'v', (byte)'u', (byte)'n', (byte)'-', (byte)'t', (byte)'z',  // vun, vun-tz
-            (byte)'w', (byte)'a', (byte)'e', (byte)'-', (byte)'c', (byte)'h',  // wae, wae-ch
-            (byte)'w', (byte)'a', (byte)'l', (byte)'-', (byte)'e', (byte)'t',  // wal, wal-et
-            (byte)'w', (byte)'o', (byte)'-', (byte)'s', (byte)'n',  // wo, wo-sn
-            (byte)'x', (byte)'-', (byte)'i', (byte)'v', (byte)'_', (byte)'m', (byte)'a', (byte)'t', (byte)'h', (byte)'a', (byte)'n',  // x-iv_mathan
-            (byte)'x', (byte)'h', (byte)'-', (byte)'z', (byte)'a',  // xh, xh-za
-            (byte)'x', (byte)'o', (byte)'g', (byte)'-', (byte)'u', (byte)'g',  // xog, xog-ug
-            (byte)'y', (byte)'a', (byte)'v', (byte)'-', (byte)'c', (byte)'m',  // yav, yav-cm
-            (byte)'y', (byte)'i', (byte)'-', (byte)'0', (byte)'0', (byte)'1',  // yi, yi-001
-            (byte)'y', (byte)'o', (byte)'-', (byte)'b', (byte)'j',  // yo, yo-bj
-            (byte)'y', (byte)'o', (byte)'-', (byte)'n', (byte)'g',  // yo-ng
-            (byte)'y', (byte)'u', (byte)'e', (byte)'-', (byte)'h', (byte)'k',  // yue, yue-hk
-            (byte)'z', (byte)'g', (byte)'h', (byte)'-', (byte)'t', (byte)'f', (byte)'n', (byte)'g', (byte)'-', (byte)'m', (byte)'a',  // zgh, zgh-tfng, zgh-tfng-ma
-            (byte)'z', (byte)'h', (byte)'-', (byte)'c', (byte)'h', (byte)'s',  // zh, zh-chs
-            (byte)'z', (byte)'h', (byte)'-', (byte)'c', (byte)'h', (byte)'t',  // zh-cht
-            (byte)'z', (byte)'h', (byte)'-', (byte)'c', (byte)'n', (byte)'_', (byte)'p', (byte)'h', (byte)'o', (byte)'n', (byte)'e', (byte)'b',  // zh-cn, zh-cn_phoneb
-            (byte)'z', (byte)'h', (byte)'-', (byte)'c', (byte)'n', (byte)'_', (byte)'s', (byte)'t', (byte)'r', (byte)'o', (byte)'k', (byte)'e',  // zh-cn_stroke
-            (byte)'z', (byte)'h', (byte)'-', (byte)'h', (byte)'a', (byte)'n', (byte)'s', (byte)'-', (byte)'h', (byte)'k',  // zh-hans, zh-hans-hk
-            (byte)'z', (byte)'h', (byte)'-', (byte)'h', (byte)'a', (byte)'n', (byte)'s', (byte)'-', (byte)'m', (byte)'o',  // zh-hans-mo
-            (byte)'z', (byte)'h', (byte)'-', (byte)'h', (byte)'a', (byte)'n', (byte)'t',  // zh-hant
-            (byte)'z', (byte)'h', (byte)'-', (byte)'h', (byte)'k', (byte)'_', (byte)'r', (byte)'a', (byte)'d', (byte)'s', (byte)'t', (byte)'r',  // zh-hk, zh-hk_radstr
-            (byte)'z', (byte)'h', (byte)'-', (byte)'m', (byte)'o', (byte)'_', (byte)'r', (byte)'a', (byte)'d', (byte)'s', (byte)'t', (byte)'r',  // zh-mo, zh-mo_radstr
-            (byte)'z', (byte)'h', (byte)'-', (byte)'m', (byte)'o', (byte)'_', (byte)'s', (byte)'t', (byte)'r', (byte)'o', (byte)'k', (byte)'e',  // zh-mo_stroke
-            (byte)'z', (byte)'h', (byte)'-', (byte)'s', (byte)'g', (byte)'_', (byte)'p', (byte)'h', (byte)'o', (byte)'n', (byte)'e', (byte)'b',  // zh-sg, zh-sg_phoneb
-            (byte)'z', (byte)'h', (byte)'-', (byte)'s', (byte)'g', (byte)'_', (byte)'s', (byte)'t', (byte)'r', (byte)'o', (byte)'k', (byte)'e',  // zh-sg_stroke
-            (byte)'z', (byte)'h', (byte)'-', (byte)'t', (byte)'w', (byte)'_', (byte)'p', (byte)'r', (byte)'o', (byte)'n', (byte)'u', (byte)'n',  // zh-tw, zh-tw_pronun
-            (byte)'z', (byte)'h', (byte)'-', (byte)'t', (byte)'w', (byte)'_', (byte)'r', (byte)'a', (byte)'d', (byte)'s', (byte)'t', (byte)'r',  // zh-tw_radstr
-            (byte)'z', (byte)'u', (byte)'-', (byte)'z', (byte)'a',  // zu, zu-za
-        };
+        private static ReadOnlySpan<byte> CultureNames =>
+            "aa-dj"u8 +  // aa, aa-dj
+            "aa-er"u8 +  // aa-er
+            "aa-et"u8 +  // aa-et
+            "af-na"u8 +  // af, af-na
+            "af-za"u8 +  // af-za
+            "agq-cm"u8 +  // agq, agq-cm
+            "ak-gh"u8 +  // ak, ak-gh
+            "am-et"u8 +  // am, am-et
+            "ar-001"u8 +  // ar, ar-001
+            "ar-ae"u8 +  // ar-ae
+            "ar-bh"u8 +  // ar-bh
+            "ar-dj"u8 +  // ar-dj
+            "ar-dz"u8 +  // ar-dz
+            "ar-eg"u8 +  // ar-eg
+            "ar-er"u8 +  // ar-er
+            "ar-il"u8 +  // ar-il
+            "ar-iq"u8 +  // ar-iq
+            "ar-jo"u8 +  // ar-jo
+            "ar-km"u8 +  // ar-km
+            "ar-kw"u8 +  // ar-kw
+            "ar-lb"u8 +  // ar-lb
+            "ar-ly"u8 +  // ar-ly
+            "ar-ma"u8 +  // ar-ma
+            "ar-mr"u8 +  // ar-mr
+            "ar-om"u8 +  // ar-om
+            "ar-ps"u8 +  // ar-ps
+            "ar-qa"u8 +  // ar-qa
+            "ar-sa"u8 +  // ar-sa
+            "ar-sd"u8 +  // ar-sd
+            "ar-so"u8 +  // ar-so
+            "ar-ss"u8 +  // ar-ss
+            "ar-sy"u8 +  // ar-sy
+            "ar-td"u8 +  // ar-td
+            "ar-tn"u8 +  // ar-tn
+            "ar-ye"u8 +  // ar-ye
+            "arn-cl"u8 +  // arn, arn-cl
+            "as-in"u8 +  // as, as-in
+            "asa-tz"u8 +  // asa, asa-tz
+            "ast-es"u8 +  // ast, ast-es
+            "az-cyrl-az"u8 +  // az, az-cyrl, az-cyrl-az
+            "az-latn-az"u8 +  // az-latn, az-latn-az
+            "ba-ru"u8 +  // ba, ba-ru
+            "bas-cm"u8 +  // bas, bas-cm
+            "be-by"u8 +  // be, be-by
+            "bem-zm"u8 +  // bem, bem-zm
+            "bez-tz"u8 +  // bez, bez-tz
+            "bg-bg"u8 +  // bg, bg-bg
+            "bin-ng"u8 +  // bin, bin-ng
+            "bm-latn-ml"u8 +  // bm, bm-latn, bm-latn-ml
+            "bn-bd"u8 +  // bn, bn-bd
+            "bn-in"u8 +  // bn-in
+            "bo-cn"u8 +  // bo, bo-cn
+            "bo-in"u8 +  // bo-in
+            "br-fr"u8 +  // br, br-fr
+            "brx-in"u8 +  // brx, brx-in
+            "bs-cyrl-ba"u8 +  // bs, bs-cyrl, bs-cyrl-ba
+            "bs-latn-ba"u8 +  // bs-latn, bs-latn-ba
+            "byn-er"u8 +  // byn, byn-er
+            "ca-ad"u8 +  // ca, ca-ad
+            "ca-es-valencia"u8 +  // ca-es, ca-es-valencia
+            "ca-fr"u8 +  // ca-fr
+            "ca-it"u8 +  // ca-it
+            "ce-ru"u8 +  // ce, ce-ru
+            "cgg-ug"u8 +  // cgg, cgg-ug
+            "chr-cher-us"u8 +  // chr, chr-cher, chr-cher-us
+            "co-fr"u8 +  // co, co-fr
+            "cs-cz"u8 +  // cs, cs-cz
+            "cu-ru"u8 +  // cu, cu-ru
+            "cy-gb"u8 +  // cy, cy-gb
+            "da-dk"u8 +  // da, da-dk
+            "da-gl"u8 +  // da-gl
+            "dav-ke"u8 +  // dav, dav-ke
+            "de-at"u8 +  // de, de-at
+            "de-be"u8 +  // de-be
+            "de-ch"u8 +  // de-ch
+            "de-de_phoneb"u8 +  // de-de, de-de_phoneb
+            "de-it"u8 +  // de-it
+            "de-li"u8 +  // de-li
+            "de-lu"u8 +  // de-lu
+            "dje-ne"u8 +  // dje, dje-ne
+            "dsb-de"u8 +  // dsb, dsb-de
+            "dua-cm"u8 +  // dua, dua-cm
+            "dv-mv"u8 +  // dv, dv-mv
+            "dyo-sn"u8 +  // dyo, dyo-sn
+            "dz-bt"u8 +  // dz, dz-bt
+            "ebu-ke"u8 +  // ebu, ebu-ke
+            "ee-gh"u8 +  // ee, ee-gh
+            "ee-tg"u8 +  // ee-tg
+            "el-cy"u8 +  // el, el-cy
+            "el-gr"u8 +  // el-gr
+            "en-001"u8 +  // en, en-001
+            "en-029"u8 +  // en-029
+            "en-150"u8 +  // en-150
+            "en-ag"u8 +  // en-ag
+            "en-ai"u8 +  // en-ai
+            "en-as"u8 +  // en-as
+            "en-at"u8 +  // en-at
+            "en-au"u8 +  // en-au
+            "en-bb"u8 +  // en-bb
+            "en-be"u8 +  // en-be
+            "en-bi"u8 +  // en-bi
+            "en-bm"u8 +  // en-bm
+            "en-bs"u8 +  // en-bs
+            "en-bw"u8 +  // en-bw
+            "en-bz"u8 +  // en-bz
+            "en-ca"u8 +  // en-ca
+            "en-cc"u8 +  // en-cc
+            "en-ch"u8 +  // en-ch
+            "en-ck"u8 +  // en-ck
+            "en-cm"u8 +  // en-cm
+            "en-cx"u8 +  // en-cx
+            "en-cy"u8 +  // en-cy
+            "en-de"u8 +  // en-de
+            "en-dk"u8 +  // en-dk
+            "en-dm"u8 +  // en-dm
+            "en-er"u8 +  // en-er
+            "en-fi"u8 +  // en-fi
+            "en-fj"u8 +  // en-fj
+            "en-fk"u8 +  // en-fk
+            "en-fm"u8 +  // en-fm
+            "en-gb"u8 +  // en-gb
+            "en-gd"u8 +  // en-gd
+            "en-gg"u8 +  // en-gg
+            "en-gh"u8 +  // en-gh
+            "en-gi"u8 +  // en-gi
+            "en-gm"u8 +  // en-gm
+            "en-gu"u8 +  // en-gu
+            "en-gy"u8 +  // en-gy
+            "en-hk"u8 +  // en-hk
+            "en-id"u8 +  // en-id
+            "en-ie"u8 +  // en-ie
+            "en-il"u8 +  // en-il
+            "en-im"u8 +  // en-im
+            "en-in"u8 +  // en-in
+            "en-io"u8 +  // en-io
+            "en-je"u8 +  // en-je
+            "en-jm"u8 +  // en-jm
+            "en-ke"u8 +  // en-ke
+            "en-ki"u8 +  // en-ki
+            "en-kn"u8 +  // en-kn
+            "en-ky"u8 +  // en-ky
+            "en-lc"u8 +  // en-lc
+            "en-lr"u8 +  // en-lr
+            "en-ls"u8 +  // en-ls
+            "en-mg"u8 +  // en-mg
+            "en-mh"u8 +  // en-mh
+            "en-mo"u8 +  // en-mo
+            "en-mp"u8 +  // en-mp
+            "en-ms"u8 +  // en-ms
+            "en-mt"u8 +  // en-mt
+            "en-mu"u8 +  // en-mu
+            "en-mw"u8 +  // en-mw
+            "en-my"u8 +  // en-my
+            "en-na"u8 +  // en-na
+            "en-nf"u8 +  // en-nf
+            "en-ng"u8 +  // en-ng
+            "en-nl"u8 +  // en-nl
+            "en-nr"u8 +  // en-nr
+            "en-nu"u8 +  // en-nu
+            "en-nz"u8 +  // en-nz
+            "en-pg"u8 +  // en-pg
+            "en-ph"u8 +  // en-ph
+            "en-pk"u8 +  // en-pk
+            "en-pn"u8 +  // en-pn
+            "en-pr"u8 +  // en-pr
+            "en-pw"u8 +  // en-pw
+            "en-rw"u8 +  // en-rw
+            "en-sb"u8 +  // en-sb
+            "en-sc"u8 +  // en-sc
+            "en-sd"u8 +  // en-sd
+            "en-se"u8 +  // en-se
+            "en-sg"u8 +  // en-sg
+            "en-sh"u8 +  // en-sh
+            "en-si"u8 +  // en-si
+            "en-sl"u8 +  // en-sl
+            "en-ss"u8 +  // en-ss
+            "en-sx"u8 +  // en-sx
+            "en-sz"u8 +  // en-sz
+            "en-tc"u8 +  // en-tc
+            "en-tk"u8 +  // en-tk
+            "en-to"u8 +  // en-to
+            "en-tt"u8 +  // en-tt
+            "en-tv"u8 +  // en-tv
+            "en-tz"u8 +  // en-tz
+            "en-ug"u8 +  // en-ug
+            "en-um"u8 +  // en-um
+            "en-us"u8 +  // en-us
+            "en-vc"u8 +  // en-vc
+            "en-vg"u8 +  // en-vg
+            "en-vi"u8 +  // en-vi
+            "en-vu"u8 +  // en-vu
+            "en-ws"u8 +  // en-ws
+            "en-za"u8 +  // en-za
+            "en-zm"u8 +  // en-zm
+            "en-zw"u8 +  // en-zw
+            "eo-001"u8 +  // eo, eo-001
+            "es-419"u8 +  // es, es-419
+            "es-ar"u8 +  // es-ar
+            "es-bo"u8 +  // es-bo
+            "es-br"u8 +  // es-br
+            "es-cl"u8 +  // es-cl
+            "es-co"u8 +  // es-co
+            "es-cr"u8 +  // es-cr
+            "es-cu"u8 +  // es-cu
+            "es-do"u8 +  // es-do
+            "es-ec"u8 +  // es-ec
+            "es-es_tradnl"u8 +  // es-es, es-es_tradnl
+            "es-gq"u8 +  // es-gq
+            "es-gt"u8 +  // es-gt
+            "es-hn"u8 +  // es-hn
+            "es-mx"u8 +  // es-mx
+            "es-ni"u8 +  // es-ni
+            "es-pa"u8 +  // es-pa
+            "es-pe"u8 +  // es-pe
+            "es-ph"u8 +  // es-ph
+            "es-pr"u8 +  // es-pr
+            "es-py"u8 +  // es-py
+            "es-sv"u8 +  // es-sv
+            "es-us"u8 +  // es-us
+            "es-uy"u8 +  // es-uy
+            "es-ve"u8 +  // es-ve
+            "et-ee"u8 +  // et, et-ee
+            "eu-es"u8 +  // eu, eu-es
+            "ewo-cm"u8 +  // ewo, ewo-cm
+            "fa-ir"u8 +  // fa, fa-ir
+            "ff-cm"u8 +  // ff, ff-cm
+            "ff-gn"u8 +  // ff-gn
+            "ff-latn-sn"u8 +  // ff-latn, ff-latn-sn
+            "ff-mr"u8 +  // ff-mr
+            "ff-ng"u8 +  // ff-ng
+            "fi-fi"u8 +  // fi, fi-fi
+            "fil-ph"u8 +  // fil, fil-ph
+            "fo-dk"u8 +  // fo, fo-dk
+            "fo-fo"u8 +  // fo-fo
+            "fr-029"u8 +  // fr, fr-029
+            "fr-be"u8 +  // fr-be
+            "fr-bf"u8 +  // fr-bf
+            "fr-bi"u8 +  // fr-bi
+            "fr-bj"u8 +  // fr-bj
+            "fr-bl"u8 +  // fr-bl
+            "fr-ca"u8 +  // fr-ca
+            "fr-cd"u8 +  // fr-cd
+            "fr-cf"u8 +  // fr-cf
+            "fr-cg"u8 +  // fr-cg
+            "fr-ch"u8 +  // fr-ch
+            "fr-ci"u8 +  // fr-ci
+            "fr-cm"u8 +  // fr-cm
+            "fr-dj"u8 +  // fr-dj
+            "fr-dz"u8 +  // fr-dz
+            "fr-fr"u8 +  // fr-fr
+            "fr-ga"u8 +  // fr-ga
+            "fr-gf"u8 +  // fr-gf
+            "fr-gn"u8 +  // fr-gn
+            "fr-gp"u8 +  // fr-gp
+            "fr-gq"u8 +  // fr-gq
+            "fr-ht"u8 +  // fr-ht
+            "fr-km"u8 +  // fr-km
+            "fr-lu"u8 +  // fr-lu
+            "fr-ma"u8 +  // fr-ma
+            "fr-mc"u8 +  // fr-mc
+            "fr-mf"u8 +  // fr-mf
+            "fr-mg"u8 +  // fr-mg
+            "fr-ml"u8 +  // fr-ml
+            "fr-mq"u8 +  // fr-mq
+            "fr-mr"u8 +  // fr-mr
+            "fr-mu"u8 +  // fr-mu
+            "fr-nc"u8 +  // fr-nc
+            "fr-ne"u8 +  // fr-ne
+            "fr-pf"u8 +  // fr-pf
+            "fr-pm"u8 +  // fr-pm
+            "fr-re"u8 +  // fr-re
+            "fr-rw"u8 +  // fr-rw
+            "fr-sc"u8 +  // fr-sc
+            "fr-sn"u8 +  // fr-sn
+            "fr-sy"u8 +  // fr-sy
+            "fr-td"u8 +  // fr-td
+            "fr-tg"u8 +  // fr-tg
+            "fr-tn"u8 +  // fr-tn
+            "fr-vu"u8 +  // fr-vu
+            "fr-wf"u8 +  // fr-wf
+            "fr-yt"u8 +  // fr-yt
+            "fur-it"u8 +  // fur, fur-it
+            "fy-nl"u8 +  // fy, fy-nl
+            "ga-ie"u8 +  // ga, ga-ie
+            "gd-gb"u8 +  // gd, gd-gb
+            "gl-es"u8 +  // gl, gl-es
+            "gn-py"u8 +  // gn, gn-py
+            "gsw-ch"u8 +  // gsw, gsw-ch
+            "gsw-fr"u8 +  // gsw-fr
+            "gsw-li"u8 +  // gsw-li
+            "gu-in"u8 +  // gu, gu-in
+            "guz-ke"u8 +  // guz, guz-ke
+            "gv-im"u8 +  // gv, gv-im
+            "ha-latn-gh"u8 +  // ha, ha-latn, ha-latn-gh
+            "ha-latn-ne"u8 +  // ha-latn-ne
+            "ha-latn-ng"u8 +  // ha-latn-ng
+            "haw-us"u8 +  // haw, haw-us
+            "he-il"u8 +  // he, he-il
+            "hi-in"u8 +  // hi, hi-in
+            "hr-ba"u8 +  // hr, hr-ba
+            "hr-hr"u8 +  // hr-hr
+            "hsb-de"u8 +  // hsb, hsb-de
+            "hu-hu_technl"u8 +  // hu, hu-hu, hu-hu_technl
+            "hy-am"u8 +  // hy, hy-am
+            "ia-001"u8 +  // ia, ia-001
+            "ia-fr"u8 +  // ia-fr
+            "ibb-ng"u8 +  // ibb, ibb-ng
+            "id-id"u8 +  // id, id-id
+            "ig-ng"u8 +  // ig, ig-ng
+            "ii-cn"u8 +  // ii, ii-cn
+            "is-is"u8 +  // is, is-is
+            "it-ch"u8 +  // it, it-ch
+            "it-it"u8 +  // it-it
+            "it-sm"u8 +  // it-sm
+            "iu-cans-ca"u8 +  // iu, iu-cans, iu-cans-ca
+            "iu-latn-ca"u8 +  // iu-latn, iu-latn-ca
+            "ja-jp_radstr"u8 +  // ja, ja-jp, ja-jp_radstr
+            "jgo-cm"u8 +  // jgo, jgo-cm
+            "jmc-tz"u8 +  // jmc, jmc-tz
+            "jv-java-id"u8 +  // jv, jv-java, jv-java-id
+            "jv-latn-id"u8 +  // jv-latn, jv-latn-id
+            "ka-ge_modern"u8 +  // ka, ka-ge, ka-ge_modern
+            "kab-dz"u8 +  // kab, kab-dz
+            "kam-ke"u8 +  // kam, kam-ke
+            "kde-tz"u8 +  // kde, kde-tz
+            "kea-cv"u8 +  // kea, kea-cv
+            "khq-ml"u8 +  // khq, khq-ml
+            "ki-ke"u8 +  // ki, ki-ke
+            "kk-kz"u8 +  // kk, kk-kz
+            "kkj-cm"u8 +  // kkj, kkj-cm
+            "kl-gl"u8 +  // kl, kl-gl
+            "kln-ke"u8 +  // kln, kln-ke
+            "km-kh"u8 +  // km, km-kh
+            "kn-in"u8 +  // kn, kn-in
+            "ko-kp"u8 +  // ko, ko-kp
+            "ko-kr"u8 +  // ko-kr
+            "kok-in"u8 +  // kok, kok-in
+            "kr-ng"u8 +  // kr, kr-ng
+            "ks-arab-in"u8 +  // ks, ks-arab, ks-arab-in
+            "ks-deva-in"u8 +  // ks-deva, ks-deva-in
+            "ksb-tz"u8 +  // ksb, ksb-tz
+            "ksf-cm"u8 +  // ksf, ksf-cm
+            "ksh-de"u8 +  // ksh, ksh-de
+            "ku-arab-iq"u8 +  // ku, ku-arab, ku-arab-iq
+            "ku-arab-ir"u8 +  // ku-arab-ir
+            "kw-gb"u8 +  // kw, kw-gb
+            "ky-kg"u8 +  // ky, ky-kg
+            "la-001"u8 +  // la, la-001
+            "lag-tz"u8 +  // lag, lag-tz
+            "lb-lu"u8 +  // lb, lb-lu
+            "lg-ug"u8 +  // lg, lg-ug
+            "lkt-us"u8 +  // lkt, lkt-us
+            "ln-ao"u8 +  // ln, ln-ao
+            "ln-cd"u8 +  // ln-cd
+            "ln-cf"u8 +  // ln-cf
+            "ln-cg"u8 +  // ln-cg
+            "lo-la"u8 +  // lo, lo-la
+            "lrc-iq"u8 +  // lrc, lrc-iq
+            "lrc-ir"u8 +  // lrc-ir
+            "lt-lt"u8 +  // lt, lt-lt
+            "lu-cd"u8 +  // lu, lu-cd
+            "luo-ke"u8 +  // luo, luo-ke
+            "luy-ke"u8 +  // luy, luy-ke
+            "lv-lv"u8 +  // lv, lv-lv
+            "mas-ke"u8 +  // mas, mas-ke
+            "mas-tz"u8 +  // mas-tz
+            "mer-ke"u8 +  // mer, mer-ke
+            "mfe-mu"u8 +  // mfe, mfe-mu
+            "mg-mg"u8 +  // mg, mg-mg
+            "mgh-mz"u8 +  // mgh, mgh-mz
+            "mgo-cm"u8 +  // mgo, mgo-cm
+            "mi-nz"u8 +  // mi, mi-nz
+            "mk-mk"u8 +  // mk, mk-mk
+            "ml-in"u8 +  // ml, ml-in
+            "mn-cyrl"u8 +  // mn, mn-cyrl
+            "mn-mn"u8 +  // mn-mn
+            "mn-mong-cn"u8 +  // mn-mong, mn-mong-cn
+            "mn-mong-mn"u8 +  // mn-mong-mn
+            "mni-in"u8 +  // mni, mni-in
+            "moh-ca"u8 +  // moh, moh-ca
+            "mr-in"u8 +  // mr, mr-in
+            "ms-bn"u8 +  // ms, ms-bn
+            "ms-my"u8 +  // ms-my
+            "ms-sg"u8 +  // ms-sg
+            "mt-mt"u8 +  // mt, mt-mt
+            "mua-cm"u8 +  // mua, mua-cm
+            "my-mm"u8 +  // my, my-mm
+            "mzn-ir"u8 +  // mzn, mzn-ir
+            "naq-na"u8 +  // naq, naq-na
+            "nb-no"u8 +  // nb, nb-no
+            "nb-sj"u8 +  // nb-sj
+            "nd-zw"u8 +  // nd, nd-zw
+            "nds-de"u8 +  // nds, nds-de
+            "nds-nl"u8 +  // nds-nl
+            "ne-in"u8 +  // ne, ne-in
+            "ne-np"u8 +  // ne-np
+            "nl-aw"u8 +  // nl, nl-aw
+            "nl-be"u8 +  // nl-be
+            "nl-bq"u8 +  // nl-bq
+            "nl-cw"u8 +  // nl-cw
+            "nl-nl"u8 +  // nl-nl
+            "nl-sr"u8 +  // nl-sr
+            "nl-sx"u8 +  // nl-sx
+            "nmg-cm"u8 +  // nmg, nmg-cm
+            "nn-no"u8 +  // nn, nn-no
+            "nnh-cm"u8 +  // nnh, nnh-cm
+            "no"u8 +  // no
+            "nqo-gn"u8 +  // nqo, nqo-gn
+            "nr-za"u8 +  // nr, nr-za
+            "nso-za"u8 +  // nso, nso-za
+            "nus-ss"u8 +  // nus, nus-ss
+            "nyn-ug"u8 +  // nyn, nyn-ug
+            "oc-fr"u8 +  // oc, oc-fr
+            "om-et"u8 +  // om, om-et
+            "om-ke"u8 +  // om-ke
+            "or-in"u8 +  // or, or-in
+            "os-ge"u8 +  // os, os-ge
+            "os-ru"u8 +  // os-ru
+            "pa-arab-pk"u8 +  // pa, pa-arab, pa-arab-pk
+            "pa-in"u8 +  // pa-in
+            "pap-029"u8 +  // pap, pap-029
+            "pl-pl"u8 +  // pl, pl-pl
+            "prg-001"u8 +  // prg, prg-001
+            "prs-af"u8 +  // prs, prs-af
+            "ps-af"u8 +  // ps, ps-af
+            "pt-ao"u8 +  // pt, pt-ao
+            "pt-br"u8 +  // pt-br
+            "pt-ch"u8 +  // pt-ch
+            "pt-cv"u8 +  // pt-cv
+            "pt-gq"u8 +  // pt-gq
+            "pt-gw"u8 +  // pt-gw
+            "pt-lu"u8 +  // pt-lu
+            "pt-mo"u8 +  // pt-mo
+            "pt-mz"u8 +  // pt-mz
+            "pt-pt"u8 +  // pt-pt
+            "pt-st"u8 +  // pt-st
+            "pt-tl"u8 +  // pt-tl
+            "qps-latn-x-sh"u8 +  // qps-latn-x-sh
+            "qps-ploca"u8 +  // qps-ploc, qps-ploca
+            "qps-plocm"u8 +  // qps-plocm
+            "quc-latn-gt"u8 +  // quc, quc-latn, quc-latn-gt
+            "quz-bo"u8 +  // quz, quz-bo
+            "quz-ec"u8 +  // quz-ec
+            "quz-pe"u8 +  // quz-pe
+            "rm-ch"u8 +  // rm, rm-ch
+            "rn-bi"u8 +  // rn, rn-bi
+            "ro-md"u8 +  // ro, ro-md
+            "ro-ro"u8 +  // ro-ro
+            "rof-tz"u8 +  // rof, rof-tz
+            "ru-by"u8 +  // ru, ru-by
+            "ru-kg"u8 +  // ru-kg
+            "ru-kz"u8 +  // ru-kz
+            "ru-md"u8 +  // ru-md
+            "ru-ru"u8 +  // ru-ru
+            "ru-ua"u8 +  // ru-ua
+            "rw-rw"u8 +  // rw, rw-rw
+            "rwk-tz"u8 +  // rwk, rwk-tz
+            "sa-in"u8 +  // sa, sa-in
+            "sah-ru"u8 +  // sah, sah-ru
+            "saq-ke"u8 +  // saq, saq-ke
+            "sbp-tz"u8 +  // sbp, sbp-tz
+            "sd-arab-pk"u8 +  // sd, sd-arab, sd-arab-pk
+            "sd-deva-in"u8 +  // sd-deva, sd-deva-in
+            "se-fi"u8 +  // se, se-fi
+            "se-no"u8 +  // se-no
+            "se-se"u8 +  // se-se
+            "seh-mz"u8 +  // seh, seh-mz
+            "ses-ml"u8 +  // ses, ses-ml
+            "sg-cf"u8 +  // sg, sg-cf
+            "shi-latn-ma"u8 +  // shi, shi-latn, shi-latn-ma
+            "shi-tfng-ma"u8 +  // shi-tfng, shi-tfng-ma
+            "si-lk"u8 +  // si, si-lk
+            "sk-sk"u8 +  // sk, sk-sk
+            "sl-si"u8 +  // sl, sl-si
+            "sma-no"u8 +  // sma, sma-no
+            "sma-se"u8 +  // sma-se
+            "smj-no"u8 +  // smj, smj-no
+            "smj-se"u8 +  // smj-se
+            "smn-fi"u8 +  // smn, smn-fi
+            "sms-fi"u8 +  // sms, sms-fi
+            "sn-latn-zw"u8 +  // sn, sn-latn, sn-latn-zw
+            "so-dj"u8 +  // so, so-dj
+            "so-et"u8 +  // so-et
+            "so-ke"u8 +  // so-ke
+            "so-so"u8 +  // so-so
+            "sq-al"u8 +  // sq, sq-al
+            "sq-mk"u8 +  // sq-mk
+            "sq-xk"u8 +  // sq-xk
+            "sr-cyrl-ba"u8 +  // sr, sr-cyrl, sr-cyrl-ba
+            "sr-cyrl-cs"u8 +  // sr-cyrl-cs
+            "sr-cyrl-me"u8 +  // sr-cyrl-me
+            "sr-cyrl-rs"u8 +  // sr-cyrl-rs
+            "sr-cyrl-xk"u8 +  // sr-cyrl-xk
+            "sr-latn-ba"u8 +  // sr-latn, sr-latn-ba
+            "sr-latn-cs"u8 +  // sr-latn-cs
+            "sr-latn-me"u8 +  // sr-latn-me
+            "sr-latn-rs"u8 +  // sr-latn-rs
+            "sr-latn-xk"u8 +  // sr-latn-xk
+            "ss-sz"u8 +  // ss, ss-sz
+            "ss-za"u8 +  // ss-za
+            "ssy-er"u8 +  // ssy, ssy-er
+            "st-ls"u8 +  // st, st-ls
+            "st-za"u8 +  // st-za
+            "sv-ax"u8 +  // sv, sv-ax
+            "sv-fi"u8 +  // sv-fi
+            "sv-se"u8 +  // sv-se
+            "sw-cd"u8 +  // sw, sw-cd
+            "sw-ke"u8 +  // sw-ke
+            "sw-tz"u8 +  // sw-tz
+            "sw-ug"u8 +  // sw-ug
+            "swc-cd"u8 +  // swc, swc-cd
+            "syr-sy"u8 +  // syr, syr-sy
+            "ta-in"u8 +  // ta, ta-in
+            "ta-lk"u8 +  // ta-lk
+            "ta-my"u8 +  // ta-my
+            "ta-sg"u8 +  // ta-sg
+            "te-in"u8 +  // te, te-in
+            "teo-ke"u8 +  // teo, teo-ke
+            "teo-ug"u8 +  // teo-ug
+            "tg-cyrl-tj"u8 +  // tg, tg-cyrl, tg-cyrl-tj
+            "th-th"u8 +  // th, th-th
+            "ti-er"u8 +  // ti, ti-er
+            "ti-et"u8 +  // ti-et
+            "tig-er"u8 +  // tig, tig-er
+            "tk-tm"u8 +  // tk, tk-tm
+            "tn-bw"u8 +  // tn, tn-bw
+            "tn-za"u8 +  // tn-za
+            "to-to"u8 +  // to, to-to
+            "tr-cy"u8 +  // tr, tr-cy
+            "tr-tr"u8 +  // tr-tr
+            "ts-za"u8 +  // ts, ts-za
+            "tt-ru"u8 +  // tt, tt-ru
+            "twq-ne"u8 +  // twq, twq-ne
+            "tzm-arab-ma"u8 +  // tzm, tzm-arab, tzm-arab-ma
+            "tzm-latn-dz"u8 +  // tzm-latn, tzm-latn-dz
+            "tzm-latn-ma"u8 +  // tzm-latn-ma
+            "tzm-tfng-ma"u8 +  // tzm-tfng, tzm-tfng-ma
+            "ug-cn"u8 +  // ug, ug-cn
+            "uk-ua"u8 +  // uk, uk-ua
+            "ur-in"u8 +  // ur, ur-in
+            "ur-pk"u8 +  // ur-pk
+            "uz-arab-af"u8 +  // uz, uz-arab, uz-arab-af
+            "uz-cyrl-uz"u8 +  // uz-cyrl, uz-cyrl-uz
+            "uz-latn-uz"u8 +  // uz-latn, uz-latn-uz
+            "vai-latn-lr"u8 +  // vai, vai-latn, vai-latn-lr
+            "vai-vaii-lr"u8 +  // vai-vaii, vai-vaii-lr
+            "ve-za"u8 +  // ve, ve-za
+            "vi-vn"u8 +  // vi, vi-vn
+            "vo-001"u8 +  // vo, vo-001
+            "vun-tz"u8 +  // vun, vun-tz
+            "wae-ch"u8 +  // wae, wae-ch
+            "wal-et"u8 +  // wal, wal-et
+            "wo-sn"u8 +  // wo, wo-sn
+            "x-iv_mathan"u8 +  // x-iv_mathan
+            "xh-za"u8 +  // xh, xh-za
+            "xog-ug"u8 +  // xog, xog-ug
+            "yav-cm"u8 +  // yav, yav-cm
+            "yi-001"u8 +  // yi, yi-001
+            "yo-bj"u8 +  // yo, yo-bj
+            "yo-ng"u8 +  // yo-ng
+            "yue-hk"u8 +  // yue, yue-hk
+            "zgh-tfng-ma"u8 +  // zgh, zgh-tfng, zgh-tfng-ma
+            "zh-chs"u8 +  // zh, zh-chs
+            "zh-cht"u8 +  // zh-cht
+            "zh-cn_phoneb"u8 +  // zh-cn, zh-cn_phoneb
+            "zh-cn_stroke"u8 +  // zh-cn_stroke
+            "zh-hans-hk"u8 +  // zh-hans, zh-hans-hk
+            "zh-hans-mo"u8 +  // zh-hans-mo
+            "zh-hant"u8 +  // zh-hant
+            "zh-hk_radstr"u8 +  // zh-hk, zh-hk_radstr
+            "zh-mo_radstr"u8 +  // zh-mo, zh-mo_radstr
+            "zh-mo_stroke"u8 +  // zh-mo_stroke
+            "zh-sg_phoneb"u8 +  // zh-sg, zh-sg_phoneb
+            "zh-sg_stroke"u8 +  // zh-sg_stroke
+            "zh-tw_pronun"u8 +  // zh-tw, zh-tw_pronun
+            "zh-tw_radstr"u8 +  // zh-tw_radstr
+            "zu-za"u8;  // zu, zu-za
 
         private const int CulturesCount = 864;
 
@@ -1950,873 +1948,871 @@ namespace System.Globalization
 
         // ThreeLetterWindowsLanguageName is string containing 3-letter Windows language names
         // every 3-characters entry is matching locale name entry in CultureNames
-        private static ReadOnlySpan<byte> ThreeLetterWindowsLanguageName => new byte[CulturesCount * 3]
-        {
-            (byte)'Z', (byte)'Z', (byte)'Z',  // aa
-            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-dj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-er
-            (byte)'Z', (byte)'Z', (byte)'Z',  // aa-et
-            (byte)'A', (byte)'F', (byte)'K',  // af
-            (byte)'Z', (byte)'Z', (byte)'Z',  // af-na
-            (byte)'A', (byte)'F', (byte)'K',  // af-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // agq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // agq-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ak
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ak-gh
-            (byte)'A', (byte)'M', (byte)'H',  // am
-            (byte)'A', (byte)'M', (byte)'H',  // am-et
-            (byte)'A', (byte)'R', (byte)'A',  // ar
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-001
-            (byte)'A', (byte)'R', (byte)'U',  // ar-ae
-            (byte)'A', (byte)'R', (byte)'H',  // ar-bh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-dj
-            (byte)'A', (byte)'R', (byte)'G',  // ar-dz
-            (byte)'A', (byte)'R', (byte)'E',  // ar-eg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-er
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-il
-            (byte)'A', (byte)'R', (byte)'I',  // ar-iq
-            (byte)'A', (byte)'R', (byte)'J',  // ar-jo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-km
-            (byte)'A', (byte)'R', (byte)'K',  // ar-kw
-            (byte)'A', (byte)'R', (byte)'B',  // ar-lb
-            (byte)'A', (byte)'R', (byte)'L',  // ar-ly
-            (byte)'A', (byte)'R', (byte)'M',  // ar-ma
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-mr
-            (byte)'A', (byte)'R', (byte)'O',  // ar-om
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-ps
-            (byte)'A', (byte)'R', (byte)'Q',  // ar-qa
-            (byte)'A', (byte)'R', (byte)'A',  // ar-sa
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-sd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-so
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-ss
-            (byte)'A', (byte)'R', (byte)'S',  // ar-sy
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ar-td
-            (byte)'A', (byte)'R', (byte)'T',  // ar-tn
-            (byte)'A', (byte)'R', (byte)'Y',  // ar-ye
-            (byte)'M', (byte)'P', (byte)'D',  // arn
-            (byte)'M', (byte)'P', (byte)'D',  // arn-cl
-            (byte)'A', (byte)'S', (byte)'M',  // as
-            (byte)'A', (byte)'S', (byte)'M',  // as-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // asa
-            (byte)'Z', (byte)'Z', (byte)'Z',  // asa-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ast
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ast-es
-            (byte)'A', (byte)'Z', (byte)'E',  // az
-            (byte)'A', (byte)'Z', (byte)'C',  // az-cyrl
-            (byte)'A', (byte)'Z', (byte)'C',  // az-cyrl-az
-            (byte)'A', (byte)'Z', (byte)'E',  // az-latn
-            (byte)'A', (byte)'Z', (byte)'E',  // az-latn-az
-            (byte)'B', (byte)'A', (byte)'S',  // ba
-            (byte)'B', (byte)'A', (byte)'S',  // ba-ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bas
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bas-cm
-            (byte)'B', (byte)'E', (byte)'L',  // be
-            (byte)'B', (byte)'E', (byte)'L',  // be-by
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bem
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bem-zm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bez
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bez-tz
-            (byte)'B', (byte)'G', (byte)'R',  // bg
-            (byte)'B', (byte)'G', (byte)'R',  // bg-bg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bin
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bin-ng
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bm-latn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bm-latn-ml
-            (byte)'B', (byte)'N', (byte)'B',  // bn
-            (byte)'B', (byte)'N', (byte)'B',  // bn-bd
-            (byte)'B', (byte)'N', (byte)'G',  // bn-in
-            (byte)'B', (byte)'O', (byte)'B',  // bo
-            (byte)'B', (byte)'O', (byte)'B',  // bo-cn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // bo-in
-            (byte)'B', (byte)'R', (byte)'E',  // br
-            (byte)'B', (byte)'R', (byte)'E',  // br-fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // brx
-            (byte)'Z', (byte)'Z', (byte)'Z',  // brx-in
-            (byte)'B', (byte)'S', (byte)'B',  // bs
-            (byte)'B', (byte)'S', (byte)'C',  // bs-cyrl
-            (byte)'B', (byte)'S', (byte)'C',  // bs-cyrl-ba
-            (byte)'B', (byte)'S', (byte)'B',  // bs-latn
-            (byte)'B', (byte)'S', (byte)'B',  // bs-latn-ba
-            (byte)'Z', (byte)'Z', (byte)'Z',  // byn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // byn-er
-            (byte)'C', (byte)'A', (byte)'T',  // ca
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-ad
-            (byte)'C', (byte)'A', (byte)'T',  // ca-es
-            (byte)'V', (byte)'A', (byte)'L',  // ca-es-valencia
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ca-it
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ce
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ce-ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // cgg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // cgg-ug
-            (byte)'C', (byte)'R', (byte)'E',  // chr
-            (byte)'C', (byte)'R', (byte)'E',  // chr-cher
-            (byte)'C', (byte)'R', (byte)'E',  // chr-cher-us
-            (byte)'C', (byte)'O', (byte)'S',  // co
-            (byte)'C', (byte)'O', (byte)'S',  // co-fr
-            (byte)'C', (byte)'S', (byte)'Y',  // cs
-            (byte)'C', (byte)'S', (byte)'Y',  // cs-cz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // cu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // cu-ru
-            (byte)'C', (byte)'Y', (byte)'M',  // cy
-            (byte)'C', (byte)'Y', (byte)'M',  // cy-gb
-            (byte)'D', (byte)'A', (byte)'N',  // da
-            (byte)'D', (byte)'A', (byte)'N',  // da-dk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // da-gl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dav
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dav-ke
-            (byte)'D', (byte)'E', (byte)'U',  // de
-            (byte)'D', (byte)'E', (byte)'A',  // de-at
-            (byte)'Z', (byte)'Z', (byte)'Z',  // de-be
-            (byte)'D', (byte)'E', (byte)'S',  // de-ch
-            (byte)'D', (byte)'E', (byte)'U',  // de-de
-            (byte)'D', (byte)'E', (byte)'U',  // de-de_phoneb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // de-it
-            (byte)'D', (byte)'E', (byte)'C',  // de-li
-            (byte)'D', (byte)'E', (byte)'L',  // de-lu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dje
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dje-ne
-            (byte)'D', (byte)'S', (byte)'B',  // dsb
-            (byte)'D', (byte)'S', (byte)'B',  // dsb-de
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dua
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dua-cm
-            (byte)'D', (byte)'I', (byte)'V',  // dv
-            (byte)'D', (byte)'I', (byte)'V',  // dv-mv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dyo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dyo-sn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // dz-bt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ebu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ebu-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ee
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ee-gh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ee-tg
-            (byte)'E', (byte)'L', (byte)'L',  // el
-            (byte)'Z', (byte)'Z', (byte)'Z',  // el-cy
-            (byte)'E', (byte)'L', (byte)'L',  // el-gr
-            (byte)'E', (byte)'N', (byte)'U',  // en
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-001
-            (byte)'E', (byte)'N', (byte)'B',  // en-029
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-150
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ag
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ai
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-as
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-at
-            (byte)'E', (byte)'N', (byte)'A',  // en-au
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-be
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bs
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-bw
-            (byte)'E', (byte)'N', (byte)'L',  // en-bz
-            (byte)'E', (byte)'N', (byte)'C',  // en-ca
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ch
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ck
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cx
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-cy
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-de
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-dk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-dm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-er
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-fm
-            (byte)'E', (byte)'N', (byte)'G',  // en-gb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-gy
-            (byte)'E', (byte)'N', (byte)'H',  // en-hk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-id
-            (byte)'E', (byte)'N', (byte)'I',  // en-ie
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-il
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-im
-            (byte)'E', (byte)'N', (byte)'N',  // en-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-io
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-je
-            (byte)'E', (byte)'N', (byte)'J',  // en-jm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ki
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-kn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ky
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-lc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-lr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ls
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mp
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ms
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-mw
-            (byte)'E', (byte)'N', (byte)'M',  // en-my
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-na
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ng
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-nu
-            (byte)'E', (byte)'N', (byte)'Z',  // en-nz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pg
-            (byte)'E', (byte)'N', (byte)'P',  // en-ph
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-pw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-rw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-se
-            (byte)'E', (byte)'N', (byte)'E',  // en-sg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-si
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ss
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sx
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-sz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-to
-            (byte)'E', (byte)'N', (byte)'T',  // en-tt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ug
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-um
-            (byte)'E', (byte)'N', (byte)'U',  // en-us
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-vu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-ws
-            (byte)'E', (byte)'N', (byte)'S',  // en-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // en-zm
-            (byte)'E', (byte)'N', (byte)'W',  // en-zw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // eo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // eo-001
-            (byte)'E', (byte)'S', (byte)'P',  // es
-            (byte)'E', (byte)'S', (byte)'J',  // es-419
-            (byte)'E', (byte)'S', (byte)'S',  // es-ar
-            (byte)'E', (byte)'S', (byte)'B',  // es-bo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // es-br
-            (byte)'E', (byte)'S', (byte)'L',  // es-cl
-            (byte)'E', (byte)'S', (byte)'O',  // es-co
-            (byte)'E', (byte)'S', (byte)'C',  // es-cr
-            (byte)'E', (byte)'S', (byte)'K',  // es-cu
-            (byte)'E', (byte)'S', (byte)'D',  // es-do
-            (byte)'E', (byte)'S', (byte)'F',  // es-ec
-            (byte)'E', (byte)'S', (byte)'N',  // es-es
-            (byte)'E', (byte)'S', (byte)'P',  // es-es_tradnl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // es-gq
-            (byte)'E', (byte)'S', (byte)'G',  // es-gt
-            (byte)'E', (byte)'S', (byte)'H',  // es-hn
-            (byte)'E', (byte)'S', (byte)'M',  // es-mx
-            (byte)'E', (byte)'S', (byte)'I',  // es-ni
-            (byte)'E', (byte)'S', (byte)'A',  // es-pa
-            (byte)'E', (byte)'S', (byte)'R',  // es-pe
-            (byte)'Z', (byte)'Z', (byte)'Z',  // es-ph
-            (byte)'E', (byte)'S', (byte)'U',  // es-pr
-            (byte)'E', (byte)'S', (byte)'Z',  // es-py
-            (byte)'E', (byte)'S', (byte)'E',  // es-sv
-            (byte)'E', (byte)'S', (byte)'T',  // es-us
-            (byte)'E', (byte)'S', (byte)'Y',  // es-uy
-            (byte)'E', (byte)'S', (byte)'V',  // es-ve
-            (byte)'E', (byte)'T', (byte)'I',  // et
-            (byte)'E', (byte)'T', (byte)'I',  // et-ee
-            (byte)'E', (byte)'U', (byte)'Q',  // eu
-            (byte)'E', (byte)'U', (byte)'Q',  // eu-es
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ewo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ewo-cm
-            (byte)'F', (byte)'A', (byte)'R',  // fa
-            (byte)'F', (byte)'A', (byte)'R',  // fa-ir
-            (byte)'F', (byte)'U', (byte)'L',  // ff
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-gn
-            (byte)'F', (byte)'U', (byte)'L',  // ff-latn
-            (byte)'F', (byte)'U', (byte)'L',  // ff-latn-sn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-mr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ff-ng
-            (byte)'F', (byte)'I', (byte)'N',  // fi
-            (byte)'F', (byte)'I', (byte)'N',  // fi-fi
-            (byte)'F', (byte)'P', (byte)'O',  // fil
-            (byte)'F', (byte)'P', (byte)'O',  // fil-ph
-            (byte)'F', (byte)'O', (byte)'S',  // fo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fo-dk
-            (byte)'F', (byte)'O', (byte)'S',  // fo-fo
-            (byte)'F', (byte)'R', (byte)'A',  // fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-029
-            (byte)'F', (byte)'R', (byte)'B',  // fr-be
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-bl
-            (byte)'F', (byte)'R', (byte)'C',  // fr-ca
-            (byte)'F', (byte)'R', (byte)'D',  // fr-cd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-cf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-cg
-            (byte)'F', (byte)'R', (byte)'S',  // fr-ch
-            (byte)'F', (byte)'R', (byte)'I',  // fr-ci
-            (byte)'F', (byte)'R', (byte)'E',  // fr-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-dj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-dz
-            (byte)'F', (byte)'R', (byte)'A',  // fr-fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-ga
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gp
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-gq
-            (byte)'F', (byte)'R', (byte)'H',  // fr-ht
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-km
-            (byte)'F', (byte)'R', (byte)'L',  // fr-lu
-            (byte)'F', (byte)'R', (byte)'O',  // fr-ma
-            (byte)'F', (byte)'R', (byte)'M',  // fr-mc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mg
-            (byte)'F', (byte)'R', (byte)'F',  // fr-ml
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-mu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-nc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-ne
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-pf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-pm
-            (byte)'F', (byte)'R', (byte)'R',  // fr-re
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-rw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-sc
-            (byte)'F', (byte)'R', (byte)'N',  // fr-sn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-sy
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-td
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-tg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-tn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-vu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-wf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fr-yt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fur
-            (byte)'Z', (byte)'Z', (byte)'Z',  // fur-it
-            (byte)'F', (byte)'Y', (byte)'N',  // fy
-            (byte)'F', (byte)'Y', (byte)'N',  // fy-nl
-            (byte)'I', (byte)'R', (byte)'E',  // ga
-            (byte)'I', (byte)'R', (byte)'E',  // ga-ie
-            (byte)'G', (byte)'L', (byte)'A',  // gd
-            (byte)'G', (byte)'L', (byte)'A',  // gd-gb
-            (byte)'G', (byte)'L', (byte)'C',  // gl
-            (byte)'G', (byte)'L', (byte)'C',  // gl-es
-            (byte)'G', (byte)'R', (byte)'N',  // gn
-            (byte)'G', (byte)'R', (byte)'N',  // gn-py
-            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw-ch
-            (byte)'G', (byte)'S', (byte)'W',  // gsw-fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // gsw-li
-            (byte)'G', (byte)'U', (byte)'J',  // gu
-            (byte)'G', (byte)'U', (byte)'J',  // gu-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // guz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // guz-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // gv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // gv-im
-            (byte)'H', (byte)'A', (byte)'U',  // ha
-            (byte)'H', (byte)'A', (byte)'U',  // ha-latn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ha-latn-gh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ha-latn-ne
-            (byte)'H', (byte)'A', (byte)'U',  // ha-latn-ng
-            (byte)'H', (byte)'A', (byte)'W',  // haw
-            (byte)'H', (byte)'A', (byte)'W',  // haw-us
-            (byte)'H', (byte)'E', (byte)'B',  // he
-            (byte)'H', (byte)'E', (byte)'B',  // he-il
-            (byte)'H', (byte)'I', (byte)'N',  // hi
-            (byte)'H', (byte)'I', (byte)'N',  // hi-in
-            (byte)'H', (byte)'R', (byte)'V',  // hr
-            (byte)'H', (byte)'R', (byte)'B',  // hr-ba
-            (byte)'H', (byte)'R', (byte)'V',  // hr-hr
-            (byte)'H', (byte)'S', (byte)'B',  // hsb
-            (byte)'H', (byte)'S', (byte)'B',  // hsb-de
-            (byte)'H', (byte)'U', (byte)'N',  // hu
-            (byte)'H', (byte)'U', (byte)'N',  // hu-hu
-            (byte)'H', (byte)'U', (byte)'N',  // hu-hu_technl
-            (byte)'H', (byte)'Y', (byte)'E',  // hy
-            (byte)'H', (byte)'Y', (byte)'E',  // hy-am
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ia
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ia-001
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ia-fr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ibb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ibb-ng
-            (byte)'I', (byte)'N', (byte)'D',  // id
-            (byte)'I', (byte)'N', (byte)'D',  // id-id
-            (byte)'I', (byte)'B', (byte)'O',  // ig
-            (byte)'I', (byte)'B', (byte)'O',  // ig-ng
-            (byte)'I', (byte)'I', (byte)'I',  // ii
-            (byte)'I', (byte)'I', (byte)'I',  // ii-cn
-            (byte)'I', (byte)'S', (byte)'L',  // is
-            (byte)'I', (byte)'S', (byte)'L',  // is-is
-            (byte)'I', (byte)'T', (byte)'A',  // it
-            (byte)'I', (byte)'T', (byte)'S',  // it-ch
-            (byte)'I', (byte)'T', (byte)'A',  // it-it
-            (byte)'Z', (byte)'Z', (byte)'Z',  // it-sm
-            (byte)'I', (byte)'U', (byte)'K',  // iu
-            (byte)'I', (byte)'U', (byte)'S',  // iu-cans
-            (byte)'I', (byte)'U', (byte)'S',  // iu-cans-ca
-            (byte)'I', (byte)'U', (byte)'K',  // iu-latn
-            (byte)'I', (byte)'U', (byte)'K',  // iu-latn-ca
-            (byte)'J', (byte)'P', (byte)'N',  // ja
-            (byte)'J', (byte)'P', (byte)'N',  // ja-jp
-            (byte)'J', (byte)'P', (byte)'N',  // ja-jp_radstr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jgo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jgo-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jmc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jmc-tz
-            (byte)'J', (byte)'A', (byte)'V',  // jv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jv-java
-            (byte)'Z', (byte)'Z', (byte)'Z',  // jv-java-id
-            (byte)'J', (byte)'A', (byte)'V',  // jv-latn
-            (byte)'J', (byte)'A', (byte)'V',  // jv-latn-id
-            (byte)'K', (byte)'A', (byte)'T',  // ka
-            (byte)'K', (byte)'A', (byte)'T',  // ka-ge
-            (byte)'K', (byte)'A', (byte)'T',  // ka-ge_modern
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kab
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kab-dz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kam
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kam-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kde
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kde-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kea
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kea-cv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // khq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // khq-ml
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ki
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ki-ke
-            (byte)'K', (byte)'K', (byte)'Z',  // kk
-            (byte)'K', (byte)'K', (byte)'Z',  // kk-kz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kkj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kkj-cm
-            (byte)'K', (byte)'A', (byte)'L',  // kl
-            (byte)'K', (byte)'A', (byte)'L',  // kl-gl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kln
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kln-ke
-            (byte)'K', (byte)'H', (byte)'M',  // km
-            (byte)'K', (byte)'H', (byte)'M',  // km-kh
-            (byte)'K', (byte)'D', (byte)'I',  // kn
-            (byte)'K', (byte)'D', (byte)'I',  // kn-in
-            (byte)'K', (byte)'O', (byte)'R',  // ko
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ko-kp
-            (byte)'K', (byte)'O', (byte)'R',  // ko-kr
-            (byte)'K', (byte)'N', (byte)'K',  // kok
-            (byte)'K', (byte)'N', (byte)'K',  // kok-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kr-ng
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ks
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-arab
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-arab-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-deva
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ks-deva-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksb
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksb-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksf-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ksh-de
-            (byte)'K', (byte)'U', (byte)'R',  // ku
-            (byte)'K', (byte)'U', (byte)'R',  // ku-arab
-            (byte)'K', (byte)'U', (byte)'R',  // ku-arab-iq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ku-arab-ir
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // kw-gb
-            (byte)'K', (byte)'Y', (byte)'R',  // ky
-            (byte)'K', (byte)'Y', (byte)'R',  // ky-kg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // la
-            (byte)'Z', (byte)'Z', (byte)'Z',  // la-001
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lag
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lag-tz
-            (byte)'L', (byte)'B', (byte)'X',  // lb
-            (byte)'L', (byte)'B', (byte)'X',  // lb-lu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lg-ug
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lkt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lkt-us
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ln
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-ao
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ln-cg
-            (byte)'L', (byte)'A', (byte)'O',  // lo
-            (byte)'L', (byte)'A', (byte)'O',  // lo-la
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc-iq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lrc-ir
-            (byte)'L', (byte)'T', (byte)'H',  // lt
-            (byte)'L', (byte)'T', (byte)'H',  // lt-lt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // lu-cd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // luo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // luo-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // luy
-            (byte)'Z', (byte)'Z', (byte)'Z',  // luy-ke
-            (byte)'L', (byte)'V', (byte)'I',  // lv
-            (byte)'L', (byte)'V', (byte)'I',  // lv-lv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mas
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mas-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mas-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mer
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mer-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mfe
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mfe-mu
-            (byte)'M', (byte)'L', (byte)'G',  // mg
-            (byte)'M', (byte)'L', (byte)'G',  // mg-mg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mgh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mgh-mz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mgo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mgo-cm
-            (byte)'M', (byte)'R', (byte)'I',  // mi
-            (byte)'M', (byte)'R', (byte)'I',  // mi-nz
-            (byte)'M', (byte)'K', (byte)'I',  // mk
-            (byte)'M', (byte)'K', (byte)'I',  // mk-mk
-            (byte)'M', (byte)'Y', (byte)'M',  // ml
-            (byte)'M', (byte)'Y', (byte)'M',  // ml-in
-            (byte)'M', (byte)'O', (byte)'N',  // mn
-            (byte)'M', (byte)'N', (byte)'N',  // mn-cyrl
-            (byte)'M', (byte)'N', (byte)'N',  // mn-mn
-            (byte)'M', (byte)'N', (byte)'G',  // mn-mong
-            (byte)'M', (byte)'N', (byte)'G',  // mn-mong-cn
-            (byte)'M', (byte)'N', (byte)'M',  // mn-mong-mn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mni
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mni-in
-            (byte)'M', (byte)'W', (byte)'K',  // moh
-            (byte)'M', (byte)'W', (byte)'K',  // moh-ca
-            (byte)'M', (byte)'A', (byte)'R',  // mr
-            (byte)'M', (byte)'A', (byte)'R',  // mr-in
-            (byte)'M', (byte)'S', (byte)'L',  // ms
-            (byte)'M', (byte)'S', (byte)'B',  // ms-bn
-            (byte)'M', (byte)'S', (byte)'L',  // ms-my
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ms-sg
-            (byte)'M', (byte)'L', (byte)'T',  // mt
-            (byte)'M', (byte)'L', (byte)'T',  // mt-mt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mua
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mua-cm
-            (byte)'M', (byte)'Y', (byte)'A',  // my
-            (byte)'M', (byte)'Y', (byte)'A',  // my-mm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mzn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // mzn-ir
-            (byte)'Z', (byte)'Z', (byte)'Z',  // naq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // naq-na
-            (byte)'N', (byte)'O', (byte)'R',  // nb
-            (byte)'N', (byte)'O', (byte)'R',  // nb-no
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nb-sj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nd
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nd-zw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nds
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nds-de
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nds-nl
-            (byte)'N', (byte)'E', (byte)'P',  // ne
-            (byte)'N', (byte)'E', (byte)'I',  // ne-in
-            (byte)'N', (byte)'E', (byte)'P',  // ne-np
-            (byte)'N', (byte)'L', (byte)'D',  // nl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-aw
-            (byte)'N', (byte)'L', (byte)'B',  // nl-be
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-bq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-cw
-            (byte)'N', (byte)'L', (byte)'D',  // nl-nl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-sr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nl-sx
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nmg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nmg-cm
-            (byte)'N', (byte)'O', (byte)'N',  // nn
-            (byte)'N', (byte)'O', (byte)'N',  // nn-no
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nnh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nnh-cm
-            (byte)'N', (byte)'O', (byte)'R',  // no
-            (byte)'N', (byte)'Q', (byte)'O',  // nqo
-            (byte)'N', (byte)'Q', (byte)'O',  // nqo-gn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nr-za
-            (byte)'N', (byte)'S', (byte)'O',  // nso
-            (byte)'N', (byte)'S', (byte)'O',  // nso-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nus
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nus-ss
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nyn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // nyn-ug
-            (byte)'O', (byte)'C', (byte)'I',  // oc
-            (byte)'O', (byte)'C', (byte)'I',  // oc-fr
-            (byte)'O', (byte)'R', (byte)'M',  // om
-            (byte)'O', (byte)'R', (byte)'M',  // om-et
-            (byte)'Z', (byte)'Z', (byte)'Z',  // om-ke
-            (byte)'O', (byte)'R', (byte)'I',  // or
-            (byte)'O', (byte)'R', (byte)'I',  // or-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // os
-            (byte)'Z', (byte)'Z', (byte)'Z',  // os-ge
-            (byte)'Z', (byte)'Z', (byte)'Z',  // os-ru
-            (byte)'P', (byte)'A', (byte)'N',  // pa
-            (byte)'P', (byte)'A', (byte)'P',  // pa-arab
-            (byte)'P', (byte)'A', (byte)'P',  // pa-arab-pk
-            (byte)'P', (byte)'A', (byte)'N',  // pa-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pap
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pap-029
-            (byte)'P', (byte)'L', (byte)'K',  // pl
-            (byte)'P', (byte)'L', (byte)'K',  // pl-pl
-            (byte)'Z', (byte)'Z', (byte)'Z',  // prg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // prg-001
-            (byte)'P', (byte)'R', (byte)'S',  // prs
-            (byte)'P', (byte)'R', (byte)'S',  // prs-af
-            (byte)'P', (byte)'A', (byte)'S',  // ps
-            (byte)'P', (byte)'A', (byte)'S',  // ps-af
-            (byte)'P', (byte)'T', (byte)'B',  // pt
-            (byte)'P', (byte)'T', (byte)'A',  // pt-ao
-            (byte)'P', (byte)'T', (byte)'B',  // pt-br
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-ch
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-cv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-gq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-gw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-lu
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-mo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-mz
-            (byte)'P', (byte)'T', (byte)'G',  // pt-pt
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-st
-            (byte)'Z', (byte)'Z', (byte)'Z',  // pt-tl
-            (byte)'E', (byte)'N', (byte)'J',  // qps-latn-x-sh
-            (byte)'E', (byte)'N', (byte)'U',  // qps-ploc
-            (byte)'J', (byte)'P', (byte)'N',  // qps-ploca
-            (byte)'A', (byte)'R', (byte)'A',  // qps-plocm
-            (byte)'Q', (byte)'U', (byte)'C',  // quc
-            (byte)'Q', (byte)'U', (byte)'T',  // quc-latn
-            (byte)'Q', (byte)'U', (byte)'T',  // quc-latn-gt
-            (byte)'Q', (byte)'U', (byte)'B',  // quz
-            (byte)'Q', (byte)'U', (byte)'B',  // quz-bo
-            (byte)'Q', (byte)'U', (byte)'E',  // quz-ec
-            (byte)'Q', (byte)'U', (byte)'P',  // quz-pe
-            (byte)'R', (byte)'M', (byte)'C',  // rm
-            (byte)'R', (byte)'M', (byte)'C',  // rm-ch
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rn-bi
-            (byte)'R', (byte)'O', (byte)'M',  // ro
-            (byte)'R', (byte)'O', (byte)'D',  // ro-md
-            (byte)'R', (byte)'O', (byte)'M',  // ro-ro
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rof
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rof-tz
-            (byte)'R', (byte)'U', (byte)'S',  // ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-by
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-kg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-kz
-            (byte)'R', (byte)'U', (byte)'M',  // ru-md
-            (byte)'R', (byte)'U', (byte)'S',  // ru-ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ru-ua
-            (byte)'K', (byte)'I', (byte)'N',  // rw
-            (byte)'K', (byte)'I', (byte)'N',  // rw-rw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rwk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // rwk-tz
-            (byte)'S', (byte)'A', (byte)'N',  // sa
-            (byte)'S', (byte)'A', (byte)'N',  // sa-in
-            (byte)'S', (byte)'A', (byte)'H',  // sah
-            (byte)'S', (byte)'A', (byte)'H',  // sah-ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // saq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // saq-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sbp
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sbp-tz
-            (byte)'S', (byte)'I', (byte)'P',  // sd
-            (byte)'S', (byte)'I', (byte)'P',  // sd-arab
-            (byte)'S', (byte)'I', (byte)'P',  // sd-arab-pk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sd-deva
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sd-deva-in
-            (byte)'S', (byte)'M', (byte)'E',  // se
-            (byte)'S', (byte)'M', (byte)'G',  // se-fi
-            (byte)'S', (byte)'M', (byte)'E',  // se-no
-            (byte)'S', (byte)'M', (byte)'F',  // se-se
-            (byte)'Z', (byte)'Z', (byte)'Z',  // seh
-            (byte)'Z', (byte)'Z', (byte)'Z',  // seh-mz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ses
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ses-ml
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sg
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sg-cf
-            (byte)'Z', (byte)'Z', (byte)'Z',  // shi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-latn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-latn-ma
-            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-tfng
-            (byte)'Z', (byte)'Z', (byte)'Z',  // shi-tfng-ma
-            (byte)'S', (byte)'I', (byte)'N',  // si
-            (byte)'S', (byte)'I', (byte)'N',  // si-lk
-            (byte)'S', (byte)'K', (byte)'Y',  // sk
-            (byte)'S', (byte)'K', (byte)'Y',  // sk-sk
-            (byte)'S', (byte)'L', (byte)'V',  // sl
-            (byte)'S', (byte)'L', (byte)'V',  // sl-si
-            (byte)'S', (byte)'M', (byte)'B',  // sma
-            (byte)'S', (byte)'M', (byte)'A',  // sma-no
-            (byte)'S', (byte)'M', (byte)'B',  // sma-se
-            (byte)'S', (byte)'M', (byte)'K',  // smj
-            (byte)'S', (byte)'M', (byte)'J',  // smj-no
-            (byte)'S', (byte)'M', (byte)'K',  // smj-se
-            (byte)'S', (byte)'M', (byte)'N',  // smn
-            (byte)'S', (byte)'M', (byte)'N',  // smn-fi
-            (byte)'S', (byte)'M', (byte)'S',  // sms
-            (byte)'S', (byte)'M', (byte)'S',  // sms-fi
-            (byte)'S', (byte)'N', (byte)'A',  // sn
-            (byte)'S', (byte)'N', (byte)'A',  // sn-latn
-            (byte)'S', (byte)'N', (byte)'A',  // sn-latn-zw
-            (byte)'S', (byte)'O', (byte)'M',  // so
-            (byte)'Z', (byte)'Z', (byte)'Z',  // so-dj
-            (byte)'Z', (byte)'Z', (byte)'Z',  // so-et
-            (byte)'Z', (byte)'Z', (byte)'Z',  // so-ke
-            (byte)'S', (byte)'O', (byte)'M',  // so-so
-            (byte)'S', (byte)'Q', (byte)'I',  // sq
-            (byte)'S', (byte)'Q', (byte)'I',  // sq-al
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sq-mk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sq-xk
-            (byte)'S', (byte)'R', (byte)'B',  // sr
-            (byte)'S', (byte)'R', (byte)'O',  // sr-cyrl
-            (byte)'S', (byte)'R', (byte)'N',  // sr-cyrl-ba
-            (byte)'S', (byte)'R', (byte)'B',  // sr-cyrl-cs
-            (byte)'S', (byte)'R', (byte)'Q',  // sr-cyrl-me
-            (byte)'S', (byte)'R', (byte)'O',  // sr-cyrl-rs
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sr-cyrl-xk
-            (byte)'S', (byte)'R', (byte)'M',  // sr-latn
-            (byte)'S', (byte)'R', (byte)'S',  // sr-latn-ba
-            (byte)'S', (byte)'R', (byte)'L',  // sr-latn-cs
-            (byte)'S', (byte)'R', (byte)'P',  // sr-latn-me
-            (byte)'S', (byte)'R', (byte)'M',  // sr-latn-rs
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sr-latn-xk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ss
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ss-sz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ss-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ssy
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ssy-er
-            (byte)'S', (byte)'O', (byte)'T',  // st
-            (byte)'Z', (byte)'Z', (byte)'Z',  // st-ls
-            (byte)'S', (byte)'O', (byte)'T',  // st-za
-            (byte)'S', (byte)'V', (byte)'E',  // sv
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sv-ax
-            (byte)'S', (byte)'V', (byte)'F',  // sv-fi
-            (byte)'S', (byte)'V', (byte)'E',  // sv-se
-            (byte)'S', (byte)'W', (byte)'K',  // sw
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-cd
-            (byte)'S', (byte)'W', (byte)'K',  // sw-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // sw-ug
-            (byte)'Z', (byte)'Z', (byte)'Z',  // swc
-            (byte)'Z', (byte)'Z', (byte)'Z',  // swc-cd
-            (byte)'S', (byte)'Y', (byte)'R',  // syr
-            (byte)'S', (byte)'Y', (byte)'R',  // syr-sy
-            (byte)'T', (byte)'A', (byte)'I',  // ta
-            (byte)'T', (byte)'A', (byte)'I',  // ta-in
-            (byte)'T', (byte)'A', (byte)'M',  // ta-lk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ta-my
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ta-sg
-            (byte)'T', (byte)'E', (byte)'L',  // te
-            (byte)'T', (byte)'E', (byte)'L',  // te-in
-            (byte)'Z', (byte)'Z', (byte)'Z',  // teo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // teo-ke
-            (byte)'Z', (byte)'Z', (byte)'Z',  // teo-ug
-            (byte)'T', (byte)'A', (byte)'J',  // tg
-            (byte)'T', (byte)'A', (byte)'J',  // tg-cyrl
-            (byte)'T', (byte)'A', (byte)'J',  // tg-cyrl-tj
-            (byte)'T', (byte)'H', (byte)'A',  // th
-            (byte)'T', (byte)'H', (byte)'A',  // th-th
-            (byte)'T', (byte)'I', (byte)'R',  // ti
-            (byte)'T', (byte)'I', (byte)'R',  // ti-er
-            (byte)'T', (byte)'I', (byte)'E',  // ti-et
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tig
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tig-er
-            (byte)'T', (byte)'U', (byte)'K',  // tk
-            (byte)'T', (byte)'U', (byte)'K',  // tk-tm
-            (byte)'T', (byte)'S', (byte)'N',  // tn
-            (byte)'T', (byte)'S', (byte)'B',  // tn-bw
-            (byte)'T', (byte)'S', (byte)'N',  // tn-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // to
-            (byte)'Z', (byte)'Z', (byte)'Z',  // to-to
-            (byte)'T', (byte)'R', (byte)'K',  // tr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tr-cy
-            (byte)'T', (byte)'R', (byte)'K',  // tr-tr
-            (byte)'T', (byte)'S', (byte)'O',  // ts
-            (byte)'T', (byte)'S', (byte)'O',  // ts-za
-            (byte)'T', (byte)'T', (byte)'T',  // tt
-            (byte)'T', (byte)'T', (byte)'T',  // tt-ru
-            (byte)'Z', (byte)'Z', (byte)'Z',  // twq
-            (byte)'Z', (byte)'Z', (byte)'Z',  // twq-ne
-            (byte)'T', (byte)'Z', (byte)'A',  // tzm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-arab
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-arab-ma
-            (byte)'T', (byte)'Z', (byte)'A',  // tzm-latn
-            (byte)'T', (byte)'Z', (byte)'A',  // tzm-latn-dz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // tzm-latn-ma
-            (byte)'T', (byte)'Z', (byte)'M',  // tzm-tfng
-            (byte)'T', (byte)'Z', (byte)'M',  // tzm-tfng-ma
-            (byte)'U', (byte)'I', (byte)'G',  // ug
-            (byte)'U', (byte)'I', (byte)'G',  // ug-cn
-            (byte)'U', (byte)'K', (byte)'R',  // uk
-            (byte)'U', (byte)'K', (byte)'R',  // uk-ua
-            (byte)'U', (byte)'R', (byte)'D',  // ur
-            (byte)'U', (byte)'R', (byte)'I',  // ur-in
-            (byte)'U', (byte)'R', (byte)'D',  // ur-pk
-            (byte)'U', (byte)'Z', (byte)'B',  // uz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // uz-arab
-            (byte)'Z', (byte)'Z', (byte)'Z',  // uz-arab-af
-            (byte)'U', (byte)'Z', (byte)'C',  // uz-cyrl
-            (byte)'U', (byte)'Z', (byte)'C',  // uz-cyrl-uz
-            (byte)'U', (byte)'Z', (byte)'B',  // uz-latn
-            (byte)'U', (byte)'Z', (byte)'B',  // uz-latn-uz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vai
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-latn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-latn-lr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-vaii
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vai-vaii-lr
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ve
-            (byte)'Z', (byte)'Z', (byte)'Z',  // ve-za
-            (byte)'V', (byte)'I', (byte)'T',  // vi
-            (byte)'V', (byte)'I', (byte)'T',  // vi-vn
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vo-001
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vun
-            (byte)'Z', (byte)'Z', (byte)'Z',  // vun-tz
-            (byte)'Z', (byte)'Z', (byte)'Z',  // wae
-            (byte)'Z', (byte)'Z', (byte)'Z',  // wae-ch
-            (byte)'Z', (byte)'Z', (byte)'Z',  // wal
-            (byte)'Z', (byte)'Z', (byte)'Z',  // wal-et
-            (byte)'W', (byte)'O', (byte)'L',  // wo
-            (byte)'W', (byte)'O', (byte)'L',  // wo-sn
-            (byte)'I', (byte)'V', (byte)'L',  // x-iv_mathan
-            (byte)'X', (byte)'H', (byte)'O',  // xh
-            (byte)'X', (byte)'H', (byte)'O',  // xh-za
-            (byte)'Z', (byte)'Z', (byte)'Z',  // xog
-            (byte)'Z', (byte)'Z', (byte)'Z',  // xog-ug
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yav
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yav-cm
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yi
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yi-001
-            (byte)'Y', (byte)'O', (byte)'R',  // yo
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yo-bj
-            (byte)'Y', (byte)'O', (byte)'R',  // yo-ng
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yue
-            (byte)'Z', (byte)'Z', (byte)'Z',  // yue-hk
-            (byte)'Z', (byte)'H', (byte)'G',  // zgh
-            (byte)'Z', (byte)'H', (byte)'G',  // zgh-tfng
-            (byte)'Z', (byte)'H', (byte)'G',  // zgh-tfng-ma
-            (byte)'C', (byte)'H', (byte)'S',  // zh
-            (byte)'C', (byte)'H', (byte)'S',  // zh-chs
-            (byte)'C', (byte)'H', (byte)'T',  // zh-cht
-            (byte)'C', (byte)'H', (byte)'S',  // zh-cn
-            (byte)'C', (byte)'H', (byte)'S',  // zh-cn_phoneb
-            (byte)'C', (byte)'H', (byte)'S',  // zh-cn_stroke
-            (byte)'C', (byte)'H', (byte)'S',  // zh-hans
-            (byte)'Z', (byte)'Z', (byte)'Z',  // zh-hans-hk
-            (byte)'Z', (byte)'Z', (byte)'Z',  // zh-hans-mo
-            (byte)'Z', (byte)'H', (byte)'H',  // zh-hant
-            (byte)'Z', (byte)'H', (byte)'H',  // zh-hk
-            (byte)'Z', (byte)'H', (byte)'H',  // zh-hk_radstr
-            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo
-            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo_radstr
-            (byte)'Z', (byte)'H', (byte)'M',  // zh-mo_stroke
-            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg
-            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg_phoneb
-            (byte)'Z', (byte)'H', (byte)'I',  // zh-sg_stroke
-            (byte)'C', (byte)'H', (byte)'T',  // zh-tw
-            (byte)'C', (byte)'H', (byte)'T',  // zh-tw_pronun
-            (byte)'C', (byte)'H', (byte)'T',  // zh-tw_radstr
-            (byte)'Z', (byte)'U', (byte)'L',  // zu
-            (byte)'Z', (byte)'U', (byte)'L',  // zu-za
-        };
+        private static ReadOnlySpan<byte> ThreeLetterWindowsLanguageName =>
+            "ZZZ"u8 + // aa
+            "ZZZ"u8 + // aa-dj
+            "ZZZ"u8 + // aa-er
+            "ZZZ"u8 + // aa-et
+            "AFK"u8 + // af
+            "ZZZ"u8 + // af-na
+            "AFK"u8 + // af-za
+            "ZZZ"u8 + // agq
+            "ZZZ"u8 + // agq-cm
+            "ZZZ"u8 + // ak
+            "ZZZ"u8 + // ak-gh
+            "AMH"u8 + // am
+            "AMH"u8 + // am-et
+            "ARA"u8 + // ar
+            "ZZZ"u8 + // ar-001
+            "ARU"u8 + // ar-ae
+            "ARH"u8 + // ar-bh
+            "ZZZ"u8 + // ar-dj
+            "ARG"u8 + // ar-dz
+            "ARE"u8 + // ar-eg
+            "ZZZ"u8 + // ar-er
+            "ZZZ"u8 + // ar-il
+            "ARI"u8 + // ar-iq
+            "ARJ"u8 + // ar-jo
+            "ZZZ"u8 + // ar-km
+            "ARK"u8 + // ar-kw
+            "ARB"u8 + // ar-lb
+            "ARL"u8 + // ar-ly
+            "ARM"u8 + // ar-ma
+            "ZZZ"u8 + // ar-mr
+            "ARO"u8 + // ar-om
+            "ZZZ"u8 + // ar-ps
+            "ARQ"u8 + // ar-qa
+            "ARA"u8 + // ar-sa
+            "ZZZ"u8 + // ar-sd
+            "ZZZ"u8 + // ar-so
+            "ZZZ"u8 + // ar-ss
+            "ARS"u8 + // ar-sy
+            "ZZZ"u8 + // ar-td
+            "ART"u8 + // ar-tn
+            "ARY"u8 + // ar-ye
+            "MPD"u8 + // arn
+            "MPD"u8 + // arn-cl
+            "ASM"u8 + // as
+            "ASM"u8 + // as-in
+            "ZZZ"u8 + // asa
+            "ZZZ"u8 + // asa-tz
+            "ZZZ"u8 + // ast
+            "ZZZ"u8 + // ast-es
+            "AZE"u8 + // az
+            "AZC"u8 + // az-cyrl
+            "AZC"u8 + // az-cyrl-az
+            "AZE"u8 + // az-latn
+            "AZE"u8 + // az-latn-az
+            "BAS"u8 + // ba
+            "BAS"u8 + // ba-ru
+            "ZZZ"u8 + // bas
+            "ZZZ"u8 + // bas-cm
+            "BEL"u8 + // be
+            "BEL"u8 + // be-by
+            "ZZZ"u8 + // bem
+            "ZZZ"u8 + // bem-zm
+            "ZZZ"u8 + // bez
+            "ZZZ"u8 + // bez-tz
+            "BGR"u8 + // bg
+            "BGR"u8 + // bg-bg
+            "ZZZ"u8 + // bin
+            "ZZZ"u8 + // bin-ng
+            "ZZZ"u8 + // bm
+            "ZZZ"u8 + // bm-latn
+            "ZZZ"u8 + // bm-latn-ml
+            "BNB"u8 + // bn
+            "BNB"u8 + // bn-bd
+            "BNG"u8 + // bn-in
+            "BOB"u8 + // bo
+            "BOB"u8 + // bo-cn
+            "ZZZ"u8 + // bo-in
+            "BRE"u8 + // br
+            "BRE"u8 + // br-fr
+            "ZZZ"u8 + // brx
+            "ZZZ"u8 + // brx-in
+            "BSB"u8 + // bs
+            "BSC"u8 + // bs-cyrl
+            "BSC"u8 + // bs-cyrl-ba
+            "BSB"u8 + // bs-latn
+            "BSB"u8 + // bs-latn-ba
+            "ZZZ"u8 + // byn
+            "ZZZ"u8 + // byn-er
+            "CAT"u8 + // ca
+            "ZZZ"u8 + // ca-ad
+            "CAT"u8 + // ca-es
+            "VAL"u8 + // ca-es-valencia
+            "ZZZ"u8 + // ca-fr
+            "ZZZ"u8 + // ca-it
+            "ZZZ"u8 + // ce
+            "ZZZ"u8 + // ce-ru
+            "ZZZ"u8 + // cgg
+            "ZZZ"u8 + // cgg-ug
+            "CRE"u8 + // chr
+            "CRE"u8 + // chr-cher
+            "CRE"u8 + // chr-cher-us
+            "COS"u8 + // co
+            "COS"u8 + // co-fr
+            "CSY"u8 + // cs
+            "CSY"u8 + // cs-cz
+            "ZZZ"u8 + // cu
+            "ZZZ"u8 + // cu-ru
+            "CYM"u8 + // cy
+            "CYM"u8 + // cy-gb
+            "DAN"u8 + // da
+            "DAN"u8 + // da-dk
+            "ZZZ"u8 + // da-gl
+            "ZZZ"u8 + // dav
+            "ZZZ"u8 + // dav-ke
+            "DEU"u8 + // de
+            "DEA"u8 + // de-at
+            "ZZZ"u8 + // de-be
+            "DES"u8 + // de-ch
+            "DEU"u8 + // de-de
+            "DEU"u8 + // de-de_phoneb
+            "ZZZ"u8 + // de-it
+            "DEC"u8 + // de-li
+            "DEL"u8 + // de-lu
+            "ZZZ"u8 + // dje
+            "ZZZ"u8 + // dje-ne
+            "DSB"u8 + // dsb
+            "DSB"u8 + // dsb-de
+            "ZZZ"u8 + // dua
+            "ZZZ"u8 + // dua-cm
+            "DIV"u8 + // dv
+            "DIV"u8 + // dv-mv
+            "ZZZ"u8 + // dyo
+            "ZZZ"u8 + // dyo-sn
+            "ZZZ"u8 + // dz
+            "ZZZ"u8 + // dz-bt
+            "ZZZ"u8 + // ebu
+            "ZZZ"u8 + // ebu-ke
+            "ZZZ"u8 + // ee
+            "ZZZ"u8 + // ee-gh
+            "ZZZ"u8 + // ee-tg
+            "ELL"u8 + // el
+            "ZZZ"u8 + // el-cy
+            "ELL"u8 + // el-gr
+            "ENU"u8 + // en
+            "ZZZ"u8 + // en-001
+            "ENB"u8 + // en-029
+            "ZZZ"u8 + // en-150
+            "ZZZ"u8 + // en-ag
+            "ZZZ"u8 + // en-ai
+            "ZZZ"u8 + // en-as
+            "ZZZ"u8 + // en-at
+            "ENA"u8 + // en-au
+            "ZZZ"u8 + // en-bb
+            "ZZZ"u8 + // en-be
+            "ZZZ"u8 + // en-bi
+            "ZZZ"u8 + // en-bm
+            "ZZZ"u8 + // en-bs
+            "ZZZ"u8 + // en-bw
+            "ENL"u8 + // en-bz
+            "ENC"u8 + // en-ca
+            "ZZZ"u8 + // en-cc
+            "ZZZ"u8 + // en-ch
+            "ZZZ"u8 + // en-ck
+            "ZZZ"u8 + // en-cm
+            "ZZZ"u8 + // en-cx
+            "ZZZ"u8 + // en-cy
+            "ZZZ"u8 + // en-de
+            "ZZZ"u8 + // en-dk
+            "ZZZ"u8 + // en-dm
+            "ZZZ"u8 + // en-er
+            "ZZZ"u8 + // en-fi
+            "ZZZ"u8 + // en-fj
+            "ZZZ"u8 + // en-fk
+            "ZZZ"u8 + // en-fm
+            "ENG"u8 + // en-gb
+            "ZZZ"u8 + // en-gd
+            "ZZZ"u8 + // en-gg
+            "ZZZ"u8 + // en-gh
+            "ZZZ"u8 + // en-gi
+            "ZZZ"u8 + // en-gm
+            "ZZZ"u8 + // en-gu
+            "ZZZ"u8 + // en-gy
+            "ENH"u8 + // en-hk
+            "ZZZ"u8 + // en-id
+            "ENI"u8 + // en-ie
+            "ZZZ"u8 + // en-il
+            "ZZZ"u8 + // en-im
+            "ENN"u8 + // en-in
+            "ZZZ"u8 + // en-io
+            "ZZZ"u8 + // en-je
+            "ENJ"u8 + // en-jm
+            "ZZZ"u8 + // en-ke
+            "ZZZ"u8 + // en-ki
+            "ZZZ"u8 + // en-kn
+            "ZZZ"u8 + // en-ky
+            "ZZZ"u8 + // en-lc
+            "ZZZ"u8 + // en-lr
+            "ZZZ"u8 + // en-ls
+            "ZZZ"u8 + // en-mg
+            "ZZZ"u8 + // en-mh
+            "ZZZ"u8 + // en-mo
+            "ZZZ"u8 + // en-mp
+            "ZZZ"u8 + // en-ms
+            "ZZZ"u8 + // en-mt
+            "ZZZ"u8 + // en-mu
+            "ZZZ"u8 + // en-mw
+            "ENM"u8 + // en-my
+            "ZZZ"u8 + // en-na
+            "ZZZ"u8 + // en-nf
+            "ZZZ"u8 + // en-ng
+            "ZZZ"u8 + // en-nl
+            "ZZZ"u8 + // en-nr
+            "ZZZ"u8 + // en-nu
+            "ENZ"u8 + // en-nz
+            "ZZZ"u8 + // en-pg
+            "ENP"u8 + // en-ph
+            "ZZZ"u8 + // en-pk
+            "ZZZ"u8 + // en-pn
+            "ZZZ"u8 + // en-pr
+            "ZZZ"u8 + // en-pw
+            "ZZZ"u8 + // en-rw
+            "ZZZ"u8 + // en-sb
+            "ZZZ"u8 + // en-sc
+            "ZZZ"u8 + // en-sd
+            "ZZZ"u8 + // en-se
+            "ENE"u8 + // en-sg
+            "ZZZ"u8 + // en-sh
+            "ZZZ"u8 + // en-si
+            "ZZZ"u8 + // en-sl
+            "ZZZ"u8 + // en-ss
+            "ZZZ"u8 + // en-sx
+            "ZZZ"u8 + // en-sz
+            "ZZZ"u8 + // en-tc
+            "ZZZ"u8 + // en-tk
+            "ZZZ"u8 + // en-to
+            "ENT"u8 + // en-tt
+            "ZZZ"u8 + // en-tv
+            "ZZZ"u8 + // en-tz
+            "ZZZ"u8 + // en-ug
+            "ZZZ"u8 + // en-um
+            "ENU"u8 + // en-us
+            "ZZZ"u8 + // en-vc
+            "ZZZ"u8 + // en-vg
+            "ZZZ"u8 + // en-vi
+            "ZZZ"u8 + // en-vu
+            "ZZZ"u8 + // en-ws
+            "ENS"u8 + // en-za
+            "ZZZ"u8 + // en-zm
+            "ENW"u8 + // en-zw
+            "ZZZ"u8 + // eo
+            "ZZZ"u8 + // eo-001
+            "ESP"u8 + // es
+            "ESJ"u8 + // es-419
+            "ESS"u8 + // es-ar
+            "ESB"u8 + // es-bo
+            "ZZZ"u8 + // es-br
+            "ESL"u8 + // es-cl
+            "ESO"u8 + // es-co
+            "ESC"u8 + // es-cr
+            "ESK"u8 + // es-cu
+            "ESD"u8 + // es-do
+            "ESF"u8 + // es-ec
+            "ESN"u8 + // es-es
+            "ESP"u8 + // es-es_tradnl
+            "ZZZ"u8 + // es-gq
+            "ESG"u8 + // es-gt
+            "ESH"u8 + // es-hn
+            "ESM"u8 + // es-mx
+            "ESI"u8 + // es-ni
+            "ESA"u8 + // es-pa
+            "ESR"u8 + // es-pe
+            "ZZZ"u8 + // es-ph
+            "ESU"u8 + // es-pr
+            "ESZ"u8 + // es-py
+            "ESE"u8 + // es-sv
+            "EST"u8 + // es-us
+            "ESY"u8 + // es-uy
+            "ESV"u8 + // es-ve
+            "ETI"u8 + // et
+            "ETI"u8 + // et-ee
+            "EUQ"u8 + // eu
+            "EUQ"u8 + // eu-es
+            "ZZZ"u8 + // ewo
+            "ZZZ"u8 + // ewo-cm
+            "FAR"u8 + // fa
+            "FAR"u8 + // fa-ir
+            "FUL"u8 + // ff
+            "ZZZ"u8 + // ff-cm
+            "ZZZ"u8 + // ff-gn
+            "FUL"u8 + // ff-latn
+            "FUL"u8 + // ff-latn-sn
+            "ZZZ"u8 + // ff-mr
+            "ZZZ"u8 + // ff-ng
+            "FIN"u8 + // fi
+            "FIN"u8 + // fi-fi
+            "FPO"u8 + // fil
+            "FPO"u8 + // fil-ph
+            "FOS"u8 + // fo
+            "ZZZ"u8 + // fo-dk
+            "FOS"u8 + // fo-fo
+            "FRA"u8 + // fr
+            "ZZZ"u8 + // fr-029
+            "FRB"u8 + // fr-be
+            "ZZZ"u8 + // fr-bf
+            "ZZZ"u8 + // fr-bi
+            "ZZZ"u8 + // fr-bj
+            "ZZZ"u8 + // fr-bl
+            "FRC"u8 + // fr-ca
+            "FRD"u8 + // fr-cd
+            "ZZZ"u8 + // fr-cf
+            "ZZZ"u8 + // fr-cg
+            "FRS"u8 + // fr-ch
+            "FRI"u8 + // fr-ci
+            "FRE"u8 + // fr-cm
+            "ZZZ"u8 + // fr-dj
+            "ZZZ"u8 + // fr-dz
+            "FRA"u8 + // fr-fr
+            "ZZZ"u8 + // fr-ga
+            "ZZZ"u8 + // fr-gf
+            "ZZZ"u8 + // fr-gn
+            "ZZZ"u8 + // fr-gp
+            "ZZZ"u8 + // fr-gq
+            "FRH"u8 + // fr-ht
+            "ZZZ"u8 + // fr-km
+            "FRL"u8 + // fr-lu
+            "FRO"u8 + // fr-ma
+            "FRM"u8 + // fr-mc
+            "ZZZ"u8 + // fr-mf
+            "ZZZ"u8 + // fr-mg
+            "FRF"u8 + // fr-ml
+            "ZZZ"u8 + // fr-mq
+            "ZZZ"u8 + // fr-mr
+            "ZZZ"u8 + // fr-mu
+            "ZZZ"u8 + // fr-nc
+            "ZZZ"u8 + // fr-ne
+            "ZZZ"u8 + // fr-pf
+            "ZZZ"u8 + // fr-pm
+            "FRR"u8 + // fr-re
+            "ZZZ"u8 + // fr-rw
+            "ZZZ"u8 + // fr-sc
+            "FRN"u8 + // fr-sn
+            "ZZZ"u8 + // fr-sy
+            "ZZZ"u8 + // fr-td
+            "ZZZ"u8 + // fr-tg
+            "ZZZ"u8 + // fr-tn
+            "ZZZ"u8 + // fr-vu
+            "ZZZ"u8 + // fr-wf
+            "ZZZ"u8 + // fr-yt
+            "ZZZ"u8 + // fur
+            "ZZZ"u8 + // fur-it
+            "FYN"u8 + // fy
+            "FYN"u8 + // fy-nl
+            "IRE"u8 + // ga
+            "IRE"u8 + // ga-ie
+            "GLA"u8 + // gd
+            "GLA"u8 + // gd-gb
+            "GLC"u8 + // gl
+            "GLC"u8 + // gl-es
+            "GRN"u8 + // gn
+            "GRN"u8 + // gn-py
+            "ZZZ"u8 + // gsw
+            "ZZZ"u8 + // gsw-ch
+            "GSW"u8 + // gsw-fr
+            "ZZZ"u8 + // gsw-li
+            "GUJ"u8 + // gu
+            "GUJ"u8 + // gu-in
+            "ZZZ"u8 + // guz
+            "ZZZ"u8 + // guz-ke
+            "ZZZ"u8 + // gv
+            "ZZZ"u8 + // gv-im
+            "HAU"u8 + // ha
+            "HAU"u8 + // ha-latn
+            "ZZZ"u8 + // ha-latn-gh
+            "ZZZ"u8 + // ha-latn-ne
+            "HAU"u8 + // ha-latn-ng
+            "HAW"u8 + // haw
+            "HAW"u8 + // haw-us
+            "HEB"u8 + // he
+            "HEB"u8 + // he-il
+            "HIN"u8 + // hi
+            "HIN"u8 + // hi-in
+            "HRV"u8 + // hr
+            "HRB"u8 + // hr-ba
+            "HRV"u8 + // hr-hr
+            "HSB"u8 + // hsb
+            "HSB"u8 + // hsb-de
+            "HUN"u8 + // hu
+            "HUN"u8 + // hu-hu
+            "HUN"u8 + // hu-hu_technl
+            "HYE"u8 + // hy
+            "HYE"u8 + // hy-am
+            "ZZZ"u8 + // ia
+            "ZZZ"u8 + // ia-001
+            "ZZZ"u8 + // ia-fr
+            "ZZZ"u8 + // ibb
+            "ZZZ"u8 + // ibb-ng
+            "IND"u8 + // id
+            "IND"u8 + // id-id
+            "IBO"u8 + // ig
+            "IBO"u8 + // ig-ng
+            "III"u8 + // ii
+            "III"u8 + // ii-cn
+            "ISL"u8 + // is
+            "ISL"u8 + // is-is
+            "ITA"u8 + // it
+            "ITS"u8 + // it-ch
+            "ITA"u8 + // it-it
+            "ZZZ"u8 + // it-sm
+            "IUK"u8 + // iu
+            "IUS"u8 + // iu-cans
+            "IUS"u8 + // iu-cans-ca
+            "IUK"u8 + // iu-latn
+            "IUK"u8 + // iu-latn-ca
+            "JPN"u8 + // ja
+            "JPN"u8 + // ja-jp
+            "JPN"u8 + // ja-jp_radstr
+            "ZZZ"u8 + // jgo
+            "ZZZ"u8 + // jgo-cm
+            "ZZZ"u8 + // jmc
+            "ZZZ"u8 + // jmc-tz
+            "JAV"u8 + // jv
+            "ZZZ"u8 + // jv-java
+            "ZZZ"u8 + // jv-java-id
+            "JAV"u8 + // jv-latn
+            "JAV"u8 + // jv-latn-id
+            "KAT"u8 + // ka
+            "KAT"u8 + // ka-ge
+            "KAT"u8 + // ka-ge_modern
+            "ZZZ"u8 + // kab
+            "ZZZ"u8 + // kab-dz
+            "ZZZ"u8 + // kam
+            "ZZZ"u8 + // kam-ke
+            "ZZZ"u8 + // kde
+            "ZZZ"u8 + // kde-tz
+            "ZZZ"u8 + // kea
+            "ZZZ"u8 + // kea-cv
+            "ZZZ"u8 + // khq
+            "ZZZ"u8 + // khq-ml
+            "ZZZ"u8 + // ki
+            "ZZZ"u8 + // ki-ke
+            "KKZ"u8 + // kk
+            "KKZ"u8 + // kk-kz
+            "ZZZ"u8 + // kkj
+            "ZZZ"u8 + // kkj-cm
+            "KAL"u8 + // kl
+            "KAL"u8 + // kl-gl
+            "ZZZ"u8 + // kln
+            "ZZZ"u8 + // kln-ke
+            "KHM"u8 + // km
+            "KHM"u8 + // km-kh
+            "KDI"u8 + // kn
+            "KDI"u8 + // kn-in
+            "KOR"u8 + // ko
+            "ZZZ"u8 + // ko-kp
+            "KOR"u8 + // ko-kr
+            "KNK"u8 + // kok
+            "KNK"u8 + // kok-in
+            "ZZZ"u8 + // kr
+            "ZZZ"u8 + // kr-ng
+            "ZZZ"u8 + // ks
+            "ZZZ"u8 + // ks-arab
+            "ZZZ"u8 + // ks-arab-in
+            "ZZZ"u8 + // ks-deva
+            "ZZZ"u8 + // ks-deva-in
+            "ZZZ"u8 + // ksb
+            "ZZZ"u8 + // ksb-tz
+            "ZZZ"u8 + // ksf
+            "ZZZ"u8 + // ksf-cm
+            "ZZZ"u8 + // ksh
+            "ZZZ"u8 + // ksh-de
+            "KUR"u8 + // ku
+            "KUR"u8 + // ku-arab
+            "KUR"u8 + // ku-arab-iq
+            "ZZZ"u8 + // ku-arab-ir
+            "ZZZ"u8 + // kw
+            "ZZZ"u8 + // kw-gb
+            "KYR"u8 + // ky
+            "KYR"u8 + // ky-kg
+            "ZZZ"u8 + // la
+            "ZZZ"u8 + // la-001
+            "ZZZ"u8 + // lag
+            "ZZZ"u8 + // lag-tz
+            "LBX"u8 + // lb
+            "LBX"u8 + // lb-lu
+            "ZZZ"u8 + // lg
+            "ZZZ"u8 + // lg-ug
+            "ZZZ"u8 + // lkt
+            "ZZZ"u8 + // lkt-us
+            "ZZZ"u8 + // ln
+            "ZZZ"u8 + // ln-ao
+            "ZZZ"u8 + // ln-cd
+            "ZZZ"u8 + // ln-cf
+            "ZZZ"u8 + // ln-cg
+            "LAO"u8 + // lo
+            "LAO"u8 + // lo-la
+            "ZZZ"u8 + // lrc
+            "ZZZ"u8 + // lrc-iq
+            "ZZZ"u8 + // lrc-ir
+            "LTH"u8 + // lt
+            "LTH"u8 + // lt-lt
+            "ZZZ"u8 + // lu
+            "ZZZ"u8 + // lu-cd
+            "ZZZ"u8 + // luo
+            "ZZZ"u8 + // luo-ke
+            "ZZZ"u8 + // luy
+            "ZZZ"u8 + // luy-ke
+            "LVI"u8 + // lv
+            "LVI"u8 + // lv-lv
+            "ZZZ"u8 + // mas
+            "ZZZ"u8 + // mas-ke
+            "ZZZ"u8 + // mas-tz
+            "ZZZ"u8 + // mer
+            "ZZZ"u8 + // mer-ke
+            "ZZZ"u8 + // mfe
+            "ZZZ"u8 + // mfe-mu
+            "MLG"u8 + // mg
+            "MLG"u8 + // mg-mg
+            "ZZZ"u8 + // mgh
+            "ZZZ"u8 + // mgh-mz
+            "ZZZ"u8 + // mgo
+            "ZZZ"u8 + // mgo-cm
+            "MRI"u8 + // mi
+            "MRI"u8 + // mi-nz
+            "MKI"u8 + // mk
+            "MKI"u8 + // mk-mk
+            "MYM"u8 + // ml
+            "MYM"u8 + // ml-in
+            "MON"u8 + // mn
+            "MNN"u8 + // mn-cyrl
+            "MNN"u8 + // mn-mn
+            "MNG"u8 + // mn-mong
+            "MNG"u8 + // mn-mong-cn
+            "MNM"u8 + // mn-mong-mn
+            "ZZZ"u8 + // mni
+            "ZZZ"u8 + // mni-in
+            "MWK"u8 + // moh
+            "MWK"u8 + // moh-ca
+            "MAR"u8 + // mr
+            "MAR"u8 + // mr-in
+            "MSL"u8 + // ms
+            "MSB"u8 + // ms-bn
+            "MSL"u8 + // ms-my
+            "ZZZ"u8 + // ms-sg
+            "MLT"u8 + // mt
+            "MLT"u8 + // mt-mt
+            "ZZZ"u8 + // mua
+            "ZZZ"u8 + // mua-cm
+            "MYA"u8 + // my
+            "MYA"u8 + // my-mm
+            "ZZZ"u8 + // mzn
+            "ZZZ"u8 + // mzn-ir
+            "ZZZ"u8 + // naq
+            "ZZZ"u8 + // naq-na
+            "NOR"u8 + // nb
+            "NOR"u8 + // nb-no
+            "ZZZ"u8 + // nb-sj
+            "ZZZ"u8 + // nd
+            "ZZZ"u8 + // nd-zw
+            "ZZZ"u8 + // nds
+            "ZZZ"u8 + // nds-de
+            "ZZZ"u8 + // nds-nl
+            "NEP"u8 + // ne
+            "NEI"u8 + // ne-in
+            "NEP"u8 + // ne-np
+            "NLD"u8 + // nl
+            "ZZZ"u8 + // nl-aw
+            "NLB"u8 + // nl-be
+            "ZZZ"u8 + // nl-bq
+            "ZZZ"u8 + // nl-cw
+            "NLD"u8 + // nl-nl
+            "ZZZ"u8 + // nl-sr
+            "ZZZ"u8 + // nl-sx
+            "ZZZ"u8 + // nmg
+            "ZZZ"u8 + // nmg-cm
+            "NON"u8 + // nn
+            "NON"u8 + // nn-no
+            "ZZZ"u8 + // nnh
+            "ZZZ"u8 + // nnh-cm
+            "NOR"u8 + // no
+            "NQO"u8 + // nqo
+            "NQO"u8 + // nqo-gn
+            "ZZZ"u8 + // nr
+            "ZZZ"u8 + // nr-za
+            "NSO"u8 + // nso
+            "NSO"u8 + // nso-za
+            "ZZZ"u8 + // nus
+            "ZZZ"u8 + // nus-ss
+            "ZZZ"u8 + // nyn
+            "ZZZ"u8 + // nyn-ug
+            "OCI"u8 + // oc
+            "OCI"u8 + // oc-fr
+            "ORM"u8 + // om
+            "ORM"u8 + // om-et
+            "ZZZ"u8 + // om-ke
+            "ORI"u8 + // or
+            "ORI"u8 + // or-in
+            "ZZZ"u8 + // os
+            "ZZZ"u8 + // os-ge
+            "ZZZ"u8 + // os-ru
+            "PAN"u8 + // pa
+            "PAP"u8 + // pa-arab
+            "PAP"u8 + // pa-arab-pk
+            "PAN"u8 + // pa-in
+            "ZZZ"u8 + // pap
+            "ZZZ"u8 + // pap-029
+            "PLK"u8 + // pl
+            "PLK"u8 + // pl-pl
+            "ZZZ"u8 + // prg
+            "ZZZ"u8 + // prg-001
+            "PRS"u8 + // prs
+            "PRS"u8 + // prs-af
+            "PAS"u8 + // ps
+            "PAS"u8 + // ps-af
+            "PTB"u8 + // pt
+            "PTA"u8 + // pt-ao
+            "PTB"u8 + // pt-br
+            "ZZZ"u8 + // pt-ch
+            "ZZZ"u8 + // pt-cv
+            "ZZZ"u8 + // pt-gq
+            "ZZZ"u8 + // pt-gw
+            "ZZZ"u8 + // pt-lu
+            "ZZZ"u8 + // pt-mo
+            "ZZZ"u8 + // pt-mz
+            "PTG"u8 + // pt-pt
+            "ZZZ"u8 + // pt-st
+            "ZZZ"u8 + // pt-tl
+            "ENJ"u8 + // qps-latn-x-sh
+            "ENU"u8 + // qps-ploc
+            "JPN"u8 + // qps-ploca
+            "ARA"u8 + // qps-plocm
+            "QUC"u8 + // quc
+            "QUT"u8 + // quc-latn
+            "QUT"u8 + // quc-latn-gt
+            "QUB"u8 + // quz
+            "QUB"u8 + // quz-bo
+            "QUE"u8 + // quz-ec
+            "QUP"u8 + // quz-pe
+            "RMC"u8 + // rm
+            "RMC"u8 + // rm-ch
+            "ZZZ"u8 + // rn
+            "ZZZ"u8 + // rn-bi
+            "ROM"u8 + // ro
+            "ROD"u8 + // ro-md
+            "ROM"u8 + // ro-ro
+            "ZZZ"u8 + // rof
+            "ZZZ"u8 + // rof-tz
+            "RUS"u8 + // ru
+            "ZZZ"u8 + // ru-by
+            "ZZZ"u8 + // ru-kg
+            "ZZZ"u8 + // ru-kz
+            "RUM"u8 + // ru-md
+            "RUS"u8 + // ru-ru
+            "ZZZ"u8 + // ru-ua
+            "KIN"u8 + // rw
+            "KIN"u8 + // rw-rw
+            "ZZZ"u8 + // rwk
+            "ZZZ"u8 + // rwk-tz
+            "SAN"u8 + // sa
+            "SAN"u8 + // sa-in
+            "SAH"u8 + // sah
+            "SAH"u8 + // sah-ru
+            "ZZZ"u8 + // saq
+            "ZZZ"u8 + // saq-ke
+            "ZZZ"u8 + // sbp
+            "ZZZ"u8 + // sbp-tz
+            "SIP"u8 + // sd
+            "SIP"u8 + // sd-arab
+            "SIP"u8 + // sd-arab-pk
+            "ZZZ"u8 + // sd-deva
+            "ZZZ"u8 + // sd-deva-in
+            "SME"u8 + // se
+            "SMG"u8 + // se-fi
+            "SME"u8 + // se-no
+            "SMF"u8 + // se-se
+            "ZZZ"u8 + // seh
+            "ZZZ"u8 + // seh-mz
+            "ZZZ"u8 + // ses
+            "ZZZ"u8 + // ses-ml
+            "ZZZ"u8 + // sg
+            "ZZZ"u8 + // sg-cf
+            "ZZZ"u8 + // shi
+            "ZZZ"u8 + // shi-latn
+            "ZZZ"u8 + // shi-latn-ma
+            "ZZZ"u8 + // shi-tfng
+            "ZZZ"u8 + // shi-tfng-ma
+            "SIN"u8 + // si
+            "SIN"u8 + // si-lk
+            "SKY"u8 + // sk
+            "SKY"u8 + // sk-sk
+            "SLV"u8 + // sl
+            "SLV"u8 + // sl-si
+            "SMB"u8 + // sma
+            "SMA"u8 + // sma-no
+            "SMB"u8 + // sma-se
+            "SMK"u8 + // smj
+            "SMJ"u8 + // smj-no
+            "SMK"u8 + // smj-se
+            "SMN"u8 + // smn
+            "SMN"u8 + // smn-fi
+            "SMS"u8 + // sms
+            "SMS"u8 + // sms-fi
+            "SNA"u8 + // sn
+            "SNA"u8 + // sn-latn
+            "SNA"u8 + // sn-latn-zw
+            "SOM"u8 + // so
+            "ZZZ"u8 + // so-dj
+            "ZZZ"u8 + // so-et
+            "ZZZ"u8 + // so-ke
+            "SOM"u8 + // so-so
+            "SQI"u8 + // sq
+            "SQI"u8 + // sq-al
+            "ZZZ"u8 + // sq-mk
+            "ZZZ"u8 + // sq-xk
+            "SRB"u8 + // sr
+            "SRO"u8 + // sr-cyrl
+            "SRN"u8 + // sr-cyrl-ba
+            "SRB"u8 + // sr-cyrl-cs
+            "SRQ"u8 + // sr-cyrl-me
+            "SRO"u8 + // sr-cyrl-rs
+            "ZZZ"u8 + // sr-cyrl-xk
+            "SRM"u8 + // sr-latn
+            "SRS"u8 + // sr-latn-ba
+            "SRL"u8 + // sr-latn-cs
+            "SRP"u8 + // sr-latn-me
+            "SRM"u8 + // sr-latn-rs
+            "ZZZ"u8 + // sr-latn-xk
+            "ZZZ"u8 + // ss
+            "ZZZ"u8 + // ss-sz
+            "ZZZ"u8 + // ss-za
+            "ZZZ"u8 + // ssy
+            "ZZZ"u8 + // ssy-er
+            "SOT"u8 + // st
+            "ZZZ"u8 + // st-ls
+            "SOT"u8 + // st-za
+            "SVE"u8 + // sv
+            "ZZZ"u8 + // sv-ax
+            "SVF"u8 + // sv-fi
+            "SVE"u8 + // sv-se
+            "SWK"u8 + // sw
+            "ZZZ"u8 + // sw-cd
+            "SWK"u8 + // sw-ke
+            "ZZZ"u8 + // sw-tz
+            "ZZZ"u8 + // sw-ug
+            "ZZZ"u8 + // swc
+            "ZZZ"u8 + // swc-cd
+            "SYR"u8 + // syr
+            "SYR"u8 + // syr-sy
+            "TAI"u8 + // ta
+            "TAI"u8 + // ta-in
+            "TAM"u8 + // ta-lk
+            "ZZZ"u8 + // ta-my
+            "ZZZ"u8 + // ta-sg
+            "TEL"u8 + // te
+            "TEL"u8 + // te-in
+            "ZZZ"u8 + // teo
+            "ZZZ"u8 + // teo-ke
+            "ZZZ"u8 + // teo-ug
+            "TAJ"u8 + // tg
+            "TAJ"u8 + // tg-cyrl
+            "TAJ"u8 + // tg-cyrl-tj
+            "THA"u8 + // th
+            "THA"u8 + // th-th
+            "TIR"u8 + // ti
+            "TIR"u8 + // ti-er
+            "TIE"u8 + // ti-et
+            "ZZZ"u8 + // tig
+            "ZZZ"u8 + // tig-er
+            "TUK"u8 + // tk
+            "TUK"u8 + // tk-tm
+            "TSN"u8 + // tn
+            "TSB"u8 + // tn-bw
+            "TSN"u8 + // tn-za
+            "ZZZ"u8 + // to
+            "ZZZ"u8 + // to-to
+            "TRK"u8 + // tr
+            "ZZZ"u8 + // tr-cy
+            "TRK"u8 + // tr-tr
+            "TSO"u8 + // ts
+            "TSO"u8 + // ts-za
+            "TTT"u8 + // tt
+            "TTT"u8 + // tt-ru
+            "ZZZ"u8 + // twq
+            "ZZZ"u8 + // twq-ne
+            "TZA"u8 + // tzm
+            "ZZZ"u8 + // tzm-arab
+            "ZZZ"u8 + // tzm-arab-ma
+            "TZA"u8 + // tzm-latn
+            "TZA"u8 + // tzm-latn-dz
+            "ZZZ"u8 + // tzm-latn-ma
+            "TZM"u8 + // tzm-tfng
+            "TZM"u8 + // tzm-tfng-ma
+            "UIG"u8 + // ug
+            "UIG"u8 + // ug-cn
+            "UKR"u8 + // uk
+            "UKR"u8 + // uk-ua
+            "URD"u8 + // ur
+            "URI"u8 + // ur-in
+            "URD"u8 + // ur-pk
+            "UZB"u8 + // uz
+            "ZZZ"u8 + // uz-arab
+            "ZZZ"u8 + // uz-arab-af
+            "UZC"u8 + // uz-cyrl
+            "UZC"u8 + // uz-cyrl-uz
+            "UZB"u8 + // uz-latn
+            "UZB"u8 + // uz-latn-uz
+            "ZZZ"u8 + // vai
+            "ZZZ"u8 + // vai-latn
+            "ZZZ"u8 + // vai-latn-lr
+            "ZZZ"u8 + // vai-vaii
+            "ZZZ"u8 + // vai-vaii-lr
+            "ZZZ"u8 + // ve
+            "ZZZ"u8 + // ve-za
+            "VIT"u8 + // vi
+            "VIT"u8 + // vi-vn
+            "ZZZ"u8 + // vo
+            "ZZZ"u8 + // vo-001
+            "ZZZ"u8 + // vun
+            "ZZZ"u8 + // vun-tz
+            "ZZZ"u8 + // wae
+            "ZZZ"u8 + // wae-ch
+            "ZZZ"u8 + // wal
+            "ZZZ"u8 + // wal-et
+            "WOL"u8 + // wo
+            "WOL"u8 + // wo-sn
+            "IVL"u8 + // x-iv_mathan
+            "XHO"u8 + // xh
+            "XHO"u8 + // xh-za
+            "ZZZ"u8 + // xog
+            "ZZZ"u8 + // xog-ug
+            "ZZZ"u8 + // yav
+            "ZZZ"u8 + // yav-cm
+            "ZZZ"u8 + // yi
+            "ZZZ"u8 + // yi-001
+            "YOR"u8 + // yo
+            "ZZZ"u8 + // yo-bj
+            "YOR"u8 + // yo-ng
+            "ZZZ"u8 + // yue
+            "ZZZ"u8 + // yue-hk
+            "ZHG"u8 + // zgh
+            "ZHG"u8 + // zgh-tfng
+            "ZHG"u8 + // zgh-tfng-ma
+            "CHS"u8 + // zh
+            "CHS"u8 + // zh-chs
+            "CHT"u8 + // zh-cht
+            "CHS"u8 + // zh-cn
+            "CHS"u8 + // zh-cn_phoneb
+            "CHS"u8 + // zh-cn_stroke
+            "CHS"u8 + // zh-hans
+            "ZZZ"u8 + // zh-hans-hk
+            "ZZZ"u8 + // zh-hans-mo
+            "ZHH"u8 + // zh-hant
+            "ZHH"u8 + // zh-hk
+            "ZHH"u8 + // zh-hk_radstr
+            "ZHM"u8 + // zh-mo
+            "ZHM"u8 + // zh-mo_radstr
+            "ZHM"u8 + // zh-mo_stroke
+            "ZHI"u8 + // zh-sg
+            "ZHI"u8 + // zh-sg_phoneb
+            "ZHI"u8 + // zh-sg_stroke
+            "CHT"u8 + // zh-tw
+            "CHT"u8 + // zh-tw_pronun
+            "CHT"u8 + // zh-tw_radstr
+            "ZUL"u8 + // zu
+            "ZUL"u8;  // zu-za
 
         internal const int CommaSep              = 0 << 16;
         internal const int SemicolonSep          = 1 << 16;
@@ -3818,7 +3814,7 @@ namespace System.Globalization
                 char ch = name[i];
 
                 Debug.Assert(ch <= 'z');
-                lower_case[i] = ((uint)(ch - 'A') <= 'Z' - 'A') ? (byte)(ch | 0x20) : (byte)ch;
+                lower_case[i] = char.IsAsciiLetterUpper(ch) ? (byte)(ch | 0x20) : (byte)ch;
             }
 
             ReadOnlySpan<byte> lname = lower_case;

@@ -26,8 +26,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override void GetBytes(byte[] data!!)
+        public override void GetBytes(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             GetBytes(new Span<byte>(data));
         }
 
@@ -45,8 +47,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override void GetNonZeroBytes(byte[] data!!)
+        public override void GetNonZeroBytes(byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             GetNonZeroBytes(new Span<byte>(data));
         }
 
@@ -58,14 +62,10 @@ namespace System.Security.Cryptography
                 GetBytes(data);
 
                 // Find the first zero in the remaining portion.
-                int indexOfFirst0Byte = data.Length;
-                for (int i = 0; i < data.Length; i++)
+                int indexOfFirst0Byte = data.IndexOf((byte)0);
+                if (indexOfFirst0Byte < 0)
                 {
-                    if (data[i] == 0)
-                    {
-                        indexOfFirst0Byte = i;
-                        break;
-                    }
+                    return;
                 }
 
                 // If there were any zeros, shift down all non-zeros.

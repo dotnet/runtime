@@ -18,7 +18,6 @@ namespace System.Xml
         private int _bits;
         private int _bitsFilled;
 
-        private const string CharsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         private static readonly byte[] s_mapBase64 = ConstructMapBase64();
         private const int MaxValidChar = (int)'z';
         private const byte Invalid = unchecked((byte)-1);
@@ -42,20 +41,13 @@ namespace System.Xml
             }
         }
 
-        internal override int Decode(char[] chars!!, int startPos, int len)
+        internal override int Decode(char[] chars, int startPos, int len)
         {
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (chars.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentNullException.ThrowIfNull(chars);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, chars.Length - startPos);
 
             if (len == 0)
             {
@@ -68,20 +60,13 @@ namespace System.Xml
             return charsDecoded;
         }
 
-        internal override int Decode(string str!!, int startPos, int len)
+        internal override int Decode(string str, int startPos, int len)
         {
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
-            if (startPos < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startPos));
-            }
-            if (str.Length - startPos < len)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentNullException.ThrowIfNull(str);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
+            ArgumentOutOfRangeException.ThrowIfNegative(startPos);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(len, str.Length - startPos);
 
             if (len == 0)
             {
@@ -120,14 +105,14 @@ namespace System.Xml
         private static byte[] ConstructMapBase64()
         {
             byte[] mapBase64 = new byte[MaxValidChar + 1];
-            for (int i = 0; i < mapBase64.Length; i++)
+            Array.Fill(mapBase64, Invalid);
+
+            ReadOnlySpan<byte> charsBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+            for (int i = 0; i < charsBase64.Length; i++)
             {
-                mapBase64[i] = Invalid;
+                mapBase64[charsBase64[i]] = (byte)i;
             }
-            for (int i = 0; i < CharsBase64.Length; i++)
-            {
-                mapBase64[(int)CharsBase64[i]] = (byte)i;
-            }
+
             return mapBase64;
         }
 

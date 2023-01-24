@@ -150,7 +150,7 @@ public class Tests
  		if (ldobj_stobj (ref d1, ref d2) != 2.0)
 			return 3;
 		if (d1 != 2.0 || d2 != 0.0)
-			return 4;		
+			return 4;
 		return 0;
 	}
 
@@ -303,7 +303,7 @@ public class Tests
 	static void ldsflda<T> (int[] iarr) {
 		iarr [0] = GFoo<T>.static_f.i;
 	}
-	
+
 	public static int test_0_stsfld () {
 		Foo[] farr = new Foo [] { new Foo () { i = 1, j = 2 } };
 		stsfld<Foo> (farr);
@@ -497,7 +497,7 @@ public class Tests
 	static GFoo3<T> newobj<T> (T t1, T t2) {
 		return new GFoo3<T> (t1, t2);
 	}
-	
+
 	public static int test_0_gshared_new () {
 		var g1 = newobj (1, 2);
 		if (g1.t != 1 || g1.t2 != 2)
@@ -645,7 +645,7 @@ public class Tests
 		public T foo;
 	}
 
-	[MethodImplAttribute (MethodImplOptions.NoInlining)]	
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static void locals<T> (T t) {
 		Foo2<T> t2 = new Foo2<T> ();
 		object o = t2;
@@ -874,13 +874,13 @@ public class Tests
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
-	static T2 rgctx_in_call_innner_inner<T1, T2> (T1 t1, T2 t2) {
+	static T2 rgctx_in_call_inner_inner<T1, T2> (T1 t1, T2 t2) {
 		return t2;
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static GFoo3<T> rgctx_in_call_inner<T> (T t) {
-		return rgctx_in_call_innner_inner (1, new GFoo3<T> ());
+		return rgctx_in_call_inner_inner (1, new GFoo3<T> ());
 	}
 
     public static int test_0_rgctx_in_call () {
@@ -1249,7 +1249,7 @@ public class Tests
 		object o2 = a.bar<long> (1024, 0, o1);
 		if (o1 != o2)
 			return 1;
-		return 0;		
+		return 0;
 	}
 
 		interface BIFace {
@@ -1459,7 +1459,7 @@ public class Tests
 		}
 	}
 
-	public static int test_0_nullable_unbox () {	
+	public static int test_0_nullable_unbox () {
 		IFaceUnbox2 c = new ClassUnbox2 ();
 		int? i = c.unbox<int?> (5);
 		if (i != 5)

@@ -4,7 +4,7 @@ Dump generation on Windows, Linux and other non-Windows platforms has several ch
 
 Our goal is to generate core dumps that are on par with WER (Windows Error Reporting) crash dumps on any supported Linux platform. To the very least we want to enable the following:
 - automatic generation of minimal size minidumps. The quality and quantity of the information contained in the dump should be on par with the information contained in a traditional Windows mini-dump.
-- simple configurabilty by the user (not _su_!).
+- simple configurability by the user (not _su_!).
 
 Our solution at this time is to intercept any unhandled exception in the PAL layer of the runtime and have coreclr itself trigger and generate a "mini" core dump.
 
@@ -40,9 +40,9 @@ Like the severe memory corruption case, if the signal handler (`SIGSEGV`) gets c
 
 There will be some differences gathering the crash information but these platforms still use ELF format core dumps so that part of the utility should be much different. The mechanism used for Linux to give _createdump_ permission to use ptrace and access the /proc doesn't exists on these platforms.
 
-### OS X ###
+### macOS ###
 
-On .NET 5.0, createdump supported generating dumps on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This wad because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with dumps obtained from apps running on a 5.0 runtime, but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+On .NET 5.0, createdump supported generating dumps on macOS but instead of the MachO dump format, it generates the ELF coredumps. This wad because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with dumps obtained from apps running on a 5.0 runtime, but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
 
 Starting .NET 6.0, native Mach-O core files get generated and the variable COMPlus_DbgEnableElfDumpOnMacOS has been deprecated.
 
@@ -56,13 +56,18 @@ NOTE: Core dump generation in docker containers require the ptrace capability (-
 
 Any configuration or policy is set with environment variables which are passed as options to the _createdump_ utility.
 
+Starting with .NET 7.0 or greater the below environment variables can be prefixed with DOTNET_ or COMPlus_.
+
 Environment variables supported:
 
 - `COMPlus_DbgEnableMiniDump`: if set to "1", enables this core dump generation. The default is NOT to generate a dump.
 - `COMPlus_DbgMiniDumpType`: See below. Default is "2" MiniDumpWithPrivateReadWriteMemory.
 - `COMPlus_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. See "Dump name formatting" for how the dump name can be formatted. The default is _/tmp/coredump.%p_.
 - `COMPlus_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
+- `COMPlus_CreateDumpVerboseDiagnostics`: if set to "1", enables the _createdump_ utilities verbose diagnostic messages (TRACE_VERBOSE macro).
+- `COMPlus_CreateDumpLogToFile`: if set, it is the path of the file to write the _createdump_ diagnostic messages.
 - `COMPlus_EnableCrashReport`: In .NET 6.0 or greater, if set to "1", createdump also generates a json formatted crash report which includes information about the threads and stack frames of the crashing application. The crash report name is the dump path/name with _.crashreport.json_ appended.
+- `COMPlus_EnableCrashReportOnly`: In .NET 7.0 or greater, same as COMPlus_EnableCrashReport except the core dump is not generated.
 
 COMPlus_DbgMiniDumpType values:
 
@@ -93,9 +98,12 @@ createdump [options] pid
 -u, --full - create full core dump.
 -d, --diag - enable diagnostic messages.
 -v, --verbose - enable verbose diagnostic messages.
---crashreport - write crash report file.
+-l, --logtofile - file path and name to log diagnostic messages.
+--crashreport - write crash report file (dump file path + .crashreport.json).
+--crashreportonly - write crash report file only (no dump).
 --crashthread <id> - the thread id of the crashing thread.
 --signal <code> - the signal code of the crash.
+--singlefile - enable single-file app check.
 ```
 
 **Dump name formatting**

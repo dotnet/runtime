@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             public MethodDesc ImplementationMethod { get; }
         }
 
-        internal class InterfaceGVMEntryInfo : TypeGVMEntryInfo
+        internal sealed class InterfaceGVMEntryInfo : TypeGVMEntryInfo
         {
             public InterfaceGVMEntryInfo(MethodDesc callingMethod, MethodDesc implementationMethod,
                 TypeDesc implementationType, DefaultInterfaceMethodResolution defaultResolution)
@@ -40,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             public TypeDesc ImplementationType { get; }
             public DefaultInterfaceMethodResolution DefaultResolution { get; }
         }
-         
+
         private readonly TypeDesc _associatedType;
         private DependencyList _staticDependencies;
 
@@ -50,6 +49,8 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(TypeNeedsGVMTableEntries(associatedType));
             _associatedType = associatedType;
         }
+
+        public TypeDesc AssociatedType => _associatedType;
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
@@ -87,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                 return true;
 
             //
-            // Check if the type implements any interface with GVM methods, where the method implementations could be on 
+            // Check if the type implements any interface with GVM methods, where the method implementations could be on
             // base types.
             // Example:
             //      interface IFace {
@@ -102,10 +103,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    if (!method.HasInstantiation || method.Signature.IsStatic)
+                    if (!method.HasInstantiation)
                         continue;
 
-                    MethodDesc slotDecl = type.ResolveInterfaceMethodTarget(method);
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        type.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) : type.ResolveInterfaceMethodTarget(method);
                     if (slotDecl == null)
                     {
                         var resolution = type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);
@@ -142,13 +144,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    Debug.Assert(!method.Signature.IsStatic);
-
                     if (!method.HasInstantiation)
                         continue;
 
                     DefaultInterfaceMethodResolution resolution = DefaultInterfaceMethodResolution.None;
-                    MethodDesc slotDecl = _associatedType.ResolveInterfaceMethodTarget(method);
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        _associatedType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) : _associatedType.ResolveInterfaceMethodTarget(method);
                     if (slotDecl == null)
                     {
                         resolution = _associatedType.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);

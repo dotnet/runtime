@@ -171,7 +171,7 @@ FAIL:
     .field public float32 Z
 }
 
-// Make sure that the JIT produces an appropiate floating point constant.
+// Make sure that the JIT produces an appropriate floating point constant.
 // JIT's internal representation uses doubles to store constants, even
 // when constants are float-typed. This means that the JIT should first
 // create a float value having the required bit pattern and then convert
@@ -246,7 +246,7 @@ FAIL:
 // Non-zero SIMD constants are not supported so field by field initialization
 // should not be attempted.
 
-.class sequential sealed Wrapper extends [System.Runtime]System.ValueType
+.class public sequential sealed Wrapper extends [System.Runtime]System.ValueType
 {
     .field public valuetype [System.Numerics.Vectors]System.Numerics.Vector4 Value
 }
@@ -276,7 +276,7 @@ FAIL:
     ret
 }
 
-.method hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -310,7 +310,7 @@ FAIL:
 
     call bool ObjRefInitBlk()
     brfalse FAIL
-    
+
     call bool SimdInitBlk()
     brfalse FAIL
 

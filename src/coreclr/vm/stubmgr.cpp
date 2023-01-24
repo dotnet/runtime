@@ -53,7 +53,7 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
 #ifdef _DEBUG
 // Get a string representation of this TraceDestination
 // Uses the supplied buffer to store the memory (or may return a string literal).
-const WCHAR * TraceDestination::DbgToString(SString & buffer)
+const CHAR * TraceDestination::DbgToString(SString & buffer)
 {
     CONTRACTL
     {
@@ -63,12 +63,12 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
     }
     CONTRACTL_END;
 
-    const WCHAR * pValue = W("unknown");
+    const CHAR * pValue = "unknown";
 
 #ifndef DACCESS_COMPILE
     if (!StubManager::IsStubLoggingEnabled())
     {
-        return W("<unavailable while native-debugging>");
+        return "<unavailable while native-debugging>";
     }
     // Now that we know we're not interop-debugging, we can safely call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -82,50 +82,50 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
         {
             case TRACE_ENTRY_STUB:
                 buffer.Printf("TRACE_ENTRY_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_STUB:
                 buffer.Printf("TRACE_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNMANAGED:
                 buffer.Printf("TRACE_UNMANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MANAGED:
                 buffer.Printf("TRACE_MANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNJITTED_METHOD:
             {
                 MethodDesc * md = this->GetMethodDesc();
                 buffer.Printf("TRACE_UNJITTED_METHOD(md=0x%p, %s::%s)", md, md->m_pszDebugClassName, md->m_pszDebugMethodName);
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
             }
                 break;
 
             case TRACE_FRAME_PUSH:
                 buffer.Printf("TRACE_FRAME_PUSH(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MGR_PUSH:
                 buffer.Printf("TRACE_MGR_PUSH(addr=0x%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_OTHER:
-                pValue = W("TRACE_OTHER");
+                pValue = "TRACE_OTHER";
                 break;
         }
     }
     EX_CATCH
     {
-        pValue = W("(OOM while printing TD)");
+        pValue = "(OOM while printing TD)";
     }
     EX_END_CATCH(SwallowAllExceptions);
 #endif
@@ -542,7 +542,7 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
                 FAULT_NOT_FATAL();
                 SString buffer;
-                DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+                DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
             else
             {
@@ -675,8 +675,7 @@ StubManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     // Report the global list head.
-    DacEnumMemoryRegion(DacGlobalBase() +
-                        g_dacGlobals.StubManager__g_pFirstManager,
+    DacEnumMemoryRegion(DacGlobalValues()->StubManager__g_pFirstManager,
                         sizeof(TADDR));
 
     //
@@ -1004,8 +1003,7 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     }
     CONTRACTL_END;
 
-    // Forwarded to from RangeSectionStubManager
-    return FALSE;
+    return GetStubPrecodeRangeList()->IsInRange(stubStartAddress) || GetFixupPrecodeRangeList()->IsInRange(stubStartAddress);
 }
 
 BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
@@ -1033,7 +1031,14 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
     else
 #endif // HAS_COMPACT_ENTRYPOINTS
     {
-        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        // When the target slot points to the fixup part of the fixup precode, we need to compensate
+        // for that to get the actual stub address
+        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress - FixupPrecode::FixupCodeOffset, TRUE /* speculative */);
+        if ((pPrecode == NULL) || (pPrecode->GetType() != PRECODE_FIXUP))
+        {
+            pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+        }
+
         PREFIX_ASSUME(pPrecode != NULL);
 
         switch (pPrecode->GetType())
@@ -1498,21 +1503,6 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
 }
 #endif
 
-PCODE RangeSectionStubManager::GetMethodThunkTarget(PCODE stubStartAddress)
-{
-    WRAPPER_NO_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    return rel32Decode(stubStartAddress+1);
-#elif defined(TARGET_ARM)
-    TADDR pInstr = PCODEToPINSTR(stubStartAddress);
-    return *dac_cast<PTR_PCODE>(pInstr + 2 * sizeof(DWORD));
-#else
-    PORTABILITY_ASSERT("RangeSectionStubManager::GetMethodThunkTarget");
-    return NULL;
-#endif
-}
-
 #ifdef DACCESS_COMPILE
 LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 {
@@ -1837,7 +1827,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif
@@ -1849,7 +1839,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
 BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
-    //@dbgtodo dharvey implement DAC suport
+    //@dbgtodo dharvey implement DAC support
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
@@ -2390,6 +2380,8 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
+    GetStubPrecodeRangeList()->EnumMemoryRegions(flags);
+    GetFixupPrecodeRangeList()->EnumMemoryRegions(flags);
 }
 
 void

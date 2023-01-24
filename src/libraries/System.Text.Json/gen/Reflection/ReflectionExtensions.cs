@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ namespace System.Text.Json.Reflection
 {
     internal static partial class ReflectionExtensions
     {
-        public static CustomAttributeData GetCustomAttributeData(this MemberInfo memberInfo, Type type)
+        public static CustomAttributeData? GetCustomAttributeData(this MemberInfo memberInfo, Type type)
         {
             return memberInfo.CustomAttributes.FirstOrDefault(a => type.IsAssignableFrom(a.AttributeType));
         }
@@ -21,10 +21,48 @@ namespace System.Text.Json.Reflection
             return index < customAttributeData.ConstructorArguments.Count ? (TValue)customAttributeData.ConstructorArguments[index].Value! : default!;
         }
 
-        public static bool IsInitOnly(this MethodInfo method!!)
+        public static bool ContainsAttribute(this MemberInfo memberInfo, string attributeFullName)
+            => CustomAttributeData.GetCustomAttributes(memberInfo).Any(attr => attr.AttributeType.FullName == attributeFullName);
+
+        public static bool IsInitOnly(this MethodInfo method)
         {
+            if (method is null)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
             MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
+        }
+
+        public static bool IsRequired(this PropertyInfo propertyInfo)
+        {
+#if ROSLYN4_4_OR_GREATER
+            if (propertyInfo is null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
+            }
+
+            PropertyInfoWrapper methodInfoWrapper = (PropertyInfoWrapper)propertyInfo;
+            return methodInfoWrapper.Symbol.IsRequired;
+#else
+            return false;
+#endif
+        }
+
+        public static bool IsRequired(this FieldInfo propertyInfo)
+        {
+#if ROSLYN4_4_OR_GREATER
+            if (propertyInfo is null)
+            {
+                throw new ArgumentNullException(nameof(propertyInfo));
+            }
+
+            FieldInfoWrapper fieldInfoWrapper = (FieldInfoWrapper)propertyInfo;
+            return fieldInfoWrapper.Symbol.IsRequired;
+#else
+            return false;
+#endif
         }
 
         private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)

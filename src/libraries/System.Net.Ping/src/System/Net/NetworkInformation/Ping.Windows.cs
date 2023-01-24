@@ -14,7 +14,7 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
-        private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(Icmp6EchoReply)) * 2 + ip header info;
+        private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(ICMPV6_ECHO_REPLY)) * 2 + ip header info;
 
         private static readonly SafeWaitHandle s_nullSafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, true);
 
@@ -57,10 +57,7 @@ namespace System.Net.NetworkInformation
             // Cache correct handle.
             InitialiseIcmpHandle();
 
-            if (_replyBuffer == null)
-            {
-                _replyBuffer = SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
-            }
+            _replyBuffer ??= SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
 
             int error;
             try
@@ -148,6 +145,7 @@ namespace System.Net.NetworkInformation
                 _handlePingV4 = Interop.IpHlpApi.IcmpCreateFile();
                 if (_handlePingV4.IsInvalid)
                 {
+                    _handlePingV4.Dispose();
                     _handlePingV4 = null;
                     throw new Win32Exception(); // Gets last error.
                 }
@@ -157,6 +155,7 @@ namespace System.Net.NetworkInformation
                 _handlePingV6 = Interop.IpHlpApi.Icmp6CreateFile();
                 if (_handlePingV6.IsInvalid)
                 {
+                    _handlePingV6.Dispose();
                     _handlePingV6 = null;
                     throw new Win32Exception(); // Gets last error.
                 }
@@ -165,7 +164,7 @@ namespace System.Net.NetworkInformation
 
         private int SendEcho(IPAddress address, byte[] buffer, int timeout, PingOptions? options, bool isAsync)
         {
-            Interop.IpHlpApi.IPOptions ipOptions = new Interop.IpHlpApi.IPOptions(options);
+            Interop.IpHlpApi.IP_OPTION_INFORMATION ipOptions = new Interop.IpHlpApi.IP_OPTION_INFORMATION(options);
             if (!_ipv6)
             {
                 return (int)Interop.IpHlpApi.IcmpSendEcho2(
@@ -203,19 +202,19 @@ namespace System.Net.NetworkInformation
                 (uint)timeout);
         }
 
-        private PingReply CreatePingReply()
+        private unsafe PingReply CreatePingReply()
         {
             SafeLocalAllocHandle buffer = _replyBuffer!;
 
             // Marshals and constructs new reply.
             if (_ipv6)
             {
-                Interop.IpHlpApi.Icmp6EchoReply icmp6Reply = Marshal.PtrToStructure<Interop.IpHlpApi.Icmp6EchoReply>(buffer.DangerousGetHandle());
-                return CreatePingReplyFromIcmp6EchoReply(icmp6Reply, buffer.DangerousGetHandle(), _sendSize);
+                ref Interop.IpHlpApi.ICMPV6_ECHO_REPLY icmp6Reply = ref *(Interop.IpHlpApi.ICMPV6_ECHO_REPLY*)buffer.DangerousGetHandle();
+                return CreatePingReplyFromIcmp6EchoReply(in icmp6Reply, buffer.DangerousGetHandle(), _sendSize);
             }
 
-            Interop.IpHlpApi.IcmpEchoReply icmpReply = Marshal.PtrToStructure<Interop.IpHlpApi.IcmpEchoReply>(buffer.DangerousGetHandle());
-            return CreatePingReplyFromIcmpEchoReply(icmpReply);
+            ref Interop.IpHlpApi.ICMP_ECHO_REPLY icmpReply = ref *(Interop.IpHlpApi.ICMP_ECHO_REPLY*)buffer.DangerousGetHandle();
+            return CreatePingReplyFromIcmpEchoReply(in icmpReply);
         }
 
         private void Cleanup(bool isAsync)
@@ -337,7 +336,7 @@ namespace System.Net.NetworkInformation
             return (IPStatus)statusCode;
         }
 
-        private static PingReply CreatePingReplyFromIcmpEchoReply(Interop.IpHlpApi.IcmpEchoReply reply)
+        private static PingReply CreatePingReplyFromIcmpEchoReply(in Interop.IpHlpApi.ICMP_ECHO_REPLY reply)
         {
             const int DontFragmentFlag = 2;
 
@@ -366,7 +365,7 @@ namespace System.Net.NetworkInformation
             return new PingReply(address, options, ipStatus, rtt, buffer);
         }
 
-        private static PingReply CreatePingReplyFromIcmp6EchoReply(Interop.IpHlpApi.Icmp6EchoReply reply, IntPtr dataPtr, int sendSize)
+        private static PingReply CreatePingReplyFromIcmp6EchoReply(in Interop.IpHlpApi.ICMPV6_ECHO_REPLY reply, IntPtr dataPtr, int sendSize)
         {
             IPAddress address = new IPAddress(reply.Address.Address, reply.Address.ScopeID);
             IPStatus ipStatus = GetStatusFromCode((int)reply.Status);

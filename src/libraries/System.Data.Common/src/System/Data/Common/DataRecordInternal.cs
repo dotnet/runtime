@@ -131,7 +131,7 @@ namespace System.Data.Common
                 {
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cbytes)
-                        cbytes = cbytes - ndataIndex;
+                        cbytes -= ndataIndex;
                     else
                         cbytes = length;
                 }
@@ -205,7 +205,7 @@ namespace System.Data.Common
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cchars)
                     {
-                        cchars = cchars - ndataIndex;
+                        cchars -= ndataIndex;
                     }
                     else
                     {
@@ -318,9 +318,9 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        TypeConverter ICustomTypeDescriptor.GetConverter()
+        TypeConverter? ICustomTypeDescriptor.GetConverter()
         {
-            return null!;
+            return null;
         }
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
@@ -359,14 +359,8 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
-        {
-            if (_propertyDescriptors == null)
-            {
-                _propertyDescriptors = new PropertyDescriptorCollection(null);
-            }
-            return _propertyDescriptors;
-        }
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
+            _propertyDescriptors ??= new PropertyDescriptorCollection(null);
 
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {

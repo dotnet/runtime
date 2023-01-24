@@ -17,10 +17,12 @@ namespace Microsoft.Extensions.DependencyModel
         private const int UnseekableStreamInitialRentSize = 4096;
         private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
 
-        private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _stringPool = new Dictionary<string, string>();
 
-        public DependencyContext Read(Stream stream!!)
+        public DependencyContext Read(Stream stream)
         {
+            ThrowHelper.ThrowIfNull(stream);
+
             ArraySegment<byte> buffer = ReadToEnd(stream);
             try
             {
@@ -145,7 +147,7 @@ namespace Microsoft.Extensions.DependencyModel
                     case DependencyContextStrings.RuntimeTargetPropertyName:
                         ReadRuntimeTarget(ref reader, out runtimeTargetName, out runtimeSignature);
                         break;
-                    case DependencyContextStrings.CompilationOptionsPropertName:
+                    case DependencyContextStrings.CompilationOptionsPropertyName:
                         compilationOptions = ReadCompilationOptions(ref reader);
                         break;
                     case DependencyContextStrings.TargetsPropertyName:
@@ -163,10 +165,7 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            if (compilationOptions == null)
-            {
-                compilationOptions = CompilationOptions.Default;
-            }
+            compilationOptions ??= CompilationOptions.Default;
 
             Target? runtimeTarget = SelectRuntimeTarget(targets, runtimeTargetName);
             runtimeTargetName = runtimeTarget?.Name;
@@ -449,7 +448,7 @@ namespace Microsoft.Extensions.DependencyModel
             };
         }
 
-        private IEnumerable<Dependency> ReadTargetLibraryDependencies(ref Utf8JsonReader reader)
+        private List<Dependency> ReadTargetLibraryDependencies(ref Utf8JsonReader reader)
         {
             var dependencies = new List<Dependency>();
 
@@ -842,7 +841,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        [return: NotNullIfNotNull("s")]
+        [return: NotNullIfNotNull(nameof(s))]
         private string? Pool(string? s)
         {
             if (s == null)

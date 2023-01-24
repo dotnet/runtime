@@ -109,17 +109,7 @@ namespace System.Net.Http
         }
 #endif
 
-        public HttpContentHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpContentHeaders(this);
-                }
-                return _headers;
-            }
-        }
+        public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
         private bool IsBuffered
         {
@@ -192,8 +182,8 @@ namespace System.Net.Http
                 {
                     // Remove at most a single set of quotes.
                     if (charset.Length > 2 &&
-                        charset[0] == '\"' &&
-                        charset[charset.Length - 1] == '\"')
+                        charset.StartsWith('\"') &&
+                        charset.EndsWith('\"'))
                     {
                         encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
                     }
@@ -634,7 +624,7 @@ namespace System.Net.Http
             return true;
         }
 
-        private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
+        private LimitMemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
         {
             error = null;
 
@@ -695,10 +685,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private void CheckTaskNotNull(Task task)
@@ -845,7 +832,7 @@ namespace System.Net.Http
             return returnFunc(state);
         }
 
-        private static Exception CreateOverCapacityException(int maxBufferSize)
+        private static HttpRequestException CreateOverCapacityException(int maxBufferSize)
         {
             return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }

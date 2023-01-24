@@ -12,10 +12,6 @@
 
 #include <libunwind.h>
 
-#if HAVE_UCONTEXT_T
-#include <ucontext.h>
-#endif  // HAVE_UCONTEXT_T
-
 #include "UnixContext.h"
 #include "UnwindHelpers.h"
 
@@ -51,11 +47,25 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #ifdef HOST_ARM64
 
-#define MCREG_Pc(mc)      ((mc)->__ss.__pc)
-#define MCREG_Sp(mc)      ((mc)->__ss.__sp)
-#define MCREG_Lr(mc)      ((mc)->__ss.__lr)
 #define MCREG_X0(mc)      ((mc)->__ss.__x[0])
 #define MCREG_X1(mc)      ((mc)->__ss.__x[1])
+#define MCREG_X2(mc)      ((mc)->__ss.__x[2])
+#define MCREG_X3(mc)      ((mc)->__ss.__x[3])
+#define MCREG_X4(mc)      ((mc)->__ss.__x[4])
+#define MCREG_X5(mc)      ((mc)->__ss.__x[5])
+#define MCREG_X6(mc)      ((mc)->__ss.__x[6])
+#define MCREG_X7(mc)      ((mc)->__ss.__x[7])
+#define MCREG_X8(mc)      ((mc)->__ss.__x[8])
+#define MCREG_X9(mc)      ((mc)->__ss.__x[9])
+#define MCREG_X10(mc)     ((mc)->__ss.__x[10])
+#define MCREG_X11(mc)     ((mc)->__ss.__x[11])
+#define MCREG_X12(mc)     ((mc)->__ss.__x[12])
+#define MCREG_X13(mc)     ((mc)->__ss.__x[13])
+#define MCREG_X14(mc)     ((mc)->__ss.__x[14])
+#define MCREG_X15(mc)     ((mc)->__ss.__x[15])
+#define MCREG_X16(mc)     ((mc)->__ss.__x[16])
+#define MCREG_X17(mc)     ((mc)->__ss.__x[17])
+#define MCREG_X18(mc)     ((mc)->__ss.__x[18])
 #define MCREG_X19(mc)     ((mc)->__ss.__x[19])
 #define MCREG_X20(mc)     ((mc)->__ss.__x[20])
 #define MCREG_X21(mc)     ((mc)->__ss.__x[21])
@@ -67,6 +77,9 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #define MCREG_X27(mc)     ((mc)->__ss.__x[27])
 #define MCREG_X28(mc)     ((mc)->__ss.__x[28])
 #define MCREG_Fp(mc)      ((mc)->__ss.__fp)
+#define MCREG_Lr(mc)      ((mc)->__ss.__lr)
+#define MCREG_Sp(mc)      ((mc)->__ss.__sp)
+#define MCREG_Pc(mc)      ((mc)->__ss.__pc)
 
 #elif HOST_AMD64 // HOST_ARM64
 
@@ -172,11 +185,25 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #if defined(HOST_ARM64)
 
-#define MCREG_Pc(mc)      ((mc).pc)
-#define MCREG_Sp(mc)      ((mc).sp)
-#define MCREG_Lr(mc)      ((mc).regs[30])
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
+#define MCREG_X2(mc)      ((mc).regs[2])
+#define MCREG_X3(mc)      ((mc).regs[3])
+#define MCREG_X4(mc)      ((mc).regs[4])
+#define MCREG_X5(mc)      ((mc).regs[5])
+#define MCREG_X6(mc)      ((mc).regs[6])
+#define MCREG_X7(mc)      ((mc).regs[7])
+#define MCREG_X8(mc)      ((mc).regs[8])
+#define MCREG_X9(mc)      ((mc).regs[9])
+#define MCREG_X10(mc)     ((mc).regs[10])
+#define MCREG_X11(mc)     ((mc).regs[11])
+#define MCREG_X12(mc)     ((mc).regs[12])
+#define MCREG_X13(mc)     ((mc).regs[13])
+#define MCREG_X14(mc)     ((mc).regs[14])
+#define MCREG_X15(mc)     ((mc).regs[15])
+#define MCREG_X16(mc)     ((mc).regs[16])
+#define MCREG_X17(mc)     ((mc).regs[17])
+#define MCREG_X18(mc)     ((mc).regs[18])
 #define MCREG_X19(mc)     ((mc).regs[19])
 #define MCREG_X20(mc)     ((mc).regs[20])
 #define MCREG_X21(mc)     ((mc).regs[21])
@@ -188,6 +215,9 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 #define MCREG_X27(mc)     ((mc).regs[27])
 #define MCREG_X28(mc)     ((mc).regs[28])
 #define MCREG_Fp(mc)      ((mc).regs[29])
+#define MCREG_Lr(mc)      ((mc).regs[30])
+#define MCREG_Sp(mc)      ((mc).sp)
+#define MCREG_Pc(mc)      ((mc).pc)
 
 #else
 
@@ -634,7 +664,7 @@ uint64_t GetPC(void* context)
 #endif // HOST_AMD64
 
 // Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* lsda)
+bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
 {
     unw_proc_info_t procInfo;
 
@@ -652,6 +682,7 @@ bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* lsda)
     *lsda = procInfo.lsda;
 #endif
     *startAddress = procInfo.start_ip;
+    *endAddress = procInfo.end_ip;
 
     return true;
 }
@@ -661,3 +692,63 @@ bool VirtualUnwind(REGDISPLAY* pRegisterSet)
 {
     return UnwindHelpers::StepFrame(pRegisterSet);
 }
+
+#ifdef TARGET_ARM64
+
+    uint64_t& UNIX_CONTEXT::X0() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X1() { return (uint64_t&)MCREG_X1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X2() { return (uint64_t&)MCREG_X2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X3() { return (uint64_t&)MCREG_X3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X4() { return (uint64_t&)MCREG_X4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X5() { return (uint64_t&)MCREG_X5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X6() { return (uint64_t&)MCREG_X6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X7() { return (uint64_t&)MCREG_X7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X8() { return (uint64_t&)MCREG_X8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X9() { return (uint64_t&)MCREG_X9(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X10() { return (uint64_t&)MCREG_X10(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X11() { return (uint64_t&)MCREG_X11(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X12() { return (uint64_t&)MCREG_X12(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X13() { return (uint64_t&)MCREG_X13(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X14() { return (uint64_t&)MCREG_X14(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X15() { return (uint64_t&)MCREG_X15(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X16() { return (uint64_t&)MCREG_X16(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X17() { return (uint64_t&)MCREG_X17(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X18() { return (uint64_t&)MCREG_X18(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X19() { return (uint64_t&)MCREG_X19(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X20() { return (uint64_t&)MCREG_X20(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X21() { return (uint64_t&)MCREG_X21(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X22() { return (uint64_t&)MCREG_X22(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X23() { return (uint64_t&)MCREG_X23(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X24() { return (uint64_t&)MCREG_X24(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X25() { return (uint64_t&)MCREG_X25(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X26() { return (uint64_t&)MCREG_X26(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X27() { return (uint64_t&)MCREG_X27(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::X28() { return (uint64_t&)MCREG_X28(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // X29
+    uint64_t& UNIX_CONTEXT::Lr() { return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); } // X30
+    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+
+#elif defined(TARGET_AMD64)
+    uint64_t& UNIX_CONTEXT::Rax(){ return (uint64_t&)MCREG_Rax(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rcx(){ return (uint64_t&)MCREG_Rcx(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rdx(){ return (uint64_t&)MCREG_Rdx(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rbx(){ return (uint64_t&)MCREG_Rbx(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rsp(){ return (uint64_t&)MCREG_Rsp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rbp(){ return (uint64_t&)MCREG_Rbp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rsi(){ return (uint64_t&)MCREG_Rsi(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rdi(){ return (uint64_t&)MCREG_Rdi(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R13(){ return (uint64_t&)MCREG_R13(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
+
+#else
+    PORTABILITY_ASSERT("UNIX_CONTEXT");
+#endif // TARGET_ARM
+

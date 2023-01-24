@@ -91,10 +91,7 @@ namespace System.Data
                 }
 
                 _schemaIsChanged = value;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
             }
         }
 
@@ -121,10 +118,7 @@ namespace System.Data
             }
 
             // no need to listen to events after close
-            if (_listener != null)
-            {
-                _listener.CleanUp();
-            }
+            _listener?.CleanUp();
 
             _listener = null!;
             _schemaTable = null;
@@ -138,12 +132,7 @@ namespace System.Data
 
             // each time, we just get schema table of current table for once, no need to recreate each time, if schema is changed, reader is already
             // is invalid
-            if (_schemaTable == null)
-            {
-                _schemaTable = GetSchemaTableFromDataTable(_currentDataTable);
-            }
-
-            return _schemaTable;
+            return _schemaTable ??= GetSchemaTableFromDataTable(_currentDataTable);
         }
 
         public override bool NextResult()
@@ -158,10 +147,7 @@ namespace System.Data
 
             _currentDataTable = _tables[++_tableCounter];
 
-            if (_listener != null)
-            {
-                _listener.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
-            }
+            _listener?.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
 
             _schemaTable = null;
             _rowCounter = -1;
@@ -195,10 +181,7 @@ namespace System.Data
             if (_rowCounter >= _currentDataTable.Rows.Count - 1)
             {
                 _reachEORows = true;
-                if (_listener != null)
-                {
-                    _listener.CleanUp();
-                }
+                _listener?.CleanUp();
                 return false;
             }
 
@@ -212,10 +195,7 @@ namespace System.Data
                 if (_rowCounter == _currentDataTable.Rows.Count)
                 {
                     _reachEORows = true;
-                    if (_listener != null)
-                    {
-                        _listener.CleanUp();
-                    }
+                    _listener?.CleanUp();
                     return false;
                 }
                 ValidateRow(_rowCounter);
@@ -992,7 +972,7 @@ namespace System.Data
                             }
                         }
                         else
-                        { // we are proccessing current datarow
+                        { // we are processing current datarow
                             _currentRowRemoved = true;
                             if (_rowCounter > 0)
                             {

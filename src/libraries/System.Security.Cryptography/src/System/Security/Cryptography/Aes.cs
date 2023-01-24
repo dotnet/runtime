@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
             return new AesImplementation();
         }
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new Aes? Create(string algorithmName)
         {

@@ -123,7 +123,7 @@ enum failure_get_memory
     fgm_commit_table = 5
 };
 
-// A record of the last OOM that occured in the GC, with some
+// A record of the last OOM that occurred in the GC, with some
 // additional information as to what triggered the OOM.
 struct oom_history
 {
@@ -201,7 +201,7 @@ struct unused_generation
 
 // The actual structure containing the DAC variables. When DACCESS_COMPILE is not
 // defined (i.e. the normal runtime build), this structure contains pointers to the
-// GC's global DAC variabels. When DACCESS_COMPILE is defined (i.e. the DAC build),
+// GC's global DAC variables. When DACCESS_COMPILE is defined (i.e. the DAC build),
 // this structure contains __DPtrs for every DAC variable that will marshal values
 // from the debugee process to the debugger process when dereferenced.
 struct GcDacVars {

@@ -3,8 +3,8 @@
 
 using System;
 using System.Collections;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -82,7 +82,7 @@ namespace System.Xml
             get
             {
                 string? defaultNs = LookupNamespace(string.Empty);
-                return (defaultNs == null) ? string.Empty : defaultNs;
+                return defaultNs ?? string.Empty;
             }
         }
 
@@ -118,8 +118,11 @@ namespace System.Xml
             return true;
         }
 
-        public virtual void AddNamespace(string prefix!!, string uri!!)
+        public virtual void AddNamespace(string prefix, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(uri);
+
             Debug.Assert(_nameTable != null);
             Debug.Assert(_nsdecls != null);
             prefix = _nameTable.Add(prefix);
@@ -182,8 +185,11 @@ namespace System.Xml
             }
         }
 
-        public virtual void RemoveNamespace(string prefix!!, string uri!!)
+        public virtual void RemoveNamespace(string prefix, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(uri);
+
             Debug.Assert(_nsdecls != null);
 
             int declIndex = LookupNamespaceDecl(prefix);
@@ -311,7 +317,7 @@ namespace System.Xml
             return -1;
         }
 
-        public virtual string? LookupPrefix(string uri)
+        public virtual string? LookupPrefix([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             Debug.Assert(_nsdecls != null);
 

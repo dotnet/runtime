@@ -11,7 +11,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "event.h"
 #include "regdisplay.h"
@@ -56,7 +55,7 @@ COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
 
 PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     MethodInfo methodInfo;
     if (pCodeManager != NULL && pCodeManager->FindMethodInfo(ControlPC, &methodInfo))
     {
@@ -66,20 +65,23 @@ PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
     return NULL;
 }
 
-ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
+// WARNING: This method is called by suspension while one thread is interrupted
+//          in a random location, possibly holding random locks.
+//          It is unsafe to use blocking APIs or allocate in this method.
+//          Please ensure that all methods called by this one also have this warning.
+bool RuntimeInstance::IsManaged(PTR_VOID pvAddress)
 {
-    ReaderWriterLock::ReadHolder read(&m_ModuleListLock);
+    return (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(m_pvManagedCodeStartRange) < m_cbManagedCodeRange);
+}
 
-    // TODO: ICodeManager support in DAC
-#ifndef DACCESS_COMPILE
-    for (CodeManagerEntry * pEntry = m_CodeManagerList.GetHead(); pEntry != NULL; pEntry = pEntry->m_pNext)
+ICodeManager * RuntimeInstance::GetCodeManagerForAddress(PTR_VOID pvAddress)
+{
+    if (!IsManaged(pvAddress))
     {
-        if (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(pEntry->m_pvStartRange) < pEntry->m_cbRange)
-            return pEntry->m_pCodeManager;
+        return NULL;
     }
-#endif
 
-    return NULL;
+    return m_CodeManager;
 }
 
 #ifndef DACCESS_COMPILE
@@ -90,7 +92,7 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
 ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(PTR_VOID address)
 {
     // Try looking up the code manager assuming the address is for code first. This is expected to be most common.
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(address);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(address);
     if (pCodeManager != NULL)
         return pCodeManager;
 
@@ -119,7 +121,7 @@ void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(PTR_VOID address, Cla
 
 PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
 {
-    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     if (pCodeManager != NULL)
     {
         PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
@@ -137,25 +139,13 @@ PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Cont
 
 GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
 
+// WARNING: This method is called by suspension while one thread is interrupted
+//          in a random location, possibly holding random locks.
+//          It is unsafe to use blocking APIs or allocate in this method.
+//          Please ensure that all methods called by this one also have this warning.
 PTR_RuntimeInstance GetRuntimeInstance()
 {
     return g_pTheRuntimeInstance;
-}
-
-void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
-    }
-}
-
-void RuntimeInstance::SetLoopHijackFlags(uint32_t flag)
-{
-    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
-    {
-        iter->m_pTypeManager->SetLoopHijackFlag(flag);
-    }
 }
 
 RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
@@ -163,15 +153,11 @@ RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
     return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));
 }
 
-ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
-{
-    return m_ModuleListLock;
-}
-
 #ifndef DACCESS_COMPILE
 
 RuntimeInstance::RuntimeInstance() :
     m_pThreadStore(NULL),
+    m_CodeManager(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
 {
@@ -196,56 +182,19 @@ void RuntimeInstance::EnableConservativeStackReporting()
     m_conservativeStackReportingEnabled = true;
 }
 
-bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
+void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
-    CodeManagerEntry * pEntry = new (nothrow) CodeManagerEntry();
-    if (NULL == pEntry)
-        return false;
+    _ASSERTE(m_CodeManager == NULL);
+    _ASSERTE(pCodeManager != NULL);
 
-    pEntry->m_pvStartRange = pvStartRange;
-    pEntry->m_cbRange = cbRange;
-    pEntry->m_pCodeManager = pCodeManager;
-
-    {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
-
-        m_CodeManagerList.PushHead(pEntry);
-    }
-
-    return true;
+    m_CodeManager = pCodeManager;
+    m_pvManagedCodeStartRange = pvStartRange;
+    m_cbManagedCodeRange = cbRange;
 }
 
-void RuntimeInstance::UnregisterCodeManager(ICodeManager * pCodeManager)
+extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
-    CodeManagerEntry * pEntry = NULL;
-
-    {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
-
-        for (CodeManagerList::Iterator i = m_CodeManagerList.Begin(), end = m_CodeManagerList.End(); i != end; i++)
-        {
-            if (i->m_pCodeManager == pCodeManager)
-            {
-                pEntry = *i;
-
-                m_CodeManagerList.Remove(i);
-                break;
-            }
-        }
-    }
-
-    ASSERT(pEntry != NULL);
-    delete pEntry;
-}
-
-extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
-{
-    return GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
-}
-
-extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
-{
-    return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
+    GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
 }
 
 bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
@@ -295,12 +244,7 @@ bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
         return false;
 
     pEntry->m_pTypeManager = pTypeManager;
-
-    {
-        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
-
-        m_TypeManagerList.PushHead(pEntry);
-    }
+    m_TypeManagerList.PushHeadInterlocked(pEntry);
 
     return true;
 }
@@ -320,13 +264,8 @@ COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
         return nullptr; // Return null on failure.
 
     pEntry->m_osModule = hOsModule;
-
-    {
-        RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-        ReaderWriterLock::WriteHolder write(&pRuntimeInstance->GetTypeManagerLock());
-
-        pRuntimeInstance->GetOsModuleList()->PushHead(pEntry);
-    }
+    RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
+    pRuntimeInstance->GetOsModuleList()->PushHeadInterlocked(pEntry);
 
     return hOsModule; // Return non-null on success
 }
@@ -411,17 +350,5 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterfac
     return pCell;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
-COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (uint32_t uOffset, uint32_t tlsStorageSize, uint32_t numTlsCells))
-{
-    Thread * pCurrentThread = ThreadStore::GetCurrentThread();
-
-    PTR_UInt8 pResult = pCurrentThread->GetThreadLocalStorageForDynamicType(uOffset);
-    if (pResult != NULL || tlsStorageSize == 0 || numTlsCells == 0)
-        return pResult;
-
-    ASSERT(tlsStorageSize > 0 && numTlsCells > 0);
-    return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
-}
 
 #endif // DACCESS_COMPILE

@@ -9,9 +9,13 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable IDE0060
+
 namespace System.Threading
 {
-    [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()
@@ -82,12 +86,6 @@ namespace System.Threading
         {
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
-        {
-            return true;
-        }
-
         internal static bool NotifyThreadBlocked() => false;
 
         internal static void NotifyThreadUnblocked()
@@ -95,6 +93,11 @@ namespace System.Threading
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        {
+            return true;
+        }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,
@@ -118,7 +121,7 @@ namespace System.Threading
         }
 
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
-            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+            IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
@@ -129,7 +132,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
             }
 
-            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            // OS doesn't signal handle, so do it here
             overlapped->InternalLow = (IntPtr)0;
             // Both types of callbacks are executed on the same thread pool
             return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);

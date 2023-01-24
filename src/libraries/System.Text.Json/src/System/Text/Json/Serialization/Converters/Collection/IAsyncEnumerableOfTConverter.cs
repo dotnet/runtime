@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TAsyncEnumerable, TElement>
         where TAsyncEnumerable : IAsyncEnumerable<TElement>
     {
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TAsyncEnumerable value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TAsyncEnumerable value)
         {
             if (!typeToConvert.IsAssignableFrom(typeof(IAsyncEnumerable<TElement>)))
             {
@@ -27,14 +27,15 @@ namespace System.Text.Json.Serialization.Converters
             ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        internal override bool SupportsCreateObjectDelegate => false;
+        protected override void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new BufferedAsyncEnumerable();
         }
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
         {
-            if (!state.SupportContinuation)
+            if (!state.SupportAsync)
             {
                 ThrowHelper.ThrowNotSupportedException_TypeRequiresAsyncSerialization(TypeToConvert);
             }
@@ -117,6 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
+                state.Current.EndCollectionElement();
                 moveNextTask = enumerator.MoveNextAsync();
             } while (moveNextTask.IsCompleted);
 

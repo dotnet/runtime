@@ -113,7 +113,7 @@ struct EHblkDsc
 
     // After funclets are created, this is the index of corresponding FuncInfoDsc
     // Special case for Filter/Filter-handler:
-    //   Like the IL the filter funclet immediately preceeds the filter-handler funclet.
+    //   Like the IL the filter funclet immediately precedes the filter-handler funclet.
     //   So this index points to the filter-handler funclet. If you want the filter
     //   funclet index, just subtract 1.
     unsigned short ebdFuncIndex;

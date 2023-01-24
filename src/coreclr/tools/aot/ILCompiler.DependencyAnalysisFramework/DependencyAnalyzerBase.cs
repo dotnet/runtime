@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
@@ -14,12 +13,12 @@ namespace ILCompiler.DependencyAnalysisFramework
     /// so that if MarkedNodeList is called, it can produce the complete graph. For the case
     /// where nodes have deferred computation the ComputeDependencyRoutine even will be triggered
     /// to fill in data.
-    /// 
-    /// The Log visitor logic can be called at any time, and should log the current set of marked 
+    ///
+    /// The Log visitor logic can be called at any time, and should log the current set of marked
     /// nodes and edges in the analysis. (Notably, if its called before MarkedNodeList is evaluated
     /// it will contain only roots, if its called during, the edges/nodes may be incomplete, and
     /// if called after MarkedNodeList is computed it will be a complete graph.
-    /// 
+    ///
     /// </summary>
     /// <typeparam name="DependencyContextType"></typeparam>
     public abstract class DependencyAnalyzerBase<DependencyContextType>

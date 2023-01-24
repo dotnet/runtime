@@ -53,10 +53,8 @@ namespace System.Data
                 (node.Content is XmlSchemaSimpleTypeUnion))
                 throw ExceptionBuilder.SimpleTypeNotSupported();
 
-            if (node.Content is XmlSchemaSimpleTypeRestriction)
+            if (node.Content is XmlSchemaSimpleTypeRestriction content)
             {
-                XmlSchemaSimpleTypeRestriction content = (XmlSchemaSimpleTypeRestriction)node.Content;
-
                 XmlSchemaSimpleType? ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
                 if ((ancestor != null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
                 {
@@ -213,7 +211,7 @@ namespace System.Data
             }
         }
 
-        internal string QualifiedName(string name)
+        internal static string QualifiedName(string name)
         {
             if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;
@@ -298,7 +296,7 @@ namespace System.Data
             return enumType;
         }
 
-        internal static SimpleType CreateByteArrayType(string encoding)
+        internal static SimpleType CreateByteArrayType()
         {
             SimpleType byteArrayType = new SimpleType("base64Binary");
             return byteArrayType;

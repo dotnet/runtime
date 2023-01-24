@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /***
-*   mbusafecrt.c - implementaion of support functions and data for MBUSafeCRT
+*   mbusafecrt.c - implementation of support functions and data for MBUSafeCRT
 *
 
 *

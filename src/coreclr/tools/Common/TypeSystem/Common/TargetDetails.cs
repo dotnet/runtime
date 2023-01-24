@@ -27,11 +27,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Cross-platform console model
         /// </summary>
-        CoreRT,
+        NativeAot,
         /// <summary>
         /// model for armel execution model
         /// </summary>
-        CoreRTArmel,
+        NativeAotArmel,
         /// <summary>
         /// Jit runtime ABI
         /// </summary>
@@ -80,6 +80,7 @@ namespace Internal.TypeSystem
                 {
                     case TargetArchitecture.ARM64:
                     case TargetArchitecture.X64:
+                    case TargetArchitecture.LoongArch64:
                         return 8;
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.X86:
@@ -108,17 +109,21 @@ namespace Internal.TypeSystem
             {
                 if (Architecture == TargetArchitecture.ARM)
                 {
-                    // Corresponds to alignment required for __m128 (there's no __m256)
+                    // Corresponds to alignment required for __m128 (there's no __m256/__m512)
                     return 8;
                 }
                 else if (Architecture == TargetArchitecture.ARM64)
                 {
-                    // Corresponds to alignmet required for __m256
+                    // Corresponds to alignmet required for __m128 (there's no __m256/__m512)
+                    return 16;
+                }
+                else if (Architecture == TargetArchitecture.LoongArch64)
+                {
                     return 16;
                 }
 
-                // 256-bit vector is the type with the higest alignment we support
-                return 32;
+                // 512-bit vector is the type with the highest alignment we support
+                return 64;
             }
         }
 
@@ -131,8 +136,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // We use default packing size of 32 irrespective of the platform.
-                return 32;
+                // We use default packing size of 64 irrespective of the platform.
+                return 64;
             }
         }
 
@@ -172,6 +177,7 @@ namespace Internal.TypeSystem
                     case TargetArchitecture.ARM:
                         return 2;
                     case TargetArchitecture.ARM64:
+                    case TargetArchitecture.LoongArch64:
                         return 4;
                     default:
                         return 1;
@@ -276,6 +282,7 @@ namespace Internal.TypeSystem
                         return new LayoutInt(8);
                 case TargetArchitecture.X64:
                 case TargetArchitecture.ARM64:
+                case TargetArchitecture.LoongArch64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
                     return new LayoutInt(4);
@@ -318,11 +325,17 @@ namespace Internal.TypeSystem
                 // and Procedure Call Standard for the Arm 64-bit Architecture.
                 Debug.Assert(Architecture == TargetArchitecture.ARM ||
                     Architecture == TargetArchitecture.ARM64 ||
+                    Architecture == TargetArchitecture.LoongArch64 ||
                     Architecture == TargetArchitecture.X64 ||
                     Architecture == TargetArchitecture.X86);
 
                 return 4;
             }
         }
+
+        /// <summary>
+        /// CodeDelta - encapsulate the fact that ARM requires a thumb bit
+        /// </summary>
+        public int CodeDelta { get => (Architecture == TargetArchitecture.ARM) ? 1 : 0; }
     }
 }

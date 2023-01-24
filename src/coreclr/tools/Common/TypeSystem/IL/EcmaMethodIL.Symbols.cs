@@ -12,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.IL
 {
     // Pluggable file that adds PDB handling functionality to EcmaMethodIL
-    partial class EcmaMethodIL
+    public partial class EcmaMethodIL
     {
         public override MethodDebugInformation GetDebugInfo()
         {

@@ -136,17 +136,13 @@
   <!--
     Finds symbol files and injects them into the package build.
   -->
-
-  <!--
-    Finds symbol files and injects them into the package build.
-  -->
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
     <ItemGroup Condition="'$(SymbolsSuffix)' != ''">
       <AdditionalLibPackageExcludes Include="%2A%2A\%2A$(SymbolsSuffix)"/>
     </ItemGroup>
 
     <ItemGroup>
-      <NativeWithSymbolFile Include="@(NativeBinary)">
+      <NativeWithSymbolFile Include="@(NativeBinary)" Condition="'$(PackageTargetRuntime)'!=''">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
       </NativeWithSymbolFile>
       <NativeWithSymbolFile Include="@(ArchitectureSpecificToolFile)">

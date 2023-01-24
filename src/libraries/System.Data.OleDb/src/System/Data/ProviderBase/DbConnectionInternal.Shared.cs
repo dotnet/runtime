@@ -338,10 +338,8 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == activateCount, "activated multiple times?");
 #endif // DEBUG
 
-            if (PerformanceCounters != null)
-            { // Pool.Clear will DestroyObject that will clean performanceCounters before going here
-                PerformanceCounters.NumberOfActiveConnections.Decrement();
-            }
+            // Pool.Clear will DestroyObject that will clean performanceCounters before going here
+            PerformanceCounters?.NumberOfActiveConnections.Decrement();
 
             if (!_connectionIsDoomed && Pool!.UseLoadBalancing)
             {
@@ -373,7 +371,7 @@ namespace System.Data.ProviderBase
                 // connection so it is ready to put back into the pool for
                 // general use.
 
-                TerminateStasis(true);
+                TerminateStasis();
 
                 Deactivate(); // call it one more time just in case
 
@@ -391,7 +389,7 @@ namespace System.Data.ProviderBase
                 // it indicates a closed (or leaked), non-pooled connection so
                 // it is safe to dispose.
 
-                TerminateStasis(false);
+                TerminateStasis();
 
                 Deactivate(); // call it one more time just in case
 
@@ -456,11 +454,7 @@ namespace System.Data.ProviderBase
 
         internal void NotifyWeakReference(int message)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Notify(message);
-            }
+            ReferenceCollection?.Notify(message);
         }
 
         internal virtual void OpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory)
@@ -497,7 +491,7 @@ namespace System.Data.ProviderBase
                 }
                 catch
                 {
-                    // This should occure for all exceptions, even ADP.UnCatchableExceptions.
+                    // This should occur for all exceptions, even ADP.UnCatchableExceptions.
                     connectionFactory.SetInnerConnectionTo(outerConnection, this);
                     throw;
                 }
@@ -581,11 +575,7 @@ namespace System.Data.ProviderBase
 
         internal void RemoveWeakReference(object value)
         {
-            DbReferenceCollection? referenceCollection = ReferenceCollection;
-            if (null != referenceCollection)
-            {
-                referenceCollection.Remove(value);
-            }
+            ReferenceCollection?.Remove(value);
         }
 
         internal void DetachCurrentTransactionIfEnded()
@@ -642,7 +632,7 @@ namespace System.Data.ProviderBase
             PerformanceCounters!.NumberOfStasisConnections.Increment();
         }
 
-        private void TerminateStasis(bool returningToPool)
+        private void TerminateStasis()
         {
             PerformanceCounters!.NumberOfStasisConnections.Decrement();
             _isInStasis = false;

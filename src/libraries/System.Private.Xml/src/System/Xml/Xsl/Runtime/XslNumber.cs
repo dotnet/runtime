@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ namespace System.Xml.Xsl.Runtime
     {
         public char startChar;      // First element of numbering sequence for format token
         public int startIdx;       // Start index of separator token
-        public string formatString;   // Format string for separator token
+        public string? formatString;   // Format string for separator token
         public int length;         // Length of separator token, or minimum length of decimal numbers for format token
 
         // Instances of this internal class must be created via CreateFormat and CreateSeparator
@@ -117,7 +116,7 @@ namespace System.Xml.Xsl.Runtime
         private readonly string _groupingSeparator;
         private readonly int _groupingSize;
 
-        private readonly List<TokenInfo> _tokens;
+        private readonly List<TokenInfo?>? _tokens;
 
         public const char DefaultStartChar = '1';
         private static readonly TokenInfo s_defaultFormat = TokenInfo.CreateFormat("0", 0, 1);
@@ -139,7 +138,7 @@ namespace System.Xml.Xsl.Runtime
                 return;
             }
 
-            _tokens = new List<TokenInfo>();
+            _tokens = new List<TokenInfo?>();
             int idxStart = 0;
             bool isAlphaNumeric = CharUtil.IsAlphaNumeric(formatString[idxStart]);
 
@@ -211,7 +210,7 @@ namespace System.Xml.Xsl.Runtime
             else
             {
                 int cFormats = _tokens.Count;
-                TokenInfo prefix = _tokens[0], suffix;
+                TokenInfo? prefix = _tokens[0], suffix;
 
                 if (cFormats % 2 == 0)
                 {
@@ -222,8 +221,8 @@ namespace System.Xml.Xsl.Runtime
                     suffix = _tokens[--cFormats];
                 }
 
-                TokenInfo periodicSeparator = 2 < cFormats ? _tokens[cFormats - 2] : s_defaultSeparator;
-                TokenInfo periodicFormat = 0 < cFormats ? _tokens[cFormats - 1] : s_defaultFormat;
+                TokenInfo? periodicSeparator = 2 < cFormats ? _tokens[cFormats - 2] : s_defaultSeparator;
+                TokenInfo? periodicFormat = 0 < cFormats ? _tokens[cFormats - 1] : s_defaultFormat;
 
                 if (prefix != null)
                 {
@@ -239,13 +238,13 @@ namespace System.Xml.Xsl.Runtime
 
                     if (i > 0)
                     {
-                        TokenInfo thisSeparator = haveFormat ? _tokens[formatIndex + 0] : periodicSeparator;
-                        thisSeparator.AssertSeparator(true);
+                        TokenInfo? thisSeparator = haveFormat ? _tokens[formatIndex + 0] : periodicSeparator;
+                        thisSeparator!.AssertSeparator(true);
                         sb.Append(thisSeparator.formatString, thisSeparator.startIdx, thisSeparator.length);
                     }
 
-                    TokenInfo thisFormat = haveFormat ? _tokens[formatIndex + 1] : periodicFormat;
-                    thisFormat.AssertSeparator(false);
+                    TokenInfo? thisFormat = haveFormat ? _tokens[formatIndex + 1] : periodicFormat;
+                    thisFormat!.AssertSeparator(false);
                     FormatItem(sb, val[i], thisFormat.startChar, thisFormat.length);
                 }
 

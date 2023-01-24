@@ -52,9 +52,9 @@ Namespace Microsoft.VisualBasic
                 ' as well as skipping over quotations used around embedded spaces within
                 ' the application name
                 '  examples:
-                '       f:\"Program Files"\Microsoft\foo.exe  a b  d   e  f 
-                '       "f:\"Program Files"\Microsoft\foo.exe" a b  d   e  f 
-                '       f:\Program Files\Microsoft\foo.exe                  a b  d   e  f 
+                '       f:\"Program Files"\Microsoft\foo.exe  a b  d   e  f
+                '       "f:\"Program Files"\Microsoft\foo.exe" a b  d   e  f
+                '       f:\Program Files\Microsoft\foo.exe                  a b  d   e  f
                 Dim LengthOfAppName, j As Integer
 
                 'Remove the app name from the arguments
@@ -134,8 +134,6 @@ Namespace Microsoft.VisualBasic
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
-        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="Trimmer warns because it can't see Microsoft.VisualBasic.Forms. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
             Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)
@@ -150,7 +148,7 @@ Namespace Microsoft.VisualBasic
         '============================================================================
         Public Function Choose(ByVal Index As Double, ByVal ParamArray Choice() As Object) As Object
 
-            Dim FixedIndex As Integer = CInt(Fix(Index) - 1) 'ParamArray is 0 based, but Choose assumes 1 based 
+            Dim FixedIndex As Integer = CInt(Fix(Index) - 1) 'ParamArray is 0 based, but Choose assumes 1 based
 
             If Choice.Rank <> 1 Then
                 Throw New ArgumentException(SR.Format(SR.Argument_RankEQOne1, "Choice"))
@@ -228,7 +226,7 @@ Namespace Microsoft.VisualBasic
             End If
 
             'Build-up the string.  Calculate number of spaces needed: VB3 uses Stop + 1.
-            'This may seem bogus but it has to be this way for VB3 compatibilty.
+            'This may seem bogus but it has to be this way for VB3 compatibility.
             Buffer1 = CStr([Stop] + 1)
             Buffer2 = CStr(Start - 1)
 
@@ -253,7 +251,7 @@ Namespace Microsoft.VisualBasic
                 InsertNumber(Buffer, Lower, Spaces)
             End If
 
-            'Insert the partition 
+            'Insert the partition
             Buffer = Buffer & ":"
 
             'Insert upper-end of partition range

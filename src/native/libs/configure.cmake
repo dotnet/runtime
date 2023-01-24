@@ -14,47 +14,23 @@ if(POLICY CMP0075)
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
-    set(PAL_UNIX_NAME \"ANDROID\")
-elseif (CLR_CMAKE_TARGET_BROWSER)
-    set(PAL_UNIX_NAME \"BROWSER\")
-elseif (CLR_CMAKE_TARGET_LINUX)
-    set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_OSX)
-    set(PAL_UNIX_NAME \"OSX\")
-
+if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    set(PAL_UNIX_NAME \"MACCATALYST\")
-elseif (CLR_CMAKE_TARGET_IOS)
-    set(PAL_UNIX_NAME \"IOS\")
-elseif (CLR_CMAKE_TARGET_TVOS)
-    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-elseif (CLR_CMAKE_TARGET_NETBSD)
-    set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
-    if (CLR_CMAKE_TARGET_ILLUMOS)
-        set(PAL_UNIX_NAME \"ILLUMOS\")
-    else ()
-        set(PAL_UNIX_NAME \"SOLARIS\")
-    endif ()
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-else ()
-    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     # This variable can be set and used by the coreclr and installer builds.
     # Libraries doesn't need it, but not using it makes the build fail.  So
-    # just check and igore the variable.
+    # just check and ignore the variable.
 endif()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
@@ -145,18 +121,6 @@ check_c_source_compiles(
     "
     HAVE_FLOCK64)
 
-check_c_source_compiles(
-    "
-    #include <sys/types.h>
-    #include <ifaddrs.h>
-    int main(void)
-    {
-        struct ifaddrs ia;
-        return 0;
-    }
-    "
-    HAVE_IFADDRS)
-
 check_symbol_exists(
     O_CLOEXEC
     fcntl.h
@@ -166,6 +130,11 @@ check_symbol_exists(
     F_DUPFD_CLOEXEC
     fcntl.h
     HAVE_F_DUPFD_CLOEXEC)
+
+check_symbol_exists(
+    F_DUPFD
+    fcntl.h
+    HAVE_F_DUPFD)
 
 check_symbol_exists(
     F_FULLFSYNC
@@ -212,6 +181,11 @@ check_symbol_exists(
     HAVE_VFORK)
 
 check_symbol_exists(
+    pipe
+    unistd.h
+    HAVE_PIPE)
+
+check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)
@@ -225,16 +199,6 @@ check_symbol_exists(
     strcpy_s
     string.h
     HAVE_STRCPY_S)
-
-check_symbol_exists(
-    strlcpy
-    string.h
-    HAVE_STRLCPY)
-
-check_symbol_exists(
-    strcat_s
-    string.h
-    HAVE_STRCAT_S)
 
 check_symbol_exists(
     strlcat
@@ -299,6 +263,11 @@ check_symbol_exists(
     TIOCGWINSZ
     "sys/ioctl.h"
     HAVE_TIOCGWINSZ)
+
+check_symbol_exists(
+    TIOCSWINSZ
+    "sys/ioctl.h"
+    HAVE_TIOCSWINSZ)
 
 check_symbol_exists(
     tcgetattr
@@ -408,6 +377,16 @@ check_symbol_exists(
     ${STATFS_INCLUDES}
     HAVE_STATFS)
 
+check_symbol_exists(
+    "getrlimit"
+    "sys/resource.h"
+    HAVE_GETRLIMIT)
+
+check_symbol_exists(
+    "setrlimit"
+    "sys/resource.h"
+    HAVE_SETRLIMIT)
+
 check_type_size(
     "struct statfs"
     STATFS_SIZE
@@ -468,32 +447,35 @@ check_struct_has_member(
     "sys/select.h"
     HAVE_PRIVATE_FDS_BITS)
 
-check_c_source_compiles(
-    "
-    #include <sys/sendfile.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
-    "
-    HAVE_SENDFILE_4)
+# do not use sendfile() on iOS/tvOS, it causes SIGSYS at runtime on devices
+if(NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    check_c_source_compiles(
+        "
+        #include <sys/sendfile.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0); return 0; }
+        "
+        HAVE_SENDFILE_4)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_6)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_6)
 
-check_c_source_compiles(
-    "
-    #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/socket.h>
-    #include <sys/uio.h>
-    int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
-    "
-    HAVE_SENDFILE_7)
+    check_c_source_compiles(
+        "
+        #include <stdlib.h>
+        #include <sys/types.h>
+        #include <sys/socket.h>
+        #include <sys/uio.h>
+        int main(void) { int i = sendfile(0, 0, 0, 0, NULL, NULL, 0); return 0; }
+        "
+        HAVE_SENDFILE_7)
+endif()
 
 check_symbol_exists(
     fcopyfile
@@ -615,7 +597,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER)
+elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
 else()
     if(CLR_CMAKE_TARGET_OSX)
@@ -699,7 +681,9 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (NOT CLR_CMAKE_TARGET_WASI)
+    check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif()
 
 check_symbol_exists(
     futimes
@@ -710,6 +694,16 @@ check_symbol_exists(
     futimens
     sys/stat.h
     HAVE_FUTIMENS)
+
+check_symbol_exists(
+    fchmod
+    sys/stat.h
+    HAVE_FCHMOD)
+
+check_symbol_exists(
+    chmod
+    sys/stat.h
+    HAVE_CHMOD)
 
 check_symbol_exists(
     utimensat
@@ -822,7 +816,7 @@ check_c_source_compiles(
     "
     HAVE_MKSTEMP)
 
-if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP)
+if (NOT HAVE_MKSTEMPS AND NOT HAVE_MKSTEMP AND NOT CLR_CMAKE_TARGET_WASI)
     message(FATAL_ERROR "Cannot find mkstemps nor mkstemp on this platform.")
 endif()
 
@@ -909,6 +903,30 @@ check_symbol_exists(
     getgrouplist
     "unistd.h;grp.h"
     HAVE_GETGROUPLIST)
+
+check_include_files(
+    "syslog.h"
+    HAVE_SYSLOG_H)
+
+check_include_files(
+    "termios.h"
+    HAVE_TERMIOS_H)
+
+check_include_files(
+    "dlfcn.h"
+    HAVE_DLFCN_H)
+
+check_include_files(
+    "sys/statvfs.h"
+    HAVE_SYS_STATVFS_H)
+
+check_include_files(
+    "net/if.h"
+    HAVE_NET_IF_H)
+
+check_include_files(
+    "pthread.h"
+    HAVE_PTHREAD_H)
 
 if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(HAVE_IOS_NET_ROUTE_H 1)
@@ -1045,7 +1063,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER)
+elseif (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 
@@ -1071,18 +1089,6 @@ else ()
         GSS_SPNEGO_MECHANISM
         "gssapi/gssapi.h"
         HAVE_GSS_SPNEGO_MECHANISM)
-endif ()
-
-if (HAVE_GSSFW_HEADERS)
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "GSS/GSS.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
-else ()
-    check_symbol_exists(
-        GSS_KRB5_CRED_NO_CI_FLAGS_X
-        "gssapi/gssapi_krb5.h"
-        HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X)
 endif ()
 
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
@@ -1131,6 +1137,38 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
+
+check_symbol_exists(
+    makedev
+    sys/file.h
+    HAVE_MAKEDEV_FILEH)
+
+check_symbol_exists(
+    makedev
+    sys/sysmacros.h
+    HAVE_MAKEDEV_SYSMACROSH)
+
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TARGET_WASI)
+  message(FATAL_ERROR "Cannot find the makedev function on this platform.")
+endif()
+
+check_symbol_exists(
+    getgrgid_r
+    grp.h
+    HAVE_GETGRGID_R)
+
+check_c_source_compiles(
+    "
+    #include <asm/termbits.h>
+    #include <sys/ioctl.h>
+
+    int main(void)
+    {
+        struct termios2 t;
+        return 0;
+    }
+    "
+    HAVE_TERMIOS2)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

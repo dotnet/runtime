@@ -296,7 +296,7 @@ namespace System.ComponentModel.Design.Tests
         }
 
         [Fact]
-        public void Properties_GetWhenPopulateOptionCollectionOverriden_ReturnsExpected()
+        public void Properties_GetWhenPopulateOptionCollectionOverridden_ReturnsExpected()
         {
             var service = new PopulatingDesignerOptionService();
             DesignerOptionService.DesignerOptionCollection options = service.Options;

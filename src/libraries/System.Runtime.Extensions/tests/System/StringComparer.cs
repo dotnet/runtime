@@ -87,7 +87,7 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                 yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -173,7 +173,7 @@ namespace System.Tests
             yield return new object[] { "latin i", "LATIN I", "en-US", CompareOptions.IgnoreCase, true};
 
             // Android has its own ICU, which doesn't work well with tr
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "turky \u0131", "TURKY I", "tr-TR", CompareOptions.IgnoreCase, true};
                 yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};

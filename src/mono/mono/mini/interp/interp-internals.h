@@ -20,13 +20,15 @@
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
 #define MINT_TYPE_VT 9
+#define MINT_TYPE_VOID 10
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+// This alignment provides us with straight forward support for Vector128
+#define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -98,9 +100,13 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
-#define INTERP_IMETHOD_TAG_UNBOX(im) ((gpointer)((mono_u)(im) | 1))
-#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
-#define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
+#define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
+#define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
+#define INTERP_IMETHOD_UNTAG_1(im) ((InterpMethod*)((mono_u)(im) & ~1))
+
+#define INTERP_IMETHOD_TAG_UNBOX(im) INTERP_IMETHOD_TAG_1(im)
+#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) INTERP_IMETHOD_IS_TAGGED_1(im)
+#define INTERP_IMETHOD_UNTAG_UNBOX(im) INTERP_IMETHOD_UNTAG_1(im)
 
 /*
  * Structure representing a method transformed for the interpreter
@@ -144,9 +150,28 @@ struct InterpMethod {
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
+	gint32 entry_count;
+	InterpMethod *optimized_imethod;
+	// This data is used to resolve native offsets from unoptimized method to native offsets
+	// in the optimized method. We rely on keys identifying a certain logical execution point
+	// to be equal between unoptimized and optimized method. In unoptimized method we map from
+	// native_offset to a key and in optimized_method we map from key to a native offset.
+	//
+	// The logical execution points that are being tracked are some basic block starts (in this
+	// case we don't need any tracking in the unoptimized method, just the mapping from bbindex
+	// to its native offset) and call handler returns. Call handler returns store the return ip
+	// on the stack so once we tier up the method we need to update these to IPs in the optimized
+	// method. The key for a call handler is its index, in appearance order in the IL, multiplied
+	// by -1. (So we don't collide with basic block indexes)
+	//
+	// Since we have both positive and negative keys in this array, we use G_MAXINTRE as terminator.
+	int *patchpoint_data;
 	unsigned int init_locals : 1;
 	unsigned int vararg : 1;
+	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -265,7 +290,7 @@ void
 mono_interp_transform_init (void);
 
 InterpMethod *
-mono_interp_get_imethod (MonoMethod *method, MonoError *error);
+mono_interp_get_imethod (MonoMethod *method);
 
 void
 mono_interp_print_code (InterpMethod *imethod);
@@ -275,6 +300,37 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 void
 mono_interp_error_cleanup (MonoError *error);
+
+#if HOST_BROWSER
+
+gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass);
+
+void
+mono_jiterp_check_pending_unwind (ThreadContext *context);
+
+void *
+mono_jiterp_get_context (void);
+
+int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode);
+
+int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
+
+void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
+
+int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
+
+int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+#endif
 
 static inline int
 mint_type(MonoType *type)
@@ -325,6 +381,8 @@ enum_type:
 	case MONO_TYPE_GENERICINST:
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto enum_type;
+	case MONO_TYPE_VOID:
+		return MINT_TYPE_VOID;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();

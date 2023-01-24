@@ -71,7 +71,7 @@ namespace Internal.IL.Stubs
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
 
-            ArrayBuilder<ILCodeLabel> fieldGetters = new ArrayBuilder<ILCodeLabel>();
+            ArrayBuilder<ILCodeLabel> fieldGetters = default(ArrayBuilder<ILCodeLabel>);
             foreach (FieldDesc field in owningType.GetFields())
             {
                 if (field.IsStatic)
@@ -120,7 +120,7 @@ namespace Internal.IL.Stubs
             }
 
             switchStream.EmitLdc(fieldGetters.Count);
-            
+
             switchStream.Emit(ILOpcode.ret);
 
             return emitter.Link(this);
@@ -142,11 +142,13 @@ namespace Internal.IL.Stubs
             }
         }
 
+        internal const string MetadataName = "__GetFieldHelper";
+
         public override string Name
         {
             get
             {
-                return "__GetFieldHelper";
+                return MetadataName;
             }
         }
 
@@ -154,7 +156,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__GetFieldHelper";
+                return MetadataName;
             }
         }
     }

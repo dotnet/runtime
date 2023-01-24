@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
@@ -32,7 +32,7 @@ namespace System.Reflection.Internal
 
             if (buffer == null && length != 0)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                Throw.ArgumentNull(nameof(buffer));
             }
 
             return new MemoryBlock(buffer, length);
@@ -127,11 +127,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(uint));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (uint)(ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24));
-            }
+            uint result = Unsafe.ReadUnaligned<uint>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         /// <summary>
@@ -188,11 +185,8 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(ushort));
 
-            unchecked
-            {
-                byte* ptr = Pointer + offset;
-                return (ushort)(ptr[0] | (ptr[1] << 8));
-            }
+            ushort result = Unsafe.ReadUnaligned<ushort>(Pointer + offset);
+            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
         }
 
         // When reference has tag bits.
@@ -251,7 +245,7 @@ namespace System.Reflection.Internal
             byte* ptr = Pointer + offset;
             if (BitConverter.IsLittleEndian)
             {
-                return *(Guid*)ptr;
+                return Unsafe.ReadUnaligned<Guid>(ptr);
             }
             else
             {
@@ -315,33 +309,23 @@ namespace System.Reflection.Internal
         /// If a value other than '\0' is passed we still stop at the null terminator if encountered first.</param>
         /// <param name="numberOfBytesRead">The number of bytes read, which includes the terminator if we did not hit the end of the block.</param>
         /// <returns>Length (byte count) not including terminator.</returns>
-        internal int GetUtf8NullTerminatedLength(int offset, out int numberOfBytesRead, char terminator = '\0')
+        internal int GetUtf8NullTerminatedLength(int offset, out int numberOfBytesRead, char terminator)
         {
             CheckBounds(offset, 0);
 
             Debug.Assert(terminator <= 0x7f);
 
-            byte* start = Pointer + offset;
-            byte* end = Pointer + Length;
-            byte* current = start;
-
-            while (current < end)
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + offset, Length - offset);
+            int length = terminator != '\0' ?
+                span.IndexOfAny((byte)0, (byte)terminator) :
+                span.IndexOf((byte)0);
+            if (length >= 0)
             {
-                byte b = *current;
-                if (b == 0 || b == terminator)
-                {
-                    break;
-                }
-
-                current++;
+                numberOfBytesRead = length + 1; // we also read the terminator
             }
-
-            int length = (int)(current - start);
-            numberOfBytesRead = length;
-            if (current < end)
+            else
             {
-                // we also read the terminator
-                numberOfBytesRead++;
+                numberOfBytesRead = length = span.Length;
             }
 
             return length;
@@ -353,22 +337,11 @@ namespace System.Reflection.Internal
 
             Debug.Assert(asciiChar != 0 && asciiChar <= 0x7f);
 
-            for (int i = startOffset; i < Length; i++)
-            {
-                byte b = Pointer[i];
-
-                if (b == 0)
-                {
-                    break;
-                }
-
-                if (b == asciiChar)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + startOffset, Length - startOffset);
+            int i = span.IndexOfAny((byte)asciiChar, (byte)0);
+            return i >= 0 && span[i] == asciiChar ?
+                startOffset + i :
+                -1;
         }
 
         // comparison stops at null terminator, terminator parameter, or end-of-block -- whichever comes first.
@@ -534,7 +507,7 @@ namespace System.Reflection.Internal
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-            return BlobUtilities.ReadBytes(Pointer + offset, byteCount);
+            return new ReadOnlySpan<byte>(Pointer + offset, byteCount).ToArray();
         }
 
         internal int IndexOf(byte b, int start)
@@ -545,19 +518,10 @@ namespace System.Reflection.Internal
 
         internal int IndexOfUnchecked(byte b, int start)
         {
-            byte* p = Pointer + start;
-            byte* end = Pointer + Length;
-            while (p < end)
-            {
-                if (*p == b)
-                {
-                    return (int)(p - Pointer);
-                }
-
-                p++;
-            }
-
-            return -1;
+            int i = new ReadOnlySpan<byte>(Pointer + start, Length - start).IndexOf(b);
+            return i >= 0 ?
+                i + start :
+                -1;
         }
 
         // same as Array.BinarySearch, but without using IComparer

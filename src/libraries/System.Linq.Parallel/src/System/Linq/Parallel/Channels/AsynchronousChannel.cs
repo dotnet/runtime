@@ -235,10 +235,7 @@ namespace System.Linq.Parallel
             // remove the lock.
             lock (this)
             {
-                if (_consumerEvent != null)
-                {
-                    _consumerEvent.Set(_index);
-                }
+                _consumerEvent?.Set(_index);
             }
         }
         //-----------------------------------------------------------------------------------

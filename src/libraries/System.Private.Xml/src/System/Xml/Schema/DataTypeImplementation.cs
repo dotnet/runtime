@@ -1,20 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
+using System.Collections;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Serialization;
+using System.Reflection;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.IO;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Serialization;
-    using System.Reflection;
-
     public enum XmlSchemaDatatypeVariety
     {
         Atomic,
@@ -471,17 +472,8 @@ namespace System.Xml.Schema
 
         internal override FacetsChecker FacetsChecker { get { return miscFacetsChecker; } }
 
-        internal override XmlValueConverter ValueConverter
-        {
-            get
-            {
-                if (_valueConverter == null)
-                {
-                    _valueConverter = CreateValueConverter(_parentSchemaType!);
-                }
-                return _valueConverter;
-            }
-        }
+        internal override XmlValueConverter ValueConverter =>
+            _valueConverter ??= CreateValueConverter(_parentSchemaType!);
 
         public override XmlTokenizedType TokenizedType { get { return XmlTokenizedType.None; } }
 
@@ -530,8 +522,6 @@ namespace System.Xml.Schema
 
         protected DatatypeImplementation? Base { get { return _baseType; } }
 
-        internal abstract Type ListValueType { get; }
-
         internal abstract RestrictionFlags ValidRestrictionFlags { get; }
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Preserve; } }
@@ -575,8 +565,10 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             typedValue = null;
 
@@ -880,22 +872,8 @@ namespace System.Xml.Schema
             new SchemaDatatypeMap("unsignedShort",      s_unsignedShort, 42),
         };
 
-        protected int Compare(byte[] value1, byte[] value2)
-        {
-            int length = value1.Length;
-            if (length != value2.Length)
-            {
-                return -1;
-            }
-            for (int i = 0; i < length; i++)
-            {
-                if (value1[i] != value2[i])
-                {
-                    return -1;
-                }
-            }
-            return 0;
-        }
+        protected static int Compare(byte[] value1, byte[] value2) =>
+            value1.AsSpan().SequenceEqual(value2) ? 0 : -1;
 
 #if PRIYAL
         protected object GetValueToCheck(object value, IXmlNamespaceResolver nsmgr) {
@@ -956,10 +934,8 @@ namespace System.Xml.Schema
                 } while (simpleType != null && simpleType != DatatypeImplementation.AnySimpleType);
             }
 
-            if (listItemType == null)
-            { //Get built-in simple type for the typecode
-                listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
-            }
+            //Get built-in simple type for the typecode
+            listItemType ??= DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
 
             return XmlListConverter.Create(listItemType.ValueConverter);
         }
@@ -1035,8 +1011,10 @@ namespace System.Xml.Schema
         }
         internal DatatypeImplementation ItemType { get { return _itemType; } }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             string? s = value as string;
             typedValue = null;
@@ -1135,7 +1113,7 @@ namespace System.Xml.Schema
                     XsdSimpleValue simpleValue = (XsdSimpleValue)unionTypedValue;
                     values.Add(new XmlAtomicValue(simpleValue.XmlType, simpleValue.TypedValue, nsmgr));
                 }
-                array = values.ToArray(typeof(XmlAtomicValue));
+                array = ToArray(values, typeof(XmlAtomicValue[]));
             }
             else
             { //Variety == List or Atomic
@@ -1147,8 +1125,8 @@ namespace System.Xml.Schema
 
                     values.Add(typedValue);
                 }
-                array = values.ToArray(_itemType.ValueType);
-                Debug.Assert(array.GetType() == ListValueType);
+                Debug.Assert(_itemType.ListValueType.GetElementType() == _itemType.ValueType);
+                array = ToArray(values, _itemType.ListValueType);
             }
             if (values.Count < _minListSize)
             {
@@ -1164,6 +1142,12 @@ namespace System.Xml.Schema
 
         Error:
             return exception;
+
+            // TODO: Replace with https://github.com/dotnet/runtime/issues/76478 once available
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+                Justification = "Array type is always present as it is passed in as a parameter.")]
+            static Array ToArray(ArrayList values, Type arrayType)
+                => values.ToArray(arrayType.GetElementType()!);
         }
     }
 
@@ -1294,8 +1278,10 @@ namespace System.Xml.Schema
             return exception;
         }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             typedValue = null;
             string? s = value as string;
@@ -1778,7 +1764,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(decimal);
         private static readonly Type s_listValueType = typeof(decimal[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
@@ -2673,7 +2659,7 @@ namespace System.Xml.Schema
             Debug.Assert(uri != null);
 
             string stringValue = uri.OriginalString;
-            exception = ((StringFacetsChecker)stringFacetsChecker).CheckValueFacets(stringValue, this, false);
+            exception = StringFacetsChecker.CheckValueFacets(stringValue, this, false);
             if (exception != null) goto Error;
 
             typedValue = uri;
@@ -3187,7 +3173,7 @@ namespace System.Xml.Schema
     }
 
     /*
-      <xs:simpleType name="nonPositiveInteger" id="nonPostiveInteger">
+      <xs:simpleType name="nonPositiveInteger" id="nonPositiveInteger">
         <xs:annotation>
           <xs:documentation
             source="http://www.w3.org/TR/xmlschema-2/#negativeInteger"/>
@@ -3256,7 +3242,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(long);
         private static readonly Type s_listValueType = typeof(long[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(long.MinValue, long.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(long.MinValue, long.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3320,7 +3306,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(int);
         private static readonly Type s_listValueType = typeof(int[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(int.MinValue, int.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(int.MinValue, int.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3377,7 +3363,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(short);
         private static readonly Type s_listValueType = typeof(short[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(short.MinValue, short.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(short.MinValue, short.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3433,7 +3419,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(sbyte);
         private static readonly Type s_listValueType = typeof(sbyte[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(sbyte.MinValue, sbyte.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(sbyte.MinValue, sbyte.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3521,7 +3507,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(ulong);
         private static readonly Type s_listValueType = typeof(ulong[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ulong.MinValue, ulong.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ulong.MinValue, ulong.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3577,7 +3563,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(uint);
         private static readonly Type s_listValueType = typeof(uint[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(uint.MinValue, uint.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(uint.MinValue, uint.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3633,7 +3619,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(ushort);
         private static readonly Type s_listValueType = typeof(ushort[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ushort.MinValue, ushort.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ushort.MinValue, ushort.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3688,7 +3674,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(byte);
         private static readonly Type s_listValueType = typeof(byte[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(byte.MinValue, byte.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(byte.MinValue, byte.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3895,9 +3881,8 @@ namespace System.Xml.Schema
 
             try
             {
-                Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
                 decimal value = XmlConvert.ToDecimal(s);
-                exception = facetsChecker.CheckTotalAndFractionDigits(value, 14 + 4, 4, true, true);
+                exception = Numeric10FacetsChecker.CheckTotalAndFractionDigits(value, 14 + 4, 4, true, true);
                 if (exception != null) goto Error;
 
                 return value;
@@ -3924,8 +3909,7 @@ namespace System.Xml.Schema
             exception = XmlConvert.TryToDecimal(s, out decimalValue);
             if (exception != null) goto Error;
 
-            Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
-            exception = facetsChecker.CheckTotalAndFractionDigits(decimalValue, 14 + 4, 4, true, true);
+            exception = Numeric10FacetsChecker.CheckTotalAndFractionDigits(decimalValue, 14 + 4, 4, true, true);
             if (exception != null) goto Error;
 
             typedValue = decimalValue;

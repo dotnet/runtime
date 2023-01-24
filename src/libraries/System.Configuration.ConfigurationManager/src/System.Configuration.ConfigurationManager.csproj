@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
     <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides types that support using configuration files.
-
-Commonly Used Types:
-System.Configuration.Configuration
-System.Configuration.ConfigurationManager</PackageDescription>
+    <PackageDescription>Provides types that support using XML configuration files (app.config). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as Microsoft.Extensions.Configuration.</PackageDescription>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -250,18 +248,28 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
-    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
-             Link="Common\System\Security\IdentityHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs" Link="Common\System\Security\IdentityHelper.cs" />
     <Compile Include="System\Configuration\SettingsProperty.cs" />
     <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
     <Compile Include="System\UriIdnScope.cs" />
-    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs"
-             Link="Common\System\IO\TempFileCollection.cs" />
+    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs" Link="Common\System\IO\TempFileCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
-             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
+    <Compile Include="System\Diagnostics\FilterElement.cs" />
+    <Compile Include="System\Diagnostics\ListenerElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SourceElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SwitchElementsCollection.cs" />
+    <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
+    <Compile Include="System\Diagnostics\TraceConfiguration.cs" />
+    <Compile Include="System\Diagnostics\TraceSection.cs" />
+    <Compile Include="System\Diagnostics\TypedElement.cs" />
+    <Compile Include="System\Diagnostics\TraceUtils.cs" />
   </ItemGroup>
 
   <!-- Since this package is compatible with .NETStandard, it must also ensure its .NETFramework and .NETCoreApp behavior is compatible with its .NETStandard behavior.-->
@@ -269,36 +277,8 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Net.WebClient" />
-    <Reference Include="System.Xml.ReaderWriter" />
-    <Reference Include="System.Xml.XmlSerializer" />
-  </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
-    <Reference Include="System.Security.Cryptography" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">

@@ -7,14 +7,12 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net.Security
 {
     internal sealed class SafeFreeNegoCredentials : SafeFreeCredentials
     {
         private SafeGssCredHandle _credential;
-        private readonly bool _isNtlmOnly;
+        private readonly Interop.NetSecurityNative.PackageType _packageType;
         private readonly string _userName;
         private readonly bool _isDefault;
 
@@ -23,10 +21,10 @@ namespace System.Net.Security
             get { return _credential; }
         }
 
-        // Property represents if Ntlm Protocol is specfied or not.
-        public bool IsNtlmOnly
+        // Property represents which protocol is specified (Negotiate, Ntlm or Kerberos).
+        public Interop.NetSecurityNative.PackageType PackageType
         {
-            get { return _isNtlmOnly; }
+            get { return _packageType; }
         }
 
         public string UserName
@@ -39,39 +37,32 @@ namespace System.Net.Security
             get { return _isDefault; }
         }
 
-        public SafeFreeNegoCredentials(bool isNtlmOnly, string username, string password, string domain)
+        public SafeFreeNegoCredentials(Interop.NetSecurityNative.PackageType packageType, string username, string password, ReadOnlySpan<char> domain)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(username != null && password != null, "Username and Password can not be null");
-            const char At = '@';
-            const char Backwhack = '\\';
 
-            // any invalid user format will not be mnipulated and passed as it is.
-            int index = username.IndexOf(Backwhack);
-            if (index > 0 && username.IndexOf(Backwhack, index + 1) < 0 && string.IsNullOrEmpty(domain))
+            // any invalid user format will not be manipulated and passed as it is.
+            int index = username.IndexOf('\\');
+            if (index > 0 && username.IndexOf('\\', index + 1) < 0 && domain.IsEmpty)
             {
-                domain = username.Substring(0, index);
+                domain = username.AsSpan(0, index);
                 username = username.Substring(index + 1);
             }
 
             // remove any leading and trailing whitespace
-            if (domain != null)
-            {
-                domain = domain.Trim();
-            }
-
             username = username.Trim();
-
-            if ((username.IndexOf(At) < 0) && !string.IsNullOrEmpty(domain))
+            domain = domain.Trim();
+            if (!username.Contains('@') && !domain.IsEmpty)
             {
-                username += At + domain;
+                username = string.Concat(username, "@", domain);
             }
 
             bool ignore = false;
-            _isNtlmOnly = isNtlmOnly;
+            _packageType = packageType;
             _userName = username;
             _isDefault = string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password);
-            _credential = SafeGssCredHandle.Create(username, password, isNtlmOnly);
+            _credential = SafeGssCredHandle.Create(username, password, packageType);
             _credential.DangerousAddRef(ref ignore);
         }
 

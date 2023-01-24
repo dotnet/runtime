@@ -94,17 +94,16 @@ namespace System
             if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MustMatch);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             int srcLB = sourceArray.GetLowerBound(0);
-            if (sourceIndex < srcLB || sourceIndex - srcLB < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_ArrayLB);
+            ArgumentOutOfRangeException.ThrowIfLessThan(sourceIndex, srcLB);
+            ArgumentOutOfRangeException.ThrowIfNegative(sourceIndex - srcLB, nameof(sourceIndex));
             sourceIndex -= srcLB;
 
             int dstLB = destinationArray.GetLowerBound(0);
-            if (destinationIndex < dstLB || destinationIndex - dstLB < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
+            ArgumentOutOfRangeException.ThrowIfLessThan(destinationIndex, dstLB);
+            ArgumentOutOfRangeException.ThrowIfNegative(destinationIndex - dstLB, nameof(destinationIndex));
             destinationIndex -= dstLB;
 
             if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
@@ -223,6 +222,22 @@ namespace System
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            if (RuntimeHelpers.GetMethodTable(this)->IsMultiDimensionalArray)
+            {
+                ref int bounds = ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this);
+                rawIndex -= Unsafe.Add(ref bounds, 1);
+            }
+
+            if ((uint)rawIndex >= (uint)LongLength)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+            return rawIndex;
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
@@ -252,8 +267,47 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern unsafe object? InternalGetValue(nint flattenedIndex);
+        internal unsafe object? InternalGetValue(nint flattenedIndex)
+        {
+            MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
+
+            TypeHandle arrayElementTypeHandle = pMethodTable->GetArrayElementTypeHandle();
+
+            // Legacy behavior (none of the cases where the element type is a type descriptor are supported).
+            // That is, this happens when the element type is either a pointer or a function pointer type.
+            if (arrayElementTypeHandle.IsTypeDesc)
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+
+            Debug.Assert((nuint)flattenedIndex < NativeLength);
+
+            ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(this);
+            object? result;
+
+            MethodTable* pElementMethodTable = arrayElementTypeHandle.AsMethodTable();
+
+            if (pElementMethodTable->IsValueType)
+            {
+                // If the element is a value type, shift to the right offset using the component size, then box
+                ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+
+                result = RuntimeHelpers.Box(pElementMethodTable, ref offsetDataRef);
+            }
+            else
+            {
+                // The element is a reference type, so no need to retrieve the component size.
+                // Just offset with object size as element type, since it's the same regardless of T.
+                ref object elementRef = ref Unsafe.As<byte, object>(ref arrayDataRef);
+                ref object offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
+
+                result = offsetElementRef;
+            }
+
+            GC.KeepAlive(this); // Keep the method table alive
+
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalSetValue(object? value, nint flattenedIndex);
@@ -326,8 +380,52 @@ namespace System
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern void Initialize();
+        public unsafe void Initialize()
+        {
+            MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);
+            TypeHandle thElem = pArrayMT->GetArrayElementTypeHandle();
+            if (thElem.IsTypeDesc)
+            {
+                return;
+            }
+
+            MethodTable* pElemMT = thElem.AsMethodTable();
+            if (!pElemMT->HasDefaultConstructor || !pElemMT->IsValueType)
+            {
+                return;
+            }
+
+            RuntimeType arrayType = (RuntimeType)GetType();
+
+            if (arrayType.GenericCache is not ArrayInitializeCache cache)
+            {
+                cache = new ArrayInitializeCache(arrayType);
+                arrayType.GenericCache = cache;
+            }
+
+            delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            nuint elementSize = pArrayMT->ComponentSize;
+
+            for (int i = 0; i < Length; i++)
+            {
+                constructorFtn(ref arrayRef);
+                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
+            }
+        }
+
+        private sealed unsafe partial class ArrayInitializeCache
+        {
+            internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
+
+            [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
+            private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
+
+            public ArrayInitializeCache(RuntimeType arrayType)
+            {
+                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+            }
+        }
     }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -394,7 +492,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             return _this[index];
@@ -407,7 +505,7 @@ namespace System
             T[] _this = Unsafe.As<T[]>(this);
             if ((uint)index >= (uint)_this.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             _this[index] = value;

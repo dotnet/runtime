@@ -14,6 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all IEnumerable types.
     /// </summary>
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class IEnumerableConverterFactory : JsonConverterFactory
     {
         private static readonly IDictionaryConverter<IDictionary> s_converterForIDictionary = new IDictionaryConverter<IDictionary>();

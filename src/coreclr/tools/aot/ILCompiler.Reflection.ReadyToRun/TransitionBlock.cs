@@ -149,5 +149,20 @@ namespace ILCompiler.Reflection.ReadyToRun
             private int OffsetOfX8Register => OffsetOfArgumentRegisters - PointerSize;
             public override int OffsetOfFirstGCRefMapSlot => OffsetOfX8Register;
         }
+
+        private sealed class LoongArch64TransitionBlock : TransitionBlock
+        {
+            public static readonly TransitionBlock Instance = new LoongArch64TransitionBlock();
+
+            public override int PointerSize => 8;
+            // R4 .. R11
+            public override int NumArgumentRegisters => 8;
+            // fp=R22,ra=R1,s0-s8(R23-R31),tp=R2
+            public override int NumCalleeSavedRegisters => 12;
+            // Callee-saves, padding, argument registers
+            public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
+            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
+            public override int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
+        }
     }
 }

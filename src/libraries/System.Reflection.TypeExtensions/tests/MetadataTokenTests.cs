@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, method.GetMetadataToken());
         }
 
-        public static bool GetMetadataTokenSupported => true;
+        public static bool GetMetadataTokenSupported => PlatformDetection.IsMetadataTokenSupported;
 
         public static bool IsReflectionEmitSupported => PlatformDetection.IsReflectionEmitSupported;
 

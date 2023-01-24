@@ -3,11 +3,13 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : Assembly
     {
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override string Location => string.Empty;
@@ -37,5 +39,16 @@ namespace System.Reflection.Emit
 
         public override Stream? GetManifestResourceStream(Type type, string name) =>
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+
+        internal static void EnsureDynamicCodeSupported()
+        {
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                ThrowDynamicCodeNotSupported();
+            }
+        }
+
+        private static void ThrowDynamicCodeNotSupported() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
     }
 }

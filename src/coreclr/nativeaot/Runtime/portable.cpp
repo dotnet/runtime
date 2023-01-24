@@ -14,7 +14,6 @@
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
@@ -36,7 +35,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C NATIVEAOT_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 struct gc_alloc_context
 {
@@ -118,7 +117,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
     if (numElements > 0x10000)
     {
         // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
         size64 = (size64 + (sizeof(uintptr_t)-1)) & ~(sizeof(uintptr_t)-1);
 
         size = (size_t)size64;
@@ -130,7 +129,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
     else
 #endif // !HOST_64BIT
     {
-        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
         size = ALIGN_UP(size, sizeof(uintptr_t));
     }
 
@@ -287,7 +286,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int
     if (numElements > 0x10000)
     {
         // Perform the size computation using 64-bit integeres to detect overflow
-        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->RawGetComponentSize());
         size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
         size = (size_t)size64;
@@ -298,7 +297,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (MethodTable * pArrayEEType, int
     }
     else
     {
-        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
         size = ALIGN_UP(size, sizeof(uintptr_t));
     }
     uint8_t* result = acontext->alloc_ptr;
@@ -401,45 +400,20 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 void * ReturnFromCallDescrThunk;
 #endif
 
-#if defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
+#if defined(USE_PORTABLE_HELPERS)
 //
 // Return address hijacking
 //
-#if !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackScalar, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackObject, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-#else // !defined (HOST_ARM64)
-COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
 COOP_PINVOKE_HELPER(void, RhpGcStressHijack, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
-#endif // !defined (HOST_ARM64)
+
+COOP_PINVOKE_HELPER(void, RhpGcProbeHijack, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 #endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
 
 #if defined(USE_PORTABLE_HELPERS)
@@ -496,7 +470,7 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 }
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     return NULL;
 }
@@ -543,15 +517,6 @@ COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 }
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-#ifdef CALLDESCR_FPARGREGSARERETURNREGS
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub))
-#else
-COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (uintptr_t* pReturnVoidStub, uintptr_t* pReturnIntegerStub, uintptr_t* pCommonStub, uintptr_t* pReturnFloatingPointReturn4Thunk, uintptr_t* pReturnFloatingPointReturn8Thunk))
-#endif
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }

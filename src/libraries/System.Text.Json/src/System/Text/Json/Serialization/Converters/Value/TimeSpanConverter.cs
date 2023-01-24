@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class TimeSpanConverter : JsonConverter<TimeSpan>
+    internal sealed class TimeSpanConverter : JsonPrimitiveConverter<TimeSpan>
     {
         private const int MinimumTimeSpanFormatLength = 8; // hh:mm:ss
         private const int MaximumTimeSpanFormatLength = 26; // -dddddddd.hh:mm:ss.fffffff
@@ -20,47 +19,34 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
-            bool isEscaped = reader._stringHasEscaping;
-            int maximumLength = isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength;
+            return ReadCore(ref reader);
+        }
 
-            ReadOnlySpan<byte> source = stackalloc byte[0];
+        internal override TimeSpan ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+            return ReadCore(ref reader);
+        }
 
-            if (reader.HasValueSequence)
+        private static TimeSpan ReadCore(ref Utf8JsonReader reader)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
+
+            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumTimeSpanFormatLength, MaximumEscapedTimeSpanFormatLength))
             {
-                ReadOnlySequence<byte> valueSequence = reader.ValueSequence;
-                long sequenceLength = valueSequence.Length;
+                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+            }
 
-                if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, maximumLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
-                }
-
-                Span<byte> stackSpan = stackalloc byte[isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength];
-                valueSequence.CopyTo(stackSpan);
-                source = stackSpan.Slice(0, (int)sequenceLength);
+            scoped ReadOnlySpan<byte> source;
+            if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+            {
+                source = reader.ValueSpan;
             }
             else
             {
-                source = reader.ValueSpan;
-
-                if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, maximumLength))
-                {
-                    ThrowHelper.ThrowFormatException(DataType.TimeSpan);
-                }
-            }
-
-            if (isEscaped)
-            {
-                int backslash = source.IndexOf(JsonConstants.BackSlash);
-                Debug.Assert(backslash != -1);
-
-                Span<byte> sourceUnescaped = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
-
-                JsonReaderHelper.Unescape(source, sourceUnescaped, backslash, out int written);
-                Debug.Assert(written > 0);
-
-                source = sourceUnescaped.Slice(0, written);
-                Debug.Assert(!source.IsEmpty);
+                Span<byte> stackSpan = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
+                int bytesWritten = reader.CopyString(stackSpan);
+                source = stackSpan.Slice(0, bytesWritten);
             }
 
             byte firstChar = source[0];
@@ -94,6 +80,16 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(result);
 
             writer.WriteStringValue(output.Slice(0, bytesWritten));
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        {
+            Span<byte> output = stackalloc byte[MaximumTimeSpanFormatLength];
+
+            bool result = Utf8Formatter.TryFormat(value, output, out int bytesWritten, 'c');
+            Debug.Assert(result);
+
+            writer.WritePropertyName(output.Slice(0, bytesWritten));
         }
     }
 }

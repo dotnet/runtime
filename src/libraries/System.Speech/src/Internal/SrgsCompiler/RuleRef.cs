@@ -68,10 +68,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Get InitialState of external RuleRef.
                 string sExternalRuleUri = sbExternalRuleUri.ToString();
                 ruleRef = backend.FindRule(sExternalRuleUri);
-                if (ruleRef == null)
-                {
-                    ruleRef = backend.CreateRule(sExternalRuleUri, SPCFGRULEATTRIBUTES.SPRAF_Import);
-                }
+                ruleRef ??= backend.CreateRule(sExternalRuleUri, SPCFGRULEATTRIBUTES.SPRAF_Import);
             }
             Arc rulerefArc = backend.RuleTransition(ruleRef, _rule, 1.0f);
 #pragma warning disable 0618

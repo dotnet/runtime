@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    enum MarshallerKind
+    internal enum MarshallerKind
     {
         Unknown,
         BlittableValue,
@@ -47,6 +47,7 @@ namespace Internal.TypeSystem.Interop
         AsAnyW,
         FailedTypeLoad,
         ComInterface,
+        BlittableValueClassByRefReturn,
         BlittableValueClassWithCopyCtor,
         CustomMarshaler,
         Invalid

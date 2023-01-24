@@ -2,6 +2,15 @@
 
 Documentation on compatibility guidance and the current state. The version headings act as a rolling delta between the previous version.
 
+## Version 2
+
+The focus of version 2 is to support all repos that make up the .NET Product, including ASP.NET Core and Windows Forms, as well as all packages in dotnet/runtime.
+
+### User defined type marshalling
+
+Support for user-defined type marshalling in the source-generated marshalling is described in [UserTypeMarshallingV2.md](UserTypeMarshallingV2.md). This support replaces the designs specified in [StructMarshalling.md](StructMarshalling.md) and [SpanMarshallers.md](SpanMarshallers.md).
+
+
 ## Version 1
 
 The focus of version 1 is to support `NetCoreApp`. This implies that anything not needed by `NetCoreApp` is subject to change.
@@ -54,7 +63,6 @@ In the built-in system, marshalling a `string` contains an optimization for para
 
 When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `UnmanagedType.LPStr`):
   - Best-fit mapping will be disabled and no exception will be thrown for unmappable characters. In the built-in system, this behaviour was configured through [`DllImportAttribute.BestFitMapping`] and [`DllImportAttribute.ThrowOnUnmappableChar`]. The generated marshalling code will have the equivalent behaviour of `BestFitMapping=false` and `ThrowOnUnmappableChar=false`.
-  - No optimization for stack allocation will be performed. Marshalling will always allocate through `AllocCoTaskMem`.
 
 The p/invoke source generator does not provide an equivalent to using `CharSet.Auto` in the built-in system. If platform-dependent behaviour is desired, it is left to the user to define different p/invokes with different marshalling configurations.
 

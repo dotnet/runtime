@@ -115,8 +115,10 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public virtual Type[] FindInterfaces(TypeFilter filter!!, object? filterCriteria)
+        public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
         {
+            ArgumentNullException.ThrowIfNull(filter);
+
             Type?[] c = GetInterfaces();
             int cnt = 0;
             for (int i = 0; i < c.Length; i++)
@@ -366,6 +368,7 @@ namespace System
             return false;
         }
 
+        // IL2085 is produced due to the "this" of the method not being annotated and used in effectively this.GetInterfaces()
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
                 "But this method only compares the result against the passed in ifaceType." +
@@ -375,7 +378,14 @@ namespace System
             Type? t = this;
             while (t != null)
             {
+                // IL2075 is produced due to the BaseType not returning annotated value and used in effectively this.BaseType.GetInterfaces()
+                // The GetInterfaces technically requires all interfaces to be preserved
+                // But this method only compares the result against the passed in ifaceType.
+                // So if ifaceType exists, then trimming should have kept it implemented on any type.
+                // The warning is currently analyzer only.
+#pragma warning disable IL2075
                 Type[] interfaces = t.GetInterfaces();
+#pragma warning restore IL2075
                 if (interfaces != null)
                 {
                     for (int i = 0; i < interfaces.Length; i++)

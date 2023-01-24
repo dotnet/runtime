@@ -13,28 +13,25 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
         private object _callback;
 
-        internal ObservableCounter(Meter meter, string name, Func<T> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValue;
+            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
             Publish();
         }
 
-        internal ObservableCounter(Meter meter, string name, Func<Measurement<T>> observeValue!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<Measurement<T>> observeValue, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValue;
+            _callback = observeValue ?? throw new ArgumentNullException(nameof(observeValue));
             Publish();
         }
 
-        internal ObservableCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues!!, string? unit, string? description) : base(meter, name, unit, description)
+        internal ObservableCounter(Meter meter, string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit, string? description) : base(meter, name, unit, description)
         {
-            _callback = observeValues;
+            _callback = observeValues ?? throw new ArgumentNullException(nameof(observeValues));
             Publish();
         }
 

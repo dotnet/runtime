@@ -139,7 +139,6 @@ private:
     static HRESULT InitCaType(
         CustomAttributeType* pType,
         Factory<SString>* pSstringFactory,
-        Factory<StackScratchBuffer>* pStackScratchBufferFactory,
         CaType* pCaType);
 
     static HRESULT ParseCaType(

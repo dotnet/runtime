@@ -29,25 +29,34 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static partial ECDsa Create(ECParameters parameters);
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
-        public static new ECDsa? Create(string algorithm!!)
+        public static new ECDsa? Create(string algorithm)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
+
             return CryptoConfig.CreateFromName(algorithm) as ECDsa;
         }
 
-        public virtual byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm)
+        public virtual byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             // hashAlgorithm is verified in the overload
 
             return SignData(data, 0, data.Length, hashAlgorithm);
         }
 
-        public virtual byte[] SignData(byte[] data!!, int offset, int count, HashAlgorithmName hashAlgorithm)
+        public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentNullException.ThrowIfNull(data);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
@@ -91,16 +100,20 @@ namespace System.Security.Cryptography
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
         public byte[] SignData(
-            byte[] data!!,
+            byte[] data,
             int offset,
             int count,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentNullException.ThrowIfNull(data);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -185,8 +198,9 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
-        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
+            ArgumentNullException.ThrowIfNull(data);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -215,8 +229,9 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or signing operation.
         /// </exception>
-        public byte[] SignData(Stream data!!, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
+            ArgumentNullException.ThrowIfNull(data);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -262,12 +277,134 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the signing operation.
         /// </exception>
-        public byte[] SignHash(byte[] hash!!, DSASignatureFormat signatureFormat)
+        public byte[] SignHash(byte[] hash, DSASignatureFormat signatureFormat)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            return SignHashCore(hash, signatureFormat);
+        }
+
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value in the indicated format.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash value of the data that is being signed.
+        /// </param>
+        /// <param name="signatureFormat">
+        ///   The encoding format to use for the signature.
+        /// </param>
+        /// <returns>
+        ///   A digital signature for the specified hash value.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat" /> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
+        /// <seealso cref="SignHash(ReadOnlySpan{byte})" />.
+        public byte[] SignHash(ReadOnlySpan<byte> hash, DSASignatureFormat signatureFormat)
         {
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
             return SignHashCore(hash, signatureFormat);
+        }
+
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash value of the data that is being signed.
+        /// </param>
+        /// <returns>
+        ///   A digital signature for the specified hash value.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
+        /// <remarks>
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
+        /// </remarks>
+        /// <seealso cref="SignHash(ReadOnlySpan{byte}, DSASignatureFormat)" />.
+        public byte[] SignHash(ReadOnlySpan<byte> hash)
+        {
+            return SignHashCore(hash, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value in the indicated format into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash value of the data that is being signed.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature.
+        /// </param>
+        /// <param name="signatureFormat">
+        ///   The encoding format to use for the signature.
+        /// </param>
+        /// <returns>
+        ///   The total number of bytes written to <paramref name="destination" />.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat" /> is not a known format.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        /// </exception>
+        /// <seealso cref="SignHash(ReadOnlySpan{byte}, Span{byte})" />.
+        public int SignHash(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat)
+        {
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            if (TrySignHashCore(hash, destination, signatureFormat, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        /// <summary>
+        ///   Computes the ECDSA signature for the specified hash value into the provided buffer.
+        /// </summary>
+        /// <param name="hash">
+        ///   The hash value of the data that is being signed.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature.
+        /// </param>
+        /// <returns>
+        ///   The total number of bytes written to <paramref name="destination" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred in the signing operation.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the signature.
+        /// </exception>
+        /// <remarks>
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   the signature. To use a different signature format, use <see cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
+        /// </remarks>
+        /// <seealso cref="SignHash(ReadOnlySpan{byte}, Span{byte}, DSASignatureFormat)" />.
+        public int SignHash(ReadOnlySpan<byte> hash, Span<byte> destination)
+        {
+            if (TrySignHashCore(hash, destination, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
         }
 
         /// <summary>
@@ -406,26 +543,196 @@ namespace System.Security.Cryptography
             return TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
         }
 
-        public virtual byte[] SignData(Stream data!!, HashAlgorithmName hashAlgorithm)
+        public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(data);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, hashAlgorithm);
             return SignHash(hash);
         }
 
-        public bool VerifyData(byte[] data!!, byte[] signature, HashAlgorithmName hashAlgorithm)
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to hash and sign.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use to create the hash value.
+        /// </param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   the signature. To use a different signature format, use
+        ///   <see cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />.
+        /// </remarks>
+        /// <seealso cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName, DSASignatureFormat)" />
+        public byte[] SignData(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            return SignDataCore(data, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it using the specified signature format.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to hash and sign.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use to create the hash value.
+        /// </param>
+        /// <param name="signatureFormat">
+        ///   The encoding format to use for the signature.
+        /// </param>
+        /// <returns>
+        ///   The ECDSA signature for the specified data.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat" /> is not a known format.
+        /// </exception>
+        /// <seealso cref="SignData(ReadOnlySpan{byte}, HashAlgorithmName)" />
+        public byte[] SignData(ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            return SignDataCore(data, hashAlgorithm, signatureFormat);
+        }
+
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it in the indicated format into the provided buffer.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to hash and sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use to create the hash value.
+        /// </param>
+        /// <param name="signatureFormat">
+        ///   The encoding format to use for the signature.
+        /// </param>
+        /// <returns>
+        ///   The total number of bytes written to <paramref name="destination" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="signatureFormat" /> is not a known format.
+        /// </exception>
+        /// <seealso cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName)" />
+        public int SignData(
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            HashAlgorithmName hashAlgorithm,
+            DSASignatureFormat signatureFormat)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            if (!signatureFormat.IsKnownValue())
+                throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
+
+            if (TrySignDataCore(data, destination, hashAlgorithm, signatureFormat, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        /// <summary>
+        ///   Computes the hash value of the specified data and signs it in the indicated format into the provided buffer.
+        /// </summary>
+        /// <param name="data">
+        ///   The data to hash and sign.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the signature.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use to create the hash value.
+        /// </param>
+        /// <returns>
+        ///   The total number of bytes written to <paramref name="destination" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is an empty string.
+        ///   </para>
+        ///   <para> -or- </para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is too small to hold the signature.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hashAlgorithm" />'s <see cref="HashAlgorithmName.Name" /> is <see langword="null" />.
+        /// </exception>
+        /// <remarks>
+        ///   This method will use <see cref="DSASignatureFormat.IeeeP1363FixedFieldConcatenation" /> to encode the
+        ///   the signature. To use a different signature format, use
+        ///   <see cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />.
+        /// </remarks>
+        /// <seealso cref="SignData(ReadOnlySpan{byte}, Span{byte}, HashAlgorithmName, DSASignatureFormat)" />
+        public int SignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            if (TrySignDataCore(data, destination, hashAlgorithm, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out int written))
+            {
+                return written;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
+        {
+            ArgumentNullException.ThrowIfNull(data);
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
 
         public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
@@ -479,10 +786,13 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
@@ -517,8 +827,10 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the hashing or verification operation.
         /// </exception>
-        public bool VerifyData(byte[] data!!, byte[] signature!!, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -600,8 +912,10 @@ namespace System.Security.Cryptography
             return VerifyHashCore(hashSpan, signature, signatureFormat);
         }
 
-        public bool VerifyData(Stream data!!, byte[] signature!!, HashAlgorithmName hashAlgorithm)
+        public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             byte[] hash = HashData(data, hashAlgorithm);
@@ -631,11 +945,14 @@ namespace System.Security.Cryptography
         ///   An error occurred in the hashing or verification operation.
         /// </exception>
         public bool VerifyData(
-            Stream data!!,
-            byte[] signature!!,
+            Stream data,
+            byte[] signature,
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -672,18 +989,22 @@ namespace System.Security.Cryptography
         public override string? KeyExchangeAlgorithm => null;
         public override string SignatureAlgorithm => "ECDsa";
 
-        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        }
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
-        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        }
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
+            // If this is an algorithm that we ship, then we can use the hash one-shot.
+            if (this is IRuntimeAlgorithm)
+            {
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            }
+
+            // If this is not our algorithm implementation, for compatibility purposes we need to
+            // call out to the HashData virtual.
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             bool returnArray = false;
@@ -777,7 +1098,7 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat,
             out int bytesWritten)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             // The only available implementation here is abstract method, use it
             byte[] result = SignHash(hash.ToArray());
@@ -806,8 +1127,11 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred in the verification operation.
         /// </exception>
-        public bool VerifyHash(byte[] hash!!, byte[] signature!!, DSASignatureFormat signatureFormat)
+        public bool VerifyHash(byte[] hash, byte[] signature, DSASignatureFormat signatureFormat)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -857,7 +1181,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> signature,
             DSASignatureFormat signatureFormat)
         {
-            // This method is expected to be overriden with better implementation
+            // This method is expected to be overridden with better implementation
 
             byte[]? sig = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
 

@@ -13,27 +13,27 @@ namespace System.Media
 
         public static SystemSound Asterisk
         {
-            get => s_asterisk ?? (s_asterisk = new SystemSound(Interop.User32.MB_ICONASTERISK));
+            get => s_asterisk ??= new SystemSound(Interop.User32.MB_ICONASTERISK);
         }
 
         public static SystemSound Beep
         {
-            get => s_beep ?? (s_beep = new SystemSound(Interop.User32.MB_OK));
+            get => s_beep ??= new SystemSound(Interop.User32.MB_OK);
         }
 
         public static SystemSound Exclamation
         {
-            get => s_exclamation ?? (s_exclamation = new SystemSound(Interop.User32.MB_ICONEXCLAMATION));
+            get => s_exclamation ??= new SystemSound(Interop.User32.MB_ICONEXCLAMATION);
         }
 
         public static SystemSound Hand
         {
-            get => s_hand ?? (s_hand = new SystemSound(Interop.User32.MB_ICONHAND));
+            get => s_hand ??= new SystemSound(Interop.User32.MB_ICONHAND);
         }
 
         public static SystemSound Question
         {
-            get => s_question ?? (s_question = new SystemSound(Interop.User32.MB_ICONQUESTION));
+            get => s_question ??= new SystemSound(Interop.User32.MB_ICONQUESTION);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace System.Configuration
 
             if (!alwaysIntercept && StringUtil.EqualsIgnoreCase(oldStreamname, newStreamname)) return;
 
-            if (_streams == null) _streams = new HybridDictionary(true);
+            _streams ??= new HybridDictionary(true);
 
             _streams[oldStreamname] = new StreamUpdate(newStreamname);
         }

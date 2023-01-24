@@ -117,13 +117,13 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void UriMailTo_TwoSemiColonSepratedAddresses_Success()
+        public void UriMailTo_TwoSemiColonSeparatedAddresses_Success()
         {
             Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host;User@Host"));
         }
 
         [Fact]
-        public void UriMailTo_TwoCommaSepratedAddresses_Success()
+        public void UriMailTo_TwoCommaSeparatedAddresses_Success()
         {
             Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host,User@Host"));
         }

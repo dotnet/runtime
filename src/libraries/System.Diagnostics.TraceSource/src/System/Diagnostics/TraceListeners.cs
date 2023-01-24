@@ -83,23 +83,27 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void AddRange(TraceListener[] value!!)
+        public void AddRange(TraceListener[] value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             for (int i = 0; ((i) < (value.Length)); i = ((i) + (1)))
             {
-                this.Add(value[i]);
+                Add(value[i]);
             }
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public void AddRange(TraceListenerCollection value!!)
+        public void AddRange(TraceListenerCollection value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
-                this.Add(value[i]);
+                Add(value[i]);
             }
         }
 
@@ -142,8 +146,10 @@ namespace System.Diagnostics
             return _list.GetEnumerator();
         }
 
-        internal void InitializeListener(TraceListener listener!!)
+        internal static void InitializeListener(TraceListener listener)
         {
+            ArgumentNullException.ThrowIfNull(listener);
+
             listener.IndentSize = TraceInternal.IndentSize;
             listener.IndentLevel = TraceInternal.IndentLevel;
         }

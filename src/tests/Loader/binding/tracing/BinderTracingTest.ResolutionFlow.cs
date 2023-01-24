@@ -73,7 +73,8 @@ namespace BinderTracingTests
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [AssemblyNotFound]
-        [BinderTest(isolate: true, testSetup: nameof(LoadSubdirectoryAssembly_InstanceALC))]
+        [BinderTest(isolate: true, testSetup: nameof(LoadSubdirectoryAssembly_InstanceALC),
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation FindInLoadContext_CustomALC_IncompatibleVersion()
         {
             var assemblyName = new AssemblyName($"{SubdirectoryAssemblyName}, Version=4.3.2.1");
@@ -180,7 +181,9 @@ namespace BinderTracingTests
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [MismatchedAssemblyName]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (DefaultALC)    [AssemblyNotFound]
-        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { DependentAssemblyName + "_Copy" } )]
+        [BinderTest(isolate: true,
+            additionalLoadsToTrack: new string[] { DependentAssemblyName + "_Copy" },
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes AssemblyNotFound instead of MismatchedAssemblyName.
         public static BindOperation ApplicationAssemblies_MismatchedAssemblyName()
         {
             var assemblyName = new AssemblyName($"{DependentAssemblyName}_Copy, Culture=neutral, PublicKeyToken=null");
@@ -336,7 +339,8 @@ namespace BinderTracingTests
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [Success]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true,
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation AssemblyLoadContextResolvingEvent_CustomALC()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
@@ -405,7 +409,8 @@ namespace BinderTracingTests
         //   ResolutionAttempted : ApplicationAssemblies                (DefaultALC)    [AssemblyNotFound]
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [Exception]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true,
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation AssemblyLoadContextResolvingEvent_CustomALC_Exception()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
@@ -471,7 +476,8 @@ namespace BinderTracingTests
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Success]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true,
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation AppDomainAssemblyResolveEvent_CustomALC()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);
@@ -544,7 +550,8 @@ namespace BinderTracingTests
         //   ResolutionAttempted : DefaultAssemblyLoadContextFallback   (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AssemblyLoadContextResolvingEvent    (CustomALC)     [AssemblyNotFound]
         //   ResolutionAttempted : AppDomainAssemblyResolveEvent        (CustomALC)     [Exception]
-        [BinderTest(isolate: true)]
+        [BinderTest(isolate: true,
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation AppDomainAssemblyResolveEvent_Exception()
         {
             var assemblyName = new AssemblyName(SubdirectoryAssemblyName);

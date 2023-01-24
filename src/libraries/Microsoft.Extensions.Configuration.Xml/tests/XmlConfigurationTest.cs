@@ -561,7 +561,6 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
         public void ThrowExceptionWhenFindDTD()
         {
             var xml =
@@ -690,7 +689,31 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
+        public void ThrowExceptionWhenDuplicateKeyOfElementContents()
+        {
+            var xml =
+                @"<settings>
+                    <Data>
+                        <DefaultConnection>
+                            <ConnectionString>TestConnectionString</ConnectionString>
+                            <Provider>SqlClient</Provider>
+                        </DefaultConnection>
+                    </Data>
+                    <data name='defaultconnection'>
+                        <ConnectionString>TestConnectionString1</ConnectionString>
+                        <provider>NewProvider</provider>
+                    </data>
+                </settings>";
+            var xmlConfigSrc = new XmlConfigurationProvider(new XmlConfigurationSource());
+            var expectedMsg = SR.Format(SR.Error_KeyIsDuplicated, "data:defaultconnection:ConnectionString",
+                SR.Format(SR.Msg_LineInfo, 9, 43));
+
+            var exception = Assert.Throws<FormatException>(() => xmlConfigSrc.Load(TestStreamHelpers.StringToStream(xml)));
+
+            Assert.Equal(expectedMsg, exception.Message);
+        }
+
+        [Fact]
         public void XmlConfiguration_Throws_On_Missing_Configuration_File()
         {
             var ex = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: false).Build());
@@ -704,6 +727,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73432", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public void LoadKeyValuePairsFromValidEncryptedXml()
         {

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -149,6 +150,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(FindMembers_TestData))]
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on FindMembers references compiler-generated members which use reflection. " +
+                            "These members are not accessed by the test.")]
         public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
         {
             Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);
@@ -848,7 +852,7 @@ namespace System.Tests
         static string testtype = "System.Collections.Generic.Dictionary`2[[Program, Foo], [Program, Foo]]";
 
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
-                           Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
+                           Assembly.LoadFrom(Path.Join(".", "TestLoadAssembly.dll")) :
                            null;
         private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
@@ -1134,6 +1138,36 @@ namespace System.Tests
             }
         }
 #endregion
+
+        [Fact]
+        public void GetEnumTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestEnum)) == TypeCode.Int32);
+        }
+
+        [Fact]
+        public void GetEnumNestedInGenericClassTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestGenericClass<TestClass>.NestedEnum)) == TypeCode.Int32);
+        }
+
+        public enum TestEnum
+        {
+            A,
+            B,
+            C
+        }
+
+        public class TestClass { }
+        public class TestGenericClass<T>
+        {
+            public enum NestedEnum
+            {
+                A,
+                B,
+                C
+            }
+        }
     }
 
     public class NonGenericClass { }

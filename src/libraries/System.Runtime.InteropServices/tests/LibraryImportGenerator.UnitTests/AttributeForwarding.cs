@@ -4,6 +4,8 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop;
+using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -17,7 +19,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class AttributeForwarding
     {
-        [ConditionalTheory]
+        [Theory]
         [InlineData("SuppressGCTransition", "System.Runtime.InteropServices.SuppressGCTransitionAttribute")]
         [InlineData("UnmanagedCallConv", "System.Runtime.InteropServices.UnmanagedCallConvAttribute")]
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
@@ -25,6 +27,7 @@ namespace LibraryImportGenerator.UnitTests
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -33,15 +36,21 @@ partial class C
     public static partial S Method1();
 }}
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {{
 }}
 
 struct Native
 {{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+}}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -59,13 +68,14 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_EmptyCallConvArray()
         {
             string source = @"
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -74,15 +84,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -103,12 +119,13 @@ struct Native
                     && attr.NamedArguments[0].Value.Values.Length == 0);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_SingleCallConvType()
         {
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -117,15 +134,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -150,12 +173,13 @@ struct Native
                         callConvType));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task UnmanagedCallConvAttribute_MultipleCallConvTypes()
         {
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -164,15 +188,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -201,12 +231,13 @@ struct Native
                         callConvType2));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task DefaultDllImportSearchPathsAttribute()
         {
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -215,15 +246,21 @@ partial class C
     public static partial S Method1();
 }}
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {{
 }}
 
 struct Native
 {{
-    public Native(S s) {{ }}
-    public S ToManaged() {{ return default; }}
+}}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -245,13 +282,14 @@ struct Native
                     && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task OtherAttributeType()
         {
             string source = @"
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 class OtherAttribute : Attribute {}
@@ -263,15 +301,21 @@ partial class C
     public static partial S Method1();
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
 struct Native
 {
-    public Native(S s) { }
-    public S ToManaged() { return default; }
+}
+
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -290,9 +334,12 @@ struct Native
                 attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
         }
 
-        [ConditionalFact]
+        [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
+            // This code is invalid configuration from the source generator's perspective.
+            // We just use it as validation for forwarding the In and Out attributes.
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -300,11 +347,15 @@ partial class C
 {
     [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([In, Out] int[] a);
+    public static partial bool Method1([In, Out] int a);
 }
 " + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                origComp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out _,
+                new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -313,12 +364,6 @@ partial class C
             INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
             Assert.Collection(targetMethod.Parameters,
                 param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                        Assert.Empty(attr.NamedArguments);
-                    },
                     attr =>
                     {
                         Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
@@ -333,7 +378,8 @@ partial class C
                     }));
         }
 
-        [ConditionalFact]
+        [Fact]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter()
         {
             string source = @"
@@ -347,7 +393,11 @@ partial class C
 }
 " + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                origComp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out _,
+                new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -360,39 +410,6 @@ partial class C
                         Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
                         Assert.Empty(attr.NamedArguments);
                     }));
-        }
-
-        [ConditionalFact]
-        public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
-        {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
-}
-" + CodeSnippets.LibraryImportAttributeDeclaration;
-            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-            Assert.Collection(targetMethod.Parameters,
-                param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                        var namedArgs = attr.NamedArguments.ToImmutableDictionary();
-                        Assert.Equal(10, namedArgs["SizeConst"].Value);
-                        Assert.Equal((short)1, namedArgs["SizeParamIndex"].Value);
-                        Assert.Equal(UnmanagedType.I4, (UnmanagedType)namedArgs["ArraySubType"].Value!);
-                    }),
-                param => Assert.Equal(SpecialType.System_Int32, param.Type.SpecialType));
         }
 
         private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation newComp)

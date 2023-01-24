@@ -54,7 +54,7 @@ namespace System.Runtime.Loader
         internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             RuntimeAssembly? loadedAssembly = null;
             LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
@@ -140,8 +140,10 @@ namespace System.Runtime.Loader
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
         // Returns the load context in which the specified assembly has been loaded
-        public static AssemblyLoadContext? GetLoadContext(Assembly assembly!!)
+        public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(assembly);
+
             RuntimeAssembly? rtAsm = GetRuntimeAssembly(assembly);
 
             // We only support looking up load context for runtime assemblies.

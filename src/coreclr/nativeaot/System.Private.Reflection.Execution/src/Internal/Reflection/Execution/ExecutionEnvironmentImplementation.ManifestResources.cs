@@ -28,7 +28,7 @@ namespace Internal.Reflection.Execution
             {
                 if (resourceName == resourceInfos[i].Name)
                 {
-                    return new ManifestResourceInfo(assembly, resourceName, ResourceLocation.Embedded);
+                    return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
                 }
             }
             return null;
@@ -47,9 +47,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override Stream GetManifestResourceStream(Assembly assembly, string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
+            ArgumentNullException.ThrowIfNull(name);
 
             // This was most likely an embedded resource which the toolchain should have embedded
             // into an assembly.
@@ -66,7 +64,7 @@ namespace Internal.Reflection.Execution
             return null;
         }
 
-        private unsafe Stream ReadResourceFromBlob(ResourceInfo resourceInfo)
+        private static unsafe Stream ReadResourceFromBlob(ResourceInfo resourceInfo)
         {
             byte* pBlob;
             uint cbBlob;
@@ -81,9 +79,9 @@ namespace Internal.Reflection.Execution
             return new UnmanagedMemoryStream(pBlob + resourceInfo.Index, resourceInfo.Length);
         }
 
-        private LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
+        private static LowLevelList<ResourceInfo> GetExtractedResources(Assembly assembly)
         {
-            LowLevelDictionary<string, LowLevelList<ResourceInfo>> extractedResourceDictionary = this.ExtractedResourceDictionary;
+            LowLevelDictionary<string, LowLevelList<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
             string assemblyName = assembly.GetName().FullName;
             LowLevelList<ResourceInfo> resourceInfos;
             if (!extractedResourceDictionary.TryGetValue(assemblyName, out resourceInfos))
@@ -91,7 +89,7 @@ namespace Internal.Reflection.Execution
             return resourceInfos;
         }
 
-        private LowLevelDictionary<string, LowLevelList<ResourceInfo>> ExtractedResourceDictionary
+        private static LowLevelDictionary<string, LowLevelList<ResourceInfo>> ExtractedResourceDictionary
         {
             get
             {

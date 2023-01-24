@@ -22,15 +22,15 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_corelib
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
-#  --result_dir Linux.arm_arm.Checked
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --result_dir linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
-# information in files Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+# information in files linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 # and System.Private.CoreLib-DebuggingFile.json
 #
-#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+#  ~/git/coreclr$ cat linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 #  {
 #    "AssemblyName": "System.Private.CoreLib",
 #    "ReturnCode": 0,
@@ -43,7 +43,7 @@
 #    "OutputFileSizeInBytes": 9564160
 #  }
 #
-#  ~/git/coreclr$ cat Linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
+#  ~/git/coreclr$ cat linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
 #  {
 #    "ReturnCode": 0,
 #    "StdOut": [
@@ -59,16 +59,16 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/x64/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/x64/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
-#  --result_dir Linux.x64_arm.Checked
+#  --result_dir linux.x64_arm.Checked
 #
 #  runs Hostx64/arm crossgen on System.Private.CoreLib.dll in artifacts/Product and on
 #  all the assemblies inside dotnet-sdk-latest-linux-arm.tar.gz and stores the
-#  collected information in directory Linux.x64_arm.Checked
+#  collected information in directory linux.x64_arm.Checked
 #
-#  ~/git/coreclr$ ls Linux.x64_arm.Checked | head
+#  ~/git/coreclr$ ls linux.x64_arm.Checked | head
 #   Microsoft.AI.DependencyCollector.dll.json
 #   Microsoft.ApplicationInsights.AspNetCore.dll.json
 #   Microsoft.ApplicationInsights.dll.json
@@ -83,8 +83,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python -u tests/scripts/crossgen_comparison.py compare
-#  --base_dir Linux.x64_arm.Checked
-#  --diff_dir Linux.x86_arm.Checked
+#  --base_dir linux.x64_arm.Checked
+#  --diff_dir linux.x86_arm.Checked
 #
 # compares the results of Hostx64/arm crossgen and Hostx86/arm crossgen.
 ################################################################################
@@ -246,7 +246,7 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        
+
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         loop.close()
@@ -559,7 +559,7 @@ class CrossGenRunner:
         stdout = None
         stderr = None
 
-        proc = await asyncio.create_subprocess_shell(" ".join(args), 
+        proc = await asyncio.create_subprocess_shell(" ".join(args),
                                                      stdin=asyncio.subprocess.PIPE,
                                                      stdout=asyncio.subprocess.PIPE,
                                                      stderr=asyncio.subprocess.PIPE)
@@ -878,7 +878,7 @@ def compare_results(args):
         root.appendChild(assemblies)
 
         assembly = root.createElement('assembly')
-        assembly.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        assembly.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         assembly.setAttribute('total', '{0}'.format(len(both_assemblies)))
         assembly.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         assembly.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
@@ -886,7 +886,7 @@ def compare_results(args):
         assemblies.appendChild(assembly)
 
         collection = root.createElement('collection')
-        collection.setAttribute('name', 'crossgen2_comparison_job_targetting_{0}'.format(args.target_arch_os))
+        collection.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
         collection.setAttribute('total', '{0}'.format(len(both_assemblies)))
         collection.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
         collection.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
@@ -941,7 +941,7 @@ def compare_results(args):
             base_result = base_results_by_name[assembly_name]
             diff_result = diff_results_by_name[assembly_name]
             base_diff_are_equal = True
-            
+
             if base_result.returncode != diff_result.returncode:
                 base_diff_are_equal = False
             elif base_result.returncode == 0 and diff_result.returncode == 0:
@@ -981,11 +981,11 @@ def compare_results(args):
 
                 failureXml.appendChild(messageXml)
 
-        xml_str = root.toprettyxml(indent ="\t") 
+        xml_str = root.toprettyxml(indent ="\t")
 
         if output_file_type == FileTypes.NativeOrReadyToRunImage:
             with open(args.testresultsxml, "w") as f:
-                f.write(xml_str) 
+                f.write(xml_str)
 
     if not did_compare:
         sys.exit(1)

@@ -18,7 +18,7 @@ namespace System.Threading
 
         private void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -52,6 +52,8 @@ namespace System.Threading
             if (myHandle.IsInvalid)
             {
                 int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;

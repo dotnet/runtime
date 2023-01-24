@@ -16,12 +16,10 @@
 #include <cordbpriv.h>
 #include "field.h"
 #include <msodwwrap.h>
-#include <shlobj.h>
 #include <werapi.h>
 #include "dbginterface.h"
 #include <winver.h>
 #include "dlwrap.h"
-#include "eemessagebox.h"
 #include "eventreporter.h"
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
@@ -954,10 +952,8 @@ void ResetWatsonBucketsFavorWorker(void * pParam)
     return;
 }
 
-
 //----------------------------------------------------------------------------
-// CreateThread() callback to invoke native Watson or put up our fake Watson
-// dialog depending on m_fDoReportFault value.
+// CreateThread() callback to invoke native Watson
 //
 // The output is a FaultReport* value communicated by setting
 // pFaultReportInfo->m_result. The DWORD function return value
@@ -978,32 +974,7 @@ static DWORD WINAPI DoFaultReportCreateThreadCallback(LPVOID pFaultReportInfoAsV
 
     FaultReportInfo *pFaultReportInfo = (FaultReportInfo*)pFaultReportInfoAsVoid;
     EXCEPTION_POINTERS *pExceptionInfo = pFaultReportInfo->m_pExceptionInfo;
-
-    if (pFaultReportInfo->m_fDoReportFault)
-    {
-        pFaultReportInfo->m_faultRepRetValResult = DoReportFault(pExceptionInfo);
-    }
-    else
-    {
-        int res = EEMessageBoxCatastrophicWithCustomizedStyle(
-                               IDS_DEBUG_UNHANDLEDEXCEPTION,
-                               IDS_DEBUG_SERVICE_CAPTION,
-                               MB_OKCANCEL | MB_ICONEXCLAMATION,
-                               TRUE,
-                               GetCurrentProcessId(),
-                               GetCurrentProcessId(),
-                               pFaultReportInfo->m_threadid,
-                               pFaultReportInfo->m_threadid
-                              );
-        if (res == IDOK)
-        {
-            pFaultReportInfo->m_faultReportResult = FaultReportResultQuit;
-        }
-        else
-        {
-            pFaultReportInfo->m_faultReportResult = FaultReportResultDebug;
-        }
-    }
+    pFaultReportInfo->m_faultRepRetValResult = DoReportFault(pExceptionInfo);
 
     return 0;
 }

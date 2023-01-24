@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -472,6 +473,18 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(1, ((JsonValue)jArrayEnumerator.Current).GetValue<int>());
             Assert.True(jArrayEnumerator.MoveNext());
             Assert.Equal("value", ((JsonValue)jArrayEnumerator.Current).GetValue<string>());
+        }
+
+        [Fact]
+        public static void LazyInitializationIsThreadSafe()
+        {
+            string arrayText = "[\"elem0\",\"elem1\"]";
+            JsonArray node = Assert.IsType<JsonArray>(JsonNode.Parse(arrayText));
+            Parallel.For(0, 128, i =>
+            {
+                Assert.Equal("elem0", (string)node[0]);
+                Assert.Equal("elem1", (string)node[1]);
+            });
         }
     }
 }

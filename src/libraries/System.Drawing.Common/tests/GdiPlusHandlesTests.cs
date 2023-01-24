@@ -9,7 +9,6 @@ using Xunit.Sdk;
 
 namespace System.Drawing.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
     public static class GdiPlusHandlesTests
     {
         public static bool IsDrawingAndRemoteExecutorSupported => Helpers.GetIsDrawingSupported() && RemoteExecutor.IsSupported;
@@ -51,7 +50,7 @@ namespace System.Drawing.Tests
                 int error = Marshal.GetLastWin32Error();
 
                 if (error != 0)
-                    throw new XunitException($"GetGuiResorces failed with win32 error: {error}");
+                    throw new XunitException($"GetGuiResources failed with win32 error: {error}");
             }
         }
 

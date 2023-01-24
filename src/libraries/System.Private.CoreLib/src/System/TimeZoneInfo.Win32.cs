@@ -320,8 +320,10 @@ namespace System
         /// This function will either return a valid TimeZoneInfo instance or
         /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id!!)
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
         {
+            ArgumentNullException.ThrowIfNull(id);
+
             // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
@@ -711,7 +713,7 @@ namespace System
 
                 result = dstDisabled || CheckDaylightSavingTimeNotSupported(timeZone) ||
                     //
-                    // since Daylight Saving Time is not "disabled", do a straight comparision between
+                    // since Daylight Saving Time is not "disabled", do a straight comparison between
                     // the Win32 API data and the registry data ...
                     //
                     (timeZone.DaylightBias == registryTimeZoneInfo.DaylightBias &&
@@ -750,14 +752,16 @@ namespace System
             // filePath   = "C:\Windows\System32\tzres.dll"
             // resourceId = -100
             //
-            string[] resources = resource.Split(',');
+            ReadOnlySpan<char> resourceSpan = resource;
+            Span<Range> resources = stackalloc Range[3];
+            resources = resources.Slice(0, resourceSpan.Split(resources, ','));
             if (resources.Length != 2)
             {
                 return string.Empty;
             }
 
             // Get the resource ID
-            if (!int.TryParse(resources[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
+            if (!int.TryParse(resourceSpan[resources[1]], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
             {
                 return string.Empty;
             }
@@ -770,7 +774,7 @@ namespace System
             string system32 = Environment.SystemDirectory;
 
             // trim the string "@tzres.dll" to "tzres.dll" and append the "mui" file extension to it.
-            string tzresDll = $"{resources[0].AsSpan().TrimStart('@')}.mui";
+            string tzresDll = $"{resourceSpan[resources[0]].TrimStart('@')}.mui";
 
             try
             {
@@ -1004,7 +1008,7 @@ namespace System
         }
 
         // Helper function to get the full display name for the UTC static time zone instance
-        private static string GetUtcFullDisplayName(string timeZoneId, string standardDisplayName)
+        private static string GetUtcFullDisplayName(string _ /*timeZoneId*/, string standardDisplayName)
         {
             return $"(UTC) {standardDisplayName}";
         }

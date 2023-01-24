@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // The test came from https://github.com/dotnet/runtime/issues/21860.
-// It tests that we do access overlapping fields with the correct types. 
-// Espessialy if the stuct was casted by 'Unsafe.As` from a promoted type
+// It tests that we do access overlapping fields with the correct types.
+// Especially if the struct was casted by 'Unsafe.As` from a promoted type
 // and the promoted type had another field on the same offset but with a different type/size.
 
 using System.Runtime.CompilerServices;
@@ -50,7 +50,7 @@ class TestReadIntAsDouble
 		p.ulo = d.x;
 		p.umid = d.y;
         // The jit gets field's type based on offset, so it will return `ulo` as int.
-        d.m = Unsafe.As<Dec, DecCalc1>(ref p).ulomidLE; 
+        d.m = Unsafe.As<Dec, DecCalc1>(ref p).ulomidLE;
 	}
 
     [StructLayout(LayoutKind.Explicit)]

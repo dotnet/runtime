@@ -65,7 +65,7 @@ namespace System.Buffers.Text
                 {
                     // This check can't be performed earlier because we need to throw if an invalid symbol is
                     // provided, even if the buffer is too small.
-                    if ((uint)4 >= (uint)destination.Length)
+                    if (destination.Length <= 4)
                     {
                         goto BufferTooSmall;
                     }
@@ -75,7 +75,7 @@ namespace System.Buffers.Text
                 }
                 else if (symbol == 'l')
                 {
-                    if ((uint)4 >= (uint)destination.Length)
+                    if (destination.Length <= 4)
                     {
                         goto BufferTooSmall;
                     }

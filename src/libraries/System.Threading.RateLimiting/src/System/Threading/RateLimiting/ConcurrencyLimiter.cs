@@ -15,7 +15,11 @@ namespace System.Threading.RateLimiting
     {
         private int _permitCount;
         private int _queueCount;
+        private long? _idleSince = Stopwatch.GetTimestamp();
         private bool _disposed;
+
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
 
         private readonly ConcurrencyLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -23,25 +27,58 @@ namespace System.Threading.RateLimiting
         private static readonly ConcurrencyLease SuccessfulLease = new ConcurrencyLease(true, null, 0);
         private static readonly ConcurrencyLease FailedLease = new ConcurrencyLease(false, null, 0);
         private static readonly ConcurrencyLease QueueLimitLease = new ConcurrencyLease(false, null, 0, "Queue limit reached");
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _queue;
+
+        /// <inheritdoc />
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
 
         /// <summary>
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
-        public ConcurrencyLimiter(ConcurrencyLimiterOptions options!!)
+        public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
         {
-            _options = options;
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if (options.PermitLimit <= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.PermitLimit)), nameof(options));
+            }
+            if (options.QueueLimit < 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanOrEqual0, nameof(options.QueueLimit)), nameof(options));
+            }
+
+            _options = new ConcurrencyLimiterOptions
+            {
+                PermitLimit = options.PermitLimit,
+                QueueProcessingOrder = options.QueueProcessingOrder,
+                QueueLimit = options.QueueLimit
+            };
+
             _permitCount = _options.PermitLimit;
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _permitCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            ThrowIfDisposed();
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = _permitCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
-        protected override RateLimitLease AcquireCore(int permitCount)
+        protected override RateLimitLease AttemptAcquireCore(int permitCount)
         {
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)
@@ -54,7 +91,13 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulLease or FailedLease to indicate limiter state
             if (permitCount == 0)
             {
-                return _permitCount > 0 ? SuccessfulLease : FailedLease;
+                if (_permitCount > 0)
+                {
+                    Interlocked.Increment(ref _successfulLeasesCount);
+                    return SuccessfulLease;
+                }
+                Interlocked.Increment(ref _failedLeasesCount);
+                return FailedLease;
             }
 
             // Perf: Check SemaphoreSlim implementation instead of locking
@@ -69,11 +112,12 @@ namespace System.Threading.RateLimiting
                 }
             }
 
+            Interlocked.Increment(ref _failedLeasesCount);
             return FailedLease;
         }
 
         /// <inheritdoc/>
-        protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)
+        protected override ValueTask<RateLimitLease> AcquireAsyncCore(int permitCount, CancellationToken cancellationToken = default)
         {
             // These amounts of resources can never be acquired
             if (permitCount > _options.PermitLimit)
@@ -84,6 +128,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulLease if requestedCount is 0 and resources are available
             if (permitCount == 0 && _permitCount > 0 && !_disposed)
             {
+                Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
@@ -107,12 +152,22 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            {
+                                // Updating queue count is handled by the cancellation code
+                                _queueCount += oldestRequest.Count;
+                            }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(QueueLimitLease);
                     }
@@ -146,6 +201,7 @@ namespace System.Threading.RateLimiting
             {
                 if (permitCount == 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     // Edge case where the check before the lock showed 0 available permits but when we got the lock some permits were now available
                     lease = SuccessfulLease;
                     return true;
@@ -155,8 +211,10 @@ namespace System.Threading.RateLimiting
                 // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
+                    _idleSince = null;
                     _permitCount -= permitCount;
                     Debug.Assert(_permitCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = new ConcurrencyLease(true, this, permitCount);
                     return true;
                 }
@@ -185,7 +243,17 @@ namespace System.Threading.RateLimiting
                         ? _queue.PeekHead()
                         : _queue.PeekTail();
 
-                    if (_permitCount >= nextPendingRequest.Count)
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? _queue.DequeueHead()
+                            : _queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
+                    else if (_permitCount >= nextPendingRequest.Count)
                     {
                         nextPendingRequest =
                             _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
@@ -205,6 +273,10 @@ namespace System.Threading.RateLimiting
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
                         }
+                        else
+                        {
+                            Interlocked.Increment(ref _successfulLeasesCount);
+                        }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);
                     }
@@ -212,6 +284,13 @@ namespace System.Threading.RateLimiting
                     {
                         break;
                     }
+                }
+
+                if (_permitCount == _options.PermitLimit)
+                {
+                    Debug.Assert(_idleSince is null);
+                    Debug.Assert(_queueCount == 0);
+                    _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }
@@ -236,7 +315,7 @@ namespace System.Threading.RateLimiting
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
                     next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.SetResult(FailedLease);
+                    next.Tcs.TrySetResult(FailedLease);
                 }
             }
         }

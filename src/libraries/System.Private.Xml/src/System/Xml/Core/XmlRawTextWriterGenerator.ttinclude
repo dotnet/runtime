@@ -5,7 +5,6 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
-#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -277,7 +276,7 @@ namespace System.Xml
         }
 
         // Serialize the document type declaration.
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             Debug.Assert(name != null && name.Length > 0);<#
 
@@ -1997,7 +1996,7 @@ namespace System.Xml
             }
         }
 
-        public override void WriteDocType(string name, string pubid, string sysid, string subset)
+        public override void WriteDocType(string name, string? pubid, string? sysid, string? subset)
         {
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)

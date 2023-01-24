@@ -63,10 +63,12 @@ namespace System.Threading
                     (uint)SemaphoreRights.FullControl // Equivalent to SEMAPHORE_ALL_ACCESS
                 );
 
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (handle.IsInvalid)
                 {
+                    handle.Dispose();
+
                     if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     {
                         throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
@@ -128,8 +130,10 @@ namespace System.Threading
         public static bool TryOpenExisting(string name, SemaphoreRights rights, [NotNullWhen(returnValue: true)] out Semaphore? result) =>
             OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
 
-        private static OpenExistingResult OpenExistingWorker(string name!!, SemaphoreRights rights, out Semaphore? result)
+        private static OpenExistingResult OpenExistingWorker(string name, SemaphoreRights rights, out Semaphore? result)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
@@ -138,9 +142,10 @@ namespace System.Threading
             result = null;
             SafeWaitHandle handle = Interop.Kernel32.OpenSemaphore((uint)rights, false, name);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (handle.IsInvalid)
             {
+                handle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

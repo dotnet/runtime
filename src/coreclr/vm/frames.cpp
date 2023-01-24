@@ -115,8 +115,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
 #ifdef TARGET_X86
     // On x86, StubLinkerCPU::EmitMethodStubProlog calls Frame::LogTransition
     // but the caller of EmitMethodStubProlog sets the GSCookie later on.
@@ -127,8 +125,6 @@ void __stdcall Frame::LogTransition(Frame* frame)
 
     if (Frame::ShouldLogTransitions())
         frame->Log();
-
-    END_ENTRYPOINT_VOIDRET;
 } // void Frame::Log()
 
 #endif // #ifndef DACCESS_COMPILE
@@ -391,7 +387,7 @@ VOID Frame::Push(Thread *pThread)
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
+    // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
@@ -618,7 +614,7 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
-    PTR_CORCOMPILE_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection = pZapModule->GetImportSectionForRVA(rva);
     if (pImportSection == NULL)
         return NULL;
 
@@ -903,6 +899,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
@@ -929,24 +926,16 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
 #endif // USE_CHECKED_OBJECTREFS
 
+#ifdef _DEBUG
+    m_Next          = NULL;
+    m_pCurThread    = NULL;
+#endif // _DEBUG
+
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_pCurThread    = pThread;
     m_MaybeInterior = maybeInterior;
 
-    // Push the GC frame to the per-thread list
-    m_Next = pThread->GetGCFrame();
-
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
-    // declared in the same source function. We cannot predict the order
-    // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
-    // with multiple Frames in mscorwks.dll
-    _ASSERTE(((m_Next == NULL) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
-             "Pushing a GCFrame out of order ?");
-
-    pThread->SetGCFrame(this);
+    Push(pThread);
 }
 
 GCFrame::~GCFrame()
@@ -956,6 +945,7 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
@@ -966,6 +956,54 @@ GCFrame::~GCFrame()
     {
         m_pCurThread->DisablePreemptiveGC();
     }
+
+    Pop();
+
+    if (!wasCoop)
+    {
+        m_pCurThread->EnablePreemptiveGC();
+    }
+}
+
+void GCFrame::Push(Thread* pThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pThread != NULL);
+        PRECONDITION(m_Next == NULL);
+        PRECONDITION(m_pCurThread == NULL);
+    }
+    CONTRACTL_END;
+
+    // Push the GC frame to the per-thread list
+    m_Next = pThread->GetGCFrame();
+    m_pCurThread = pThread;
+
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // declared in the same source function. We cannot predict the order
+    // in which the compiler will lay them out in the stack frame.
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // with multiple GCFrames in coreclr.dll
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             "Pushing a GCFrame out of order ?");
+
+    pThread->SetGCFrame(this);
+}
+
+void GCFrame::Pop()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(m_pCurThread != NULL);
+    }
+    CONTRACTL_END;
 
     // When the frame is destroyed, make sure it is no longer in the
     // frame chain managed by the Thread.
@@ -981,12 +1019,8 @@ GCFrame::~GCFrame()
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
-
-    if (!wasCoop)
-    {
-        m_pCurThread->EnablePreemptiveGC();
-    }
 }
+#endif // !DACCESS_COMPILE
 
 //
 // GCFrame Object Scanning
@@ -995,9 +1029,6 @@ GCFrame::~GCFrame()
 // protected by the programmer explicitly protecting it in a GC Frame
 // via the GCPROTECTBEGIN / GCPROTECTEND facility...
 //
-
-#endif // !DACCESS_COMPILE
-
 void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1026,7 +1057,7 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
-// Methods of IntepreterFrame.
+// Methods of InterpreterFrame.
 InterpreterFrame::InterpreterFrame(Interpreter* interp)
   : Frame(), m_interp(interp)
 {
@@ -1341,6 +1372,17 @@ UINT TransitionFrame::CbStackPopUsingGCRefMap(PTR_BYTE pGCRefMap)
 }
 #endif
 
+static UINT OffsetFromGCRefMapPos(int pos)
+{
+#ifdef TARGET_X86
+    return (pos < NUM_ARGUMENT_REGISTERS) ?
+            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
+            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
+#else
+    return TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * sizeof(TADDR);
+#endif
+}
+
 void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanContext* sc, PTR_BYTE pGCRefMap)
 {
     WRAPPER_NO_CONTRACT;
@@ -1358,16 +1400,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
     {
         int pos = decoder.CurrentPos();
         int token = decoder.ReadToken();
-
-        int ofs;
-
-#ifdef TARGET_X86
-        ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
-            (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
-            (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
-#else
-        ofs = TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * sizeof(TADDR);
-#endif
+        int ofs = OffsetFromGCRefMapPos(pos);
 
         PTR_TADDR ppObj = dac_cast<PTR_TADDR>(pTransitionBlock + ofs);
 
@@ -1805,7 +1838,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
     else if (!initialInit &&
              (m_Attribs & Frame::FRAME_ATTR_CAPTURE_DEPTH_2) != 0)
     {
-        // explictly told depth
+        // explicitly told depth
         LazyMachState::unwindLazyState(lazy, &unwound, threadId, 2);
     }
     else
@@ -2029,6 +2062,76 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
     }
 }
 
+#ifdef _DEBUG
+static void DumpGCRefMap(const char *name, BYTE *address)
+{
+    GCRefMapDecoder decoder(address);
+
+    printf("%s GC ref map: ", name);
+#if TARGET_X86
+    uint32_t stackPop = decoder.ReadStackPop();
+    printf("POP(0x%x)", stackPop);
+#endif
+
+    int previousToken = GCREFMAP_SKIP;
+    while (!decoder.AtEnd())
+    {
+        int pos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+        if (token != previousToken)
+        {
+            if (previousToken != GCREFMAP_SKIP)
+            {
+                printf(") ");
+            }
+            switch (token)
+            {
+                case GCREFMAP_SKIP:
+                    break;
+
+                case GCREFMAP_REF:
+                    printf("R(");
+                    break;
+
+                case GCREFMAP_INTERIOR:
+                    printf("I(");
+                    break;
+
+                case GCREFMAP_METHOD_PARAM:
+                    printf("M(");
+                    break;
+
+                case GCREFMAP_TYPE_PARAM:
+                    printf("T(");
+                    break;
+
+                case GCREFMAP_VASIG_COOKIE:
+                    printf("V(");
+                    break;
+
+                default:
+                    // Not implemented
+                    _ASSERTE(false);
+            }
+        }
+        else if (token != GCREFMAP_SKIP)
+        {
+            printf(" ");
+        }
+        if (token != GCREFMAP_SKIP)
+        {
+            printf("%02x", OffsetFromGCRefMapPos(pos));
+        }
+        previousToken = token;
+    }
+    if (previousToken != GCREFMAP_SKIP)
+    {
+        printf(")");
+    }
+    printf("\n");
+}
+#endif
+
 bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell)
 {
 #ifdef _DEBUG
@@ -2043,16 +2146,29 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     GCRefMapDecoder decoderNew((BYTE *)pBlob);
     GCRefMapDecoder decoderExisting(pGCRefMap);
 
-#ifdef TARGET_X86
-    _ASSERTE(decoderNew.ReadStackPop() == decoderExisting.ReadStackPop());
-#endif
+    bool invalidGCRefMap = false;
 
-    _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
-    while (!decoderNew.AtEnd())
+#ifdef TARGET_X86
+    if (decoderNew.ReadStackPop() != decoderExisting.ReadStackPop())
     {
-        _ASSERTE(decoderNew.CurrentPos() == decoderExisting.CurrentPos());
-        _ASSERTE(decoderNew.ReadToken() == decoderExisting.ReadToken());
-        _ASSERTE(decoderNew.AtEnd() == decoderExisting.AtEnd());
+        invalidGCRefMap = true;
+    }
+#endif
+    while (!invalidGCRefMap && !(decoderNew.AtEnd() && decoderExisting.AtEnd()))
+    {
+        if (decoderNew.AtEnd() != decoderExisting.AtEnd() ||
+            decoderNew.CurrentPos() != decoderExisting.CurrentPos() ||
+            decoderNew.ReadToken() != decoderExisting.ReadToken())
+        {
+            invalidGCRefMap = true;
+        }
+    }
+    if (invalidGCRefMap)
+    {
+        printf("GC ref map mismatch detected for method: %s::%s\n", pMD->GetMethodTable()->GetDebugClassName(), pMD->GetName());
+        DumpGCRefMap("  Runtime", (BYTE *)pBlob);
+        DumpGCRefMap("Crossgen2", pGCRefMap);
+        _ASSERTE(false);
     }
 #endif
     return true;

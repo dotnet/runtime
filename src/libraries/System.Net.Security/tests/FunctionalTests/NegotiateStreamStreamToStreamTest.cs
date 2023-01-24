@@ -20,7 +20,7 @@ namespace System.Net.Security.Tests
         public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
 
         private const int PartialBytesToRead = 5;
-        protected static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
+        protected static readonly byte[] s_sampleMsg = "Sample Test Message"u8.ToArray();
 
         private const int MaxWriteDataSize = 63 * 1024; // NegoState.MaxWriteDataSize
         private static string s_longString = new string('A', MaxWriteDataSize) + 'Z';
@@ -63,9 +63,12 @@ namespace System.Net.Security.Tests
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.False(serverIdentity.IsAuthenticated);
-                Assert.Equal("", serverIdentity.Name);
+                using (serverIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", serverIdentity.AuthenticationType);
+                    Assert.False(serverIdentity.IsAuthenticated);
+                    Assert.Equal("", serverIdentity.Name);
+                }
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
@@ -77,11 +80,14 @@ namespace System.Net.Security.Tests
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
-                Assert.Equal("NTLM", clientIdentity.AuthenticationType);
+                using (clientIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.True(clientIdentity.IsAuthenticated);
+                    Assert.True(clientIdentity.IsAuthenticated);
 
-                IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
+                    IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
+                }
             }
         }
 
@@ -153,9 +159,12 @@ namespace System.Net.Security.Tests
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated);
-                Assert.Equal(targetName, serverIdentity.Name);
+                using (serverIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", serverIdentity.AuthenticationType);
+                    Assert.True(serverIdentity.IsAuthenticated);
+                    Assert.Equal(targetName, serverIdentity.Name);
+                }
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
@@ -167,11 +176,14 @@ namespace System.Net.Security.Tests
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
-                Assert.Equal("NTLM", clientIdentity.AuthenticationType);
+                using (clientIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.True(clientIdentity.IsAuthenticated);
+                    Assert.True(clientIdentity.IsAuthenticated);
 
-                IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
+                    IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
+                }
             }
         }
 
@@ -210,9 +222,12 @@ namespace System.Net.Security.Tests
                 Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
-                Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.True(serverIdentity.IsAuthenticated);
-                Assert.Equal(targetName, serverIdentity.Name);
+                using (serverIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", serverIdentity.AuthenticationType);
+                    Assert.True(serverIdentity.IsAuthenticated);
+                    Assert.Equal(targetName, serverIdentity.Name);
+                }
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
@@ -224,12 +239,15 @@ namespace System.Net.Security.Tests
                 Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
-                Assert.Equal("NTLM", clientIdentity.AuthenticationType);
+                using (clientIdentity as IDisposable)
+                {
+                    Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.False(clientIdentity.IsAuthenticated);
-                // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
+                    Assert.False(clientIdentity.IsAuthenticated);
+                    // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
 
-                IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
+                    IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
+                }
             }
         }
     }

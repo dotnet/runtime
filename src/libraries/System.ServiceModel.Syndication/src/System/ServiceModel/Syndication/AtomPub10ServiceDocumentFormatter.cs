@@ -22,8 +22,13 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate!!) : base()
+        public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
         {
+            if (documentTypeToCreate is null)
+            {
+                throw new ArgumentNullException(nameof(documentTypeToCreate));
+            }
+
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)), nameof(documentTypeToCreate));
@@ -41,20 +46,35 @@ namespace System.ServiceModel.Syndication
 
         public override string Version => App10Constants.Namespace;
 
-        public override bool CanRead(XmlReader reader!!)
+        public override bool CanRead(XmlReader reader)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
 
         XmlSchema IXmlSerializable.GetSchema() => null;
 
-        void IXmlSerializable.ReadXml(XmlReader reader!!)
+        void IXmlSerializable.ReadXml(XmlReader reader)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             ReadDocument(reader);
         }
 
-        void IXmlSerializable.WriteXml(XmlWriter writer!!)
+        void IXmlSerializable.WriteXml(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
@@ -63,8 +83,13 @@ namespace System.ServiceModel.Syndication
             WriteDocument(writer);
         }
 
-        public override void ReadFrom(XmlReader reader!!)
+        public override void ReadFrom(XmlReader reader)
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             reader.MoveToContent();
             if (!CanRead(reader))
             {
@@ -74,8 +99,13 @@ namespace System.ServiceModel.Syndication
             ReadDocument(reader);
         }
 
-        public override void WriteTo(XmlWriter writer!!)
+        public override void WriteTo(XmlWriter writer)
         {
+            if (writer is null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             if (Document == null)
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
@@ -191,10 +221,7 @@ namespace System.ServiceModel.Syndication
                         {
                             SyndicationCategory category = CreateCategory(inlineCategories);
                             Atom10FeedFormatter.ReadCategory(reader, category, version, preserveAttributeExtensions: true, preserveElementExtensions: true, maxExtensionSize);
-                            if (category.Scheme == null)
-                            {
-                                category.Scheme = inlineCategories.Scheme;
-                            }
+                            category.Scheme ??= inlineCategories.Scheme;
                             inlineCategories.Categories.Add(category);
                         }
                         else if (!TryParseElement(reader, inlineCategories, version))
@@ -550,10 +577,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteAttributeString(App10Constants.Href, FeedUtils.GetUriString(collection.Link));
             }
             WriteAttributeExtensions(writer, collection, Version);
-            if (collection.Title != null)
-            {
-                collection.Title.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
-            }
+            collection.Title?.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
             for (int i = 0; i < collection.Accepts.Count; ++i)
             {
                 writer.WriteElementString(App10Constants.Prefix, App10Constants.Accept, App10Constants.Namespace, collection.Accepts[i]);
@@ -598,10 +622,7 @@ namespace System.ServiceModel.Syndication
                 WriteXmlBase(writer, baseUriToWrite);
             }
             WriteAttributeExtensions(writer, workspace, Version);
-            if (workspace.Title != null)
-            {
-                workspace.Title.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
-            }
+            workspace.Title?.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
             for (int i = 0; i < workspace.Collections.Count; ++i)
             {
                 WriteCollection(writer, workspace.Collections[i], baseUri);

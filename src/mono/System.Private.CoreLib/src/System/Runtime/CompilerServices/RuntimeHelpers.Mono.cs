@@ -1,5 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.Serialization;
@@ -10,10 +12,8 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (fldHandle.Value == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(fldHandle));
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentNullException.ThrowIfNull(fldHandle.Value, nameof(fldHandle));
 
             InitializeArray(array, fldHandle.Value);
         }
@@ -29,6 +29,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             [Intrinsic]
@@ -41,6 +42,22 @@ namespace System.Runtime.CompilerServices
         public static int GetHashCode(object? o)
         {
             return InternalGetHashCode(o);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int InternalTryGetHashCode(object? o);
+
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        public static int TryGetHashCode(object? o)
+        {
+            return InternalTryGetHashCode(o);
         }
 
         public static new bool Equals(object? o1, object? o2)
@@ -64,7 +81,7 @@ namespace System.Runtime.CompilerServices
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)
-                throw new ArgumentException("Handle is not initialized.", nameof(type));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(type.Value);
         }
@@ -114,7 +131,7 @@ namespace System.Runtime.CompilerServices
         public static void RunModuleConstructor(ModuleHandle module)
         {
             if (module == ModuleHandle.EmptyHandle)
-                throw new ArgumentException("Handle is not initialized.", nameof(module));
+                throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(module.Value);
         }
@@ -143,6 +160,22 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.HasReferences((obj.GetType() as RuntimeType)!);
         }
 
+        // A conservative GC already scans the stack looking for potential object-refs or by-refs.
+        // Mono uses a conservative GC so there is no need for this API to be full implemented.
+        internal unsafe ref struct GCFrameRegistration
+        {
+#pragma warning disable IDE0060
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+            }
+#pragma warning restore IDE0060
+        }
+
+        [Conditional("unnecessary")]
+        internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+        [Conditional("unnecessary")]
+        internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.
@@ -154,10 +187,7 @@ namespace System.Runtime.CompilerServices
         {
             if (type is not RuntimeType rt)
             {
-                if (type is null)
-                {
-                    throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
-                }
+                ArgumentNullException.ThrowIfNull(type);
 
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }

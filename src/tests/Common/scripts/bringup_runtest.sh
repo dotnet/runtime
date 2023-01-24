@@ -46,26 +46,26 @@ function print_usage {
     echo '  --copyNativeTestBin              : Explicitly copy native test components into the test dir'
     echo '  --crossgen                       : Precompiles the framework managed assemblies'
     echo '  --runcrossgentests               : Runs the ready to run tests'
-    echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
-    echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
-    echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
-    echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
+    echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
+    echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
+    echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
+    echo '  --jitforcerelocs                 : Runs the tests with DOTNET_ForceRelocs=1'
     echo '  --jitdisasm                      : Runs jit-dasm on the tests'
-    echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
-    echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
+    echo '  --gcstresslevel=<n>              : Runs the tests with DOTNET_GCStress=n'
+    echo '  --gcname=<n>                     : Runs the tests with DOTNET_GCName=n'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
-    echo '  --tieredcompilation              : Runs the tests with COMPlus_TieredCompilation=1'
+    echo '  --tieredcompilation              : Runs the tests with DOTNET_TieredCompilation=1'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
-    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
+    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specified path (default: <test root>/coreclrtests.xml)'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -727,20 +727,22 @@ function run_test {
     return $testScriptExitCode
 }
 
-# Variables for running tests in the background
-if [ `uname` = "NetBSD" ]; then
-    NumProc=$(getconf NPROCESSORS_ONLN)
-elif [ `uname` = "Darwin" ]; then
-    NumProc=$(getconf _NPROCESSORS_ONLN)
+# Get the number of processors available to the scheduler
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
+  NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
+  NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "darwin" ]]; then
+  NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-    if [ -x "$(command -v nproc)" ]; then
-        NumProc=$(nproc --all)
-    elif [ -x "$(command -v getconf)" ]; then
-        NumProc=$(getconf _NPROCESSORS_ONLN)
-    else
-        NumProc=1
-    fi
+  NumProc=1
 fi
+
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
 ((processCount = 0))
@@ -985,8 +987,14 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"
@@ -1047,26 +1055,26 @@ do
             doCrossgen=1
             ;;
         --jitstress=*)
-            export COMPlus_JitStress=${i#*=}
+            export DOTNET_JitStress=${i#*=}
             ;;
         --jitstressregs=*)
-            export COMPlus_JitStressRegs=${i#*=}
+            export DOTNET_JitStressRegs=${i#*=}
             ;;
         --jitminopts)
-            export COMPlus_JITMinOpts=1
+            export DOTNET_JITMinOpts=1
             ;;
         --copyNativeTestBin)
             export copyNativeTestBin=1
             ;;
         --jitforcerelocs)
-            export COMPlus_ForceRelocs=1
+            export DOTNET_ForceRelocs=1
             ;;
         --link=*)
             export ILLINK=${i#*=}
             export DoLink=true
             ;;
         --tieredcompilation)
-            export COMPlus_TieredCompilation=1
+            export DOTNET_TieredCompilation=1
             ;;
         --jitdisasm)
             jitdisasm=1
@@ -1105,7 +1113,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            export RunCrossGen=1
+            export RunCrossGen2=1
             ;;
         --sequential)
             ((maxProcesses = 1))
@@ -1138,10 +1146,10 @@ do
             testEnv=${i#*=}
             ;;
         --gcstresslevel=*)
-            export COMPlus_GCStress=${i#*=}
+            export DOTNET_GCStress=${i#*=}
             ;;
         --gcname=*)
-            export COMPlus_GCName=${i#*=}
+            export DOTNET_GCName=${i#*=}
             ;;
         --show-time)
             showTime=ON
@@ -1172,10 +1180,10 @@ if [[ -n "$coreOverlayDir" && "$buildOverlayOnly" == "ON" ]]; then
 fi
 
 if ((disableEventLogging == 0)); then
-    export COMPlus_EnableEventLog=1
+    export DOTNET_EnableEventLog=1
 fi
 
-export COMPlus_gcServer="$serverGC"
+export DOTNET_gcServer="$serverGC"
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."

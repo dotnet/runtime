@@ -49,14 +49,44 @@ namespace Microsoft.Extensions.Logging.Generators
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
-                if (Parser.IsSyntaxTargetForGeneration(context.Node))
+                if (IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context);
+                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context);
                     if (classSyntax != null)
                     {
                         ClassDeclarations.Add(classSyntax);
                     }
                 }
+            }
+
+            private static bool IsSyntaxTargetForGeneration(SyntaxNode node) =>
+                node is MethodDeclarationSyntax m && m.AttributeLists.Count > 0;
+
+            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            {
+                var methodDeclarationSyntax = (MethodDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in methodDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == Parser.LoggerMessageAttribute)
+                        {
+                            return methodDeclarationSyntax.Parent as ClassDeclarationSyntax;
+                        }
+                    }
+                }
+
+                return null;
             }
         }
     }

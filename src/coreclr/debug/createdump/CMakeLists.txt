@@ -30,6 +30,7 @@ if(CLR_CMAKE_HOST_WIN32)
         version.lib
         dbghelp.lib
         ws2_32.lib
+        ntdll.lib
     )
 
 else(CLR_CMAKE_HOST_WIN32)

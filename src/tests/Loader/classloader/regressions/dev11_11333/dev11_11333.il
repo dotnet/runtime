@@ -79,7 +79,7 @@
 	.class public auto ansi _CL
 	{
 		.custom instance void [System]System.ComponentModel.EditorBrowsableAttribute::.ctor(valuetype [System]System.ComponentModel.EditorBrowsableState) = ( 01 00 01 00 00 00 00 00 )
-		.method public hidebysig static int32 MAIN$CONS7(string[] args) cil managed
+		.method public hidebysig static int32 MAIN$CONS7() cil managed
 		{
 			.entrypoint
 			.locals init ( [0] class 'ns1'.'MyGeneric`1'<object> 'g')

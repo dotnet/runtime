@@ -488,7 +488,7 @@ class SigParser
         }
 
         //------------------------------------------------------------------------
-        // Is this at the Sentinal (the ... in a varargs signature) that marks
+        // Is this at the Sentinel (the ... in a varargs signature) that marks
         // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
@@ -966,7 +966,7 @@ protected:
 
 
 // Returns the address of the payload inside the stackelem
-inline void* StackElemEndianessFixup(void* pStackElem, UINT cbSize) {
+inline void* StackElemEndiannessFixup(void* pStackElem, UINT cbSize) {
     LIMITED_METHOD_CONTRACT;
 
     BYTE *pRetVal = (BYTE*)pStackElem;

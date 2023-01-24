@@ -50,7 +50,7 @@ public:
     std::unordered_map<pal::string_t, const fx_ver_t> fx_versions_by_name;
 
     // Included frameworks used for active context - in case this is a self-contained app
-    // this contains a list of frameworks which are part of the app - they are not framework dependencies/refernces.
+    // this contains a list of frameworks which are part of the app - they are not framework dependencies/references.
     std::unordered_map<pal::string_t, const fx_ver_t> included_fx_versions_by_name;
 
     // Config properties for secondary contexts

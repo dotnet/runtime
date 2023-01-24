@@ -7,7 +7,7 @@
 # In SslStress it's a thin utility to generate a runscript for running the app with the live-built testhost.
 # The main reason to use an equivalent solution in SslStress is consistency with HttpStress.
 
-$Version="7.0"
+$Version="8.0"
 $RepoRoot="$(git rev-parse --show-toplevel)"
 $DailyDotnetRoot= "./.dotnet-daily"
 
@@ -34,13 +34,26 @@ if (-not (Test-Path -Path $TestHostRoot)) {
     exit 1
 }
 
+if (-not (Test-Path -Path $DailyDotnetRoot)) {
+    Write-Host "Downloading daily SDK to: $DailyDotnetRoot"
+    New-Item -ItemType Directory -Path $DailyDotnetRoot
+    Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile "$DailyDotnetRoot\dotnet-install.ps1"
+    & "$DailyDotnetRoot\dotnet-install.ps1" -NoPath -Channel "$Version.1xx" -Quality daily -InstallDir $DailyDotnetRoot
+} else {
+    Write-Host "Daily SDK found in $DailyDotnetRoot"
+}
+
+$env:DOTNET_ROOT=$DailyDotnetRoot
+$env:PATH="$DailyDotnetRoot;$env:PATH"
+$env:DOTNET_MULTILEVEL_LOOKUP=0
+
 Write-Host "Building solution."
 dotnet build -c $StressConfiguration
 
 $Runscript=".\run-stress-$LibrariesConfiguration-$StressConfiguration.ps1"
 if (-not (Test-Path $Runscript)) {
     Write-Host "Generating Runscript."
-    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec ./bin/$StressConfiguration/net$Version/SslStress.dll `$args"
+    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec --roll-forward Major ./bin/$StressConfiguration/net$Version/SslStress.dll `$args"
 }
 
 Write-Host "To run tests type:"

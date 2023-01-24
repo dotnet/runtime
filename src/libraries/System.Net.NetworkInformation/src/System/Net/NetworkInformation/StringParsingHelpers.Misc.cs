@@ -101,28 +101,12 @@ namespace System.Net.NetworkInformation
         internal static int ParseRawIntFile(string filePath)
         {
             int ret;
-            if (!int.TryParse(ReadAllText(filePath).Trim(), out ret))
+            if (!int.TryParse(ReadAllText(filePath).AsSpan().Trim(), out ret))
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
 
             return ret;
-        }
-
-        internal static long ParseRawLongFile(string filePath)
-        {
-            long ret;
-            if (!long.TryParse(ReadAllText(filePath).Trim(), out ret))
-            {
-                throw ExceptionHelper.CreateForParseFailure();
-            }
-
-            return ret;
-        }
-
-        internal static int ParseRawHexFileAsInt(string filePath)
-        {
-            return Convert.ToInt32(ReadAllText(filePath).Trim(), 16);
         }
 
         private static int CountOccurrences(string value, string candidate)

@@ -785,7 +785,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	if (!double_faulted) {
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
-		g_async_safe_printf ("\nAn error has occured in the native fault reporting. Some diagnostic information will be unavailable.\n");
+		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
 
 	}
 
@@ -811,7 +811,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		}
 	}
 
-#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
 	pid_t crashed_pid = getpid ();
 
 	pid_t pid = crashed_pid; /* init to some >0 value */

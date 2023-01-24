@@ -236,7 +236,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Element, s_NEXT6, string.Empty), true, "vn");
                 }
 
-                //[Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites")]
+                //[Variation("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntities")]
                 private void TRReadOuterXml28()
                 {
                     string strExpected = "att1=\"xxx&lt;xxxAxxxCxxxe1fooxxx\"";

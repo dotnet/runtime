@@ -111,8 +111,7 @@ namespace System.Reflection.Emit
 
         public void AddOtherMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             typeb.check_not_created();
         }
 
@@ -162,8 +161,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
             typeb.check_not_created();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
@@ -186,7 +184,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
@@ -195,15 +192,13 @@ namespace System.Reflection.Emit
         public void SetGetMethod(MethodBuilder mdBuilder)
         {
             typeb.check_not_created();
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             get_method = mdBuilder;
         }
 
         public void SetSetMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
-                throw new ArgumentNullException(nameof(mdBuilder));
+            ArgumentNullException.ThrowIfNull(mdBuilder);
             set_method = mdBuilder;
         }
 
@@ -227,7 +222,7 @@ namespace System.Reflection.Emit
 
         private static Exception not_supported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
     }
 }

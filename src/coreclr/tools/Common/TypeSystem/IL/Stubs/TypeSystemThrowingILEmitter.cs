@@ -12,7 +12,7 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Helper class to generate method bodies that throw exceptions for methods that can't be compiled
     /// for various reasons. The exception thrown is same (or similar) to the one an attempt to JIT-compile
-    /// (or intepret) the method on a just-in-time compiled runtime would generate.
+    /// (or interpret) the method on a just-in-time compiled runtime would generate.
     /// </summary>
     internal static class TypeSystemThrowingILEmitter
     {

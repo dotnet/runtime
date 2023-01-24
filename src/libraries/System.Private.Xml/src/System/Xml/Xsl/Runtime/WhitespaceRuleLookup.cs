@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Xml;
 using System.Collections;
@@ -9,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using MS.Internal.Xml;
 using System.Xml.Xsl.Qil;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Runtime
 {
@@ -20,8 +20,8 @@ namespace System.Xml.Xsl.Runtime
     {
         private readonly Hashtable _qnames;
         private readonly ArrayList _wildcards;
-        private readonly InternalWhitespaceRule _ruleTemp;
-        private XmlNameTable _nameTable;
+        private readonly InternalWhitespaceRule? _ruleTemp;
+        private XmlNameTable? _nameTable;
 
         public WhitespaceRuleLookup()
         {
@@ -85,10 +85,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public bool ShouldStripSpace(string localName, string namespaceName)
         {
-            InternalWhitespaceRule qnameRule, wildcardRule;
+            InternalWhitespaceRule? qnameRule, wildcardRule;
             Debug.Assert(_nameTable != null && _ruleTemp != null);
-            Debug.Assert(localName != null && (object)_nameTable.Get(localName) == (object)localName);
-            Debug.Assert(namespaceName != null && (object)_nameTable.Get(namespaceName) == (object)namespaceName);
+            Debug.Assert(localName != null && (object?)_nameTable.Get(localName) == (object)localName);
+            Debug.Assert(namespaceName != null && (object?)_nameTable.Get(namespaceName) == (object)namespaceName);
 
             _ruleTemp.Init(localName, namespaceName, false, 0);
 
@@ -103,7 +103,7 @@ namespace System.Xml.Xsl.Runtime
                 if (qnameRule != null)
                 {
                     // If qname priority is greater than any subsequent wildcard's priority, then we're done
-                    if (qnameRule.Priority > wildcardRule.Priority)
+                    if (qnameRule.Priority > wildcardRule!.Priority)
                         return !qnameRule.PreserveSpace;
 
                     // Don't bother to consider wildcards with the same PreserveSpace flag
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.Runtime
                         continue;
                 }
 
-                if (wildcardRule.LocalName == null || (object)wildcardRule.LocalName == (object)localName)
+                if (wildcardRule!.LocalName == null || (object)wildcardRule.LocalName == (object)localName)
                 {
                     if (wildcardRule.NamespaceName == null || (object)wildcardRule.NamespaceName == (object)namespaceName)
                     {
@@ -133,12 +133,12 @@ namespace System.Xml.Xsl.Runtime
             {
             }
 
-            public InternalWhitespaceRule(string localName, string namespaceName, bool preserveSpace, int priority)
+            public InternalWhitespaceRule(string? localName, string? namespaceName, bool preserveSpace, int priority)
             {
                 Init(localName, namespaceName, preserveSpace, priority);
             }
 
-            public void Init(string localName, string namespaceName, bool preserveSpace, int priority)
+            public void Init(string? localName, string? namespaceName, bool preserveSpace, int priority)
             {
                 base.Init(localName, namespaceName, preserveSpace);
                 _priority = priority;
@@ -168,12 +168,12 @@ namespace System.Xml.Xsl.Runtime
                 return _hashCode;
             }
 
-            public override bool Equals(object obj)
+            public override bool Equals([NotNullWhen(true)] object? obj)
             {
                 Debug.Assert(obj is InternalWhitespaceRule);
-                InternalWhitespaceRule that = obj as InternalWhitespaceRule;
+                InternalWhitespaceRule? that = obj as InternalWhitespaceRule;
 
-                Debug.Assert(LocalName != null && that.LocalName != null);
+                Debug.Assert(LocalName != null && that!.LocalName != null);
                 Debug.Assert(NamespaceName != null && that.NamespaceName != null);
 
                 // string == operator compares object references first and if they are not the same compares contents

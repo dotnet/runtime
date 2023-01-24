@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class MemberInfoWrapper : MemberInfo
+    internal sealed class MemberInfoWrapper : MemberInfo
     {
         private readonly ISymbol _member;
         private readonly MetadataLoadContextInternal _metadataLoadContext;

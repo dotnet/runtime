@@ -196,7 +196,7 @@ namespace System.Formats.Asn1
             }
 
             Span<byte> stackSpan = stackalloc byte[sizeof(ulong)];
-            int sizeLimit = Marshal.SizeOf(backingType);
+            int sizeLimit = GetPrimitiveIntegerSize(backingType);
             stackSpan = stackSpan.Slice(0, sizeLimit);
 
             bool read = TryReadBitString(
@@ -394,16 +394,7 @@ namespace System.Formats.Asn1
         {
             for (int byteIdx = 0; byteIdx < value.Length; byteIdx++)
             {
-                byte cur = value[byteIdx];
-                byte mask = 0b1000_0000;
-                byte next = 0;
-
-                for (; cur != 0; cur >>= 1, mask >>= 1)
-                {
-                    next |= (byte)((cur & 1) * mask);
-                }
-
-                value[byteIdx] = next;
+                value[byteIdx] = (byte)((value[byteIdx] * 0x0202020202ul & 0x010884422010ul) % 1023);
             }
         }
     }

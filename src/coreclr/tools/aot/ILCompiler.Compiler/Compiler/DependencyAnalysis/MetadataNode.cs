@@ -4,7 +4,6 @@
 using System;
 
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -14,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
-        ObjectAndOffsetSymbolNode _endSymbol;
+        private ObjectAndOffsetSymbolNode _endSymbol;
 
         public MetadataNode()
         {
@@ -30,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Offset => 0;
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 

@@ -7,19 +7,23 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit;
+using Xunit.Abstractions;
 
 #nullable enable
 
 namespace DebuggerTests
 {
-    public class BadHarnessInitTests : DebuggerTestBase
+    public class BadHarnessInitTests : DebuggerTests
     {
+        public BadHarnessInitTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public override async Task InitializeAsync() => await Task.CompletedTask;
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InvalidInitCommands()
         {
-            var bad_cmd_name = "non-existant.command";
+            var bad_cmd_name = "non-existent.command";
 
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
                 new List<(string, Task<Result>)>

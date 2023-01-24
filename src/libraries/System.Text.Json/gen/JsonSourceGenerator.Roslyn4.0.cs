@@ -1,17 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+#if !ROSLYN4_4_OR_GREATER
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+#endif
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -24,8 +22,13 @@ namespace System.Text.Json.SourceGeneration
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
-                .CreateSyntaxProvider(static (s, _) => Parser.IsSyntaxTargetForGeneration(s), static (s, _) => Parser.GetSemanticTargetForGeneration(s))
-                .Where(static c => c is not null);
+                .ForAttributeWithMetadataName(
+#if !ROSLYN4_4_OR_GREATER
+                    context,
+#endif
+                    Parser.JsonSerializableAttributeFullName,
+                    (node, _) => node is ClassDeclarationSyntax,
+                    (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
             IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
                 context.CompilationProvider.Combine(classDeclarations.Collect());
@@ -48,7 +51,7 @@ namespace System.Text.Json.SourceGeneration
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
             Parser parser = new(compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses, sourceProductionContext.CancellationToken);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
@@ -61,7 +64,7 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName!, p => p.Type);
         private List<TypeGenerationSpec>? _rootTypes;
     }
 

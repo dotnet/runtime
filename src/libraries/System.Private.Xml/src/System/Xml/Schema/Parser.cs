@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Globalization;
+using System.Text;
+using System.IO;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Text;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed partial class Parser
     {
         private SchemaType _schemaType;

@@ -62,11 +62,8 @@ namespace Internal.IntrinsicSupport
             if (RuntimeAugments.IsNullable(t))
             {
                 RuntimeTypeHandle nullableType = RuntimeAugments.GetNullableType(t);
-                if (ImplementsIEquatable(nullableType))
-                {
-                    openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
-                    comparerTypeArgument = nullableType;
-                }
+                openComparerType = typeof(NullableEqualityComparer<>).TypeHandle;
+                comparerTypeArgument = nullableType;
             }
             if (IsEnum(t))
             {
@@ -101,7 +98,7 @@ namespace Internal.IntrinsicSupport
         // Redirection target functions for redirecting behavior of Array.IndexOf
         //-----------------------------------------------------------------------
 
-        // This one is an intrinsic that is used to make enum comparisions more efficient.
+        // This one is an intrinsic that is used to make enum comparisons more efficient.
         [Intrinsic]
         internal static bool EnumOnlyEquals<T>(T x, T y) where T : struct
         {
@@ -156,6 +153,7 @@ namespace Internal.IntrinsicSupport
         }
 
         private static bool StructOnlyNormalEquals<T>(T left, T right)
+            where T : notnull
         {
             return left.Equals(right);
         }

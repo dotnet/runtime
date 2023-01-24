@@ -27,19 +27,29 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private InvocationFlags m_invocationFlags;
+        private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = m_invocationFlags;
+                InvocationFlags flags = Invoker._invocationFlags;
                 if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
+                    flags = ComputeAndUpdateInvocationFlags(this, ref Invoker._invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private MethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                m_invoker ??= new MethodInvoker(this, Signature);
+                return m_invoker;
             }
         }
         #endregion
@@ -147,56 +157,18 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode()
-        {
-            // See RuntimeMethodInfo.Equals() below.
-            if (IsGenericMethod)
-                return ValueType.GetHashCodeOfPtr(m_handle);
-            else
-                return base.GetHashCode();
-        }
+        // We cannot do simple object identity comparisons due to generic methods.
+        // Equals and GetHashCode will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+        // retrieve items from and insert items into s_methodInstantiations.
 
-        public override bool Equals(object? obj)
-        {
-            if (!IsGenericMethod)
-                return obj == (object)this;
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
 
-            // We cannot do simple object identity comparisons for generic methods.
-            // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
+        public override bool Equals(object? obj) =>
+            obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType) &&
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m.m_reflectedTypeCache.GetRuntimeType());
 
-            RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-            if (mi == null || !mi.IsGenericMethod)
-                return false;
-
-            // now we know that both operands are generic methods
-
-            IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-            IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-            if (handle1.Value.Value != handle2.Value.Value)
-                return false;
-
-            Type[] lhs = GetGenericArguments();
-            Type[] rhs = mi.GetGenericArguments();
-
-            if (lhs.Length != rhs.Length)
-                return false;
-
-            for (int i = 0; i < lhs.Length; i++)
-            {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-
-            if (DeclaringType != mi.DeclaringType)
-                return false;
-
-            if (ReflectedType != mi.ReflectedType)
-                return false;
-
-            return true;
-        }
         #endregion
 
         #region ICustomAttributeProvider
@@ -205,16 +177,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -295,7 +271,7 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
-        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+        internal RuntimeType[] ArgumentTypes => Signature.Arguments;
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody? GetMethodBody()
@@ -308,16 +284,9 @@ namespace System.Reflection
 
         #endregion
 
-        #region Invocation Logic(On MemberBase)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, in arguments, Signature, false, wrapExceptions);
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        #region Invocation Logic
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
             // ContainsStackPointers means that the struct (either the declaring type or the return type)
@@ -337,11 +306,38 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig.Arguments);
+            object? retValue;
 
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
+            unsafe
+            {
+                StackAllocedArguments argStorage = default;
+                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
+                ReadOnlySpan<object?> parameters = new(in parameter);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+
+                StackAllocatedByRefs byrefStorage = default;
+#pragma warning disable 8500
+                IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+#pragma warning restore 8500
+
+                CheckArguments(
+                    copyOfParameters,
+                    pByRefStorage,
+                    shouldCopyBackParameters,
+                    parameters,
+                    ArgumentTypes,
+                    binder,
+                    culture,
+                    invokeAttr);
+
+#if MONO // Temporary until Mono is updated.
+                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
+#else
+                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
+#endif
+            }
+
+            return retValue;
         }
 
         #endregion
@@ -411,9 +407,10 @@ namespace System.Reflection
                 DelegateBindingFlags.RelaxedSignature);
         }
 
-        private Delegate CreateDelegateInternal(Type delegateType!!, object? firstArgument, DelegateBindingFlags bindingFlags)
+        private Delegate CreateDelegateInternal(Type delegateType, object? firstArgument, DelegateBindingFlags bindingFlags)
         {
-            // Validate the parameters.
+            ArgumentNullException.ThrowIfNull(delegateType);
+
             RuntimeType? rtType = delegateType as RuntimeType;
             if (rtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -434,8 +431,10 @@ namespace System.Reflection
 
         #region Generics
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation!!)
+        public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
+            ArgumentNullException.ThrowIfNull(methodInstantiation);
+
             RuntimeType[] methodInstantionRuntimeType = new RuntimeType[methodInstantiation.Length];
 
             if (!IsGenericMethodDefinition)

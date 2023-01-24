@@ -6,6 +6,7 @@
 #include "dir_utils.h"
 #include "pal.h"
 #include "utils.h"
+#include <cinttypes>
 
 #ifdef __sun
 #include <alloca.h>
@@ -31,7 +32,7 @@ pal::string_t& extractor_t::extraction_dir()
         // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...
         //
         // If DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set in the environment,
-        // a default is choosen within the temporary directory.
+        // a default is chosen within the temporary directory.
 
         if (!pal::getenv(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR"), &m_extraction_dir))
         {
@@ -178,7 +179,7 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 
     if (extracted_size != cast_size)
     {
-        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%d Actual size:%d"), size, extracted_size);
+        trace::error(_X("Failure extracting contents of the application bundle. Expected size:%" PRId64 " Actual size:%zu"), size, extracted_size);
         trace::error(_X("I/O failure when writing extracted files."));
         throw StatusCode::BundleExtractionIOError;
     }

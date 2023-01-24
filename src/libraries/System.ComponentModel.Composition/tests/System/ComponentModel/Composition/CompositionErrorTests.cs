@@ -441,7 +441,7 @@ namespace System.ComponentModel.Composition
             return new CompositionError(messages[0], innerException);
         }
 
-        private static CompositionError CreateCompostionErrorWithCompositionException(string message1, string message2)
+        private static CompositionError CreateCompositionErrorWithCompositionException(string message1, string message2)
         {
             var exception = CreateCompositionException(new Exception(message2));
 

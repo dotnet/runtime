@@ -1,0 +1,634 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="cs" original="../Strings.resx">
+    <body>
+      <trans-unit id="AddMissingCustomTypeMarshallerMembers">
+        <source>Add missing custom type marshaller members</source>
+        <target state="translated">Přidat chybějící vlastní typu zařazovacích členů</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">Pokud se obrazec „Ze spravovaných na nespravované s vyrovnávací pamětí přidělenou volajícímu“ používá metodou FromManaged, která přebírá Span&lt;T&gt; u zařazovacího typu, musí typ poskytovat statickou vlastnost BufferSize, která určuje počet elementů ve vyrovnávací paměti přidělené volajícímu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">Zařazovací typ {0} musí obsahovat statickou celočíselnou vlastnost BufferSize určenou jen pro čtení, která určuje velikost vyrovnávací paměti přidělené volajícímu, protože obsahuje metodu FromManaged, která přebírá Span&lt;{1}&gt; přidělený volajícímu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportDescription">
+        <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
+        <target state="translated">Vygenerovaný atribut DllImportAttribute nebude mít hodnotu odpovídající {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportMessage">
+        <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
+        <target state="translated">{0} nemá žádný ekvivalent v DllImportAttribute a nepřesměruje se</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportTitle">
+        <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
+        <target state="translated">Určené argumenty LibraryImportAttribute nelze přesměrovat do DllImportAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescription">
+        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
+        <target state="translated">Zdrojem generovaná volání P/Invokes budou ignorovat všechny nepodporované konfigurace.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessage">
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Konfigurace {0} není podporována zdrojově generovanými voláními P/Invoke. Pokud je zadaná konfigurace povinná, použijte místo toho normální DllImport.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
+        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
+        <target state="translated">Určenou konfiguraci zařazování nepodporují zdrojem generovaná volání P/Invokes. {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameter">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Zadaná konfigurace {0} pro parametr {1} není podporována zdrojově generovanými voláními P/Invoke. Pokud je zadaná konfigurace povinná, použijte místo toho normální DllImport.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturn">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Zadaná konfigurace {0} pro návratovou hodnotu metody{1} není podporována voláními P/Invoke generovanými zdrojem. Pokud je zadaná konfigurace povinná, použijte místo toho normální DllImport.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValue">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Zadaná hodnota {0} pro {1} není podporována zdrojově generovanými voláními P/Invoke. Pokud je zadaná hodnota povinná, použijte místo toho normální DllImport.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitle">
+        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
+        <target state="translated">Určenou konfiguraci nepodporují zdrojem generovaná volání P/Invokes.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
+        <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
+        <target state="translated">Automatická konverze volání P/Invoke s PreserveSig nastaveným na hodnotu False na zdrojem generované volání P/Invoke může mít za následek neplatný kód.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImport">
+        <source>Convert to 'LibraryImport'</source>
+        <target state="translated">Převést na LibraryImport</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="translated">Převést na LibraryImport a povolit nebezpečný kód</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportDescription">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">K vygenerování kódu zařazování P/Invoke v době kompilace použijte LibraryImportAttribute místo DllImportAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="translated">Převod tohoto rozhraní API na LibraryImport bude vyžadovat další kód, který poskytne vlastní zařazovače pro některé parametry.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMessage">
+        <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">Označit metodu {0} pomocí LibraryImportAttribute místo DllImportAttribute, aby došlo k vygenerování kódu zařazování volání P/Invoke za kompilace.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportTitle">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">K vygenerování kódu zařazování P/Invoke v době kompilace použijte LibraryImportAttribute místo DllImportAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffix">
+        <source>Convert to 'LibraryImport' with '{0}' suffix</source>
+        <target state="translated">Převést na LibraryImport s příponou {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="translated">Převést na LibraryImport s příponou {0} a povolit nebezpečný kód</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">Zařazovací typ nemá požadovaný tvar</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
+        <source>A marshaller for an element scenario cannot be stateful.</source>
+        <target state="translated">Zařazovač pro scénář elementu nemůže být stavový.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
+        <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
+        <target state="translated">Zadaný zařazovací typ {0} je stavový zařazovač, ale stavové zařazovače nejsou v poskytnutém režimu zařazování {1} povolené.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
+        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
+        <target state="translated">Typ elementu span vrácený první metodou musí být stejného typu jako typ elementu rozsahu vráceného druhou metodou.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
+        <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
+        <target state="translated">Typ elementu span vrácený {0} musí být stejného typu jako typ elementu rozsahu vráceného {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullDescription">
+        <source>An entry-point type for marshalling a given type must not be 'null'.</source>
+        <target state="translated">Typ vstupního bodu pro zařazování daného typu nesmí nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullMessage">
+        <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
+        <target state="translated">Zařazovací typ vstupního bodu pro typ {0} nesmí nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
+        <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
+        <target state="translated">První parametr první metody musí být stejného typu jako návratové typy druhé metody.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
+        <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">První parametr {0} musí být stejného typu jako návratový typ {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchDescription">
+        <source>The first parameters of the two methods must be the same type.</source>
+        <target state="translated">První parametry těchto dvou metod musí být stejného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchMessage">
+        <source>The first parameter of '{0}' and '{1}' must be the same type</source>
+        <target state="translated">První parametr {0} a {1} musí být stejného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
+        <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
+        <target state="translated">Přetížení metody FromUnmanaged není podporováno, protože některé obrazce nedokážou rozlišit mezi přetíženími.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
+        <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
+        <target state="translated">Typ {0} přetíží metodu FromUnmanaged, která se ve vlastních zařazováních nepodporuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
+        <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
+        <target state="translated">Návratový typ GetPinnableReference (když se vezme v úvahu „ref“) musí být přenositelný.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
+        <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
+        <target state="translated">Odkazovaný typ návratového typu GetPinnableReference musí být přenositelný</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">Metoda {0} je obsažena v typu {1}, který není označen jako „partial“. Generování zdrojů volání P/Invoke bude metodu {0} ignorovat.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescription">
+        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
+        <target state="translated">Metody označené atributem LibraryImportAttribute by měly být typu „static“, „partial“ a non-generic. Generování zdrojů volání P/Invoke bude ignorovat metody typu non-„static“, non-„partial“ a generic.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessage">
+        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">Metoda {0} by měla mít vlastnost „static“, „partial“ a non-generic, když je označena atributem LibraryImportAttribute. Generování zdroje voláním P/Invoke bude metodu {0} ignorovat.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid 'CustomMarshallerAttribute' usage</source>
+        <target state="translated">Neplatné použití CustomMarshaattribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
+        <source>Invalid 'LibraryImportAttribute' usage</source>
+        <target state="translated">Neplatné použití LibraryImportAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="translated">Zadaný spravovaný typ je neplatný</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="translated">Zadaný zařazovací typ je neplatný</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
+        <source>Invalid 'NativeMarshallingAttribute' usage</source>
+        <target state="translated">Neplatné použití NativeMars telemetringAttribute</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">Zařazovací typ má nekompatibilní signatury metod</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationDescription">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
+        <target state="translated">Konfigurace StringMarshalling a StringMarshallingCustomType je neplatná.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">Konfigurace StringMarshalling a StringMarshallingCustomType u metody {0} je neplatná. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
+        <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
+        <target state="translated">StringMarshallingCustomType musí být určený, pokud je StringMarshalling nastavený na StringMarshalling.Custom.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
+        <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
+        <target state="translated">StringMarshalling by měl být nastavený na StringMarshalling.Custom, když je pokud je určený StringMarshallingCustomType.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
+        <target state="translated">Typ prvku ReadOnlySpan vrácený GetManagedValuesSource musí být stejný, jako typ prvku vrácený GetManagedValuesDestination.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
+        <target state="translated">Typ prvku ReadOnlySpan vrácený GetManagedValuesSource musí být stejný, jako typ prvku vrácený GetManagedValuesDestination</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
+        <target state="translated">Nativní typ druhu LinearCollection, který podporuje funkci CallerAllocatedBuffer musí poskytovat tříparametrový konstruktor přebírající spravovaný prvek jako první parametr, „Span&lt;byte&gt;“ jako druhý parametr a nativní velikost prvku jako třetí parametr</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
+        <target state="translated">Typ {0} konkrétně určuje, že podporuje zařazování „In“ s funkcí CallerAllocatedBuffer pro {1}, ale neposkytuje tříparametrový konstruktor, který přebírá {1}, „Span&lt;byte&gt;“ a „int“</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
+        <target state="translated">Souvislý zařazovací modul kolekce, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat metodu GetManagedValuesSource, která vrací metodu ReadOnlySpan&lt;&gt; a GetUnmanagedValuesDestination, která vrací hodnotu Span&lt;&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1}, ale neposkytuje metodu GetManagedValuesSource, která vrací metodu ReadOnlySpan&lt;&gt; a GetUnmanagedValuesDestination, která vrací Span&lt;&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">Souvislý zařazovací modul kolekce, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat metodu GetManagedValuesDestination, která přijímá int a vrací metodu Span&lt;&gt; a GetUnmanagedValuesSource, která přijímá int a vrací readOnlySpan&lt;&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1}, ale neposkytuje metodu GetManagedValuesDestination, která přijímá int a vrací metodu Span&lt;&gt; a GetUnmanagedValuesSource, která přijímá int a vrací readOnlySpan&lt;&gt;</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="translated">Zařazovací typ musí být uzavřený obecný typ nebo mít stejný počet obecných parametrů jako spravovaný typ, aby generátor mohl určit, které metody jsou dostupné u konkrétních zařazovacích typů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">Spravovaný typ {0} pro zařazovací typ vstupního bodu {1} musí být uzavřený obecný typ, mít stejnou aritu jako spravovaný typ, pokud se jedná o zařazování hodnot, nebo mít jeden další obecný parametr, pokud se jedná o zařazování kolekcí.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="translated">Spravovaný typ vlastního zařazování nesmí nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="translated">Spravovaný typ pro zařazovací typ vstupního bodu {0} nesmí nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">Zařazovací typ musí být uzavřený obecný typ nebo mít stejný počet obecných parametrů jako spravovaný typ, aby mohl vygenerovaný kód použít konkrétní vytvoření instance.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="translated">Zařazovací typ {0}, na který odkazuje zařazovací typ vstupního bodu {1}, musí být uzavřený obecný typ nebo mít stejnou aritu jako spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullDescription">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
+        <target state="translated">Parametr marshallerType v atributu System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute nemůže nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullMessage">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
+        <target state="translated">Parametr marshallerType v atributu System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute nemůže nabývat hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
+        <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
+        <target state="translated">Typ zařazovače musí být bezstavová statická třída nebo stavový typ hodnoty. Nestatická třída není povolena.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
+        <source>The type '{0}' must be a static class or a value type</source>
+        <target state="translated">Typ {0} musí být statická třída nebo typ hodnoty.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
+        <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
+        <target state="translated">Typ s atributem System.Runtime.InteropServices.CustomMarshallerAttribute musí určovat spravovaný typ, který nenabývá hodnoty null.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
+        <target state="translated">Typ {0} neurčuje spravovaný typ v atributu System.Runtime.InteropServices.CustomMarshallerAttribute uplatněném na tento typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">Zařazovací typ musí být uzavřený obecný typ nebo mít stejný počet obecných parametrů jako spravovaný typ, aby mohl vygenerovaný kód použít konkrétní vytvoření instance.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">Zařazovací typ {0} pro spravovaný typ {1} musí být uzavřený obecný typ, mít stejnou aritu jako spravovaný typ, pokud se jedná o zařazování hodnot, nebo mít jeden další obecný parametr, pokud se jedná o zařazování kolekcí.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescription">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute vyžaduje nebezpečný kód. Projekt se musí aktualizovat na hodnotu &lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessage">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute vyžaduje nebezpečný kód. Projekt se musí aktualizovat na hodnotu &lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitle">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="translated">LibraryImportAttribute vyžaduje nebezpečný kód.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
+        <source>The return type the two method must be the expected type.</source>
+        <target state="translated">Návratový typ, který obě metody musí být očekávaného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
+        <source>The return type of '{0}' must be '{1}'</source>
+        <target state="translated">Návratový typ {0} musí být {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchDescription">
+        <source>The return types of the two methods must be the same type.</source>
+        <target state="translated">Návratové typy těchto dvou metod musí být stejného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchMessage">
+        <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">Návratový typ {0} musí být stejného typu jako návratový typ {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeDescription">
+        <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
+        <target state="translated">Stavový zařazovač musí mít instanční metodu s názvem Free, která nemá žádné parametry a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeMessage">
+        <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
+        <target state="translated">Typ {0} je stavový zařazovač a nemá instanční metodu s názvem Free, která je bez parametrů a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat instanční metodu FromManaged, která přebírá spravovanou hodnotu jako parametr a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu FromManaged s jedním parametrem, která přijímá jako parametr {2} a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat instanční metodu FromUnmanaged, která přebírá nespravovanou hodnotu jako parametr a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu FromUnmanaged s jedním parametrem, která jako parametr přebírá hodnotu unmanaged a vrací void.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat instanční metodu ToManaged, která nepřebírá žádné parametry a vrací typ managed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu bez parametrů s názvem ToManaged, která vrací {2}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
+        <target state="translated">Stavový zařazovač, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat instanční metodu ToUnmanaged, která nepřebírá žádné parametry a vrací typ unmanaged.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje instanční metodu bez parametrů s názvem ToUnmanaged, která pro zařazovač vrací typ unmanaged.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">Když se použije obrazec Spravovaný na nespravovaný s vyrovnávací pamětí přidělenou volajícím poskytnutím metody AllocateContainerForUnmanagedElements, která přebírá span&lt;T&gt; typu zařazovače, musí typ poskytnout statickou vlastnost BufferSize, aby bylo možné poskytnout počet prvků ve vyrovnávací paměti přidělené volajícím.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">Typ zařazovacího modulu {0} musí mít statickou vlastnost BufferSize jen pro čtení int, aby bylo možné určit velikost vyrovnávací paměti přidělené volajícím, protože má metodu AllocateContainerForUnmanagedElements, která přebírá metodu Span&lt;{1}&gt; přidělenou volajícím.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">Souvislý zařazovací modul kolekce, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat metodu GetManagedValuesSource, která přebírá spravovanou hodnotu jako parametr a vrací metodu ReadOnlySpan&lt;&gt; a GetUnmanagedValuesDestination, která přebírá nespravovanou hodnotu jako parametr a vrací hodnotu Span&lt;&gt;</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1}, ale neposkytuje metodu GetManagedValuesSource, která přijímá {2} jako parametr a vrací metodu ReadOnlySpan&lt;&gt; a GetUnmanagedValuesDestination, která přebírá nespravovanou hodnotu jako parametr a vrací hodnotu Span&lt;&gt;</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">Souvislý zařazovací modul kolekce, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat metodu GetManagedValuesDestination, která přebírá spravovanou hodnotu a vrací metodu Span&lt;&gt; a GetUnmanagedValuesSource, která přebírá nespravovanou hodnotu a int a vrací readOnlySpan&lt;&gt;.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1}, ale neposkytuje metodu GetManagedValuesDestination, která přijímá {2} a vrací metodu Span&lt;&gt; a GetUnmanagedValuesSource, která přebírá nespravovanou hodnotu a int a vrací hodnotu ReadOnlySpan&lt;&gt;</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
+        <target state="translated">Bezstavový zařazovací modul kolekce, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat metodu AllocateContainerForManagedElements, která přebírá nespravovaný typ jako první parametr a počet elementů jako parametr int.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje metodu AllocateContainerForManagedElements se dvěma parametry, která přijímá nespravovaný typ jako první parametr a int jako druhý parametr.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
+        <target state="translated">Bezstavový zařazovací modul kolekce, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat metodu AllocateContainerForUnmanagedElements, která přebírá spravovaný typ jako první parametr a poskytuje počet elementů jako parametr out int.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje metodu AllocateContainerForUnmanagedElements se dvěma parametry, která jako první parametr přijímá {2} a druhý parametr out int.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedDescription">
+        <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
+        <target state="translated">Zařazovací modul bezstavové hodnoty, který podporuje zařazování z nespravovaného do spravovaného, musí poskytovat metodu ConvertToManaged, která přebírá nespravovaný typ jako parametr a vrací spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedMessage">
+        <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1}, ale neposkytuje metodu ConvertToManaged, která přijímá nespravovaný typ jako parametr a vrací {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="translated">Zařazovací modul bezstavové hodnoty, který podporuje zařazování ze spravovaného do nespravovaného, musí poskytovat metodu ConvertToUnmanaged s jedním parametrem, která přijímá spravovanou hodnotu jako parametr a vrací hodnotu nespravovaného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
+        <target state="translated">Typ {0} určuje, že podporuje režim zařazování {1} pro {2}, ale neposkytuje metodu ConvertToUnmanaged s jedním parametrem, která přijímá jako parametr {2} a vrací hodnotu nespravovaného typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
+        <target state="translated">Návratový typ ConvertToUnmanaged a typ parametru ConvertToManaged musí být stejné.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
+        <target state="translated">Návratový typ ConvertToUnmanaged a typ parametru ConvertToManaged musí být stejné.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedDescription">
+        <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
+        <target state="translated">Nespravovaný typ vlastního zařazovacího modulu musí být nespravovaný typ jazyka C#.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedMessage">
+        <source>The return type of '{0}' must be unmanaged</source>
+        <target state="translated">Návratový typ {0} musí být nespravovaný.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="translated">void* musí být přetypovatelné na tento typ, aby připnutý výsledek statické metody GetPinnableReference mohl být po připnutí předán nativnímu kontextu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="translated">void* musí být přetypovatelné na typ {0}, protože spravovaný typ {1} obsahuje statickou metodu GetPinnableReference.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="translated">Typ vstupního bodu pro zařazování daného typu musí mít atribut System.Runtime.InteropServices.CustomMarshallerAttribute, který tento typ určuje jako spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="translated">Zařazovací typ vstupního bodu {0} pro typ {1} musí být typ s nejméně jedním atributem System.Runtime.InteropServices.CustomMarshallerAttribute, který tento typ určuje jako spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedDescription">
+        <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
+        <target state="translated">Nativní typ „Value“ nebo druhu LinearCollection podporující zařazování ve směru „Out“ musí poskytovat metodu ToManaged, která vrací spravovaný typ.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedMessage">
+        <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
+        <target state="translated">Typ {0}určuje, že podporuje zařazování ve směru „Out“, ale neposkytuje metodu ToManaged, která vrací spravovaný typ</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
+        <target state="translated">Návratový typ ToUnmanaged a typ parametru FromUnmanaged musí být stejné.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
+        <target state="translated">Návratový typ ToUnmanaged a typ parametru FromUnmanaged musí být stejné.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescription">
+        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">U typů, které nejsou podporovány zdrojem generovanými voláními P/Invoke, bude výsledné volání P/Invoke záviset na podkladovém modulu runtime, aby určený typ zařadil.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameter">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">Typ {0} nepodporují zdrojem generovaná volání P/Invokes. Vygenerovaný zdroj nebude zpracovávat zařazování parametru {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
+        <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">{0} Generovaný zdroj nebude zpracovávat zařazování parametru {1}.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturn">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">Typ {0} nepodporují zdrojem generovaná volání P/Invokes. Vygenerovaný zdroj nebude zpracovávat zařazování návratové hodnoty metody {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
+        <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">{0} Generovaný zdroj nebude zpracovávat zařazování návratové hodnoty metody {1}.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">Určený typ nepodporují zdrojem generovaná volání P/Invokes.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">Nativní typ druhu Value, který podporuje funkci CallerAllocatedBuffer, musí poskytovat dvouparametrový konstruktor přebírající spravovaný prvek a hodnotu Span jako parametry.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">Typ {0} určuje, že podporuje zařazování In s funkcí CallerAllocatedBuffer pro {1}, ale neposkytuje dvouparametrový konstruktor, který přebírá {1} a Span jako parametry.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
+        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
+        <target state="translated">Nativní typ druhu „Value“ musí poskytovat jednoparametrový konstruktor přebírající spravovaný typ jako parametr</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
+        <target state="translated">Typ {0} konkrétně určuje, že podporuje zařazování „In“ pro {1}, ale neposkytuje jednoparametrový konstruktor, který přebírá {1} jako parametr</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

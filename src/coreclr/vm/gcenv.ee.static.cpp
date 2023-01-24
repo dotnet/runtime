@@ -5,7 +5,6 @@
 #include "gcenv.h"
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
-#include "nativeoverlapped.h"
 #include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -17,12 +16,6 @@
 #include "configuration.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
-
-// the method table for the WeakReference class
-extern MethodTable* pWeakReferenceMT;
-
-// The canonical method table for WeakReference<T>
-extern MethodTable* pWeakReferenceOfTCanonMT;
 
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);

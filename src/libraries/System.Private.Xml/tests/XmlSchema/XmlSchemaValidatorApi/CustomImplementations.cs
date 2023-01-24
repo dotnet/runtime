@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Xml.Schema;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     internal class ObservedNameTable : NameTable
     {

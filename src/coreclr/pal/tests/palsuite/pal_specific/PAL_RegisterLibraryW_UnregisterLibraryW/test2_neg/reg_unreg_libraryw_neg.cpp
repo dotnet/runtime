@@ -6,7 +6,7 @@
 ** Source: pal_registerlibraryw_unregisterlibraryw_neg.c
 **
 ** Purpose: Negative test the PAL_RegisterLibrary API.
-**          Call PAL_RegisterLibrary to map a non-existant module
+**          Call PAL_RegisterLibrary to map a non-existent module
 **          into the calling process address space.
 **
 **

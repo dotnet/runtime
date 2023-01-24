@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
                     {
                         RSAKeyFormatHelper.ReadEncryptedPkcs8(
                             keyBlob,
-                            ExportPassword,
+                            (ReadOnlySpan<char>)ExportPassword,
                             out _,
                             out RSAParameters key);
                         return key;
@@ -70,70 +70,6 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(keyBlob);
-                }
-            }
-
-            private static bool HasWorkingPKCS1Padding { get; } = OperatingSystem.IsMacOSVersionAtLeast(10, 15);
-
-            private static void ImportPrivateKey(
-                RSAParameters rsaParameters,
-                out SafeSecKeyRefHandle privateKey,
-                out SafeSecKeyRefHandle publicKey)
-            {
-                // macOS 10.14 and older have broken PKCS#1 depadding for decryption
-                // of empty data. The bug doesn't affect the legacy CSSM keys so we
-                // use them instead.
-                if (HasWorkingPKCS1Padding)
-                {
-                    privateKey = ImportKey(rsaParameters);
-                    publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
-                }
-                else
-                {
-                    privateKey = ImportLegacyPrivateKey(rsaParameters);
-
-                    try
-                    {
-                        RSAParameters publicOnly = new RSAParameters
-                        {
-                            Modulus = rsaParameters.Modulus,
-                            Exponent = rsaParameters.Exponent,
-                        };
-
-                        publicKey = ImportKey(publicOnly);
-                    }
-                    catch
-                    {
-                        privateKey.Dispose();
-                        throw;
-                    }
-                }
-            }
-
-            private static SafeSecKeyRefHandle ImportLegacyPrivateKey(RSAParameters parameters)
-            {
-                Debug.Assert(parameters.D != null);
-
-                AsnWriter keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
-
-                byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
-
-                if (!keyWriter.TryEncode(rented, out int written))
-                {
-                    Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                    throw new InvalidOperationException();
-                }
-
-                // Explicitly clear the inner buffer
-                keyWriter.Reset();
-
-                try
-                {
-                    return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), true);
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, written);
                 }
             }
         }

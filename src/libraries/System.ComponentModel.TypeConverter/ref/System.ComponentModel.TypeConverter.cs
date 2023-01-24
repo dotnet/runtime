@@ -289,7 +289,7 @@ namespace System.ComponentModel
         public virtual string? GetClassName() { throw null; }
         public virtual string? GetComponentName() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        public virtual System.ComponentModel.TypeConverter GetConverter() { throw null; }
+        public virtual System.ComponentModel.TypeConverter? GetConverter() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public virtual System.ComponentModel.EventDescriptor? GetDefaultEvent() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -350,6 +350,14 @@ namespace System.ComponentModel
         Update = 2,
         Insert = 3,
         Delete = 4,
+    }
+    public partial class DateOnlyConverter : System.ComponentModel.TypeConverter
+    {
+        public DateOnlyConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     public partial class DateTimeConverter : System.ComponentModel.TypeConverter
     {
@@ -510,6 +518,10 @@ namespace System.ComponentModel
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
+    public partial class HalfConverter : System.ComponentModel.BaseNumberConverter
+    {
+        public HalfConverter() { }
+    }
     public partial class HandledEventArgs : System.EventArgs
     {
         public HandledEventArgs() { }
@@ -572,7 +584,7 @@ namespace System.ComponentModel
         string? GetClassName();
         string? GetComponentName();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        System.ComponentModel.TypeConverter GetConverter();
+        System.ComponentModel.TypeConverter? GetConverter();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor? GetDefaultEvent();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -655,6 +667,10 @@ namespace System.ComponentModel
         public virtual string Text { get { throw null; } }
         public abstract object? CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Type instanceType);
     }
+    public partial class Int128Converter : System.ComponentModel.BaseNumberConverter
+    {
+        public Int128Converter() { }
+    }
     public partial class Int16Converter : System.ComponentModel.BaseNumberConverter
     {
         public Int16Converter() { }
@@ -678,16 +694,16 @@ namespace System.ComponentModel
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
-        System.ComponentModel.IContainer Container { get; }
-        object Instance { get; }
-        System.ComponentModel.PropertyDescriptor PropertyDescriptor { get; }
+        System.ComponentModel.IContainer? Container { get; }
+        object? Instance { get; }
+        System.ComponentModel.PropertyDescriptor? PropertyDescriptor { get; }
         void OnComponentChanged();
         bool OnComponentChanging();
     }
     public partial interface ITypedList
     {
-        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors);
-        string GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors);
+        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors);
+        string GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors);
     }
     public abstract partial class License : System.IDisposable
     {
@@ -1244,6 +1260,14 @@ namespace System.ComponentModel
         public static bool CheckPath(string value) { throw null; }
         public static bool CheckRootedPath(string value) { throw null; }
     }
+    public partial class TimeOnlyConverter : System.ComponentModel.TypeConverter
+    {
+        public TimeOnlyConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+    }
     public partial class TimeSpanConverter : System.ComponentModel.TypeConverter
     {
         public TimeSpanConverter() { }
@@ -1358,7 +1382,7 @@ namespace System.ComponentModel
     {
         protected TypeDescriptionProvider() { }
         protected TypeDescriptionProvider(System.ComponentModel.TypeDescriptionProvider parent) { }
-        public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object[]? args) { throw null; }
+        public virtual object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         public virtual System.Collections.IDictionary? GetCache(object instance) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered.")]
         public virtual System.ComponentModel.ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance) { throw null; }
@@ -1384,7 +1408,9 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
         public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler? Refreshed { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1408,7 +1434,7 @@ namespace System.ComponentModel
         public static System.ComponentModel.Design.IDesigner? CreateDesigner(System.ComponentModel.IComponent component, System.Type designerBaseType) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.EventDescriptor oldEventDescriptor, params System.Attribute[] attributes) { throw null; }
         public static System.ComponentModel.EventDescriptor CreateEvent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, string name, System.Type type, params System.Attribute[] attributes) { throw null; }
-        public static object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object[]? args) { throw null; }
+        public static object? CreateInstance(System.IServiceProvider? provider, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type objectType, System.Type[]? argTypes, object?[]? args) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         public static System.ComponentModel.PropertyDescriptor CreateProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type componentType, System.ComponentModel.PropertyDescriptor oldPropertyDescriptor, params System.Attribute[] attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -1538,6 +1564,10 @@ namespace System.ComponentModel
     public partial class UInt64Converter : System.ComponentModel.BaseNumberConverter
     {
         public UInt64Converter() { }
+    }
+    public partial class UInt128Converter : System.ComponentModel.BaseNumberConverter
+    {
+        public UInt128Converter() { }
     }
     public partial class VersionConverter : System.ComponentModel.TypeConverter
     {
@@ -2162,11 +2192,11 @@ namespace System.ComponentModel.Design.Serialization
         event System.ComponentModel.Design.Serialization.ResolveNameEventHandler ResolveName;
         event System.EventHandler SerializationComplete;
         void AddSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
-        object CreateInstance(System.Type type, System.Collections.ICollection arguments, string name, bool addToContainer);
-        object GetInstance(string name);
-        string GetName(object value);
-        object GetSerializer(System.Type objectType, System.Type serializerType);
-        System.Type GetType(string typeName);
+        object CreateInstance(System.Type type, System.Collections.ICollection? arguments, string? name, bool addToContainer);
+        object? GetInstance(string name);
+        string? GetName(object value);
+        object? GetSerializer(System.Type? objectType, System.Type serializerType);
+        System.Type? GetType(string typeName);
         void RemoveSerializationProvider(System.ComponentModel.Design.Serialization.IDesignerSerializationProvider provider);
         void ReportError(object errorInformation);
         void SetName(object instance, string name);
@@ -2338,6 +2368,7 @@ namespace System.Timers
     {
         public Timer() { }
         public Timer(double interval) { }
+        public Timer(System.TimeSpan interval) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AutoReset { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]

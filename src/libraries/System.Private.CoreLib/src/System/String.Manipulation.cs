@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -15,7 +17,19 @@ namespace System
 {
     public partial class String
     {
-        private const int StackallocIntBufferSizeLimit = 128;
+        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
+        private static class IndexOfAnyValuesStorage
+        {
+            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            // also specifically excludes VT from the list of newline functions, so we do not include
+            // it in the needle list.
+            public static readonly IndexOfAnyValues<char> NewLineChars =
+                IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+        }
+
+        internal const int StackallocIntBufferSizeLimit = 128;
+        internal const int StackallocCharBufferSizeLimit = 256;
 
         private static void FillStringChecked(string dest, int destPos, string src)
         {
@@ -41,8 +55,10 @@ namespace System
         public static string Concat(object? arg0, object? arg1, object? arg2) =>
             Concat(arg0?.ToString(), arg1?.ToString(), arg2?.ToString());
 
-        public static string Concat(params object?[] args!!)
+        public static string Concat(params object?[] args)
         {
+            ArgumentNullException.ThrowIfNull(args);
+
             if (args.Length <= 1)
             {
                 return args.Length == 0 ?
@@ -101,8 +117,10 @@ namespace System
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values!!)
+        public static string Concat<T>(IEnumerable<T> values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             if (typeof(T) == typeof(char))
             {
                 // Special-case T==char, as we can handle that case much more efficiently,
@@ -126,7 +144,7 @@ namespace System
 
                     // Create the StringBuilder, add the chars we've already enumerated,
                     // add the rest, and then get the resulting string.
-                    var result = new ValueStringBuilder(stackalloc char[256]);
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
                     result.Append(c); // first value
                     do
                     {
@@ -162,7 +180,7 @@ namespace System
                         return firstString ?? string.Empty;
                     }
 
-                    var result = new ValueStringBuilder(stackalloc char[256]);
+                    var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
 
                     result.Append(firstString);
 
@@ -182,8 +200,10 @@ namespace System
             }
         }
 
-        public static string Concat(IEnumerable<string?> values!!)
+        public static string Concat(IEnumerable<string?> values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -196,7 +216,7 @@ namespace System
                     return firstValue ?? string.Empty;
                 }
 
-                var result = new ValueStringBuilder(stackalloc char[256]);
+                var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
 
                 result.Append(firstValue);
 
@@ -360,8 +380,38 @@ namespace System
             return result;
         }
 
-        public static string Concat(params string?[] values!!)
+        internal static string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2, ReadOnlySpan<char> str3, ReadOnlySpan<char> str4)
         {
+            int length = checked(str0.Length + str1.Length + str2.Length + str3.Length + str4.Length);
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
+
+            str0.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str0.Length);
+
+            str1.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str1.Length);
+
+            str2.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str2.Length);
+
+            str3.CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(str3.Length);
+
+            str4.CopyTo(resultSpan);
+
+            return result;
+        }
+
+        public static string Concat(params string?[] values)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -425,22 +475,24 @@ namespace System
             return copiedLength == totalLength ? result : Concat((string?[])values.Clone());
         }
 
-        public static string Format(string format, object? arg0)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0));
+            return FormatHelper(null, format, new ReadOnlySpan<object?>(in arg0));
         }
 
-        public static string Format(string format, object? arg0, object? arg1)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1));
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
         }
 
-        public static string Format(string format, object? arg0, object? arg1, object? arg2)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
         }
 
-        public static string Format(string format, params object?[] args)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -449,25 +501,27 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(null, format, new ParamsArray(args));
+            return FormatHelper(null, format, args);
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0));
+            return FormatHelper(provider, format, new ReadOnlySpan<object?>(in arg0));
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1));
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
         }
 
-        public static string Format(IFormatProvider? provider, string format, params object?[] args)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -476,21 +530,171 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(provider, format, new ParamsArray(args));
+            return FormatHelper(provider, format, args);
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
+        private static string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
         {
-            var sb = new ValueStringBuilder(stackalloc char[256]);
+            ArgumentNullException.ThrowIfNull(format);
+
+            var sb = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             sb.EnsureCapacity(format.Length + args.Length * 8);
             sb.AppendFormatHelper(provider, format, args);
             return sb.ToString();
         }
 
-        public string Insert(int startIndex, string value!!)
+        /// <summary>
+        /// Replaces the format item or items in a <see cref="CompositeFormat"/> with the string representation of the corresponding objects.
+        /// A parameter supplies culture-specific formatting information.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static string Format<TArg0>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0)
         {
-            if ((uint)startIndex > Length)
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(1);
+            return Format(provider, format, arg0, 0, 0, default);
+        }
+
+        /// <summary>
+        /// Replaces the format item or items in a <see cref="CompositeFormat"/> with the string representation of the corresponding objects.
+        /// A parameter supplies culture-specific formatting information.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <typeparam name="TArg1">The type of the second object to format.</typeparam>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <param name="arg1">The second object to format.</param>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static string Format<TArg0, TArg1>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(2);
+            return Format(provider, format, arg0, arg1, 0, default);
+        }
+
+        /// <summary>
+        /// Replaces the format item or items in a <see cref="CompositeFormat"/> with the string representation of the corresponding objects.
+        /// A parameter supplies culture-specific formatting information.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <typeparam name="TArg1">The type of the second object to format.</typeparam>
+        /// <typeparam name="TArg2">The type of the third object to format.</typeparam>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <param name="arg1">The second object to format.</param>
+        /// <param name="arg2">The third object to format.</param>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(3);
+            return Format(provider, format, arg0, arg1, arg2, default);
+        }
+
+        /// <summary>
+        /// Replaces the format item or items in a <see cref="CompositeFormat"/> with the string representation of the corresponding objects.
+        /// A parameter supplies culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="args">An array of objects to format.</param>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="args"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static string Format(IFormatProvider? provider, CompositeFormat format, params object?[] args)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(args);
+            return Format(provider, format, (ReadOnlySpan<object?>)args);
+        }
+
+        /// <summary>
+        /// Replaces the format item or items in a <see cref="CompositeFormat"/> with the string representation of the corresponding objects.
+        /// A parameter supplies culture-specific formatting information.
+        /// </summary>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="args">A span of objects to format.</param>
+        /// <returns>The formatted string.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static string Format(IFormatProvider? provider, CompositeFormat format, ReadOnlySpan<object?> args)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(args.Length);
+            return args.Length switch
+            {
+                0 => format.Format,
+                1 => Format(provider, format, args[0], 0, 0, args),
+                2 => Format(provider, format, args[0], args[1], 0, args),
+                _ => Format(provider, format, args[0], args[1], args[2], args),
+            };
+        }
+
+        private static string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
+        {
+            // If there's no formatting to be done, we can just return the original format string as the result.
+            if (format._formattedCount == 0)
+            {
+                return format.Format;
+            }
+
+            // Create the interpolated string handler.
+            var handler = new DefaultInterpolatedStringHandler(format._literalLength, format._formattedCount, provider, stackalloc char[StackallocCharBufferSizeLimit]);
+
+            // Format each segment.
+            foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
+            {
+                if (segment.Literal is string literal)
+                {
+                    handler.AppendLiteral(literal);
+                }
+                else
+                {
+                    int index = segment.ArgIndex;
+                    switch (index)
+                    {
+                        case 0:
+                            handler.AppendFormatted(arg0, segment.Alignment, segment.Format);
+                            break;
+
+                        case 1:
+                            handler.AppendFormatted(arg1, segment.Alignment, segment.Format);
+                            break;
+
+                        case 2:
+                            handler.AppendFormatted(arg2, segment.Alignment, segment.Format);
+                            break;
+
+                        default:
+                            Debug.Assert(index > 2);
+                            handler.AppendFormatted(args[index], segment.Alignment, segment.Format);
+                            break;
+                    }
+                }
+            }
+
+            // Complete the operation.
+            return handler.ToStringAndClear();
+        }
+
+        public string Insert(int startIndex, string value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)Length, nameof(startIndex));
 
             int oldLength = Length;
             int insertLength = value.Length;
@@ -518,7 +722,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), new ReadOnlySpan<string?>(value));
+            return JoinCore(new ReadOnlySpan<char>(in separator), new ReadOnlySpan<string?>(value));
         }
 
         public static string Join(string? separator, params string?[] value)
@@ -532,25 +736,17 @@ namespace System
         }
 
         public static string Join(char separator, string?[] value, int startIndex, int count) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value, startIndex, count);
+            JoinCore(new ReadOnlySpan<char>(in separator), value, startIndex, count);
 
         public static string Join(string? separator, string?[] value, int startIndex, int count) =>
             JoinCore(separator.AsSpan(), value, startIndex, count);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value!!, int startIndex, int count)
+        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            }
-            if (startIndex > value.Length - count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
-            }
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, value.Length - count);
 
             return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
@@ -588,7 +784,7 @@ namespace System
                 }
 
                 // Null separator and values are handled by the StringBuilder
-                var result = new ValueStringBuilder(stackalloc char[256]);
+                var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
 
                 result.Append(firstValue);
 
@@ -604,7 +800,7 @@ namespace System
         }
 
         public static string Join(char separator, params object?[] values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join(string? separator, params object?[] values) =>
             JoinCore(separator.AsSpan(), values);
@@ -628,7 +824,7 @@ namespace System
                 return firstString ?? Empty;
             }
 
-            var result = new ValueStringBuilder(stackalloc char[256]);
+            var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
 
             result.Append(firstString);
 
@@ -646,7 +842,7 @@ namespace System
         }
 
         public static string Join<T>(char separator, IEnumerable<T> values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join<T>(string? separator, IEnumerable<T> values) =>
             JoinCore(separator.AsSpan(), values);
@@ -696,7 +892,7 @@ namespace System
                     return firstString ?? Empty;
                 }
 
-                var result = new ValueStringBuilder(stackalloc char[256]);
+                var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
 
                 result.Append(firstString);
 
@@ -805,8 +1001,7 @@ namespace System
 
         public string PadLeft(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -824,8 +1019,7 @@ namespace System
 
         public string PadRight(int totalWidth, char paddingChar)
         {
-            if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(totalWidth);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -841,13 +1035,10 @@ namespace System
 
         public string Remove(int startIndex, int count)
         {
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             int oldLength = this.Length;
-            if (count > oldLength - startIndex)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, oldLength - startIndex);
 
             if (count == 0)
                 return this;
@@ -919,7 +1110,7 @@ namespace System
             Debug.Assert(!oldValue.IsEmpty);
             Debug.Assert(compareInfo != null);
 
-            var result = new ValueStringBuilder(stackalloc char[256]);
+            var result = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             result.EnsureCapacity(searchSpace.Length);
 
             bool hasDoneAnyReplacements = false;
@@ -975,7 +1166,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            int remainingLength = Length - firstIndex;
+            nuint remainingLength = (uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -987,36 +1178,22 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
 
-            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            // If the string is long enough for vectorization to kick in, we'd like to
+            // process the remaining elements vectorized too.
+            // Thus we adjust the pointers so that at least one full vector from the end can be processed.
+            nuint length = (uint)Length;
+            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<ushort>.Count)
             {
-                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
-                Vector<ushort> newChars = new Vector<ushort>(newChar);
-
-                do
-                {
-                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
-                    Vector<ushort> equals = Vector.Equals(original, oldChars);
-                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
-
-                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
-                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
-                    remainingLength -= Vector<ushort>.Count;
-                }
-                while (remainingLength >= Vector<ushort>.Count);
+                nuint adjust = (length - remainingLength) & ((uint)Vector128<ushort>.Count - 1);
+                pSrc = ref Unsafe.Subtract(ref pSrc, adjust);
+                pDst = ref Unsafe.Subtract(ref pDst, adjust);
+                remainingLength += adjust;
             }
 
-            for (; remainingLength > 0; remainingLength--)
-            {
-                ushort currentChar = pSrc;
-                pDst = currentChar == oldChar ? newChar : currentChar;
-
-                pSrc = ref Unsafe.Add(ref pSrc, 1);
-                pDst = ref Unsafe.Add(ref pDst, 1);
-            }
+            SpanHelpers.ReplaceValueType(ref pSrc, ref pDst, oldChar, newChar, remainingLength);
 
             return result;
         }
@@ -1046,15 +1223,32 @@ namespace System
                 // Find all occurrences of the oldValue character.
                 char c = oldValue[0];
                 int i = 0;
-                while (true)
+
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
                 {
-                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos < 0)
+                    while (true)
                     {
-                        break;
+                        int pos = PackedSpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                        if (pos < 0)
+                        {
+                            break;
+                        }
+                        replacementIndices.Append(i + pos);
+                        i += pos + 1;
                     }
-                    replacementIndices.Append(i + pos);
-                    i += pos + 1;
+                }
+                else
+                {
+                    while (true)
+                    {
+                        int pos = SpanHelpers.NonPackedIndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                        if (pos < 0)
+                        {
+                            break;
+                        }
+                        replacementIndices.Append(i + pos);
+                        i += pos + 1;
+                    }
                 }
             }
             else
@@ -1179,8 +1373,10 @@ namespace System
         /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
         /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
-        public string ReplaceLineEndings(string replacementText!!)
+        public string ReplaceLineEndings(string replacementText)
         {
+            ArgumentNullException.ThrowIfNull(replacementText);
+
             // Early-exit: do we need to do anything at all?
             // If not, return this string as-is.
 
@@ -1198,7 +1394,7 @@ namespace System
             ReadOnlySpan<char> firstSegment = this.AsSpan(0, idxOfFirstNewlineChar);
             ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
 
-            ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[256]);
+            ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
             {
                 int idx = IndexOfNewlineChar(remaining, out stride);
@@ -1225,16 +1421,9 @@ namespace System
             // the haystack; or O(n) if no needle is found. This ensures that in the common case
             // of this method being called within a loop, the worst-case runtime is O(n) rather than
             // O(n^2), where n is the length of the input text.
-            //
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-
-            const string needles = "\r\n\f\u0085\u2028\u2029";
 
             stride = default;
-            int idx = text.IndexOfAny(needles);
+            int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
             if ((uint)idx < (uint)text.Length)
             {
                 stride = 1; // needle found
@@ -1257,12 +1446,12 @@ namespace System
 
         public string[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), int.MaxValue, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), int.MaxValue, options);
         }
 
         public string[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), count, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1307,9 +1496,7 @@ namespace System
 
         private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 
@@ -1318,17 +1505,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (separators.IsEmpty)
@@ -1339,7 +1516,7 @@ namespace System
 
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            MakeSeparatorList(separators, ref sepListBuilder);
+            MakeSeparatorListAny(this, separators, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
 
             // Handle the special case of no replaces.
@@ -1380,11 +1557,7 @@ namespace System
 
         private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count),
-                    SR.ArgumentOutOfRange_NegativeCount);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             CheckStringSplitOptions(options);
 
@@ -1401,17 +1574,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (singleSeparator)
@@ -1430,14 +1593,14 @@ namespace System
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
             var lengthListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
-            MakeSeparatorList(separators!, ref sepListBuilder, ref lengthListBuilder);
+            MakeSeparatorListAny(this, separators, ref sepListBuilder, ref lengthListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
             ReadOnlySpan<int> lengthList = lengthListBuilder.AsSpan();
 
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
-                return new string[] { this };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1450,23 +1613,38 @@ namespace System
             return result;
         }
 
-        private string[] SplitInternal(string separator, int count, StringSplitOptions options)
+        private string[] CreateSplitArrayOfThisAsSoleValue(StringSplitOptions options, int count)
         {
-            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            Debug.Assert(count >= 0);
 
-            MakeSeparatorList(separator, ref sepListBuilder);
-            ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
-            if (sepList.Length == 0)
+            if (count != 0)
             {
-                // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
                 string candidate = this;
+
                 if ((options & StringSplitOptions.TrimEntries) != 0)
                 {
                     candidate = candidate.Trim();
                 }
-                return ((candidate.Length == 0) && ((options & StringSplitOptions.RemoveEmptyEntries) != 0))
-                    ? Array.Empty<string>()
-                    : new string[] { candidate };
+
+                if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
+                {
+                    return new string[] { candidate };
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
+        private string[] SplitInternal(string separator, int count, StringSplitOptions options)
+        {
+            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+
+            MakeSeparatorList(this, separator, ref sepListBuilder);
+            ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
+            if (sepList.Length == 0)
+            {
+                // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1592,16 +1770,17 @@ namespace System
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separators"><see cref="ReadOnlySpan{T}"/> of separator chars</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
+        internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             // Special-case no separators to mean any whitespace is a separator.
             if (separators.Length == 0)
             {
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < source.Length; i++)
                 {
-                    if (char.IsWhiteSpace(this[i]))
+                    if (char.IsWhiteSpace(source[i]))
                     {
                         sepListBuilder.Append(i);
                     }
@@ -1615,16 +1794,15 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-
-                if (Length >= 16 && Sse41.IsSupported)
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
                 {
-                    MakeSeparatorListVectorized(ref sepListBuilder, sep0, sep1, sep2);
+                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
                     return;
                 }
 
-                for (int i = 0; i < Length; i++)
+                for (int i = 0; i < source.Length; i++)
                 {
-                    char c = this[i];
+                    char c = source[i];
                     if (c == sep0 || c == sep1 || c == sep2)
                     {
                         sepListBuilder.Append(i);
@@ -1638,16 +1816,12 @@ namespace System
             {
                 unsafe
                 {
-                    ProbabilisticMap map = default;
-                    uint* charMap = (uint*)&map;
-                    ProbabilisticMap.Initialize(charMap, separators);
+                    var map = new ProbabilisticMap(separators);
+                    ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
 
-                    for (int i = 0; i < Length; i++)
+                    for (int i = 0; i < source.Length; i++)
                     {
-                        char c = this[i];
-                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
-                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
-                            separators.Contains(c))
+                        if (ProbabilisticMap.Contains(ref charMap, separators, source[i]))
                         {
                             sepListBuilder.Append(i);
                         }
@@ -1656,117 +1830,99 @@ namespace System
             }
         }
 
-        private void MakeSeparatorListVectorized(ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
             // Redundant test so we won't prejit remainder of this method
-            // on platforms without SSE.
-            if (!Sse41.IsSupported)
+            // on platforms where it is not supported
+            if (!Vector128.IsHardwareAccelerated)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
-            Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
+            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count);
+
+            nuint offset = 0;
+            nuint lengthToExamine = (uint)sourceSpan.Length;
+
+            ref ushort source = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(sourceSpan));
 
             Vector128<ushort> v1 = Vector128.Create((ushort)c);
             Vector128<ushort> v2 = Vector128.Create((ushort)c2);
             Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-            ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
-            int cond = Length & -Vector128<ushort>.Count;
-            int i = 0;
-
-            for (; i < cond; i += Vector128<ushort>.Count)
+            do
             {
-                Vector128<ushort> charVector = ReadVector(ref c0, i);
-                Vector128<ushort> cmp = Sse2.CompareEqual(charVector, v1);
+                Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
+                Vector128<ushort> v2Eq = Vector128.Equals(vector, v2);
+                Vector128<ushort> v3Eq = Vector128.Equals(vector, v3);
+                Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v2), cmp);
-                cmp = Sse2.Or(Sse2.CompareEqual(charVector, v3), cmp);
-
-                if (Sse41.TestZ(cmp, cmp)) { continue; }
-
-                Vector128<byte> mask = Sse2.ShiftRightLogical(cmp.AsUInt64(), 4).AsByte();
-                mask = Ssse3.Shuffle(mask, shuffleConstant);
-
-                uint lowBits = Sse2.ConvertToUInt32(mask.AsUInt32());
-                mask = Sse2.ShiftRightLogical(mask.AsUInt64(), 32).AsByte();
-                uint highBits = Sse2.ConvertToUInt32(mask.AsUInt32());
-
-                for (int idx = i; lowBits != 0; idx++)
+                if (cmp != Vector128<byte>.Zero)
                 {
-                    if ((lowBits & 0xF) != 0)
+                    // Skip every other bit
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                    do
                     {
-                        sepListBuilder.Append(idx);
-                    }
-
-                    lowBits >>= 8;
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append((int)(offset + bitPos));
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    } while (mask != 0);
                 }
 
-                for (int idx = i + 4; highBits != 0; idx++)
-                {
-                    if ((highBits & 0xF) != 0)
-                    {
-                        sepListBuilder.Append(idx);
-                    }
+                offset += (nuint)Vector128<ushort>.Count;
+            } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
 
-                    highBits >>= 8;
-                }
-            }
-
-            for (; i < Length; i++)
+            while (offset < lengthToExamine)
             {
-                char curr = Unsafe.Add(ref c0, (IntPtr)(uint)i);
+                char curr = (char)Unsafe.Add(ref source, offset);
                 if (curr == c || curr == c2 || curr == c3)
                 {
-                    sepListBuilder.Append(i);
+                    sepListBuilder.Append((int)offset);
                 }
-            }
-
-            static Vector128<ushort> ReadVector(ref char c0, int offset)
-            {
-                ref char ci = ref Unsafe.Add(ref c0, (IntPtr)(uint)offset);
-                ref byte b = ref Unsafe.As<char, byte>(ref ci);
-                return Unsafe.ReadUnaligned<Vector128<ushort>>(ref b);
+                offset++;
             }
         }
 
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separator">separator string</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
-        private void MakeSeparatorList(string separator, ref ValueListBuilder<int> sepListBuilder)
+        internal static void MakeSeparatorList(ReadOnlySpan<char> source, ReadOnlySpan<char> separator, ref ValueListBuilder<int> sepListBuilder)
         {
-            Debug.Assert(!IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
+            Debug.Assert(!separator.IsEmpty, "Empty separator");
 
-            int currentSepLength = separator.Length;
-
-            for (int i = 0; i < Length; i++)
+            int i = 0;
+            while (!source.IsEmpty)
             {
-                if (this[i] == separator[0] && currentSepLength <= Length - i)
+                int index = source.IndexOf(separator);
+                if (index < 0)
                 {
-                    if (currentSepLength == 1
-                        || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
-                    {
-                        sepListBuilder.Append(i);
-                        i += currentSepLength - 1;
-                    }
+                    break;
                 }
+
+                i += index;
+                sepListBuilder.Append(i);
+
+                i += separator.Length;
+                source = source.Slice(index + separator.Length);
             }
         }
 
         /// <summary>
         /// Uses ValueListBuilder to create list that holds indexes of separators in string and list that holds length of separator strings.
         /// </summary>
+        /// <param name="source">The source to parse.</param>
         /// <param name="separators">separator strngs</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> for separator indexes</param>
         /// <param name="lengthListBuilder"><see cref="ValueListBuilder{T}"/> for separator length values</param>
-        private void MakeSeparatorList(string?[] separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
+        internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<string?> separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
         {
-            Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
+            Debug.Assert(!separators.IsEmpty, "Zero separators");
 
-            for (int i = 0; i < Length; i++)
+            for (int i = 0; i < source.Length; i++)
             {
                 for (int j = 0; j < separators.Length; j++)
                 {
@@ -1776,10 +1932,9 @@ namespace System
                         continue;
                     }
                     int currentSepLength = separator.Length;
-                    if (this[i] == separator[0] && currentSepLength <= Length - i)
+                    if (source[i] == separator[0] && currentSepLength <= source.Length - i)
                     {
-                        if (currentSepLength == 1
-                            || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
+                        if (currentSepLength == 1 || source.Slice(i, currentSepLength).SequenceEqual(separator))
                         {
                             sepListBuilder.Append(i);
                             lengthListBuilder.Append(currentSepLength);
@@ -1791,7 +1946,7 @@ namespace System
             }
         }
 
-        private static void CheckStringSplitOptions(StringSplitOptions options)
+        internal static void CheckStringSplitOptions(StringSplitOptions options)
         {
             const StringSplitOptions AllValidFlags = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
 
@@ -1804,41 +1959,66 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
+        public string Substring(int startIndex)
+        {
+            if (startIndex == 0)
+            {
+                return this;
+            }
+
+            int length = Length - startIndex;
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if ((uint)startIndex > (uint)Length)
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
+            return InternalSubString(startIndex, length);
+        }
 
         public string Substring(int startIndex, int length)
         {
-            if (startIndex < 0)
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
+#else
+            if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
+#endif
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
             }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if (length == Length)
+            {
+                Debug.Assert(startIndex == 0);
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
             if (startIndex > Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }
 
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            if (startIndex == 0 && length == this.Length)
-            {
-                return this;
-            }
-
-            return InternalSubString(startIndex, length);
+            throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
         }
 
         private string InternalSubString(int startIndex, int length)

@@ -17,13 +17,14 @@ namespace System.IO.Internal
 #if CODEDOM
     public
 #else
-    internal
+    internal sealed
 #endif
     class TempFileCollection : ICollection, IDisposable
     {
         private string _basePath;
         private readonly string _tempDir;
         private readonly Hashtable _files;
+        private bool _createdTempDirectory;
 
         public TempFileCollection() : this(null, false)
         {
@@ -46,10 +47,17 @@ namespace System.IO.Internal
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+#pragma warning disable IDE0060
+#if CODEDOM
+        protected virtual
+#else
+        internal
+#endif
+        void Dispose(bool disposing)
         {
             SafeDelete();
         }
+#pragma warning restore IDE0060
 
         ~TempFileCollection()
         {
@@ -122,7 +130,7 @@ namespace System.IO.Internal
                 do
                 {
                     _basePath = Path.Combine(
-                        string.IsNullOrEmpty(TempDir) ? Path.GetTempPath() : TempDir,
+                        string.IsNullOrEmpty(TempDir) ? GetTempDirectory() : TempDir,
                         Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
                     tempFileName = _basePath + ".tmp";
 
@@ -145,6 +153,19 @@ namespace System.IO.Internal
             }
         }
 
+#if NET7_0_OR_GREATER
+        private string GetTempDirectory()
+        {
+            _createdTempDirectory = true;
+            return Directory.CreateTempSubdirectory().FullName;
+        }
+#else
+        private static string GetTempDirectory()
+        {
+            return Path.GetTempPath();
+        }
+#endif
+
         public bool KeepFiles { get; set; }
 
         private bool KeepFile(string fileName)
@@ -158,7 +179,7 @@ namespace System.IO.Internal
             SafeDelete();
         }
 
-        internal void Delete(string fileName)
+        private static void Delete(string fileName)
         {
             try
             {
@@ -172,6 +193,8 @@ namespace System.IO.Internal
 
         internal void SafeDelete()
         {
+            bool allFilesDeleted = true;
+
             if (_files != null && _files.Count > 0)
             {
                 string[] fileNames = new string[_files.Count];
@@ -183,7 +206,27 @@ namespace System.IO.Internal
                         Delete(fileName);
                         _files.Remove(fileName);
                     }
+                    else
+                    {
+                        allFilesDeleted = false;
+                    }
                 }
+            }
+
+            // if we created a temp directory, delete it and clear the basePath, so a new directory will be created for the next request.
+            if (_createdTempDirectory && allFilesDeleted)
+            {
+                try
+                {
+                    Directory.Delete(Path.GetDirectoryName(BasePath));
+                }
+                catch
+                {
+                    // Ignore all exceptions
+                }
+
+                _createdTempDirectory = false;
+                _basePath = null;
             }
         }
     }

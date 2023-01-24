@@ -7,7 +7,6 @@ parameters:
   condition: true
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   disableClrTest: false
   isOfficialBuild: false
@@ -17,7 +16,6 @@ parameters:
   pool: ''
   runtimeVariant: ''
   signBinaries: false
-  stagedBuild: false
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
@@ -35,7 +33,6 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     helixType: 'build/product/'
     enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
@@ -70,7 +67,6 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     gatherAssetManifests: true
     variables:
@@ -93,12 +89,12 @@ jobs:
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
       - name: compilerArg
         value: '-clang9'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+      # We need to use the stable version available on Alpine Linux
+      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
         - name: compilerArg
           value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -133,7 +129,7 @@ jobs:
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component alljits -component paltests -component nativeaot -component spmi '
-    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component jit -component iltools -component spmi '
 
@@ -148,7 +144,7 @@ jobs:
 
     - name: clrRuntimePortableBuildArg
       value: ''
-    - ${{ if eq(parameters.osGroup, 'Tizen') }}:
+    - ${{ if eq(parameters.osGroup, 'tizen') }}:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
@@ -160,8 +156,8 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
+      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
     # Install internal tools on official builds
@@ -182,7 +178,7 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -197,25 +193,35 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if ne(parameters.archType, 'x64') }}:
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
+
+    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm')) }}:
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x86 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x86 targeting arm)
+
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - ${{ if or(ne(parameters.osGroup, 'Linux'), ne(parameters.archType, 'x86')) }}:
+    - ${{ if or(ne(parameters.osGroup, 'linux'), ne(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
-    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset libs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+        displayName: Build libs
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.toolstests $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci -test
         displayName: Run CoreCLR Tools unit tests
 
@@ -231,7 +237,7 @@ jobs:
 
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - ${{ if eq(parameters.osGroup, 'osx') }}:
 
         - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
           parameters:
@@ -251,25 +257,12 @@ jobs:
             targetFolder: $(buildProductRootFolderPath)/sharedFramework
             overWrite: true
 
-    # Sign diagnostic files on Windows
     - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
-      - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
-          /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
-          /p:SignDiagnostics=true
-          /p:DotNetSignType=$(SignType)
-          -noBl
-          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
-          -projects $(Build.SourcesDirectory)\eng\empty.csproj
-        displayName: Sign Diagnostic Binaries
-
-      - task: PublishPipelineArtifact@1
-        displayName: Publish Signing Logs
-        inputs:
-          targetPath: '$(Build.SourcesDirectory)/artifacts/log/'
-          artifactName: ${{ format('SignLogs_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        continueOnError: true
-        condition: always()
+      - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+        parameters:
+          basePath: $(buildProductRootFolderPath)
+          isOfficialBuild: ${{ parameters.signBinaries }}
+          timeoutInMinutes: 30
 
     # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
@@ -284,12 +277,17 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
-      - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
-        parameters:
-          archType: ${{ parameters.archType }}
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
+    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+        - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
+          parameters:
+            archType: ${{ parameters.archType }}
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            isOfficialBuild: ${{ parameters.signBinaries }}
+            ${{ if eq(parameters.archType, 'arm') }}:
+              hostArchType: x86
+            ${{ else }}:
+              hostArchType: x64
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.

@@ -102,7 +102,7 @@ FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 // initialization.  We often want to reason about BitSets as immutable values, and just copying
 // the representation would introduce sharing in the indirect case, which is usually not what's
 // desired.  On the other hand, there are many cases in which the RHS value has just been
-// created functionally, and the intialization/assignment is obviously its last use.  In these
+// created functionally, and the initialization/assignment is obviously its last use.  In these
 // cases, allocating a new indirect representation for the lhs (if it does not already have one)
 // would be unnecessary and wasteful.  Thus, for assignment, we have a "normal" assignment
 // function, which makes a copy of the referent data structure in the indirect case, and an
@@ -133,11 +133,7 @@ FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 //      An "adapter" class that provides methods that retrieves things from the Env:
 //        static void* Alloc(Env, size_t byteSize): Allocates memory the BitSet implementation can use.
 //        static unsigned    GetSize(Env):          the current size (= # of bits) of this bitset type.
-//        static unsigned    GetArrSize(Env, unsigned elemSize):  The number of "elemSize" chunks sufficient to hold
-//                                                                "GetSize". A given BitSet implementation must call
-//                                                                this with only one constant value. Thus, and "Env"
-//                                                                may compute this result when GetSize changes.
-//
+//        static unsigned    GetArrSize(Env):       The number of size_t chunks sufficient to hold "GetSize".
 //        static unsigned    GetEpoch(Env):         the current epoch.
 //
 // (For many instantiations, BitSetValueArgType and BitSetValueRetType will be the same as BitSetType; in cases where

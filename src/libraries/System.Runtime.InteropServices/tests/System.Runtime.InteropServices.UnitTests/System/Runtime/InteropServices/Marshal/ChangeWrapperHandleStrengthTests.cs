@@ -33,8 +33,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { d };
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(ChangeWrapperHandleStrength_TestData))]
         public void ChangeWrapperHandleStrength_ValidObject_Success(object otp)
         {
@@ -42,8 +41,7 @@ namespace System.Runtime.InteropServices.Tests
             Marshal.ChangeWrapperHandleStrength(otp, fIsWeak: false);
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void ChangeWrapperHandleStrength_NullObject_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("otp", () => Marshal.ChangeWrapperHandleStrength(null, fIsWeak: true));

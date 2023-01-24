@@ -5,15 +5,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
     .Extensions
 #endif
 {
+#pragma warning disable IDE0065
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
+#pragma warning restore IDE0065
+
     // A RuntimeResourceSet stores all the resources defined in one
     // particular CultureInfo, with some loading optimizations.
     //
@@ -63,7 +67,7 @@ namespace System.Resources
     // including user-defined types, in a more efficient way than using
     // Serialization, at least when your .resources file contains a reasonable
     // proportion of base data types such as Strings or ints.  We use
-    // Serialization for all the non-instrinsic types.
+    // Serialization for all the non-intrinsic types.
     //
     // The third section of the file is the name section.  It contains a
     // series of resource names, written out as byte-length prefixed little
@@ -150,8 +154,8 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     //
-#if CORERT
-    public  // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#if NATIVEAOT
+    public  // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif
@@ -188,11 +192,16 @@ namespace System.Resources
             _defaultReader = new ResourceReader(stream, _resCache, permitDeserialization);
         }
 #else
-        internal RuntimeResourceSet(IResourceReader reader!!) :
+        internal RuntimeResourceSet(IResourceReader reader) :
             // explicitly do not call IResourceReader constructor since it caches all resources
             // the purpose of RuntimeResourceSet is to lazily load and cache.
             base()
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             _defaultReader = reader as DeserializingResourceReader ?? throw new ArgumentException(SR.Format(SR.NotSupported_WrongResourceReader_Type, reader.GetType()), nameof(reader));
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
 
@@ -260,8 +269,17 @@ namespace System.Resources
             return GetObject(key, ignoreCase, false);
         }
 
-        private object? GetObject(string key!!, bool ignoreCase, bool isString)
+        private object? GetObject(string key, bool ignoreCase, bool isString)
         {
+#if RESOURCES_EXTENSIONS
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+#else
+            ArgumentNullException.ThrowIfNull(key);
+#endif
+
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;
             if (reader is null || cache is null)
@@ -270,6 +288,9 @@ namespace System.Resources
             object? value;
             ResourceLocator resEntry;
 
+            // Lock the cache first, then the reader (reader locks implicitly through its methods).
+            // Lock order MUST match ResourceReader.ResourceEnumerator.Entry to avoid deadlock.
+            Debug.Assert(!Monitor.IsEntered(reader));
             lock (cache)
             {
                 // Find the offset within the data section
@@ -282,7 +303,7 @@ namespace System.Resources
 
                     // When data type cannot be cached
                     dataPos = resEntry.DataPosition;
-                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos, out _);
+                    return isString ? reader.LoadString(dataPos) : reader.LoadObject(dataPos);
                 }
 
                 dataPos = reader.FindPosForResource(key);
@@ -340,14 +361,11 @@ namespace System.Resources
             return value;
         }
 
-        private static object? ReadValue (ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
+        private static object? ReadValue(ResourceReader reader, int dataPos, bool isString, out ResourceLocator locator)
         {
             object? value;
             ResourceTypeCode typeCode;
 
-            // Normally calling LoadString or LoadObject requires
-            // taking a lock.  Note that in this case, we took a
-            // lock before calling this method.
             if (isString)
             {
                 value = reader.LoadString(dataPos);

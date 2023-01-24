@@ -26,7 +26,7 @@ namespace System.Net.Sockets.Tests
         private SocketAsyncEventArgsPool _readWritePool; // Pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations.
         private int _totalBytesRead;          // Counter of the total # bytes received by the server.
         private int _numConnectedSockets;     // The total number of clients connected to the server.
-        private Semaphore _maxNumberAcceptedClientsSemaphore;
+        private SemaphoreSlim _maxNumberAcceptedClientsSemaphore;
         private int _acceptRetryCount = 10;
         private ProtocolType _protocolType;
 
@@ -49,7 +49,7 @@ namespace System.Net.Sockets.Tests
                 receiveBufferSize);
 
             _readWritePool = new SocketAsyncEventArgsPool(numConnections);
-            _maxNumberAcceptedClientsSemaphore = new Semaphore(numConnections, numConnections);
+            _maxNumberAcceptedClientsSemaphore = new SemaphoreSlim(numConnections, numConnections);
             _protocolType = protocolType;
             Init();
             Start(localEndPoint);
@@ -136,7 +136,7 @@ namespace System.Net.Sockets.Tests
             }
 
             _log.WriteLine(this.GetHashCode() + " StartAccept(_numConnectedSockets={0})", _numConnectedSockets);
-            if (!_maxNumberAcceptedClientsSemaphore.WaitOne(TestSettings.PassingTestTimeout))
+            if (!_maxNumberAcceptedClientsSemaphore.Wait(TestSettings.PassingTestTimeout))
             {
                 throw new TimeoutException("Timeout waiting for client connection.");
             }

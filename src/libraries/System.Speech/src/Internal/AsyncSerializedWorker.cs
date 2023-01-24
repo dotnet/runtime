@@ -236,9 +236,9 @@ namespace System.Speech.Internal
                         _syncContext.Post(_workerPostCallback, null);
                     }
                 }
-                else if (WorkItemPending != null)
+                else
                 {
-                    WorkItemPending(null);
+                    WorkItemPending?.Invoke(null);
                 }
             }
         }
@@ -270,10 +270,7 @@ namespace System.Speech.Internal
 
         internal void Invoke()
         {
-            if (_dynamicCallback != null)
-            {
-                _dynamicCallback.DynamicInvoke(_postData);
-            }
+            _dynamicCallback?.DynamicInvoke(_postData);
         }
 
         private Delegate _dynamicCallback;

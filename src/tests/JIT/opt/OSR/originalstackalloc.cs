@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-// Orignal method has stackalloc, osr does not
+// Original method has stackalloc, osr does not
 
 class OriginalStackalloc
 {
@@ -26,5 +26,5 @@ class OriginalStackalloc
         int result = F(0, 1_000_000, 1);
         Console.WriteLine($"done, sum is {result}");
         return (result == 1783293664) ? 100 : -1;
-    }  
+    }
 }

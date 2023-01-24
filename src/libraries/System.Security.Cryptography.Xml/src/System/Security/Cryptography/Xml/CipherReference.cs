@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.Xml
 {
     public sealed class CipherReference : EncryptedReference
     {
-        private byte[] _cipherValue;
+        private byte[]? _cipherValue;
 
         public CipherReference() : base()
         {
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         // This method is used to cache results from resolved cipher references.
-        internal byte[] CipherValue
+        internal byte[]? CipherValue
         {
             get
             {
@@ -65,18 +65,23 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             ReferenceType = value.LocalName;
-            string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
+            string? uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             Uri = uri ?? throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
 
             // Transforms
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            XmlNode transformsNode = value.SelectSingleNode("enc:Transforms", nsm);
+            XmlNode? transformsNode = value.SelectSingleNode("enc:Transforms", nsm);
             if (transformsNode != null)
-                TransformChain.LoadXml(transformsNode as XmlElement);
+                TransformChain.LoadXml((transformsNode as XmlElement)!);
 
             // cache the Xml
             _cachedXml = value;

@@ -243,7 +243,7 @@ namespace System.IO.Ports.Tests
 
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0,
                     DEFAULT_NUM_BYTES_TO_WRITE, callbackHandler.Callback, this);
-                callbackHandler.BeginWriteAysncResult = writeAsyncResult;
+                callbackHandler.BeginWriteAsyncResult = writeAsyncResult;
 
                 Assert.Equal(this, writeAsyncResult.AsyncState);
 
@@ -252,9 +252,9 @@ namespace System.IO.Ports.Tests
                 com2.RtsEnable = true;
                 read();
 
-                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that
+                // callbackHandler.WriteAsyncResult guarantees that the callback has been called however it does not gauarentee that
                 // the code calling the callback has finished it's processing
-                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
+                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAsyncResult;
 
                 // No we have to wait for the callbackHandler to complete
                 int elapsedTime = 0;
@@ -290,15 +290,15 @@ namespace System.IO.Ports.Tests
                 };
 
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0, DEFAULT_NUM_BYTES_TO_WRITE, callbackHandler.Callback, this);
-                callbackHandler.BeginWriteAysncResult = writeAsyncResult;
+                callbackHandler.BeginWriteAsyncResult = writeAsyncResult;
 
                 Assert.Throws<TimeoutException>(read);
                 com2.RtsEnable = true;
                 read();
 
-                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that
+                // callbackHandler.WriteAsyncResult guarantees that the callback has been called however it does not gauarentee that
                 // the code calling the callback has finished it's processing
-                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
+                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAsyncResult;
 
                 // No we have to wait for the callbackHandler to complete
                 int elapsedTime = 0;
@@ -339,7 +339,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying write method throws {0} buffer.Lenght={1}, offset={2}, count={3}",
+                Debug.WriteLine("Verifying write method throws {0} buffer.Length={1}, offset={2}, count={3}",
                     expectedException, bufferLength, offset, count);
                 com.Open();
 
@@ -369,7 +369,7 @@ namespace System.IO.Ports.Tests
             {
                 Random rndGen = new Random(-55);
 
-                Debug.WriteLine("Verifying write method buffer.Lenght={0}, offset={1}, count={2}, endocing={3}",
+                Debug.WriteLine("Verifying write method buffer.Length={0}, offset={1}, count={2}, endocing={3}",
                     buffer.Length, offset, count, encoding.EncodingName);
 
                 com1.Encoding = encoding;
@@ -405,9 +405,9 @@ namespace System.IO.Ports.Tests
             {
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(buffer, offset, count, callbackHandler.Callback, this);
                 com1.BaseStream.EndWrite(writeAsyncResult);
-                callbackHandler.BeginWriteAysncResult = writeAsyncResult;
+                callbackHandler.BeginWriteAsyncResult = writeAsyncResult;
 
-                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
+                IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAsyncResult;
                 Assert.Equal(this, callbackWriteAsyncResult.AsyncState);
                 Assert.False(callbackWriteAsyncResult.CompletedSynchronously, "Should not have completed sync (cback)");
                 Assert.True(callbackWriteAsyncResult.IsCompleted, "Should have completed (cback)");
@@ -470,8 +470,8 @@ namespace System.IO.Ports.Tests
 
         private class CallbackHandler
         {
-            private IAsyncResult _writeAysncResult;
-            private IAsyncResult _beginWriteAysncResult;
+            private IAsyncResult _writeAsyncResult;
+            private IAsyncResult _beginWriteAsyncResult;
             private readonly SerialPort _com;
 
             public CallbackHandler() : this(null) { }
@@ -481,38 +481,38 @@ namespace System.IO.Ports.Tests
                 _com = com;
             }
 
-            public void Callback(IAsyncResult writeAysncResult)
+            public void Callback(IAsyncResult writeAsyncResult)
             {
                 Debug.WriteLine("About to enter callback lock (already entered {0})", Monitor.IsEntered(this));
                 lock (this)
                 {
                     Debug.WriteLine("Inside callback lock");
-                    _writeAysncResult = writeAysncResult;
+                    _writeAsyncResult = writeAsyncResult;
 
-                    if (!writeAysncResult.IsCompleted)
+                    if (!writeAsyncResult.IsCompleted)
                     {
                         throw new Exception("Err_23984afaea Expected IAsyncResult passed into callback to not be completed");
                     }
 
-                    while (null == _beginWriteAysncResult)
+                    while (null == _beginWriteAsyncResult)
                     {
                         Assert.True(Monitor.Wait(this, 5000), "Monitor.Wait in Callback");
                     }
 
-                    if (null != _beginWriteAysncResult && !_beginWriteAysncResult.IsCompleted)
+                    if (null != _beginWriteAsyncResult && !_beginWriteAsyncResult.IsCompleted)
                     {
                         throw new Exception("Err_7907azpu Expected IAsyncResult returned from begin write to not be completed");
                     }
 
                     if (null != _com)
                     {
-                        _com.BaseStream.EndWrite(_beginWriteAysncResult);
-                        if (!_beginWriteAysncResult.IsCompleted)
+                        _com.BaseStream.EndWrite(_beginWriteAsyncResult);
+                        if (!_beginWriteAsyncResult.IsCompleted)
                         {
                             throw new Exception("Err_6498afead Expected IAsyncResult returned from begin write to not be completed");
                         }
 
-                        if (!writeAysncResult.IsCompleted)
+                        if (!writeAsyncResult.IsCompleted)
                         {
                             throw new Exception("Err_1398ehpo Expected IAsyncResult passed into callback to not be completed");
                         }
@@ -523,33 +523,33 @@ namespace System.IO.Ports.Tests
             }
 
 
-            public IAsyncResult WriteAysncResult
+            public IAsyncResult WriteAsyncResult
             {
                 get
                 {
                     lock (this)
                     {
-                        while (null == _writeAysncResult)
+                        while (null == _writeAsyncResult)
                         {
                             Monitor.Wait(this);
                         }
 
-                        return _writeAysncResult;
+                        return _writeAsyncResult;
                     }
                 }
             }
 
-            public IAsyncResult BeginWriteAysncResult
+            public IAsyncResult BeginWriteAsyncResult
             {
                 get
                 {
-                    return _beginWriteAysncResult;
+                    return _beginWriteAsyncResult;
                 }
                 set
                 {
                     lock (this)
                     {
-                        _beginWriteAysncResult = value;
+                        _beginWriteAsyncResult = value;
                         Monitor.Pulse(this);
                     }
                 }

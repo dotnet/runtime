@@ -48,7 +48,20 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgHaveSufficientProfileData: check if profile data is available
+// fgHaveProfileWeights: Check if we have a profile that has weights.
+//
+bool Compiler::fgHaveProfileWeights()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    return fgPgoHaveWeights;
+}
+
+//------------------------------------------------------------------------
+// fgHaveSufficientProfileWeights: check if profile data is available
 //   and is sufficient enough to be trustful.
 //
 // Returns:
@@ -57,9 +70,9 @@ bool Compiler::fgHaveProfileData()
 // Note:
 //   See notes for fgHaveProfileData.
 //
-bool Compiler::fgHaveSufficientProfileData()
+bool Compiler::fgHaveSufficientProfileWeights()
 {
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -73,7 +86,7 @@ bool Compiler::fgHaveSufficientProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgHaveTrustedProfileData: check if profile data source is one
+// fgHaveTrustedProfileWeights: check if profile data source is one
 //   that can be trusted to faithfully represent the current program
 //   behavior.
 //
@@ -83,9 +96,9 @@ bool Compiler::fgHaveSufficientProfileData()
 // Note:
 //   See notes for fgHaveProfileData.
 //
-bool Compiler::fgHaveTrustedProfileData()
+bool Compiler::fgHaveTrustedProfileWeights()
 {
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -119,7 +132,7 @@ void Compiler::fgApplyProfileScale()
 
     // Callee has profile data?
     //
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         // No; we will carry on nonetheless.
         //
@@ -140,7 +153,7 @@ void Compiler::fgApplyProfileScale()
     //
     if (calleeWeight == BB_ZERO_WEIGHT)
     {
-        calleeWeight = fgHaveProfileData() ? 1.0 : BB_UNITY_WEIGHT;
+        calleeWeight = fgHaveProfileWeights() ? 1.0 : BB_UNITY_WEIGHT;
         JITDUMP("   ... callee entry has weight zero, will use weight of " FMT_WT " to scale\n", calleeWeight);
     }
 
@@ -243,7 +256,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, weight_t* weigh
     }
 #endif // DEBUG
 
-    if (!fgHaveProfileData())
+    if (!fgHaveProfileWeights())
     {
         return false;
     }
@@ -348,6 +361,7 @@ public:
 class BlockCountInstrumentor : public Instrumentor
 {
 private:
+    void        RelocateProbes();
     BasicBlock* m_entryBlock;
 
 public:
@@ -378,164 +392,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
         return;
     }
 
-    // If this is an OSR method, look for potential tail calls in
-    // blocks that are not BBJ_RETURN.
-    //
-    // If we see any, we need to adjust our instrumentation pattern.
-    //
-    if (m_comp->opts.IsOSR() && ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) != 0))
-    {
-        JITDUMP("OSR + PGO + potential tail call --- preparing to relocate block probes\n");
-
-        // We should be in a root method compiler instance. OSR + PGO does not
-        // currently try and instrument inlinees.
-        //
-        // Relaxing this will require changes below because inlinee compilers
-        // share the root compiler flow graph (and hence bb epoch), and flow
-        // from inlinee tail calls to returns can be more complex.
-        //
-        assert(!m_comp->compIsForInlining());
-
-        // Build cheap preds.
-        //
-        m_comp->fgComputeCheapPreds();
-        m_comp->EnsureBasicBlockEpoch();
-
-        // Keep track of return blocks needing special treatment.
-        // We also need to track of duplicate preds.
-        //
-        JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
-        BlockSet                         predsSeen = BlockSetOps::MakeEmpty(m_comp);
-
-        // Walk blocks looking for BBJ_RETURNs that are successors of potential tail calls.
-        //
-        // If any such has a conditional pred, we will need to reroute flow from those preds
-        // via an intermediary block. That block will subsequently hold the relocated block
-        // probe for the return for those preds.
-        //
-        // Scrub the cheap pred list for these blocks so that each pred appears at most once.
-        //
-        for (BasicBlock* const block : m_comp->Blocks())
-        {
-            // Ignore blocks that we won't process.
-            //
-            if (!ShouldProcess(block))
-            {
-                continue;
-            }
-
-            if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
-            {
-                JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-                assert(block->bbJumpKind == BBJ_RETURN);
-                bool pushed = false;
-                BlockSetOps::ClearD(m_comp, predsSeen);
-                for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
-                {
-                    BasicBlock* const pred = predEdge->block;
-
-                    // If pred is not to be processed, ignore it and scrub from the pred list.
-                    //
-                    if (!ShouldProcess(pred))
-                    {
-                        JITDUMP(FMT_BB " -> " FMT_BB " is dead edge\n", pred->bbNum, block->bbNum);
-                        predEdge->block = nullptr;
-                        continue;
-                    }
-
-                    BasicBlock* const succ = pred->GetUniqueSucc();
-
-                    if (succ == nullptr)
-                    {
-                        // Flow from pred -> block is conditional, and will require updating.
-                        //
-                        JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
-                        if (!pushed)
-                        {
-                            specialReturnBlocks.Push(block);
-                            pushed = true;
-                        }
-
-                        // Have we seen this pred before?
-                        //
-                        if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
-                        {
-                            // Yes, null out the duplicate pred list entry.
-                            //
-                            predEdge->block = nullptr;
-                        }
-                    }
-                    else
-                    {
-                        // We should only ever see one reference to this pred.
-                        //
-                        assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
-
-                        // Ensure flow from non-critical preds is BBJ_ALWAYS as we
-                        // may add a new block right before block.
-                        //
-                        if (pred->bbJumpKind == BBJ_NONE)
-                        {
-                            pred->bbJumpKind = BBJ_ALWAYS;
-                            pred->bbJumpDest = block;
-                        }
-                        assert(pred->bbJumpKind == BBJ_ALWAYS);
-                    }
-
-                    BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
-                }
-            }
-        }
-
-        // Now process each special return block.
-        // Create an intermediary that falls through to the return.
-        // Update any critical edges to target the intermediary.
-        //
-        // Note we could also route any non-tail-call pred via the
-        // intermedary. Doing so would cut down on probe duplication.
-        //
-        if (specialReturnBlocks.Size() > 0)
-        {
-            SetModifiedFlow();
-        }
-
-        while (specialReturnBlocks.Size() > 0)
-        {
-            bool              first        = true;
-            BasicBlock* const block        = specialReturnBlocks.Pop();
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-
-            intermediary->bbFlags |= BBF_IMPORTED;
-            intermediary->inheritWeight(block);
-
-            for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
-            {
-                BasicBlock* const pred = predEdge->block;
-
-                if (pred != nullptr)
-                {
-                    BasicBlock* const succ = pred->GetUniqueSucc();
-
-                    if (succ == nullptr)
-                    {
-                        // This will update all branch targets from pred.
-                        //
-                        m_comp->fgReplaceJumpTarget(pred, intermediary, block);
-
-                        // Patch the pred list. Note we only need one pred list
-                        // entry pointing at intermediary.
-                        //
-                        predEdge->block = first ? intermediary : nullptr;
-                        first           = false;
-                    }
-                    else
-                    {
-                        assert(pred->bbJumpKind == BBJ_ALWAYS);
-                    }
-                }
-            }
-        }
-    }
+    RelocateProbes();
 
 #ifdef DEBUG
     // Set schema index to invalid value
@@ -545,6 +402,185 @@ void BlockCountInstrumentor::Prepare(bool preImport)
         block->bbCountSchemaIndex = -1;
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// BlockCountInstrumentor::RelocateProbes: relocate any probes that
+//   would appear in post-tail call blocks.
+//
+// Notes:
+//   Conveys relocation information by modifying the cheap pred list.
+//
+//   Actual relocation happens during Instrument, keying off of the
+//   BBF_TAILCALL_SUCCESSOR flag and the (modified) cheap pred list.
+//
+void BlockCountInstrumentor::RelocateProbes()
+{
+    // We only see such blocks when optimizing. They are flagged by the importer.
+    //
+    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    {
+        // No problematic blocks to worry about.
+        //
+        return;
+    }
+
+    JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
+
+    // We should be in a root method compiler instance. We currently do not instrument inlinees.
+    //
+    // Relaxing this will require changes below because inlinee compilers
+    // share the root compiler flow graph (and hence bb epoch), and flow
+    // from inlinee tail calls to returns can be more complex.
+    //
+    assert(!m_comp->compIsForInlining());
+
+    // Build cheap preds.
+    //
+    m_comp->fgComputeCheapPreds();
+    m_comp->EnsureBasicBlockEpoch();
+
+    // Keep track of return blocks needing special treatment.
+    // We also need to track of duplicate preds.
+    //
+    JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
+    BlockSet                         predsSeen = BlockSetOps::MakeEmpty(m_comp);
+
+    // Walk blocks looking for BBJ_RETURNs that are successors of potential tail calls.
+    //
+    // If any such has a conditional pred, we will need to reroute flow from those preds
+    // via an intermediary block. That block will subsequently hold the relocated block
+    // probe for the return for those preds.
+    //
+    // Scrub the cheap pred list for these blocks so that each pred appears at most once.
+    //
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        // Ignore blocks that we won't process.
+        //
+        if (!ShouldProcess(block))
+        {
+            continue;
+        }
+
+        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+        {
+            JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
+            assert(block->bbJumpKind == BBJ_RETURN);
+            bool pushed = false;
+            BlockSetOps::ClearD(m_comp, predsSeen);
+            for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+            {
+                BasicBlock* const pred = predEdge->block;
+
+                // If pred is not to be processed, ignore it and scrub from the pred list.
+                //
+                if (!ShouldProcess(pred))
+                {
+                    JITDUMP(FMT_BB " -> " FMT_BB " is dead edge\n", pred->bbNum, block->bbNum);
+                    predEdge->block = nullptr;
+                    continue;
+                }
+
+                BasicBlock* const succ = pred->GetUniqueSucc();
+
+                if (succ == nullptr)
+                {
+                    // Flow from pred -> block is conditional, and will require updating.
+                    //
+                    JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
+                    if (!pushed)
+                    {
+                        specialReturnBlocks.Push(block);
+                        pushed = true;
+                    }
+
+                    // Have we seen this pred before?
+                    //
+                    if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
+                    {
+                        // Yes, null out the duplicate pred list entry.
+                        //
+                        predEdge->block = nullptr;
+                    }
+                }
+                else
+                {
+                    // We should only ever see one reference to this pred.
+                    //
+                    assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
+
+                    // Ensure flow from non-critical preds is BBJ_ALWAYS as we
+                    // may add a new block right before block.
+                    //
+                    if (pred->bbJumpKind == BBJ_NONE)
+                    {
+                        pred->bbJumpKind = BBJ_ALWAYS;
+                        pred->bbJumpDest = block;
+                    }
+                    assert(pred->bbJumpKind == BBJ_ALWAYS);
+                }
+
+                BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
+            }
+        }
+    }
+
+    // Did we find any blocks with probes needing relocation?
+    //
+    if (specialReturnBlocks.Size() == 0)
+    {
+        JITDUMP("No probes need relocating\n");
+        return;
+    }
+
+    JITDUMP("%u probes need relocating\n", specialReturnBlocks.Size());
+
+    // Now process each special return block.
+    // Create an intermediary that falls through to the return.
+    // Update any critical edges to target the intermediary.
+    //
+    // Note we could also route any non-tail-call pred via the
+    // intermedary. Doing so would cut down on probe duplication.
+    //
+    SetModifiedFlow();
+
+    while (specialReturnBlocks.Size() > 0)
+    {
+        bool              first        = true;
+        BasicBlock* const block        = specialReturnBlocks.Pop();
+        BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
+
+        intermediary->bbFlags |= BBF_IMPORTED;
+        intermediary->inheritWeight(block);
+
+        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        {
+            BasicBlock* const pred = predEdge->block;
+
+            if (pred != nullptr)
+            {
+                BasicBlock* const succ = pred->GetUniqueSucc();
+
+                if (succ == nullptr)
+                {
+                    // This will update all branch targets from pred.
+                    //
+                    m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+
+                    // Patch the pred list. Note we only need one pred list
+                    // entry pointing at intermediary.
+                    //
+                    predEdge->block = first ? intermediary : nullptr;
+                    first           = false;
+                }
+                else
+                {
+                    assert(pred->bbJumpKind == BBJ_ALWAYS);
+                }
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -570,7 +606,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = 1;
     schemaElem.Other               = 0;
-    schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+    schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
     schemaElem.ILOffset = offset;
@@ -715,8 +751,7 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
     // the first time this method is called. So make the call conditional
     // on the entry block's profile count.
     //
-    GenTreeCall::Use* args = m_comp->gtNewCallArgs(arg);
-    GenTree*          call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
+    GenTreeCall* call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
 
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
@@ -749,12 +784,19 @@ public:
     // for non-tree edges whether the edge postdominates
     // the source, dominates the target, or is a critical edge.
     //
+    // Later we may need to relocate or duplicate probes. We
+    // overload this enum to also represent those cases.
+    //
     enum class EdgeKind
     {
         Unknown,
         PostdominatesSource,
         DominatesTarget,
-        CriticalEdge
+        CriticalEdge,
+        Deleted,
+        Relocated,
+        Leader,
+        Duplicate
     };
 
     virtual void Badcode()                     = 0;
@@ -824,6 +866,12 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
             BlockSetOps::AddElemD(comp, marked, hndBegBB->bbNum);
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* filterBB = HBtab->ebdFilter;
+                stack.Push(filterBB);
+                BlockSetOps::AddElemD(comp, marked, filterBB->bbNum);
+            }
         }
     }
 
@@ -891,12 +939,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             {
                 // See if we're leaving an EH handler region.
                 //
-                bool           isInTry     = false;
-                unsigned const regionIndex = ehGetMostNestedRegionIndex(block, &isInTry);
+                bool            isInTry     = false;
+                unsigned const  regionIndex = ehGetMostNestedRegionIndex(block, &isInTry);
+                EHblkDsc* const dsc         = ehGetBlockHndDsc(block);
 
-                if (isInTry)
+                if (isInTry || (dsc->ebdHandlerType == EH_HANDLER_CATCH))
                 {
-                    // No, we're leaving a try or catch, not a handler.
+                    // We're leaving a try or catch, not a handler.
                     // Treat this as a normal edge.
                     //
                     BasicBlock* const target = block->bbJumpDest;
@@ -933,7 +982,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 {
                     // Pseudo-edge back to handler entry.
                     //
-                    EHblkDsc* const   dsc    = ehGetBlockHndDsc(block);
                     BasicBlock* const target = dsc->ebdHndBeg;
                     assert(BlockSetOps::IsMember(comp, marked, target->bbNum));
                     visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::PostdominatesSource);
@@ -1137,20 +1185,27 @@ private:
     //
     struct Probe
     {
+        BasicBlock* source;
         BasicBlock* target;
         Probe*      next;
         int         schemaIndex;
         EdgeKind    kind;
+        Probe*      leader;
     };
 
-    Probe* NewProbe(BasicBlock* source, BasicBlock* target)
+    // Add probe to block, representing edge from source to target.
+    //
+    Probe* NewProbe(BasicBlock* block, BasicBlock* source, BasicBlock* target)
     {
-        Probe* p                  = new (m_comp, CMK_Pgo) Probe();
-        p->target                 = target;
-        p->kind                   = EdgeKind::Unknown;
-        p->schemaIndex            = -1;
-        p->next                   = (Probe*)source->bbSparseProbeList;
-        source->bbSparseProbeList = p;
+        Probe* p       = new (m_comp, CMK_Pgo) Probe();
+        p->source      = source;
+        p->target      = target;
+        p->kind        = EdgeKind::Unknown;
+        p->schemaIndex = -1;
+        p->next        = (Probe*)block->bbSparseProbeList;
+        p->leader      = nullptr;
+
+        block->bbSparseProbeList = p;
         m_probeCount++;
 
         return p;
@@ -1159,7 +1214,7 @@ private:
     void NewSourceProbe(BasicBlock* source, BasicBlock* target)
     {
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [source]\n", m_probeCount, source->bbNum, target->bbNum);
-        Probe* p = NewProbe(source, target);
+        Probe* p = NewProbe(source, source, target);
         p->kind  = EdgeKind::PostdominatesSource;
     }
 
@@ -1167,7 +1222,7 @@ private:
     {
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [target]\n", m_probeCount, source->bbNum, target->bbNum);
 
-        Probe* p = NewProbe(source, target);
+        Probe* p = NewProbe(source, source, target);
         p->kind  = EdgeKind::DominatesTarget;
     }
 
@@ -1175,11 +1230,51 @@ private:
     {
         JITDUMP("[%u] New probe for " FMT_BB " -> " FMT_BB " [edge]\n", m_probeCount, source->bbNum, target->bbNum);
 
-        Probe* p = NewProbe(source, target);
+        Probe* p = NewProbe(source, source, target);
         p->kind  = EdgeKind::CriticalEdge;
 
         m_edgeProbeCount++;
     }
+
+    void NewRelocatedProbe(BasicBlock* block, BasicBlock* source, BasicBlock* target, Probe** pLeader = nullptr)
+    {
+        Probe*      p   = NewProbe(block, source, target);
+        const char* msg = "unknown";
+
+        // Are we starting or adding to a duplicate group?
+        //
+        if (pLeader != nullptr)
+        {
+            Probe* l = *pLeader;
+            if (l == nullptr)
+            {
+                // This probe will be the leader of the group
+                //
+                *pLeader = p;
+                p->kind  = EdgeKind::Leader;
+                msg      = "leader";
+            }
+            else
+            {
+                // This probe is a duplicate
+                //
+                p->leader = l;
+                p->kind   = EdgeKind::Duplicate;
+                msg       = "duplicate";
+            }
+        }
+        else
+        {
+            p->kind = EdgeKind::Relocated;
+            msg     = "relocated";
+        }
+
+        JITDUMP("New %s probe for " FMT_BB " -> " FMT_BB " [reloc to " FMT_BB " ]\n", msg, source->bbNum, target->bbNum,
+                block->bbNum);
+    }
+
+    void SplitCriticalEdges();
+    void RelocateProbes();
 
     unsigned m_blockCount;
     unsigned m_probeCount;
@@ -1233,14 +1328,14 @@ public:
                 NewEdgeProbe(source, target);
                 break;
             default:
-                assert(!"unexpected kind");
+                assert(!"unexpected edge kind");
                 break;
         }
     }
 };
 
 //------------------------------------------------------------------------
-// EfficientEdgeCountInstrumentor:Prepare: analyze the flow graph to
+// EfficientEdgeCountInstrumentor::Prepare: analyze the flow graph to
 //   determine which edges should be instrumented.
 //
 // Arguments:
@@ -1265,23 +1360,400 @@ public:
 //
 void EfficientEdgeCountInstrumentor::Prepare(bool preImport)
 {
-    if (!preImport)
+    if (preImport)
     {
-        // If we saw badcode in the preimport prepare, we would expect
-        // compilation to blow up in the importer. So if we end up back
-        // here postimport with badcode set, something is wrong.
-        //
-        assert(!m_badcode);
+        JITDUMP("\nEfficientEdgeCountInstrumentor: preparing for instrumentation\n");
+        m_comp->WalkSpanningTree(this);
+        JITDUMP("%u blocks, %u probes (%u on critical edges)\n", m_blockCount, m_probeCount, m_edgeProbeCount);
         return;
     }
 
-    JITDUMP("\nEfficientEdgeCountInstrumentor: preparing for instrumentation\n");
-    m_comp->WalkSpanningTree(this);
-    JITDUMP("%u blocks, %u probes (%u on critical edges)\n", m_blockCount, m_probeCount, m_edgeProbeCount);
+    // If we saw badcode in the preimport prepare, we would expect
+    // compilation to blow up in the importer. So if we end up back
+    // here postimport with badcode set, something is wrong.
+    //
+    assert(!m_badcode);
+
+    // Walk the probe list splitting critical edges as required.
+    //
+    SplitCriticalEdges();
+
+    // If this is an optimized method, look for potential tail calls in
+    // probe blocks that are not BBJ_RETURN.
+    //
+    // If we see any, we need to adjust our instrumentation pattern.
+    //
+    RelocateProbes();
 }
 
 //------------------------------------------------------------------------
-// EfficientEdgeCountInstrumentor:BuildSchemaElements: create schema
+// EfficientEdgeCountInstrumentor::SplitCriticalEdges: add blocks for
+//   probes along critical edges and adjust affeted probes and probe lists.
+//
+//
+// Notes:
+//   Transforms CriticalEdge probes to Deleted and/or Relocated probes.
+//
+void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
+{
+    if (m_edgeProbeCount == 0)
+    {
+        return;
+    }
+
+    JITDUMP("\nEfficientEdgeCountInstrumentor: splitting up to %u critical edges\n", m_edgeProbeCount);
+    unsigned edgesSplit   = 0;
+    unsigned edgesIgnored = 0;
+
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (!ShouldProcess(block))
+        {
+
+#ifdef DEBUG
+            // Account for probes originating from un-imported blocks.
+            //
+            for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
+            {
+                if (probe->kind == EdgeKind::CriticalEdge)
+                {
+                    edgesIgnored++;
+                }
+            }
+#endif
+
+            continue;
+        }
+
+        for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
+        {
+            // Figure out what block the probe will appear in.
+            //
+            BasicBlock* const source            = probe->source;
+            BasicBlock* const target            = probe->target;
+            BasicBlock*       instrumentedBlock = nullptr;
+
+            switch (probe->kind)
+            {
+                case EdgeKind::PostdominatesSource:
+                    instrumentedBlock = source;
+                    break;
+                case EdgeKind::DominatesTarget:
+                    instrumentedBlock = target;
+                    break;
+                case EdgeKind::Relocated:
+                    instrumentedBlock = block;
+                    break;
+                case EdgeKind::CriticalEdge:
+                {
+                    assert(block == source);
+
+                    // See if the edge still exists.
+                    //
+                    bool found = false;
+                    for (BasicBlock* const succ : block->Succs(m_comp->impInlineRoot()))
+                    {
+                        if (target == succ)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found)
+                    {
+                        // Importer folding may have changed the block jump kind
+                        // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
+                        //
+                        if (block->bbJumpKind == BBJ_NONE)
+                        {
+                            block->bbJumpKind = BBJ_ALWAYS;
+                            block->bbJumpDest = target;
+                        }
+
+                        instrumentedBlock = m_comp->fgSplitEdge(block, target);
+                        instrumentedBlock->bbFlags |= BBF_IMPORTED;
+                        edgesSplit++;
+
+                        // Add in the relocated probe
+                        //
+                        NewRelocatedProbe(instrumentedBlock, source, target);
+                    }
+                    else
+                    {
+                        JITDUMP("Could not find " FMT_BB " -> " FMT_BB " edge to instrument\n", block->bbNum,
+                                target->bbNum);
+
+                        // If we're optimizing, assume this edge got folded away
+                        //
+                        if (m_comp->opts.IsInstrumentedOptimized())
+                        {
+                            JITDUMP(" -- assuming this is ok\n");
+
+                            // Placate the asserts below
+                            //
+                            instrumentedBlock = source;
+                            edgesIgnored++;
+                        }
+                        else
+                        {
+                            assert(found);
+                        }
+                    }
+
+                    // Delete the critical edge probe
+                    //
+                    probe->kind = EdgeKind::Deleted;
+                }
+                break;
+
+                default:
+                    assert(!"unexpected edge kind");
+            }
+
+            assert(instrumentedBlock != nullptr);
+        }
+    }
+
+    // We should have found all edges needing splitting.
+    //
+    assert((edgesSplit + edgesIgnored) == m_edgeProbeCount);
+
+    if (edgesSplit > 0)
+    {
+        SetModifiedFlow();
+    }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountInstrumentor::RelocateProbes: relocate any probes that
+//   would appear in post-tail call blocks.
+//
+// Notes:
+//   May build and modify the cheap pred lists.
+//   May create Leader and Duplicate probes.
+//
+void EfficientEdgeCountInstrumentor::RelocateProbes()
+{
+    // We only see such blocks when optimizing. They are flagged by the importer.
+    //
+    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    {
+        // No problematic blocks to worry about.
+        //
+        return;
+    }
+
+    JITDUMP("Optimized + instrumented + potential tail calls --- preparing to relocate edge probes\n");
+
+    // We should be in a root method compiler instance. We currently do not instrument inlinees.
+    //
+    // Relaxing this will require changes below because inlinee compilers
+    // share the root compiler flow graph (and hence bb epoch), and flow
+    // from inlinee tail calls to returns can be more complex.
+    //
+    assert(!m_comp->compIsForInlining());
+
+    // Build cheap preds.
+    //
+    m_comp->fgComputeCheapPreds();
+    m_comp->EnsureBasicBlockEpoch();
+
+    // Keep track of return blocks needing special treatment.
+    // We also need to track of duplicate preds.
+    //
+    JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
+    BlockSet                         retsPushed = BlockSetOps::MakeEmpty(m_comp);
+    BlockSet                         predsSeen  = BlockSetOps::MakeEmpty(m_comp);
+
+    // Walk probe list looking for probes that would appear in BBJ_RETURNs
+    // that are successors of potential tail calls.
+    //
+    // If any such has a conditional pred, we will need to reroute flow from those preds
+    // via an intermediary block. That block will subsequently hold the relocated
+    // probe for the return for those preds.
+    //
+    // Scrub the cheap pred list for these blocks so that each pred appears at most once.
+    //
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (!ShouldProcess(block))
+        {
+            continue;
+        }
+
+        for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
+        {
+            if (probe->kind == EdgeKind::Deleted)
+            {
+                continue;
+            }
+
+            // Figure out what block the probe will appear in.
+            // We do not expect to see any critical edges as we should have split them already.
+            //
+            BasicBlock* const source            = probe->source;
+            BasicBlock* const target            = probe->target;
+            BasicBlock*       instrumentedBlock = nullptr;
+
+            switch (probe->kind)
+            {
+                case EdgeKind::PostdominatesSource:
+                    instrumentedBlock = source;
+                    break;
+                case EdgeKind::DominatesTarget:
+                    instrumentedBlock = target;
+                    break;
+                case EdgeKind::Relocated:
+                    instrumentedBlock = block;
+                    break;
+                default:
+                    assert(!"unexpected probe kind");
+            }
+
+            assert(instrumentedBlock != nullptr);
+
+            // Nothing to do unless the block we wanted to instrument is a tail call successor.
+            //
+            if ((instrumentedBlock->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
+            {
+                continue;
+            }
+
+            JITDUMP("Instrumentation target " FMT_BB " is successor of possible tail call\n", instrumentedBlock->bbNum);
+            assert(instrumentedBlock->bbJumpKind == BBJ_RETURN);
+
+            // We will need to relocate probes in this block. Add to our list if not already there.
+            //
+            if (!BlockSetOps::IsMember(m_comp, retsPushed, instrumentedBlock->bbNum))
+            {
+                specialReturnBlocks.Push(instrumentedBlock);
+                BlockSetOps::AddElemD(m_comp, retsPushed, instrumentedBlock->bbNum);
+            }
+
+            // Figure out which preds we'll relocate things to.
+            //
+            BlockSetOps::ClearD(m_comp, predsSeen);
+
+            for (BasicBlockList* predEdge = instrumentedBlock->bbCheapPreds; predEdge != nullptr;
+                 predEdge                 = predEdge->next)
+            {
+                BasicBlock* const pred = predEdge->block;
+                BasicBlock* const succ = pred->GetUniqueSucc();
+
+                if (succ == nullptr)
+                {
+                    // Flow from pred -> block is conditional, and will require updating.
+                    //
+                    JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, instrumentedBlock->bbNum);
+
+                    // Have we seen this pred before?
+                    //
+                    if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
+                    {
+                        // Yes, null out the duplicate pred list entry.
+                        //
+                        predEdge->block = nullptr;
+                    }
+                }
+                else
+                {
+                    // We should only ever see one reference to this pred.
+                    //
+                    assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
+
+                    // Ensure flow from non-critical preds is BBJ_ALWAYS as we
+                    // may add a new block right before block.
+                    //
+                    if (pred->bbJumpKind == BBJ_NONE)
+                    {
+                        pred->bbJumpKind = BBJ_ALWAYS;
+                        pred->bbJumpDest = block;
+                    }
+                    assert(pred->bbJumpKind == BBJ_ALWAYS);
+                }
+
+                BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
+            }
+        }
+    }
+
+    // Did we find any blocks with probes needing relocation?
+    //
+    if (specialReturnBlocks.Size() == 0)
+    {
+        JITDUMP("No probes need relocating\n");
+        return;
+    }
+
+    JITDUMP("%u blocks have probes need relocating\n", specialReturnBlocks.Size());
+
+    while (specialReturnBlocks.Size() > 0)
+    {
+        BasicBlock* const block = specialReturnBlocks.Pop();
+
+        // This block should have just one probe, which we no longer need.
+        //
+        Probe* const probe = (Probe*)block->bbSparseProbeList;
+        assert(probe->next == nullptr);
+        assert(probe->kind == EdgeKind::PostdominatesSource);
+        probe->kind = EdgeKind::Deleted;
+
+        // Any critical edge preds will probe via this intermediary block
+        // that we will create when necessary.
+        //
+        BasicBlock* intermediary = nullptr;
+
+        // The first probe we add will be the leader of a duplicate probe group.
+        //
+        Probe* leader = nullptr;
+
+        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        {
+            BasicBlock* const pred = predEdge->block;
+
+            if (pred == nullptr)
+            {
+                // Pred edge for a duplicate pred we scrubbed above.
+                //
+                continue;
+            }
+
+            // Does this pred reach along a critical edge,
+            // or is the pred the tail of a callfinally pair?
+            //
+            BasicBlock* const succ = pred->GetUniqueSucc();
+
+            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            {
+                // Yes. Create intermediary if necessary and add probe there.
+                //
+                if (intermediary == nullptr)
+                {
+                    intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
+
+                    intermediary->bbFlags |= BBF_IMPORTED;
+                    intermediary->inheritWeight(block);
+                    NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
+                    SetModifiedFlow();
+                }
+
+                // Alter flow from pred->block to go via intermediary
+                //
+                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+            }
+            else
+            {
+                // Put a copy of probe into the pred.
+                //
+                NewRelocatedProbe(pred, probe->source, probe->target, &leader);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// EfficientEdgeCountInstrumentor::BuildSchemaElements: create schema
 //   elements for the probes
 //
 // Arguments:
@@ -1297,25 +1769,31 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
     {
-        // Probe is for the edge from block to target.
+        // Deleted and Duplicate probes don't create new schema elements.
         //
+        if ((probe->kind == EdgeKind::Duplicate) || (probe->kind == EdgeKind::Deleted))
+        {
+            continue;
+        }
+
+        // Probe is for the edge from source to target.
+        //
+        BasicBlock* const source = probe->source;
         BasicBlock* const target = probe->target;
 
-        // Remember the schema index for this probe
-        //
         assert(probe->schemaIndex == -1);
         probe->schemaIndex = (int)schema.size();
 
-        // Normally we use the the offset of the block in the schema, but for certain
+        // Normally we use the offset of the block in the schema, but for certain
         // blocks we do not have any information we can use and need to use internal BB numbers.
         //
-        int32_t sourceKey = EfficientEdgeCountBlockToKey(block);
+        int32_t sourceKey = EfficientEdgeCountBlockToKey(source);
         int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = 1;
         schemaElem.Other               = targetKey;
-        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
+        schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
         schemaElem.ILOffset = sourceKey;
@@ -1338,22 +1816,29 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
 //
 void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    // Inlinee compilers build their blocks in the root compiler's
-    // graph. So for NumSucc, we use the root compiler instance.
-    //
-    Compiler* const comp = m_comp->impInlineRoot();
-
     // Walk the bbSparseProbeList, adding instrumentation.
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
     {
-        // Probe is for the edge from block to target.
+        if (probe->kind == EdgeKind::Deleted)
+        {
+            continue;
+        }
+
+        // Probe is for the edge from source to target.
         //
+        BasicBlock* const source = probe->source;
         BasicBlock* const target = probe->target;
 
-        // Retrieve the schema index for this probe
+        // Retrieve the schema index for this probe.
+        // For duplicate probes, get the index from the group leader.
         //
-        const int schemaIndex = probe->schemaIndex;
+        int schemaIndex = probe->schemaIndex;
+
+        if (probe->kind == EdgeKind::Duplicate)
+        {
+            schemaIndex = probe->leader->schemaIndex;
+        }
 
         // Sanity checks.
         //
@@ -1372,32 +1857,20 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         switch (probe->kind)
         {
             case EdgeKind::PostdominatesSource:
-                instrumentedBlock = block;
+                instrumentedBlock = source;
                 break;
             case EdgeKind::DominatesTarget:
-                instrumentedBlock = probe->target;
+                instrumentedBlock = target;
+                break;
+            case EdgeKind::Relocated:
+            case EdgeKind::Leader:
+            case EdgeKind::Duplicate:
+                instrumentedBlock = block;
                 break;
             case EdgeKind::CriticalEdge:
-            {
-#ifdef DEBUG
-                // Verify the edge still exists.
-                //
-                bool found = false;
-                for (BasicBlock* const succ : block->Succs(comp))
-                {
-                    if (target == succ)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                assert(found);
-#endif
-                instrumentedBlock = m_comp->fgSplitEdge(block, probe->target);
-                instrumentedBlock->bbFlags |= BBF_IMPORTED;
-            }
-            break;
-
+                // Should have been handled in SplitCriticalEdges()
+                assert(!"unexpected probe kind");
+                break;
             default:
                 unreached();
         }
@@ -1421,16 +1894,19 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
 
-        m_instrCount++;
+        if (probe->kind != EdgeKind::Duplicate)
+        {
+            m_instrCount++;
+        }
     }
 }
 
 //------------------------------------------------------------------------
-// ClassProbeVisitor: invoke functor on each virtual call or cast-related
+// HandleHistogramProbeVisitor: invoke functor on each virtual call or cast-related
 //     helper calls in a tree
 //
 template <class TFunctor>
-class ClassProbeVisitor final : public GenTreeVisitor<ClassProbeVisitor<TFunctor>>
+class HandleHistogramProbeVisitor final : public GenTreeVisitor<HandleHistogramProbeVisitor<TFunctor>>
 {
 public:
     enum
@@ -1441,26 +1917,17 @@ public:
     TFunctor& m_functor;
     Compiler* m_compiler;
 
-    ClassProbeVisitor(Compiler* compiler, TFunctor& functor)
-        : GenTreeVisitor<ClassProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
+    HandleHistogramProbeVisitor(Compiler* compiler, TFunctor& functor)
+        : GenTreeVisitor<HandleHistogramProbeVisitor>(compiler), m_functor(functor), m_compiler(compiler)
     {
     }
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall() && (node->AsCall()->gtClassProfileCandidateInfo != nullptr))
+        if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
-            GenTreeCall* const call = node->AsCall();
-            if (call->IsVirtual() && (call->gtCallType != CT_INDIRECT))
-            {
-                // virtual call
-                m_functor(m_compiler, call);
-            }
-            else if (m_compiler->impIsCastHelperEligibleForClassProbe(call))
-            {
-                // isinst/cast helper
-                m_functor(m_compiler, call);
-            }
+            assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
+            m_functor(m_compiler, node->AsCall());
         }
 
         return Compiler::WALK_CONTINUE;
@@ -1468,44 +1935,65 @@ public:
 };
 
 //------------------------------------------------------------------------
-// BuildClassProbeSchemaGen: functor that creates class probe schema elements
+// BuildHandleHistogramProbeSchemaGen: functor that creates class probe schema elements
 //
-class BuildClassProbeSchemaGen
+class BuildHandleHistogramProbeSchemaGen
 {
 private:
     Schema&   m_schema;
     unsigned& m_schemaCount;
 
 public:
-    BuildClassProbeSchemaGen(Schema& schema, unsigned& schemaCount) : m_schema(schema), m_schemaCount(schemaCount)
+    BuildHandleHistogramProbeSchemaGen(Schema& schema, unsigned& schemaCount)
+        : m_schema(schema), m_schemaCount(schemaCount)
     {
     }
 
     void operator()(Compiler* compiler, GenTreeCall* call)
     {
-        ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count = 1;
-        schemaElem.Other = ICorJitInfo::ClassProfile32::CLASS_FLAG;
-        if (call->IsVirtualStub())
+        Compiler::GDVProbeType probeType = compiler->compClassifyGDVProbeType(call);
+
+        if ((probeType == Compiler::GDVProbeType::ClassProfile) ||
+            (probeType == Compiler::GDVProbeType::MethodAndClassProfile))
         {
-            schemaElem.Other |= ICorJitInfo::ClassProfile32::INTERFACE_FLAG;
-        }
-        else
-        {
-            assert(call->IsVirtualVtable() || compiler->impIsCastHelperEligibleForClassProbe(call));
+            CreateHistogramSchemaEntries(compiler, call, true /* isTypeHistogram */);
         }
 
-        schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
-                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->gtClassProfileCandidateInfo->ilOffset;
+        if ((probeType == Compiler::GDVProbeType::MethodProfile) ||
+            (probeType == Compiler::GDVProbeType::MethodAndClassProfile))
+        {
+            CreateHistogramSchemaEntries(compiler, call, false /* isTypeHistogram */);
+        }
+    }
+
+    void CreateHistogramSchemaEntries(Compiler* compiler, GenTreeCall* call, bool isTypeHistogram)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
+        schemaElem.Count                                 = 1;
+        schemaElem.Other = isTypeHistogram ? ICorJitInfo::HandleHistogram32::CLASS_FLAG : 0;
+        if (call->IsVirtualStub())
+        {
+            schemaElem.Other |= ICorJitInfo::HandleHistogram32::INTERFACE_FLAG;
+        }
+        else if (call->IsDelegateInvoke())
+        {
+            schemaElem.Other |= ICorJitInfo::HandleHistogram32::DELEGATE_FLAG;
+        }
+
+        schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
+                                             ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
+        schemaElem.ILOffset = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
         schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
+        m_schemaCount++;
+
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
-        schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
+        schemaElem.InstrumentationKind = isTypeHistogram ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes
+                                                         : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
+        schemaElem.Count = ICorJitInfo::HandleHistogram32::SIZE;
         m_schema.push_back(schemaElem);
 
         m_schemaCount++;
@@ -1513,9 +2001,9 @@ public:
 };
 
 //------------------------------------------------------------------------
-// ClassProbeInserter: functor that adds class probe instrumentation
+// HandleHistogramProbeInserter: functor that adds class/method probe instrumentation
 //
-class ClassProbeInserter
+class HandleHistogramProbeInserter
 {
     Schema&   m_schema;
     uint8_t*  m_profileMemory;
@@ -1523,7 +2011,7 @@ class ClassProbeInserter
     unsigned& m_instrCount;
 
 public:
-    ClassProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
+    HandleHistogramProbeInserter(Schema& schema, uint8_t* profileMemory, int* pCurrentSchemaIndex, unsigned& instrCount)
         : m_schema(schema)
         , m_profileMemory(profileMemory)
         , m_currentSchemaIndex(pCurrentSchemaIndex)
@@ -1534,10 +2022,11 @@ public:
     void operator()(Compiler* compiler, GenTreeCall* call)
     {
         JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
-                call->gtClassProfileCandidateInfo->probeIndex, call->gtClassProfileCandidateInfo->ilOffset);
+                call->gtHandleHistogramProfileCandidateInfo->probeIndex,
+                call->gtHandleHistogramProfileCandidateInfo->ilOffset);
 
         // We transform the call from (CALLVIRT obj, ... args ...) to
-        // to
+        //
         //      (CALLVIRT
         //        (COMMA
         //          (ASG tmp, obj)
@@ -1547,47 +2036,89 @@ public:
         //         ... args ...)
         //
 
-        // Sanity check that we're looking at the right schema entry
-        //
-        assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
-        bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
-        bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
-        assert(is32 || is64);
+        // Read histograms
+        void* typeHistogram   = nullptr;
+        void* methodHistogram = nullptr;
 
-        // Figure out where the table is located.
-        //
-        uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
-        *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
+        bool is32;
+        ReadHistogramAndAdvance(call->gtHandleHistogramProfileCandidateInfo->ilOffset, &typeHistogram, &methodHistogram,
+                                &is32);
+        bool secondIs32;
+        ReadHistogramAndAdvance(call->gtHandleHistogramProfileCandidateInfo->ilOffset, &typeHistogram, &methodHistogram,
+                                &secondIs32);
 
-        GenTreeCall::Use* objUse = nullptr;
+        assert(((typeHistogram != nullptr) || (methodHistogram != nullptr)) &&
+               "Expected at least one handle histogram when inserting probes");
+
+        if ((typeHistogram != nullptr) && (methodHistogram != nullptr))
+        {
+            // We expect both histograms to be 32-bit or 64-bit, not a mix.
+            assert(is32 == secondIs32);
+        }
+
+        assert(!call->gtArgs.AreArgsComplete());
+        CallArg* objUse = nullptr;
         if (compiler->impIsCastHelperEligibleForClassProbe(call))
         {
-            // Grab the second arg of cast/isinst helper call
-            objUse = call->gtCallArgs->GetNext();
+            // Second arg of cast/isinst helper call is the object instance
+            objUse = call->gtArgs.GetArgByIndex(1);
         }
         else
         {
-            // Grab 'this' arg
-            objUse = call->gtCallThisArg;
+            objUse = call->gtArgs.GetThisArg();
         }
 
-        assert(objUse->GetNode()->TypeIs(TYP_REF));
+        assert(objUse->GetEarlyNode()->TypeIs(TYP_REF));
 
         // Grab a temp to hold the 'this' object as it will be used three times
         //
-        unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
+        unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("handle histogram profile tmp"));
         compiler->lvaTable[tmpNum].lvType = TYP_REF;
+
+        GenTree* helperCallNode = nullptr;
+
+        if (typeHistogram != nullptr)
+        {
+            GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+            GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
+            helperCallNode =
+                compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
+                                              TYP_VOID, tmpNode, classProfileNode);
+        }
+
+        if (methodHistogram != nullptr)
+        {
+            GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+            GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
+
+            GenTree* methodProfileCallNode;
+            if (call->IsDelegateInvoke())
+            {
+                methodProfileCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
+                                                                           : CORINFO_HELP_DELEGATEPROFILE64,
+                                                                      TYP_VOID, tmpNode, methodProfileNode);
+            }
+            else
+            {
+                assert(call->IsVirtualVtable());
+                GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
+                methodProfileCallNode =
+                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
+                                                  TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
+            }
+
+            if (helperCallNode == nullptr)
+            {
+                helperCallNode = methodProfileCallNode;
+            }
+            else
+            {
+                helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, methodProfileCallNode);
+            }
+        }
 
         // Generate the IR...
         //
-        GenTree* const          classProfileNode = compiler->gtNewIconNode((ssize_t)classProfile, TYP_I_IMPL);
-        GenTree* const          tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTreeCall::Use* const args             = compiler->gtNewCallArgs(tmpNode, classProfileNode);
-        GenTree* const          helperCallNode =
-            compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64, TYP_VOID,
-                                          args);
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
@@ -1596,23 +2127,85 @@ public:
 
         // Update the call
         //
-        objUse->SetNode(asgCommaNode);
+        objUse->SetEarlyNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
         m_instrCount++;
     }
+
+private:
+    void ReadHistogramAndAdvance(IL_OFFSET ilOffset, void** typeHistogram, void** methodHistogram, bool* histogramIs32)
+    {
+        if (*m_currentSchemaIndex >= (int)m_schema.size())
+        {
+            return;
+        }
+
+        ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
+
+        bool is32 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
+        bool is64 = countEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;
+        if (!is32 && !is64)
+        {
+            return;
+        }
+
+        if (countEntry.ILOffset != static_cast<int32_t>(ilOffset))
+        {
+            return;
+        }
+
+        assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
+        ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
+        assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes) ||
+               (tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods));
+
+        void** outHistogram;
+        if (tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes)
+        {
+            assert(*typeHistogram == nullptr);
+            outHistogram = typeHistogram;
+        }
+        else
+        {
+            assert(*methodHistogram == nullptr);
+            outHistogram = methodHistogram;
+        }
+
+        *outHistogram  = &m_profileMemory[countEntry.Offset];
+        *histogramIs32 = is32;
+
+#ifdef DEBUG
+        if (is32)
+        {
+            ICorJitInfo::HandleHistogram32* h32 =
+                reinterpret_cast<ICorJitInfo::HandleHistogram32*>(&m_profileMemory[countEntry.Offset]);
+            assert(reinterpret_cast<uint8_t*>(&h32->Count) == &m_profileMemory[countEntry.Offset]);
+            assert(reinterpret_cast<uint8_t*>(h32->HandleTable) == &m_profileMemory[tableEntry.Offset]);
+        }
+        else
+        {
+            ICorJitInfo::HandleHistogram64* h64 =
+                reinterpret_cast<ICorJitInfo::HandleHistogram64*>(&m_profileMemory[countEntry.Offset]);
+            assert(reinterpret_cast<uint8_t*>(&h64->Count) == &m_profileMemory[countEntry.Offset]);
+            assert(reinterpret_cast<uint8_t*>(h64->HandleTable) == &m_profileMemory[tableEntry.Offset]);
+        }
+#endif
+
+        *m_currentSchemaIndex += 2;
+    }
 };
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor: instrumentor that adds a class probe to each
+// HandleHistogramProbeInstrumentor: instrumentor that adds a class probe to each
 //   virtual call in the basic block
 //
-class ClassProbeInstrumentor : public Instrumentor
+class HandleHistogramProbeInstrumentor : public Instrumentor
 {
 public:
-    ClassProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
+    HandleHistogramProbeInstrumentor(Compiler* comp) : Instrumentor(comp)
     {
     }
     bool ShouldProcess(BasicBlock* block) override
@@ -1625,13 +2218,13 @@ public:
 };
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor::Prepare: prepare for class instrumentation
+// HandleHistogramProbeInstrumentor::Prepare: prepare for class instrumentation
 //
 // Arguments:
 //   preImport - true if this is the prepare call that happens before
 //      importation
 //
-void ClassProbeInstrumentor::Prepare(bool isPreImport)
+void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 {
     if (isPreImport)
     {
@@ -1643,33 +2236,33 @@ void ClassProbeInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        block->bbClassSchemaIndex = -1;
+        block->bbHistogramSchemaIndex = -1;
     }
 #endif
 }
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor::BuildSchemaElements: create schema elements for a class probe
+// HandleHistogramProbeInstrumentor::BuildSchemaElements: create schema elements for a class probe
 //
 // Arguments:
 //   block -- block to instrument
 //   schema -- schema that we're building
 //
-void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
+void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
-    if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
+    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
     {
         return;
     }
 
     // Remember the schema index for this block.
     //
-    block->bbClassSchemaIndex = (int)schema.size();
+    block->bbHistogramSchemaIndex = (int)schema.size();
 
     // Scan the statements and identify the class probes
     //
-    BuildClassProbeSchemaGen                    schemaGen(schema, m_schemaCount);
-    ClassProbeVisitor<BuildClassProbeSchemaGen> visitor(m_comp, schemaGen);
+    BuildHandleHistogramProbeSchemaGen                              schemaGen(schema, m_schemaCount);
+    HandleHistogramProbeVisitor<BuildHandleHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -1677,16 +2270,16 @@ void ClassProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
 }
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor::Instrument: add class probes to block
+// HandleHistogramProbeInstrumentor::Instrument: add class probes to block
 //
 // Arguments:
 //   block -- block of interest
 //   schema -- instrumentation schema
 //   profileMemory -- profile data slab
 //
-void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
+void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
-    if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
+    if ((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0)
     {
         return;
     }
@@ -1698,11 +2291,11 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     // Scan the statements and add class probes
     //
-    int classSchemaIndex = block->bbClassSchemaIndex;
-    assert((classSchemaIndex >= 0) && (classSchemaIndex < (int)schema.size()));
+    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
-    ClassProbeInserter                    insertProbes(schema, profileMemory, &classSchemaIndex, m_instrCount);
-    ClassProbeVisitor<ClassProbeInserter> visitor(m_comp, insertProbes);
+    HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
+    HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_comp, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -1729,50 +2322,10 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     //
     // * disabled by option
     // * we are prejitting
-    // * we are jitting tier0 methods with patchpoints
-    // * we are jitting an OSR method
     //
-    // OSR is incompatible with edge profiling. Only portions of the Tier0
-    // method will be executed, and the bail-outs at patchpoints won't be obvious
-    // exit points from the method. So for OSR we always do block profiling.
-    //
-    // Note this incompatibility only exists for methods that actually have
-    // patchpoints. Currently we will only place patchponts in methods with
-    // backwards jumps.
-    //
-    // And because we want the Tier1 method to see the full set of profile data,
-    // when OSR is enabled, both Tier0 and any OSR methods need to contribute to
-    // the same profile data set. Since Tier0 has laid down a dense block-based
-    // schema, the OSR methods must use this schema as well.
-    //
-    // Note that OSR methods may also inline. We currently won't instrument
-    // any inlinee contributions (which would also need to carefully "share"
-    // the profile data segment with any Tier0 version and/or any other equivalent
-    // inlnee), so we'll lose a bit of their profile data. We can support this
-    // eventually if it turns out to matter.
-    //
-    // Similar issues arise with partially jitted methods; they must also use
-    // block based profiles.
-    //
-    // Under OSR stress we may add patchpoints even without backedges. So we also
-    // need to change the PGO instrumentation approach if OSR stress is enabled.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(DEBUG)
-    const bool mayHaveStressPatchpoints =
-        (JitConfig.JitOffsetOnStackReplacement() >= 0) || (JitConfig.JitRandomOnStackReplacement() > 0);
-#else
-    const bool mayHaveStressPatchpoints = false;
-#endif
-
-    const bool mayHavePatchpoints =
-        ((JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints)) ||
-        (JitConfig.TC_PartialCompilation() > 0);
-    const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
-    const bool osrMethod            = opts.IsOSR();
-    const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
+    const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
+    const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool useEdgeProfiles = edgesEnabled && !prejit;
 
     if (useEdgeProfiles)
     {
@@ -1780,35 +2333,31 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     }
     else
     {
-        JITDUMP("Using block profiling, because %s\n",
-                (JitConfig.JitEdgeProfiling() == 0)
-                    ? "edge profiles disabled"
-                    : prejit ? "prejitting" : osrMethod ? "OSR" : "tier0 with patchpoints");
-
+        JITDUMP("Using block profiling, because %s\n", edgesEnabled ? "edge profiling disabled" : "prejitting");
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
     // Enable class profiling by default, when jitting.
     // Todo: we may also want this on by default for prejitting.
     //
-    const bool useClassProfiles = (JitConfig.JitClassProfiling() > 0) && !prejit;
-    if (useClassProfiles)
+    const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
+    const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
+    const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
+    if (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles))
     {
-        fgClassInstrumentor = new (this, CMK_Pgo) ClassProbeInstrumentor(this);
+        fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }
     else
     {
-        JITDUMP("Not doing class profiling, because %s\n",
-                (JitConfig.JitClassProfiling() > 0) ? "class profiles disabled" : "prejit");
-
-        fgClassInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        JITDUMP("Not doing class/method profiling, because %s\n", prejit ? "prejit" : "class/method profiles disabled");
+        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
 
     // Make pre-import preparations.
     //
     const bool isPreImport = true;
     fgCountInstrumentor->Prepare(isPreImport);
-    fgClassInstrumentor->Prepare(isPreImport);
+    fgHistogramInstrumentor->Prepare(isPreImport);
 
     return PhaseStatus::MODIFIED_NOTHING;
 }
@@ -1837,7 +2386,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     const bool isPreImport = false;
     fgCountInstrumentor->Prepare(isPreImport);
-    fgClassInstrumentor->Prepare(isPreImport);
+    fgHistogramInstrumentor->Prepare(isPreImport);
 
     // Walk the flow graph to build up the instrumentation schema.
     //
@@ -1849,25 +2398,10 @@ PhaseStatus Compiler::fgInstrumentMethod()
             fgCountInstrumentor->BuildSchemaElements(block, schema);
         }
 
-        if (fgClassInstrumentor->ShouldProcess(block))
+        if (fgHistogramInstrumentor->ShouldProcess(block))
         {
-            fgClassInstrumentor->BuildSchemaElements(block, schema);
+            fgHistogramInstrumentor->BuildSchemaElements(block, schema);
         }
-    }
-
-    // Verify we created schema for the calls needing class probes.
-    // (we counted those when importing)
-    //
-    // This is not true when we do partial compilation; it can/will erase class probes,
-    // and there's no easy way to figure out how many should be left.
-    //
-    if (doesMethodHavePartialCompilationPatchpoints())
-    {
-        assert(fgClassInstrumentor->SchemaCount() <= info.compClassProbeCount);
-    }
-    else
-    {
-        assert(fgClassInstrumentor->SchemaCount() == info.compClassProbeCount);
     }
 
     // Optionally, when jitting, if there were no class probes and only one count probe,
@@ -1889,7 +2423,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
         minimalProbeMode = (JitConfig.JitMinimalJitProfiling() > 0);
     }
 
-    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgClassInstrumentor->SchemaCount() == 0))
+    if (minimalProbeMode && (fgCountInstrumentor->SchemaCount() == 1) && (fgHistogramInstrumentor->SchemaCount() == 0))
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
@@ -1897,7 +2431,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
-            fgClassInstrumentor->SchemaCount());
+            fgHistogramInstrumentor->SchemaCount());
 
     assert(schema.size() > 0);
 
@@ -1930,7 +2464,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
         // Do any cleanup we might need to do...
         //
         fgCountInstrumentor->SuppressProbes();
-        fgClassInstrumentor->SuppressProbes();
+        fgHistogramInstrumentor->SuppressProbes();
 
         // If we needed to create cheap preds, we're done with them now.
         //
@@ -1941,7 +2475,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
         // We may have modified control flow preparing for instrumentation.
         //
-        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgClassInstrumentor->ModifiedFlow();
+        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
         return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1956,22 +2490,25 @@ PhaseStatus Compiler::fgInstrumentMethod()
             fgCountInstrumentor->Instrument(block, schema, profileMemory);
         }
 
-        if (fgClassInstrumentor->ShouldProcess(block))
+        if (fgHistogramInstrumentor->ShouldProcess(block))
         {
-            fgClassInstrumentor->Instrument(block, schema, profileMemory);
+            fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
     }
 
-    // Verify we instrumented everthing we created schemas for.
+    // Verify we instrumented everything we created schemas for.
     //
     assert(fgCountInstrumentor->InstrCount() == fgCountInstrumentor->SchemaCount());
-    assert(fgClassInstrumentor->InstrCount() == fgClassInstrumentor->SchemaCount());
+
+    // Verify we instrumented for each probe
+    //
+    assert(fgHistogramInstrumentor->InstrCount() == info.compHandleHistogramProbeCount);
 
     // Add any special entry instrumentation. This does not
     // use the schema mechanism.
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgClassInstrumentor->InstrumentMethodEntry(schema, profileMemory);
+    fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
 
     // If we needed to create cheap preds, we're done with them now.
     //
@@ -2050,11 +2587,35 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
+
+            case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
+                fgPgoMethodProfiles++;
+                break;
+
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
+                if (iSchema + 1 < fgPgoSchemaCount)
+                {
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes)
+                    {
+                        fgPgoClassProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods)
+                    {
+                        fgPgoMethodProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                }
+
+                __fallthrough;
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
@@ -2070,15 +2631,19 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgNumProfileRuns = 1;
     }
 
-    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d other records\n",
-            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, otherRecords);
+    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d method profiles, %d "
+            "other records\n",
+            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, fgPgoMethodProfiles, otherRecords);
 
     const bool haveBlockCounts = fgPgoBlockCounts > 0;
     const bool haveEdgeCounts  = fgPgoEdgeCounts > 0;
 
-    // We expect one or the other but not both.
+    fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
+
+    // We expect not to have both block and edge counts. We may have other
+    // forms of profile data even if we do not have any counts.
     //
-    assert(haveBlockCounts != haveEdgeCounts);
+    assert(!haveBlockCounts || !haveEdgeCounts);
 
     if (haveBlockCounts)
     {
@@ -2149,14 +2714,6 @@ void Compiler::fgIncorporateBlockCounts()
         {
             fgSetProfileWeight(block, profileWeight);
         }
-    }
-
-    // For OSR, give the method entry (which will be a scratch BB)
-    // the same weight as the OSR Entry.
-    //
-    if (opts.IsOSR())
-    {
-        fgFirstBB->inheritWeight(fgOSREntryBB);
     }
 }
 
@@ -2650,7 +3207,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 bool     weightKnown = false;
                 if (info->m_incomingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all incoming edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all incoming edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_incomingEdges; edge != nullptr; edge = edge->m_nextIncomingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -2668,7 +3225,7 @@ void EfficientEdgeCountReconstructor::Solve()
                 }
                 else if (info->m_outgoingUnknown == 0)
                 {
-                    JITDUMP(FMT_BB ": all outgoing edge weights known, summming...\n", block->bbNum);
+                    JITDUMP(FMT_BB ": all outgoing edge weights known, summing...\n", block->bbNum);
                     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
                     {
                         if (!edge->m_weightKnown)
@@ -2956,7 +3513,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // By default, we're guaranteed to see at least 30 calls to instrumented method, for dynamic PGO.
     // Hence we require at least 30 observed switch executions.
     //
-    // The profitabilty of peeling is related to the dominant fraction. The cost has a constant portion
+    // The profitability of peeling is related to the dominant fraction. The cost has a constant portion
     // (at a minimum the cost of a not-taken branch) and a variable portion, plus increased code size.
     // So we don't want to peel in cases where the dominant fraction is too small.
     //
@@ -3334,15 +3891,16 @@ void flowList::setEdgeWeights(weight_t theMinWeight, weight_t theMaxWeight, Basi
 // fgComputeBlockAndEdgeWeights: determine weights for blocks
 //   and optionally for edges
 //
-void Compiler::fgComputeBlockAndEdgeWeights()
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::fgComputeBlockAndEdgeWeights()
 {
-    JITDUMP("*************** In fgComputeBlockAndEdgeWeights()\n");
-
     const bool usingProfileWeights = fgIsUsingProfileWeights();
-
-    fgModified             = false;
-    fgHaveValidEdgeWeights = false;
-    fgCalledCount          = BB_UNITY_WEIGHT;
+    bool       madeChanges         = false;
+    fgModified                     = false;
+    fgHaveValidEdgeWeights         = false;
+    fgCalledCount                  = BB_UNITY_WEIGHT;
 
 #if DEBUG
     if (verbose)
@@ -3352,35 +3910,47 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     }
 #endif // DEBUG
 
-    const weight_t returnWeight = fgComputeMissingBlockWeights();
+    weight_t returnWeight = BB_UNITY_WEIGHT;
+
+    madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
 
     if (usingProfileWeights)
     {
-        fgComputeCalledCount(returnWeight);
+        madeChanges |= fgComputeCalledCount(returnWeight);
     }
     else
     {
         JITDUMP(" -- no profile data, so using default called count\n");
     }
 
-    fgComputeEdgeWeights();
+    PhaseStatus edgeStatus = fgComputeEdgeWeights();
+
+    if (edgeStatus != PhaseStatus::MODIFIED_NOTHING)
+    {
+        return edgeStatus;
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
 // fgComputeMissingBlockWeights: determine weights for blocks
 //   that were not profiled and do not yet have weights.
 //
+// Arguments
+//    returnWeight [out] - sum of weights for all return and throw blocks
+//
 // Returns:
-//   sum of weights for all return and throw blocks in the method
-
-weight_t Compiler::fgComputeMissingBlockWeights()
+//    true if any changes made
+//
+bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
 {
     BasicBlock* bSrc;
     BasicBlock* bDst;
     unsigned    iterations = 0;
     bool        changed;
     bool        modified = false;
-    weight_t    returnWeight;
+    weight_t    weight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -3388,8 +3958,8 @@ weight_t Compiler::fgComputeMissingBlockWeights()
     modified = false;
     do // while (changed)
     {
-        changed      = false;
-        returnWeight = 0;
+        changed = false;
+        weight  = 0;
         iterations++;
 
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
@@ -3454,6 +4024,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
 
+                // Handler entries are assumed to run rarely, except for
+                // finally blocks: These are executed regardless of if
+                // an exception is thrown, and thus should inherit weight.
+                if (bbIsHandlerBeg(bDst))
+                {
+                    bSrc = bDst->bbPreds->getBlock();
+
+                    // To minimize asmdiffs for now, modify weights only if splitting.
+                    if (fgFirstColdBlock != nullptr)
+                    {
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
+                        {
+                            newWeight = bSrc->bbWeight;
+                        }
+                        else
+                        {
+                            newWeight = BB_ZERO_WEIGHT;
+                        }
+                    }
+                }
+
                 if ((newWeight != BB_MAX_WEIGHT) && (bDst->bbWeight != newWeight))
                 {
                     changed        = true;
@@ -3469,13 +4060,27 @@ weight_t Compiler::fgComputeMissingBlockWeights()
                     }
                 }
             }
+            else if (!bDst->hasProfileWeight() && bbIsHandlerBeg(bDst) && !bDst->isRunRarely())
+            {
+                // Assume handler/filter entries are rarely executed.
+                // To avoid unnecessary loop iterations, set weight
+                // only if bDst->bbWeight is not already zero.
+
+                // To minimize asmdiffs for now, modify weights only if splitting.
+                if (fgFirstColdBlock != nullptr)
+                {
+                    changed  = true;
+                    modified = true;
+                    bDst->bbSetRunRarely();
+                }
+            }
 
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
             if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
-                returnWeight += bDst->bbWeight;
+                weight += bDst->bbWeight;
             }
         }
     }
@@ -3493,7 +4098,9 @@ weight_t Compiler::fgComputeMissingBlockWeights()
     }
 #endif
 
-    return returnWeight;
+    *returnWeight = weight;
+
+    return modified;
 }
 
 //-------------------------------------------------------------
@@ -3502,12 +4109,16 @@ weight_t Compiler::fgComputeMissingBlockWeights()
 //
 // Argument:
 //   returnWeight - sum of weights for all return and throw blocks
-
-void Compiler::fgComputeCalledCount(weight_t returnWeight)
+//
+// Returns:
+//   true if any changes were made
+//
+bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 {
     // When we are not using profile data we have already setup fgCalledCount
     // only set it here if we are using profile data
     assert(fgIsUsingProfileWeights());
+    bool madeChanges = false;
 
     BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
@@ -3549,6 +4160,7 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
     if (fgFirstBBisScratch())
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
+        madeChanges = true;
     }
 
 #if DEBUG
@@ -3557,12 +4169,17 @@ void Compiler::fgComputeCalledCount(weight_t returnWeight)
         printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
     }
 #endif
+
+    return madeChanges;
 }
 
 //-------------------------------------------------------------
 // fgComputeEdgeWeights: compute edge weights from block weights
-
-void Compiler::fgComputeEdgeWeights()
+//
+// Returns:
+//   Suitable phase status
+//
+PhaseStatus Compiler::fgComputeEdgeWeights()
 {
     const bool isOptimizing        = opts.OptimizationEnabled();
     const bool usingProfileWeights = fgIsUsingProfileWeights();
@@ -3570,7 +4187,7 @@ void Compiler::fgComputeEdgeWeights()
     if (!isOptimizing || !usingProfileWeights)
     {
         JITDUMP(" -- not optimizing or no profile data, so not computing edge weights\n");
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     BasicBlock* bSrc;
@@ -3937,6 +4554,8 @@ EARLY_EXIT:;
 
     fgHaveValidEdgeWeights = !inconsistentProfileData;
     fgEdgeWeightsComputed  = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -3979,7 +4598,7 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckProfileData: verify profile data is self-consistent
+// fgDebugCheckProfileWeights: verify profile weights are self-consistent
 //   (or nearly so)
 //
 // Notes:
@@ -3990,9 +4609,18 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   we expect EH edge counts to be small, so errors from ignoring
 //   them should be rare.
 //
-void Compiler::fgDebugCheckProfileData()
+//   There's no point checking until we've built pred lists, as
+//   we can't easily reason about consistency without them.
+//
+void Compiler::fgDebugCheckProfileWeights()
 {
-    assert(fgComputePredsDone);
+    // Optionally check profile data, if we have any.
+    //
+    const bool enabled = (JitConfig.JitProfileChecks() > 0) && fgHaveProfileWeights() && fgComputePredsDone;
+    if (!enabled)
+    {
+        return;
+    }
 
     // We can't check before we have computed edge weights.
     //

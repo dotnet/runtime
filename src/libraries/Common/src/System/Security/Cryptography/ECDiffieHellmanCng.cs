@@ -20,8 +20,16 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDiffieHellmanCng(ECCurve curve)
         {
-            // GenerateKey will already do all of the validation we need.
-            GenerateKey(curve);
+            try
+            {
+                // GenerateKey will already do all of the validation we need.
+                GenerateKey(curve);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
         }
 
         public override int KeySize
@@ -58,24 +66,16 @@ namespace System.Security.Cryptography
             KeySizeValue = newKeySize;
         }
 
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // Return the three sizes that can be explicitly set (for backwards compatibility)
-                return new[] {
-                    new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                    new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                };
-            }
-        }
+        // Return the three sizes that can be explicitly set (for backwards compatibility)
+        public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
         public override byte[] DeriveKeyFromHash(
-            ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
             byte[]? secretPrepend,
             byte[]? secretAppend)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
@@ -90,12 +90,13 @@ namespace System.Security.Cryptography
         }
 
         public override byte[] DeriveKeyFromHmac(
-            ECDiffieHellmanPublicKey otherPartyPublicKey!!,
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
             byte[]? hmacKey,
             byte[]? secretPrepend,
             byte[]? secretAppend)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
@@ -114,8 +115,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey!!, byte[] prfLabel!!, byte[] prfSeed!!)
+        public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ArgumentNullException.ThrowIfNull(prfLabel);
+            ArgumentNullException.ThrowIfNull(prfSeed);
+
             using (SafeNCryptSecretHandle secretAgreement = DeriveSecretAgreementHandle(otherPartyPublicKey))
             {
                 return Interop.NCrypt.DeriveKeyMaterialTls(

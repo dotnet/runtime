@@ -508,12 +508,11 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         return E_FAIL;
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString modName = mod->GetPEAssembly()->GetPath();
     if (modName.IsEmpty())
         return E_FAIL;
 
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    const char* szModName = modName.GetUTF8();
 
     MethodDebugInfo methodDebugInfo(numMap, locals.countVars);
 
@@ -956,8 +955,7 @@ void TypeInfoBase::CalculateName()
 
     TypeString::AppendType(sName, typeHandle, formatFlags);
 
-    StackScratchBuffer buffer;
-    const UTF8 *utf8 = sName.GetUTF8(buffer);
+    const UTF8 *utf8 = sName.GetUTF8();
     if (typeHandle.IsValueType())
     {
         m_type_name = new char[strlen(utf8) + 1];
@@ -1298,11 +1296,9 @@ void FunctionMember::DumpLinkageName(char* ptr, int& offset)
     md->GetMethodInfoNoSig(namespaceOrClassName, methodName);
     SString utf8namespaceOrClassName;
     SString utf8methodName;
-    namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
-    methodName.ConvertToUTF8(utf8methodName);
 
-    const char *nspace = utf8namespaceOrClassName.GetUTF8NoConvert();
-    const char *mname = utf8methodName.GetUTF8NoConvert();
+    const char *nspace = utf8namespaceOrClassName.GetUTF8();
+    const char *mname = utf8methodName.GetUTF8();
 
     if (!nspace || !mname)
     {
@@ -2164,7 +2160,7 @@ void Elf_Builder::Initialize(PCODE codePtr, TADDR codeLen)
     //
     // Create '.text' section
     //
-    Elf_SectionTracker *text = OpenSection(".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
+    Elf_SectionTracker *text = OpenSection(".text", SHT_NOBITS, SHF_ALLOC | SHF_EXECINSTR);
     {
         text->DisableHeaderUpdate();
         text->Header()->sh_addr = codePtr;
@@ -2537,9 +2533,8 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     /* Get module name */
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    SString modName = mod->GetPEAssembly()->GetPath();
+    const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 
     int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
@@ -3166,7 +3161,7 @@ public:
     }
 };
 
-/* Buid the source files table for DWARF source line info */
+/* Build the source files table for DWARF source line info */
 bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines, const char * &cuPath)
 {
     FileTableBuilder fileTable(nlines);
@@ -3615,7 +3610,7 @@ const char * NotifyGdb::SplitFilename(const char* path)
     const char *pSlash = nullptr;
     for (const char *p = path; *p != '\0'; p++)
     {
-        if (*p == '/' || *p == '\\')
+        if (*p == DIRECTORY_SEPARATOR_CHAR_A)
             pSlash = p;
     }
 
@@ -3672,6 +3667,8 @@ Elf64_Ehdr::Elf64_Ehdr()
     e_machine = EM_X86_64;
 #elif defined(TARGET_ARM64)
     e_machine = EM_AARCH64;
+#elif defined(TARGET_LOONGARCH64)
+    e_machine = EM_LOONGARCH;
 #endif
     e_flags = 0;
     e_version = 1;

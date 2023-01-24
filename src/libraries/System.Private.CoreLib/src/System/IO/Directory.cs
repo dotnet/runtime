@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -32,6 +34,46 @@ namespace System.IO
             FileSystem.CreateDirectory(fullPath);
 
             return new DirectoryInfo(path, fullPath, isNormalized: true);
+        }
+
+        /// <summary>
+        /// Creates all directories and subdirectories in the specified path with the specified permissions unless they already exist.
+        /// </summary>
+        /// <param name="path">The directory to create.</param>
+        /// <param name="unixCreateMode">Unix file mode used to create directories.</param>
+        /// <returns>An object that represents the directory at the specified path. This object is returned regardless of whether a directory at the specified path already exists.</returns>
+        /// <exception cref="T:System.ArgumentException"><paramref name="path" /> is a zero-length string, or contains one or more invalid characters. You can query for invalid characters by using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method.</exception>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="path" /> is <see langword="null" />.</exception>
+        /// <exception cref="T:System.ArgumentException">The caller attempts to use an invalid file mode.</exception>
+        /// <exception cref="T:System.UnauthorizedAccessException">The caller does not have the required permission.</exception>
+        /// <exception cref="T:System.IO.PathTooLongException">The specified path exceeds the system-defined maximum length.</exception>
+        /// <exception cref="T:System.IO.IOException"><paramref name="path" /> is a file.</exception>
+        /// <exception cref="T:System.IO.DirectoryNotFoundException">A component of the <paramref name="path" /> is not a directory.</exception>
+        [UnsupportedOSPlatform("windows")]
+        public static DirectoryInfo CreateDirectory(string path, UnixFileMode unixCreateMode)
+            => CreateDirectoryCore(path, unixCreateMode);
+
+        /// <summary>
+        /// Creates a uniquely-named, empty directory in the current user's temporary directory.
+        /// </summary>
+        /// <param name="prefix">An optional string to add to the beginning of the subdirectory name.</param>
+        /// <returns>An object that represents the directory that was created.</returns>
+        /// <exception cref="ArgumentException"><paramref name="prefix" /> contains a directory separator.</exception>
+        /// <exception cref="IOException">A new directory cannot be created.</exception>
+        public static unsafe DirectoryInfo CreateTempSubdirectory(string? prefix = null)
+        {
+            EnsureNoDirectorySeparators(prefix);
+
+            string path = CreateTempSubdirectoryCore(prefix);
+            return new DirectoryInfo(path, isNormalized: true);
+        }
+
+        private static void EnsureNoDirectorySeparators(string? value, [CallerArgumentExpression("value")] string? paramName = null)
+        {
+            if (value is not null && value.AsSpan().IndexOfAny(PathInternal.DirectorySeparators) >= 0)
+            {
+                throw new ArgumentException(SR.Argument_DirectorySeparatorInvalid, paramName);
+            }
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
@@ -152,11 +194,14 @@ namespace System.IO
             => new List<string>(InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
 
         internal static IEnumerable<string> InternalEnumeratePaths(
-            string path!!,
-            string searchPattern!!,
+            string path,
+            string searchPattern,
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             return searchTarget switch
@@ -201,8 +246,10 @@ namespace System.IO
         public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumeratePaths(path, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        public static string GetDirectoryRoot(string path!!)
+        public static string GetDirectoryRoot(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             string fullPath = Path.GetFullPath(path);
             string root = Path.GetPathRoot(fullPath)!;
 

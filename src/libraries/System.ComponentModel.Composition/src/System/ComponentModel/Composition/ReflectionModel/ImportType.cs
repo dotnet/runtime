@@ -28,12 +28,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                return _castSingleValueCache = _castSingleValueCache ?? new Dictionary<Type, Func<Export, object>?>();
+                return _castSingleValueCache ??= new Dictionary<Type, Func<Export, object>?>();
             }
         }
 
-        public ImportType(Type type!!, ImportCardinality cardinality)
+        public ImportType(Type type, ImportCardinality cardinality)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _type = type;
             Type contractType = type;
 
@@ -103,8 +105,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return IsGenericDescendentOf(type.BaseType, baseGenericTypeDefinition);
         }
 
-        public static bool IsDescendentOf(Type type!!, Type baseType!!)
+        public static bool IsDescendentOf(Type type, Type baseType)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(baseType);
+
             if (!baseType.IsGenericTypeDefinition)
             {
                 return baseType.IsAssignableFrom(type);

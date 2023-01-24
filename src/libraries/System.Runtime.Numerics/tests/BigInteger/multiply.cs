@@ -204,6 +204,30 @@ namespace System.Numerics.Tests
             VerifyMultiplyString(Math.Pow(2, 33) + " 2 bMultiply");
         }
 
+        [Fact]
+        public static void RunMultiply_OnePositiveOneNegative()
+        {
+            Random random = new Random(s_seed);
+            byte[] tempByteArray1 = new byte[0];
+
+            // Multiply Method - One positive and one negative BigIntegers
+            for (int i = 0; i < s_samples; i++)
+            {
+                try
+                {
+                    tempByteArray1 = GetRandomByteArray(random);
+                    string randBigInt = Print(tempByteArray1);
+                    VerifyMultiplyString(randBigInt + randBigInt + "uNegate bMultiply");
+
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    Console.WriteLine("Array1: " + Print(tempByteArray1));
+                    throw;
+                }
+            }
+        }
+
         private static void VerifyMultiplyString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);

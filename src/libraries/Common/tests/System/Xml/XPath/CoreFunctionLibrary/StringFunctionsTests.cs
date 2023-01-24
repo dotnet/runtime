@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
-using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.CoreFunctionLibrary
 {
@@ -18,790 +16,958 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// Verify result.
         /// string()="context node data"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest241()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest241(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1/Para[1]";
             var testExpression = @"string()";
             var expected = @"Test";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// string(1) = "1"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest242()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest242(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(1)";
             var expected = 1d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string(-0) = "0"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest243()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest243(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(-0)";
             var expected = 0d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string(+0) = "0"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest244()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest244(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(+0)";
 
-            Utils.XPathStringTestThrows<System.Xml.XPath.XPathException>(xml, testExpression);
+            Utils.XPathStringTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression);
         }
 
         /// <summary>
         /// Verify result.
         /// string(number("NotANumber")) = "NaN"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest245()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest245(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(number(""NotANumber""))";
             var expected = double.NaN;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string(true()) = "true"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest246()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest246(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(true())";
             var expected = @"true";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string(false()) = "false"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest247()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest247(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(false())";
             var expected = @"false";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string(child::para) = "1st child node data"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest248()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest248(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"string(child::Para)";
             var expected = @"Test";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// concat("AA", "BB") = "AABB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest249()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest249(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"concat(""AA"", ""BB"")";
             var expected = @"AABB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// concat("AA", "BB", "CC") = "AABBCC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2410()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2410(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"concat(""AA"", ""BB"", ""CC"")";
             var expected = @"AABBCC";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// concat(string(child::*), "BB") = "AABB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2411()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2411(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"concat(string(child::*), ""BB"")";
             var expected = @"TestBB";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// starts-with("AABB", "AA") = true
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2412()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2412(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"starts-with(""AABB"", ""AA"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// starts-with("AABB", "BB") = false
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2413()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2413(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"starts-with(""AABB"", ""BB"")";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// starts-with("AABB", string(child::*)) = true
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2414()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2414(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"starts-with(""TestBB"", string(child::*))";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// contains("AABBCC", "BB") = true
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2415()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2415(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"contains(""AABBCC"", ""BB"")";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// contains("AABBCC", "DD") = false
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2416()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2416(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"contains(""AABBCC"", ""DD"")";
             var expected = false;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// contains("AABBCC", string(child::*)) = true
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2417()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2417(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"contains(""AATestBB"", string(child::*))";
             var expected = true;
 
-            Utils.XPathBooleanTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathBooleanTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-before("AA/BB", "/") = "AA"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2418()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2418(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring-before(""AA/BB"", ""/"")";
             var expected = @"AA";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-before("AA/BB", "D") = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2419()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2419(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring-before(""AA/BB"", ""D"")";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-before(string(child::*), "/") = "AA"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2420()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2420(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"substring-before(string(child::*), ""t"")";
             var expected = @"Tes";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-after("AA/BB", "/") = "BB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2421()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2421(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring-after(""AA/BB"", ""/"")";
             var expected = @"BB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-after("AA/BB", "D") != ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2422()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2422(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring-after(""AA/BB"", ""D"")";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring-after(string(child::*), "/") = "BB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2423()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2423(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"substring-after(string(child::*), ""T"")";
             var expected = @"est";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABC", 2) = "BC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2424()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2424(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABC"", 2)";
             var expected = @"BC";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCD", 2, 2) = "BC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2425()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2425(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCD"", 2, 2)";
             var expected = @"BC";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", 1.5, 2.6) = "BCD"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2426()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2426(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 1.5, 2.6)";
             var expected = @"BCD";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", 0, 3) = "AB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2427()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2427(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 0, 3)";
             var expected = @"AB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", 0 div 0, 3) = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2428()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2428(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 0 div 0, 3)";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", 1, 0 div 0) = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2429()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2429(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 1, 0 div 0)";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", -42, 1 div 0) = "ABCDE"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2430()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2430(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", -42, 1 div 0)";
             var expected = @"ABCDE";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring("ABCDE", -1 div 0, 1 div 0) = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2431()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2431(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", -1 div 0, 1 div 0)";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// substring(string(child::*), 2) = "BC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2432()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2432(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"substring(string(child::*), 2)";
             var expected = @"est";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// string-length("ABCDE") = 5
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2433()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2433(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string-length(""ABCDE"")";
             var expected = 5d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result ( assuming the string-value of the context node has 5 characters).
         /// string-length() = 5
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2434()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2434(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1/Para[1]";
             var testExpression = @"string-length()";
             var expected = 4d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// string-length("") = 0
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2435()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2435(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string-length("""")";
             var expected = 0d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// string-length(string(child::*)) = 2
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2436()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2436(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"string-length(string(child::*))";
             var expected = 4d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("") = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2473()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2473(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space("""")";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space(" \t\n\r") = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2474()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2474(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = "normalize-space(\" \t\n\r\")";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space(" Surrogate-Pair-String ") = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2475()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2475(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var fourCircles = char.ConvertFromUtf32(0x1F01C);
             var testExpression = "normalize-space(\" " + fourCircles + " \")";
             var expected = fourCircles;
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space(" AB") = "AB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2437()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2437(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space("" AB"")";
             var expected = @"AB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("AB ") = "AB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2438()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2438(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""AB "")";
             var expected = @"AB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("A B") = "A B"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2439()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2439(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""A B"")";
             var expected = @"A B";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("     AB") = "AB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2440()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2440(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""   AB"")";
             var expected = @"AB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("AB     ") = "AB"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2441()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2441(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""AB   "")";
             var expected = @"AB";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("A     B") = "A B"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2442()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2442(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""A   B"")";
             var expected = @"A B";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space("     A     B     ") = "A B"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2443()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2443(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"normalize-space(""   A   B   "")";
             var expected = @"A B";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space() = "A B"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2444()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2444(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test4/Para[1]";
             var testExpression = @"normalize-space()";
             var expected = @"A B";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Checks for preceding and trailing whitespace
         /// normalize-space('   abc   ')
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2445()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2445(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"normalize-space('   abc   ')";
             var expected = @"abc";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Checks for preceding and trailing whitespace (characters other than space)
         /// normalize-space('   abc   ')
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2446()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2446(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"normalize-space('			abc			')";
             var expected = @"abc";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Checks for a sequence of whitespace between characters
         /// normalize-space('a     bc')
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2447()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2447(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"normalize-space('a	bc')";
             var expected = @"a bc";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Checks for a sequence of whitespace between characters (characters other than space)
         /// normalize-space('a   bc')
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2448()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2448(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"normalize-space('a			bc')";
             var expected = @"a bc";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// A single tab should be replaced with a space
         /// normalize-space('a bc')
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2449()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2449(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"normalize-space('a	bc')";
             var expected = @"a bc";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// normalize-space(string(child::*)) = "A B"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2450()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2450(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test4";
             var testExpression = @"normalize-space(string(child::*))";
             var expected = @"A B";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("", "abc", "ABC") = ""
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2472()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2472(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate("""", ""abc"", ""ABC"")";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("unicode", "unicode", "uppercase-unicode") = "uppercase -unicode"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2476()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2476(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = "translate(\"\0x03B1\0x03B2\0x03B3\", \"\0x03B1\0x03B2\0x03B3\", \"\0x0391\0x0392\0x0393\")";
             var expected = "\0x0391\0x0392\0x0393";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("surrogate-pairs", "ABC", "") = "surrogate-pairs"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2477()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2477(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var fourOClock = char.ConvertFromUtf32(0x1F553);
@@ -809,204 +975,249 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var testExpression = @"translate(""" + fourOClock + fiveOClock + @""", ""ABC"", """")";
             var expected = fourOClock + fiveOClock;
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("abc", "abca", "ABCZ") = "ABC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2478()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2478(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate(""abc"", ""abca"", ""ABCZ"")";
             var expected = "ABC";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("abc", "abc", "ABC") = "ABC"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2451()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2451(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate(""abc"", ""abc"", ""ABC"")";
             var expected = @"ABC";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("aba", "b", "B") = "aBa"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2452()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2452(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate(""aba"", ""b"", ""B"")";
             var expected = @"aBa";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate("--aaa--", "abc-", "ABC") = "AAA"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2453()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2453(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"translate(""-aaa-"", ""abc-"", ""ABC"")";
             var expected = @"AAA";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Verify result.
         /// translate(string(child::*), "AB", "ab") = "aa"
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2454()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2454(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
             var startingNodePath = "/Doc/Test1";
             var testExpression = @"translate(string(child::*), ""est"", ""EST"")";
             var expected = @"TEST";
 
-            Utils.XPathStringTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// string(NaN)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2455()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2455(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(number(0 div 0))";
             var expected = double.NaN;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// string(-0)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2456()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2456(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(-0)";
             var expected = 0d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// string(infinity)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2457()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2457(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(number(1 div 0))";
             var expected = double.PositiveInfinity;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// string(-Infinity)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2458()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2458(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(number(-1 div 0))";
             var expected = double.NegativeInfinity;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// for integers, leading zeros and decimal should be removed
         /// string(007.00)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2459()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2459(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(007.00)";
             var expected = 7d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// string(-007.00)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2460()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2460(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"string(-007.00)";
             var expected = -7d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Code coverage: covers the substring() function with in a query
         /// child::*[substring(name(),0,1)="b"]
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2461()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2461(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"child::*[substring(name(),0,1)=""b""]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Code coverage: covers the substring-after() function with in a query
         /// child::*[substring-after(name(),"b")="ook"]
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2462()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2462(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"child::*[substring-after(name(),""b"")=""ook""]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Code coverage: covers the normalize-space() function with in a query
         /// child::*[normalize-space(" book")=name()]
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2463()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2463(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"child::*[normalize-space("" book"")=name()]";
             var expected = new XPathResult(0);
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Expected: namespace uri
         /// string() (namespace node)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2464()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2464(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/ns:store/ns:booksection/namespace::NSbook";
@@ -1016,7 +1227,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             namespaceManager.AddNamespace("ns", "http://default.htm");
             var expected = @"http://book.htm";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -1024,8 +1235,11 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// Expected: xml namespace uri
         /// string() (namespace node = xml)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2465()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2465(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/ns:store/namespace::*[last()]";
@@ -1035,7 +1249,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             namespaceManager.AddNamespace("ns", "http://default.htm");
             var expected = @"http://www.w3.org/XML/1998/namespace";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -1043,8 +1257,11 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// Expected: default namespace uri
         /// string() (namespace node = default ns)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2466()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2466(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/ns:store/namespace::*[1]";
@@ -1054,7 +1271,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             namespaceManager.AddNamespace("ns", "http://default.htm");
             var expected = @"http://default.htm";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -1062,8 +1279,11 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         /// Expected: uri of namespace
         /// string() (namespace node)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2467()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2467(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"string(ns:store/ns:booksection/namespace::*)";
@@ -1072,46 +1292,55 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             namespaceManager.AddNamespace("ns", "http://default.htm");
             var expected = @"http://book.htm";
 
-            Utils.XPathStringTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathStringTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// substring("ABCDE", 1, -1)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2468()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2468(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 1, -1)";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// substring("ABCDE", 1, -1 div 0)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2469()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2469(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
             var testExpression = @"substring(""ABCDE"", 1, -1 div 0)";
             var expected = @"";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// string(/bookstore/book/title)
         /// </summary>
-        [Fact]
-        public static void StringFunctionsTest2471()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void StringFunctionsTest2471(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"string(/bookstore/book/title)";
             var expected = @"Seven Years in Trenton";
 
-            Utils.XPathStringTest(xml, testExpression, expected);
+            Utils.XPathStringTest(kind, xml, testExpression, expected);
         }
     }
 }

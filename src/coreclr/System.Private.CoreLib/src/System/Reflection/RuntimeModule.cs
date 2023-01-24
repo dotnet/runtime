@@ -153,8 +153,6 @@ namespace System.Reflection
 
             Type declaringType = ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
 
-            declaringType.GetFields();
-
             try
             {
                 return declaringType.GetField(fieldName,
@@ -385,16 +383,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -415,9 +417,11 @@ namespace System.Reflection
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(
-            string className!!, // throw on null strings regardless of the value of "throwOnError"
+            string className, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
+            ArgumentNullException.ThrowIfNull(className);
+
             RuntimeType? retType = null;
             object? keepAlive = null;
             RuntimeModule thisAsLocal = this;
@@ -475,8 +479,10 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public override FieldInfo? GetField(string name!!, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return RuntimeType?.GetField(name, bindingAttr);
         }
 
@@ -523,7 +529,7 @@ namespace System.Reflection
             return m_runtimeAssembly;
         }
 
-        protected override ModuleHandle GetModuleHandleImpl()
+        private protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
         }

@@ -172,10 +172,6 @@ namespace System.Runtime
         internal static extern int RhEndNoGCRegion();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpShutdown")]
-        internal static extern void RhpShutdown();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCSegmentSize")]
         internal static extern ulong RhGetGCSegmentSize();
 
@@ -186,6 +182,17 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
         internal static extern long RhGetTotalAllocatedBytes();
+
+        internal enum GCConfigurationType
+        {
+            Int64,
+            StringUtf8,
+            Boolean
+        }
+
+        [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe partial void RhEnumerateConfigurationValues(void* configurationContext, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
 
         [LibraryImport(RuntimeLibrary)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -200,6 +207,10 @@ namespace System.Runtime
 
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalPauseDuration")]
+        internal static extern long RhGetTotalPauseDuration();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
@@ -225,6 +236,12 @@ namespace System.Runtime
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;
+        }
+
+        internal static IntPtr RhHandleAllocRefCounted(object value)
+        {
+            const int HNDTYPE_REFCOUNTED = 5;
+            return RhHandleAlloc(value, (GCHandleType)HNDTYPE_REFCOUNTED);
         }
 
         // Allocate handle for dependent handle case where a secondary can be set at the same time.
@@ -281,14 +298,14 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static unsafe extern bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
+        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
 
         internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
             => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
-        private static unsafe extern bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
+        private static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
         internal static unsafe bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType)
             => AreTypesAssignable(pSourceType.ToPointer(), pTargetType.ToPointer());
@@ -299,18 +316,22 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        private static unsafe extern object IsInstanceOf(MethodTable* pTargetType, object obj);
+        private static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
             => IsInstanceOf(pTargetType.ToPointer(), obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        private  static unsafe extern object IsInstanceOfClass(MethodTable* pTargetType, object obj);
+        private  static extern unsafe object IsInstanceOfClass(MethodTable* pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static unsafe extern object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
+        internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfException")]
+        internal static extern unsafe bool IsInstanceOfException(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
             => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
@@ -323,28 +344,28 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
-        private static unsafe extern object RhBoxAny(ref byte pData, MethodTable* pEEType);
+        private static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
         internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
             => RhBoxAny(ref pData, pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static unsafe extern object RhNewObject(MethodTable* pEEType);
+        private static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        private static unsafe extern Array RhNewArray(MethodTable* pEEType, int length);
+        private static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
 
         internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
             => RhNewArray(pEEType.ToPointer(), length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static unsafe extern string RhNewString(MethodTable* pEEType, int length);
+        internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
 
         internal static unsafe string RhNewString(EETypePtr pEEType, int length)
             => RhNewString(pEEType.ToPointer(), length);
@@ -363,15 +384,16 @@ namespace System.Runtime
         internal static unsafe void RhUnbox(object? obj, ref byte data, EETypePtr pUnboxToEEType)
             => RhUnbox(obj, ref data, pUnboxToEEType.ToPointer());
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhMemberwiseClone")]
-        internal static extern object RhMemberwiseClone(object obj);
-
         // Busy spin for the given number of iterations.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
         [SuppressGCTransition]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static partial void RhSpinWait(int iterations);
+
+        // Call RhSpinWait with a GC transition
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial void RhLongSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
@@ -445,12 +467,15 @@ namespace System.Runtime
         internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
-        internal static extern IntPtr RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot);
+        // For my life cannot figure out the ordering of modifiers this is expecting.
+#pragma warning disable IDE0036
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext);
+
+        internal static unsafe IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot)
+        {
+            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
@@ -483,6 +508,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnregisterRefCountedHandleCallback")]
         internal static extern void RhUnregisterRefCountedHandleCallback(IntPtr pCalloutMethod, EETypePtr pTypeFilter);
+
+#if FEATURE_OBJCMARSHAL
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterObjectiveCMarshalBeginEndCallback")]
+        internal static extern bool RhRegisterObjectiveCMarshalBeginEndCallback(IntPtr pCalloutMethod);
+#endif
 
         //
         // Blob support
@@ -531,19 +562,19 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
+        internal static extern unsafe object[] RhGetThreadStaticStorageForModule(int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static unsafe extern bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
+        internal static extern unsafe bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static unsafe extern IntPtr RhCurrentNativeThreadId();
+        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
-        internal static unsafe extern ulong RhCurrentOSThreadId();
+        internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport("*", "RhGetCurrentThunkContext")]
@@ -627,33 +658,31 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
-        // The GC conservative reporting descriptor is a special structure of data that the GC
-        // parses to determine whether there are specific regions of memory that it should not
-        // collect or move around.
-        // This can only be used to report memory regions on the current stack and the structure must itself
-        // be located on the stack.
-        // This structure is contractually required to be 4 pointers in size. All details about
-        // the contents are abstracted into the runtime
-        // To use, place one of these structures on the stack, and then pass it by ref to a function
-        // which will pin the byref to create a pinned interior pointer.
-        // Then, call RhInitializeConservativeReportingRegion to mark the region as conservatively reported.
-        // When done, call RhDisableConservativeReportingRegion to disable conservative reporting, or
-        // simply let it be pulled off the stack.
-        internal struct ConservativelyReportedRegionDesc
+        internal unsafe struct GCFrameRegistration
         {
-            private IntPtr _ptr1;
-            private IntPtr _ptr2;
-            private IntPtr _ptr3;
-            private IntPtr _ptr4;
+            private nuint m_reserved1;
+            private nuint m_reserved2;
+            private void* m_pObjRefs;
+            private uint m_numObjRefs;
+            private int m_MaybeInterior;
+
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+                m_reserved1 = 0;
+                m_reserved2 = 0;
+                m_pObjRefs = allocation;
+                m_numObjRefs = elemCount;
+                m_MaybeInterior = areByRefs ? 1 : 0;
+            }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhInitializeConservativeReportingRegion")]
-        internal static extern unsafe void RhInitializeConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc, void* bufferBegin, int cbBuffer);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterForGCReporting")]
+        internal static extern unsafe void RhRegisterForGCReporting(GCFrameRegistration* pRegistration);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhDisableConservativeReportingRegion")]
-        internal static extern unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhUnregisterForGCReporting")]
+        internal static extern unsafe void RhUnregisterForGCReporting(GCFrameRegistration* pRegistration);
 
         //
         // ETW helpers.
@@ -679,7 +708,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
-        internal static extern object InterlockedExchange([NotNullIfNotNull("value")] ref object? location1, object? value);
+        internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]

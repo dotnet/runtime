@@ -180,6 +180,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_FILESTREAM :
 		if (output_path) {
 			file_stream_writer = ep_file_stream_writer_alloc (output_path);
+			ep_raise_error_if_nok (file_stream_writer != NULL);
 			instance->file = ep_file_alloc (ep_file_stream_writer_get_stream_writer_ref (file_stream_writer), format);
 			ep_raise_error_if_nok (instance->file != NULL);
 			file_stream_writer = NULL;
@@ -266,13 +267,14 @@ ep_session_enable_rundown (EventPipeSession *session)
 
 	//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
 	//! The keywords below seems to correspond to:
+	//!  GCKeyword                          (0x00000001)
 	//!  LoaderKeyword                      (0x00000008)
 	//!  JitKeyword                         (0x00000010)
 	//!  NgenKeyword                        (0x00000020)
 	//!  unused_keyword                     (0x00000100)
 	//!  JittedMethodILToNativeMapKeyword   (0x00020000)
 	//!  ThreadTransferKeyword              (0x80000000)
-	const uint64_t keywords = 0x80020138;
+	const uint64_t keywords = 0x80020139;
 	const EventPipeEventLevel verbose_logging_level = EP_EVENT_LEVEL_VERBOSE;
 
 	EventPipeProviderConfiguration rundown_providers [2];
@@ -578,7 +580,7 @@ ep_session_resume (EventPipeSession *session)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_session;
 const char quiet_linker_empty_file_warning_eventpipe_session = 0;
 #endif

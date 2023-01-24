@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-// This test case is ported from S.N.Vector counterpart 
-// https://github.com/dotnet/coreclr/blob/master/tests/src/JIT/SIMD/VectorUnused.cs
+// This test case is ported from S.N.Vector counterpart
+// https://github.com/dotnet/runtime/blob/main/src/tests/JIT/SIMD/VectorUnused.cs
 
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-internal partial class IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.General;
+
+public partial class Program
 {
-    private const int Pass = 100;
-    private const int Fail = -1;
-
     private class Vector128UnusedTest<T> where T : struct, IComparable<T>, IEquatable<T>
     {
         public static int VectorUnused(T t1, T t2)
@@ -41,7 +41,8 @@ internal partial class IntelHardwareIntrinsicTest
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static void VectorUnused()
     {
         int returnVal = Pass;
 
@@ -72,6 +73,6 @@ internal partial class IntelHardwareIntrinsicTest
             if (Vector256UnusedTest<long>.VectorUnused(3, 2) != Pass) returnVal = Fail;
             if (Vector256UnusedTest<ulong>.VectorUnused(3, 2) != Pass) returnVal = Fail;
         }
-        return returnVal;
+        Assert.Equal(Pass, returnVal);
     }
 }

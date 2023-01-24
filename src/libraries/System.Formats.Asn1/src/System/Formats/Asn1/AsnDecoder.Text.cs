@@ -184,7 +184,7 @@ namespace System.Formats.Asn1
 
         /// <summary>
         ///   Reads a character string value from <paramref name="source"/> with a specified tag under
-        ///   the specified encoding rules, copying the decoded string into a a provided destination buffer.
+        ///   the specified encoding rules, copying the decoded string into a provided destination buffer.
         /// </summary>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="destination">The buffer in which to write.</param>

@@ -42,13 +42,17 @@ namespace System
             };
         }
 
-        public static StringComparer Create(CultureInfo culture!!, bool ignoreCase)
+        public static StringComparer Create(CultureInfo culture, bool ignoreCase)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return new CultureAwareComparer(culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public static StringComparer Create(CultureInfo culture!!, CompareOptions options)
+        public static StringComparer Create(CultureInfo culture, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return new CultureAwareComparer(culture, options);
         }
 
@@ -185,8 +189,10 @@ namespace System
             return x.Equals(y);
         }
 
-        public int GetHashCode(object obj!!)
+        public int GetHashCode(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (obj is string s)
             {
                 return GetHashCode(s);
@@ -254,8 +260,10 @@ namespace System
             return _compareInfo.Compare(x, y, _options) == 0;
         }
 
-        public override int GetHashCode(string obj!!)
+        public override int GetHashCode(string obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             return _compareInfo.GetHashCode(obj, _options);
         }
 
@@ -310,7 +318,7 @@ namespace System
 
             if (_ignoreCase)
             {
-                return string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+                return System.Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
             }
 
             return string.CompareOrdinal(x, y);
@@ -410,7 +418,25 @@ namespace System
         {
         }
 
-        public override int Compare(string? x, string? y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+        public override int Compare(string? x, string? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return 0;
+            }
+
+            if (x == null)
+            {
+                return -1;
+            }
+
+            if (y == null)
+            {
+                return 1;
+            }
+
+            return System.Globalization.Ordinal.CompareStringIgnoreCase(ref x.GetRawStringData(), x.Length, ref y.GetRawStringData(), y.Length);
+        }
 
         public override bool Equals(string? x, string? y)
         {

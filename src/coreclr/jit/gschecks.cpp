@@ -15,6 +15,42 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
+// gsPhase: modify IR and symbols to implement stack security checks
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::gsPhase()
+{
+    bool madeChanges = false;
+
+    if (getNeedsGSSecurityCookie())
+    {
+        unsigned const prevBBCount = fgBBcount;
+        gsGSChecksInitCookie();
+
+        if (compGSReorderStackLayout)
+        {
+            gsCopyShadowParams();
+        }
+
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
+        madeChanges = true;
+    }
+    else
+    {
+        JITDUMP("No GS security needed\n");
+    }
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 /*****************************************************************************
  * gsGSChecksInitCookie
  * Grabs the cookie for detecting overflow of unsafe buffers.
@@ -53,15 +89,25 @@ void Compiler::gsCopyShadowParams()
     }
 
     // Allocate array for shadow param info
+    //
     gsShadowVarInfo = new (this, CMK_Unknown) ShadowParamVarInfo[lvaCount]();
 
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
     // Look for assignments to *p, and ptrs passed to functions
+    //
     if (gsFindVulnerableParams())
     {
         // Replace vulnerable params by shadow copies.
+        //
         gsParamsToShadows();
+    }
+    else
+    {
+        // There are no vulnerable params.
+        // Clear out the info to avoid looking at stale data.
+        //
+        gsShadowVarInfo = nullptr;
     }
 }
 
@@ -120,6 +166,8 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_FIELD:
 
             newState.isUnderIndir = true;
@@ -189,20 +237,25 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             newState.isUnderIndir = false;
             newState.isAssignSrc  = false;
             {
-                if (tree->AsCall()->gtCallThisArg != nullptr)
+                CallArg* thisArg = tree->AsCall()->gtArgs.GetThisArg();
+                if (thisArg != nullptr)
                 {
+                    // TODO-ARGS: This is a quirk for previous behavior where
+                    // we set this to true for the 'this' arg. The flag can
+                    // then remain set after the recursive call, depending on
+                    // what the child node is, e.g. GT_ARGPLACE did not clear
+                    // the flag, so when processing the second arg we would
+                    // also have isUnderIndir = true.
                     newState.isUnderIndir = true;
-                    comp->fgWalkTreePre(&tree->AsCall()->gtCallThisArg->NodeRef(), gsMarkPtrsAndAssignGroups,
-                                        (void*)&newState);
                 }
 
-                for (GenTreeCall::Use& use : tree->AsCall()->Args())
+                for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.EarlyNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-                for (GenTreeCall::Use& use : tree->AsCall()->LateArgs())
+                for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
                 {
-                    comp->fgWalkTreePre(&use.NodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
+                    comp->fgWalkTreePre(&arg.LateNodeRef(), gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
 
                 if (tree->AsCall()->gtCallType == CT_INDIRECT)
@@ -214,15 +267,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                     // a write to memory.
                     comp->fgWalkTreePre(&tree->AsCall()->gtCallAddr, gsMarkPtrsAndAssignGroups, (void*)&newState);
                 }
-            }
-            return WALK_SKIP_SUBTREES;
-
-        case GT_ADDR:
-            newState.isUnderIndir = false;
-            // We'll assume p in "**p = " can be vulnerable because by changing 'p', someone
-            // could control where **p stores to.
-            {
-                comp->fgWalkTreePre(&tree->AsOp()->gtOp1, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
             }
             return WALK_SKIP_SUBTREES;
 
@@ -359,7 +403,7 @@ bool Compiler::gsFindVulnerableParams()
 void Compiler::gsParamsToShadows()
 {
     // Cache old count since we'll add new variables, and
-    // gsShadowVarInfo will not grow to accomodate the new ones.
+    // gsShadowVarInfo will not grow to accommodate the new ones.
     UINT lvaOldCount = lvaCount;
 
     // Create shadow copy for each param candidate
@@ -405,7 +449,7 @@ void Compiler::gsParamsToShadows()
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
-        shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
+
         if (varTypeIsStruct(type))
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag
@@ -435,40 +479,47 @@ void Compiler::gsParamsToShadows()
     public:
         enum
         {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true
+            DoPostOrder = true
         };
 
         ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
         {
         }
 
-        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
 
-            unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
-            unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
-
-            if (shadowLclNum != BAD_VAR_NUM)
+            if (tree->OperIsLocal() || tree->OperIsLocalAddr())
             {
-                LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-                assert(ShadowParamVarInfo::mayNeedShadowCopy(varDsc));
+                unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
+                unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
 
-                tree->AsLclVarCommon()->SetLclNum(shadowLclNum);
-
-                if (varTypeIsSmall(varDsc->TypeGet()))
+                if (shadowLclNum != BAD_VAR_NUM)
                 {
-                    if (tree->OperIs(GT_LCL_VAR))
-                    {
-                        tree->gtType = TYP_INT;
+                    LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+                    assert(ShadowParamVarInfo::mayNeedShadowCopy(varDsc));
 
-                        if (user->OperIs(GT_ASG) && user->gtGetOp1() == tree)
+                    tree->AsLclVarCommon()->SetLclNum(shadowLclNum);
+
+                    if (varTypeIsSmall(varDsc->TypeGet()))
+                    {
+                        if (tree->OperIs(GT_LCL_VAR))
                         {
-                            user->gtType = TYP_INT;
+                            tree->gtType = TYP_INT;
+
+                            if (user->OperIs(GT_ASG) && user->gtGetOp1() == tree)
+                            {
+                                user->gtType = TYP_INT;
+                            }
                         }
                     }
                 }
+            }
+            // The transformation replaces small locals with TYP_INT ones, so "full" defs may become partial.
+            else if (tree->OperIs(GT_ASG) && varTypeIsSmall(tree->AsOp()->gtGetOp1()))
+            {
+                m_compiler->fgAssignSetVarDef(tree);
             }
 
             return WALK_CONTINUE;
@@ -509,7 +560,7 @@ void Compiler::gsParamsToShadows()
         {
             assert(shadowVarDsc->GetLayout() != nullptr);
             assert(shadowVarDsc->lvExactSize != 0);
-            opAssign = gtNewBlkOpNode(dst, src, false, true);
+            opAssign = gtNewBlkOpNode(dst, src);
         }
         else
         {
@@ -558,7 +609,7 @@ void Compiler::gsParamsToShadows()
                 GenTree* opAssign = nullptr;
                 if (varDsc->TypeGet() == TYP_STRUCT)
                 {
-                    opAssign = gtNewBlkOpNode(dst, src, false, true);
+                    opAssign = gtNewBlkOpNode(dst, src);
                 }
                 else
                 {

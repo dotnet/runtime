@@ -237,7 +237,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     {
         if (!CompatibleHostAndTargetPlatforms(hProcess))
         {
-            hr = CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+            hr = CORDBG_E_INCOMPATIBLE_PLATFORMS;
             goto Label_Exit;
         }
     }

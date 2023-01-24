@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -61,21 +63,37 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 4 (ICMPv4) error messages received.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long ErrorsReceived { get; }
 
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 4 (ICMPv4) Echo Request messages sent.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long ErrorsSent { get; }
 
         /// <summary>
         /// Gets the number of Internet Control Message Protocol messages received.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long MessagesReceived { get; }
 
         /// <summary>
         /// Gets the number of Internet Control Message Protocol version 4 (ICMPv4) messages sent.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long MessagesSent { get; }
 
         /// <summary>

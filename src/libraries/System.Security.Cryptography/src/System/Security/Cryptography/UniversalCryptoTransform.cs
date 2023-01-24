@@ -68,22 +68,17 @@ namespace System.Security.Cryptography
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            if (inputBuffer == null)
-                throw new ArgumentNullException(nameof(inputBuffer));
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            if (inputCount <= 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount));
+            ArgumentNullException.ThrowIfNull(inputBuffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputOffset, inputBuffer.Length);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(inputCount);
             if (inputCount % InputBlockSize != 0)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
             if (inputCount > inputBuffer.Length - inputOffset)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
-            if (outputBuffer == null)
-                throw new ArgumentNullException(nameof(outputBuffer));
-            if (outputOffset > outputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(outputOffset));
+
+            ArgumentNullException.ThrowIfNull(outputBuffer);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(outputOffset, outputBuffer.Length);
             if (inputCount > outputBuffer.Length - outputOffset)
                 throw new ArgumentOutOfRangeException(nameof(outputOffset), SR.Argument_InvalidOffLen);
 
@@ -92,14 +87,13 @@ namespace System.Security.Cryptography
             return numBytesWritten;
         }
 
-        public byte[] TransformFinalBlock(byte[] inputBuffer!!, int inputOffset, int inputCount)
+        public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
-            if (inputCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(inputCount));
-            if (inputOffset > inputBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(inputOffset));
+            ArgumentNullException.ThrowIfNull(inputBuffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(inputOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputOffset, inputBuffer.Length);
             if (inputCount > inputBuffer.Length - inputOffset)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Argument_InvalidOffLen);
 

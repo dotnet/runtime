@@ -23,12 +23,10 @@
 //#define USE_COREDISTOOLS
 #endif // INTERNAL_BUILD
 
-#ifdef _MSC_VER
-// On Windows, we build against PAL macros that convert to Windows SEH. But we don't want all the
-// Contract stuff that normally gets pulled it. Defining JIT_BUILD prevents this, just as it does
-// when building the JIT using parts of utilcode.
+// JIT_BUILD disables certain PAL_TRY debugging and Contracts features. Set this just as the JIT sets it.
 #define JIT_BUILD
 
+#ifdef _MSC_VER
 // Defining this prevents:
 //   error C2338 : / RTCc rejects conformant code, so it isn't supported by the C++ Standard Library.
 //   Either remove this compiler option, or define _ALLOW_RTCc_IN_STL to acknowledge that you have received this
@@ -55,7 +53,6 @@
 #include <malloc.h>
 #include <assert.h>
 #include <wchar.h>
-#include <tchar.h>
 #include <specstrings.h>
 #include <math.h>
 #include <limits.h>
@@ -64,6 +61,7 @@
 
 // Getting STL to work with PAL is difficult, so reimplement STL functionality to not require it.
 #ifdef TARGET_UNIX
+#include "clr_std/utility"
 #include "clr_std/string"
 #include "clr_std/algorithm"
 #include "clr_std/vector"
@@ -71,6 +69,7 @@
 #ifndef USE_STL
 #define USE_STL
 #endif // USE_STL
+#include <utility>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -83,13 +82,6 @@
 #include "..\external\msvcdis\inc\disarm64.h"
 #endif // USE_MSVCDIS
 
-#ifndef DIRECTORY_SEPARATOR_CHAR_A
-#define DIRECTORY_SEPARATOR_CHAR_A '\\'
-#endif
-#ifndef DIRECTORY_SEPARATOR_STR_A
-#define DIRECTORY_SEPARATOR_STR_A "\\"
-#endif
-
 #ifndef W
 #ifdef TARGET_UNIX
 #define W(str) u##str
@@ -98,9 +90,27 @@
 #endif // TARGET_UNIX
 #endif // !W
 
+#ifdef TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '/'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "/"
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_W
+#define DIRECTORY_SEPARATOR_STR_W W("/")
+#endif
+#else // TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '\\'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "\\"
+#endif
 #ifndef DIRECTORY_SEPARATOR_STR_W
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 #endif
+#endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_A PAL_SHLIB_SUFFIX
@@ -117,5 +127,7 @@ static inline void __debugbreak()
   DebugBreak();
 }
 #endif
+
+#include <minipal/utils.h>
 
 #endif // STANDARDPCH_H

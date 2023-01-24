@@ -7,13 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.DisabledReflection", "System.Private.DisabledReflection\src\System.Private.DisabledReflection.csproj", "{ADA691AE-4E1F-4212-97E6-51A27EFCE7E4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Interop", "System.Private.Interop\src\System.Private.Interop.csproj", "{BAF9BBDF-0DFA-4E0D-AB3C-F07657B9EBB0}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Core", "System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj", "{6147AF1A-5054-492A-9309-FA868A184414}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Execution", "System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj", "{7498DD7C-76C1-4912-AF72-DA84E05B568F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Reflection.Metadata", "System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj", "{C0245BD9-6AE2-47A5-BC41-DB6F777423AF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.StackTraceMetadata", "System.Private.StackTraceMetadata\src\System.Private.StackTraceMetadata.csproj", "{33CAE331-16EE-443C-A0CC-4337B94A02AD}"
 EndProject

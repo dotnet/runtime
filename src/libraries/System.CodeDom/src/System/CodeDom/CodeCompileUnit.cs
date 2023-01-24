@@ -17,12 +17,12 @@ namespace System.CodeDom
 
         public CodeNamespaceCollection Namespaces { get; } = new CodeNamespaceCollection();
 
-        public StringCollection ReferencedAssemblies => _assemblies ?? (_assemblies = new StringCollection());
+        public StringCollection ReferencedAssemblies => _assemblies ??= new StringCollection();
 
-        public CodeAttributeDeclarationCollection AssemblyCustomAttributes => _attributes ?? (_attributes = new CodeAttributeDeclarationCollection());
+        public CodeAttributeDeclarationCollection AssemblyCustomAttributes => _attributes ??= new CodeAttributeDeclarationCollection();
 
-        public CodeDirectiveCollection StartDirectives => _startDirectives ?? (_startDirectives = new CodeDirectiveCollection());
+        public CodeDirectiveCollection StartDirectives => _startDirectives ??= new CodeDirectiveCollection();
 
-        public CodeDirectiveCollection EndDirectives => _endDirectives ?? (_endDirectives = new CodeDirectiveCollection());
+        public CodeDirectiveCollection EndDirectives => _endDirectives ??= new CodeDirectiveCollection();
     }
 }

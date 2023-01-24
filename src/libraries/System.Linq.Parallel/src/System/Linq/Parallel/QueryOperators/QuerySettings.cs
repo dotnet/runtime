@@ -123,7 +123,7 @@ namespace System.Linq.Parallel
                 throw new InvalidOperationException(SR.ParallelQuery_DuplicateMergeOptions);
             }
 
-            TaskScheduler? tm = (this.TaskScheduler == null) ? settings2.TaskScheduler : this.TaskScheduler;
+            TaskScheduler? tm = this.TaskScheduler ?? settings2.TaskScheduler;
             int? dop = this.DegreeOfParallelism.HasValue ? this.DegreeOfParallelism : settings2.DegreeOfParallelism;
             CancellationToken externalCancellationToken = (this.CancellationState.ExternalCancellationToken.CanBeCanceled) ? this.CancellationState.ExternalCancellationToken : settings2.CancellationState.ExternalCancellationToken;
             ParallelExecutionMode? executionMode = this.ExecutionMode.HasValue ? this.ExecutionMode : settings2.ExecutionMode;
@@ -172,26 +172,11 @@ namespace System.Linq.Parallel
         internal QuerySettings WithDefaults()
         {
             QuerySettings settings = this;
-            if (settings.TaskScheduler == null)
-            {
-                settings.TaskScheduler = TaskScheduler.Default;
-            }
 
-            if (settings.DegreeOfParallelism == null)
-            {
-                settings.DegreeOfParallelism = Scheduling.GetDefaultDegreeOfParallelism();
-            }
-
-            if (settings.ExecutionMode == null)
-            {
-                settings.ExecutionMode = ParallelExecutionMode.Default;
-            }
-
-            if (settings.MergeOptions == null)
-            {
-                settings.MergeOptions = ParallelMergeOptions.Default;
-            }
-
+            settings.TaskScheduler ??= TaskScheduler.Default;
+            settings.DegreeOfParallelism ??= Scheduling.GetDefaultDegreeOfParallelism();
+            settings.ExecutionMode ??= ParallelExecutionMode.Default;
+            settings.MergeOptions ??= ParallelMergeOptions.Default;
             if (settings.MergeOptions == ParallelMergeOptions.Default)
             {
                 settings.MergeOptions = ParallelMergeOptions.AutoBuffered;

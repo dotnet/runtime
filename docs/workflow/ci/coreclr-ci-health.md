@@ -111,7 +111,7 @@ The **Failure Trend** graph attempts to show what is failing in bar graph and gi
 
 The **Failed Runs** graph is the most interesting for finding specific issues. As of writing the `Top 10 failing tasks` are:
 
-*Note* that any one of these buckets can include random one off infrastructure failures or systimatic Azure Dev Ops failures. For example the build bucket can include issues like:
+*Note* that any one of these buckets can include random one off infrastructure failures or systematic Azure Dev Ops failures. For example the build bucket can include issues like:
 
 >  fips.c(143): OpenSSL internal error
 

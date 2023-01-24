@@ -19,7 +19,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerZero) != 0f)
             {
-                Console.WriteLine($"'(float)0' was evaluted to '{(float)integerZero}'. Expected: '0f'.");
+                Console.WriteLine($"'(float)0' was evaluated to '{(float)integerZero}'. Expected: '0f'.");
                 _counter++;
             }
         }
@@ -34,7 +34,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)sByteMinValue) != -128f)
             {
-                Console.WriteLine($"'(float)-128' was evaluted to '{(float)sByteMinValue}'. Expected: '-128f'.");
+                Console.WriteLine($"'(float)-128' was evaluated to '{(float)sByteMinValue}'. Expected: '-128f'.");
                 _counter++;
             }
         }
@@ -49,7 +49,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)sByteMaxValue) != 127f)
             {
-                Console.WriteLine($"'(float)127' was evaluted to '{(float)sByteMaxValue}'. Expected: '127f'.");
+                Console.WriteLine($"'(float)127' was evaluated to '{(float)sByteMaxValue}'. Expected: '127f'.");
                 _counter++;
             }
         }
@@ -64,7 +64,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneIncrementAboveSByteMinValue) != -127f)
             {
-                Console.WriteLine($"'(float)-127' was evaluted to '{(float)integerOneIncrementAboveSByteMinValue}'. Expected: '-127f'.");
+                Console.WriteLine($"'(float)-127' was evaluated to '{(float)integerOneIncrementAboveSByteMinValue}'. Expected: '-127f'.");
                 _counter++;
             }
         }
@@ -79,7 +79,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneDecrementUnderSByteMaxValue) != 126f)
             {
-                Console.WriteLine($"'(float)126' was evaluted to '{(float)integerOneDecrementUnderSByteMaxValue}'. Expected: '126f'.");
+                Console.WriteLine($"'(float)126' was evaluated to '{(float)integerOneDecrementUnderSByteMaxValue}'. Expected: '126f'.");
                 _counter++;
             }
         }
@@ -94,7 +94,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneDecrementUnderByteMinValue) != -1f)
             {
-                Console.WriteLine($"'(float)-1' was evaluted to '{(float)integerOneDecrementUnderByteMinValue}'. Expected: '-1f'.");
+                Console.WriteLine($"'(float)-1' was evaluated to '{(float)integerOneDecrementUnderByteMinValue}'. Expected: '-1f'.");
                 _counter++;
             }
         }
@@ -109,7 +109,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneIncrementAboveByteMinValue) != 1f)
             {
-                Console.WriteLine($"'(float)1' was evaluted to '{(float)integerOneIncrementAboveByteMinValue}'. Expected: '1f'.");
+                Console.WriteLine($"'(float)1' was evaluated to '{(float)integerOneIncrementAboveByteMinValue}'. Expected: '1f'.");
                 _counter++;
             }
         }
@@ -128,7 +128,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerZero) != 0d)
             {
-                Console.WriteLine($"'(double)0' was evaluted to '{(double)integerZero}'. Expected: '0d'.");
+                Console.WriteLine($"'(double)0' was evaluated to '{(double)integerZero}'. Expected: '0d'.");
                 _counter++;
             }
         }
@@ -143,7 +143,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)sByteMinValue) != -128d)
             {
-                Console.WriteLine($"'(double)-128' was evaluted to '{(double)sByteMinValue}'. Expected: '-128d'.");
+                Console.WriteLine($"'(double)-128' was evaluated to '{(double)sByteMinValue}'. Expected: '-128d'.");
                 _counter++;
             }
         }
@@ -158,7 +158,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)sByteMaxValue) != 127d)
             {
-                Console.WriteLine($"'(double)127' was evaluted to '{(double)sByteMaxValue}'. Expected: '127d'.");
+                Console.WriteLine($"'(double)127' was evaluated to '{(double)sByteMaxValue}'. Expected: '127d'.");
                 _counter++;
             }
         }
@@ -173,7 +173,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneIncrementAboveSByteMinValue) != -127d)
             {
-                Console.WriteLine($"'(double)-127' was evaluted to '{(double)integerOneIncrementAboveSByteMinValue}'. Expected: '-127d'.");
+                Console.WriteLine($"'(double)-127' was evaluated to '{(double)integerOneIncrementAboveSByteMinValue}'. Expected: '-127d'.");
                 _counter++;
             }
         }
@@ -188,7 +188,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneDecrementUnderSByteMaxValue) != 126d)
             {
-                Console.WriteLine($"'(double)126' was evaluted to '{(double)integerOneDecrementUnderSByteMaxValue}'. Expected: '126d'.");
+                Console.WriteLine($"'(double)126' was evaluated to '{(double)integerOneDecrementUnderSByteMaxValue}'. Expected: '126d'.");
                 _counter++;
             }
         }
@@ -203,7 +203,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneDecrementUnderByteMinValue) != -1d)
             {
-                Console.WriteLine($"'(double)-1' was evaluted to '{(double)integerOneDecrementUnderByteMinValue}'. Expected: '-1d'.");
+                Console.WriteLine($"'(double)-1' was evaluated to '{(double)integerOneDecrementUnderByteMinValue}'. Expected: '-1d'.");
                 _counter++;
             }
         }
@@ -218,7 +218,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneIncrementAboveByteMinValue) != 1d)
             {
-                Console.WriteLine($"'(double)1' was evaluted to '{(double)integerOneIncrementAboveByteMinValue}'. Expected: '1d'.");
+                Console.WriteLine($"'(double)1' was evaluated to '{(double)integerOneIncrementAboveByteMinValue}'. Expected: '1d'.");
                 _counter++;
             }
         }
@@ -237,7 +237,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerZero) != 0)
             {
-                Console.WriteLine($"'(sbyte)0' was evaluted to '{(sbyte)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(sbyte)0' was evaluated to '{(sbyte)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -252,7 +252,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)sByteMinValue) != -128)
             {
-                Console.WriteLine($"'(sbyte)-128' was evaluted to '{(sbyte)sByteMinValue}'. Expected: '-128'.");
+                Console.WriteLine($"'(sbyte)-128' was evaluated to '{(sbyte)sByteMinValue}'. Expected: '-128'.");
                 _counter++;
             }
         }
@@ -267,7 +267,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(sbyte)127' was evaluted to '{(sbyte)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(sbyte)127' was evaluated to '{(sbyte)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -282,7 +282,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneIncrementAboveSByteMinValue) != -127)
             {
-                Console.WriteLine($"'(sbyte)-127' was evaluted to '{(sbyte)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
+                Console.WriteLine($"'(sbyte)-127' was evaluated to '{(sbyte)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
                 _counter++;
             }
         }
@@ -297,7 +297,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(sbyte)126' was evaluted to '{(sbyte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(sbyte)126' was evaluated to '{(sbyte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -312,7 +312,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneDecrementUnderByteMinValue) != -1)
             {
-                Console.WriteLine($"'(sbyte)-1' was evaluted to '{(sbyte)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
+                Console.WriteLine($"'(sbyte)-1' was evaluated to '{(sbyte)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
                 _counter++;
             }
         }
@@ -327,7 +327,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(sbyte)1' was evaluted to '{(sbyte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(sbyte)1' was evaluated to '{(sbyte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -346,7 +346,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerZero) != 0)
             {
-                Console.WriteLine($"'(byte)0' was evaluted to '{(byte)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(byte)0' was evaluated to '{(byte)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -375,7 +375,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(byte)127' was evaluted to '{(byte)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(byte)127' was evaluated to '{(byte)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -404,7 +404,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(byte)126' was evaluted to '{(byte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(byte)126' was evaluated to '{(byte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -433,7 +433,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(byte)1' was evaluted to '{(byte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(byte)1' was evaluated to '{(byte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -452,7 +452,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerZero) != 0)
             {
-                Console.WriteLine($"'(short)0' was evaluted to '{(short)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(short)0' was evaluated to '{(short)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -467,7 +467,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)sByteMinValue) != -128)
             {
-                Console.WriteLine($"'(short)-128' was evaluted to '{(short)sByteMinValue}'. Expected: '-128'.");
+                Console.WriteLine($"'(short)-128' was evaluated to '{(short)sByteMinValue}'. Expected: '-128'.");
                 _counter++;
             }
         }
@@ -482,7 +482,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(short)127' was evaluted to '{(short)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(short)127' was evaluated to '{(short)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -497,7 +497,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneIncrementAboveSByteMinValue) != -127)
             {
-                Console.WriteLine($"'(short)-127' was evaluted to '{(short)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
+                Console.WriteLine($"'(short)-127' was evaluated to '{(short)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
                 _counter++;
             }
         }
@@ -512,7 +512,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(short)126' was evaluted to '{(short)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(short)126' was evaluated to '{(short)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -527,7 +527,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneDecrementUnderByteMinValue) != -1)
             {
-                Console.WriteLine($"'(short)-1' was evaluted to '{(short)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
+                Console.WriteLine($"'(short)-1' was evaluated to '{(short)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
                 _counter++;
             }
         }
@@ -542,7 +542,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(short)1' was evaluted to '{(short)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(short)1' was evaluated to '{(short)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -561,7 +561,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerZero) != 0)
             {
-                Console.WriteLine($"'(ushort)0' was evaluted to '{(ushort)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(ushort)0' was evaluated to '{(ushort)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -590,7 +590,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(ushort)127' was evaluted to '{(ushort)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(ushort)127' was evaluated to '{(ushort)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -619,7 +619,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(ushort)126' was evaluted to '{(ushort)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(ushort)126' was evaluated to '{(ushort)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -648,7 +648,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(ushort)1' was evaluted to '{(ushort)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(ushort)1' was evaluated to '{(ushort)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -667,7 +667,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerZero) != 0)
             {
-                Console.WriteLine($"'(int)0' was evaluted to '{(int)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(int)0' was evaluated to '{(int)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -682,7 +682,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)sByteMinValue) != -128)
             {
-                Console.WriteLine($"'(int)-128' was evaluted to '{(int)sByteMinValue}'. Expected: '-128'.");
+                Console.WriteLine($"'(int)-128' was evaluated to '{(int)sByteMinValue}'. Expected: '-128'.");
                 _counter++;
             }
         }
@@ -697,7 +697,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(int)127' was evaluted to '{(int)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(int)127' was evaluated to '{(int)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -712,7 +712,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneIncrementAboveSByteMinValue) != -127)
             {
-                Console.WriteLine($"'(int)-127' was evaluted to '{(int)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
+                Console.WriteLine($"'(int)-127' was evaluated to '{(int)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
                 _counter++;
             }
         }
@@ -727,7 +727,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(int)126' was evaluted to '{(int)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(int)126' was evaluated to '{(int)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -742,7 +742,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneDecrementUnderByteMinValue) != -1)
             {
-                Console.WriteLine($"'(int)-1' was evaluted to '{(int)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
+                Console.WriteLine($"'(int)-1' was evaluated to '{(int)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
                 _counter++;
             }
         }
@@ -757,7 +757,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(int)1' was evaluted to '{(int)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(int)1' was evaluated to '{(int)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -776,7 +776,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerZero) != 0)
             {
-                Console.WriteLine($"'(uint)0' was evaluted to '{(uint)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(uint)0' was evaluated to '{(uint)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -805,7 +805,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(uint)127' was evaluted to '{(uint)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(uint)127' was evaluated to '{(uint)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -834,7 +834,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(uint)126' was evaluted to '{(uint)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(uint)126' was evaluated to '{(uint)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -863,7 +863,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(uint)1' was evaluted to '{(uint)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(uint)1' was evaluated to '{(uint)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -882,7 +882,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerZero) != 0)
             {
-                Console.WriteLine($"'(long)0' was evaluted to '{(long)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(long)0' was evaluated to '{(long)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -897,7 +897,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)sByteMinValue) != -128)
             {
-                Console.WriteLine($"'(long)-128' was evaluted to '{(long)sByteMinValue}'. Expected: '-128'.");
+                Console.WriteLine($"'(long)-128' was evaluated to '{(long)sByteMinValue}'. Expected: '-128'.");
                 _counter++;
             }
         }
@@ -912,7 +912,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(long)127' was evaluted to '{(long)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(long)127' was evaluated to '{(long)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -927,7 +927,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneIncrementAboveSByteMinValue) != -127)
             {
-                Console.WriteLine($"'(long)-127' was evaluted to '{(long)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
+                Console.WriteLine($"'(long)-127' was evaluated to '{(long)integerOneIncrementAboveSByteMinValue}'. Expected: '-127'.");
                 _counter++;
             }
         }
@@ -942,7 +942,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(long)126' was evaluted to '{(long)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(long)126' was evaluated to '{(long)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -957,7 +957,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneDecrementUnderByteMinValue) != -1)
             {
-                Console.WriteLine($"'(long)-1' was evaluted to '{(long)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
+                Console.WriteLine($"'(long)-1' was evaluated to '{(long)integerOneDecrementUnderByteMinValue}'. Expected: '-1'.");
                 _counter++;
             }
         }
@@ -972,7 +972,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(long)1' was evaluted to '{(long)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(long)1' was evaluated to '{(long)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -991,7 +991,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerZero) != 0)
             {
-                Console.WriteLine($"'(ulong)0' was evaluted to '{(ulong)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(ulong)0' was evaluated to '{(ulong)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1020,7 +1020,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(ulong)127' was evaluted to '{(ulong)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(ulong)127' was evaluated to '{(ulong)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1049,7 +1049,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(ulong)126' was evaluted to '{(ulong)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(ulong)126' was evaluated to '{(ulong)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1078,7 +1078,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(ulong)1' was evaluted to '{(ulong)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(ulong)1' was evaluated to '{(ulong)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1097,7 +1097,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerZero) != 0f)
             {
-                Console.WriteLine($"'(float)0' was evaluted to '{(float)integerZero}'. Expected: '0f'.");
+                Console.WriteLine($"'(float)0' was evaluated to '{(float)integerZero}'. Expected: '0f'.");
                 _counter++;
             }
         }
@@ -1112,7 +1112,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)sByteMaxValue) != 127f)
             {
-                Console.WriteLine($"'(float)127' was evaluted to '{(float)sByteMaxValue}'. Expected: '127f'.");
+                Console.WriteLine($"'(float)127' was evaluated to '{(float)sByteMaxValue}'. Expected: '127f'.");
                 _counter++;
             }
         }
@@ -1127,7 +1127,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneDecrementUnderSByteMaxValue) != 126f)
             {
-                Console.WriteLine($"'(float)126' was evaluted to '{(float)integerOneDecrementUnderSByteMaxValue}'. Expected: '126f'.");
+                Console.WriteLine($"'(float)126' was evaluated to '{(float)integerOneDecrementUnderSByteMaxValue}'. Expected: '126f'.");
                 _counter++;
             }
         }
@@ -1142,7 +1142,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneIncrementAboveSByteMaxValue) != 128f)
             {
-                Console.WriteLine($"'(float)128' was evaluted to '{(float)integerOneIncrementAboveSByteMaxValue}'. Expected: '128f'.");
+                Console.WriteLine($"'(float)128' was evaluated to '{(float)integerOneIncrementAboveSByteMaxValue}'. Expected: '128f'.");
                 _counter++;
             }
         }
@@ -1157,7 +1157,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)byteMaxValue) != 255f)
             {
-                Console.WriteLine($"'(float)255' was evaluted to '{(float)byteMaxValue}'. Expected: '255f'.");
+                Console.WriteLine($"'(float)255' was evaluated to '{(float)byteMaxValue}'. Expected: '255f'.");
                 _counter++;
             }
         }
@@ -1172,7 +1172,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneIncrementAboveByteMinValue) != 1f)
             {
-                Console.WriteLine($"'(float)1' was evaluted to '{(float)integerOneIncrementAboveByteMinValue}'. Expected: '1f'.");
+                Console.WriteLine($"'(float)1' was evaluated to '{(float)integerOneIncrementAboveByteMinValue}'. Expected: '1f'.");
                 _counter++;
             }
         }
@@ -1187,7 +1187,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((float)integerOneDecrementUnderByteMaxValue) != 254f)
             {
-                Console.WriteLine($"'(float)254' was evaluted to '{(float)integerOneDecrementUnderByteMaxValue}'. Expected: '254f'.");
+                Console.WriteLine($"'(float)254' was evaluated to '{(float)integerOneDecrementUnderByteMaxValue}'. Expected: '254f'.");
                 _counter++;
             }
         }
@@ -1206,7 +1206,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerZero) != 0d)
             {
-                Console.WriteLine($"'(double)0' was evaluted to '{(double)integerZero}'. Expected: '0d'.");
+                Console.WriteLine($"'(double)0' was evaluated to '{(double)integerZero}'. Expected: '0d'.");
                 _counter++;
             }
         }
@@ -1221,7 +1221,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)sByteMaxValue) != 127d)
             {
-                Console.WriteLine($"'(double)127' was evaluted to '{(double)sByteMaxValue}'. Expected: '127d'.");
+                Console.WriteLine($"'(double)127' was evaluated to '{(double)sByteMaxValue}'. Expected: '127d'.");
                 _counter++;
             }
         }
@@ -1236,7 +1236,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneDecrementUnderSByteMaxValue) != 126d)
             {
-                Console.WriteLine($"'(double)126' was evaluted to '{(double)integerOneDecrementUnderSByteMaxValue}'. Expected: '126d'.");
+                Console.WriteLine($"'(double)126' was evaluated to '{(double)integerOneDecrementUnderSByteMaxValue}'. Expected: '126d'.");
                 _counter++;
             }
         }
@@ -1251,7 +1251,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneIncrementAboveSByteMaxValue) != 128d)
             {
-                Console.WriteLine($"'(double)128' was evaluted to '{(double)integerOneIncrementAboveSByteMaxValue}'. Expected: '128d'.");
+                Console.WriteLine($"'(double)128' was evaluated to '{(double)integerOneIncrementAboveSByteMaxValue}'. Expected: '128d'.");
                 _counter++;
             }
         }
@@ -1266,7 +1266,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)byteMaxValue) != 255d)
             {
-                Console.WriteLine($"'(double)255' was evaluted to '{(double)byteMaxValue}'. Expected: '255d'.");
+                Console.WriteLine($"'(double)255' was evaluated to '{(double)byteMaxValue}'. Expected: '255d'.");
                 _counter++;
             }
         }
@@ -1281,7 +1281,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneIncrementAboveByteMinValue) != 1d)
             {
-                Console.WriteLine($"'(double)1' was evaluted to '{(double)integerOneIncrementAboveByteMinValue}'. Expected: '1d'.");
+                Console.WriteLine($"'(double)1' was evaluated to '{(double)integerOneIncrementAboveByteMinValue}'. Expected: '1d'.");
                 _counter++;
             }
         }
@@ -1296,7 +1296,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((double)integerOneDecrementUnderByteMaxValue) != 254d)
             {
-                Console.WriteLine($"'(double)254' was evaluted to '{(double)integerOneDecrementUnderByteMaxValue}'. Expected: '254d'.");
+                Console.WriteLine($"'(double)254' was evaluated to '{(double)integerOneDecrementUnderByteMaxValue}'. Expected: '254d'.");
                 _counter++;
             }
         }
@@ -1315,7 +1315,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerZero) != 0)
             {
-                Console.WriteLine($"'(sbyte)0' was evaluted to '{(sbyte)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(sbyte)0' was evaluated to '{(sbyte)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1330,7 +1330,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(sbyte)127' was evaluted to '{(sbyte)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(sbyte)127' was evaluated to '{(sbyte)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1345,7 +1345,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(sbyte)126' was evaluted to '{(sbyte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(sbyte)126' was evaluated to '{(sbyte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1388,7 +1388,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((sbyte)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(sbyte)1' was evaluted to '{(sbyte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(sbyte)1' was evaluated to '{(sbyte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1421,7 +1421,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerZero) != 0)
             {
-                Console.WriteLine($"'(byte)0' was evaluted to '{(byte)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(byte)0' was evaluated to '{(byte)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1436,7 +1436,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(byte)127' was evaluted to '{(byte)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(byte)127' was evaluated to '{(byte)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1451,7 +1451,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(byte)126' was evaluted to '{(byte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(byte)126' was evaluated to '{(byte)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1466,7 +1466,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(byte)128' was evaluted to '{(byte)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(byte)128' was evaluated to '{(byte)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -1481,7 +1481,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(byte)255' was evaluted to '{(byte)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(byte)255' was evaluated to '{(byte)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -1496,7 +1496,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(byte)1' was evaluted to '{(byte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(byte)1' was evaluated to '{(byte)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1511,7 +1511,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((byte)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(byte)254' was evaluted to '{(byte)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(byte)254' was evaluated to '{(byte)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -1530,7 +1530,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerZero) != 0)
             {
-                Console.WriteLine($"'(short)0' was evaluted to '{(short)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(short)0' was evaluated to '{(short)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1545,7 +1545,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(short)127' was evaluted to '{(short)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(short)127' was evaluated to '{(short)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1560,7 +1560,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(short)126' was evaluted to '{(short)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(short)126' was evaluated to '{(short)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1575,7 +1575,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(short)128' was evaluted to '{(short)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(short)128' was evaluated to '{(short)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -1590,7 +1590,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(short)255' was evaluted to '{(short)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(short)255' was evaluated to '{(short)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -1605,7 +1605,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(short)1' was evaluted to '{(short)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(short)1' was evaluated to '{(short)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1620,7 +1620,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((short)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(short)254' was evaluted to '{(short)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(short)254' was evaluated to '{(short)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -1639,7 +1639,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerZero) != 0)
             {
-                Console.WriteLine($"'(ushort)0' was evaluted to '{(ushort)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(ushort)0' was evaluated to '{(ushort)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1654,7 +1654,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(ushort)127' was evaluted to '{(ushort)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(ushort)127' was evaluated to '{(ushort)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1669,7 +1669,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(ushort)126' was evaluted to '{(ushort)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(ushort)126' was evaluated to '{(ushort)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1684,7 +1684,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(ushort)128' was evaluted to '{(ushort)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(ushort)128' was evaluated to '{(ushort)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -1699,7 +1699,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(ushort)255' was evaluted to '{(ushort)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(ushort)255' was evaluated to '{(ushort)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -1714,7 +1714,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(ushort)1' was evaluted to '{(ushort)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(ushort)1' was evaluated to '{(ushort)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1729,7 +1729,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ushort)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(ushort)254' was evaluted to '{(ushort)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(ushort)254' was evaluated to '{(ushort)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -1748,7 +1748,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerZero) != 0)
             {
-                Console.WriteLine($"'(int)0' was evaluted to '{(int)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(int)0' was evaluated to '{(int)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1763,7 +1763,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(int)127' was evaluted to '{(int)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(int)127' was evaluated to '{(int)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1778,7 +1778,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(int)126' was evaluted to '{(int)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(int)126' was evaluated to '{(int)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1793,7 +1793,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(int)128' was evaluted to '{(int)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(int)128' was evaluated to '{(int)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -1808,7 +1808,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(int)255' was evaluted to '{(int)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(int)255' was evaluated to '{(int)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -1823,7 +1823,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(int)1' was evaluted to '{(int)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(int)1' was evaluated to '{(int)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1838,7 +1838,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((int)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(int)254' was evaluted to '{(int)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(int)254' was evaluated to '{(int)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -1857,7 +1857,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerZero) != 0)
             {
-                Console.WriteLine($"'(uint)0' was evaluted to '{(uint)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(uint)0' was evaluated to '{(uint)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1872,7 +1872,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(uint)127' was evaluted to '{(uint)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(uint)127' was evaluated to '{(uint)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1887,7 +1887,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(uint)126' was evaluted to '{(uint)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(uint)126' was evaluated to '{(uint)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -1902,7 +1902,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(uint)128' was evaluted to '{(uint)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(uint)128' was evaluated to '{(uint)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -1917,7 +1917,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(uint)255' was evaluted to '{(uint)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(uint)255' was evaluated to '{(uint)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -1932,7 +1932,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(uint)1' was evaluted to '{(uint)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(uint)1' was evaluated to '{(uint)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -1947,7 +1947,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((uint)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(uint)254' was evaluted to '{(uint)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(uint)254' was evaluated to '{(uint)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -1966,7 +1966,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerZero) != 0)
             {
-                Console.WriteLine($"'(long)0' was evaluted to '{(long)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(long)0' was evaluated to '{(long)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -1981,7 +1981,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(long)127' was evaluted to '{(long)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(long)127' was evaluated to '{(long)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -1996,7 +1996,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(long)126' was evaluted to '{(long)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(long)126' was evaluated to '{(long)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -2011,7 +2011,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(long)128' was evaluted to '{(long)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(long)128' was evaluated to '{(long)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -2026,7 +2026,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(long)255' was evaluted to '{(long)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(long)255' was evaluated to '{(long)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -2041,7 +2041,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(long)1' was evaluted to '{(long)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(long)1' was evaluated to '{(long)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -2056,7 +2056,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((long)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(long)254' was evaluted to '{(long)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(long)254' was evaluated to '{(long)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }
@@ -2075,7 +2075,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerZero) != 0)
             {
-                Console.WriteLine($"'(ulong)0' was evaluted to '{(ulong)integerZero}'. Expected: '0'.");
+                Console.WriteLine($"'(ulong)0' was evaluated to '{(ulong)integerZero}'. Expected: '0'.");
                 _counter++;
             }
         }
@@ -2090,7 +2090,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)sByteMaxValue) != 127)
             {
-                Console.WriteLine($"'(ulong)127' was evaluted to '{(ulong)sByteMaxValue}'. Expected: '127'.");
+                Console.WriteLine($"'(ulong)127' was evaluated to '{(ulong)sByteMaxValue}'. Expected: '127'.");
                 _counter++;
             }
         }
@@ -2105,7 +2105,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneDecrementUnderSByteMaxValue) != 126)
             {
-                Console.WriteLine($"'(ulong)126' was evaluted to '{(ulong)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
+                Console.WriteLine($"'(ulong)126' was evaluated to '{(ulong)integerOneDecrementUnderSByteMaxValue}'. Expected: '126'.");
                 _counter++;
             }
         }
@@ -2120,7 +2120,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneIncrementAboveSByteMaxValue) != 128)
             {
-                Console.WriteLine($"'(ulong)128' was evaluted to '{(ulong)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
+                Console.WriteLine($"'(ulong)128' was evaluated to '{(ulong)integerOneIncrementAboveSByteMaxValue}'. Expected: '128'.");
                 _counter++;
             }
         }
@@ -2135,7 +2135,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)byteMaxValue) != 255)
             {
-                Console.WriteLine($"'(ulong)255' was evaluted to '{(ulong)byteMaxValue}'. Expected: '255'.");
+                Console.WriteLine($"'(ulong)255' was evaluated to '{(ulong)byteMaxValue}'. Expected: '255'.");
                 _counter++;
             }
         }
@@ -2150,7 +2150,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneIncrementAboveByteMinValue) != 1)
             {
-                Console.WriteLine($"'(ulong)1' was evaluted to '{(ulong)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
+                Console.WriteLine($"'(ulong)1' was evaluated to '{(ulong)integerOneIncrementAboveByteMinValue}'. Expected: '1'.");
                 _counter++;
             }
         }
@@ -2165,7 +2165,7 @@ public partial class ValueNumberingCheckedCastsOfConstants
 
             if (checked((ulong)integerOneDecrementUnderByteMaxValue) != 254)
             {
-                Console.WriteLine($"'(ulong)254' was evaluted to '{(ulong)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
+                Console.WriteLine($"'(ulong)254' was evaluated to '{(ulong)integerOneDecrementUnderByteMaxValue}'. Expected: '254'.");
                 _counter++;
             }
         }

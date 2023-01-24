@@ -37,8 +37,8 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
     if (compHndBBtabCount == 0)
     {
@@ -167,13 +167,13 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
-                // fgRemoveRefPred(firstBlock, currentBlock);
+                fgRemoveRefPred(firstBlock, currentBlock);
 
                 // Delete the leave block, which should be marked as
-                // keep always.
+                // keep always and have the sole finally block as a pred.
                 assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                 nextBlock = leaveBlock->bbNext;
-
+                fgRemoveRefPred(leaveBlock, firstBlock);
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
@@ -292,8 +292,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
     bool enableRemoveEmptyTry = true;
 
@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         if (!verifiedSingleCallfinally)
         {
-            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n");
+            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
             assert(verifiedSingleCallfinally);
             continue;
@@ -545,6 +545,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     block->bbJumpKind = BBJ_ALWAYS;
                     block->bbJumpDest = continuation;
                     fgAddRefPred(continuation, block);
+                    fgRemoveRefPred(leave, block);
                 }
             }
 
@@ -569,6 +570,13 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // EH table so XTnum now points at the next entry and will update
         // the EH region indices of any nested EH in the (former) handler.
         fgRemoveEHTableEntry(XTnum);
+
+        // (7) The handler entry has an artificial extra ref count. Remove it.
+        // There also should be one normal ref, from the try, and the handler
+        // may contain internal branches back to its start. So the ref count
+        // should currently be at least 2.
+        assert(firstHandlerBlock->bbRefs >= 2);
+        firstHandlerBlock->bbRefs -= 1;
 
         // Another one bites the dust...
         emptyCount++;
@@ -621,8 +629,8 @@ PhaseStatus Compiler::fgCloneFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
     bool enableCloning = true;
 
@@ -1022,7 +1030,7 @@ PhaseStatus Compiler::fgCloneFinally()
         //  try { } catch { } finally { }
         //
         // will have two call finally blocks, one for the normal exit
-        // from the try, and the the other for the exit from the
+        // from the try, and the other for the exit from the
         // catch. They'll both pass the same return point which is the
         // statement after the finally, so they can share the clone.
         //
@@ -1134,7 +1142,7 @@ PhaseStatus Compiler::fgCloneFinally()
             else
             {
                 optCopyBlkDest(block, newBlock);
-                optRedirectBlock(newBlock, &blockMap);
+                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
             }
         }
 
@@ -1173,13 +1181,22 @@ PhaseStatus Compiler::fgCloneFinally()
 
                         // Ref count updates.
                         fgAddRefPred(firstCloneBlock, currentBlock);
-                        // fgRemoveRefPred(firstBlock, currentBlock);
+                        fgRemoveRefPred(firstBlock, currentBlock);
 
                         // Delete the leave block, which should be marked as
                         // keep always.
                         assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                         nextBlock = leaveBlock->bbNext;
 
+                        // All preds should be BBJ_EHFINALLYRETs from the finally.
+                        for (BasicBlock* const leavePred : leaveBlock->PredBlocks())
+                        {
+                            assert(leavePred->bbJumpKind == BBJ_EHFINALLYRET);
+                            assert(leavePred->getHndIndex() == XTnum);
+                        }
+
+                        leaveBlock->bbRefs  = 0;
+                        leaveBlock->bbPreds = nullptr;
                         leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
                         fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
@@ -1625,8 +1642,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
     if (compHndBBtabCount == 0)
     {
@@ -1739,7 +1756,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
             {
                 // The callfinally must be empty, so that we can
                 // safely retarget anything that branches here to
-                // another callfinally with the same contiuation.
+                // another callfinally with the same continuation.
                 assert(currentBlock->isEmpty());
 
                 // This callfinally invokes the finally for this try.
@@ -1871,7 +1888,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     BasicBlock* const canonicalCallFinally = continuationMap[continuationBlock];
     assert(canonicalCallFinally != nullptr);
 
-    // If the block already jumps to the canoncial call finally, no work needed.
+    // If the block already jumps to the canonical call finally, no work needed.
     if (block->bbJumpDest == canonicalCallFinally)
     {
         JITDUMP(FMT_BB " already canonical\n", block->bbNum);
@@ -2005,7 +2022,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         {
         }
 
-        static bool Equals(const ThrowHelper x, const ThrowHelper& y)
+        static bool Equals(const ThrowHelper& x, const ThrowHelper& y)
         {
             return BasicBlock::sameEHRegion(x.m_block, y.m_block) && GenTreeCall::Equals(x.m_call, y.m_call);
         }
@@ -2121,14 +2138,12 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    BlockToBlockMap::KeyIterator iter(blockMap.Begin());
-    BlockToBlockMap::KeyIterator end(blockMap.End());
-    unsigned                     updateCount = 0;
+    unsigned updateCount = 0;
 
-    for (; !iter.Equal(end); iter++)
+    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
-        BasicBlock* const nonCanonicalBlock = iter.Get();
-        BasicBlock* const canonicalBlock    = iter.GetValue();
+        BasicBlock* const nonCanonicalBlock = iter->GetKey();
+        BasicBlock* const canonicalBlock    = iter->GetValue();
         flowList*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
@@ -2215,7 +2230,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergable throws
+// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergeable throws
 //
 // Arguments:
 //    predBlock - block falling through to the throw helper
@@ -2261,7 +2276,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergable throws
+// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergeable throws
 //
 // Arguments:
 //    predBlock - block jumping to the throw helper

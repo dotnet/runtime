@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.IO;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
@@ -261,7 +261,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("LineNumber/LinePos after ReadBase64 succesive calls")]
+        [Variation("LineNumber/LinePos after ReadBase64 successive calls")]
         public int TestLinePos21()
         {
             if (IsCustomReader()) CError.Skip("Skipped");
@@ -281,7 +281,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("LineNumber/LinePos after ReadBinHex succesive calls")]
+        [Variation("LineNumber/LinePos after ReadBinHex successive calls")]
         public int TestLinePos22()
         {
             if (IsCustomReader()) CError.Skip("Skipped");

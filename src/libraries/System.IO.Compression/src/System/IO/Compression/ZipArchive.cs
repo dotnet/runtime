@@ -117,8 +117,10 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
-        public ZipArchive(Stream stream!!, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
+        public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             EntryNameAndCommentEncoding = entryNameEncoding;
             Stream? extraTempStream = null;
 
@@ -202,8 +204,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                if (extraTempStream != null)
-                    extraTempStream.Dispose();
+                extraTempStream?.Dispose();
 
                 throw;
             }
@@ -338,8 +339,10 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The Zip archive is corrupt and the entries cannot be retrieved.</exception>
         /// <param name="entryName">A path relative to the root of the archive, identifying the desired entry.</param>
         /// <returns>A wrapper for the file entry in the archive. If no entry in the archive exists with the specified name, null will be returned.</returns>
-        public ZipArchiveEntry? GetEntry(string entryName!!)
+        public ZipArchiveEntry? GetEntry(string entryName)
         {
+            ArgumentNullException.ThrowIfNull(entryName);
+
             if (_mode == ZipArchiveMode.Create)
                 throw new NotSupportedException(SR.EntriesInCreateMode);
 
@@ -386,18 +389,15 @@ namespace System.IO.Compression
             }
         }
 
-        private ZipArchiveEntry DoCreateEntry(string entryName!!, CompressionLevel? compressionLevel)
+        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
+            ArgumentNullException.ThrowIfNull(entryName);
+
             if (string.IsNullOrEmpty(entryName))
                 throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
-
-            if (_entriesDictionary.ContainsKey(entryName))
-            {
-                throw new InvalidOperationException(string.Format(SR.EntryNameAlreadyExists, entryName));
-            }
 
             ThrowIfDisposed();
 
@@ -454,8 +454,7 @@ namespace System.IO.Compression
 
         internal void ThrowIfDisposed()
         {
-            if (_isDisposed)
-                throw new ObjectDisposedException(GetType().ToString());
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void CloseStreams()

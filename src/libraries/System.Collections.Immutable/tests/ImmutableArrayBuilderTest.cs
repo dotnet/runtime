@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -22,7 +23,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CreateBuilderDefaultCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>();
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>();
             Assert.NotNull(builder);
             Assert.NotSame(builder, ImmutableArray.CreateBuilder<int>());
         }
@@ -36,7 +37,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void NormalConstructionValueType()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(3);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(3);
             Assert.Equal(0, builder.Count);
             Assert.False(((ICollection<int>)builder).IsReadOnly);
             for (int i = 0; i < builder.Count; i++)
@@ -96,7 +97,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Add()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(0);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(0);
             builder.Add(1);
             builder.Add(2);
             Assert.Equal(new int[] { 1, 2 }, builder);
@@ -118,8 +119,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRangeBuilder()
         {
-            var builder1 = new ImmutableArray<int>.Builder(2);
-            var builder2 = new ImmutableArray<int>.Builder(2);
+            ImmutableArray<int>.Builder builder1 = new ImmutableArray<int>.Builder(2);
+            ImmutableArray<int>.Builder builder2 = new ImmutableArray<int>.Builder(2);
 
             builder1.AddRange(builder2);
             Assert.Equal(0, builder1.Count);
@@ -136,8 +137,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRangeImmutableArray()
         {
-            var builder1 = new ImmutableArray<int>.Builder(2);
-            var array = ImmutableArray.Create(1, 2, 3);
+            ImmutableArray<int>.Builder builder1 = new ImmutableArray<int>.Builder(2);
+            ImmutableArray<int> array = ImmutableArray.Create(1, 2, 3);
 
             builder1.AddRange(array);
             Assert.Equal(new[] { 1, 2, 3 }, builder1);
@@ -258,6 +259,16 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void IndexOf_WithoutCountParam()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(2, 5, 8).ToBuilder();
+            var absComparer = new DelegateEqualityComparer<int>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+
+            Assert.Equal(1, builder.IndexOf(-5, 0, absComparer));
+            Assert.Equal(-1, builder.IndexOf(-5, 2, absComparer));
+        }
+
+        [Fact]
         public void LastIndexOf()
         {
             IndexOfTests.LastIndexOfTest(
@@ -282,6 +293,28 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void InsertRange()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+
+            builder.InsertRange(0, Enumerable.Range(1, 4));
+            Assert.Equal(new[] { 1, 2, 3, 4 }, builder);
+
+            builder.InsertRange(1, Enumerable.Range(5, 2));
+            Assert.Equal(new[] { 1, 5, 6, 2, 3, 4 }, builder);
+
+            builder.InsertRange(0, new ImmutableArray<int>(new int[] { 7, 8 }));
+            Assert.Equal(new[] { 7, 8, 1, 5, 6, 2, 3, 4 }, builder);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(-1, Enumerable.Range(1, 2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(100, Enumerable.Range(1, 2)));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => builder.InsertRange(2, null));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(-1, new ImmutableArray<int>()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(100, new ImmutableArray<int>()));
+        }
+
+        [Fact]
         public void Remove()
         {
             var builder = new ImmutableArray<int>.Builder();
@@ -295,6 +328,19 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 2 }, builder);
             Assert.True(builder.Remove(2));
             Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void Remove_EqualityComparer()
+        {
+            ImmutableArray<double>.Builder builder = ImmutableArray.Create(1.5, 2.5, 3.5).ToBuilder();
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+
+            Assert.True(builder.Remove(-1.5, absComparer));
+            Assert.Equal(new[] { 2.5, 3.5 }, builder);
+
+            Assert.False(builder.Remove(5, absComparer));
+            Assert.False(builder.Remove(4, null));
         }
 
         [Fact]
@@ -312,6 +358,55 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(new[] { 2 }, builder);
             builder.RemoveAt(0);
             Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void RemoveRange_ValueType()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.AddRange(1, 2, 3, 4, 5);
+
+            builder.RemoveRange(1, 2);
+            Assert.Equal(new[] { 1, 4, 5 }, builder);
+
+            builder.RemoveRange(new int[] { 4, 6 });
+            Assert.Equal(new[] { 1, 5 }, builder);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(-1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(1, 10));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null));
+        }
+
+        [Fact]
+        public void RemoveRange_ReferenceType()
+        {
+            var builder = new ImmutableArray<GenericParameterHelper>.Builder();
+            builder.AddRange(new GenericParameterHelper(1), new GenericParameterHelper(2), new GenericParameterHelper(3), new GenericParameterHelper(4));
+
+            builder.RemoveRange(1, 2);
+
+            Assert.Equal(new[] { new GenericParameterHelper(1), new GenericParameterHelper(4) }, builder);
+        }
+
+        [Fact]
+        public void RemoveRange_EqualityComparer()
+        {
+            ImmutableArray<double>.Builder builder = ImmutableArray.Create(1.5, 2.5, 3.5, 4.5, 5.6).ToBuilder();
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+
+            builder.RemoveRange(new[] { -2.5, -4.5, 6.2 }, absComparer);
+            Assert.Equal(new[] { 1.5, 3.5, 5.6 }, builder);
+            AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null, absComparer));
+        }
+
+        [Fact]
+        public void RemoveAll()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.AddRange(Enumerable.Range(1, 8));
+            builder.RemoveAll(n => n % 2 == 0);
+
+            Assert.Equal(new[] { 1, 3, 5, 7 }, builder);
         }
 
         [Fact]
@@ -374,9 +469,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SortNullComparer()
         {
-            var template = ImmutableArray.Create(2, 4, 1, 3);
+            ImmutableArray<int> template = ImmutableArray.Create(2, 4, 1, 3);
 
-            var builder = template.ToBuilder();
+            ImmutableArray<int>.Builder builder = template.ToBuilder();
             builder.Sort((IComparer<int>)null);
             Assert.Equal(new[] { 1, 2, 3, 4 }, builder);
 
@@ -519,7 +614,7 @@ namespace System.Collections.Immutable.Tests
             var builder = new ImmutableArray<int>.Builder();
             builder.AddRange(0, 1, 2);
 
-            var array = builder.ToImmutableArray();
+            ImmutableArray<int> array = builder.ToImmutableArray();
             Assert.Equal(0, array[0]);
             Assert.Equal(1, array[1]);
             Assert.Equal(2, array[2]);
@@ -539,7 +634,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CopyToArray()
         {
-            var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
             var target = new int[4];
 
             builder.CopyTo(target, 1);
@@ -551,9 +646,36 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyTo_DestinationArray()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            var target = new int[4];
+
+            builder.CopyTo(target);
+            Assert.Equal(new[] { 1, 2, 3, 0 }, target);
+
+            AssertExtensions.Throws<ArgumentNullException>("destination", () => builder.CopyTo(null));
+        }
+
+        [Fact]
+        public void CopyTo_SourceIdx_DestinationArr_DestinationIdx_Length()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            var target = new int[4];
+
+            builder.CopyTo(1, target, 1, 2);
+            Assert.Equal(new[] { 0, 2, 3, 0 }, target);
+
+            AssertExtensions.Throws<ArgumentNullException>("destination", () => builder.CopyTo(1, null, 2, 3));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.CopyTo(1, target, 2, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => builder.CopyTo(1, target, 2, 8));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", () => builder.CopyTo(1, target, 5, 2));
+        }
+
+        [Fact]
         public void CopyToSpan()
         {
-            var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
             Span<int> span;
             int[] target = new int[4];
 
@@ -590,7 +712,7 @@ namespace System.Collections.Immutable.Tests
         {
             var builder = new ImmutableArray<int>.Builder(1);
             builder.Add(1);
-            var immutable = builder.ToImmutable();
+            ImmutableArray<int> immutable = builder.ToImmutable();
             builder[0] = 0;
             Assert.Equal(0, builder[0]);
             Assert.Equal(1, immutable[0]);
@@ -600,7 +722,7 @@ namespace System.Collections.Immutable.Tests
         public void Enumerator()
         {
             var empty = new ImmutableArray<int>.Builder(0);
-            var enumerator = empty.GetEnumerator();
+            IEnumerator<int> enumerator = empty.GetEnumerator();
             Assert.False(enumerator.MoveNext());
 
             var manyElements = new ImmutableArray<int>.Builder(3);
@@ -621,7 +743,7 @@ namespace System.Collections.Immutable.Tests
         public void IEnumerator()
         {
             var empty = new ImmutableArray<int>.Builder(0);
-            var enumerator = ((IEnumerable<int>)empty).GetEnumerator();
+            IEnumerator<int> enumerator = ((IEnumerable<int>)empty).GetEnumerator();
             Assert.False(enumerator.MoveNext());
 
             var manyElements = new ImmutableArray<int>.Builder(3);
@@ -641,12 +763,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableNormal()
         {
-            var builder = CreateBuilderWithCount<string>(2);
+            ImmutableArray<string>.Builder builder = CreateBuilderWithCount<string>(2);
             Assert.Equal(2, builder.Count);
             Assert.Equal(2, builder.Capacity);
             builder[1] = "b";
             builder[0] = "a";
-            var array = builder.MoveToImmutable();
+            ImmutableArray<string> array = builder.MoveToImmutable();
             Assert.Equal(new[] { "a", "b" }, array);
             Assert.Equal(0, builder.Count);
             Assert.Equal(0, builder.Capacity);
@@ -655,11 +777,11 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableRepeat()
         {
-            var builder = CreateBuilderWithCount<string>(2);
+            ImmutableArray<string>.Builder builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
-            var array1 = builder.MoveToImmutable();
-            var array2 = builder.MoveToImmutable();
+            ImmutableArray<string> array1 = builder.MoveToImmutable();
+            ImmutableArray<string> array2 = builder.MoveToImmutable();
             Assert.Equal(new[] { "a", "b" }, array1);
             Assert.Equal(0, array2.Length);
         }
@@ -667,7 +789,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutablePartialFill()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(4);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(4);
             builder.Add(42);
             builder.Add(13);
             Assert.Equal(4, builder.Capacity);
@@ -678,20 +800,20 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutablePartialFillWithCountUpdate()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(4);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(4);
             builder.Add(42);
             builder.Add(13);
             Assert.Equal(4, builder.Capacity);
             Assert.Equal(2, builder.Count);
             builder.Count = builder.Capacity;
-            var array = builder.MoveToImmutable();
+            ImmutableArray<int> array = builder.MoveToImmutable();
             Assert.Equal(new[] { 42, 13, 0, 0 }, array);
         }
 
         [Fact]
         public void MoveToImmutableThenUse()
         {
-            var builder = CreateBuilderWithCount<string>(2);
+            ImmutableArray<string>.Builder builder = CreateBuilderWithCount<string>(2);
             Assert.Equal(2, builder.MoveToImmutable().Length);
             Assert.Equal(0, builder.Capacity);
             builder.Add("a");
@@ -704,7 +826,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableAfterClear()
         {
-            var builder = CreateBuilderWithCount<string>(2);
+            ImmutableArray<string>.Builder builder = CreateBuilderWithCount<string>(2);
             builder[0] = "a";
             builder[1] = "b";
             builder.Clear();
@@ -714,7 +836,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableAddToCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
             for (int i = 0; i < builder.Capacity; i++)
             {
                 builder.Add(i);
@@ -726,7 +848,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableInsertToCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
             for (int i = 0; i < builder.Capacity; i++)
             {
                 builder.Insert(i, i);
@@ -738,8 +860,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableAddRangeToCapcity()
         {
-            var array = new[] { 1, 2, 3, 4, 5 };
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: array.Length);
+            int[] array = new[] { 1, 2, 3, 4, 5 };
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: array.Length);
             builder.AddRange(array);
             Assert.Equal(array, builder.MoveToImmutable());
         }
@@ -747,7 +869,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void MoveToImmutableAddRemoveAddToCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 3);
             for (int i = 0; i < builder.Capacity; i++)
             {
                 builder.Add(i);
@@ -759,9 +881,140 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void DrainToImmutableEmptyZeroCapacity()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(0);
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableEmptyNonZeroCapacity()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(10);
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableAtCapacity()
+        {
+            ImmutableArray<string>.Builder builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.Count = 2;
+            builder[1] = "b";
+            builder[0] = "a";
+            Assert.Equal(2, builder.Count);
+            Assert.Equal(2, builder.Capacity);
+
+            ImmutableArray<string> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array);
+            Assert.Equal(0, builder.Count);
+            Assert.Equal(0, builder.Capacity);
+        }
+
+        [Fact]
+        public void DrainToImmutablePartialFill()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(4);
+            builder.AddRange(42, 13);
+            Assert.Equal(4, builder.Capacity);
+            Assert.Equal(2, builder.Count);
+
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 42, 13 }, array);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutablePartialFillWithCountUpdate()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(4);
+            builder.AddRange(42, 13);
+            builder.Count = builder.Capacity;
+            Assert.Equal(4, builder.Capacity);
+            Assert.Equal(4, builder.Count);
+
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 42, 13, 0, 0 }, array);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableRepeat()
+        {
+            ImmutableArray<string>.Builder builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.AddRange("a", "b");
+
+            ImmutableArray<string> array1 = builder.DrainToImmutable();
+            ImmutableArray<string> array2 = builder.DrainToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array1);
+            Assert.Equal(0, array2.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableThenUse()
+        {
+            ImmutableArray<string>.Builder builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.Count = 2;
+            Assert.Equal(2, builder.DrainToImmutable().Length);
+            Assert.Equal(0, builder.Capacity);
+            builder.AddRange("a", "b");
+            Assert.Equal(2, builder.Count);
+            Assert.True(builder.Capacity >= 2);
+
+            ImmutableArray<string> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { "a", "b" }, array);
+        }
+
+        [Fact]
+        public void DrainToImmutableAfterClear()
+        {
+            ImmutableArray<string>.Builder builder = ImmutableArray.CreateBuilder<string>(2);
+            builder.AddRange("a", "b");
+            builder.Clear();
+
+            ImmutableArray<string> array = builder.DrainToImmutable();
+            Assert.Equal(0, array.Length);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Equal(0, builder.Count);
+        }
+
+        [Fact]
+        public void DrainToImmutableAtCapacityClearsCollection()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(2);
+            builder.AddRange(1, 2);
+            builder.DrainToImmutable();
+            builder.Count = 4;
+
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 0, 0, 0, 0 }, array);
+        }
+
+        [Fact]
+        public void DrainToImmutablePartialFillClearsCollection()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(4);
+            builder.AddRange(1, 2);
+            builder.DrainToImmutable();
+            builder.Count = 6;
+
+            ImmutableArray<int> array = builder.DrainToImmutable();
+            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, array);
+        }
+
+        [Fact]
         public void CapacitySetToZero()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Capacity = 0;
             Assert.Equal(0, builder.Capacity);
             Assert.Equal(new int[] { }, builder.ToArray());
@@ -770,7 +1023,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CapacitySetToLessThanCount()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(1);
             Assert.Throws<ArgumentException>(() => builder.Capacity = 1);
@@ -779,7 +1032,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CapacitySetToCount()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(2);
             builder.Capacity = builder.Count;
@@ -790,7 +1043,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CapacitySetToCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(2);
             builder.Capacity = builder.Capacity;
@@ -801,7 +1054,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CapacitySetToBiggerCapacity()
         {
-            var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(2);
             builder.Capacity = 20;
@@ -811,6 +1064,22 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void Replace()
+        {
+            ImmutableArray<double>.Builder builder = ImmutableArray.Create(1.5, 2.5, 3.5).ToBuilder();
+
+            builder.Replace(1.5, 1.6);
+
+            Assert.Equal(new[] { 1.6, 2.5, 3.5 }, builder);
+
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+
+            builder.Replace(-3.5, 4.2, absComparer);
+
+            Assert.Equal(new[] { 1.6, 2.5, 4.2 }, builder);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.CreateBuilder<int>());
@@ -838,8 +1107,8 @@ namespace System.Collections.Immutable.Tests
             builder.Add(2);
             builder.Add(3);
 
-            ref readonly var safeRef = ref builder.ItemRef(1);
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref builder.ItemRef(1);
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 
@@ -861,7 +1130,7 @@ namespace System.Collections.Immutable.Tests
 
         private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)
         {
-            var builder = ImmutableArray.CreateBuilder<T>(count);
+            ImmutableArray<T>.Builder builder = ImmutableArray.CreateBuilder<T>(count);
             builder.Count = count;
             return builder;
         }

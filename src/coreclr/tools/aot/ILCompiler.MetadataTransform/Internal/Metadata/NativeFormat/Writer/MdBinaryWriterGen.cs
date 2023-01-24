@@ -3,7 +3,7 @@
 
 // NOTE: This is a generated file - do not manually edit!
 
-#pragma warning disable 649
+#pragma warning disable 649, SA1121, IDE0036, SA1129
 
 using System;
 using System.IO;

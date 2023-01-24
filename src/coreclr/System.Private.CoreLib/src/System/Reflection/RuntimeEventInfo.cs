@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -53,8 +54,7 @@ namespace System.Reflection
             return
                 o is RuntimeEventInfo m &&
                 m.m_token == m_token &&
-                RuntimeTypeHandle.GetModule(m_declaringType).Equals(
-                    RuntimeTypeHandle.GetModule(m.m_declaringType));
+                ReferenceEquals(m_declaringType, m.m_declaringType);
         }
 
         internal BindingFlags BindingFlags => m_bindingFlags;
@@ -68,6 +68,17 @@ namespace System.Reflection
 
             return m_addMethod.GetParametersNoCopy()[0].ParameterType.FormatTypeName() + " " + Name;
         }
+
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported &&
+                obj is RuntimeEventInfo ei &&
+                ei.m_token == m_token &&
+                ReferenceEquals(ei.m_declaringType, m_declaringType) &&
+                ReferenceEquals(ei.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
         #endregion
 
         #region ICustomAttributeProvider
@@ -76,16 +87,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 

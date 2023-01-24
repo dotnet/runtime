@@ -9,11 +9,7 @@ namespace System.Xml.XPath
     {
         public static XContainer? GetParent(this XObject obj)
         {
-            XContainer? ret = obj.Parent;
-            if (ret == null)
-            {
-                ret = obj.Document;
-            }
+            XContainer? ret = (XContainer?)obj.Parent ?? obj.Document;
             if (ret == obj)
             {
                 return null;

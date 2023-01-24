@@ -15,7 +15,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
@@ -43,7 +42,7 @@ namespace System
 
         internal object m_firstParameter;
         internal object m_helperObject;
-        internal IntPtr m_extraFunctionPointerOrData;
+        internal nint m_extraFunctionPointerOrData;
         internal IntPtr m_functionPointer;
 
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
@@ -52,28 +51,15 @@ namespace System
         private protected const int ClosedStaticThunk = 1;
         private protected const int OpenStaticThunk = 2;
         private protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
-        private protected const int DelegateInvokeThunk = 4;
-        private protected const int OpenInstanceThunk = 5;        // This may not exist
-        private protected const int ObjectArrayThunk = 6;         // This may not exist
+        private protected const int OpenInstanceThunk = 4;        // This may not exist
+        private protected const int ObjectArrayThunk = 5;         // This may not exist
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
         private protected virtual IntPtr GetThunk(int whichThunk)
         {
-#if PROJECTN
-            // The GetThunk function should be overriden on all delegate types, except for universal
-            // canonical delegates which use calling convention converter thunks to marshal arguments
-            // for the delegate call. If we execute this version of GetThunk, we can at least assert
-            // that the current delegate type is a generic type.
-            Debug.Assert(this.EETypePtr.IsGeneric);
-            return TypeLoaderExports.GetDelegateThunk(this, whichThunk);
-#else
-            // CoreRT doesn't support Universal Shared Code right now, so let's make this method return null for now.
-            // When CoreRT adds USG support we'll probably want to do some level of IL switching here so that
-            // we don't have this static call into type loader when USG is not enabled at compile time.
-            // The static call hurts size in our minimal targets.
+            // NativeAOT doesn't support Universal Shared Code, so let's make this method return null.
             return IntPtr.Zero;
-#endif
         }
 
         /// <summary>
@@ -113,7 +99,7 @@ namespace System
                 isInterpreterEntrypoint = true;
                 return IntPtr.Zero;
             }
-            else if (m_extraFunctionPointerOrData != IntPtr.Zero)
+            else if (m_extraFunctionPointerOrData != 0)
             {
                 if (GetThunk(OpenInstanceThunk) == m_functionPointer)
                 {
@@ -125,7 +111,7 @@ namespace System
             else
             {
                 if (m_firstParameter != null)
-                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.EETypePtr);
+                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.GetEETypePtr());
 
                 // TODO! Implementation issue for generic invokes here ... we need another IntPtr for uniqueness.
 
@@ -169,7 +155,7 @@ namespace System
         private void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
         {
             if (firstParameter is null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new NullReferenceException();
 
             IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
 
@@ -197,7 +183,7 @@ namespace System
         private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
         {
             if (firstParameter is null)
-                throw new ArgumentException(SR.Arg_DlgtNullInst);
+                throw new NullReferenceException();
 
             m_functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
             m_firstParameter = firstParameter;
@@ -231,7 +217,7 @@ namespace System
         }
 
         // This function is known to the compiler backend.
-        private void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
+        private void InitializeOpenStaticThunk(object _ /*firstParameter*/, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
@@ -278,31 +264,21 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        protected virtual object DynamicInvokeImpl(object?[]? args)
+        protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             if (IsDynamicDelegate())
             {
                 // DynamicDelegate case
-                object result = ((Func<object?[]?, object>)m_helperObject)(args);
+                object? result = ((Func<object?[]?, object?>)m_helperObject)(args);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
             else
             {
-                IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
+                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
 
-                IntPtr genericDictionary = IntPtr.Zero;
-                if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* descriptor = FunctionPointerOps.ConvertToGenericDescriptor(invokeThunk);
-                        genericDictionary = descriptor->InstantiationArgument;
-                        invokeThunk = descriptor->MethodFunctionPointer;
-                    }
-                }
-
-                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true);
+                object? result = dynamicInvokeInfo.Invoke(m_firstParameter, m_functionPointer,
+                    args, binderBundle: null, wrapInTargetInvocationException: true);
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
@@ -373,7 +349,7 @@ namespace System
 
         internal static bool InternalEqualTypes(object a, object b)
         {
-            return a.EETypePtr == b.EETypePtr;
+            return a.GetEETypePtr() == b.GetEETypePtr();
         }
 
         // Returns a new delegate of the specified type whose implementation is provied by the
@@ -444,49 +420,6 @@ namespace System
                 }
             }
             return del;
-        }
-
-        private string GetTargetMethodsDescriptionForDebugger()
-        {
-            if (m_functionPointer == GetThunk(MulticastThunk))
-            {
-                // Multi-cast delegates return the Target of the last delegate in the list
-                Delegate[] invocationList = (Delegate[])m_helperObject;
-                int invocationCount = (int)m_extraFunctionPointerOrData;
-                StringBuilder builder = new StringBuilder();
-                for (int c = 0; c < invocationCount; c++)
-                {
-                    if (c != 0)
-                        builder.Append(", ");
-
-                    builder.Append(invocationList[c].GetTargetMethodsDescriptionForDebugger());
-                }
-
-                return builder.ToString();
-            }
-            else
-            {
-                RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
-                if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
-                {
-                    return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);
-                }
-                else
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* pointerDef = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
-                        return DebuggerFunctionPointerFormattingHook(pointerDef->InstantiationArgument, typeOfFirstParameterIfInstanceDelegate);
-                    }
-                }
-            }
-        }
-
-        private static string DebuggerFunctionPointerFormattingHook(IntPtr functionPointer, RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
-        {
-            // This method will be hooked by the debugger and the debugger will cause it to return a description for the function pointer
-            throw new NotSupportedException();
         }
     }
 }

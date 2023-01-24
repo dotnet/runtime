@@ -207,7 +207,7 @@ namespace Internal.IL.Stubs
                     codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
                 }
             }
-            
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
 
             MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
@@ -346,7 +346,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdc(0);
             codeStream.EmitStLoc(iteratorLocal);
 
-            // Loop across every element of the array. 
+            // Loop across every element of the array.
             ILCodeLabel startOfLoopLabel = emitter.NewCodeLabel();
             codeStream.EmitLabel(startOfLoopLabel);
 
@@ -494,7 +494,7 @@ namespace Internal.IL.Stubs
         public override MethodIL EmitIL()
         {
             // We will generate the following code:
-            //  
+            //
             // object ret;
             // object[] args = new object[parameterCount];
             // args[0] = param0;
@@ -697,15 +697,11 @@ namespace Internal.IL.Stubs
 
             ILCodeLabel returnNullLabel = emitter.NewCodeLabel();
 
-            bool hasDynamicInvokeThunk = (_delegateInfo.SupportedFeatures & DelegateFeature.DynamicInvoke) != 0 &&
-                DynamicInvokeMethodThunk.SupportsSignature(_delegateInfo.Signature);
-
             ILCodeLabel[] labels = new ILCodeLabel[(int)DelegateThunkCollection.MaxThunkKind];
             for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
                 MethodDesc thunk = _delegateInfo.Thunks[i];
-                if (thunk != null || 
-                    (i == DelegateThunkKind.DelegateInvokeThunk && hasDynamicInvokeThunk))
+                if (thunk != null)
                     labels[(int)i] = emitter.NewCodeLabel();
                 else
                     labels[(int)i] = returnNullLabel;
@@ -718,43 +714,15 @@ namespace Internal.IL.Stubs
 
             for (DelegateThunkKind i = 0; i < DelegateThunkCollection.MaxThunkKind; i++)
             {
-                MethodDesc targetMethod = null;
+                MethodDesc thunk = _delegateInfo.Thunks[i];
+                if (thunk == null)
+                    continue;
 
-                // Dynamic invoke thunk is special since we're calling into a shared helper
-                if (i == DelegateThunkKind.DelegateInvokeThunk && hasDynamicInvokeThunk)
-                {
-                    Debug.Assert(_delegateInfo.Thunks[i] == null);
+                MethodDesc targetMethod = thunk.InstantiateAsOpen();
 
-                    var sig = new DynamicInvokeMethodSignature(_delegateInfo.Signature);
-                    // TODO: layering violation. Should move delegate thunk stuff to ILCompiler.Compiler.
-                    MethodDesc thunk = ((ILCompiler.CompilerTypeSystemContext)Context).GetDynamicInvokeThunk(sig);
-
-                    if (thunk.HasInstantiation)
-                    {
-                        TypeDesc[] inst = DynamicInvokeMethodThunk.GetThunkInstantiationForMethod(_delegateInfo.Type.InstantiateAsOpen().GetMethod("Invoke", null));
-                        targetMethod = Context.GetInstantiatedMethod(thunk, new Instantiation(inst));
-                    }
-                    else
-                    {
-                        targetMethod = thunk;
-                    }
-                }
-                else
-                {
-                    MethodDesc thunk = _delegateInfo.Thunks[i];
-
-                    if (thunk != null)
-                    {
-                        targetMethod = thunk.InstantiateAsOpen();
-                    }
-                }
-
-                if (targetMethod != null)
-                {
-                    codeStream.EmitLabel(labels[(int)i]);
-                    codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
-                    codeStream.Emit(ILOpcode.ret);
-                }
+                codeStream.EmitLabel(labels[(int)i]);
+                codeStream.Emit(ILOpcode.ldftn, emitter.NewToken(targetMethod));
+                codeStream.Emit(ILOpcode.ret);
             }
 
             codeStream.EmitLabel(returnNullLabel);

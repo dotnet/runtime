@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     public partial class Rfc2898DeriveBytes
     {
         // Throwing UTF8 on invalid input.
-        private static readonly Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
+        private static readonly UTF8Encoding s_throwingUtf8Encoding = new UTF8Encoding(false, true);
 
         /// <summary>
         /// Creates a PBKDF2 derived key from password bytes.
@@ -38,12 +38,15 @@ namespace System.Security.Cryptography
         ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
         /// </exception>
         public static byte[] Pbkdf2(
-            byte[] password!!,
-            byte[] salt!!,
+            byte[] password,
+            byte[] salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
+
             return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
@@ -76,10 +79,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -115,8 +116,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -157,12 +157,15 @@ namespace System.Security.Cryptography
         /// and use <see cref="Pbkdf2(byte[], byte[], int, HashAlgorithmName, int)" />.
         /// </remarks>
         public static byte[] Pbkdf2(
-            string password!!,
-            byte[] salt!!,
+            string password,
+            byte[] salt,
             int iterations,
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
+
             return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
 
@@ -203,10 +206,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (outputLength < 0)
-                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 
@@ -250,8 +251,7 @@ namespace System.Security.Cryptography
             int iterations,
             HashAlgorithmName hashAlgorithm)
         {
-            if (iterations <= 0)
-                throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(iterations);
 
             ValidateHashAlgorithm(hashAlgorithm);
 

@@ -377,7 +377,7 @@ namespace System.Configuration
                         // - If the whitespace doesn't contain /r/n, then it's okay to skip them
                         //   as part of the element.
                         // - If the whitespace contains /r/n, not skipping them will result
-                        //   in a redundant emtpy line being copied.
+                        //   in a redundant empty line being copied.
                         if (Reader.NodeType == XmlNodeType.Whitespace) Reader.Skip();
                     }
                     else
@@ -921,8 +921,13 @@ namespace System.Configuration
         private void ResetCachedStringWriter()
         {
             if (_cachedStringWriter == null)
+            {
                 _cachedStringWriter = new StringWriter(new StringBuilder(64), CultureInfo.InvariantCulture);
-            else _cachedStringWriter.GetStringBuilder().Length = 0;
+            }
+            else
+            {
+                _cachedStringWriter.GetStringBuilder().Length = 0;
+            }
         }
 
         // Copy a configuration section to a string, and advance the reader.

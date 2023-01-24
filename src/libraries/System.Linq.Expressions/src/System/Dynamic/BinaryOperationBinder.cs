@@ -24,7 +24,7 @@ namespace System.Dynamic
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType => typeof(object);
+        public sealed override Type ReturnType => typeof(object);
 
         /// <summary>
         /// The binary operation kind.
@@ -59,12 +59,12 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, nameof(target));
-            ContractUtils.RequiresNotNull(args, nameof(args));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(args);
             ContractUtils.Requires(args.Length == 1, nameof(args));
 
             var arg0 = args[0];
-            ContractUtils.RequiresNotNull(arg0, nameof(args));
+            ArgumentNullException.ThrowIfNull(arg0, nameof(args));
 
             return target.BindBinaryOperation(this, arg0);
         }
@@ -72,7 +72,7 @@ namespace System.Dynamic
         /// <summary>
         /// Always returns <c>true</c> because this is a standard <see cref="DynamicMetaObjectBinder"/>.
         /// </summary>
-        internal override sealed bool IsStandardBinder => true;
+        internal sealed override bool IsStandardBinder => true;
 
         internal static bool OperationIsValid(ExpressionType operation)
         {

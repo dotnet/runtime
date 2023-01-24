@@ -6,7 +6,7 @@ namespace System.Threading
     /// <summary>
     /// Overlapped subclass adding data needed by ThreadPoolBoundHandle.
     /// </summary>
-    internal unsafe sealed class ThreadPoolBoundHandleOverlapped : Overlapped
+    internal sealed unsafe class ThreadPoolBoundHandleOverlapped : Overlapped
     {
         private static readonly IOCompletionCallback s_completionCallback = CompletionCallback;
 

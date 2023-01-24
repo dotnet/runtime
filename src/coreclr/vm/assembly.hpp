@@ -29,12 +29,8 @@ class DomainAssembly;
 class DomainModule;
 class SystemDomain;
 class ClassLoader;
-class ComDynamicWrite;
-class AssemblySink;
 class AssemblyNative;
 class AssemblySpec;
-class ISharedSecurityDescriptor;
-class SecurityTransparencyBehavior;
 class Pending;
 class AllocMemTracker;
 class FriendAssemblyDescriptor;
@@ -43,17 +39,6 @@ class FriendAssemblyDescriptor;
 #define ASSEMBLY_ACCESS_RUN     0x01
 #define ASSEMBLY_ACCESS_SAVE    0x02
 #define ASSEMBLY_ACCESS_COLLECT 0x8
-
-struct CreateDynamicAssemblyArgsGC
-{
-    ASSEMBLYNAMEREF assemblyName;
-    LOADERALLOCATORREF loaderAllocator;
-};
-
-struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
-{
-    INT32           access;
-};
 
 // An assembly is the unit of deployment for managed code.
 // Assemblies are one to one with files since coreclr does not support multimodule assemblies.
@@ -81,7 +66,7 @@ public:
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
+    static Assembly* CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive);
 
     MethodDesc *GetEntryPoint();
 
@@ -145,7 +130,7 @@ public:
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName()
+    LPCUTF8 GetDebugName()
     {
         WRAPPER_NO_CONTRACT;
         return GetPEAssembly()->GetDebugName();
@@ -268,25 +253,10 @@ public:
         m_debuggerFlags = flags;
     }
 
-    void SetCopiedPDBs()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_debuggerFlags = (DebuggerAssemblyControlFlags) (m_debuggerFlags | DACF_PDBS_COPIED);
-    }
-
     ULONG HashIdentity()
     {
         return GetPEAssembly()->HashIdentity();
     }
-
-    //****************************************************************************************
-    //
-    // Uses the given token to load a module or another assembly. Returns the module in
-    // which the implementation resides.
-
-    mdFile GetManifestFileToken(IMDInternalImport *pImport, mdFile kFile);
-    mdFile GetManifestFileToken(LPCSTR name);
 
     // On failure:
     //      if loadFlag == Loader::Load => throw
@@ -296,12 +266,10 @@ public:
                                      mdTypeDef mdNested,
                                      mdTypeDef *pCL);
 
-    static Module * FindModuleByTypeRef(Module *         pModule,
+    static Module * FindModuleByTypeRef(ModuleBase *     pModule,
                                         mdTypeRef        typeRef,
                                         Loader::LoadFlag loadFlag,
                                         BOOL *           pfNoResolutionScope);
-
-    Module *FindModuleByName(LPCSTR moduleName);
 
     //****************************************************************************************
     //

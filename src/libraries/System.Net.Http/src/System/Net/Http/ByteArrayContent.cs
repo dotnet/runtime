@@ -14,22 +14,23 @@ namespace System.Net.Http
         private readonly int _offset;
         private readonly int _count;
 
-        public ByteArrayContent(byte[] content!!)
+        public ByteArrayContent(byte[] content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _content = content;
             _count = content.Length;
         }
 
-        public ByteArrayContent(byte[] content!!, int offset, int count)
+        public ByteArrayContent(byte[] content, int offset, int count)
         {
-            if ((offset < 0) || (offset > content.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((count < 0) || (count > (content.Length - offset)))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, content.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, content.Length - offset);
 
             _content = content;
             _offset = offset;

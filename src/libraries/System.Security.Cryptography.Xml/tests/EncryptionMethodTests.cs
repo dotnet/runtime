@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Xml.Tests
             yield return new object[] { "<name xmlns:enc=\"http://www.w3.org/2001/04/xmlenc#\" enc:Algorithm=\"algorithm\"/>", "algorithm", 0 };
             yield return new object[] { "<name xmlns:abc=\"http://www.w3.org/2001/04/xmlenc#\" abc:Algorithm=\"algorithm\"/>", "algorithm", 0 };
             yield return new object[] { "<name xmlns:abc=\"http://www.w3.org/2001/04/xmlenc#\"><abc:KeySize>1</abc:KeySize></name>", null, 1 };
-            yield return new object[] { "<name Algorithm=\"originalAlgorithm\" xmlns:enc=\"http://www.w3.org/2001/04/xmlenc#\" enc:Algorithm=\"namespacedAlgorith\"/>", "originalAlgorithm", 0 };
+            yield return new object[] { "<name Algorithm=\"originalAlgorithm\" xmlns:enc=\"http://www.w3.org/2001/04/xmlenc#\" enc:Algorithm=\"namespacedAlgorithm\"/>", "originalAlgorithm", 0 };
             yield return new object[] { "<name xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:Algorithm=\"algorithm\"/>", null, 0 };
 
 

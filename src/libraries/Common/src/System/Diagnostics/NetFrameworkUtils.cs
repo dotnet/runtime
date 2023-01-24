@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using Microsoft.Win32;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -212,14 +213,9 @@ namespace System.Diagnostics
                                 policyKey.Close();
                             }
 
-                            if (version != null && version != string.Empty)
+                            if (!string.IsNullOrEmpty(version))
                             {
-                                StringBuilder installBuilder = new StringBuilder();
-                                installBuilder.Append(installRoot);
-                                if (!installRoot.EndsWith("\\", StringComparison.Ordinal))
-                                    installBuilder.Append('\\');
-                                installBuilder.Append(version);
-                                dllDir = installBuilder.ToString();
+                                dllDir = Path.Combine(installRoot, version);
                             }
                         }
                     }

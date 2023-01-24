@@ -128,6 +128,47 @@ FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
 }
 FCIMPLEND
 
+FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj) {
+
+    CONTRACTL
+    {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    VALIDATEOBJECT(obj);
+
+    if (obj == 0)
+        return 0;
+
+    OBJECTREF objRef(obj);
+
+    {
+        DWORD bits = objRef->GetHeader()->GetBits();
+
+        if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+        {
+            if (bits & BIT_SBLK_IS_HASHCODE)
+            {
+                // Common case: the object already has a hash code
+                return  bits & MASK_HASHCODE;
+            }
+            else
+            {
+                // We have a sync block index. There may be a hash code stored within the sync block.
+                SyncBlock *psb = objRef->PassiveGetSyncBlock();
+                if (psb != NULL)
+                {
+                    return psb->GetHashCode();
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+FCIMPLEND
+
 //
 // Compare by ref for normal classes, by value for value types.
 //
@@ -193,7 +234,7 @@ NOINLINE static Object* GetClassHelper(OBJECTREF objRef)
     return OBJECTREFToObject(refType);
 }
 
-// This routine is called by the Object.GetType() routine.   It is a major way to get the Sytem.Type
+// This routine is called by the Object.GetType() routine.   It is a major way to get the System.Type
 FCIMPL1(Object*, ObjectNative::GetClass, Object* pThis)
 {
     CONTRACTL
@@ -224,7 +265,7 @@ FCIMPL1(Object*, ObjectNative::AllocateUninitializedClone, Object* pObjUNSAFE)
 {
     FCALL_CONTRACT;
 
-    // Delegate error handling to managed side (it will throw NullRefenceException)
+    // Delegate error handling to managed side (it will throw NullReferenceException)
     if (pObjUNSAFE == NULL)
         return NULL;
 

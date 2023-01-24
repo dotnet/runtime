@@ -8,7 +8,7 @@ remove_definitions(-DSTRESS_HEAP)
 # https://github.com/dotnet/runtime/issues/8062
 remove_definitions(-DWRITE_BARRIER_CHECK)
 
-set( GC_SOURCES
+set(GC_SOURCES
   gceventstatus.cpp
   gcconfig.cpp
   gccommon.cpp
@@ -27,20 +27,17 @@ set( GC_SOURCES
   handletablecache.cpp)
 
 if(CLR_CMAKE_HOST_UNIX)
+  add_subdirectory(unix)
   include(unix/configure.cmake)
-  set ( GC_SOURCES
-    ${GC_SOURCES}
-    unix/gcenv.unix.cpp
-    unix/events.cpp
-    unix/cgroup.cpp)
 else()
-  set ( GC_SOURCES
+  add_subdirectory(windows)
+  set (GC_SOURCES
     ${GC_SOURCES}
-    windows/gcenv.windows.cpp)
+    windows/Native.rc)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  set ( GC_SOURCES
+  set (GC_SOURCES
     ${GC_SOURCES}
     vxsort/isa_detection.cpp
     vxsort/do_vxsort_avx2.cpp
@@ -99,9 +96,9 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
     advapi32.lib)
-else()
-  set (GC_LINK_LIBRARIES)
 endif(CLR_CMAKE_HOST_WIN32)
+
+set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
 
 list(APPEND GC_SOURCES ${GC_HEADERS})
 
@@ -112,12 +109,8 @@ add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(TARGETS clrgc DESTINATIONS . COMPONENT runtime)
 
-if(CLR_CMAKE_HOST_UNIX)
-  # dprintf causes many warnings (https://github.com/dotnet/runtime/issues/8737)
-  add_compile_options(-Wno-format)
-endif(CLR_CMAKE_HOST_UNIX)
-
 add_definitions(-DBUILD_AS_STANDALONE)
+add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
 add_definitions(-DVERIFY_HEAP)
 if(CLR_CMAKE_HOST_OSX)
   # The implementation of GCToOSInterface on MacOS makes use of non-POSIX
@@ -129,3 +122,4 @@ endif(CLR_CMAKE_HOST_OSX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/env)
 
+install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)

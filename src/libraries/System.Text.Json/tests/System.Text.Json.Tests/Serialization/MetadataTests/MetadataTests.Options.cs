@@ -29,10 +29,30 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
+            Assert.IsType<MyJsonContext>(options.TypeInfoResolver);
+        }
 
-            // Options can be binded only once.
-            CauseInvalidOperationException(() => options.AddContext<MyJsonContext>());
-            CauseInvalidOperationException(() => options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>());
+        [Fact]
+        public void AddContext_SupportsMultipleContexts()
+        {
+            JsonSerializerOptions options = new();
+            options.AddContext<SingleTypeContext<int>>();
+            options.AddContext<SingleTypeContext<string>>();
+
+            Assert.NotNull(options.GetTypeInfo(typeof(int)));
+            Assert.NotNull(options.GetTypeInfo(typeof(string)));
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(bool)));
+        }
+
+        [Fact]
+        public void AddContext_AppendsToExistingResolver()
+        {
+            JsonSerializerOptions options = new();
+            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+            options.AddContext<MyJsonContext>(); // this context always throws
+
+            // should always consult the default resolver, never falling back to the throwing resolver.
+            options.GetTypeInfo(typeof(int));
         }
 
         private static void CauseInvalidOperationException(Action action)
@@ -48,16 +68,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Context binds with options when instantiated with parameterless ctor.
             MyJsonContextThatSetsOptionsInParameterlessCtor context = new();
-            FieldInfo optionsField = typeof(JsonSerializerContext).GetField("_options", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(optionsField);
-            Assert.NotNull((JsonSerializerOptions)optionsField.GetValue(context));
+            Assert.NotNull(context.Options);
+            Assert.Same(context, context.Options.TypeInfoResolver);
 
             // Those options are overwritten when context is binded via options.AddContext<TContext>();
             JsonSerializerOptions options = new();
+            Assert.Null(options.TypeInfoResolver);
             options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>(); // No error.
-            FieldInfo contextField = typeof(JsonSerializerOptions).GetField("_serializerContext", BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(contextField);
-            Assert.Same(options, ((JsonSerializerContext)contextField.GetValue(options)).Options);
+            Assert.NotNull(options.TypeInfoResolver);
+            Assert.NotSame(options, ((JsonSerializerContext)options.TypeInfoResolver).Options);
         }
 
         [Fact]
@@ -66,25 +85,45 @@ namespace System.Text.Json.Serialization.Tests
             // Bind the options.
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
+            Assert.False(options.IsReadOnly);
 
-            // Attempt to bind the instance again.
-            Assert.Throws<InvalidOperationException>(() => new MyJsonContext(options));
+            // Pass the options to a context constructor
+            _ = new MyJsonContext(options);
+            Assert.True(options.IsReadOnly);
         }
 
         [Fact]
-        public void OptionsImmutableAfterBinding()
+        public void OptionsMutableAfterBinding()
         {
             // Bind via AddContext
             JsonSerializerOptions options = new();
             options.PropertyNameCaseInsensitive = true;
             options.AddContext<MyJsonContext>();
-            CauseInvalidOperationException(() => options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.False(options.IsReadOnly);
 
             // Bind via context ctor
             options = new JsonSerializerOptions();
             MyJsonContext context = new MyJsonContext(options);
-            Assert.Same(options, context.Options);
-            CauseInvalidOperationException(() => options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.True(options.IsReadOnly);
+        }
+
+        [Fact]
+        public void PassingImmutableOptionsThrowsException()
+        {
+            JsonSerializerOptions defaultOptions = JsonSerializerOptions.Default;
+            Assert.Throws<InvalidOperationException>(() => new MyJsonContext(defaultOptions));
+        }
+
+        [Fact]
+        public void PassingWrongOptionsInstanceToResolverThrowsException()
+        {
+            JsonSerializerOptions defaultOptions = JsonSerializerOptions.Default;
+            JsonSerializerOptions contextOptions = new();
+            IJsonTypeInfoResolver context = new EmptyContext(contextOptions);
+
+            Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), contextOptions));
+            Assert.IsAssignableFrom<JsonTypeInfo<int>>(context.GetTypeInfo(typeof(int), null));
+            Assert.Throws<InvalidOperationException>(() => context.GetTypeInfo(typeof(int), defaultOptions));
         }
 
         private class MyJsonContext : JsonSerializerContext
@@ -103,6 +142,21 @@ namespace System.Text.Json.Serialization.Tests
             public MyJsonContextThatSetsOptionsInParameterlessCtor() : base(new JsonSerializerOptions()) { }
             public override JsonTypeInfo? GetTypeInfo(Type type) => throw new NotImplementedException();
             protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+        }
+
+        private class EmptyContext : JsonSerializerContext
+        {
+            public EmptyContext(JsonSerializerOptions options) : base(options) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => JsonTypeInfo.CreateJsonTypeInfo(type, Options);
+        }
+
+        private class SingleTypeContext<T> : JsonSerializerContext, IJsonTypeInfoResolver
+        {
+            public SingleTypeContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => type == typeof(T) ? JsonTypeInfo.CreateJsonTypeInfo(type, options) : null;
         }
     }
 }

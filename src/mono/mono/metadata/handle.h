@@ -427,16 +427,18 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
 // The value copy is needed in cases computing value causes a GC
-#define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
-		TYPE __val = (VALUE);	\
+#define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do { \
+		MONO_DISABLE_WARNING(4189) \
+		TYPE __val = (VALUE); \
 		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \
 		MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD = __val); \
+		MONO_RESTORE_WARNING \
 	 } while (0)
 
 // handle [idx] = value (for managed pointers)
 #define MONO_HANDLE_ARRAY_SETREF(HANDLE, IDX, VALUE) do {	\
 		uintptr_t __idx = (IDX);	\
-   		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
+		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
 		{	/* FIXME scope needed by Centrinel */		\
 			/* FIXME mono_array_setref_fast is not an expression. */ \
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
@@ -484,28 +486,6 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_DOMAIN(HANDLE) MONO_HANDLE_SUPPRESS (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)))))
 
 #define mono_handle_domain(handle) MONO_HANDLE_DOMAIN ((handle))
-
-/* Given an object and a MonoClassField, return the value (must be non-object)
- * of the field.  It's the caller's responsibility to check that the object is
- * of the correct class. */
-#define MONO_HANDLE_GET_FIELD_VAL(HANDLE,TYPE,FIELD) (*(TYPE *)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, (HANDLE)), (FIELD))))
-#define MONO_HANDLE_GET_FIELD_BOOL(handle, type, field) (MONO_BOOL (MONO_HANDLE_GET_FIELD_VAL ((handle), type, (field))))
-
-#define MONO_HANDLE_NEW_GET_FIELD(HANDLE,TYPE,FIELD) MONO_HANDLE_NEW (TYPE, MONO_HANDLE_SUPPRESS (*(TYPE**)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)), (FIELD)))))
-
-#define MONO_HANDLE_SET_FIELD_VAL(HANDLE,TYPE,FIELD,VAL) do {		\
-		MonoObjectHandle __obj = (HANDLE);			\
-		MonoClassField *__field = (FIELD);			\
-		TYPE __value = (VAL);					\
-		*(TYPE*)(mono_handle_unsafe_field_addr (__obj, __field)) = __value; \
-	} while (0)
-
-#define MONO_HANDLE_SET_FIELD_REF(HANDLE,FIELD,VALH) do {		\
-		MonoObjectHandle __obj = MONO_HANDLE_CAST (MonoObject, (HANDLE)); \
-		MonoClassField *__field = (FIELD);			\
-		MonoObjectHandle __value = MONO_HANDLE_CAST (MonoObject, (VALH)); \
-		MONO_HANDLE_SUPPRESS (mono_gc_wbarrier_generic_store_internal (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value))); \
-	} while (0)
 
 #define MONO_HANDLE_GET_CLASS(handle) (MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoObject, (handle)), vtable)->klass)
 
@@ -599,15 +579,6 @@ mono_handle_assign_raw (MonoObjectHandleOut dest, void *src)
 	g_assert (dest.__raw);
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)src);
 	return dest;
-}
-
-/* It is unsafe to call this function directly - it does not pin the handle!  Use MONO_HANDLE_GET_FIELD_VAL(). */
-static inline gpointer
-mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
-{
-	/* TODO: metadata-update: fix all callers */
-	g_assert (!m_field_is_from_update (field));
-	return MONO_HANDLE_SUPPRESS (((gchar *)MONO_HANDLE_RAW (h)) + field->offset);
 }
 
 /* Matches ObjectHandleOnStack in managed code */

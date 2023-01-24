@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -68,44 +69,45 @@ internal static partial class Interop
         }
 
         // Argument structure for IPV6_ADD_MEMBERSHIP and IPV6_DROP_MEMBERSHIP.
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
         internal struct IPv6MulticastRequest
         {
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
 
-            public unsafe struct Native
+            [CustomMarshaller(typeof(IPv6MulticastRequest), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
-                private const int MulticastAddressLength = 16;
-                private fixed byte _multicastAddress[MulticastAddressLength];
-                private int _interfaceIndex;
+                public static Native ConvertToUnmanaged(IPv6MulticastRequest managed) => new(managed);
+                public static IPv6MulticastRequest ConvertToManaged(Native native) => native.ToManaged();
 
-                public Native(IPv6MulticastRequest managed)
+                public unsafe struct Native
                 {
-                    Debug.Assert(managed.MulticastAddress.Length == MulticastAddressLength);
-                    fixed (void* dest = _multicastAddress)
-                    {
-                        managed.MulticastAddress.CopyTo(new Span<byte>(dest, MulticastAddressLength));
-                    }
-                    _interfaceIndex = managed.InterfaceIndex;
-                }
+                    private const int MulticastAddressLength = 16;
+                    private fixed byte _multicastAddress[MulticastAddressLength];
+                    private int _interfaceIndex;
 
-                public IPv6MulticastRequest ToManaged()
-                {
-                    IPv6MulticastRequest managed = new()
+                    public Native(IPv6MulticastRequest managed)
                     {
-                        MulticastAddress = new byte[MulticastAddressLength],
-                        InterfaceIndex = _interfaceIndex
-                    };
-                    fixed (void* src = _multicastAddress)
-                    {
-                        new Span<byte>(src, 16).CopyTo(managed.MulticastAddress);
+                        Debug.Assert(managed.MulticastAddress.Length == MulticastAddressLength);
+                        managed.MulticastAddress.CopyTo(MemoryMarshal.CreateSpan(ref _multicastAddress[0], MulticastAddressLength));
+                        _interfaceIndex = managed.InterfaceIndex;
                     }
-                    return managed;
+
+                    public IPv6MulticastRequest ToManaged()
+                    {
+                        IPv6MulticastRequest managed = new()
+                        {
+                            MulticastAddress = new byte[MulticastAddressLength],
+                            InterfaceIndex = _interfaceIndex
+                        };
+                        MemoryMarshal.CreateReadOnlySpan(ref _multicastAddress[0], MulticastAddressLength).CopyTo(managed.MulticastAddress);
+                        return managed;
+                    }
                 }
             }
 
-            internal static readonly unsafe int Size = sizeof(Native);
+            internal static readonly unsafe int Size = sizeof(Marshaller.Native);
         }
 
         [StructLayout(LayoutKind.Sequential)]

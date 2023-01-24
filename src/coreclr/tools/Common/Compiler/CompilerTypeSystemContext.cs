@@ -21,7 +21,7 @@ namespace ILCompiler
 
         private MetadataStringDecoder _metadataStringDecoder;
 
-        private class ModuleData
+        private sealed class ModuleData
         {
             public string SimpleName;
             public string FilePath;
@@ -30,7 +30,7 @@ namespace ILCompiler
             public MemoryMappedViewAccessor MappedViewAccessor;
         }
 
-        private class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
+        private sealed class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
         {
             protected override int GetKeyHashCode(EcmaModule key)
             {
@@ -42,11 +42,11 @@ namespace ILCompiler
             }
             protected override bool CompareKeyToValue(EcmaModule key, ModuleData value)
             {
-                return Object.ReferenceEquals(key, value.Module);
+                return ReferenceEquals(key, value.Module);
             }
             protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
             {
-                return Object.ReferenceEquals(value1.Module, value2.Module);
+                return ReferenceEquals(value1.Module, value2.Module);
             }
             protected override ModuleData CreateValueFromKey(EcmaModule key)
             {
@@ -56,9 +56,9 @@ namespace ILCompiler
         }
         private readonly ModuleHashtable _moduleHashtable = new ModuleHashtable();
 
-        private class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
+        private sealed class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
         {
-            StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
+            private StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
 
             protected override int GetKeyHashCode(string key)
             {
@@ -123,9 +123,9 @@ namespace ILCompiler
             return null;
         }
 
-        public EcmaModule GetModuleFromPath(string filePath)
+        public EcmaModule GetModuleFromPath(string filePath, bool throwOnFailureToLoad = true)
         {
-            return GetOrAddModuleFromPath(filePath, true);
+            return GetOrAddModuleFromPath(filePath, true, throwOnFailureToLoad: throwOnFailureToLoad);
         }
 
         public EcmaModule GetMetadataOnlyModuleFromPath(string filePath)
@@ -133,8 +133,10 @@ namespace ILCompiler
             return GetOrAddModuleFromPath(filePath, false);
         }
 
-        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
+        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding, bool throwOnFailureToLoad = true)
         {
+            filePath = Path.GetFullPath(filePath);
+
             // This method is not expected to be called frequently. Linear search is acceptable.
             foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
             {
@@ -142,7 +144,7 @@ namespace ILCompiler
                     return entry.Module;
             }
 
-            return AddModule(filePath, null, useForBinding);
+            return AddModule(filePath, null, useForBinding, throwOnFailureToLoad: throwOnFailureToLoad);
         }
 
         public static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
@@ -180,7 +182,7 @@ namespace ILCompiler
             }
         }
 
-        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null)
+        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null, bool throwOnFailureToLoad = true)
         {
             PEReader peReader = null;
             MemoryMappedViewAccessor mappedViewAccessor = null;
@@ -189,6 +191,7 @@ namespace ILCompiler
             {
                 if (oldModuleData == null)
                 {
+                    filePath = Path.GetFullPath(filePath);
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
 
 #if !READYTORUN
@@ -196,7 +199,8 @@ namespace ILCompiler
                     throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
+                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else
                 {
@@ -204,6 +208,11 @@ namespace ILCompiler
                     peReader = oldModuleData.Module.PEReader;
                     mappedViewAccessor = oldModuleData.MappedViewAccessor;
                     pdbReader = oldModuleData.Module.PdbReader;
+                }
+
+                if (!peReader.HasMetadata && !throwOnFailureToLoad)
+                {
+                    return null;
                 }
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
@@ -234,7 +243,7 @@ namespace ILCompiler
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
@@ -244,10 +253,8 @@ namespace ILCompiler
             }
             finally
             {
-                if (mappedViewAccessor != null)
-                    mappedViewAccessor.Dispose();
-                if (pdbReader != null)
-                    pdbReader.Dispose();
+                mappedViewAccessor?.Dispose();
+                pdbReader?.Dispose();
             }
         }
 
@@ -304,8 +311,7 @@ namespace ILCompiler
 
         public MetadataStringDecoder GetMetadataStringDecoder()
         {
-            if (_metadataStringDecoder == null)
-                _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
+            _metadataStringDecoder ??= new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
             return _metadataStringDecoder;
         }
 
@@ -315,40 +321,37 @@ namespace ILCompiler
 
         private PdbSymbolReader OpenAssociatedSymbolFile(string peFilePath, PEReader peReader)
         {
-            // Assume that the .pdb file is next to the binary
-            var pdbFilename = Path.ChangeExtension(peFilePath, ".pdb");
-            string searchPath = "";
+            string pdbFileName = null;
+            BlobContentId pdbContentId = default;
 
-            if (!File.Exists(pdbFilename))
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
-                pdbFilename = null;
+                if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    continue;
 
-                // If the file doesn't exist, try the path specified in the CodeView section of the image
-                foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+                CodeViewDebugDirectoryData debugDirectoryData = peReader.ReadCodeViewDebugDirectoryData(debugEntry);
+
+                string candidatePath  = debugDirectoryData.Path;
+                if (!Path.IsPathRooted(candidatePath) || !File.Exists(candidatePath))
                 {
-                    if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
+                    // Also check next to the PE file
+                    candidatePath = Path.Combine(Path.GetDirectoryName(peFilePath), Path.GetFileName(candidatePath));
+                    if (!File.Exists(candidatePath))
                         continue;
-
-                    string candidateFileName = peReader.ReadCodeViewDebugDirectoryData(debugEntry).Path;
-                    if (Path.IsPathRooted(candidateFileName) && File.Exists(candidateFileName))
-                    {
-                        pdbFilename = candidateFileName;
-                        searchPath = Path.GetDirectoryName(pdbFilename);
-                        break;
-                    }
                 }
 
-                if (pdbFilename == null)
-                    return null;
+                pdbFileName = candidatePath;
+                pdbContentId = new BlobContentId(debugDirectoryData.Guid, debugEntry.Stamp);
+                break;
             }
 
+            if (pdbFileName == null)
+                return null;
+
             // Try to open the symbol file as portable pdb first
-            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
-            if (reader == null)
-            {
-                // Fallback to the diasymreader for non-portable pdbs
-                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, searchPath);
-            }
+            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFileName, GetMetadataStringDecoder(), pdbContentId);
+            // Fallback to the diasymreader for non-portable pdbs
+            reader ??= UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, Path.GetDirectoryName(pdbFileName));
 
             return reader;
         }

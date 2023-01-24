@@ -7,6 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
+using System.Buffers.Text;
 
 namespace System.Text.Unicode
 {
@@ -28,7 +29,7 @@ namespace System.Text.Unicode
             // First, we'll handle the common case of all-ASCII. If this is able to
             // consume the entire buffer, we'll skip the remainder of this method's logic.
 
-            int numAsciiCharsConsumedJustNow = (int)ASCIIUtility.GetIndexOfFirstNonAsciiChar(pInputBuffer, (uint)inputLength);
+            int numAsciiCharsConsumedJustNow = (int)Ascii.GetIndexOfFirstNonAsciiChar(pInputBuffer, (uint)inputLength);
             Debug.Assert(0 <= numAsciiCharsConsumedJustNow && numAsciiCharsConsumedJustNow <= inputLength);
 
             pInputBuffer += (uint)numAsciiCharsConsumedJustNow;
@@ -272,7 +273,7 @@ namespace System.Text.Unicode
 
                             // If we're 64-bit, we can perform the zero-extension of the surrogate pairs count for
                             // free right now, saving the extension step a few lines below. If we're 32-bit, the
-                            // convertion to nuint immediately below is a no-op, and we'll pay the cost of the real
+                            // conversion to nuint immediately below is a no-op, and we'll pay the cost of the real
                             // 64 -bit extension a few lines below.
                             nuint surrogatePairsCountNuint = (uint)BitOperations.PopCount(highSurrogatesMask);
 

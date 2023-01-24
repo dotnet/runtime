@@ -82,7 +82,7 @@ namespace System.DirectoryServices.AccountManagement
         private LoadState _cannotChangePasswordChanged = LoadState.NotSet;
         private bool _cannotChangePasswordRead;
 
-        // For this property we are doing an on demand load.  The store will not load this property when load is called beacuse
+        // For this property we are doing an on demand load.  The store will not load this property when load is called because
         // the loading of this property is perf intensive.  HandleGet still needs to be called to load the other object properties if
         // needed.  We read the status directly from the store and then cache it for use later.
         public bool UserCannotChangePassword
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.AccountManagement
                 // These methods implement the logic shared by all the get/set accessors for the internal properties
                 T HandleGet<T>(ref T currentValue, string name)
                 {
-                    // Check that we actually support this propery in our store
+                    // Check that we actually support this property in our store
                     //this.owningPrincipal.CheckSupportedProperty(name);
 
                     return currentValue;
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 void HandleSet<T>(ref T currentValue, T newValue, ref bool changed, string name)
                 {
-                    // Check that we actually support this propery in our store
+                    // Check that we actually support this property in our store
                     //this.owningPrincipal.CheckSupportedProperty(name);
 
                     currentValue = newValue;
@@ -310,7 +310,7 @@ namespace System.DirectoryServices.AccountManagement
                     return (_storedNewPassword != null);
 
                 case (PropertyNames.PwdInfoExpireImmediately):
-                    return (_expirePasswordImmediately != false);
+                    return (_expirePasswordImmediately);
 
                 default:
                     Debug.Fail($"PasswordInfo.GetChangeStatusForProperty: fell off end looking for {propertyName}");

@@ -4,7 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- file locking can't be disabled on Windows -->
-    <TargetFramework>$(NetCoreAppCurrent)-Unix</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)-unix</TargetFramework>
 
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
@@ -32,5 +32,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true" />
   </ItemGroup>
 </Project>

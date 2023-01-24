@@ -20,7 +20,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerOptionCollection Options
         {
-            get => _options ?? (_options = new DesignerOptionCollection(this, null, string.Empty, null));
+            get => _options ??= new DesignerOptionCollection(this, null, string.Empty, null);
         }
 
         /// <summary>
@@ -32,8 +32,11 @@ namespace System.ComponentModel.Design
         /// anything into the component parameter of the property descriptor will be
         /// ignored and the value object will be substituted.
         /// </summary>
-        protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent!!, string name!!, object value)
+        protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
         {
+            ArgumentNullException.ThrowIfNull(parent);
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidArgumentValue, "name.Length"), nameof(name));
@@ -47,8 +50,11 @@ namespace System.ComponentModel.Design
         /// null if the property couldn't be found.
         /// </summary>
         [RequiresUnreferencedCode("The Type of DesignerOptionCollection's value cannot be statically discovered.")]
-        private PropertyDescriptor? GetOptionProperty(string pageName!!, string valueName!!)
+        private PropertyDescriptor? GetOptionProperty(string pageName, string valueName)
         {
+            ArgumentNullException.ThrowIfNull(pageName);
+            ArgumentNullException.ThrowIfNull(valueName);
+
             string[] optionNames = pageName.Split('\\');
 
             DesignerOptionCollection? options = Options;
@@ -126,10 +132,7 @@ namespace System.ComponentModel.Design
                 if (Parent != null)
                 {
                     parent!._properties = null;
-                    if (Parent._children == null)
-                    {
-                        Parent._children = new ArrayList(1);
-                    }
+                    Parent._children ??= new ArrayList(1);
                     Parent._children.Add(this);
                 }
             }
@@ -258,10 +261,7 @@ namespace System.ComponentModel.Design
                 if (_children == null)
                 {
                     _service.PopulateOptionCollection(this);
-                    if (_children == null)
-                    {
-                        _children = new ArrayList(1);
-                    }
+                    _children ??= new ArrayList(1);
                 }
             }
 
@@ -461,7 +461,7 @@ namespace System.ComponentModel.Design
             {
                 if (destinationType == typeof(string))
                 {
-                    return SR.CollectionConverterText;
+                    return SR.GetResourceString(nameof(SR.CollectionConverterText), "(Collection)");
                 }
                 return base.ConvertTo(cxt, culture, value, destinationType);
             }

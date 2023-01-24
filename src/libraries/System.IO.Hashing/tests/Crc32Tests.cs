@@ -51,7 +51,7 @@ namespace System.IO.Hashing.Tests
                     "FFFFFFFF"),
                 new TestCase(
                     "Self-test 123456789",
-                    Encoding.ASCII.GetBytes("123456789"),
+                    "123456789"u8.ToArray(),
                     "2639F4CB"),
                 new TestCase(
                     "Self-test residue",
@@ -63,7 +63,7 @@ namespace System.IO.Hashing.Tests
                     "FFFFFFFF"),
                 new TestCase(
                     "The quick brown fox jumps over the lazy dog",
-                    Encoding.ASCII.GetBytes("The quick brown fox jumps over the lazy dog"),
+                    "The quick brown fox jumps over the lazy dog"u8.ToArray(),
                     "39A34F41"),
             };
 
@@ -140,6 +140,17 @@ namespace System.IO.Hashing.Tests
         public void StaticVerifyTryOneShot(TestCase testCase)
         {
             StaticVerifyTryOneShotDriver(testCase);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestCases))]
+        public void VerifyHashToUInt32(TestCase testCase)
+        {
+            var alg = new Crc32();
+            alg.Append(testCase.Input);
+            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32(), littleEndian: true);
+
+            AssertEqualHashNumber(testCase.OutputHex, Crc32.HashToUInt32(testCase.Input), littleEndian: true);
         }
     }
 }

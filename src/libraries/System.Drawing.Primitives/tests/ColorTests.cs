@@ -492,7 +492,7 @@ namespace System.Drawing.Primitives.Tests
             Assert.Equal(!expected, right != left);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void DebuggerAttributesAreValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.Aquamarine);

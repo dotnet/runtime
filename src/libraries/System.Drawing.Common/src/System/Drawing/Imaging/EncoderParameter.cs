@@ -16,7 +16,7 @@ namespace System.Drawing.Imaging
 
         ~EncoderParameter()
         {
-            Dispose(false);
+            DisposeInternal();
         }
 
         /// <summary>
@@ -69,12 +69,12 @@ namespace System.Drawing.Imaging
 
         public void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             GC.KeepAlive(this);
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             if (_parameterValue != IntPtr.Zero)
                 Marshal.FreeHGlobal(_parameterValue);
@@ -97,10 +97,7 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            if (undefined == true)
-                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
-            else
-                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
+            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
             _numberOfValues = 1;
             _parameterValue = Marshal.AllocHGlobal(sizeof(byte));
 
@@ -202,10 +199,7 @@ namespace System.Drawing.Imaging
         {
             _parameterGuid = encoder.Guid;
 
-            if (undefined == true)
-                _parameterValueType = EncoderParameterValueType.ValueTypeUndefined;
-            else
-                _parameterValueType = EncoderParameterValueType.ValueTypeByte;
+            _parameterValueType = undefined ? EncoderParameterValueType.ValueTypeUndefined : EncoderParameterValueType.ValueTypeByte;
 
             _numberOfValues = value.Length;
             _parameterValue = Marshal.AllocHGlobal(_numberOfValues);

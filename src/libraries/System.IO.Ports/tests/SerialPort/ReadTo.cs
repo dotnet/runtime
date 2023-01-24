@@ -161,7 +161,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
                 StringBuilder strBldrToWrite = new StringBuilder();
 
-                //Genrate random characters
+                // Generate random characters
                 for (int i = 0; i < numBytesToRead; i++)
                 {
                     strBldrToWrite.Append((char)rndGen.Next(40, 60));
@@ -207,7 +207,7 @@ namespace System.IO.Ports.Tests
                 StringBuilder strBldrToWrite = new StringBuilder();
                 StringBuilder strBldrExpected = new StringBuilder();
 
-                //Genrate random characters
+                // Generate random characters
                 for (int i = 0; i < numBytesToRead; i++)
                 {
                     strBldrToWrite.Append((char)rndGen.Next(0, 256));
@@ -313,7 +313,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying read method throws ArgumentExcpetion with a null NewLine string");
+                Debug.WriteLine("Verifying read method throws ArgumentException with a null NewLine string");
                 com.Open();
 
                 VerifyReadException(com, null, typeof(ArgumentNullException));
@@ -325,7 +325,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying read method throws ArgumentExcpetion with an empty NewLine string");
+                Debug.WriteLine("Verifying read method throws ArgumentException with an empty NewLine string");
                 com.Open();
 
                 VerifyReadException(com, "", typeof(ArgumentException));
@@ -391,7 +391,7 @@ namespace System.IO.Ports.Tests
                 asyncReadTask.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarantee that we are executing code in SerialPort
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
                 com2.Write(endString);
 

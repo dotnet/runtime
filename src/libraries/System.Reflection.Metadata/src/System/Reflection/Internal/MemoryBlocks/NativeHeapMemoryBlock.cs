@@ -15,7 +15,7 @@ namespace System.Reflection.Internal
     /// </remarks>
     internal sealed class NativeHeapMemoryBlock : AbstractMemoryBlock
     {
-        private unsafe sealed class DisposableData : CriticalDisposableObject
+        private sealed unsafe class DisposableData : CriticalDisposableObject
         {
             private IntPtr _pointer;
 
@@ -64,7 +64,7 @@ namespace System.Reflection.Internal
         }
 
         public override void Dispose() => _data.Dispose();
-        public unsafe override byte* Pointer => _data.Pointer;
+        public override unsafe byte* Pointer => _data.Pointer;
         public override int Size => _size;
     }
 }

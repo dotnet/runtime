@@ -1,0 +1,70 @@
+\documentclass{article}
+\usepackage[fancyhdr,pdf]{latex2man}
+
+\input{common.tex}
+
+\begin{document}
+
+\begin{Name}{3}{unw\_get\_proc\_info\_in\_range}{David Mosberger-Tang}{Programming Library}{unw\_get\_proc\_info\_in\_range}unw\_get\_proc\_info\_in\_range -- get procedure info in IP range and a frame index table
+\end{Name}
+
+\section{Synopsis}
+
+\File{\#include $<$libunwind.h$>$}\\
+
+\Type{int} \Func{unw\_get\_proc\_info\_in\_range}(\Type{unw\_word\_t~}\Var{start_ip}, \Type{unw\_word\_t~}\Var{end_ip}, \Type{unw\_word\_t~}\Var{eh_frame_table}, \Type{unw\_word\_t~}\Var{eh_frame_table_len}, \Type{unw\_word\_t~}\Var{exidx_frame_table}, \Type{unw\_word\_t~}\Var{exidx_frame_table_len,}, \Type{unw\_addr\_space\_t~*}\Var{as}, \Type{void~*}\Var{arg});\\
+
+\section{Description}
+
+The \Func{unw\_get\_proc\_info\_in\_range}() routine returns the same
+kind of auxiliary information about a procedure as
+\Func{unw\_get\_proc\_info\_by\_ip}(), except that the info is looked up in
+instruction-pointer (IP) range and frame table instead of just at IP.  This
+is equally flexible because it is possible to look up the info for an arbitrary
+procedure, even if it is not part of the current call-chain.  However, since it
+is more flexible, it also tends to run slower (and often much slower)
+than \Func{unw\_get\_proc\_info}().
+
+\section{Return Value}
+
+On successful completion, \Func{unw\_get\_proc\_info\_in\_range}()
+returns 0.  Otherwise the negative value of one of the error-codes
+below is returned.
+
+\section{Thread and Signal Safety}
+
+\Func{unw\_get\_proc\_info\_in\_range}() is thread-safe.  If the local
+address-space is passed in argument \Var{as}, this routine is also
+safe to use from a signal handler.
+
+\section{Errors}
+
+\begin{Description}
+\item[\Const{UNW\_EUNSPEC}] An unspecified error occurred.
+\item[\Const{UNW\_ENOINFO}] \Prog{Libunwind} was unable to locate
+  unwind-info for the procedure.
+\item[\Const{UNW\_EBADVERSION}] The unwind-info for the procedure has
+  version or format that is not understood by \Prog{libunwind}.
+\item[\Const{UNW\_EINVAL}] An unsupported table encoding was specified.
+\end{Description}
+In addition, \Func{unw\_get\_proc\_info\_by\_ip}() may return any
+error returned by the \Func{access\_mem}() call-back (see
+\Func{unw\_create\_addr\_space}(3)).
+
+\section{See Also}
+
+\SeeAlso{libunwind(3)},
+\SeeAlso{unw\_get\_proc\_info\_in\_range(3)},
+\SeeAlso{unw\_create\_addr\_space(3)},
+\SeeAlso{unw\_get\_proc\_name(3)},
+\SeeAlso{unw\_get\_proc\_info(3)}
+
+\section{Author}
+
+\noindent
+David Mosberger-Tang\\
+Email: \Email{dmosberger@gmail.com}\\
+WWW: \URL{http://www.nongnu.org/libunwind/}.
+\LatexManEnd
+
+\end{document}

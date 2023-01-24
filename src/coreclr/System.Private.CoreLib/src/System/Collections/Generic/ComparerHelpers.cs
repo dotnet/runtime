@@ -37,14 +37,11 @@ namespace System.Collections.Generic
             {
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericComparer<int>), runtimeType);
             }
-            // Nullable does not implement IComparable<T?> directly because that would add an extra interface call per comparison.
-            // Instead, it relies on Comparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IComparable.
-            else if (type.IsGenericType)
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
-                    result = TryCreateNullableComparer(runtimeType);
-                }
+                // Nullable does not implement IComparable<T?> directly because that would add an extra interface call per comparison.
+                var embeddedType = (RuntimeType)type.GetGenericArguments()[0];
+                result = RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
             }
             // The comparer for enums is specialized to avoid boxing.
             else if (type.IsEnum)
@@ -53,25 +50,6 @@ namespace System.Collections.Generic
             }
 
             return result ?? CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ObjectComparer<object>), runtimeType);
-        }
-
-        /// <summary>
-        /// Creates the default <see cref="Comparer{T}"/> for a nullable type.
-        /// </summary>
-        /// <param name="nullableType">The nullable type to create the default comparer for.</param>
-        private static object? TryCreateNullableComparer(RuntimeType nullableType)
-        {
-            Debug.Assert(nullableType != null);
-            Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
-
-            var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
-
-            if (typeof(IComparable<>).MakeGenericType(embeddedType).IsAssignableFrom(embeddedType))
-            {
-                return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableComparer<int>), embeddedType);
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -135,14 +113,11 @@ namespace System.Collections.Generic
                 // If T implements IEquatable<T> return a GenericEqualityComparer<T>
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<string>), runtimeType);
             }
-            else if (type.IsGenericType)
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
-                // Instead, it relies on EqualityComparer<T?>.Default to specialize for nullables and do the lifted comparisons if T implements IEquatable.
-                if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                {
-                    result = TryCreateNullableEqualityComparer(runtimeType);
-                }
+                var embeddedType = (RuntimeType)type.GetGenericArguments()[0];
+                result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
             }
             else if (type.IsEnum)
             {
@@ -151,25 +126,6 @@ namespace System.Collections.Generic
             }
 
             return result ?? CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(ObjectEqualityComparer<object>), runtimeType);
-        }
-
-        /// <summary>
-        /// Creates the default <see cref="EqualityComparer{T}"/> for a nullable type.
-        /// </summary>
-        /// <param name="nullableType">The nullable type to create the default equality comparer for.</param>
-        private static object? TryCreateNullableEqualityComparer(RuntimeType nullableType)
-        {
-            Debug.Assert(nullableType != null);
-            Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
-
-            var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
-
-            if (typeof(IEquatable<>).MakeGenericType(embeddedType).IsAssignableFrom(embeddedType))
-            {
-                return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
-            }
-
-            return null;
         }
 
         /// <summary>

@@ -1,28 +1,51 @@
 <Project>
+  <PropertyGroup>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
-    <RunScriptInputName Condition="'$(TargetOS)' == 'windows'">RunnerTemplate.cmd</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' == 'true'">RunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetsLinuxBionic)' == 'true' and '$(RunScriptWindowsCmd)' != 'true'">BionicRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetsLinuxBionic)' == 'true' and '$(RunScriptWindowsCmd)' == 'true'">BionicRunnerTemplate.cmd</RunScriptInputName>
+    <InnerRunScriptInputName>BionicRunOnDevice.sh</InnerRunScriptInputName>
   </PropertyGroup>
 
   <PropertyGroup>
     <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+    <InnerRunScriptInputPath>$(MSBuildThisFileDirectory)$(InnerRunScriptInputName)</InnerRunScriptInputPath>
 
-    <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">build-apple-app.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
+    <InnerRunEnvOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', 'TestEnv.txt'))</InnerRunEnvOutputPath>
 
-    <RunScriptHostDir Condition="'$(TargetOS)' == 'windows'">%RUNTIME_PATH%\</RunScriptHostDir>
-    <RunScriptHostDir Condition="'$(TargetOS)' != 'windows'">$RUNTIME_PATH/</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(RunScriptWindowsCmd)' == 'true'">%RUNTIME_PATH%\</RunScriptHostDir>
+    <RunScriptHostDir Condition="'$(RunScriptWindowsCmd)' != 'true'">$RUNTIME_PATH/</RunScriptHostDir>
 
-    <RunScriptHost Condition="'$(TargetOS)' == 'windows'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
-    <RunScriptHost Condition="'$(TargetOS)' != 'windows'">$(RunScriptHostDir)dotnet</RunScriptHost>
+    <RunScriptHost Condition="'$(RunScriptWindowsCmd)' == 'true'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
+    <RunScriptHost Condition="'$(RunScriptWindowsCmd)' != 'true'">$(RunScriptHostDir)dotnet</RunScriptHost>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Default and user defined categories -->
+    <_withCategories Condition="'$(WithCategories)' != ''">;$(WithCategories.Trim(';'))</_withCategories>
+    <_withoutCategories Condition="'$(WithoutCategories)' != ''">;$(WithoutCategories.Trim(';'))</_withoutCategories>
+
+    <TestScope Condition="'$(TestScope)' == '' and '$(Outerloop)' == 'true'">all</TestScope>
+    <_withCategories Condition="'$(TestScope)' == 'outerloop'">$(_withCategories);OuterLoop</_withCategories>
+    <_withoutCategories Condition="'$(ArchiveTests)' == 'true'">$(_withoutCategories);IgnoreForCI</_withoutCategories>
+    <_withoutCategories Condition="'$(TestScope)' == '' or '$(TestScope)' == 'innerloop'">$(_withoutCategories);OuterLoop</_withoutCategories>
+    <_withoutCategories Condition="!$(_withCategories.Contains('failing'))">$(_withoutCategories);failing</_withoutCategories>
   </PropertyGroup>
 
   <!-- For both tests.mobile.targets and tests.wasm.targets -->
@@ -31,7 +54,7 @@
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
   <ItemGroup>
-    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -40,12 +63,12 @@
     <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
     because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
     an empty zip because we haven't published the selfcontained app.  -->
-    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'" />
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'Browser' or '$(BuildTestsOnHelix)' == 'true')"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(BuildTestsOnHelix)' == 'true')"
           AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript;ZipTestArchive" />
   
@@ -55,7 +78,7 @@
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
@@ -71,8 +94,8 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(TargetOS)' != 'windows' and ('$(TargetOS)' != 'Browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-      <RunScriptCommand Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and ('$(TargetOS)' != 'browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>
@@ -107,6 +130,22 @@
                        OutputPath="$(RunScriptOutputPath)" />
 
     <Exec Condition="'$(TargetOS)' != 'windows' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(RunScriptOutputPath)" />
+    <Copy Condition="'$(TargetsLinuxBionic)' == 'true'" SourceFiles="$(InnerRunScriptInputPath)" DestinationFiles="$(InnerRunScriptOutputPath)" />
+    <Exec Condition="'$(TargetsLinuxBionic)' == 'true' and '$(OS)' != 'Windows_NT'" Command="chmod +x $(InnerRunScriptOutputPath)" />
+
+    <PropertyGroup Condition="'$(TargetsLinuxBionic)' == 'true'">
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'x86'">x86</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</_AndroidArchitecture>
+      <_AndroidArchitecture Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</_AndroidArchitecture>
+      <_BionicTestEnv>
+ASSEMBLY_NAME=$(AssemblyName).dll
+TEST_ARCH=$(_AndroidArchitecture)
+      </_BionicTestEnv>
+    </PropertyGroup>
+
+    <WriteLinesToFile Condition="'$(TargetsLinuxBionic)' == 'true'" File="$(InnerRunEnvOutputPath)" Overwrite="true" Lines="$(_BionicTestEnv)" Encoding="ascii">
+    </WriteLinesToFile>
   </Target>
 
   <Target Name="RunTests">
@@ -119,10 +158,10 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-      <RunTestsCommand>"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS.ToLowerInvariant()) $(TestProjectName)</RunTestsCommand>
+      <RunTestsCommand>"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS) $(TestProjectName)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsAppleMobile)' == 'true'">$(RunTestsCommand) $(Configuration) $(AdditionalXHarnessArguments)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Android'">$(RunTestsCommand) $(AdditionalXHarnessArguments)</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'android'">$(RunTestsCommand) $(AdditionalXHarnessArguments)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 
     <!-- Invoke the run script with the test host as the runtime path. -->

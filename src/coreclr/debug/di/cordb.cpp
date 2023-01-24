@@ -92,29 +92,29 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
     {
         return E_INVALIDARG;
     }
-
     return Cordb::CreateObject(
-        (CorDebugInterfaceVersion)iDebuggerVersion, ProcessDescriptor::UNINITIALIZED_PID, /*lpApplicationGroupId*/ NULL, IID_ICorDebug, (void **) ppCordb);
+        (CorDebugInterfaceVersion)iDebuggerVersion, ProcessDescriptor::UNINITIALIZED_PID, /*lpApplicationGroupId*/ NULL,  /*dacModulePath*/ NULL, IID_ICorDebug, (void **) ppCordb);
 }
 
 //
 // Public API.
-// Telesto Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.
-// This supercedes code:CoreCLRCreateCordbObject
+// Creation path with Mac sandbox support and explicit DAC module path for single-file apps
+// This supersedes code:CoreCLRCreateCordbObjectEx
 //
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
 //    pid - pid of debuggee that we're attaching to.
-//    lpApplicationGroupId - A string representing the application group ID of a sandboxed
+//    lpApplicationGroupId - a string representing the application group ID of a sandboxed
 //                           process running in Mac. Pass NULL if the process is not
 //                           running in a sandbox and other platforms.
+//    dacModulePath - the full module path of the DAC module or NULL.
 //    hmodTargetCLR - module handle to clr in target pid that we're attaching to.
 //    ppCordb - (out) the resulting ICorDebug object.
 //
 // Notes:
 //    It's inconsistent that this takes a (handle, pid) but hands back an ICorDebug instead of an ICorDebugProcess.
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
-STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
+STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR dacModulePath, HMODULE hmodTargetCLR, IUnknown** ppCordb)
 {
     if (ppCordb == NULL)
     {
@@ -130,7 +130,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
     // Create the ICorDebug object
     //
     RSExtSmartPtr<ICorDebug> pCordb;
-    Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, pid, lpApplicationGroupId, IID_ICorDebug, (void **) &pCordb);
+    Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, pid, lpApplicationGroupId, dacModulePath, IID_ICorDebug, (void **) &pCordb);
 
     //
     // Associate it with the target instance
@@ -152,8 +152,30 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
 
 //
 // Public API.
-// Telesto Creation path - only way to debug multi-instance.
-// This supercedes code:CreateCordbObject
+// Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.
+// This supersedes code:CoreCLRCreateCordbObject
+//
+// Arguments:
+//    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
+//    pid - pid of debuggee that we're attaching to.
+//    lpApplicationGroupId - a string representing the application group ID of a sandboxed
+//                           process running in Mac. Pass NULL if the process is not
+//                           running in a sandbox and other platforms.
+//    hmodTargetCLR - module handle to clr in target pid that we're attaching to.
+//    ppCordb - (out) the resulting ICorDebug object.
+//
+// Notes:
+//    It's inconsistent that this takes a (handle, pid) but hands back an ICorDebug instead of an ICorDebugProcess.
+//    Callers will need to call *ppCordb->DebugActiveProcess(pid).
+STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
+{
+    return CoreCLRCreateCordbObject3(iDebuggerVersion, pid, lpApplicationGroupId, NULL, hmodTargetCLR, ppCordb);
+}
+
+//
+// Public API.
+// Creation path - only way to debug multi-instance.
+// This supersedes code:CreateCordbObject
 //
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
@@ -168,9 +190,6 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODU
 {
     return CoreCLRCreateCordbObjectEx(iDebuggerVersion, pid, NULL, hmodTargetCLR, ppCordb);
 }
-
-
-
 
 
 //*****************************************************************************
@@ -433,10 +452,10 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
                                LPCWSTR pConfigurationFile,
                                DWORD startupFlags,
                                DWORD runtimeInfoFlags,
-                               _Out_writes_bytes_opt_(dwDirectory) LPWSTR pDirectory,
+                               __out_ecount_opt(dwDirectory) LPWSTR pDirectory,
                                DWORD dwDirectory,
                                DWORD *dwDirectoryLength,
-                               _Out_writes_bytes_opt_(cchBuffer)   LPWSTR pVersion,
+                               __out_ecount_opt(cchBuffer)   LPWSTR pVersion,
                                DWORD cchBuffer,
                                DWORD* dwlength)
 {

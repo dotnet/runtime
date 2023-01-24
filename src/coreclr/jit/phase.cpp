@@ -71,40 +71,8 @@ void Phase::PrePhase()
     comp->BeginPhase(m_phase);
 
 #ifdef DEBUG
-
-    // To help in the incremental conversion of jit activity to phases
-    // without greatly increasing dump size or checked jit time, we
-    // currently allow the phases that do pre-phase checks and
-    // dumps via the phase object, and not via explicit calls from
-    // the various methods in the phase.
-    //
-    // In the long run the aim is to get rid of all pre-phase checks
-    // and dumps, relying instead on post-phase checks and dumps from
-    // the preceeding phase.
-    //
-    // Currently the list is just the set of phases that have custom
-    // derivations from the Phase class.
-    static Phases s_allowlist[] = {PHASE_BUILD_SSA, PHASE_OPTIMIZE_VALNUM_CSES, PHASE_RATIONALIZE, PHASE_LOWERING,
-                                   PHASE_STACK_LEVEL_SETTER};
-    bool doPrePhase = false;
-
-    for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
-    {
-        if (m_phase == s_allowlist[i])
-        {
-            doPrePhase = true;
-            break;
-        }
-    }
-
     if (VERBOSE)
     {
-        if (doPrePhase)
-        {
-            printf("Trees before %s\n", m_name);
-            comp->fgDispBasicBlocks(true);
-        }
-
         if (comp->compIsForInlining())
         {
             printf("\n*************** Inline @[%06u] Starting PHASE %s\n",
@@ -113,17 +81,6 @@ void Phase::PrePhase()
         else
         {
             printf("\n*************** Starting PHASE %s\n", m_name);
-        }
-    }
-
-    if (doPrePhase)
-    {
-        if ((comp->activePhaseChecks == PhaseChecks::CHECK_ALL) && (comp->expensiveDebugCheckLevel >= 2))
-        {
-            // If everyone used the Phase class, this would duplicate the PostPhase() from the previous phase.
-            // But, not everyone does, so go ahead and do the check here, too.
-            comp->fgDebugCheckBBlist();
-            comp->fgDebugCheckLinks();
         }
     }
 #endif // DEBUG
@@ -146,64 +103,13 @@ void Phase::PostPhase(PhaseStatus status)
 #ifdef DEBUG
 
     // Don't dump or check post phase unless the phase made changes.
-    const bool        madeChanges   = (status != PhaseStatus::MODIFIED_NOTHING);
+    //
+    const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
+    const bool doPostPhase       = madeChanges;
+    const bool doPostPhaseChecks = (comp->activePhaseChecks != PhaseChecks::CHECK_NONE);
+    const bool doPostPhaseDumps  = (comp->activePhaseDumps == PhaseDumps::DUMP_ALL);
+
     const char* const statusMessage = madeChanges ? "" : " [no changes]";
-    bool              doPostPhase   = false;
-
-    // To help in the incremental conversion of jit activity to phases
-    // without greatly increasing dump size or checked jit time, we
-    // currently allow the phases that do post-phase checks and
-    // dumps via the phase object, and not via explicit calls from
-    // the various methods in the phase.
-    //
-    // As we remove the explicit checks and dumps from each phase, we
-    // will add to this list; once all phases are updated, we can
-    // remove the list entirely.
-    //
-    // This list includes custom derivations from the Phase class as
-    // well as the new-style phases that have been updated to return
-    // PhaseStatus from their DoPhase methods.
-    //
-    // clang-format off
-
-    static Phases s_allowlist[] = {
-        PHASE_INCPROFILE,
-        PHASE_IBCPREP,
-        PHASE_IMPORTATION,
-        PHASE_PATCHPOINTS,
-        PHASE_IBCINSTR,
-        PHASE_INDXCALL,
-        PHASE_MORPH_INLINE,
-        PHASE_ALLOCATE_OBJECTS,
-        PHASE_EMPTY_TRY,
-        PHASE_EMPTY_FINALLY,
-        PHASE_MERGE_FINALLY_CHAINS,
-        PHASE_CLONE_FINALLY,
-        PHASE_MERGE_THROWS,
-        PHASE_FWD_SUB,
-        PHASE_MORPH_GLOBAL,
-        PHASE_INVERT_LOOPS,
-        PHASE_OPTIMIZE_LAYOUT,
-        PHASE_FIND_LOOPS,
-        PHASE_BUILD_SSA,
-        PHASE_INSERT_GC_POLLS,
-        PHASE_RATIONALIZE,
-        PHASE_LOWERING,
-        PHASE_STACK_LEVEL_SETTER};
-
-    // clang-format on
-
-    if (madeChanges)
-    {
-        for (size_t i = 0; i < sizeof(s_allowlist) / sizeof(Phases); i++)
-        {
-            if (m_phase == s_allowlist[i])
-            {
-                doPostPhase = true;
-                break;
-            }
-        }
-    }
 
     if (VERBOSE)
     {
@@ -217,38 +123,50 @@ void Phase::PostPhase(PhaseStatus status)
             printf("\n*************** Finishing PHASE %s%s\n", m_name, statusMessage);
         }
 
-        if (doPostPhase)
+        if (doPostPhase && doPostPhaseDumps)
         {
             printf("Trees after %s\n", m_name);
             comp->fgDispBasicBlocks(true);
         }
     }
 
-    if (doPostPhase)
+    if (doPostPhase && doPostPhaseChecks)
     {
-        if (comp->activePhaseChecks == PhaseChecks::CHECK_ALL)
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_UNIQUE) == PhaseChecks::CHECK_UNIQUE)
+        {
+            comp->fgDebugCheckNodesUniqueness();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_FG) == PhaseChecks::CHECK_FG)
         {
             comp->fgDebugCheckBBlist();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_IR) == PhaseChecks::CHECK_IR)
+        {
             comp->fgDebugCheckLinks();
-            comp->fgDebugCheckNodesUniqueness();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_EH) == PhaseChecks::CHECK_EH)
+        {
             comp->fgVerifyHandlerTab();
         }
-    }
 
-    // Optionally check profile data, if we have any.
-    //
-    // There's no point checking until we've built pred lists, as
-    // we can't easily reason about consistency without them.
-    //
-    // Bypass the "doPostPhase" filter until we're sure all
-    // phases that mess with profile counts set their phase status
-    // appropriately.
-    //
-    if ((JitConfig.JitProfileChecks() > 0) && comp->fgHaveProfileData() && comp->fgComputePredsDone)
-    {
-        comp->fgDebugCheckProfileData();
-    }
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LOOPS) == PhaseChecks::CHECK_LOOPS)
+        {
+            comp->fgDebugCheckLoopTable();
+        }
 
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            comp->fgDebugCheckProfileWeights();
+        }
+
+        if ((comp->activePhaseChecks & PhaseChecks::CHECK_LINKED_LOCALS) == PhaseChecks::CHECK_LINKED_LOCALS)
+        {
+            comp->fgDebugCheckLinkedLocals();
+        }
+    }
 #endif // DEBUG
 
 #if DUMP_FLOWGRAPHS

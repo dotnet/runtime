@@ -52,10 +52,8 @@ namespace System.Data
         public SyntaxErrorException(string? message, Exception? innerException) : base(message, innerException) { }
     }
 
-    internal sealed class ExprException
+    internal static class ExprException
     {
-        private ExprException() { /* prevent utility class from being insantiated*/ }
-
         private static OverflowException _Overflow(string error)
         {
             OverflowException e = new OverflowException(error);
@@ -77,12 +75,6 @@ namespace System.Data
         private static EvaluateException _Eval(string error)
         {
             EvaluateException e = new EvaluateException(error);
-            ExceptionBuilder.TraceExceptionAsReturnValue(e);
-            return e;
-        }
-        private static EvaluateException _Eval(string error, Exception? innerException)
-        {
-            EvaluateException e = new EvaluateException(error/*, innerException*/);
             ExceptionBuilder.TraceExceptionAsReturnValue(e);
             return e;
         }
@@ -164,14 +156,14 @@ namespace System.Data
             return _Syntax(SR.Format(SR.Expr_UnknownToken1, tokExpected.ToString(), tokCurr.ToString(), position.ToString(CultureInfo.InvariantCulture)));
         }
 
-        public static Exception DatatypeConvertion(Type type1, Type type2)
+        public static Exception DatatypeConversion(Type type1, Type type2)
         {
-            return _Eval(SR.Format(SR.Expr_DatatypeConvertion, type1.ToString(), type2.ToString()));
+            return _Eval(SR.Format(SR.Expr_DatatypeConversion, type1.ToString(), type2.ToString()));
         }
 
-        public static Exception DatavalueConvertion(object value, Type type, Exception? innerException)
+        public static Exception DatavalueConversion(object value, Type type)
         {
-            return _Eval(SR.Format(SR.Expr_DatavalueConvertion, value.ToString(), type.ToString()), innerException);
+            return _Eval(SR.Format(SR.Expr_DatavalueConversion, value.ToString(), type.ToString()));
         }
 
         public static Exception InvalidName(string name)
@@ -289,9 +281,9 @@ namespace System.Data
             return _Eval(SR.Format(SR.Expr_ComputeNotAggregate, expr));
         }
 
-        public static Exception FilterConvertion(string expr)
+        public static Exception FilterConversion(string expr)
         {
-            return _Eval(SR.Format(SR.Expr_FilterConvertion, expr));
+            return _Eval(SR.Format(SR.Expr_FilterConversion, expr));
         }
 
         public static Exception LookupArgument()

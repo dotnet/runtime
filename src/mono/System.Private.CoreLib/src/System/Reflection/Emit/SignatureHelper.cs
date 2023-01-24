@@ -65,6 +65,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modopts))]  // Automatically keeps all previous fields too due to StructLayout
         internal SignatureHelper(ModuleBuilder? module, SignatureHelperType type)
         {
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             this.type = type;
             this.module = module;
         }
@@ -72,7 +74,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
         }
@@ -80,7 +82,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
         }
@@ -190,8 +192,7 @@ namespace System.Reflection.Emit
         {
             foreach (Type modifier in parameter_modifiers)
             {
-                if (modifier == null)
-                    throw new ArgumentNullException(name);
+                ArgumentNullException.ThrowIfNull(modifier, name);
                 if (modifier.IsArray)
                     throw new ArgumentException("Array type not permitted", name);
                 if (modifier.ContainsGenericParameters)
@@ -224,8 +225,7 @@ namespace System.Reflection.Emit
         // FIXME: "Currently we ignore requiredCustomModifiers and optionalCustomModifiers"
         public void AddArguments(Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
+            ArgumentNullException.ThrowIfNull(arguments);
 
             // For now
             if (requiredCustomModifiers != null || optionalCustomModifiers != null)
@@ -250,8 +250,7 @@ namespace System.Reflection.Emit
 
         public void AddArgument(Type argument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
-            if (argument == null)
-                throw new ArgumentNullException(nameof(argument));
+            ArgumentNullException.ThrowIfNull(argument);
 
             if (requiredCustomModifiers != null)
                 ValidateParameterModifiers("requiredCustomModifiers", requiredCustomModifiers);
@@ -267,8 +266,7 @@ namespace System.Reflection.Emit
 
         public void AddArgument(Type clsArgument)
         {
-            if (clsArgument == null)
-                throw new ArgumentNullException(nameof(clsArgument));
+            ArgumentNullException.ThrowIfNull(clsArgument);
 
             AppendArray(ref arguments, clsArgument);
         }
@@ -395,8 +393,7 @@ namespace System.Reflection.Emit
             if (mod != null && !(mod is ModuleBuilder))
                 throw new ArgumentException("ModuleBuilder is expected");
 
-            if (returnType == null)
-                returnType = typeof(void);
+            returnType ??= typeof(void);
 
             if (returnType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");

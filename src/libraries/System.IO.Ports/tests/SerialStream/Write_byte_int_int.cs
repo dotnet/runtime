@@ -289,7 +289,7 @@ namespace System.IO.Ports.Tests
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
-                Debug.WriteLine("Verifying write method throws {0} buffer.Lenght={1}, offset={2}, count={3}",
+                Debug.WriteLine("Verifying write method throws {0} buffer.Length={1}, offset={2}, count={3}",
                     expectedException, bufferLength, offset, count);
                 com.Open();
 
@@ -319,7 +319,7 @@ namespace System.IO.Ports.Tests
             {
                 var rndGen = new Random(-55);
 
-                Debug.WriteLine("Verifying write method buffer.Lenght={0}, offset={1}, count={2}, endocing={3}",
+                Debug.WriteLine("Verifying write method buffer.Length={0}, offset={1}, count={2}, endocing={3}",
                     buffer.Length, offset, count, encoding.EncodingName);
 
                 com1.Encoding = encoding;

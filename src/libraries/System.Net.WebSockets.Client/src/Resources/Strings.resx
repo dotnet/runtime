@@ -75,8 +75,8 @@
   <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
     <value>The argument must be a value greater than {0}.</value>
   </data>
-  <data name="net_WebSockets_Connect101Expected" xml:space="preserve">
-    <value>The server returned status code '{0}' when status code '101' was expected.</value>
+  <data name="net_WebSockets_ConnectStatusExpected" xml:space="preserve">
+    <value>The server returned status code '{0}' when status code '{1}' was expected.</value>
   </data>
   <data name="net_WebSockets_MissingResponseHeader" xml:space="preserve">
     <value>The server's response was missing the required header '{0}'.</value>
@@ -128,5 +128,11 @@
   </data>
   <data name="net_WebSockets_ClientWindowBitsNegotiationFailure" xml:space="preserve">
     <value>The WebSocket failed to negotiate max client window bits. The client requested {0} but the server responded with {1}.</value>
+  </data>
+  <data name="net_WebSockets_OptionsIncompatibleWithCustomInvoker" xml:space="preserve">
+    <value>UseDefaultCredentials, Credentials, Proxy, ClientCertificates, RemoteCertificateValidationCallback and Cookies must not be set on ClientWebSocketOptions when an HttpMessageInvoker instance is also specified. These options should be set on the HttpMessageInvoker's underlying HttpMessageHandler instead.</value>
+  </data>
+  <data name="net_WebSockets_CustomInvokerRequiredForHttp2" xml:space="preserve">
+    <value>An HttpMessageInvoker instance must be passed to ConnectAsync when using HTTP/2.</value>
   </data>
 </root>

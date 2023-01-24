@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,21 +15,30 @@ namespace System.Xml
 
     internal sealed class XmlUTF8TextWriter : XmlBaseWriter, IXmlTextWriterInitializer
     {
-        private XmlUTF8NodeWriter? _writer;
+        private XmlUTF8NodeWriter _writer = null!;  // initialized in SetOutput
 
-        public void SetOutput(Stream stream!!, Encoding encoding!!, bool ownsStream)
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new EncodingStreamWrapper(stream, encoding, true);
             }
 
-            if (_writer == null)
-            {
-                _writer = new XmlUTF8NodeWriter();
-            }
+            _writer ??= new XmlUTF8NodeWriter();
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
+        }
+
+        public override bool CanFragment
+        {
+            get
+            {
+                // Fragmenting only works for utf8
+                return _writer.Encoding == null;
+            }
         }
 
         protected override XmlSigningNodeWriter CreateSigningNodeWriter()
@@ -48,28 +58,12 @@ namespace System.Xml
         private Encoding? _encoding;
         private char[]? _chars;
 
-        private static readonly byte[] s_startDecl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"',
-        };
-        private static readonly byte[] s_endDecl =
-        {
-            (byte)'"', (byte)'?', (byte)'>'
-        };
-        private static readonly byte[] s_utf8Decl =
-        {
-            (byte)'<', (byte)'?', (byte)'x', (byte)'m', (byte)'l', (byte)' ',
-            (byte)'v', (byte)'e', (byte)'r', (byte)'s', (byte)'i', (byte)'o', (byte)'n', (byte)'=', (byte)'"', (byte)'1', (byte)'.', (byte)'0', (byte)'"', (byte)' ',
-            (byte)'e', (byte)'n', (byte)'c', (byte)'o', (byte)'d', (byte)'i', (byte)'n', (byte)'g', (byte)'=', (byte)'"', (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'8', (byte)'"',
-            (byte)'?', (byte)'>'
-        };
-        private static ReadOnlySpan<byte> Digits => new byte[]
-        {
-            (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7',
-            (byte) '8', (byte) '9', (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F'
-        };
+        private static readonly byte[] s_startDecl = "<?xml version=\"1.0\" encoding=\""u8.ToArray();
+        private static readonly byte[] s_endDecl = "\"?>"u8.ToArray();
+        private static readonly byte[] s_utf8Decl = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"u8.ToArray();
+
+        private static ReadOnlySpan<byte> Digits => "0123456789ABCDEF"u8;
+
         private static readonly bool[] s_defaultIsEscapedAttributeChar = new bool[]
         {
             true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
@@ -110,14 +104,15 @@ namespace System.Xml
             _inAttribute = false;
         }
 
-        private byte[] GetCharEntityBuffer()
+        public Encoding? Encoding
         {
-            if (_entityChars == null)
+            get
             {
-                _entityChars = new byte[maxEntityLength];
+                return _encoding;
             }
-            return _entityChars;
         }
+
+        private byte[] GetCharEntityBuffer() => _entityChars ??= new byte[maxEntityLength];
 
         private char[] GetCharBuffer(int charCount)
         {
@@ -427,7 +422,7 @@ namespace System.Xml
             WriteEscapedText(s.Value);
         }
 
-        public unsafe override void WriteEscapedText(string s)
+        public override unsafe void WriteEscapedText(string s)
         {
             int count = s.Length;
             if (count > 0)
@@ -439,7 +434,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe override void WriteEscapedText(char[] s, int offset, int count)
+        public override unsafe void WriteEscapedText(char[] s, int offset, int count)
         {
             if (count > 0)
             {
@@ -510,7 +505,7 @@ namespace System.Xml
             WriteUTF8Chars(chars, offset, count);
         }
 
-        public unsafe override void WriteText(char[] chars, int offset, int count)
+        public override unsafe void WriteText(char[] chars, int offset, int count)
         {
             if (count > 0)
             {
@@ -628,7 +623,7 @@ namespace System.Xml
             }
         }
 
-        private int ToBase16(byte[] chars, int offset, uint value)
+        private static int ToBase16(byte[] chars, int offset, uint value)
         {
             int count = 0;
             do
@@ -709,7 +704,7 @@ namespace System.Xml
         {
             int offset;
             byte[] buffer = GetBuffer(XmlConverter.MaxUInt64Chars, out offset);
-            Advance(XmlConverter.ToChars((double)value, buffer, offset));
+            Advance(XmlConverter.ToChars(value, buffer, offset));
         }
 
         public override void WriteGuidText(Guid value)
@@ -738,7 +733,7 @@ namespace System.Xml
 
         private void InternalWriteBase64Text(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);
@@ -759,7 +754,7 @@ namespace System.Xml
 
         private async Task InternalWriteBase64TextAsync(byte[] buffer, int offset, int count)
         {
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);

@@ -438,9 +438,9 @@ void BasicBlock::dspFlags()
     {
         printf("idxlen ");
     }
-    if (bbFlags & BBF_HAS_NEWARRAY)
+    if (bbFlags & BBF_HAS_MD_IDX_LEN)
     {
-        printf("new[] ");
+        printf("mdidxlen ");
     }
     if (bbFlags & BBF_HAS_NEWOBJ)
     {
@@ -511,6 +511,10 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_LOOP_ALIGN)
     {
         printf("align ");
+    }
+    if (bbFlags & BBF_HAS_MDARRAYREF)
+    {
+        printf("mdarr ");
     }
 }
 
@@ -784,18 +788,19 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    IR nodes.  If cloning of any statement fails, `false` will be returned and block `to` may be
 //    partially populated.  If cloning of all statements succeeds, `true` will be returned and
 //    block `to` will be fully populated.
-
+//
+// Note:
+//    Leaves block ref count at zero, and pred edge list empty.
+//
 bool BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
-
     to->bbFlags  = from->bbFlags;
     to->bbWeight = from->bbWeight;
     BlockSetOps::AssignAllowUninitRhs(compiler, to->bbReach, from->bbReach);
     to->copyEHRegion(from);
     to->bbCatchTyp    = from->bbCatchTyp;
-    to->bbRefs        = from->bbRefs;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
     to->bbStkDepth    = from->bbStkDepth;
@@ -1447,7 +1452,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
     // Note that some fields have to be initialized to 0 (like bbFPStateX87)
-    memset(block, 0, sizeof(*block));
+    memset((void*)block, 0, sizeof(*block));
 
     // scopeInfo needs to be able to differentiate between blocks which
     // correspond to some instrs (and so may have some LocalVarInfo

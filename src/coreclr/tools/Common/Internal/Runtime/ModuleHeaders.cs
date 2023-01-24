@@ -8,16 +8,17 @@ namespace Internal.Runtime
     //
     // Please keep the data structures in this file in sync with the native version at
     //  src/coreclr/inc/readytorun.h
+    //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
     //
 
     internal struct ReadyToRunHeaderConstants
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 6;
+        public const ushort CurrentMajorVersion = 9;
         public const ushort CurrentMinorVersion = 0;
     }
-
+#if READYTORUN
 #pragma warning disable 0169
     internal struct ReadyToRunHeader
     {
@@ -34,6 +35,7 @@ namespace Internal.Runtime
         // Array of sections follows.
     };
 #pragma warning restore 0169
+#endif
 
     //
     // ReadyToRunSectionType IDs are used by the runtime to look up specific global data sections
@@ -41,7 +43,7 @@ namespace Internal.Runtime
     // of the enum and deprecated sections should not be removed to preserve ID stability.
     //
     // This list should be kept in sync with the runtime version at
-    // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
     public enum ReadyToRunSectionType
     {
@@ -67,9 +69,11 @@ namespace Internal.Runtime
         OwnerCompositeExecutable = 116, // Added in 4.1
         PgoInstrumentationData = 117, // Added in 5.2
         ManifestAssemblyMvids = 118, // Added in 5.3
+        CrossModuleInlineInfo = 119, // Added in 6.3
+        HotColdMap = 120, // Added in 8.0
 
         //
-        // CoreRT ReadyToRun sections
+        // NativeAOT ReadyToRun sections
         //
         StringTable = 200, // Unused
         GCStaticRegion = 201,
@@ -78,11 +82,11 @@ namespace Internal.Runtime
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,
-        GCStaticDesc = 207,
+        DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
-        ThreadStaticGCDescRegion = 209,
-        ThreadStaticIndex = 210,
-        LoopHijackFlag = 211,
+        // 209 is unused - it was used by ThreadStaticGCDescRegion
+        // 210 is unused - it was used by ThreadStaticIndex
+        // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
 

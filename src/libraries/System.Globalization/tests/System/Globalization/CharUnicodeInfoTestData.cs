@@ -125,8 +125,8 @@ namespace System.Globalization.Tests
                 return -1;
             }
 
-            int fractionDelimeterIndex = numericValueString.IndexOf("/");
-            if (fractionDelimeterIndex == -1)
+            int fractionDelimiterIndex = numericValueString.IndexOf("/");
+            if (fractionDelimiterIndex == -1)
             {
                 // Parsing basic number
                 return double.Parse(numericValueString);
@@ -134,10 +134,10 @@ namespace System.Globalization.Tests
 
             // Unicode datasets display fractions not decimals (e.g. 1/4 instead of 0.25),
             // so we should parse them as such
-            string numeratorString = numericValueString.Substring(0, fractionDelimeterIndex);
+            string numeratorString = numericValueString.Substring(0, fractionDelimiterIndex);
             double numerator = double.Parse(numeratorString);
 
-            string denominatorString = numericValueString.Substring(fractionDelimeterIndex + 1);
+            string denominatorString = numericValueString.Substring(fractionDelimiterIndex + 1);
             double denominator = double.Parse(denominatorString);
 
             return numerator / denominator;

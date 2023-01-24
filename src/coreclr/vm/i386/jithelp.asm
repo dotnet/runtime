@@ -674,7 +674,7 @@ JIT_Dbl2LngOvf ENDP
 ;       uses stdcall calling conventions
 ;
 ;   note that changing the rounding mode is very expensive.  This
-;   routine basiclly does the truncation sematics without changing
+;   routine basiclly does the truncation semantics without changing
 ;   the rounding mode, resulting in a win.
 ;
 PUBLIC JIT_Dbl2Lng

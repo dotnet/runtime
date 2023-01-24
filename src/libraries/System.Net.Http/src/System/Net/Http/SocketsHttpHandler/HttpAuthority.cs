@@ -13,6 +13,7 @@ namespace System.Net.Http
         // public string AlpnProtocolName { get; }
 
         public string IdnHost { get; }
+        public string HostValue { get; }
         public int Port { get; }
 
         public HttpAuthority(string host, int port)
@@ -23,10 +24,18 @@ namespace System.Net.Http
             var builder = new UriBuilder(Uri.UriSchemeHttp, host, port);
             Uri uri = builder.Uri;
 
-            // TODO https://github.com/dotnet/runtime/issues/25782:
-            // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-            // So, we need to add them manually for now.
-            IdnHost = uri.HostNameType == UriHostNameType.IPv6 ? "[" + uri.IdnHost + "]" : uri.IdnHost;
+            if (uri.HostNameType == UriHostNameType.IPv6)
+            {
+                // This includes brackets for IPv6 and ScopeId for IPv6 LLA so Connect works.
+                IdnHost = $"[{uri.IdnHost}]";
+                // This is bracket enclosed IPv6 without ScopeID for LLA
+                HostValue = uri.Host;
+            }
+            else
+            {
+                // IPv4 address, dns or puny encoded name
+                HostValue = IdnHost = uri.IdnHost;
+            }
             Port = port;
         }
 

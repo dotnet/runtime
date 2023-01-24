@@ -46,7 +46,7 @@ namespace System.Reflection.Emit.Tests
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
             byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => eventBuilder.SetCustomAttribute(attributeConstructor, bytes));
         }
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.Tests
             EventBuilder eventBuilder = type.DefineEvent("TestEvent", EventAttributes.None, typeof(TestEventHandler));
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
             CustomAttributeBuilder attribute = new CustomAttributeBuilder(attributeConstructor, new object[0]);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => eventBuilder.SetCustomAttribute(attribute));
         }

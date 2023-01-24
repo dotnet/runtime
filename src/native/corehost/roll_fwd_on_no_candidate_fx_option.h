@@ -9,8 +9,8 @@
 enum class roll_fwd_on_no_candidate_fx_option
 {
     disabled = 0,
-    minor,          // also inludes patch
-    major           // also inludes minor and patch
+    minor,          // also includes patch
+    major           // also includes minor and patch
 };
 
 enum class roll_forward_option;

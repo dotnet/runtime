@@ -22,7 +22,7 @@ inline ULONG PEImage::AddRef()
     }
     CONTRACT_END;
 
-    RETURN (static_cast<ULONG>(FastInterlockIncrement(&m_refCount)));
+    RETURN (static_cast<ULONG>(InterlockedIncrement(&m_refCount)));
 }
 
 inline const SString &PEImage::GetPath()
@@ -78,7 +78,7 @@ inline void PEImage::SetModuleFileNameHintForDAC()
     {
         const WCHAR* pChar = pStartPath + nChars;
         nChars = 0;
-        while ((pChar >= pStartPath) && (*pChar != L'\\'))
+        while ((pChar >= pStartPath) && (*pChar != DIRECTORY_SEPARATOR_CHAR_W))
         {
             pChar--;
             nChars++;

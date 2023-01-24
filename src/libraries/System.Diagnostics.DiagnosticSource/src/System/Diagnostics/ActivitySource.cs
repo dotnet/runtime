@@ -18,9 +18,9 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the ActivitySource object</param>
         /// <param name="version">The version of the component publishing the tracing info.</param>
-        public ActivitySource(string name!!, string? version = "")
+        public ActivitySource(string name, string? version = "")
         {
-            Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Version = version;
 
             s_activeSources.Add(this);
@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// <remarks>
         /// If the Activity object is created, it will not start automatically. Callers need to call <see cref="Activity.Start()"/> to start it.
         /// </remarks>
-        public Activity? CreateActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
+        public Activity? CreateActivity(string name, ActivityKind kind, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, ActivityIdFormat idFormat = ActivityIdFormat.Unknown)
             => CreateActivity(name, kind, default, parentId, tags, links, default, startIt: false, idFormat);
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace System.Diagnostics
         /// <param name="links">The optional <see cref="ActivityLink"/> list to initialize the created Activity object with.</param>
         /// <param name="startTime">The optional start timestamp to set on the created Activity object.</param>
         /// <returns>The created <see cref="Activity"/> object or null if there is no any listener.</returns>
-        public Activity? StartActivity(string name, ActivityKind kind, string parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
+        public Activity? StartActivity(string name, ActivityKind kind, string? parentId, IEnumerable<KeyValuePair<string, object?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default)
             => CreateActivity(name, kind, default, parentId, tags, links, startTime);
 
         /// <summary>
@@ -303,8 +303,13 @@ namespace System.Diagnostics
         /// Add a listener to the <see cref="Activity"/> starting and stopping events.
         /// </summary>
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listening to the <see cref="Activity"/> events.</param>
-        public static void AddActivityListener(ActivityListener listener!!)
+        public static void AddActivityListener(ActivityListener listener)
         {
+            if (listener is null)
+            {
+                throw new ArgumentNullException(nameof(listener));
+            }
+
             if (s_allListeners.AddIfNotExist(listener))
             {
                 s_activeSources.EnumWithAction((source, obj) => {

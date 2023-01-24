@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 namespace System.Numerics
@@ -127,6 +128,10 @@ namespace System.Numerics
             get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
+        /// <summary>Gets or sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get or set.</param>
+        /// <returns>The the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
             get => GetElement(this, index);
@@ -220,6 +225,7 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 value1, float value2)
         {
@@ -274,6 +280,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, float right)
         {
@@ -285,6 +292,7 @@ namespace System.Numerics
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(float left, Vector4 right)
         {
@@ -312,6 +320,7 @@ namespace System.Numerics
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector4.op_UnaryNegation" /> method defines the unary negation operation for <see cref="System.Numerics.Vector4" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator -(Vector4 value)
         {
@@ -624,13 +633,18 @@ namespace System.Numerics
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Transform(Vector4 vector, Matrix4x4 matrix)
+            => Transform(vector, in matrix.AsImpl());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector4 Transform(Vector4 vector, in Matrix4x4.Impl matrix)
         {
-            return new Vector4(
-                (vector.X * matrix.M11) + (vector.Y * matrix.M21) + (vector.Z * matrix.M31) + (vector.W * matrix.M41),
-                (vector.X * matrix.M12) + (vector.Y * matrix.M22) + (vector.Z * matrix.M32) + (vector.W * matrix.M42),
-                (vector.X * matrix.M13) + (vector.Y * matrix.M23) + (vector.Z * matrix.M33) + (vector.W * matrix.M43),
-                (vector.X * matrix.M14) + (vector.Y * matrix.M24) + (vector.Z * matrix.M34) + (vector.W * matrix.M44)
-            );
+            Vector4 result = matrix.X * vector.X;
+
+            result += matrix.Y * vector.Y;
+            result += matrix.Z * vector.Z;
+            result += matrix.W * vector.W;
+
+            return result;
         }
 
         /// <summary>Transforms a four-dimensional vector by the specified Quaternion rotation value.</summary>
@@ -667,11 +681,17 @@ namespace System.Numerics
         /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array)
         {
-            CopyTo(array, 0);
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if (array.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -684,37 +704,31 @@ namespace System.Numerics
         /// -or-
         /// <paramref name="index" /> is greater than or equal to the array length.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(float[] array, int index)
         {
-            if (array is null)
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
+
+            if ((uint)index >= (uint)array.Length)
             {
-                ThrowHelper.ThrowNullReferenceException();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
-            if ((index < 0) || (index >= array.Length))
-            {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
-            }
-
-            if ((array.Length - index) < 4)
+            if ((array.Length - index) < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            array[index] = X;
-            array[index + 1] = Y;
-            array[index + 2] = Z;
-            array[index + 3] = W;
+            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 4.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <exception cref="System.ArgumentException">If number of elements in source vector is greater than those available in destination span.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void CopyTo(Span<float> destination)
         {
-            if (destination.Length < 4)
+            if (destination.Length < Count)
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
@@ -725,15 +739,15 @@ namespace System.Numerics
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 4.</summary>
         /// <param name="destination">The destination span which the values are copied into.</param>
         /// <returns><see langword="true" /> if the source vector was successfully copied to <paramref name="destination" />. <see langword="false" /> if <paramref name="destination" /> is not large enough to hold the source vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryCopyTo(Span<float> destination)
         {
-            if (destination.Length < 4)
+            if (destination.Length < Count)
             {
                 return false;
             }
 
             Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
-
             return true;
         }
 
@@ -741,10 +755,26 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector4.X" />, <see cref="System.Numerics.Vector4.Y" />, <see cref="System.Numerics.Vector4.Z" />, and <see cref="System.Numerics.Vector4.W" /> elements are equal.</remarks>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector4 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector128.IsHardwareAccelerated)
+            {
+                return this.AsVector128().Equals(other.AsVector128());
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector4 self, Vector4 other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y)
+                    && self.Z.Equals(other.Z)
+                    && self.W.Equals(other.W);
+            }
         }
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
@@ -798,7 +828,7 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -810,23 +840,11 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and <paramref name="formatProvider" />. The "&lt;" and "&gt;" characters are used to begin and end the string, and the format provider's <see cref="System.Globalization.NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString(string? format, IFormatProvider? formatProvider)
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
-            StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-            sb.Append('<');
-            sb.Append(X.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Y.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(Z.ToString(format, formatProvider));
-            sb.Append(separator);
-            sb.Append(' ');
-            sb.Append(W.ToString(format, formatProvider));
-            sb.Append('>');
-            return sb.ToString();
+
+            return $"<{X.ToString(format, formatProvider)}{separator} {Y.ToString(format, formatProvider)}{separator} {Z.ToString(format, formatProvider)}{separator} {W.ToString(format, formatProvider)}>";
         }
     }
 }

@@ -163,7 +163,7 @@ typedef enum _SYSTEM_INFORMATION_CLASS {
     SystemContextSwitchInformation,
     SystemRegistryQuotaInformation,
     SystemExtendServiceTableInformation,
-    SystemPrioritySeperation,
+    SystemPrioritySeparation,
     SystemVerifierAddDriverInformation,
     SystemVerifierRemoveDriverInformation,
     SystemProcessorIdleInformation,
@@ -833,7 +833,7 @@ RtlVirtualUnwind_Unsafe(
 //
 
 #ifdef TARGET_X86
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
 //
@@ -847,7 +847,7 @@ typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 #endif // HOST_X86
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))
@@ -977,9 +977,22 @@ RtlpGetFunctionEndAddress (
     ULONG64 FunctionLength;
 
     FunctionLength = FunctionEntry->UnwindData;
-    if ((FunctionLength & 3) != 0) {
-        FunctionLength = (FunctionLength >> 2) & 0x7ff;
-    } else {
+    if ((FunctionLength & 3) != 0)
+    {
+        // Compact form pdata.
+        if ((FunctionLength & 7) == 3)
+        {
+            // Long branch pdata, by standard this is 3 so size is 12.
+            FunctionLength = 3;
+        }
+        else
+        {
+            FunctionLength = (FunctionLength >> 2) & 0x7ff;
+        }
+    }
+    else
+    {
+        // Get from the xdata record.
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
@@ -1068,14 +1081,6 @@ RtlVirtualUnwind(
     OUT PULONG64 EstablisherFrame,
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
-
-#ifndef IMAGE_REL_LOONGARCH64_PC
-#define IMAGE_REL_LOONGARCH64_PC  0x0003
-#endif
-
-#ifndef IMAGE_REL_LOONGARCH64_JIR
-#define IMAGE_REL_LOONGARCH64_JIR  0x0004
-#endif
 
 #endif // TARGET_LOONGARCH64
 

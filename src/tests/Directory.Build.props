@@ -79,13 +79,15 @@
     <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
 
     <RunWithAndroid>false</RunWithAndroid>
-    <RunWithAndroid Condition="'$(TargetOS)' == 'Android'">true</RunWithAndroid>
+    <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
 
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
+    <RuntimeVariant Condition="'$(__MonoAot)' == '1'">llvmaot</RuntimeVariant>
 
     <MonoFullAot>false</MonoFullAot>
     <MonoFullAot Condition="'$(__MonoFullAot)' == '1'">true</MonoFullAot>
+    <RuntimeVariant Condition="'$(__MonoFullAot)' == '1'">llvmfullaot</RuntimeVariant>
 
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
   </PropertyGroup>
@@ -139,10 +141,11 @@
     <TargetBits>32</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='loongarch64'">64</TargetBits>
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'FreeBSD' AND '$(TargetOS)' != 'Linux' AND '$(TargetOS)' != 'NetBSD' AND '$(TargetOS)' != 'OSX' AND '$(TargetOS)' != 'MacCatalyst' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'Solaris'">true</TargetsUnknownUnix>
+    <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(TargetOS)' != 'freebsd' AND '$(TargetOS)' != 'linux' AND '$(TargetOS)' != 'netbsd' AND '$(TargetOS)' != 'osx' AND '$(TargetOS)' != 'maccatalyst' AND '$(TargetOS)' != 'illumos' AND '$(TargetOS)' != 'solaris'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.fsproj'">F#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
@@ -173,7 +176,7 @@
   <!-- Set Test Wrapper running host OS -->
   <PropertyGroup>
     <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
-    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
   </PropertyGroup>
@@ -185,8 +188,8 @@
     <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false /p:Configuration=$(Configuration)</CLRTestMSBuildArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">

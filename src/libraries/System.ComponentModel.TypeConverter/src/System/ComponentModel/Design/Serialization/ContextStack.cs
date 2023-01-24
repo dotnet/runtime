@@ -49,10 +49,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (level < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(level));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(level);
                 if (_contextStack != null && level < _contextStack.Count)
                 {
                     return _contextStack[_contextStack.Count - 1 - level];
@@ -66,10 +63,12 @@ namespace System.ComponentModel.Design.Serialization
         /// inherits from or implements the given type, or
         /// null if no object on the stack implements the type.
         /// </summary>
-        public object? this[Type type!!]
+        public object? this[Type type]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(type);
+
                 if (_contextStack != null)
                 {
                     int level = _contextStack.Count;
@@ -94,12 +93,11 @@ namespace System.ComponentModel.Design.Serialization
         /// be popped in order. There is no way to remove an object that was
         /// appended to the end of the stack without popping all other objects.
         /// </summary>
-        public void Append(object context!!)
+        public void Append(object context)
         {
-            if (_contextStack == null)
-            {
-                _contextStack = new List<object>();
-            }
+            ArgumentNullException.ThrowIfNull(context);
+
+            _contextStack ??= new List<object>();
             _contextStack.Insert(0, context);
         }
 
@@ -124,12 +122,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Pushes the given object onto the stack.
         /// </summary>
-        public void Push(object context!!)
+        public void Push(object context)
         {
-            if (_contextStack == null)
-            {
-                _contextStack = new List<object>();
-            }
+            ArgumentNullException.ThrowIfNull(context);
+
+            _contextStack ??= new List<object>();
             _contextStack.Add(context);
         }
     }

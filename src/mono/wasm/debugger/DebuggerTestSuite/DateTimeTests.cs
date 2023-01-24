@@ -5,15 +5,18 @@ using System;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-    public class DateTimeTests : DebuggerTestBase
+    public class DateTimeTests : DebuggerTests
     {
+        public DateTimeTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
         [Theory]
         [InlineData("en-US", "dddd, MMMM d, yyyy h:mm:ss tt", "dddd, MMMM d, yyyy", "h:mm:ss tt", "M/d/yyyy", "h:mm tt")]
-        [InlineData("ja-JP", "yyyy年M月d日dddd H:mm:ss", "yyyy年M月d日dddd", "H:mm:ss", "yyyy/MM/dd", "H:mm")]
+        [InlineData("ja-JP", "yyyy\u5E74M\u6708d\u65E5dddd H:mm:ss", "yyyy\u5E74M\u6708d\u65E5dddd", "H:mm:ss", "yyyy/MM/dd", "H:mm")]
         [InlineData("es-ES", "dddd, d 'de' MMMM 'de' yyyy H:mm:ss", "dddd, d 'de' MMMM 'de' yyyy", "H:mm:ss", "d/M/yyyy", "H:mm")]
         [InlineData("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
         public async Task CheckDateTimeLocale(string locale, string fdtp, string ldp, string ltp, string sdp, string stp)
@@ -25,7 +28,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DateTimeTest:LocaleTest'," +
                 $"'{locale}'); }}, 1);",
-                debugger_test_loc, 25, 12, "LocaleTest",
+                debugger_test_loc, 25, 12, "DebuggerTests.DateTimeTest.LocaleTest",
                 locals_fn: async (locals) =>
                 {
                     DateTimeFormatInfo dtfi = CultureInfo.GetCultureInfo(locale).DateTimeFormat;

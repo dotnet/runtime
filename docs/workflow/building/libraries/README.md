@@ -26,9 +26,11 @@ cd tests
 pushd ..\src & dotnet build & popd & dotnet build /t:test
 ```
 
-The instructions for Linux and macOS are essentially the same:
+Instructions for Unix-like operating systems are essentially the same:
 
 ```bash
+#!/usr/bin/env bash
+
 # From root:
 git clean -xdf
 git pull upstream main & git push origin main
@@ -74,8 +76,8 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net7.0` (currently the latest .NET version) or `net48` (the latest .NETFramework version). (msbuild property `BuildTargetFramework`)
-- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `Unix`, `Linux`, or `OSX`. (msbuild property `TargetOS`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net8.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
@@ -114,6 +116,11 @@ The libraries build contains some native code. This includes shims over libc, op
 ./src/native/libs/build-native.sh debug x64
 ```
 
+- Building and updating the binplace (for e.g. the testhost), which is needed when iterating on native components
+```bash
+dotnet.sh build src/native/libraries/build-native.proj
+```
+
 - The following example shows how you would do an arm cross-compile build
 ```bash
 ./src/native/libs/build-native.sh debug arm cross verbose
@@ -149,7 +156,7 @@ Under the `src` directory is a set of directories, each of which represents a pa
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[$(BuildTargetFramework)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 `src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
@@ -161,12 +168,12 @@ For libraries that have multiple target frameworks the target frameworks will be
 **Examples**
 
 - Build project for Linux
-```
-dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=Linux
+```bash
+dotnet build System.Net.NetworkInformation.csproj /p:TargetOS=linux
 ```
 
 - Build Release version of library
-```
+```bash
 dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
 
@@ -175,13 +182,13 @@ When changing `System.Private.CoreLib` after a full build, in order to test agai
 
 After doing a build of the runtime:
 
-```
+```cmd
 build.cmd clr -rc Release
 ```
 
 You can iterate on `System.Private.CoreLib` by running:
 
-```
+```cmd
 build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc Release
 ```
 
@@ -192,7 +199,7 @@ You can use the same workflow for mono runtime by using `mono.corelib+libs.prete
 ### Building for Mono
 By default the libraries will attempt to build using the CoreCLR version of `System.Private.CoreLib.dll`. In order to build against the Mono version you need to use the `/p:RuntimeFlavor=Mono` argument.
 
-```
+```cmd
 .\build.cmd libs /p:RuntimeFlavor=Mono
 ```
 
@@ -216,6 +223,10 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.
 
+## Debugging
+
+Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that the debugging libraries that shipped with the .NET Runtime are correctly signed before loading them. See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+
 ## Running tests
 
 For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).
@@ -225,13 +236,13 @@ For more about running tests, read the [running tests](../../testing/libraries/t
 ## Build packages
 To build a library's package, simply invoke `dotnet pack` on the src project after you successfully built the .NETCoreApp vertical from root:
 
-```
+```cmd
 build libs
 dotnet pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
 
-```
+```cmd
 dotnet pack src\libraries\System.Text.Json\src\ -c Release
 ```

@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void BeginCatchBlock(Type exceptionType)
+        public virtual void BeginCatchBlock(Type? exceptionType)
         {
         }
 

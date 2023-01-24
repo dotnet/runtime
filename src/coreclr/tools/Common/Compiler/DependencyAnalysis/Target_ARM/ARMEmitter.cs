@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ARM
@@ -82,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ARM
             Builder.EmitByte(0xde);
             Builder.EmitByte(0xfe);
         }
-        
+
         // push reg
         // reg range: [0..12, LR]
         public void EmitPUSH(Register reg)

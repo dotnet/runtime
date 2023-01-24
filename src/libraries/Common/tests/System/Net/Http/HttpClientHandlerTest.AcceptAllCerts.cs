@@ -54,11 +54,9 @@ namespace System.Net.Http.Functional.Tests
             requestOnlyThisProtocol |= PlatformDetection.IsOSX && acceptedProtocol == SslProtocols.Tls;
 #pragma warning restore SYSLIB0039
 
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
                 if (requestOnlyThisProtocol)
                 {
                     handler.SslProtocols = acceptedProtocol;
@@ -100,10 +98,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InvalidCertificateServers))]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                 (await client.GetAsync(url)).Dispose();
             }
         }

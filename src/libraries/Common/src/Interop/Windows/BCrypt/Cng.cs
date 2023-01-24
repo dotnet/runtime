@@ -5,11 +5,13 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 using Internal.Cryptography;
+using Microsoft.Win32.SafeHandles;
+
 using static Interop;
 using static Interop.BCrypt;
-using Microsoft.Win32.SafeHandles;
 
 namespace Internal.NativeCrypto
 {
@@ -70,7 +72,10 @@ namespace Internal.NativeCrypto
         public const string BCRYPT_CHAIN_MODE_CFB = "ChainingModeCFB";
         public const string BCRYPT_CHAIN_MODE_CCM = "ChainingModeCCM";
 
-        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(string pszAlgId, string? pszImplementation, OpenAlgorithmProviderFlags dwFlags)
+        public static SafeAlgorithmHandle BCryptOpenAlgorithmProvider(
+            string pszAlgId,
+            string? pszImplementation = null,
+            OpenAlgorithmProviderFlags dwFlags = 0)
         {
             SafeAlgorithmHandle hAlgorithm;
             NTSTATUS ntStatus = Interop.BCryptOpenAlgorithmProvider(out hAlgorithm, pszAlgId, pszImplementation, (int)dwFlags);
@@ -109,7 +114,7 @@ namespace Internal.NativeCrypto
             }
         }
 
-        private static Exception CreateCryptographicException(NTSTATUS ntStatus)
+        private static CryptographicException CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
             return hr.ToCryptographicException();

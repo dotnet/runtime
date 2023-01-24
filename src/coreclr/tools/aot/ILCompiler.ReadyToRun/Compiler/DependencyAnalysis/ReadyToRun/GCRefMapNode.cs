@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _methods = new List<IMethodNode>();
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool IsShareable => false;
 
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     definedSymbols: new ISymbolDefinitionNode[] { this });
             }
 
-            _methods.MergeSort(new CompilerComparer());
+            _methods.MergeSort(CompilerComparer.Instance);
             GCRefMapBuilder builder = new GCRefMapBuilder(factory.Target, relocsOnly);
             builder.Builder.RequireInitialAlignment(4);
             builder.Builder.AddSymbol(this);

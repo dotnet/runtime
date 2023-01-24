@@ -76,6 +76,13 @@ namespace System.Runtime.Serialization
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
     }
+    public interface ISerializationSurrogateProvider2 : ISerializationSurrogateProvider
+    {
+        object? GetCustomDataToExport(Reflection.MemberInfo memberInfo, Type dataContractType);
+        object? GetCustomDataToExport(Type runtimeType, Type dataContractType);
+        void GetKnownCustomDataTypes(Collections.ObjectModel.Collection<Type> customDataTypes);
+        Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=true, AllowMultiple=true)]
     public sealed partial class KnownTypeAttribute : System.Attribute
     {

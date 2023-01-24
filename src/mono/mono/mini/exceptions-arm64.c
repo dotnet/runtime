@@ -479,7 +479,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		return TRUE;
@@ -498,7 +498,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		new_ctx->regs [ARMREG_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->pc = (*lmf)->pc;
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
 		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
@@ -550,7 +550,7 @@ mono_arch_handle_exception (void *ctx, gpointer obj)
 	UCONTEXT_REG_R0 (sigctx) = (gsize)obj;
 
 	gpointer addr = (gpointer)handle_signal_exception;
-	UCONTEXT_REG_SET_PC (sigctx, addr);
+	UCONTEXT_REG_SET_PC (sigctx, (guint64)addr);
 	host_mgreg_t sp = UCONTEXT_REG_SP (sigctx) - MONO_ARCH_REDZONE_SIZE;
 	UCONTEXT_REG_SET_SP (sigctx, sp);
 #endif

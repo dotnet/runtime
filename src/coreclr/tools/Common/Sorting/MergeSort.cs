@@ -61,7 +61,7 @@ namespace ILCompiler
         // Internal helper struct used to enable use of Comparison<T> delegates instead of IComparer<T> instances
         private struct ComparisonWrapper<T> : IComparer<T>
         {
-            Comparison<T> _comparison;
+            private Comparison<T> _comparison;
             public ComparisonWrapper(Comparison<T> comparison)
             {
                 _comparison = comparison;

@@ -3,11 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using XPathNodeType = System.Xml.XPath.XPathNodeType;
 
 namespace System.Xml.Xsl.XPath
 {
-    using XPathNodeType = System.Xml.XPath.XPathNodeType;
-
     internal sealed class XPathParser<Node>
     {
         private XPathScanner? _scanner;
@@ -356,11 +355,31 @@ namespace System.Xml.Xsl.XPath
             XPathOperator op;
             Node opnd;
 
+            ReadOnlySpan<byte> xpathOperatorPrecedence = new byte[]
+            {
+                /*Unknown    */ 0,
+                /*Or         */ 1,
+                /*And        */ 2,
+                /*Eq         */ 3,
+                /*Ne         */ 3,
+                /*Lt         */ 4,
+                /*Le         */ 4,
+                /*Gt         */ 4,
+                /*Ge         */ 4,
+                /*Plus       */ 5,
+                /*Minus      */ 5,
+                /*Multiply   */ 6,
+                /*Divide     */ 6,
+                /*Modulo     */ 6,
+                /*UnaryMinus */ 7,
+                /*Union      */ 8,  // Not used
+            };
+
             // Check for unary operators
             if (_scanner!.Kind == LexKind.Minus)
             {
                 op = XPathOperator.UnaryMinus;
-                int opPrec = s_XPathOperatorPrecedence[(int)op];
+                byte opPrec = xpathOperatorPrecedence[(int)op];
                 _scanner.NextLex();
                 opnd = _builder!.Operator(op, ParseSubExpr(opPrec), default(Node));
             }
@@ -373,7 +392,7 @@ namespace System.Xml.Xsl.XPath
             while (true)
             {
                 op = (_scanner.Kind <= LexKind.LastOperator) ? (XPathOperator)_scanner.Kind : XPathOperator.Unknown;
-                int opPrec = s_XPathOperatorPrecedence[(int)op];
+                byte opPrec = xpathOperatorPrecedence[(int)op];
                 if (opPrec <= callerPrec)
                 {
                     break;
@@ -386,25 +405,6 @@ namespace System.Xml.Xsl.XPath
             --_parseSubExprDepth;
             return opnd;
         }
-
-        private static readonly int[] s_XPathOperatorPrecedence = {
-            /*Unknown    */ 0,
-            /*Or         */ 1,
-            /*And        */ 2,
-            /*Eq         */ 3,
-            /*Ne         */ 3,
-            /*Lt         */ 4,
-            /*Le         */ 4,
-            /*Gt         */ 4,
-            /*Ge         */ 4,
-            /*Plus       */ 5,
-            /*Minus      */ 5,
-            /*Multiply   */ 6,
-            /*Divide     */ 6,
-            /*Modulo     */ 6,
-            /*UnaryMinus */ 7,
-            /*Union      */ 8,  // Not used
-        };
 
         /*
         *   UnionExpr ::= PathExpr ('|' PathExpr)*

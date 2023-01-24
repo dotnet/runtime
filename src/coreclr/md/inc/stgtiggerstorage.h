@@ -169,7 +169,7 @@ public:
 
 
 //*****************************************************************************
-// Returns the size of the signature plus the verion information
+// Returns the size of the signature plus the version information
 //*****************************************************************************
     static HRESULT SizeOfStorageSignature(
         LPCSTR      pRuntimeVersion,        // The version string as it's length is part of the total size.
@@ -308,20 +308,4 @@ private:
     void        *m_pbExtra;             // Pointer to extra data if on disk.
 };
 
-
-//*****************************************************************************
-// Debugging helpers.  #define __SAVESIZE_TRACE__ to enable.
-//*****************************************************************************
-
-// #define __SAVESIZE_TRACE__
-#ifdef __SAVESIZE_TRACE__
-#define SAVETRACE(func) DEBUG_STMT(func)
-#else
-#define SAVETRACE(func)
-#endif // __SAVESIZE_TRACE__
-
 #endif // StgTiggerStorage
-
-
-
-// EOF

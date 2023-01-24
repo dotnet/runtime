@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System;
+using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Diagnostics;
-    using System.Text;
-
     /// <summary>
     /// This structure holds components of an Xsd Duration.  It is used internally to support Xsd durations without loss
     /// of fidelity.  XsdDuration structures are immutable once they've been created.
@@ -48,13 +47,14 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDuration(bool isNegative, int years, int months, int days, int hours, int minutes, int seconds, int nanoseconds)
         {
-            if (years < 0) throw new ArgumentOutOfRangeException(nameof(years));
-            if (months < 0) throw new ArgumentOutOfRangeException(nameof(months));
-            if (days < 0) throw new ArgumentOutOfRangeException(nameof(days));
-            if (hours < 0) throw new ArgumentOutOfRangeException(nameof(hours));
-            if (minutes < 0) throw new ArgumentOutOfRangeException(nameof(minutes));
-            if (seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
-            if (nanoseconds < 0 || nanoseconds > 999999999) throw new ArgumentOutOfRangeException(nameof(nanoseconds));
+            ArgumentOutOfRangeException.ThrowIfNegative(years);
+            ArgumentOutOfRangeException.ThrowIfNegative(months);
+            ArgumentOutOfRangeException.ThrowIfNegative(days);
+            ArgumentOutOfRangeException.ThrowIfNegative(hours);
+            ArgumentOutOfRangeException.ThrowIfNegative(minutes);
+            ArgumentOutOfRangeException.ThrowIfNegative(seconds);
+            ArgumentOutOfRangeException.ThrowIfNegative(nanoseconds);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(nanoseconds, 999999999);
 
             _years = years;
             _months = months;
@@ -633,7 +633,7 @@ namespace System.Xml.Schema
             result = 0;
             numDigits = 0;
 
-            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
             {
                 digit = s[offset] - '0';
 
@@ -647,7 +647,7 @@ namespace System.Xml.Schema
                     // Skip past any remaining digits
                     numDigits = offset - offsetStart;
 
-                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    while (offset < offsetEnd && char.IsAsciiDigit(s[offset]))
                     {
                         offset++;
                     }

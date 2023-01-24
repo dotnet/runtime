@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public static partial class WindowsServiceLifetimeHostBuilderExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddWindowsService(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddWindowsService(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.Hosting.WindowsServiceLifetimeOptions> configure) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder) { throw null; }
         public static Microsoft.Extensions.Hosting.IHostBuilder UseWindowsService(this Microsoft.Extensions.Hosting.IHostBuilder hostBuilder, System.Action<Microsoft.Extensions.Hosting.WindowsServiceLifetimeOptions> configure) { throw null; }
     }
@@ -21,10 +23,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 {
     public static partial class WindowsServiceHelpers
     {
-        [System.Runtime.Versioning.SupportedOSPlatformGuard("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("windows")]
         public static bool IsWindowsService() { throw null; }
     }
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public partial class WindowsServiceLifetime : System.ServiceProcess.ServiceBase, Microsoft.Extensions.Hosting.IHostLifetime
     {
         public WindowsServiceLifetime(Microsoft.Extensions.Hosting.IHostEnvironment environment, Microsoft.Extensions.Hosting.IHostApplicationLifetime applicationLifetime, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory, Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Hosting.HostOptions> optionsAccessor) { }

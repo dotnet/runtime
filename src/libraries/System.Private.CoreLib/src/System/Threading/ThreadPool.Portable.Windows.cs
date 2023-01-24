@@ -14,8 +14,6 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
         {
-            Debug.Assert(UsePortableThreadPoolForIO);
-
             if (overlapped == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
@@ -37,8 +35,10 @@ namespace System.Threading
         }
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle!!)
+        public static bool BindHandle(SafeHandle osHandle)
         {
+            ArgumentNullException.ThrowIfNull(osHandle);
+
             bool mustReleaseSafeHandle = false;
             try
             {

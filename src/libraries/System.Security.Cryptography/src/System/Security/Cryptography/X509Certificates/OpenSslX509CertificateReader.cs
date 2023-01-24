@@ -376,8 +376,8 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 return Interop.Crypto.OpenSslEncode(
-                    x => Interop.Crypto.GetX509DerSize(x),
-                    (x, buf) => Interop.Crypto.EncodeX509(x, buf),
+                    Interop.Crypto.GetX509DerSize,
+                    Interop.Crypto.EncodeX509,
                     _cert);
             }
         }
@@ -606,7 +606,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
+        private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
             // are functionally immutable (unlike Windows ones) an UpRef is sufficient.
@@ -709,15 +709,26 @@ namespace System.Security.Cryptography.X509Certificates
 
                 int bioSize = Interop.Crypto.GetMemoryBioSize(bioHandle);
                 // Ensure space for the trailing \0
-                var buf = new byte[bioSize + 1];
-                int read = Interop.Crypto.BioGets(bioHandle, buf, buf.Length);
+                Span<byte> buffer = new byte[bioSize + 1];
+                Span<byte> current = buffer;
+                int total = 0;
+                int read;
 
-                if (read < 0)
+                do
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+                    read = Interop.Crypto.BioGets(bioHandle, current);
 
-                return Encoding.UTF8.GetString(buf, 0, read);
+                    if (read < 0)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    current = current.Slice(read);
+                    total += read;
+                }
+                while (read > 0);
+
+                return Encoding.UTF8.GetString(buffer.Slice(0, total));
             }
         }
 
@@ -781,61 +792,35 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(
                 bytes.Length == 13 || bytes.Length == 15,
                 "DateTime value should be UTCTime (13 bytes) or GeneralizedTime (15 bytes)");
-
             Debug.Assert(
                 bytes[bytes.Length - 1] == 'Z',
                 "DateTime value should end with Z marker");
 
-            if (bytes == null || bytes.Length < 1 || bytes[bytes.Length - 1] != 'Z')
+            if (bytes != null && bytes.Length is 13 or 15 && bytes[^1] == 'Z')
             {
-                throw new CryptographicException();
-            }
+                Span<char> dateString = stackalloc char[Encoding.ASCII.GetCharCount(bytes)];
+                Encoding.ASCII.GetChars(bytes, dateString);
 
-            string dateString = Encoding.ASCII.GetString(bytes);
-
-            if (s_validityDateTimeFormatInfo == null)
-            {
-                DateTimeFormatInfo validityFormatInfo =
-                    (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
-
-                // Two-digit years are 1950-2049
-                validityFormatInfo.Calendar.TwoDigitYearMax = 2049;
-
-                s_validityDateTimeFormatInfo = validityFormatInfo;
-            }
-
-            if (bytes.Length == 13)
-            {
-                DateTime utcTime;
-
-                if (!DateTime.TryParseExact(
-                    dateString,
-                    "yyMMddHHmmss'Z'",
-                    s_validityDateTimeFormatInfo,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out utcTime))
+                if (s_validityDateTimeFormatInfo == null)
                 {
-                    throw new CryptographicException();
+                    DateTimeFormatInfo validityFormatInfo =
+                        (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+
+                    // Two-digit years are 1950-2049
+                    validityFormatInfo.Calendar.TwoDigitYearMax = 2049;
+
+                    s_validityDateTimeFormatInfo = validityFormatInfo;
                 }
 
-                return utcTime.ToLocalTime();
-            }
-
-            if (bytes.Length == 15)
-            {
-                DateTime generalizedTime;
-
-                if (!DateTime.TryParseExact(
+                if (DateTime.TryParseExact(
                     dateString,
-                    "yyyyMMddHHmmss'Z'",
+                    bytes.Length == 13 ? "yyMMddHHmmss'Z'" : "yyyyMMddHHmmss'Z'",
                     s_validityDateTimeFormatInfo,
                     DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                    out generalizedTime))
+                    out DateTime time))
                 {
-                    throw new CryptographicException();
+                    return time.ToLocalTime();
                 }
-
-                return generalizedTime.ToLocalTime();
             }
 
             throw new CryptographicException();

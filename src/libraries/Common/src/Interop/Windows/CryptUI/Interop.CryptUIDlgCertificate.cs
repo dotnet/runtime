@@ -4,6 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -11,7 +14,7 @@ internal static partial class Interop
     internal static partial class CryptUI
     {
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #else
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 #endif
@@ -37,85 +40,95 @@ internal static partial class Interop
             internal uint nStartPage;
 
 #if NET7_0_OR_GREATER
-            internal unsafe struct Native
+            [CustomMarshaller(typeof(CRYPTUI_VIEWCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
-                private uint dwSize;
-                private IntPtr hwndParent;
-                private uint dwFlags;
-                private IntPtr szTitle;
-                private IntPtr pCertContext;
-                private IntPtr rgszPurposes;
-                private uint cPurposes;
-                private IntPtr pCryptProviderData;
-                private bool fpCryptProviderDataTrustedUsage;
-                private uint idxSigner;
-                private uint idxCert;
-                private bool fCounterSigner;
-                private uint idxCounterSigner;
-                private uint cStores;
-                private IntPtr rghStores;
-                private uint cPropSheetPages;
-                private IntPtr rgPropSheetPages;
-                private uint nStartPage;
+                public static Native ConvertToUnmanaged(CRYPTUI_VIEWCERTIFICATE_STRUCTW managed) => new(managed);
 
-                public Native(CRYPTUI_VIEWCERTIFICATE_STRUCTW managed)
+                public static CRYPTUI_VIEWCERTIFICATE_STRUCTW ConvertToManaged(Native n) => n.ToManaged();
+
+                public static void Free(Native native) => native.FreeNative();
+
+                internal unsafe struct Native
                 {
-                    dwSize = managed.dwSize;
-                    hwndParent = managed.hwndParent;
-                    dwFlags = managed.dwFlags;
-                    szTitle = Marshal.StringToCoTaskMemUni(managed.szTitle);
-                    pCertContext = managed.pCertContext;
-                    rgszPurposes = managed.rgszPurposes;
-                    cPurposes = managed.cPurposes;
-                    pCryptProviderData = managed.pCryptProviderData;
-                    fpCryptProviderDataTrustedUsage = managed.fpCryptProviderDataTrustedUsage;
-                    idxSigner = managed.idxSigner;
-                    idxCert = managed.idxCert;
-                    fCounterSigner = managed.fCounterSigner;
-                    idxCounterSigner = managed.idxCounterSigner;
-                    cStores = managed.cStores;
-                    rghStores = managed.rghStores;
-                    cPropSheetPages = managed.cPropSheetPages;
-                    rgPropSheetPages = managed.rgPropSheetPages;
-                    nStartPage = managed.nStartPage;
+                    private uint dwSize;
+                    private IntPtr hwndParent;
+                    private uint dwFlags;
+                    private IntPtr szTitle;
+                    private IntPtr pCertContext;
+                    private IntPtr rgszPurposes;
+                    private uint cPurposes;
+                    private IntPtr pCryptProviderData;
+                    private bool fpCryptProviderDataTrustedUsage;
+                    private uint idxSigner;
+                    private uint idxCert;
+                    private bool fCounterSigner;
+                    private uint idxCounterSigner;
+                    private uint cStores;
+                    private IntPtr rghStores;
+                    private uint cPropSheetPages;
+                    private IntPtr rgPropSheetPages;
+                    private uint nStartPage;
 
-                }
-
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(szTitle);
-                }
-
-                public CRYPTUI_VIEWCERTIFICATE_STRUCTW ToManaged()
-                {
-                    return new()
+                    public Native(CRYPTUI_VIEWCERTIFICATE_STRUCTW managed)
                     {
-                        dwSize = dwSize,
-                        hwndParent = hwndParent,
-                        dwFlags = dwFlags,
-                        szTitle = Marshal.PtrToStringUni(szTitle),
-                        pCertContext = pCertContext,
-                        rgszPurposes = rgszPurposes,
-                        cPurposes = cPurposes,
-                        pCryptProviderData = pCryptProviderData,
-                        fpCryptProviderDataTrustedUsage = fpCryptProviderDataTrustedUsage,
-                        idxSigner = idxSigner,
-                        idxCert = idxCert,
-                        fCounterSigner = fCounterSigner,
-                        idxCounterSigner = idxCounterSigner,
-                        cStores = cStores,
-                        rghStores = rghStores,
-                        cPropSheetPages = cPropSheetPages,
-                        rgPropSheetPages = rgPropSheetPages,
-                        nStartPage = nStartPage
-                    };
+                        dwSize = managed.dwSize;
+                        hwndParent = managed.hwndParent;
+                        dwFlags = managed.dwFlags;
+                        szTitle = Marshal.StringToCoTaskMemUni(managed.szTitle);
+                        pCertContext = managed.pCertContext;
+                        rgszPurposes = managed.rgszPurposes;
+                        cPurposes = managed.cPurposes;
+                        pCryptProviderData = managed.pCryptProviderData;
+                        fpCryptProviderDataTrustedUsage = managed.fpCryptProviderDataTrustedUsage;
+                        idxSigner = managed.idxSigner;
+                        idxCert = managed.idxCert;
+                        fCounterSigner = managed.fCounterSigner;
+                        idxCounterSigner = managed.idxCounterSigner;
+                        cStores = managed.cStores;
+                        rghStores = managed.rghStores;
+                        cPropSheetPages = managed.cPropSheetPages;
+                        rgPropSheetPages = managed.rgPropSheetPages;
+                        nStartPage = managed.nStartPage;
+
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(szTitle);
+                    }
+
+                    public CRYPTUI_VIEWCERTIFICATE_STRUCTW ToManaged()
+                    {
+                        return new()
+                        {
+                            dwSize = dwSize,
+                            hwndParent = hwndParent,
+                            dwFlags = dwFlags,
+                            szTitle = Marshal.PtrToStringUni(szTitle),
+                            pCertContext = pCertContext,
+                            rgszPurposes = rgszPurposes,
+                            cPurposes = cPurposes,
+                            pCryptProviderData = pCryptProviderData,
+                            fpCryptProviderDataTrustedUsage = fpCryptProviderDataTrustedUsage,
+                            idxSigner = idxSigner,
+                            idxCert = idxCert,
+                            fCounterSigner = fCounterSigner,
+                            idxCounterSigner = idxCounterSigner,
+                            cStores = cStores,
+                            rghStores = rghStores,
+                            cPropSheetPages = cPropSheetPages,
+                            rgPropSheetPages = rgPropSheetPages,
+                            nStartPage = nStartPage
+                        };
+                    }
                 }
             }
 #endif
         }
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #else
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 #endif
@@ -139,72 +152,82 @@ internal static partial class Interop
             internal IntPtr hSelectedCertStore;
 
 #if NET7_0_OR_GREATER
-            internal unsafe struct Native
+            [CustomMarshaller(typeof(CRYPTUI_SELECTCERTIFICATE_STRUCTW), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
-                private uint dwSize;
-                private IntPtr hwndParent;
-                private uint dwFlags;
-                private IntPtr szTitle;
-                private uint dwDontUseColumn;
-                private IntPtr szDisplayString;
-                private IntPtr pFilterCallback;
-                private IntPtr pDisplayCallback;
-                private IntPtr pvCallbackData;
-                private uint cDisplayStores;
-                private IntPtr rghDisplayStores;
-                private uint cStores;
-                private IntPtr rghStores;
-                private uint cPropSheetPages;
-                private IntPtr rgPropSheetPages;
-                internal IntPtr hSelectedCertStore;
+                public static Native ConvertToUnmanaged(CRYPTUI_SELECTCERTIFICATE_STRUCTW managed) => new(managed);
 
-                public Native(CRYPTUI_SELECTCERTIFICATE_STRUCTW managed)
-                {
-                    dwSize = managed.dwSize;
-                    hwndParent = managed.hwndParent;
-                    dwFlags = managed.dwFlags;
-                    szTitle = Marshal.StringToCoTaskMemUni(managed.szTitle);
-                    dwDontUseColumn = managed.dwDontUseColumn;
-                    szDisplayString = Marshal.StringToCoTaskMemUni(managed.szDisplayString);
-                    pFilterCallback = managed.pFilterCallback;
-                    pDisplayCallback = managed.pDisplayCallback;
-                    pvCallbackData = managed.pvCallbackData;
-                    cDisplayStores = managed.cDisplayStores;
-                    rghDisplayStores = managed.rghDisplayStores;
-                    cStores = managed.cStores;
-                    rghStores = managed.rghStores;
-                    cPropSheetPages = managed.cPropSheetPages;
-                    rgPropSheetPages = managed.rgPropSheetPages;
-                    hSelectedCertStore = managed.hSelectedCertStore;
-                }
+                public static CRYPTUI_SELECTCERTIFICATE_STRUCTW ConvertToManaged(Native n) => n.ToManaged();
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(szTitle);
-                    Marshal.FreeCoTaskMem(szDisplayString);
-                }
+                public static void Free(Native native) => native.FreeNative();
 
-                public CRYPTUI_SELECTCERTIFICATE_STRUCTW ToManaged()
+                internal unsafe struct Native
                 {
-                    return new()
+                    private uint dwSize;
+                    private IntPtr hwndParent;
+                    private uint dwFlags;
+                    private IntPtr szTitle;
+                    private uint dwDontUseColumn;
+                    private IntPtr szDisplayString;
+                    private IntPtr pFilterCallback;
+                    private IntPtr pDisplayCallback;
+                    private IntPtr pvCallbackData;
+                    private uint cDisplayStores;
+                    private IntPtr rghDisplayStores;
+                    private uint cStores;
+                    private IntPtr rghStores;
+                    private uint cPropSheetPages;
+                    private IntPtr rgPropSheetPages;
+                    internal IntPtr hSelectedCertStore;
+
+                    public Native(CRYPTUI_SELECTCERTIFICATE_STRUCTW managed)
                     {
-                        dwSize = dwSize,
-                        hwndParent = hwndParent,
-                        dwFlags = dwFlags,
-                        szTitle = Marshal.PtrToStringUni(szTitle),
-                        dwDontUseColumn = dwDontUseColumn,
-                        szDisplayString = Marshal.PtrToStringUni(szDisplayString),
-                        pFilterCallback = pFilterCallback,
-                        pDisplayCallback = pDisplayCallback,
-                        pvCallbackData = pvCallbackData,
-                        cDisplayStores = cDisplayStores,
-                        rghDisplayStores = rghDisplayStores,
-                        cStores = cStores,
-                        rghStores = rghStores,
-                        cPropSheetPages = cPropSheetPages,
-                        rgPropSheetPages = rgPropSheetPages,
-                        hSelectedCertStore = hSelectedCertStore
-                    };
+                        dwSize = managed.dwSize;
+                        hwndParent = managed.hwndParent;
+                        dwFlags = managed.dwFlags;
+                        szTitle = Marshal.StringToCoTaskMemUni(managed.szTitle);
+                        dwDontUseColumn = managed.dwDontUseColumn;
+                        szDisplayString = Marshal.StringToCoTaskMemUni(managed.szDisplayString);
+                        pFilterCallback = managed.pFilterCallback;
+                        pDisplayCallback = managed.pDisplayCallback;
+                        pvCallbackData = managed.pvCallbackData;
+                        cDisplayStores = managed.cDisplayStores;
+                        rghDisplayStores = managed.rghDisplayStores;
+                        cStores = managed.cStores;
+                        rghStores = managed.rghStores;
+                        cPropSheetPages = managed.cPropSheetPages;
+                        rgPropSheetPages = managed.rgPropSheetPages;
+                        hSelectedCertStore = managed.hSelectedCertStore;
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(szTitle);
+                        Marshal.FreeCoTaskMem(szDisplayString);
+                    }
+
+                    public CRYPTUI_SELECTCERTIFICATE_STRUCTW ToManaged()
+                    {
+                        return new()
+                        {
+                            dwSize = dwSize,
+                            hwndParent = hwndParent,
+                            dwFlags = dwFlags,
+                            szTitle = Marshal.PtrToStringUni(szTitle),
+                            dwDontUseColumn = dwDontUseColumn,
+                            szDisplayString = Marshal.PtrToStringUni(szDisplayString),
+                            pFilterCallback = pFilterCallback,
+                            pDisplayCallback = pDisplayCallback,
+                            pvCallbackData = pvCallbackData,
+                            cDisplayStores = cDisplayStores,
+                            rghDisplayStores = rghDisplayStores,
+                            cStores = cStores,
+                            rghStores = rghStores,
+                            cPropSheetPages = cPropSheetPages,
+                            rgPropSheetPages = rgPropSheetPages,
+                            hSelectedCertStore = hSelectedCertStore
+                        };
+                    }
                 }
             }
 #endif

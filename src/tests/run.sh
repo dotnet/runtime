@@ -11,19 +11,20 @@ function print_usage {
     echo 'Optional arguments:'
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
-    echo '  <arch>                           : One of x64, x86, arm, arm64, wasm. Defaults to current architecture.'
-    echo '  Android                          : Set build OS to Android.'
+    echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
+    echo '  android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
-    echo '  --disableEventLogging            : Disable the events logged by both VM and Managed Code'
+    echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
-    echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
-    echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
-    echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
-    echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
-    echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
-    echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
+    echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
+    echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
+    echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
+    echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
+    echo '  --jitforcerelocs                 : Runs the tests with DOTNET_ForceRelocs=1'
+    echo '  --gcname=<n>                     : Runs the tests with DOTNET_GCName=n'
+    echo '  --gcstresslevel=<n>              : Runs the tests with DOTNET_GCStress=n'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
@@ -39,49 +40,17 @@ function print_usage {
     echo '  --limitedDumpGeneration          : '
 }
 
-function check_cpu_architecture {
-    local CPUName=$(uname -m)
-    local __arch=
-
-    if [[ "$(uname -s)" == "SunOS" ]]; then
-        CPUName=$(isainfo -n)
-    fi
-
-    case $CPUName in
-        i686)
-            __arch=x86
-            ;;
-        amd64|x86_64)
-            __arch=x64
-            ;;
-        armv7l)
-            __arch=arm
-            ;;
-        aarch64|arm64)
-            __arch=arm64
-            ;;
-        *)
-            echo "Unknown CPU $CPUName detected, configuring as if for x64"
-            __arch=x64
-            ;;
-    esac
-
-    echo "$__arch"
-}
-
-################################################################################
-# Handle Arguments
-################################################################################
-
-ARCH=$(check_cpu_architecture)
-
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional happened (e.g. bad arguments, Ctrl-C interrupt).
 readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or more tests failed.
 
+scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
+repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
+source "$repoRootDir/eng/native/init-os-and-arch.sh"
+
 # Argument variables
-buildArch=$ARCH
+buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
 testRootDir=
@@ -123,11 +92,14 @@ do
         arm64)
             buildArch="arm64"
             ;;
+        loongarch64)
+            buildArch="loongarch64"
+            ;;
         wasm)
             buildArch="wasm"
             ;;
-        Android)
-            buildOS="Android"
+        android)
+            buildOS="android"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -142,16 +114,16 @@ do
             printLastResultsOnly=1
             ;;
         --jitstress=*)
-            export COMPlus_JitStress=${i#*=}
+            export DOTNET_JitStress=${i#*=}
             ;;
         --jitstressregs=*)
-            export COMPlus_JitStressRegs=${i#*=}
+            export DOTNET_JitStressRegs=${i#*=}
             ;;
         --jitminopts)
-            export COMPlus_JITMinOpts=1
+            export DOTNET_JITMinOpts=1
             ;;
         --jitforcerelocs)
-            export COMPlus_ForceRelocs=1
+            export DOTNET_ForceRelocs=1
             ;;
         --link=*)
             export ILLINK=${i#*=}
@@ -163,11 +135,14 @@ do
         --testRootDir=*)
             testRootDir=${i#*=}
             ;;
-        --disableEventLogging)
-            ((disableEventLogging = 1))
+        --enableEventLogging)
+            ((eventLogging = 1))
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
+            ;;
+        --synthesizepgo)
+            export CrossGen2SynthesizePgo=1
             ;;
         --sequential)
             runSequential=1
@@ -185,10 +160,10 @@ do
             testEnv=${i#*=}
             ;;
         --gcstresslevel=*)
-            export COMPlus_GCStress=${i#*=}
+            export DOTNET_GCStress=${i#*=}
             ;;
         --gcname=*)
-            export COMPlus_GCName=${i#*=}
+            export DOTNET_GCName=${i#*=}
             ;;
         --limitedDumpGeneration)
             limitedCoreDumps=ON
@@ -215,12 +190,12 @@ done
 # (These should be run.py arguments.)
 ################################################################################
 
-if ((disableEventLogging == 0)); then
-    export COMPlus_EnableEventLog=1
+if ((eventLogging == 1)); then
+    export DOTNET_EnableEventLog=1
 fi
 
 if ((serverGC != 0)); then
-    export COMPlus_gcServer="$serverGC"
+    export DOTNET_gcServer="$serverGC"
 fi
 
 ################################################################################
@@ -228,18 +203,16 @@ fi
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
-scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-repoRootDir=$scriptPath/../..
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "Browser")
+    runtestPyArguments+=("-os" "browser")
 fi
 
-if [ "$buildOS" = "Android" ]; then
-    runtestPyArguments+=("-os" "Android")
+if [ "$buildOS" = "android" ]; then
+    runtestPyArguments+=("-os" "android")
 fi
 
 if [[ -n "$testRootDir" ]]; then
@@ -284,6 +257,10 @@ fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ -n "$CrossGen2SynthesizePgo" ]]; then
+    runtestPyArguments+=("--synthesize_pgo")
 fi
 
 if [[ "$limitedCoreDumps" == "ON" ]]; then

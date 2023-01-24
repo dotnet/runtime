@@ -24,9 +24,6 @@ namespace System.Diagnostics
     /// Using more than eight tags will cause allocating memory to store the tags.
     /// Public static (Shared in Visual Basic) members of this type are thread safe. Any instance members are not guaranteed to be thread safe.
     /// </remarks>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     [StructLayout(LayoutKind.Sequential)]
     public struct TagList : IList<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>
     {
@@ -234,7 +231,7 @@ namespace System.Diagnostics
 
             if (_overflowTags is not null)
             {
-                _overflowTags.AsSpan().Slice(0, _tagsCount).CopyTo(tags);
+                _overflowTags.AsSpan(0, _tagsCount).CopyTo(tags);
                 return;
             }
 
@@ -261,14 +258,19 @@ namespace System.Diagnostics
         /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
         /// <exception cref="T:System.ArgumentNullException"> <paramref name="array" /> is null.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex " /> is less than 0 or greater that or equal the <paramref name="array" /> length.</exception>
-        public readonly void CopyTo(KeyValuePair<string, object?>[] array!!, int arrayIndex)
+        public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if ((uint)arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
 
-            CopyTo(array.AsSpan().Slice(arrayIndex));
+            CopyTo(array.AsSpan(arrayIndex));
         }
 
         /// <summary>

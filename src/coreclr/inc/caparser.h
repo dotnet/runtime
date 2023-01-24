@@ -281,7 +281,7 @@ public:
         HRESULT hr;
 
         if (BytesLeft() == 0)
-        {   // Need to check for NULL string sentinal (see below),
+        {   // Need to check for NULL string sentinel (see below),
             // so need to have at least one byte to read.
             IfFailRet(META_E_CA_INVALID_BLOB);
         }

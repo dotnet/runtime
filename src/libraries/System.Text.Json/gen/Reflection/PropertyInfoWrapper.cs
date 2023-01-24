@@ -5,18 +5,21 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace System.Text.Json.Reflection
 {
-    internal class PropertyInfoWrapper : PropertyInfo
+    internal sealed class PropertyInfoWrapper : PropertyInfo
     {
         private readonly IPropertySymbol _property;
-        private MetadataLoadContextInternal _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
         public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContextInternal metadataLoadContext)
         {
             _property = property;
             _metadataLoadContext = metadataLoadContext;
+
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_property.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(_property.Name) != SyntaxKind.None;
         }
 
         public override PropertyAttributes Attributes => throw new NotImplementedException();
@@ -30,6 +33,10 @@ namespace System.Text.Json.Reflection
         public override Type DeclaringType => _property.ContainingType.AsType(_metadataLoadContext);
 
         public override string Name => _property.Name;
+
+        public bool NeedsAtSign { get; }
+
+        public IPropertySymbol Symbol => _property;
 
         public override Type ReflectedType => throw new NotImplementedException();
 
@@ -78,7 +85,7 @@ namespace System.Text.Json.Reflection
             return _property.SetMethod!.AsMethodInfo(_metadataLoadContext);
         }
 
-        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
@@ -88,7 +95,7 @@ namespace System.Text.Json.Reflection
             throw new NotImplementedException();
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }

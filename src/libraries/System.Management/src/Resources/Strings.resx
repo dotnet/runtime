@@ -155,7 +155,7 @@
   <data name="CommentSystemPropertiesClass" xml:space="preserve">
     <value>Embedded class to represent WMI system Properties.</value>
   </data>
-  <data name="CommentTimeSpanConvertionFunction" xml:space="preserve">
+  <data name="CommentTimeSpanConversionFunction" xml:space="preserve">
     <value>Time interval functions  ToTimeSpan and ToDmtfTimeInterval are added to the class to convert DMTF Time Interval to  System.TimeSpan and vice-versa.</value>
   </data>
   <data name="CommentToDateTime" xml:space="preserve">

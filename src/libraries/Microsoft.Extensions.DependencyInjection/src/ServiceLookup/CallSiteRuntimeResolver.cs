@@ -3,10 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-using System.Diagnostics;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -161,7 +162,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, RuntimeResolverContext context)
         {
-            var array = Array.CreateInstance(
+            Array array = CreateArray(
                 enumerableCallSite.ItemType,
                 enumerableCallSite.ServiceCallSites.Length);
 
@@ -171,6 +172,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 array.SetValue(value, index);
             }
             return array;
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "VerifyAotCompatibility ensures elementType is not a ValueType")]
+            static Array CreateArray(Type elementType, int length)
+            {
+                Debug.Assert(!ServiceProvider.VerifyAotCompatibility || !elementType.IsValueType, "VerifyAotCompatibility=true will throw during building the IEnumerableCallSite if elementType is a ValueType.");
+
+                return Array.CreateInstance(elementType, length);
+            }
         }
 
         protected override object VisitFactory(FactoryCallSite factoryCallSite, RuntimeResolverContext context)

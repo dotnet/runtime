@@ -7,10 +7,14 @@ set "__sourceDir=%~dp0"
 :: remove trailing slash
 if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
 
-set __engNativeDir=%__sourceDir%\..\..\..\eng\native
+set "__RepoRootDir=%__sourceDir%\..\..\.."
+:: normalize
+for %%i in ("%__RepoRootDir%") do set "__RepoRootDir=%%~fi"
+set "__engNativeDir=%__RepoRootDir%\eng\native"
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
+set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set __PortableBuild=0
 set __ConfigureOnly=0
@@ -19,29 +23,29 @@ set __Ninja=1
 
 :Arg_Loop
 if [%1] == [] goto :InitVSEnv
-if /i [%1] == [Release]     ( set CMAKE_BUILD_TYPE=Release&&shift&goto Arg_Loop)
-if /i [%1] == [Debug]       ( set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
+if /i [%1] == [Release]     (set CMAKE_BUILD_TYPE=Release&&shift&goto Arg_Loop)
+if /i [%1] == [Debug]       (set CMAKE_BUILD_TYPE=Debug&&shift&goto Arg_Loop)
+if /i [%1] == [Checked]     (set CMAKE_BUILD_TYPE=Checked&&shift&goto Arg_Loop)
 
-if /i [%1] == [AnyCPU]      ( set __BuildArch=x64&&shift&goto Arg_Loop)
-if /i [%1] == [x86]         ( set __BuildArch=x86&&shift&goto Arg_Loop)
-if /i [%1] == [arm]         ( set __BuildArch=arm&&shift&goto Arg_Loop)
-if /i [%1] == [x64]         ( set __BuildArch=x64&&shift&goto Arg_Loop)
-if /i [%1] == [amd64]       ( set __BuildArch=x64&&shift&goto Arg_Loop)
-if /i [%1] == [arm64]       ( set __BuildArch=arm64&&shift&goto Arg_Loop)
+if /i [%1] == [AnyCPU]      (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i [%1] == [x86]         (set __BuildArch=x86&&shift&goto Arg_Loop)
+if /i [%1] == [arm]         (set __BuildArch=arm&&shift&goto Arg_Loop)
+if /i [%1] == [x64]         (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i [%1] == [amd64]       (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i [%1] == [arm64]       (set __BuildArch=arm64&&shift&goto Arg_Loop)
 
-if /i [%1] == [portable]    ( set __PortableBuild=1&&shift&goto Arg_Loop)
-if /i [%1] == [rid]         ( set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [portable]    (set __PortableBuild=1&&shift&goto Arg_Loop)
+if /i [%1] == [rid]         (set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [toolsetDir]  (set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [hostver]     (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [apphostver]  (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [fxrver]      (set __HostFxrVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [configureonly] ( set __ConfigureOnly=1&&shift&goto Arg_Loop)
-if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
-if /i [%1] == [rootDir]     ( set __rootDir=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [coreclrartifacts]  (set __CoreClrArtifacts=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [configureonly] (set __ConfigureOnly=1&&shift&goto Arg_Loop)
+if /i [%1] == [incremental-native-build] (set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
+if /i [%1] == [rootDir]     (set __rootDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [msbuild] (set __Ninja=0)
 if /i [%1] == [runtimeflavor]  (set __RuntimeFlavor=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [runtimeconfiguration]  (set __RuntimeConfiguration=%2&&shift&&shift&goto Arg_Loop)
@@ -102,9 +106,9 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% 
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
-echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%"
+echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
 
-call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
+call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
@@ -127,25 +131,6 @@ if [%__Ninja%] == [1] (
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
-)
-
-if "%__RuntimeFlavor%" NEQ "Mono" (
-    echo Copying "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\singlefilehost.exe"  "%__CMakeBinDir%/corehost/"
-
-    echo Copying "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-    copy /B /Y "%__CoreClrArtifacts%\corehost\PDB\singlefilehost.pdb"  "%__CMakeBinDir%/corehost/PDB/"
-
-    echo Embedding "%__CoreClrArtifacts%\mscordaccore.dll" into "%__CMakeBinDir%\corehost\singlefilehost.exe"
-    if not exist "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" (
-        "%__CoreClrArtifacts%\dactabletools\InjectResource.exe"     /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    ) else (
-        "%__CoreClrArtifacts%\x64\dactabletools\InjectResource.exe" /bin:"%__CoreClrArtifacts%\mscordaccore.dll" /dll:"%__CMakeBinDir%\corehost\singlefilehost.exe" /name:MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER
-    )
-
-    IF ERRORLEVEL 1 (
-        goto :Failure
-    )
 )
 
 echo Done building Native components

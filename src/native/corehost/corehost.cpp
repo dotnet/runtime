@@ -9,6 +9,7 @@
 #include "trace.h"
 #include "utils.h"
 #include "hostfxr_resolver.h"
+#include <cinttypes>
 
 #if defined(FEATURE_APPHOST)
 #include "bundle_marker.h"
@@ -83,12 +84,17 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 #define CURHOST_EXE
 #endif
 
-void need_newer_framework_error()
+void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
-    pal::string_t url = get_download_url();
-    trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
-    trace::error(_X(""));
-    trace::error(_X("  - %s&apphost_version=%s"), url.c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
+    trace::error(
+        MISSING_RUNTIME_ERROR_FORMAT,
+        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
+        host_path.c_str(),
+        get_current_arch_name(),
+        _STRINGIFY(COMMON_HOST_PKG_VER),
+        dotnet_root.c_str(),
+        get_download_url().c_str(),
+        _STRINGIFY(COMMON_HOST_PKG_VER));
 }
 
 #if defined(CURHOST_EXE)
@@ -110,7 +116,6 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::string_t embedded_app_name;
     if (!is_exe_enabled_for_execution(&embedded_app_name))
     {
-        trace::error(_X("A fatal error was encountered. This executable was not bound to load a managed DLL."));
         return StatusCode::AppHostExeNotBoundFailure;
     }
 
@@ -149,7 +154,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         // dotnet.exe is signed by Microsoft. It is technically possible to rename the file MyApp.exe and include it in the application.
         // Then one can create a shortcut for "MyApp.exe MyApp.dll" which works. The end result is that MyApp looks like it's signed by Microsoft.
         // To prevent this dotnet.exe must not be renamed, otherwise it won't run.
-        trace::error(_X("A fatal error was encountered. Cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
+        trace::error(_X("Error: cannot execute %s when renamed to %s."), CURHOST_TYPE, own_name.c_str());
         return StatusCode::CoreHostEntryPointFailure;
     }
 
@@ -200,7 +205,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
             trace::info(_X("Host path: [%s]"), host_path.c_str());
             trace::info(_X("Dotnet path: [%s]"), fxr.dotnet_root().c_str());
             trace::info(_X("App path: [%s]"), app_path.c_str());
-            trace::info(_X("Bundle Header Offset: [%lx]"), bundle_header_offset);
+            trace::info(_X("Bundle Header Offset: [%" PRId64 "]"), bundle_header_offset);
 
             auto set_error_writer = fxr.resolve_set_error_writer();
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer);
@@ -209,8 +214,8 @@ int exe_start(const int argc, const pal::char_t* argv[])
         else
         {
             // An outdated hostfxr can only be found for framework-related apps.
-            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
-            need_newer_framework_error();
+            trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());
+            need_newer_framework_error(fxr.dotnet_root(), host_path);
             rc = StatusCode::FrameworkMissingFailure;
         }
     }
@@ -234,10 +239,12 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = hostfxr_main_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection. 
+            // This check exists to provide an error message for apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection.
+            // Note that this is not only for UI apps - on Windows we always write errors to event log as well (regardless of UI) and it uses
+            // the same mechanism of redirecting error writers.
             if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && set_error_writer == nullptr)
             {
-                need_newer_framework_error();
+                need_newer_framework_error(fxr.dotnet_root(), host_path);
             }
         }
 #if !defined(FEATURE_STATIC_HOST)

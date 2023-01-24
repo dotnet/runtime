@@ -14,12 +14,12 @@ namespace System.Security.Cryptography
     {
         private SecKeyPair? _keys;
         private bool _disposed;
-        private readonly string _disposedName;
+        private readonly Type _disposedType;
 
-        internal EccSecurityTransforms(string disposedTypeName)
+        internal EccSecurityTransforms(Type disposedType)
         {
-            Debug.Assert(disposedTypeName != null);
-            _disposedName = disposedTypeName;
+            Debug.Assert(disposedType != null);
+            _disposedType = disposedType;
         }
 
         internal void DisposeKey()
@@ -80,10 +80,7 @@ namespace System.Security.Cryptography
 
         internal void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, _disposedType);
         }
 
         internal SecKeyPair GetOrGenerateKeys(int keySizeInBits)
@@ -237,9 +234,9 @@ namespace System.Security.Cryptography
 
         private static int GetKeySize(SecKeyPair newKeys)
         {
-            long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
+            int size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
             Debug.Assert(size == 256 || size == 384 || size == 521, $"Unknown keysize ({size})");
-            return (int)size;
+            return size;
         }
 
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)

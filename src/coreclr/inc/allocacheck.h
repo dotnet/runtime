@@ -37,19 +37,19 @@ public:
 	enum { CheckBytes = 0xCCCDCECF,
 		 };
 
-	struct AllocaSentinal {
+	struct AllocaSentinel {
 		int check;
-		AllocaSentinal* next;
+		AllocaSentinel* next;
 	};
 
 public:
 	/***************************************************/
 	AllocaCheck() {
-		sentinals = 0;
+		sentinels = 0;
 	}
 
 	~AllocaCheck() {
-		AllocaSentinal* ptr = sentinals;
+		AllocaSentinel* ptr = sentinels;
 		while (ptr != 0) {
 			if (ptr->check != (int)CheckBytes)
 				_ASSERTE(!"alloca buffer overrun");
@@ -58,20 +58,20 @@ public:
 	}
 
 	void* add(void* allocaBuff, unsigned size) {
-		AllocaSentinal* newSentinal = (AllocaSentinal*) ((char*) allocaBuff + size);
-		newSentinal->check = CheckBytes;
-		newSentinal->next = sentinals;
-		sentinals = newSentinal;
+		AllocaSentinel* newSentinel = (AllocaSentinel*) ((char*) allocaBuff + size);
+		newSentinel->check = CheckBytes;
+		newSentinel->next = sentinels;
+		sentinels = newSentinel;
         memset(allocaBuff, 0xDD, size);
 		return allocaBuff;
 	}
 
 private:
-	AllocaSentinal* sentinals;
+	AllocaSentinel* sentinels;
 };
 
 #define ALLOCA_CHECK() AllocaCheck __allocaChecker
-#define ALLOCA(size)  __allocaChecker.add(_alloca(size+sizeof(AllocaCheck::AllocaSentinal)), size);
+#define ALLOCA(size)  __allocaChecker.add(_alloca(size+sizeof(AllocaCheck::AllocaSentinel)), size);
 
 #else
 

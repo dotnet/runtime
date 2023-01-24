@@ -65,6 +65,5 @@ target_link_libraries(
     "-lz"
     "-lc++"
     "-liconv"
-    "-lcompression"
 %NativeLibrariesToLink%
 )

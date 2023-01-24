@@ -27,12 +27,13 @@ const DWORD kInvalidParamsCount = 0xffffffff;
 
 struct WerEventTypeTraits
 {
-    const LPCWSTR EventName;
+    const LPCSTR EventName;
+    const LPCWSTR EventNameW;
     const DWORD CountParams;
     INDEBUG(const WatsonBucketType BucketType);
 
-    WerEventTypeTraits(LPCWSTR name, DWORD params DEBUG_ARG(WatsonBucketType type))
-        : EventName(name), CountParams(params) DEBUG_ARG(BucketType(type))
+    WerEventTypeTraits(LPCSTR name, LPCWSTR nameW, DWORD params DEBUG_ARG(WatsonBucketType type))
+        : EventName(name), EventNameW(nameW), CountParams(params) DEBUG_ARG(BucketType(type))
     {
         _ASSERTE(params < kInvalidParamsCount);
     }
@@ -40,7 +41,7 @@ struct WerEventTypeTraits
 
 const WerEventTypeTraits g_WerEventTraits[] =
 {
-    WerEventTypeTraits(W("CLR20r3"), 9 DEBUG_ARG(CLR20r3)),
+    WerEventTypeTraits("CLR20r3", W("CLR20r3"), 9 DEBUG_ARG(CLR20r3)),
 };
 
 DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
@@ -63,7 +64,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
     DWORD countParams = kInvalidParamsCount;
     for (int index = 0; index < EndOfWerBucketTypes; ++index)
     {
-        if (wcscmp(wzEventName, g_WerEventTraits[index].EventName) == 0)
+        if (wcscmp(wzEventName, g_WerEventTraits[index].EventNameW) == 0)
         {
             _ASSERTE(index == g_WerEventTraits[index].BucketType);
             countParams = g_WerEventTraits[index].CountParams;
@@ -312,7 +313,7 @@ protected:
     typedef void (BaseBucketParamsManager::*DataPopulatorFunction)(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void PopulateBucketParameter(BucketParameterIndex paramIndex, DataPopulatorFunction pFnDataPopulator, int maxLength);
 
-    void PopulateEventName(LPCWSTR eventTypeName);
+    void PopulateEventName(const WerEventTypeTraits& trait);
     // functions for retrieving data to go into various bucket parameters
     void GetAppName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetAppVersion(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
@@ -329,7 +330,7 @@ protected:
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
-    static int CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize = false);
+    static int CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool canonicalize = false);
     // function that consumers should call to populate the GMB
     virtual void PopulateBucketParameters() = 0;
 };
@@ -364,7 +365,7 @@ BaseBucketParamsManager::~BaseBucketParamsManager()
     _ASSERTE(m_countParamsLogged == GetCountBucketParamsForEvent(m_pGmb->wzEventTypeName));
 }
 
-void BaseBucketParamsManager::PopulateEventName(LPCWSTR eventTypeName)
+void BaseBucketParamsManager::PopulateEventName(const WerEventTypeTraits& trait)
 {
     CONTRACTL
     {
@@ -374,10 +375,8 @@ void BaseBucketParamsManager::PopulateEventName(LPCWSTR eventTypeName)
     }
     CONTRACTL_END;
 
-    wcsncpy_s(m_pGmb->wzEventTypeName, DW_MAX_BUCKETPARAM_CWC, eventTypeName, _TRUNCATE);
-
-    _ASSERTE(GetCountBucketParamsForEvent(eventTypeName));
-    LOG((LF_EH, LL_INFO10, "Event     : %S\n", m_pGmb->wzEventTypeName));
+    wcsncpy_s(m_pGmb->wzEventTypeName, DW_MAX_BUCKETPARAM_CWC, trait.EventNameW, _TRUNCATE);
+    LOG((LF_EH, LL_INFO10, "Event     : %s\n", trait.EventName));
 }
 
 WCHAR* BaseBucketParamsManager::GetParamBufferForIndex(BucketParameterIndex paramIndex)
@@ -451,13 +450,14 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     }
     CONTRACTL_END;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-
-
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
-        CopyStringToBucket(targetParam, maxLength, appPath);
+        // Get just the module name; remove the path
+        const WCHAR* appName = wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
+        appName = appName ? appName + 1 : appPath;
+
+        CopyStringToBucket(targetParam, maxLength, appName);
     }
     else
     {
@@ -475,10 +475,7 @@ void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targe
     }
     CONTRACTL_END;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-
-
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 
@@ -1051,7 +1048,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
 //   pTargetParam     -- the destination buffer.
 //   targetMaxLength  -- the max length of the parameter.
 //   pSource          -- the input string.
-//   cannonicalize    -- if true, cannonicalize the filename (tolower)
+//   canonicalize    -- if true, canonicalize the filename (tolower)
 //
 // Returns
 //   the number of characters copied to the output buffer.  zero indicates an
@@ -1070,7 +1067,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
 //      because that is what a SHA1 hash coded in base32 will require.
 //    - the maxlen does not include the terminating nul.
 //------------------------------------------------------------------------------
-int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize)
+int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool canonicalize)
 {
     CONTRACTL
     {
@@ -1122,9 +1119,9 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
     {
         wcsncpy_s(pTargetParam, DW_MAX_BUCKETPARAM_CWC, pSource, srcLen);
 
-        if (cannonicalize)
+        if (canonicalize)
         {
-            // cannonicalize filenames so that the same exceptions tend to the same buckets.
+            // canonicalize filenames so that the same exceptions tend to the same buckets.
             _wcslwr_s(pTargetParam, DW_MAX_BUCKETPARAM_CWC);
         }
         return srcLen;
@@ -1148,9 +1145,12 @@ void BaseBucketParamsManager::LogParam(_In_z_ LPCWSTR paramValue, BucketParamete
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(paramIndex < InvalidBucketParamIndex);
+#ifdef LOGGING
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(paramValueUtf8, paramValue);
     // the BucketParameterIndex enum starts at 0 however we refer to Watson
     // bucket params with 1-based indices so we add one to paramIndex.
-    LOG((LF_EH, LL_INFO10, "       p %d: %S\n", paramIndex + 1, paramValue));
+    LOG((LF_EH, LL_INFO10, "       p %d: %s\n", paramIndex + 1, (paramValueUtf8 ? paramValueUtf8 : "<Alloc failed>")));
+#endif // LOGGING
     ++m_countParamsLogged;
 #endif
 }
@@ -1201,7 +1201,7 @@ void CLR20r3BucketParamsManager::PopulateBucketParameters()
     // Preempt to let GC suspend
     GCX_PREEMP();
 
-    PopulateEventName(g_WerEventTraits[CLR20r3].EventName);
+    PopulateEventName(g_WerEventTraits[CLR20r3]);
 
     // the "+ 1" is to explicitly indicate which fields need to specify space for NULL
     PopulateBucketParameter(Parameter1, &CLR20r3BucketParamsManager::GetAppName, 32);

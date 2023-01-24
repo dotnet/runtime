@@ -27,6 +27,8 @@ public class ApkBuilder
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
+    public bool ForceFullAOT { get; set; }
+    public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
     public bool InvariantGlobalization { get; set; }
     public bool EnableRuntimeLogging { get; set; }
     public bool StaticLinkedRuntime { get; set; }
@@ -172,7 +174,7 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a", ".gz" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -182,6 +184,7 @@ public class ApkBuilder
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
         var assetsToZipDirectory = Path.Combine(OutputDir, "assets-tozip");
+
         Utils.DirectoryCopy(AppDir, assetsToZipDirectory, file =>
         {
             string fileName = Path.GetFileName(file);
@@ -209,6 +212,7 @@ public class ApkBuilder
 
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
+        string d8 = Path.Combine(buildToolsFolder, "d8");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
         string zipalign = Path.Combine(buildToolsFolder, "zipalign");
         string apksigner = Path.Combine(buildToolsFolder, "apksigner");
@@ -224,7 +228,7 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libmonodroid.so` via cmake
+        // 1. Build libmonodroid.so via cmake
 
         string nativeLibraries = "";
         string monoRuntimeLib = "";
@@ -280,7 +284,7 @@ public class ApkBuilder
                     }
                 }
 
-                // if lib doesn't exist (primarly due to runtime build without static lib support), fallback linking stub lib.
+                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
                 if (!File.Exists(componentLibToLink))
                 {
                     logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
@@ -290,9 +294,9 @@ public class ApkBuilder
                 nativeLibraries += $"    {componentLibToLink}{Environment.NewLine}";
             }
 
-            // There's a circular dependecy between static mono runtime lib and static component libraries.
+            // There's a circular dependency between static mono runtime lib and static component libraries.
             // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
-            // due to circular dependecy.
+            // due to circular dependency.
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
@@ -320,6 +324,11 @@ public class ApkBuilder
             }
         }
 
+        if (ForceFullAOT)
+        {
+            defines.AppendLine("add_definitions(-DFULL_AOT=1)");
+        }
+
         if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
             defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
@@ -332,7 +341,7 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
         string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
-            $"-DANDROID_NATIVE_API_LEVEL={MinApiLevel} -B monodroid";
+            $"-DANDROID_PLATFORM=android-{MinApiLevel} -B monodroid";
 
         string cmakeBuildArgs = "--build monodroid";
 
@@ -371,8 +380,17 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
+        string envVariables = "";
+        foreach (ITaskItem item in EnvironmentVariables)
+        {
+            string name = item.ItemSpec;
+            string value = item.GetMetadata("Value");
+            envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
+        }
+
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
-            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName));
+            .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);
 
@@ -384,7 +402,20 @@ public class ApkBuilder
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
         Utils.RunProcess(logger, javac, javaCompilerArgs + monoRunnerPath, workingDir: OutputDir);
-        Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+
+        if (File.Exists(d8))
+        {
+            string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
+
+            if (!classFiles.Any())
+                throw new InvalidOperationException("Didn't find any .class files");
+
+            Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
+        }
+        else
+        {
+            Utils.RunProcess(logger, dx, "--dex --output=classes.dex obj", workingDir: OutputDir);
+        }
 
         // 3. Generate APK
 
@@ -450,10 +481,21 @@ public class ApkBuilder
         }
         Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
 
+        // Include prebuilt .dex files
+        int sequence = 2;
+        var dexFiles = Directory.GetFiles(AppDir, "*.dex");
+        foreach (var dexFile in dexFiles)
+        {
+            var classesFileName = $"classes{sequence++}.dex";
+            File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
+            logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+        }
+
         // 4. Align APK
 
         string alignedApk = Path.Combine(OutputDir, "bin", $"{ProjectName}.apk");
-        Utils.RunProcess(logger, zipalign, $"-v 4 {apkFile} {alignedApk}", workingDir: OutputDir);
+        AlignApk(apkFile, alignedApk, zipalign);
         // we don't need the unaligned one any more
         File.Delete(apkFile);
 
@@ -463,6 +505,11 @@ public class ApkBuilder
         logger.LogMessage(MessageImportance.High, $"\nAPK size: {(new FileInfo(alignedApk).Length / 1000_000.0):0.#} Mb.\n");
 
         return (alignedApk, packageId);
+    }
+
+    private void AlignApk(string unalignedApkPath, string apkOutPath, string zipalign)
+    {
+        Utils.RunProcess(logger, zipalign, $"-v 4 {unalignedApkPath} {apkOutPath}", workingDir: OutputDir);
     }
 
     private void SignApk(string apkPath, string apksigner)
@@ -483,6 +530,31 @@ public class ApkBuilder
         }
         Utils.RunProcess(logger, apksigner, $"sign --min-sdk-version {MinApiLevel} --ks debug.keystore " +
             $"--ks-pass pass:android --key-pass pass:android {apkPath}", workingDir: OutputDir);
+    }
+
+    public void ZipAndSignApk(string apkPath)
+    {
+        if (string.IsNullOrEmpty(AndroidSdk))
+            AndroidSdk = Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT");
+
+        if (string.IsNullOrEmpty(AndroidSdk) || !Directory.Exists(AndroidSdk))
+            throw new ArgumentException($"Android SDK='{AndroidSdk}' was not found or incorrect (can be set via ANDROID_SDK_ROOT envvar).");
+
+        if (string.IsNullOrEmpty(BuildToolsVersion))
+            BuildToolsVersion = GetLatestBuildTools(AndroidSdk);
+
+        if (string.IsNullOrEmpty(MinApiLevel))
+            MinApiLevel = DefaultMinApiLevel;
+
+        string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
+        string zipalign = Path.Combine(buildToolsFolder, "zipalign");
+        string apksigner = Path.Combine(buildToolsFolder, "apksigner");
+
+        string alignedApkPath = $"{apkPath}.aligned";
+        AlignApk(apkPath, alignedApkPath, zipalign);
+        logger.LogMessage(MessageImportance.High, $"\nMoving '{alignedApkPath}' to '{apkPath}'.\n");
+        File.Move(alignedApkPath, apkPath, overwrite: true);
+        SignApk(apkPath, apksigner);
     }
 
     public void ReplaceFileInApk(string file)

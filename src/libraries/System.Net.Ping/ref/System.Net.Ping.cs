@@ -47,6 +47,8 @@ namespace System.Net.NetworkInformation
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout) { throw null; }
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer) { throw null; }
         public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Net.NetworkInformation.PingReply Send(System.Net.IPAddress address, System.TimeSpan timeout, byte[]? buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Net.NetworkInformation.PingReply Send(string hostNameOrAddress, System.TimeSpan timeout, byte[]? buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
         public void SendAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options, object? userToken) { }
         public void SendAsync(System.Net.IPAddress address, int timeout, byte[] buffer, object? userToken) { }
         public void SendAsync(System.Net.IPAddress address, int timeout, object? userToken) { }
@@ -60,10 +62,12 @@ namespace System.Net.NetworkInformation
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(System.Net.IPAddress address, System.TimeSpan timeout, byte[]? buffer = null, System.Net.NetworkInformation.PingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer) { throw null; }
         public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, int timeout, byte[] buffer, System.Net.NetworkInformation.PingOptions? options) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.NetworkInformation.PingReply> SendPingAsync(string hostNameOrAddress, System.TimeSpan timeout, byte[]? buffer = null, System.Net.NetworkInformation.PingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public partial class PingCompletedEventArgs : System.ComponentModel.AsyncCompletedEventArgs
     {

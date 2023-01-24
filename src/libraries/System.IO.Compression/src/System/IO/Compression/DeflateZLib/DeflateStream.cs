@@ -49,8 +49,10 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream!!, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
+        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             switch (mode)
             {
                 case CompressionMode.Decompress:
@@ -75,8 +77,10 @@ namespace System.IO.Compression
         /// <summary>
         /// Internal constructor to specify the compressionlevel as well as the windowbits
         /// </summary>
-        internal DeflateStream(Stream stream!!, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
+        internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
         }
 
@@ -275,6 +279,15 @@ namespace System.IO.Compression
                     int n = _stream.Read(_buffer, 0, _buffer.Length);
                     if (n <= 0)
                     {
+                        // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
+                        // - More input is needed but there is no more input available.
+                        // - Inflation is not finished yet.
+                        // - Provided input wasn't completely empty
+                        // In such case, we are dealing with a truncated input stream.
+                        if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
+                        {
+                            ThrowTruncatedInvalidData();
+                        }
                         break;
                     }
                     else if (n > _buffer.Length)
@@ -342,6 +355,9 @@ namespace System.IO.Compression
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes < 0 || > than the buffer supplied to it.
             throw new InvalidDataException(SR.GenericInvalidData);
+
+        private static void ThrowTruncatedInvalidData() =>
+            throw new InvalidDataException(SR.TruncatedData);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
@@ -412,6 +428,15 @@ namespace System.IO.Compression
                             int n = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer.Length), cancellationToken).ConfigureAwait(false);
                             if (n <= 0)
                             {
+                                // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
+                                // - More input is needed but there is no more input available.
+                                // - Inflation is not finished yet.
+                                // - Provided input wasn't completely empty
+                                // In such case, we are dealing with a truncated input stream.
+                                if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
+                                {
+                                    ThrowTruncatedInvalidData();
+                                }
                                 break;
                             }
                             else if (n > _buffer.Length)
@@ -462,7 +487,7 @@ namespace System.IO.Compression
             }
             else
             {
-                WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+                WriteCore(new ReadOnlySpan<byte>(in value));
             }
         }
 
@@ -889,6 +914,10 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    {
+                        ThrowTruncatedInvalidData();
+                    }
                 }
                 finally
                 {
@@ -921,6 +950,10 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    {
+                        ThrowTruncatedInvalidData();
+                    }
                 }
                 finally
                 {
@@ -931,7 +964,6 @@ namespace System.IO.Compression
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                // Validate inputs
                 Debug.Assert(buffer != _arrayPoolBuffer);
                 _deflateStream.EnsureNotDisposed();
                 if (count <= 0)
@@ -980,7 +1012,6 @@ namespace System.IO.Compression
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                // Validate inputs
                 Debug.Assert(buffer != _arrayPoolBuffer);
                 _deflateStream.EnsureNotDisposed();
 
@@ -1047,5 +1078,8 @@ namespace System.IO.Compression
 
         private static void ThrowInvalidBeginCall() =>
             throw new InvalidOperationException(SR.InvalidBeginCall);
+
+        private static readonly bool s_useStrictValidation =
+            AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
     }
 }

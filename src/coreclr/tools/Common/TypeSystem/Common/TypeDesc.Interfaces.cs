@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading;
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {

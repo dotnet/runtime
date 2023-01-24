@@ -466,7 +466,7 @@ mono_lock_free_free (gpointer ptr, size_t block_size)
 	do {
 		new_anchor.value = old_anchor.value = ((volatile Anchor*)&desc->anchor)->value;
 		*(unsigned int*)ptr = old_anchor.data.avail;
-		new_anchor.data.avail = ((char*)ptr - (char*)sb) / desc->slot_size;
+		new_anchor.data.avail = GPTRDIFF_TO_UINT (((char*)ptr - (char*)sb) / desc->slot_size);
 		g_assert (new_anchor.data.avail < LOCK_FREE_ALLOC_SB_USABLE_SIZE (block_size) / desc->slot_size);
 
 		if (old_anchor.data.state == STATE_FULL)
@@ -526,11 +526,11 @@ mono_lock_free_free (gpointer ptr, size_t block_size)
 static void
 descriptor_check_consistency (Descriptor *desc, gboolean print)
 {
-	int count = desc->anchor.data.count;
-	int max_count = LOCK_FREE_ALLOC_SB_USABLE_SIZE (desc->block_size) / desc->slot_size;
+	guint32 count = desc->anchor.data.count;
+	guint32 max_count = LOCK_FREE_ALLOC_SB_USABLE_SIZE (desc->block_size) / desc->slot_size;
 	gboolean* linked = g_newa (gboolean, max_count);
-	int i, last;
-	unsigned int index;
+	int last;
+	guint32 index;
 
 #ifndef DESC_AVAIL_DUMMY
 	Descriptor *avail;
@@ -564,12 +564,12 @@ descriptor_check_consistency (Descriptor *desc, gboolean print)
 		g_assert_OR_PRINT (FALSE, "invalid state\n");
 	}
 
-	for (i = 0; i < max_count; ++i)
+	for (guint32 i = 0; i < max_count; ++i)
 		linked [i] = FALSE;
 
 	index = desc->anchor.data.avail;
 	last = -1;
-	for (i = 0; i < count; ++i) {
+	for (guint32 i = 0; i < count; ++i) {
 		gpointer addr = (char*)desc->sb + index * desc->slot_size;
 		g_assert_OR_PRINT (index >= 0 && index < max_count,
 				"index %d for %dth available slot, linked from %d, not in range [0 .. %d)\n",

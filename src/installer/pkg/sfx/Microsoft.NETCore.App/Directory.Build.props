@@ -95,12 +95,17 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.dex" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.jar" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -108,9 +113,6 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
@@ -180,6 +182,9 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
+    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <!-- Mono components specific files -->
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-diagnostics_tracing.so" IsNative="true" />
@@ -202,17 +207,25 @@
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="System.Private.Runtime.InteropServices.Javascript.dll" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
@@ -223,22 +236,22 @@
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="runtime.cjs.iffe.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.pre.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.post.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.cjs.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="gc-common.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
@@ -279,6 +292,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'WorkloadBuildTasks.dll'))</WorkloadTasksAssemblyPath>
   </PropertyGroup>
 </Project>

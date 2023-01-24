@@ -22,11 +22,11 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         public void VerifyEnvironmentVariable()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables.Add("DOTNET_RUNTIME_ID", "overridenFromEnv-rid");
+            options.StartInfo.EnvironmentVariables.Add("DOTNET_RUNTIME_ID", "overriddenFromEnv-rid");
 
             RemoteExecutor.Invoke(() =>
             {
-                Assert.Equal("overridenFromEnv-rid", RuntimeInformation.RuntimeIdentifier);
+                Assert.Equal("overriddenFromEnv-rid", RuntimeInformation.RuntimeIdentifier);
             }, options).Dispose();
         }
 
@@ -35,9 +35,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         {
             RemoteExecutor.Invoke(() =>
             {
-                AppDomain.CurrentDomain.SetData("RUNTIME_IDENTIFIER", "overriden-rid");
+                AppDomain.CurrentDomain.SetData("RUNTIME_IDENTIFIER", "overridden-rid");
 
-                Assert.Equal("overriden-rid", RuntimeInformation.RuntimeIdentifier);
+                Assert.Equal("overridden-rid", RuntimeInformation.RuntimeIdentifier);
             }).Dispose();
         }
 
@@ -66,12 +66,17 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no LSB /etc/os-release")]
         public void VerifyLinuxRid()
         {
             string expectedOSName = File.ReadAllLines("/etc/os-release")
                 .First(line => line.StartsWith("ID=", StringComparison.OrdinalIgnoreCase))
                 .Substring("ID=".Length)
                 .Trim('\"', '\'');
+
+            // This gets burned in at publish time on NativeAOT
+            if (PlatformDetection.IsNativeAot)
+                expectedOSName = "linux";
 
             Assert.StartsWith(expectedOSName, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }

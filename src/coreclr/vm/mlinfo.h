@@ -159,7 +159,7 @@ struct NativeTypeParamInfo
 
     BOOL                    m_SizeIsSpecified;  // used to do some validation
     UINT16                  m_CountParamIdx;    // index of "sizeis" parameter
-    UINT32                  m_Multiplier;       // multipler for "sizeis"
+    UINT32                  m_Multiplier;       // multiplier for "sizeis"
     UINT32                  m_Additive;         // additive for 'sizeis"
 
     // For NT_CUSTOMMARSHALER only.
@@ -511,7 +511,7 @@ private:
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
 
     // for NT_ARRAY only
-    UINT32          m_multiplier;     // multipler for "sizeis"
+    UINT32          m_multiplier;     // multiplier for "sizeis"
     UINT32          m_additive;       // additive for 'sizeis"
     UINT16          m_countParamIdx;  // index of "sizeis" parameter
 

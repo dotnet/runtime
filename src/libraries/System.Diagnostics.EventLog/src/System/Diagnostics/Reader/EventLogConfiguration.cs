@@ -51,8 +51,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogConfiguration(string logName, EventLogSession session)
         {
-            if (session == null)
-                session = EventLogSession.GlobalSession;
+            session ??= EventLogSession.GlobalSession;
 
             _session = session;
             LogName = logName;

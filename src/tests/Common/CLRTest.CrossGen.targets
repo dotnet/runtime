@@ -42,7 +42,6 @@ WARNING:   When setting properties based on their current state (for example:
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
-    unset RunCrossGen
     export RunCrossGen2=1
     export CompositeBuildMode=1
 fi
@@ -61,11 +60,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     if [ ! -d IL-CG2 ]%3B then
       mkdir IL-CG2
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        cp $(MSBuildProjectName).dll IL-CG2/
+        cp $(AssemblyName).dll IL-CG2/
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
-        rm IL-CG2/composite-r2r.dll
+        rm IL-CG2/composite-r2r.dll 2>/dev/null
+        rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
+        rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -75,12 +76,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
 
       __cg2ExitCode=0
+      __r2rDumpExitCode=0
 
       OneFileCrossgen2() {
+        date +%H:%M:%S
         __OutputFile=$1
 
         __ResponseFile="$__OutputFile.rsp"
-        rm $__ResponseFile
+        rm $__ResponseFile 2>/dev/null
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -89,6 +92,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         else
             __Command+=" dotnet"
         fi
+        __R2RDumpCommand=$__Command" $CORE_ROOT/R2RDump/R2RDump.dll"
+        __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump --val"
         __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
@@ -100,20 +105,31 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
+        echo --method-layout:random>>$__ResponseFile
+        if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
+            echo --synthesize-random-mibc>>$__ResponseFile
+            echo --embed-pgo-data>>$__ResponseFile
+        fi
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+        echo --targetos:$(TargetOS)>>$__ResponseFile
         echo -O>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
 
-        # Suppress some COMPlus variables for the duration of Crossgen2 execution
-        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
+        # Suppress some DOTNET variables for the duration of Crossgen2 execution
+        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
         __cg2ExitCode=$?
 
-        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
+        echo "Running R2RDump: $__R2RDumpCommand"
+        $__R2RDumpCommand
+        __r2rDumpExitCode=$?
+
+        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
+        date +%H:%M:%S
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
@@ -138,17 +154,22 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         ReleaseLock
         exit 1
       fi
+      if [ $__r2rDumpExitCode -ne 0 ]; then
+        echo R2RDump failed with exitcode: $__r2rDumpExitCode
+        ReleaseLock
+        exit 1
+      fi
     fi
     ReleaseLock
   fi
 
-  export COMPlus_ZapRequire=$(ZapRequire)
-  export COMPlus_ZapRequireList=$(MSBuildProjectName)
+  export DOTNET_ZapRequire=$(ZapRequire)
+  export DOTNET_ZapRequireList=$(AssemblyName)
 fi
         ]]>
       </CrossgenBashScript>
 
-      <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(CrossgenBashScript)</BashCLRTestPreCommands>
+      <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(CrossgenBashScript)</CLRTestBashPreCommands>
     </PropertyGroup>
   </Target>
 
@@ -158,7 +179,6 @@ fi
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (
-    set RunCrossGen=
     set RunCrossGen2=1
     set CompositeBuildMode=1
 )
@@ -169,6 +189,7 @@ if defined RunCrossGen2 (
 
     if defined LargeVersionBubble ( set ExtraCrossGen2Args=!ExtraCrossGen2Args! --inputbubble)
     set CrossGen2Status=0
+    set R2RDumpStatus=0
     set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
     if exist "IL-CG2" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
@@ -183,7 +204,9 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.dll
+    del IL-CG2\composite-r2r.dll 2>nul
+    del IL-CG2\Coreclr.TestWrapper.dll 2>nul
+    del IL-CG2\*.XUnitWrapper.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -194,9 +217,9 @@ if defined RunCrossGen2 (
         IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
-        for %%I in (!scriptPath!\*.dll) do (
-            set __OutputFile=!scriptPath!\%%~nI.dll
-            set __InputFile=!scriptPath!IL-CG2\%%~nI.dll
+        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+            set __OutputFile=!scriptPath!%%~nI.dll
+            set __InputFile=%%I
             call :CompileOneFileCrossgen2
             IF NOT !CrossGen2Status!==0 (
               IF NOT !CrossGen2Status!==2 goto :DoneCrossgen2Operations
@@ -208,8 +231,9 @@ if defined RunCrossGen2 (
 
     goto :DoneCrossgen2Operations
 :CompileOneFileCrossgen2
+    echo %time%
     set __ResponseFile=!__OutputFile!.rsp
-    del /Q !__ResponseFile!
+    del /Q !__ResponseFile! 2>nul
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -218,14 +242,21 @@ if defined RunCrossGen2 (
     ) else (
         set __Command=!__Command! "dotnet"
     )
+    set __R2RDumpCommand=!__Command! "!CORE_ROOT!\r2rdump\r2rdump.dll"
+    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if defined CrossGen2SynthesizePgo (
+        echo --synthesize-random-mibc>>!__ResponseFile!
+        echo --embed-pgo-data>>!__ResponseFile!
+    )
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
@@ -239,20 +270,33 @@ if defined RunCrossGen2 (
     echo Response file: !__ResponseFile!
     type !__ResponseFile!
 
-    REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+    REM Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
     setlocal
-    set "COMPlus_GCName="
-    set "COMPlus_GCStress="
-    set "COMPlus_HeapVerify="
-    set "COMPlus_ReadyToRun="
+    set "DOTNET_GCName="
+    set "DOTNET_GCStress="
+    set "DOTNET_HeapVerify="
+    set "DOTNET_ReadyToRun="
+
     REM work around problems in 6.0 OSR
-    set "COMPlus_TC_OnStackReplacement="
-    set "COMPlus_TC_PartialCompilation="
+    set "DOTNET_TC_OnStackReplacement="
+    set "DOTNET_TC_PartialCompilation="
 
     echo "!__Command!"
     call !__Command!
-    endlocal
+
     set CrossGen2Status=!ERRORLEVEL!
+
+    IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
+
+    echo "!__R2RDumpCommand!"
+    call !__R2RDumpCommand!
+
+    set R2RDumpStatus=!ERRORLEVEL!
+
+:DoneR2RDumpOperations
+    endlocal & set "R2RDumpStatus=%R2RDumpStatus%" &set "CrossGen2Status=%CrossGen2Status%"
+
+    echo %time%
     Exit /b 0
 
 :DoneCrossgen2Operations
@@ -263,9 +307,13 @@ if defined RunCrossGen2 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
         Exit /b 1
     )
+    IF NOT !R2RDumpStatus!==0 (
+        ECHO R2RDump failed with exitcode - !R2RDumpStatus!
+        Exit /b 1
+    )
 
-  set COMPlus_ZapRequire=$(ZapRequire)
-  set COMPlus_ZapRequireList=$(MSBuildProjectName)
+  set DOTNET_ZapRequire=$(ZapRequire)
+  set DOTNET_ZapRequireList=$(AssemblyName)
 )
         ]]>
       </CrossgenBatchScript>

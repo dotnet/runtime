@@ -206,10 +206,7 @@ namespace System.Data.OleDb
             StringMemHandle? sptr = _sptr;
             _sptr = null;
 
-            if (null != sptr)
-            {
-                sptr.Dispose();
-            }
+            sptr?.Dispose();
 
             if (_pinnedBuffer.IsAllocated)
             {
@@ -636,7 +633,7 @@ namespace System.Data.OleDb
             {
                 bindings.DangerousAddRef(ref mustRelease);
                 IntPtr ptr = bindings.ReadIntPtr(ValueOffset);
-                if (ADP.PtrZero != ptr)
+                if (IntPtr.Zero != ptr)
                 {
                     value = Marshal.PtrToStringBSTR(ptr);
                 }
@@ -671,7 +668,7 @@ namespace System.Data.OleDb
             {
                 bindings.DangerousAddRef(ref mustRelease);
                 IntPtr ptr = bindings.ReadIntPtr(ValueOffset);
-                if (ADP.PtrZero != ptr)
+                if (IntPtr.Zero != ptr)
                 {
                     value = new byte[LengthValue()];
                     Marshal.Copy(ptr, value, 0, value.Length);
@@ -684,7 +681,7 @@ namespace System.Data.OleDb
                     bindings.DangerousRelease();
                 }
             }
-            return ((null != value) ? value : Array.Empty<byte>());
+            return value ?? Array.Empty<byte>();
         }
         private void Value_ByRefBYTES(byte[] value)
         {
@@ -697,7 +694,7 @@ namespace System.Data.OleDb
             LengthValue(((0 < ValueBindingSize) ? Math.Min(ValueBindingSize, length) : length));
             StatusValue(DBStatus.S_OK);
 
-            IntPtr ptr = ADP.PtrZero;
+            IntPtr ptr = IntPtr.Zero;
             if (0 < length)
             { // avoid pinning empty byte[]
                 _pinnedBuffer = GCHandle.Alloc(value, GCHandleType.Pinned);
@@ -719,7 +716,7 @@ namespace System.Data.OleDb
             {
                 bindings.DangerousAddRef(ref mustRelease);
                 IntPtr ptr = bindings.ReadIntPtr(ValueOffset);
-                if (ADP.PtrZero != ptr)
+                if (IntPtr.Zero != ptr)
                 {
                     int charCount = LengthValue() / 2;
                     value = Marshal.PtrToStringUni(ptr, charCount);
@@ -744,7 +741,7 @@ namespace System.Data.OleDb
             LengthValue(((0 < ValueBindingSize) ? Math.Min(ValueBindingSize, length) : length) * 2); /* charcount->bytecount*/
             StatusValue(DBStatus.S_OK);
 
-            IntPtr ptr = ADP.PtrZero;
+            IntPtr ptr = IntPtr.Zero;
             if (0 < length)
             { // avoid pinning empty string, i.e String.Empty
                 _pinnedBuffer = GCHandle.Alloc(value, GCHandleType.Pinned);
@@ -763,7 +760,7 @@ namespace System.Data.OleDb
             LengthValue(((0 < ValueBindingSize) ? Math.Min(ValueBindingSize, length) : length) * 2); /* charcount->bytecount*/
             StatusValue(DBStatus.S_OK);
 
-            IntPtr ptr = ADP.PtrZero;
+            IntPtr ptr = IntPtr.Zero;
             if (0 < length)
             { // avoid pinning empty char[]
                 _pinnedBuffer = GCHandle.Alloc(value, GCHandleType.Pinned);

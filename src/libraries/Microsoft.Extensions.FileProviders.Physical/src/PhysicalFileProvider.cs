@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             _filters = filters;
-            _fileWatcherFactory = () => CreateFileWatcher();
+            _fileWatcherFactory = CreateFileWatcher;
         }
 
         /// <summary>

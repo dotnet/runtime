@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// <param name="stream">The stream of XML data.</param>
         /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
-        public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
+        public static IDictionary<string, string?> Read(Stream stream, XmlDocumentDecryptor decryptor)
         {
             var readerSettings = new XmlReaderSettings()
             {
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 IgnoreWhitespace = true
             };
 
-            XmlConfigurationElement root = null;
+            XmlConfigurationElement? root = null;
 
             using (XmlReader reader = decryptor.CreateDecryptingXmlReader(stream, readerSettings))
             {
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                     var lineInfo = reader as IXmlLineInfo;
                                     var lineNumber = lineInfo?.LineNumber;
                                     var linePosition = lineInfo?.LinePosition;
-                                    parent.TextContent = new XmlConfigurationElementTextContent(string.Empty, lineNumber, linePosition);
+                                    parent.TextContent = new XmlConfigurationElementTextContent(string.Empty, linePosition, lineNumber);
                                 }
                             }
                             break;
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
                                 XmlConfigurationElement parent = currentPath.Peek();
 
-                                parent.TextContent = new XmlConfigurationElementTextContent(reader.Value, lineNumber, linePosition);
+                                parent.TextContent = new XmlConfigurationElementTextContent(reader.Value, linePosition, lineNumber);
                             }
                             break;
                         case XmlNodeType.XmlDeclaration:
@@ -211,7 +211,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                     throw new FormatException(SR.Format(SR.Error_NamespaceIsNotSupported, GetLineInfo(reader)));
                 }
 
-                element.Attributes.Add(new XmlConfigurationElementAttributeValue(reader.LocalName, reader.Value, lineNumber, linePosition));
+                element.Attributes!.Add(new XmlConfigurationElementAttributeValue(reader.LocalName, reader.Value, lineNumber, linePosition));
             }
 
             // Go back to the element containing the attributes we just processed
@@ -221,9 +221,9 @@ namespace Microsoft.Extensions.Configuration.Xml
         // The special attribute "Name" only contributes to prefix
         // This method retrieves the Name of the element, if the attribute is present
         // Unfortunately XmlReader.GetAttribute cannot be used, as it does not support looking for attributes in a case insensitive manner
-        private static string GetName(XmlReader reader)
+        private static string? GetName(XmlReader reader)
         {
-            string name = null;
+            string? name = null;
 
             while (reader.MoveToNextAttribute())
             {
@@ -245,9 +245,9 @@ namespace Microsoft.Extensions.Configuration.Xml
             return name;
         }
 
-        private static IDictionary<string, string> ProvideConfiguration(XmlConfigurationElement root)
+        private static Dictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
         {
-            var configuration = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string?> configuration = new(StringComparer.OrdinalIgnoreCase);
 
             if (root == null)
             {
@@ -352,7 +352,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 var hasName = !string.IsNullOrEmpty(child.Name);
                 if (hasName)
                 {
-                    prefix.Push(child.Name);
+                    prefix.Push(child.Name!);
                 }
 
                 // Add index to the prefix

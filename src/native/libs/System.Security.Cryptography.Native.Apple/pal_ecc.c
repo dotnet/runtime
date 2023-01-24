@@ -49,72 +49,33 @@ int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
     return ret;
 }
 
-uint64_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
+int32_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
 {
     if (publicKey == NULL)
-    {
         return 0;
-    }
 
-    size_t blockSize = SecKeyGetBlockSize(publicKey);
+    CFDictionaryRef attributes = SecKeyCopyAttributes(publicKey);
 
-    // This seems to be the expected size of an ECDSA signature for this key.
-    // But since Apple uses the DER SEQUENCE(r, s) format the signature size isn't
-    // fixed. It might be trying to encode the biggest the DER value could be:
-    //
-    // 256: r is 32 bytes, but maybe one padding byte, so 33.
-    //      s is 32 bytes, but maybe one padding byte, so 33.
-    //      each of those values gets one tag and one length byte
-    //      35 * 2 is 70 payload bytes for the sequence, so one length byte
-    //      and one tag byte, makes 72.
-    //
-    // 384: r,s are 48 bytes, plus padding, length, and tag: 51
-    //      2 * 51 = 102, requires one length byte and one tag byte, 104.
-    //
-    // 521: neither r nor s can have the high bit set, no padding. 66 content bytes
-    //      plus tag and length is 68.
-    //      2 * 68 is 136, since it's greater than 127 it takes 2 length bytes
-    //      so 136 + 2 + 1 = 139. Looks like they accounted for padding bytes anyways.
-    //
-    // This completely needs to be revisited if Apple adds support for "generic" ECC.
-    //
-    // Word of caution: While seeking meaning in these numbers I ran across a snippet of code
-    // which suggests that on iOS (vs macOS) they use a different set of reasoning and produce
-    // different numbers (they used (8 + 2*thisValue) on iOS for "signature length").
-    //
-    // Starting with macOS Mojave and the new SecCertificateCopyKey API the values
-    // are the actual key size in bytes.
-    switch (blockSize)
+    if (attributes == NULL)
+        return 0;
+
+    CFNumberRef cfSize = CFDictionaryGetValue(attributes, kSecAttrKeySizeInBits);
+    int size = 0;
+
+    if (cfSize != NULL)
     {
-        case 72:
-            return 256;
-        case 104:
-            return 384;
-        case 141:
-            return 521;
-
-        case 28:
-            // Not fully supported as of macOS Mojave Developer Preview 4 and could later
-            // result in internal library errors when consumed by other APIs:
-            //
-            // "Internal error #ffff9d28 at VerifyTransform_block_invoke /BuildRoot/Library/
-            // Caches/com.apple.xbs/Sources/Security/Security-58286.200.178/OSX/
-            // libsecurity_transform/lib/SecSignVerifyTransform.c:540" UserInfo={NSDescription=
-            // Internal error #ffff9d28 at VerifyTransform_block_invoke /BuildRoot/Library/
-            // Caches/com.apple.xbs/Sources/Security/Security-58286.200.178/OSX/
-            // libsecurity_transform/lib/SecSignVerifyTransform.c:540, Originating Transform
-            // =CoreFoundationObject}))
-            //
-            // Thus 0 is returned instead of 224 and the managed code treats it as
-            // unsupported key size.
-            return 0;
-        case 32:
-            return 256;
-        case 48:
-            return 384;
-        case 66:
-            return 521;
+        if (!CFNumberGetValue(cfSize, kCFNumberIntType, &size))
+        {
+            size = 0;
+        }
+        else if (size != 256 && size != 384 && size != 521)
+        {
+            // Restrict the key size to sizes that are understood by managed code.
+            // Otherwise, return 0 so the managed code treats it as unsupported key size.
+            size = 0;
+        }
     }
 
-    return 0;
+    CFRelease(attributes);
+    return size;
 }

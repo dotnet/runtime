@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     filecrt.cpp
@@ -13,8 +11,6 @@ Abstract:
 
     Implementation of the file functions in the C runtime library that
     are Windows specific.
-
-
 
 --*/
 
@@ -37,103 +33,6 @@ Abstract:
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
-
-/*++
-Function:
-  _open_osfhandle
-
-See MSDN doc.
---*/
-int
-__cdecl
-_open_osfhandle( INT_PTR osfhandle, int flags )
-{
-    PAL_ERROR palError = NO_ERROR;
-    CPalThread *pthrCurrent = NULL;
-    IPalObject *pobjFile = NULL;
-    CFileProcessLocalData *pLocalData = NULL;
-    IDataLock *pDataLock = NULL;
-    INT nRetVal = -1;
-    INT openFlags = 0;
-
-    PERF_ENTRY(_open_osfhandle);
-    ENTRY( "_open_osfhandle (osfhandle=%#x, flags=%#x)\n", osfhandle, flags );
-
-    pthrCurrent = InternalGetCurrentThread();
-
-    if (flags != _O_RDONLY)
-    {
-        ASSERT("flag(%#x) not supported\n", flags);
-        goto EXIT;
-    }
-
-    openFlags |= O_RDONLY;
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pthrCurrent,
-        reinterpret_cast<HANDLE>(osfhandle),
-        &aotFile,
-        &pobjFile
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Error dereferencing file handle\n");
-        goto EXIT;
-    }
-
-    palError = pobjFile->GetProcessLocalData(
-        pthrCurrent,
-        ReadLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (NO_ERROR == palError)
-    {
-        if (NULL != pLocalData->unix_filename)
-        {
-            nRetVal = InternalOpen(pLocalData->unix_filename, openFlags);
-        }
-        else /* the only file object with no unix_filename is a pipe */
-        {
-            /* check if the file pipe descrptor is for read or write */
-            if (pLocalData->open_flags == O_WRONLY)
-            {
-                ERROR( "Couldn't open a write pipe on read mode\n");
-                goto EXIT;
-            }
-
-            nRetVal = pLocalData->unix_fd;
-        }
-
-        if ( nRetVal == -1 )
-        {
-            ERROR( "Error: %s.\n", strerror( errno ) );
-        }
-    }
-    else
-    {
-        ASSERT("Unable to access file data");
-    }
-
-EXIT:
-
-    if (NULL != pDataLock)
-    {
-        pDataLock->ReleaseLock(pthrCurrent, FALSE);
-    }
-
-    if (NULL != pobjFile)
-    {
-        pobjFile->ReleaseReference(pthrCurrent);
-    }
-
-    LOGEXIT( "_open_osfhandle return nRetVal:%d\n", nRetVal);
-    PERF_EXIT(_open_osfhandle);
-    return nRetVal;
-}
-
 
 /*++
 Function:
@@ -433,7 +332,7 @@ CorUnix::InternalFwrite(
 
     nWrittenBytes = fwrite(pvBuffer, nSize, nCount, f);
 
-    // Make sure no error ocurred.
+    // Make sure no error occurred.
     if ( nWrittenBytes < nCount )
     {
         // Set the FILE* error code

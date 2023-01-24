@@ -142,7 +142,21 @@ enum HWIntrinsicFlag : unsigned int
     // NoContainment
     // the intrinsic cannot be handled by containment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x10000
+    HW_Flag_NoContainment = 0x10000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x20000,
+
+    // AvxOnlyCompatible
+    // the intrinsic can be used on hardware with AVX but not AVX2 support
+    HW_Flag_AvxOnlyCompatible = 0x40000,
+
+    // MaybeCommutative
+    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
+    // contained
+    HW_Flag_MaybeCommutative = 0x80000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -617,6 +631,18 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Commutative) != 0;
     }
 
+    static bool IsMaybeCommutative(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_MaybeCommutative) != 0;
+#elif defined(TARGET_ARM64)
+        return false;
+#else
+#error Unsupported platform
+#endif
+    }
+
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -640,6 +666,26 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
+
+    static bool ReturnsPerElementMask(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_ReturnsPerElementMask) != 0;
+#elif defined(TARGET_ARM64)
+        unreached();
+#else
+#error Unsupported platform
+#endif
+    }
+
+#if defined(TARGET_XARCH)
+    static bool AvxOnlyCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_AvxOnlyCompatible) != 0;
+    }
+#endif
 
     static bool BaseTypeFromFirstArg(NamedIntrinsic id)
     {
@@ -848,6 +894,11 @@ private:
             else
             {
                 baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
             }
         }
     }

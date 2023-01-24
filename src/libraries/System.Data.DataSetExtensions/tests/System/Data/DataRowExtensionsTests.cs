@@ -94,6 +94,18 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        public void Field_NonNullable_Enum()
+        {
+            DataTable table = new DataTable("test");
+            table.Columns.Add(new DataColumn("col", typeof(int)));
+            DataRow row = table.NewRow();
+            row["col"] = 0;
+            table.Rows.Add(row);
+
+            Assert.Equal(SomeEnum.Foo, table.Rows[0].Field<SomeEnum>("col"));
+        }
+
+        [Fact]
         public void Field_Nullable_Enum()
         {
             DataTable table = new DataTable("test");

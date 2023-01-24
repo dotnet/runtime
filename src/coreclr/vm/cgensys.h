@@ -58,7 +58,6 @@ extern "C" void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransit
 extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
-extern "C" void STDCALL ExternalMethodFixupStub(void);
 extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
@@ -102,6 +101,7 @@ extern "C" void __stdcall __cpuid(int cpuInfo[4], int function_id);
 extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif // TARGET_UNIX
 extern "C" DWORD __stdcall xmmYmmStateSupport();
+extern "C" DWORD __stdcall avx512StateSupport();
 #endif
 
 const int CPUID_EAX = 0;
@@ -118,12 +118,6 @@ inline bool TargetHasAVXSupport()
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
     return false;
 }
-
-
-#ifndef DACCESS_COMPILE
-// Given an address in a slot, figure out if the prestub will be called
-BOOL DoesSlotCallPrestub(PCODE pCode);
-#endif
 
 #ifdef DACCESS_COMPILE
 

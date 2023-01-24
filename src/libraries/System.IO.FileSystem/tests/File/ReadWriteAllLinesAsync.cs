@@ -110,10 +110,9 @@ namespace System.IO.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public async Task WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();
@@ -121,8 +120,7 @@ namespace System.IO.Tests
             File.SetAttributes(path, FileAttributes.ReadOnly);
             try
             {
-                // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     await WriteAsync(path, new string[] { "text" });
                     Assert.Equal(new string[] { "text" }, await ReadAsync(path));
@@ -137,7 +135,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task DisposingEnumeratorClosesFileAsync()
+        public virtual async Task DisposingEnumeratorClosesFileAsync()
         {
             string path = GetTestFilePath();
             await WriteAsync(path, new[] { "line1", "line2", "line3" });
@@ -196,6 +194,72 @@ namespace System.IO.Tests
             Assert.True(File.WriteAllLinesAsync(path, new[] { "" }, Encoding.UTF8, token).IsCanceled);
             return Assert.ThrowsAsync<TaskCanceledException>(
                 async () => await File.WriteAllLinesAsync(path, new[] { "" }, Encoding.UTF8, token));
+        }
+    }
+
+    public class File_ReadLinesAsync : File_ReadWriteAllLines_EnumerableAsync
+    {
+        protected override Task<string[]> ReadAsync(string path) => ReadAsync(path, default, default);
+
+        protected virtual IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken ct = default) => File.ReadLinesAsync(path, ct);
+
+        private async Task<string[]> ReadAsync(string path, CancellationToken enumerableCt, CancellationToken enumeratorCt)
+        {
+            var list = new List<string>();
+            await foreach (string item in ReadLinesAsync(path, enumerableCt).WithCancellation(enumeratorCt))
+            {
+                list.Add(item);
+            }
+
+            return list.ToArray();
+        }
+
+        [Fact]
+        public override async Task DisposingEnumeratorClosesFileAsync()
+        {
+            string path = GetTestFilePath();
+            await WriteAsync(path, new[] { "line1", "line2", "line3" });
+
+            IAsyncEnumerable<string> readLines = ReadLinesAsync(path);
+            await using (IAsyncEnumerator<string> e1 = readLines.GetAsyncEnumerator())
+            await using (IAsyncEnumerator<string> e2 = readLines.GetAsyncEnumerator())
+            {
+                Assert.Same(readLines, e1);
+                Assert.NotSame(e1, e2);
+
+                await e1.MoveNextAsync();
+            }
+
+            // File should be closed deterministically; this shouldn't throw.
+            await File.OpenWrite(path).DisposeAsync();
+        }
+
+        [Fact]
+        public override async Task TaskAlreadyCanceledAsync()
+        {
+            string path = GetTestFilePath();
+            await File.Create(path).DisposeAsync();
+            var ct = new CancellationToken(true);
+            await Assert.ThrowsAsync<TaskCanceledException>(() => ReadAsync(path, ct, default));
+            await Assert.ThrowsAsync<TaskCanceledException>(() => ReadAsync(path, default, ct));
+        }
+
+        [Fact]
+        public void InvalidArgumentsThrowsBeforeGetAsyncEnumerator()
+        {
+            Assert.Throws<ArgumentNullException>("path", () => ReadLinesAsync(null));
+            Assert.Throws<ArgumentException>("path", () => ReadLinesAsync(string.Empty));
+        }
+    }
+
+    public class File_ReadLines_EncodedAsync : File_ReadLinesAsync
+    {
+        protected override IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken ct = default) => File.ReadLinesAsync(path, new UTF8Encoding(false), ct);
+
+        [Fact]
+        public void InvalidArgumentsThrownForNullEncoding()
+        {
+            Assert.Throws<ArgumentNullException>("encoding", () => File.ReadLinesAsync("path", null));
         }
     }
 }

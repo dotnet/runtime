@@ -118,7 +118,7 @@ namespace System
         internal const string SignerInfoCounterSigMessage = "ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner.";
         internal const string SignerInfoCounterSigDiagId = "SYSLIB0035";
 
-        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the RegexGeneratorAttribute with the regular expression source generator instead.";
+        internal const string RegexCompileToAssemblyMessage = "Regex.CompileToAssembly is obsolete and not supported. Use the GeneratedRegexAttribute with the regular expression source generator instead.";
         internal const string RegexCompileToAssemblyDiagId = "SYSLIB0036";
 
         internal const string AssemblyNameMembersMessage = "AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.";
@@ -132,5 +132,29 @@ namespace System
 
         internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
         internal const string EncryptionPolicyDiagId = "SYSLIB0040";
+
+        internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
+        internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
+
+        internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
+        internal const string EccXmlExportImportDiagId = "SYSLIB0042";
+
+        internal const string EcDhPublicKeyBlobMessage = "ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.";
+        internal const string EcDhPublicKeyBlobDiagId = "SYSLIB0043";
+
+        internal const string AssemblyNameCodeBaseMessage = "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.";
+        internal const string AssemblyNameCodeBaseDiagId = "SYSLIB0044";
+
+        internal const string CryptoStringFactoryMessage = "Cryptographic factory methods accepting an algorithm name are obsolete. Use the parameterless Create factory method on the algorithm type instead.";
+        internal const string CryptoStringFactoryDiagId = "SYSLIB0045";
+
+        internal const string ControlledExecutionRunMessage = "ControlledExecution.Run method may corrupt the process and should not be used in production code.";
+        internal const string ControlledExecutionRunDiagId = "SYSLIB0046";
+
+        internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
+        internal const string XmlSecureResolverDiagId = "SYSLIB0047";
+
+        internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
+        internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
     }
 }

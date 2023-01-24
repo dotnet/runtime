@@ -75,11 +75,10 @@ sgen_pinning_register_pinned_in_nursery (GCObject *obj)
 void
 sgen_scan_pin_queue_objects (ScanCopyContext ctx)
 {
-	int i;
 	ScanObjectFunc scan_func = ctx.ops->scan_object;
 
 	mono_os_mutex_lock (&pin_queue_mutex);
-	for (i = 0; i < pin_queue_objs.next_slot; ++i) {
+	for (gsize i = 0; i < pin_queue_objs.next_slot; ++i) {
 		GCObject *obj = (GCObject *)pin_queue_objs.data [i];
 		scan_func (obj, sgen_obj_get_descriptor_safe (obj), ctx.queue);
 	}
@@ -206,9 +205,7 @@ sgen_get_pinned_count (void)
 void
 sgen_dump_pin_queue (void)
 {
-	int i;
-
-	for (i = 0; i < last_num_pinned; ++i) {
+	for (gsize i = 0; i < last_num_pinned; ++i) {
 		GCObject *ptr = (GCObject *)pin_queue.data [i];
 		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %ld", ptr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (ptr)), (long)sgen_safe_object_get_size (ptr));
 	}

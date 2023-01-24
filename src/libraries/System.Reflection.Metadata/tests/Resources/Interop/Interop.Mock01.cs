@@ -17,7 +17,6 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(true)] // not embed
 [assembly: TypeLibVersion(1, 0)] // not embed
 // [assembly: SetWin32ContextInIDispatch()]
-// [assembly: IDispatchImpl(IDispatchImplType.CompatibleImpl)] // not embed
 
 namespace MockInterop01
 {

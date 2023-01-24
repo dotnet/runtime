@@ -7,7 +7,7 @@
 
 
 
-.method public static int32 main(class System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .locals	()
 .maxstack	2

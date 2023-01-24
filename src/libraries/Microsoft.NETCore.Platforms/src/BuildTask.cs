@@ -13,7 +13,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 
         internal Log Log
         {
-            get { return _log ?? (_log = new Log(new TaskLoggingHelper(this))); }
+            get { return _log ??= new Log(new TaskLoggingHelper(this)); }
         }
 
         public BuildTask()
@@ -35,7 +35,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         public abstract bool Execute();
     }
 
-    internal class Log : ILog
+    internal sealed class Log : ILog
     {
         private readonly TaskLoggingHelper _logger;
         public Log(TaskLoggingHelper logger)

@@ -21,24 +21,24 @@ namespace NetClient
             Tuple.Create("", "def"),
             Tuple.Create("abc", ""),
             Tuple.Create("abc", "def"),
-            Tuple.Create("", "结合"),
-            Tuple.Create("结合", ""),
-            Tuple.Create("a", "结合"),
-            Tuple.Create("结合", "a"),
-            Tuple.Create("结合", "结合"),
+            Tuple.Create("", "\u7ED3\u5408"),
+            Tuple.Create("\u7ED3\u5408", ""),
+            Tuple.Create("a", "\u7ED3\u5408"),
+            Tuple.Create("\u7ED3\u5408", "a"),
+            Tuple.Create("\u7ED3\u5408", "\u7ED3\u5408"),
 
             // String marshalling is optimized where strings shorter than MAX_PATH are
             // allocated on the stack. Longer strings have memory allocated for them.
             Tuple.Create("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901")
         };
 
-        private readonly IEnumerable<string> reversableStrings = new string[]
+        private readonly IEnumerable<string> reversibleStrings = new string[]
         {
             "",
             "a",
             "abc",
-            "reversable string",
-            "Unicode 相反 Unicode",
+            "reversible string",
+            "Unicode \u76F8\u53CD Unicode",
 
             // Long string optimization validation
             "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901"
@@ -86,7 +86,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 if (!AllAscii(s))
                 {
@@ -117,7 +117,7 @@ namespace NetClient
                 Assert.Equal(local, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 if (!AllAscii(s))
                 {
@@ -171,7 +171,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);
@@ -195,7 +195,7 @@ namespace NetClient
                 Assert.Throws<MarshalDirectiveException>( () => this.server.Reverse_LPWStr_OutAttr(local, actual));
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 var local = new StringBuilder(s);
                 string expected = Reverse(local.ToString());
@@ -243,7 +243,7 @@ namespace NetClient
                 Assert.Equal(expected, actual);
             }
 
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);
@@ -272,7 +272,7 @@ namespace NetClient
         private void Marshal_LCID()
         {
             Console.WriteLine("Marshal LCID");
-            foreach (var s in reversableStrings)
+            foreach (var s in reversibleStrings)
             {
                 string local = s;
                 string expected = Reverse(local);

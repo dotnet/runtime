@@ -125,9 +125,8 @@ namespace System
             UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
             UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
             ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-            PN_UnhandledException = 5,                           // ProjectN: "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
-            PN_UnhandledExceptionFromPInvoke = 6,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
-            Max
+            UnhandledException = 5,                              // "Unhandled exception: a managed exception was not handled before reaching unmanaged code"
+            UnhandledExceptionFromPInvoke = 6,                   // "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
         }
 
         private static string GetStringForFailFastReason(RhFailFastReason reason)
@@ -142,9 +141,9 @@ namespace System
                     return "Unhandled exception: no handler found in calling method.";
                 case RhFailFastReason.ClassLibDidNotTranslateExceptionID:
                     return "Unable to translate failure into a classlib-specific exception object.";
-                case RhFailFastReason.PN_UnhandledException:
+                case RhFailFastReason.UnhandledException:
                     return "Unhandled exception: a managed exception was not handled before reaching unmanaged code.";
-                case RhFailFastReason.PN_UnhandledExceptionFromPInvoke:
+                case RhFailFastReason.UnhandledExceptionFromPInvoke:
                     return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition.";
                 default:
                     return "Unknown reason.";
@@ -179,14 +178,14 @@ namespace System
             // If possible report the exception to GEH, if not fail fast.
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
             if (callbacks == null || !callbacks.ReportUnhandledError(exception))
-                FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+                FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
 #else
-            FailFast(GetStringForFailFastReason(RhFailFastReason.PN_UnhandledException), exception);
+            FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
 #endif
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
-        // needs to cause the process to exit. It is the classlib's opprotunity to customize the
+        // needs to cause the process to exit. It is the classlib's opportunity to customize the
         // termination behavior in whatever way necessary.
         [RuntimeExport("FailFast")]
         public static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
@@ -206,13 +205,13 @@ namespace System
 
                 if (!minimalFailFast)
                 {
-                    if ((reason == RhFailFastReason.PN_UnhandledException) && (exception != null))
+                    if ((reason == RhFailFastReason.UnhandledException) && (exception != null))
                     {
                         Debug.WriteLine("Unhandled Exception: " + exception.ToString());
                     }
 
                     failFastMessage = string.Format("Runtime-generated FailFast: ({0}): {1}{2}",
-                        reason.ToString(),  // Explicit call to ToString() to avoid MissingMetadataException inside String.Format()
+                        reason.ToString(),  // Explicit call to ToString() to avoid missing metadata exception inside String.Format()
                         GetStringForFailFastReason(reason),
                         exception != null ? " [exception object available]" : "");
                 }
@@ -267,8 +266,8 @@ namespace System
             // * RhFailFastReason, if it is one of the known reasons
             if (exception != null)
             {
-                if (reason == RhFailFastReason.PN_UnhandledException)
-                    errorCode = (uint)(exception.EETypePtr.GetHashCode());
+                if (reason == RhFailFastReason.UnhandledException)
+                    errorCode = (uint)(exception.GetEETypePtr().GetHashCode());
                 else if (exception.HResult != 0)
                     errorCode = (uint)exception.HResult;
             }
@@ -465,7 +464,7 @@ namespace System
             LowLevelList<Exception> exceptions = new LowLevelList<Exception>(curThreadExceptions);
             LowLevelList<Exception> nonThrownInnerExceptions = new LowLevelList<Exception>();
 
-            uint currentThreadId = (uint)Environment.CurrentNativeThreadId;
+            uint currentThreadId = (uint)Environment.CurrentManagedThreadId;
 
             // Reset nesting levels for exceptions on this thread that might not be currently in flight
             foreach (KeyValuePair<Exception, ExceptionData> item in s_exceptionDataTable)

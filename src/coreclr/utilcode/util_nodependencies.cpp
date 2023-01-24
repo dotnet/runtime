@@ -14,12 +14,14 @@
 #include "utilcode.h"
 #include "ex.h"
 
+#ifdef HOST_WINDOWS
+#include <versionhelpers.h>
+#endif
+
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TITLE             W("Platform not supported")
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TEXT              W("The minimum supported platform is Windows 7")
 #define NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE     0xBAD1BAD1
 
 //*****************************************************************************
@@ -27,67 +29,26 @@ RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 //*****************************************************************************
 void InitRunningOnVersionStatus ()
 {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    BOOL fSupportedPlatform = FALSE;
-    OSVERSIONINFOEX sVer;
-    DWORDLONG dwlConditionMask;
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 2;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    if(IsWindows8OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-
-    ZeroMemory(&sVer, sizeof(OSVERSIONINFOEX));
-    sVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-
-    sVer.dwMajorVersion = 6;
-    sVer.dwMinorVersion = 1;
-    sVer.dwPlatformId = VER_PLATFORM_WIN32_NT;
-
-
-    dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
+    else if(IsWindows7OrGreater())
     {
         gRunningOnStatus = RUNNING_ON_WIN7;
-        fSupportedPlatform = TRUE;
-        goto CHECK_SUPPORTED;
     }
-
-CHECK_SUPPORTED:
-
-    if (!fSupportedPlatform)
+    else
     {
-        // The current platform isn't supported. Display a message box to this effect and exit.
-        // Note that this should never happen since the .NET Fx setup should not install on
-        // non supported platforms (which is why the message box text isn't localized).
-        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, MB_OK | MB_ICONERROR, TRUE);
+        // The current platform isn't supported. Display a message to this effect and exit.
+        fprintf(stderr, "Platform not supported: Windows 7 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-#endif // TARGET_UNIX
+#endif // HOST_WINDOWS
 } // InitRunningOnVersionStatus
 
 #ifndef HOST_64BIT
@@ -473,6 +434,27 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
+
+//*****************************************************************************
+// Convert a GUID into a pointer to a string
+//*****************************************************************************
+int
+GuidToLPSTR(
+                          REFGUID   guid,   // The GUID to convert.
+    _Out_writes_(cchGuid) LPSTR szGuid,     // String into which the GUID is stored
+                          DWORD  cchGuid)   // Count in chars
+{
+    if (cchGuid < GUID_STR_BUFFER_LEN)
+        return 0;
+
+    return sprintf_s(szGuid, cchGuid, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid.Data1, guid.Data2, guid.Data3,
+            guid.Data4[0], guid.Data4[1],
+            guid.Data4[2], guid.Data4[3],
+            guid.Data4[4], guid.Data4[5],
+            guid.Data4[6], guid.Data4[7]) + 1;
+}
+
 //*****************************************************************************
 // Convert hex value into a wide string of hex digits
 //*****************************************************************************
@@ -511,9 +493,9 @@ HRESULT GetStr(
 //*****************************************************************************
 int
 GuidToLPWSTR(
-                          GUID   Guid,      // The GUID to convert.
-    _Out_writes_(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
-                          DWORD  cchGuid)   // Count in wchars
+    REFGUID guid,   // [IN] The GUID to convert.
+    LPWSTR szGuid,  // [OUT] String into which the GUID is stored
+    DWORD cchGuid)  // [IN] Size in wide chars of szGuid
 {
     CONTRACTL
     {
@@ -526,7 +508,7 @@ GuidToLPWSTR(
     // successive fields break the GUID into the form DWORD-WORD-WORD-WORD-WORD.DWORD
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
-    if (cchGuid < 39) // 38 chars + 1 null terminating.
+    if (cchGuid < GUID_STR_BUFFER_LEN)
         return 0;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -535,19 +517,19 @@ GuidToLPWSTR(
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //  ^^^^^^^^
-    if (FAILED (GetStr(Guid.Data1, szGuid+1 , 4))) return 0;
+    if (FAILED (GetStr(guid.Data1, szGuid+1 , 4))) return 0;
 
     szGuid[9]  = W('-');
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //           ^^^^
-    if (FAILED (GetStr(Guid.Data2, szGuid+10, 2))) return 0;
+    if (FAILED (GetStr(guid.Data2, szGuid+10, 2))) return 0;
 
     szGuid[14] = W('-');
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                ^^^^
-    if (FAILED (GetStr(Guid.Data3, szGuid+15, 2))) return 0;
+    if (FAILED (GetStr(guid.Data3, szGuid+15, 2))) return 0;
 
     szGuid[19] = W('-');
 
@@ -555,7 +537,7 @@ GuidToLPWSTR(
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                     ^^^^
     for (i=0; i < 2; ++i)
-        if (FAILED(GetStr(Guid.Data4[i], szGuid + 20 + (i * 2), 1)))
+        if (FAILED(GetStr(guid.Data4[i], szGuid + 20 + (i * 2), 1)))
             return (0);
 
     szGuid[24] = W('-');
@@ -563,7 +545,7 @@ GuidToLPWSTR(
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                          ^^^^^^^^^^^^
     for (i=0; i < 6; ++i)
-        if (FAILED(GetStr(Guid.Data4[i+2], szGuid + 25 + (i * 2), 1)))
+        if (FAILED(GetStr(guid.Data4[i+2], szGuid + 25 + (i * 2), 1)))
             return (0);
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -622,10 +604,9 @@ HRESULT GetHex(
 // Parse a Wide char string into a GUID
 //*****************************************************************************
 BOOL
-LPWSTRToGuid(
-                         GUID  * Guid,      // [OUT] The GUID to fill in
-    _In_reads_(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
-                         DWORD   cchGuid)   // [IN] Count in wchars in string
+LPCWSTRToGuid(
+    LPCWSTR szGuid, // [IN] String to convert.
+    GUID* pGuid)    // [OUT] Buffer for converted GUID.
 {
     CONTRACTL
     {
@@ -639,33 +620,27 @@ LPWSTRToGuid(
     // successive fields break the GUID into the form DWORD-WORD-WORD-WORD-WORD.DWORD
     // covering the 128-bit GUID. The string includes enclosing braces, which are an OLE convention.
 
-    if (cchGuid < 38) // 38 chars + 1 null terminating.
+    // Verify the surrounding syntax.
+    if (wcslen(szGuid) != 38 || szGuid[0] != '{' || szGuid[9] != '-' ||
+        szGuid[14] != '-' || szGuid[19] != '-' || szGuid[24] != '-' || szGuid[37] != '}')
+    {
         return FALSE;
-
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    // ^
-    if (szGuid[0] != W('{')) return FALSE;
+    }
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //  ^^^^^^^^
     if (FAILED (GetHex(&dw, szGuid+1 , 4))) return FALSE;
-    Guid->Data1 = dw;
-
-    if (szGuid[9] != W('-')) return FALSE;
+    pGuid->Data1 = dw;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //           ^^^^
     if (FAILED (GetHex(&dw, szGuid+10, 2))) return FALSE;
-    Guid->Data2 = (WORD)dw;
-
-    if (szGuid[14] != W('-')) return FALSE;
+    pGuid->Data2 = (WORD)dw;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                ^^^^
     if (FAILED (GetHex(&dw, szGuid+15, 2))) return FALSE;
-    Guid->Data3 = (WORD)dw;
-
-    if (szGuid[19] != W('-')) return FALSE;
+    pGuid->Data3 = (WORD)dw;
 
     // Get the last two fields (which are byte arrays).
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
@@ -673,46 +648,19 @@ LPWSTRToGuid(
     for (i=0; i < 2; ++i)
     {
         if (FAILED(GetHex(&dw, szGuid + 20 + (i * 2), 1))) return FALSE;
-        Guid->Data4[i] = (BYTE)dw;
+        pGuid->Data4[i] = (BYTE)dw;
     }
-
-    if (szGuid[24] != W('-')) return FALSE;
 
     // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
     //                          ^^^^^^^^^^^^
     for (i=0; i < 6; ++i)
     {
         if (FAILED(GetHex(&dw, szGuid + 25 + (i * 2), 1))) return FALSE;
-        Guid->Data4[i+2] = (BYTE)dw;
+        pGuid->Data4[i+2] = (BYTE)dw;
     }
-
-    // {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
-    //                                      ^
-    if (szGuid[37] != W('}')) return FALSE;
 
     return TRUE;
-} // GuidToLPWSTR
-
-
-#ifdef _DEBUG
-// Always write regardless of registry.
-void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    WCHAR rcBuff[1024];
-    va_list marker;
-
-    va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, ARRAY_SIZE(rcBuff), _TRUNCATE, szFmt, marker);
-    va_end(marker);
-    WszOutputDebugString(rcBuff);
-}
-#endif //_DEBUG
+} // LPCWSTRToGuid
 
 /**************************************************************************/
 void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
@@ -770,7 +718,20 @@ void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWOR
     *pcch = cch;
 } // TrimWhiteSpace
 
-BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStack)
+void OutputDebugStringUtf8(LPCUTF8 utf8DebugMsg)
+{
+#ifdef TARGET_UNIX
+    OutputDebugStringA(utf8DebugMsg);
+#else
+    if (utf8DebugMsg == NULL)
+        utf8DebugMsg = "";
+
+    MAKE_WIDEPTR_FROMUTF8_NOTHROW(wideDebugMsg, utf8DebugMsg);
+    OutputDebugStringW(wideDebugMsg);
+#endif // !TARGET_UNIX
+}
+
+BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommittedStack)
 {
     // We need to make sure there will be a reserved but never committed page at the end
     // of the stack. We do here the check NT does when it creates the user stack to decide
@@ -781,7 +742,7 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
     // If we are not it will bomb out. We will also bomb out if we touch the hard guard
     // page.
     //
-    // For situation B, teb->StackLimit is at the beggining of the user stack (ie
+    // For situation B, teb->StackLimit is at the beginning of the user stack (ie
     // before updating StackLimit it checks if it was able to create a new guard page,
     // in this case, it can't), which makes the check fail in RtlUnwind.
     //
@@ -802,13 +763,12 @@ BOOL ThreadWillCreateGuardPage(SIZE_T sizeReservedStack, SIZE_T sizeCommitedStac
 
     // OS rounds up sizes the following way to decide if it marks a guard page
     sizeReservedStack = ALIGN(sizeReservedStack, ((size_t)sysInfo.dwAllocationGranularity));   // Allocation granularity
-    sizeCommitedStack = ALIGN(sizeCommitedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
+    sizeCommittedStack = ALIGN(sizeCommittedStack, ((size_t)sysInfo.dwPageSize));  // Page Size
 
     // OS wont create guard page, we can't execute managed code safely.
     // We also have to make sure we have a 'hard' guard, thus we add another
     // page to the memory we would need comitted.
     // That is, the following code will check if sizeReservedStack is at least 2 pages
-    // more than sizeCommitedStack.
-    return (sizeReservedStack > sizeCommitedStack + ((size_t)sysInfo.dwPageSize));
+    // more than sizeCommittedStack.
+    return (sizeReservedStack > sizeCommittedStack + ((size_t)sysInfo.dwPageSize));
 } // ThreadWillCreateGuardPage
-

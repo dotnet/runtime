@@ -11,8 +11,8 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
-#include "win32threadpool.h"
 #include "clrversion.h"
+#include "hostinformation.h"
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -1135,8 +1135,13 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 		}
 	}
 
-	// fallback to the empty string if we can't get assembly info, e.g., if the runtime is
+	// get the name from the host if we can't get assembly info, e.g., if the runtime is
 	// suspended before an assembly is loaded.
+	SString assembly_name;
+	if (HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
+		return assembly_name.GetUTF8 ();
+
+	// fallback to the empty string
 	return reinterpret_cast<const ep_char8_t*>("");
 }
 
@@ -1147,6 +1152,66 @@ ep_rt_runtime_version_get_utf8 (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	return reinterpret_cast<const ep_char8_t*>(CLR_PRODUCT_VERSION);
+}
+
+/*
+ * Little-Endian Conversion.
+ */
+
+static
+EP_ALWAYS_INLINE
+uint16_t
+ep_rt_val_uint16_t (uint16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint32_t
+ep_rt_val_uint32_t (uint32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uint64_t
+ep_rt_val_uint64_t (uint64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int16_t
+ep_rt_val_int16_t (int16_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int32_t
+ep_rt_val_int32_t (int32_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+int64_t
+ep_rt_val_int64_t (int64_t value)
+{
+	return value;
+}
+
+static
+EP_ALWAYS_INLINE
+uintptr_t
+ep_rt_val_uintptr_t (uintptr_t value)
+{
+	return value;
 }
 
 /*
@@ -1216,6 +1281,15 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
 }
 
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<ep_char8_t *>(InterlockedCompareExchangeT<ep_char8_t *> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1274,10 +1348,10 @@ ep_rt_shutdown (void)
 static
 inline
 bool
-ep_rt_config_aquire (void)
+ep_rt_config_acquire (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_lock_aquire (ep_rt_coreclr_config_lock_get ());
+	return ep_rt_lock_acquire (ep_rt_coreclr_config_lock_get ());
 }
 
 static
@@ -1360,10 +1434,9 @@ ep_rt_method_get_full_name (
 	EX_TRY
 	{
 		SString method_name;
-		StackScratchBuffer conversion;
 
 		TypeString::AppendMethodInternal (method_name, method, TypeString::FormatNamespace | TypeString::FormatSignature);
-		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 (conversion);
+		const ep_char8_t *method_name_utf8 = method_name.GetUTF8 ();
 		if (method_name_utf8) {
 			size_t method_name_utf8_len = strlen (method_name_utf8) + 1;
 			size_t to_copy = method_name_utf8_len < name_len ? method_name_utf8_len : name_len;
@@ -1390,7 +1463,7 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 	STATIC_CONTRACT_NOTHROW;
 
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
 	}
@@ -1591,15 +1664,6 @@ ep_rt_config_value_get_output_streaming (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
-}
-
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
 /*
@@ -1954,28 +2018,43 @@ ep_rt_thread_create (
 
 	EX_TRY
 	{
-		rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
-		if (thread_params) {
-			thread_params->thread_params.thread_type = thread_type;
-			if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING) {
+		if (thread_type == EP_THREAD_TYPE_SERVER)
+		{
+			DWORD thread_id = 0;
+			HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
+			if (server_thread != NULL)
+			{
+				if (id)
+				{
+					*reinterpret_cast<DWORD *>(id) = thread_id;
+				}
+				::CloseHandle (server_thread);
+				result = true;
+			}
+		}
+		else if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING)
+		{
+			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
+			if (thread_params)
+			{
+				thread_params->thread_params.thread_type = thread_type;
 				thread_params->thread_params.thread = SetupUnstartedThread ();
 				thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
 				thread_params->thread_params.thread_params = params;
-				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params)) {
+
+				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params))
+				{
+					if (id)
+					{
+						*reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
+					}
 					thread_params->thread_params.thread->SetBackground (TRUE);
 					thread_params->thread_params.thread->StartThread ();
-					if (id)
-						*reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
 					result = true;
 				}
-			} else if (thread_type == EP_THREAD_TYPE_SERVER) {
-				DWORD thread_id = 0;
-				HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
-				if (server_thread != NULL) {
-					::CloseHandle (server_thread);
-					if (id)
-						*reinterpret_cast<DWORD *>(id) = thread_id;
-					result = true;
+				else
+				{
+					delete thread_params;
 				}
 			}
 		}
@@ -1987,6 +2066,14 @@ ep_rt_thread_create (
 	EX_END_CATCH(SwallowAllExceptions);
 
 	return result;
+}
+
+static
+inline
+void
+ep_rt_set_server_name(void)
+{
+	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
 }
 
 static
@@ -2146,7 +2233,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
 	ep_return_null_if_nok (path_utf16 != NULL);
 
 	CFileStream *file_stream = new (nothrow) CFileStream ();
@@ -2254,7 +2341,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -2353,7 +2440,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 static
 inline
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
@@ -2534,7 +2621,7 @@ ep_rt_utf8_string_replace (
 
 static
 ep_char16_t *
-ep_rt_utf8_to_utf16_string (
+ep_rt_utf8_to_utf16le_string (
 	const ep_char8_t *str,
 	size_t len)
 {
@@ -2637,6 +2724,16 @@ ep_rt_utf16_to_utf8_string (
 
 static
 inline
+ep_char8_t *
+ep_rt_utf16le_to_utf8_string (
+	const ep_char16_t *str,
+	size_t len)
+{
+	return ep_rt_utf16_to_utf8_string (str, len);
+}
+
+static
+inline
 void
 ep_rt_utf16_string_free (ep_char16_t *str)
 {
@@ -2664,19 +2761,29 @@ ep_rt_diagnostics_command_line_get (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
-	// The host initalizes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
+	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
 	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
-	// To that end, we'll "cache" it here so we free the previous string when we get it again.
-	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
+	// and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
+	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
-	if (_ep_rt_coreclr_diagnostics_cmd_line)
-		ep_rt_utf8_string_free(_ep_rt_coreclr_diagnostics_cmd_line);
-
-	_ep_rt_coreclr_diagnostics_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
+	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
+		// same as old, so free the new one
+		ep_rt_utf8_string_free (new_cmd_line);
+	} else {
+		// attempt an update, and give up if you lose the race
+		if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_coreclr_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
+			ep_rt_utf8_string_free (new_cmd_line);
+		}
+		// NOTE: If there was a value we purposefully leak it since it may still be in use.
+		// This leak is *small* (length of the command line) and bounded (should only happen once)
+	}
 
 	return _ep_rt_coreclr_diagnostics_cmd_line;
 }

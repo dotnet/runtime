@@ -11,6 +11,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -1523,6 +1524,7 @@ namespace System.Threading.Tasks
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">TaskStatus.Faulted</see>, and its
         /// <see cref="Exception"/> property will be non-null.
         /// </remarks>
+        [MemberNotNullWhen(true, nameof(Exception))]
         public bool IsFaulted =>
             // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
             (m_stateFlags & (int)TaskStateFlags.Faulted) != 0;
@@ -1922,13 +1924,13 @@ namespace System.Threading.Tasks
                 }
             }
 
-#if CORERT
+#if NATIVEAOT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
-#endif // CORERT
+#endif // NATIVEAOT
         }
 
         /// <summary>
@@ -2440,7 +2442,6 @@ namespace System.Threading.Tasks
         #region Await Support
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public TaskAwaiter GetAwaiter()
         {
             return new TaskAwaiter(this);
@@ -2637,15 +2638,40 @@ namespace System.Threading.Tasks
         /// infinite time-out -or- timeout is greater than
         /// <see cref="int.MaxValue"/>.
         /// </exception>
-        public bool Wait(TimeSpan timeout)
+        public bool Wait(TimeSpan timeout) => Wait(timeout, default);
+
+        /// <summary>
+        /// Waits for the <see cref="Task"/> to complete execution.
+        /// </summary>
+        /// <param name="timeout">The time to wait, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely</param>
+        /// <param name="cancellationToken">
+        /// A <see cref="CancellationToken"/> to observe while waiting for the task to complete.
+        /// </param>
+        /// <returns>
+        /// true if the <see cref="Task"/> completed execution within the allotted time; otherwise, false.
+        /// </returns>
+        /// <exception cref="AggregateException">
+        /// The <see cref="Task"/> was canceled -or- an exception was thrown during the execution of the <see
+        /// cref="Task"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="timeout"/> is a negative number other than -1 milliseconds, which represents an
+        /// infinite time-out -or- timeout is greater than
+        /// <see cref="int.MaxValue"/>.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The <paramref name="cancellationToken"/> was canceled.
+        /// </exception>
+        public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
             }
+            cancellationToken.ThrowIfCancellationRequested();
 
-            return Wait((int)totalMilliseconds, default);
+            return Wait((int)totalMilliseconds, cancellationToken);
         }
 
         /// <summary>
@@ -4367,7 +4393,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
+            var continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)
@@ -4404,7 +4430,7 @@ namespace System.Threading.Tasks
             if (!continuationTask.IsCompleted)
             {
                 // We need additional correlation produced here to ensure that at least the continuation
-                // code will be correlatable to the currrent activity that initiated "this" task:
+                // code will be correlatable to the current activity that initiated "this" task:
                 //  . when the antecendent ("this") is a promise we have very little control over where
                 //    the code for the promise will run (e.g. it can be a task from a user provided
                 //    TaskCompletionSource or from a classic Begin/End async operation); this user or
@@ -5192,8 +5218,9 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        public static Task<TResult> FromResult<TResult>(TResult result)
+        public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
+#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5205,39 +5232,34 @@ namespace System.Threading.Tasks
                 // null reference types and default(Nullable<T>)
                 return Task<TResult>.s_defaultResultTask;
             }
-            else if (typeof(TResult).IsValueType) // help the JIT avoid the value type branches for ref types
+
+            // For Boolean, we cache all possible values.
+            if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
             {
-                // For Boolean, we cache all possible values.
-                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
+                Task<bool> task = *(bool*)&result ? TaskCache.s_trueTask : TaskCache.s_falseTask;
+                return *(Task<TResult>*)&task;
+            }
+
+            // For Int32, we cache a range of common values, [-1,9).
+            if (typeof(TResult) == typeof(int))
+            {
+                // Compare to constants to avoid static field access if outside of cached range.
+                int value = *(int*)&result;
+                if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
                 {
-                    bool value = (bool)(object)result!;
-                    Task<bool> task = value ? TaskCache.s_trueTask : TaskCache.s_falseTask;
-                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                    Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
+                    return *(Task<TResult>*)&task;
                 }
-                // For Int32, we cache a range of common values, [-1,9).
-                else if (typeof(TResult) == typeof(int))
-                {
-                    // Compare to constants to avoid static field access if outside of cached range.
-                    int value = (int)(object)result!;
-                    if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
-                    {
-                        Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
-                        return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
-                    }
-                }
-                // For other known value types, we only special-case 0 / default(TResult).  We don't include
-                // floating point types as == may return true for different bit representations of the same value.
-                else if (
-                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
-                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
-                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
-                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
-                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
-                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
-                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
-                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!))
+            }
+            else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
+            {
+                // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
+                // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
+                // so we only need to confirm that this TResult has the same bits as default(TResult).
+                if ((sizeof(TResult) == sizeof(byte) && *(byte*)&result == default(byte)) ||
+                    (sizeof(TResult) == sizeof(ushort) && *(ushort*)&result == default(ushort)) ||
+                    (sizeof(TResult) == sizeof(uint) && *(uint*)&result == default) ||
+                    (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default))
                 {
                     return Task<TResult>.s_defaultResultTask;
                 }
@@ -5245,6 +5267,7 @@ namespace System.Threading.Tasks
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
+#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -5419,7 +5442,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task Run(Func<Task?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -5464,7 +5486,6 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Run<TResult>(Func<Task<TResult>?> function, CancellationToken cancellationToken)
         {
-            // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
 
             // Short-circuit if we are given a pre-canceled token
@@ -6213,10 +6234,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task> WhenAny(Task task1!!, Task task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        public static Task<Task> WhenAny(Task task1, Task task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task>(task1, task2);
+        }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>
         /// <typeparam name="TTask">Specifies the type of the task.</typeparam>
@@ -6405,10 +6432,16 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="task1"/> or <paramref name="task2"/> argument was null.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1!!, Task<TResult> task2!!) =>
-            task1.IsCompleted ? FromResult(task1) :
-            task2.IsCompleted ? FromResult(task2) :
-            new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        public static Task<Task<TResult>> WhenAny<TResult>(Task<TResult> task1, Task<TResult> task2)
+        {
+            ArgumentNullException.ThrowIfNull(task1);
+            ArgumentNullException.ThrowIfNull(task2);
+
+            return
+                task1.IsCompleted ? FromResult(task1) :
+                task2.IsCompleted ? FromResult(task2) :
+                new TwoTaskWhenAnyPromise<Task<TResult>>(task1, task2);
+        }
 
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
@@ -6887,7 +6920,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to this.</param>
+        /// <param name="task">The source task whose results should be transferred to this.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)

@@ -12,8 +12,8 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public abstract class BackgroundService : IHostedService, IDisposable
     {
-        private Task _executeTask;
-        private CancellationTokenSource _stoppingCts;
+        private Task? _executeTask;
+        private CancellationTokenSource? _stoppingCts;
 
         /// <summary>
         /// Gets the Task that executes the background operation.
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting
         /// <remarks>
         /// Will return <see langword="null"/> if the background operation hasn't started.
         /// </remarks>
-        public virtual Task ExecuteTask => _executeTask;
+        public virtual Task? ExecuteTask => _executeTask;
 
         /// <summary>
         /// This method is called when the <see cref="IHostedService"/> starts. The implementation should return a task that represents
@@ -36,6 +36,7 @@ namespace Microsoft.Extensions.Hosting
         /// Triggered when the application host is ready to start the service.
         /// </summary>
         /// <param name="cancellationToken">Indicates that the start process has been aborted.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous Start operation.</returns>
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
             // Create linked token to allow cancelling executing task from provided token
@@ -58,6 +59,7 @@ namespace Microsoft.Extensions.Hosting
         /// Triggered when the application host is performing a graceful shutdown.
         /// </summary>
         /// <param name="cancellationToken">Indicates that the shutdown process should no longer be graceful.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous Stop operation.</returns>
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
             // Stop called without start
@@ -69,12 +71,15 @@ namespace Microsoft.Extensions.Hosting
             try
             {
                 // Signal cancellation to the executing method
-                _stoppingCts.Cancel();
+                _stoppingCts!.Cancel();
             }
             finally
             {
                 // Wait until the task completes or the stop token triggers
-                await Task.WhenAny(_executeTask, Task.Delay(Timeout.Infinite, cancellationToken)).ConfigureAwait(false);
+                var tcs = new TaskCompletionSource<object>();
+                using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s!).SetCanceled(), tcs);
+                // Do not await the _executeTask because cancelling it will throw an OperationCanceledException which we are explicitly ignoring
+                await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false);
             }
 
         }

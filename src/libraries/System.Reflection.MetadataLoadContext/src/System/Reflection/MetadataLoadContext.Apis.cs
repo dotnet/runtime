@@ -24,7 +24,7 @@ namespace System.Reflection
     /// can do so in a way that can be distinguished from valid data) and refrains from judging whether it's "executable."
     /// This is both for performance reasons (checks cost time) and its intended role as metadata inspection tool.
     /// Examples of things that MetadataLoadContexts let go unchecked include creating generic instances that violate generic
-    /// parameter constraints, and loading type hierachies that would be unloadable in an actual runtime (deriving from sealed classes,
+    /// parameter constraints, and loading type hierarchies that would be unloadable in an actual runtime (deriving from sealed classes,
     /// overriding members that don't exist in the ancestor classes, failing to implement all abstract methods, etc.)
     ///
     /// You cannot invoke methods, set or get field or property values or instantiate objects using
@@ -103,8 +103,11 @@ namespace System.Reflection
         /// <param name="coreAssemblyName">
         /// The name of the assembly that contains the core types such as System.Object. Typically, this would be "mscorlib".
         /// </param>
-        public MetadataLoadContext(MetadataAssemblyResolver resolver!!, string? coreAssemblyName = null)
+        public MetadataLoadContext(MetadataAssemblyResolver resolver, string? coreAssemblyName = null)
         {
+            if (resolver is null)
+                throw new ArgumentNullException(nameof(resolver));
+
             this.resolver = resolver;
 
             if (coreAssemblyName != null)
@@ -122,8 +125,11 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
-        public Assembly LoadFromAssemblyPath(string assemblyPath!!)
+        public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
+            if (assemblyPath is null)
+                throw new ArgumentNullException(nameof(assemblyPath));
+
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
             return LoadFromStreamCore(File.OpenRead(assemblyPath));
@@ -134,8 +140,11 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         /// </summary>
-        public Assembly LoadFromByteArray(byte[] assembly!!)
+        public Assembly LoadFromByteArray(byte[] assembly)
         {
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
+
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
             return LoadFromStreamCore(new MemoryStream(assembly));
@@ -149,8 +158,11 @@ namespace System.Reflection
         /// The MetadataLoadContext takes ownership of the Stream passed into this method. The original owner must not mutate its position, dispose the Stream or
         /// assume that its position will stay unchanged.
         /// </summary>
-        public Assembly LoadFromStream(Stream assembly!!)
+        public Assembly LoadFromStream(Stream assembly)
         {
+            if (assembly is null)
+                throw new ArgumentNullException(nameof(assembly));
+
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
             assembly.Position = 0;
@@ -164,8 +176,11 @@ namespace System.Reflection
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
-        public Assembly LoadFromAssemblyName(string assemblyName!!)
+        public Assembly LoadFromAssemblyName(string assemblyName)
         {
+            if (assemblyName is null)
+                throw new ArgumentNullException(nameof(assemblyName));
+
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
             AssemblyName assemblyNameObject = new AssemblyName(assemblyName);
@@ -180,8 +195,11 @@ namespace System.Reflection
         /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
-        public Assembly LoadFromAssemblyName(AssemblyName assemblyName!!)
+        public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
+            if (assemblyName is null)
+                throw new ArgumentNullException(nameof(assemblyName));
+
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(MetadataLoadContext));
             RoAssemblyName refName = assemblyName.ToRoAssemblyName();

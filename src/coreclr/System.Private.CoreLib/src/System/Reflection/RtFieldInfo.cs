@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -18,7 +19,6 @@ namespace System.Reflection
         private string? m_name;
         private RuntimeType? m_fieldType;
         private InvocationFlags m_invocationFlags;
-
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,10 +43,10 @@ namespace System.Reflection
             // this should be an usable field, determine the other flags
             if (invocationFlags == 0)
             {
-                if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
+                if ((m_fieldAttributes & FieldAttributes.InitOnly) != 0)
                     invocationFlags |= InvocationFlags.SpecialField;
 
-                if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
+                if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
                     invocationFlags |= InvocationFlags.SpecialField;
 
                 // find out if the field type is one of the following: Primitive, Enum or Pointer
@@ -72,7 +72,6 @@ namespace System.Reflection
 
         #region Private Members
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => new RuntimeFieldHandleInternal(m_fieldHandle);
-
         #endregion
 
         #region Internal Members
@@ -117,11 +116,21 @@ namespace System.Reflection
             return RuntimeTypeHandle.GetModule(RuntimeFieldHandle.GetApproxDeclaringType(this));
         }
 
+        public override bool Equals(object? obj) =>
+            ReferenceEquals(this, obj) ||
+            (MetadataUpdater.IsSupported &&
+                obj is RtFieldInfo fi &&
+                fi.m_fieldHandle == m_fieldHandle &&
+                ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
+
+        public override int GetHashCode() =>
+            HashCode.Combine(m_fieldHandle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+
         #endregion
 
         #region FieldInfo Overrides
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValue(object? obj)
         {
             InvocationFlags invocationFlags = InvocationFlags;
@@ -155,19 +164,21 @@ namespace System.Reflection
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // Takes a pointer to a managed type
             return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             InvocationFlags invocationFlags = InvocationFlags;
@@ -183,11 +194,22 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
+            ParameterCopyBackAction _ref = default;
             RuntimeType fieldType = (RuntimeType)FieldType;
-            value = fieldType.CheckValue(value, binder, culture, invokeAttr);
+            if (value is null)
+            {
+                if (RuntimeTypeHandle.IsValueType(fieldType))
+                {
+                    fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
+                }
+            }
+            else if (!ReferenceEquals(value.GetType(), fieldType))
+            {
+                fieldType.CheckValue(ref value, copyBack: ref _ref, binder, culture, invokeAttr);
+            }
 
             bool domainInitialized = false;
-            if (declaringType == null)
+            if (declaringType is null)
             {
                 RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
             }
@@ -199,15 +221,17 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         public override void SetValueDirect(TypedReference obj, object value)
         {
             if (obj.IsNull)
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // Takes a pointer to a managed type
             RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
         }
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);

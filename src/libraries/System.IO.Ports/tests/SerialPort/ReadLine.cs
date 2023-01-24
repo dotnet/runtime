@@ -173,7 +173,7 @@ namespace System.IO.Ports.Tests
                 var rndGen = new Random(-55);
                 var strBldrToWrite = new StringBuilder();
 
-                //Genrate random characters
+                // Generate random characters
                 for (var i = 0; i < numBytesToRead; i++)
                 {
                     strBldrToWrite.Append((char)rndGen.Next(40, 60));
@@ -220,7 +220,7 @@ namespace System.IO.Ports.Tests
                 var strBldrExpected = new StringBuilder();
 
 
-                //Genrate random characters
+                // Generate random characters
                 for (var i = 0; i < numBytesToRead; i++)
                 {
                     strBldrToWrite.Append((char)rndGen.Next(0, 256));
@@ -384,7 +384,7 @@ namespace System.IO.Ports.Tests
                 asyncReadTask.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarantee that we are executing code in SerialPort
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
                 com2.WriteLine(string.Empty);
 
@@ -767,7 +767,7 @@ namespace System.IO.Ports.Tests
                 com1.Encoding = encoding;
                 com2.Encoding = encoding;
 
-                //Genrate random characters
+                // Generate random characters
                 do
                 {
                     strBldrToWrite = new StringBuilder();

@@ -34,7 +34,7 @@ interface ICorPublishAppDomainEnum;
 #pragma warning(pop)
 
 /* ------------------------------------------------------------------------- *
- * Library defintion
+ * Library definition
  * ------------------------------------------------------------------------- */
 
 [
