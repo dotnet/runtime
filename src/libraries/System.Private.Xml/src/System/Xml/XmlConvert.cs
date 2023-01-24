@@ -1710,7 +1710,7 @@ namespace System.Xml
 
         internal static bool TryFormat(float value, Span<char> destination, out int charsWritten)
         {
-            ReadOnlySpan<char> valueSpan = default;
+            ReadOnlySpan<char> valueSpan;
 
             if (float.IsNegativeInfinity(value))
             {
@@ -1724,9 +1724,10 @@ namespace System.Xml
             {
                 valueSpan = "-0";
             }
-
-            if (valueSpan.IsEmpty)
+            else
+            {
                 return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            }
 
             charsWritten = valueSpan.Length;
             return valueSpan.TryCopyTo(destination);
@@ -1734,7 +1735,7 @@ namespace System.Xml
 
         internal static bool TryFormat(double value, Span<char> destination, out int charsWritten)
         {
-            ReadOnlySpan<char> valueSpan = default;
+            ReadOnlySpan<char> valueSpan;
 
             if (double.IsNegativeInfinity(value))
             {
@@ -1748,9 +1749,10 @@ namespace System.Xml
             {
                 valueSpan = "-0";
             }
-
-            if (valueSpan.IsEmpty)
+            else
+            {
                 return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+            }
 
             charsWritten = valueSpan.Length;
             return valueSpan.TryCopyTo(destination);

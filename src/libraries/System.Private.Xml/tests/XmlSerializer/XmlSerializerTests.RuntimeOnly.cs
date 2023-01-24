@@ -401,8 +401,8 @@ public static partial class XmlSerializerTests
         MyCollection y = SerializeAndDeserialize<MyCollection>(x,
 @"<?xml version=""1.0""?>
 <ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
- <anyType xmlns:q1=""http://microsoft.com/wsdl/types/"" xsi:type=""q1:char"">97</anyType>
- <anyType xsi:type=""xsd:int"">45</anyType>
+  <anyType xmlns:q1=""http://microsoft.com/wsdl/types/"" xsi:type=""q1:char"">97</anyType>
+  <anyType xsi:type=""xsd:int"">45</anyType>
 </ArrayOfAnyType>");
 
         Assert.NotNull(y);
