@@ -19,7 +19,7 @@ public class WasmCalculateInitialHeapSize : Task
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
     [Required]
-    public string[]? AOTDataSegments { get; set; }
+    public string[] AOTDataSegments { get; set; } = Array.Empty<string>();
 
     [Output]
     public long? InitialHeapSize { get; private set; }
