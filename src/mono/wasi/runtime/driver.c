@@ -85,7 +85,10 @@ static MonoDomain *root_domain;
 static void
 wasi_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	printf("[MONO] %s: %s\n", log_level, message);
+	if (strcmp(log_level, "error") == 0)
+		fprintf(stderr, "[MONO] %s: %s\n", log_level, message);
+	else
+		printf("[MONO] %s: %s\n", log_level, message);
 	if (fatal) {
 		// make it trap so we could see the stack trace
 		// (*(int*)(void*)-1)++;
@@ -111,7 +114,7 @@ static int assembly_count;
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
-    /*printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);*/
+	/*printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);*/
 	int len = strlen (name);
 	if (!strcasecmp (".pdb", &name [len - 4])) {
 		char *new_name = strdup (name);
@@ -476,7 +479,7 @@ MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
 	assert (name);
-    printf("wasi: mono_wasm_assembly_load: %s\n", name);
+	printf("wasi: mono_wasm_assembly_load: %s\n", name);
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
 
@@ -545,6 +548,26 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 			store_volatile(out_result, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
 	}
 	MONO_EXIT_GC_UNSAFE;
+}
+
+MonoMethod*
+mono_wasi_assembly_get_entry_point (MonoAssembly *assembly)
+{
+	MonoImage *image;
+	MonoMethod *method;
+
+	MONO_ENTER_GC_UNSAFE;
+	image = mono_assembly_get_image (assembly);
+	uint32_t entry = mono_image_get_entry_point (image);
+	if (!entry)
+		goto end;
+
+	mono_domain_ensure_entry_assembly (root_domain, assembly);
+	method = mono_get_method (image, entry, NULL);
+
+	end:
+	MONO_EXIT_GC_UNSAFE;
+	return method;
 }
 
 MonoMethod*
@@ -707,42 +730,41 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
 MonoArray*
 mono_wasm_string_array_new (int size)
 {
-    return mono_array_new (root_domain, mono_get_string_class (), size);
+	return mono_array_new (root_domain, mono_get_string_class (), size);
 }
 
 #ifdef _WASI_DEFAULT_MAIN
 int main(int argc, char * argv[]) {
-    printf("TODOWASI: default main for non-relinked,non-aot apps, TODO\n");
-    if (argc < 2) {
-        printf("Error: First argument must be the name of the main assembly\n");
-        return 1;
-    }
-    // Assume the runtime pack has been copied into the output directory as 'runtime'
+	printf("TODOWASI: default main for non-relinked,non-aot apps, TODO\n");
+	if (argc < 2) {
+		printf("Error: First argument must be the name of the main assembly\n");
+		return 1;
+	}
+	// Assume the runtime pack has been copied into the output directory as 'runtime'
 	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-    // AJ: not needed right now as we are bundling all the assemblies in the .wasm
-    mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+	// AJ: not needed right now as we are bundling all the assemblies in the .wasm
+	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
 	mono_wasm_load_runtime("", 0);
 
-    /*mono_runtime_set_main_args (argc, argv);*/
+	/*mono_runtime_set_main_args (argc, argv);*/
 
-    /*MonoAssembly* assembly = mono_wasm_assembly_load (dotnet_wasi_getentrypointassemblyname());*/
-    /*MonoAssembly* assembly = mono_assembly_open(dotnet_wasi_getentrypointassemblyname(), NULL);*/
-    printf("wasi: ** Loading assembly %s\n", argv[1]);
-    MonoAssembly* assembly = mono_wasm_assembly_load (argv[1]);
-    if (!assembly) {
-        printf("wasi: mono_wasm_assembly_load returned NULL!\n");
-        return 1;
-    }
-    printf("wasi: ** main: getting entrypoint\n");
-	MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
+	/*MonoAssembly* assembly = mono_wasm_assembly_load (dotnet_wasi_getentrypointassemblyname());*/
+	/*MonoAssembly* assembly = mono_assembly_open(dotnet_wasi_getentrypointassemblyname(), NULL);*/
+	MonoAssembly* assembly = mono_wasm_assembly_load (argv[1]);
+	if (!assembly) {
+		printf("wasi: mono_wasm_assembly_load returned NULL!\n");
+		return 1;
+	}
+	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
+	if (!entry_method) {
+		fprintf(stderr, "Could not find entrypoint in the assembly.\n");
+		exit(1);
+	}
 
 	MonoObject* out_exc;
 	MonoObject* out_res;
-    // FIXMEWASI: should this use the mono_wasm_invoke_method_ref instead?
-    // does that handle async main?
-    int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
-	if (out_exc)
-	{
+	int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
+	if (out_exc) {
 		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
