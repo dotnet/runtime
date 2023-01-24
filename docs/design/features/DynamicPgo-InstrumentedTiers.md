@@ -136,12 +136,12 @@ G_M10906_IG05:              ;; offset=003BH
 ; ============================================================
 ```
 
-The code is optimized, it has a helper call to record types of objects passed to that virtual call (`Dispose()`). 
+The code is optimized, it has a helper call to record types of objects passed to that virtual call (`Dispose()`).
 Also, there are two edge counters (`inc [reloc]`) to get a better understanding which branch is more popular (where d is null or where it is not).
 It is worth noting that we had to instrument **optimized** code here to mitigate two issues:
 1) We don't want to see a significant performance degradation (even temporarily) after fast R2R.
 2) Unoptimized code tends to spawn a lot of new unnecessary jit compilations because it doesn't inline code, even simple getters/setters.
-  
+
 As a downside, the profile is less accurate and it doesn't instrument inlinees.
 
 ### 3) `CallDispose` is promoted to Tier1
@@ -192,7 +192,7 @@ else
     d.Dispose(); // fallback, interface call in case if a new type is added/loaded and used here
 ```
 There are more things JIT can optimize with help of PGO, e.g. be more aggressive inlining methods on hot paths, etc.
-  
+
 Thus, R2R didn't lead to a missing oportunity to run Dynamic PGO here. To summarize what happened with `CallDispose` we can take a look at this part of the diagram:
 ```mermaid
 flowchart
