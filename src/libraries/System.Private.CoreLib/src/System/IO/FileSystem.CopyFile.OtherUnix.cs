@@ -7,10 +7,10 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            //Start the file copy and prepare for finalization
+            // Start the file copy and prepare for finalization
             using StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite);
 
-            //Copy the file using the standard unix implementation
+            // Copy the file using the standard unix implementation
             StandardCopyFile(startedCopyFile);
         }
     }

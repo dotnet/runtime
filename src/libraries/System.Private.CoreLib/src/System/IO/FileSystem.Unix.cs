@@ -28,8 +28,8 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        //Helper type to facilitate returning values from StartCopyFile without having
-        //to declare a massive tuple multiple times, and making it easier to dispose.
+        // Helper type to facilitate returning values from StartCopyFile without having
+        // to declare a massive tuple multiple times, and making it easier to dispose.
         private struct StartedCopyFileState : IDisposable
         {
             public long fileLength;
@@ -54,9 +54,9 @@ namespace System.IO
 
         private static StartedCopyFileState StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
         {
-            //The return value is expected to be Disposed by the caller (unless this method throws) once the copy is complete.
-            //Begins 'CopyFile' by locking and creating the relevant file handles.
-            //If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
+            // The return value is expected to be Disposed by the caller (unless this method throws) once the copy is complete.
+            // Begins 'CopyFile' by locking and creating the relevant file handles.
+            // If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
 
             StartedCopyFileState startedCopyFile = default;
             try
@@ -70,15 +70,15 @@ namespace System.IO
                 throw;
             }
 
-            //Return the collection of information we have gotten back.
+            // Return the collection of information we have gotten back.
             return startedCopyFile;
         }
 
         private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, StartedCopyFileState startedCopyFile, bool openNewFile)
         {
-            //This function opens the 'dst' file handle for 'CopyFile', it is
-            //split out since the logic on OSX-like OSes is a bit different.
-            //'openNewFile' = false is used when we want to try to find the file only.
+            // This function opens the 'dst' file handle for 'CopyFile', it is
+            // split out since the logic on OSX-like OSes is a bit different.
+            // 'openNewFile' = false is used when we want to try to find the file only.
             if (!openNewFile)
             {
                 try
@@ -110,17 +110,17 @@ namespace System.IO
 
         private static void StandardCopyFile(StartedCopyFileState startedCopyFile)
         {
-            //Copy the file in a way that works on all Unix Operating Systems.
-            //The 'startedCopyFile' parameter should take the output from 'StartCopyFile'.
-            //'startedCopyFile' should be disposed by the caller. Assumes src and dst
-            //are non-null, caller must check this, return values from StartCopyFile
-            //are non-null (except dst when openDst is true), and from return values from
-            //OpenCopyFileDstHandle are non-null (except possibly when openNewFile is false).
+            // Copy the file in a way that works on all Unix Operating Systems.
+            // The 'startedCopyFile' parameter should take the output from 'StartCopyFile'.
+            // 'startedCopyFile' should be disposed by the caller. Assumes src and dst
+            // are non-null, caller must check this, return values from StartCopyFile
+            // are non-null (except dst when openDst is true), and from return values from
+            // OpenCopyFileDstHandle are non-null (except possibly when openNewFile is false).
             Interop.CheckIo(Interop.Sys.CopyFile(startedCopyFile.src!, startedCopyFile.dst!, startedCopyFile.fileLength));
         }
 
-        //CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
-        //The implementations on OSX-like Operating Systems attempts to clone the file first.
+        // CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
+        // The implementations on OSX-like Operating Systems attempts to clone the file first.
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
 
 #pragma warning disable IDE0060
