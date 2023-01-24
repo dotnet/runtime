@@ -2364,19 +2364,6 @@
         "rhel.7.1-x64"
       ]
     },
-    "ol.7.10": {
-      "#import": [
-        "ol.7.9",
-        "rhel.7.10"
-      ]
-    },
-    "ol.7.10-x64": {
-      "#import": [
-        "ol.7.10",
-        "ol.7.9-x64",
-        "rhel.7.10-x64"
-      ]
-    },
     "ol.7.2": {
       "#import": [
         "ol.7.1",
@@ -2521,39 +2508,6 @@
         "rhel.8.0-x64"
       ]
     },
-    "omnios": {
-      "#import": [
-        "illumos"
-      ]
-    },
-    "omnios-x64": {
-      "#import": [
-        "omnios",
-        "illumos-x64"
-      ]
-    },
-    "omnios.15": {
-      "#import": [
-        "omnios"
-      ]
-    },
-    "omnios.15-x64": {
-      "#import": [
-        "omnios.15",
-        "omnios-x64"
-      ]
-    },
-    "openindiana": {
-      "#import": [
-        "illumos"
-      ]
-    },
-    "openindiana-x64": {
-      "#import": [
-        "openindiana",
-        "illumos-x64"
-      ]
-    },
     "ol.8.1": {
       "#import": [
         "ol.8.0",
@@ -2674,6 +2628,26 @@
         "rhel.8.6-x64"
       ]
     },
+    "ol.8.7": {
+      "#import": [
+        "ol.8.6",
+        "rhel.8.7"
+      ]
+    },
+    "ol.8.7-arm64": {
+      "#import": [
+        "ol.8.7",
+        "ol.8.6-arm64",
+        "rhel.8.7-arm64"
+      ]
+    },
+    "ol.8.7-x64": {
+      "#import": [
+        "ol.8.7",
+        "ol.8.6-x64",
+        "rhel.8.7-x64"
+      ]
+    },
     "ol.9": {
       "#import": [
         "ol"
@@ -2691,38 +2665,37 @@
         "ol-x64"
       ]
     },
-    "ol.9.0": {
+    "omnios": {
       "#import": [
-        "ol.9"
+        "illumos"
       ]
     },
-    "ol.9.0-arm64": {
+    "omnios-x64": {
       "#import": [
-        "ol.9.0",
-        "ol.9-arm64"
+        "omnios",
+        "illumos-x64"
       ]
     },
-    "ol.9.0-x64": {
+    "omnios.15": {
       "#import": [
-        "ol.9.0",
-        "ol.9-x64"
+        "omnios"
       ]
     },
-    "ol.9.1": {
+    "omnios.15-x64": {
       "#import": [
-        "ol.9.0"
+        "omnios.15",
+        "omnios-x64"
       ]
     },
-    "ol.9.1-arm64": {
+    "openindiana": {
       "#import": [
-        "ol.9.1",
-        "ol.9.0-arm64"
+        "illumos"
       ]
     },
-    "ol.9.1-x64": {
+    "openindiana-x64": {
       "#import": [
-        "ol.9.1",
-        "ol.9.0-x64"
+        "openindiana",
+        "illumos-x64"
       ]
     },
     "opensuse": {
@@ -3017,17 +2990,6 @@
         "rhel-x64"
       ]
     },
-    "rhel.6": {
-      "#import": [
-        "rhel"
-      ]
-    },
-    "rhel.6-x64": {
-      "#import": [
-        "rhel.6",
-        "rhel-x64"
-      ]
-    },
     "rhel.7": {
       "#import": [
         "rhel"
@@ -3059,17 +3021,6 @@
       "#import": [
         "rhel.7.1",
         "rhel.7.0-x64"
-      ]
-    },
-    "rhel.7.10": {
-      "#import": [
-        "rhel.7.9"
-      ]
-    },
-    "rhel.7.10-x64": {
-      "#import": [
-        "rhel.7.10",
-        "rhel.7.9-x64"
       ]
     },
     "rhel.7.2": {
@@ -3296,6 +3247,23 @@
         "rhel.8.5-x64"
       ]
     },
+    "rhel.8.7": {
+      "#import": [
+        "rhel.8.6"
+      ]
+    },
+    "rhel.8.7-arm64": {
+      "#import": [
+        "rhel.8.7",
+        "rhel.8.6-arm64"
+      ]
+    },
+    "rhel.8.7-x64": {
+      "#import": [
+        "rhel.8.7",
+        "rhel.8.6-x64"
+      ]
+    },
     "rhel.9": {
       "#import": [
         "rhel"
@@ -3368,40 +3336,6 @@
         "rocky.9",
         "rocky-x64",
         "rhel.9-x64"
-      ]
-    },
-    "rhel.9.0": {
-      "#import": [
-        "rhel.9"
-      ]
-    },
-    "rhel.9.0-arm64": {
-      "#import": [
-        "rhel.9.0",
-        "rhel.9-arm64"
-      ]
-    },
-    "rhel.9.0-x64": {
-      "#import": [
-        "rhel.9.0",
-        "rhel.9-x64"
-      ]
-    },
-    "rhel.9.1": {
-      "#import": [
-        "rhel.9.0"
-      ]
-    },
-    "rhel.9.1-arm64": {
-      "#import": [
-        "rhel.9.1",
-        "rhel.9.0-arm64"
-      ]
-    },
-    "rhel.9.1-x64": {
-      "#import": [
-        "rhel.9.1",
-        "rhel.9.0-x64"
       ]
     },
     "sles": {

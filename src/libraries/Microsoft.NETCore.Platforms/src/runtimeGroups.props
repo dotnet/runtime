@@ -157,19 +157,19 @@
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6;7.7;7.8;7.9;7.10</Versions>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6;7.7;7.8;7.9</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>8;8.0;8.1;8.2;8.3;8.4;8.5;8.6</Versions>
+      <Versions>8;8.0;8.1;8.2;8.3;8.4;8.5;8.6;8.7</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>9;9.0;9.1</Versions>
+      <Versions>9</Versions>
     </RuntimeGroup>
 
     <!-- all opensuse releases are independent -->
@@ -230,17 +230,17 @@
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6;7.7;7.8;7.9;7.10</Versions>
+      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6;7.7;7.8;7.9</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>8;8.0;8.1;8.2;8.3;8.4;8.5;8.6</Versions>
+      <Versions>8;8.0;8.1;8.2;8.3;8.4;8.5;8.6;8.7</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>9;9.0;9.1</Versions>
+      <Versions>9</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="rocky">
