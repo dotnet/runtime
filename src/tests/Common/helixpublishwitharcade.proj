@@ -479,8 +479,10 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+
       <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
     </PropertyGroup>
 
     <ItemGroup>
@@ -496,11 +498,18 @@
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' != 'true'">dotnet %24HELIX_CORRELATION_PAYLOAD/</XUnitLogCheckerCommand>
+      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' == 'true'">dotnet %25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerCommand>
+      <XUnitLogCheckerCommand>$(XUnitLogCheckerCommand)XUnitLogChecker.dll $(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerCommand>
+    </PropertyGroup>
+
     <ItemGroup>
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
