@@ -710,17 +710,11 @@ function generate_wasm_body (
             // pass the first four bytes of the stackval data union,
             //  which is 'p' where pointers live
             append_ldloc(builder, svalOffset, WasmOpcode.i32_load);
-        } else {
-            // pass the address of the stackval data union
-            append_ldloca(builder, svalOffset);
-        }
-
-        if (info.enableDirect) {
+        } else if (info.enableDirect) {
             // The wrapper call convention is byref for all args. Now we convert it to the native calling convention
             const loadCilOp = cwraps.mono_jiterp_type_to_ldind(info.paramTypes[i]);
             mono_assert(loadCilOp, () => `No load opcode for ${info.paramTypes[i]}`);
 
-            // We already performed a ldarg up above, so now we have the address that would've been passed to the wrapper
             /*
                 if (m_type_is_byref (sig->params [i])) {
                     mono_mb_emit_ldarg (mb, args_start + i);
@@ -735,7 +729,8 @@ function generate_wasm_body (
             */
 
             if (loadCilOp === CilOpcodes.DUMMY_BYREF) {
-                // Nothing to do
+                // pass the address of the stackval data union
+                append_ldloca(builder, svalOffset);
             } else {
                 const loadWasmOp = (wasmOpcodeFromCilOpcode as any)[loadCilOp];
                 if (!loadWasmOp) {
@@ -744,10 +739,11 @@ function generate_wasm_body (
                 }
 
                 // FIXME: LDOBJ is not implemented
-                // TODO: Optimize ldloca->this into a single load-with-offset
-                builder.appendU8(loadWasmOp);
-                builder.appendMemarg(0, 0);
+                append_ldloc(builder, svalOffset, loadWasmOp);
             }
+        } else {
+            // pass the address of the stackval data union
+            append_ldloca(builder, svalOffset);
         }
     }
 
