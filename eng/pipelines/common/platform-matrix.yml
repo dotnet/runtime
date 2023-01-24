@@ -46,59 +46,59 @@ jobs:
 
 # Browser WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: browser_wasm
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: browser_wasm
-      jobParameters:
-        hostedOs: linux
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
+#- ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
+  #- template: xplat-setup.yml
+    #parameters:
+      #jobTemplate: ${{ parameters.jobTemplate }}
+      #helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      #variables: ${{ parameters.variables }}
+      #osGroup: browser
+      #archType: wasm
+      #targetRid: browser-wasm
+      #platform: browser_wasm
+      #shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      #container: browser_wasm
+      #jobParameters:
+        #hostedOs: linux
+        #runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        #buildConfig: ${{ parameters.buildConfig }}
+        #${{ insert }}: ${{ parameters.jobParameters }}
 
-# Browser WebAssembly Linux Firefox
+## Browser WebAssembly Linux Firefox
 
-- ${{ if containsValue(parameters.platforms, 'browser_wasm_firefox') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: browser_wasm_firefox
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: browser_wasm
-      jobParameters:
-        hostedOs: linux
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
+#- ${{ if containsValue(parameters.platforms, 'browser_wasm_firefox') }}:
+  #- template: xplat-setup.yml
+    #parameters:
+      #jobTemplate: ${{ parameters.jobTemplate }}
+      #helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      #variables: ${{ parameters.variables }}
+      #osGroup: browser
+      #archType: wasm
+      #targetRid: browser-wasm
+      #platform: browser_wasm_firefox
+      #shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      #container: browser_wasm
+      #jobParameters:
+        #hostedOs: linux
+        #runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        #buildConfig: ${{ parameters.buildConfig }}
+        #${{ insert }}: ${{ parameters.jobParameters }}
 
-# Browser WebAssembly on Windows
+## Browser WebAssembly on Windows
 
-- ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: browser_wasm_win
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      jobParameters:
-        hostedOs: windows
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
+#- ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
+  #- template: xplat-setup.yml
+    #parameters:
+      #jobTemplate: ${{ parameters.jobTemplate }}
+      #helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      #variables: ${{ parameters.variables }}
+      #osGroup: browser
+      #archType: wasm
+      #targetRid: browser-wasm
+      #platform: browser_wasm_win
+      #shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      #jobParameters:
+        #hostedOs: windows
+        #runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        #buildConfig: ${{ parameters.buildConfig }}
+        #${{ insert }}: ${{ parameters.jobParameters }}
