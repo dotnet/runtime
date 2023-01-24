@@ -217,7 +217,7 @@
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.23067.1</MicrosoftDotNetCecilVersion>
     <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23067.1</MicrosoftDotNetCecilPdbVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.23066.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-alpha.1.23073.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.1.1</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22406.1</SystemNetMsQuicTransportVersion>
@@ -239,7 +239,7 @@
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- JIT Tools -->
-     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
@@ -247,7 +247,6 @@
     <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
-
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
