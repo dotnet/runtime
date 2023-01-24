@@ -200,8 +200,10 @@ void emitterStaticStats(FILE* fout)
     fprintf(fout, "insGroup:\n");
     fprintf(fout, "Offset / size of igNext           = %2zu / %2zu\n", offsetof(insGroup, igNext),
             sizeof(igDummy->igNext));
+#if EMIT_BACKWARDS_NAVIGATION
     fprintf(fout, "Offset / size of igPrev           = %2zu / %2zu\n", offsetof(insGroup, igPrev),
             sizeof(igDummy->igPrev));
+#endif // EMIT_BACKWARDS_NAVIGATION
 #ifdef DEBUG
     fprintf(fout, "Offset / size of igSelf           = %2zu / %2zu\n", offsetof(insGroup, igSelf),
             sizeof(igDummy->igSelf));
@@ -220,8 +222,10 @@ void emitterStaticStats(FILE* fout)
             sizeof(igDummy->igData));
     fprintf(fout, "Offset / size of igPhData         = %2zu / %2zu\n", offsetof(insGroup, igPhData),
             sizeof(igDummy->igPhData));
+#if EMIT_BACKWARDS_NAVIGATION
     fprintf(fout, "Offset / size of igLastIns        = %2zu / %2zu\n", offsetof(insGroup, igLastIns),
             sizeof(igDummy->igLastIns));
+#endif // EMIT_BACKWARDS_NAVIGATION
 #if EMIT_TRACK_STACK_DEPTH
     fprintf(fout, "Offset / size of igStkLvl         = %2zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
@@ -697,7 +701,9 @@ void emitter::emitGenIG(insGroup* ig)
 
     emitCurIGfreeNext = emitCurIGfreeBase;
 
+#if EMIT_BACKWARDS_NAVIGATION
     emitLastInsFullSize = 0;
+#endif // EMIT_BACKWARDS_NAVIGATION
 }
 
 /*****************************************************************************
@@ -717,7 +723,7 @@ void emitter::emitNewIG()
     if (emitComp->verbose)
     {
         printf("Created:\n      ");
-        emitDispIG(ig, /* displayInstructions */ false, /* displayLocation */ false);
+        emitDispIG(ig, /* displayFunc */ false, /* displayInstructions */ false, /* displayLocation */ false);
     }
 #endif // DEBUG
 }
@@ -890,7 +896,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         if (emitComp->verbose)
         {
             printf("Saved:\n      ");
-            emitDispIG(ig, /* displayInstructions */ false, /* displayLocation */ false);
+            emitDispIG(ig, /* displayFunc */ false, /* displayInstructions */ false, /* displayLocation */ false);
         }
         else
         {
@@ -1058,7 +1064,9 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
         emitLastInsIG = ig;
 
+#if EMIT_BACKWARDS_NAVIGATION
         ig->igLastIns = emitLastIns;
+#endif // EMIT_BACKWARDS_NAVIGATION
     }
 
     // Reset the buffer free pointer.
@@ -1207,15 +1215,19 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns         = nullptr;
-    emitLastInsIG       = nullptr;
-    emitLastInsFullSize = 0;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
 #endif
 
-    ig->igNext = ig->igPrev = nullptr;
+    ig->igNext = nullptr;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    emitLastInsFullSize = 0;
+    ig->igPrev          = nullptr;
+#endif
 
 #ifdef DEBUG
     emitScratchSigInfo = nullptr;
@@ -1530,15 +1542,21 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     /* Grab the space for the instruction */
 
-    emitCurIG->igLastIns = emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+
+#if EMIT_BACKWARDS_NAVIGATION
+    emitCurIG->igLastIns = id;
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     assert(sz >= sizeof(void*));
     memset(id, 0, sz);
 
+#if EMIT_BACKWARDS_NAVIGATION
     id->idSetPrevSize(emitLastInsFullSize);
-
-    emitLastInsIG       = emitCurIG;
     emitLastInsFullSize = (unsigned)fullSize;
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+    emitLastInsIG = emitCurIG;
     emitCurIGfreeNext += fullSize;
 
     // These fields should have been zero-ed by the above
@@ -1654,18 +1672,22 @@ void emitter::emitCheckIGList()
 {
     assert(emitPrologIG != nullptr);
 
+#if EMIT_BACKWARDS_NAVIGATION
     struct IGIDPair
     {
         insGroup*  ig;
         instrDesc* id;
     };
     jitstd::list<IGIDPair> insList(emitComp->getAllocator(CMK_DebugOnly));
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     size_t currentOffset = 0;
 
     for (insGroup *currIG = emitIGlist, *prevIG = nullptr; currIG != nullptr; prevIG = currIG, currIG = currIG->igNext)
     {
+#if EMIT_BACKWARDS_NAVIGATION
         assert(prevIG == currIG->igPrev);
+#endif // EMIT_BACKWARDS_NAVIGATION
 
         if (currIG->igOffs != currentOffset)
         {
@@ -1745,6 +1767,7 @@ void emitter::emitCheckIGList()
             // assert((currIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
         }
 
+#if EMIT_BACKWARDS_NAVIGATION
         // Check that the instrDesc "prev" pointers are all correct.
         unsigned insCnt = currIG->igInsCnt;
         if (insCnt > 0)
@@ -1761,6 +1784,7 @@ void emitter::emitCheckIGList()
                 assert(id->idPrevSize() == idPrevSize);
             }
         }
+#endif // EMIT_BACKWARDS_NAVIGATION
     }
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
@@ -1768,6 +1792,8 @@ void emitter::emitCheckIGList()
         printf("Total code size is %08X, expected %08X\n", emitTotalCodeSize, currentOffset);
         assert(!"bad total code size");
     }
+
+#if EMIT_BACKWARDS_NAVIGATION
 
     // Check that walking the instrDescs backwards using `emitPrevID` is correct. Compare the backwards
     // walk against a list of IDs that was constructed above while walking forwards (but constructed in
@@ -1787,35 +1813,7 @@ void emitter::emitCheckIGList()
             ++nextPair;
         } while (emitPrevID(ig, id));
     }
-}
-
-//------------------------------------------------------------------------
-// emitGetLastIns: Find the last instruction in the function and point ig/id at that instruction.
-//
-// Arguments:
-//   pig - Output. On exit, set *pig to the insGroup* containing the last instruction.
-//   pid - Output. On exit, set *pid to the instrDesc* of the last instruction.
-//
-// Returns:
-//   true if there are any instructions, false otherwise. If `false` is returned, `pig` and `pid`
-//   are untouched.
-//
-// Notes:
-//   If the last IG doesn't contain any instructions, walk backwards until finding an IG that does
-//   contain instructions.
-//
-bool emitter::emitGetLastIns(insGroup** pig, instrDesc** pid)
-{
-    for (insGroup* ig = emitIGlast; ig != nullptr; ig = ig->igPrev)
-    {
-        if (ig->igLastIns != nullptr)
-        {
-            *pig = ig;
-            *pid = (instrDesc*)ig->igLastIns;
-            return true;
-        }
-    }
-    return false;
+#endif // EMIT_BACKWARDS_NAVIGATION
 }
 
 #endif // DEBUG
@@ -3242,6 +3240,37 @@ void emitter::emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp)
 
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
+#if EMIT_BACKWARDS_NAVIGATION
+
+//------------------------------------------------------------------------
+// emitGetLastIns: Find the last instruction in the function and point ig/id at that instruction.
+//
+// Arguments:
+//   pig - Output. On exit, set *pig to the insGroup* containing the last instruction.
+//   pid - Output. On exit, set *pid to the instrDesc* of the last instruction.
+//
+// Returns:
+//   true if there are any instructions, false otherwise. If `false` is returned, `pig` and `pid`
+//   are untouched.
+//
+// Notes:
+//   If the last IG doesn't contain any instructions, walk backwards until finding an IG that does
+//   contain instructions.
+//
+bool emitter::emitGetLastIns(insGroup** pig, instrDesc** pid)
+{
+    for (insGroup* ig = emitIGlast; ig != nullptr; ig = ig->igPrev)
+    {
+        if (ig->igLastIns != nullptr)
+        {
+            *pig = ig;
+            *pid = (instrDesc*)ig->igLastIns;
+            return true;
+        }
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------
 // emitPrevID: Compute the previous instrDesc, either in this IG, or in a previous IG. 'id'
 // will point to this instrDesc. 'ig' will also be updated.
@@ -3278,6 +3307,8 @@ bool emitter::emitPrevID(insGroup*& ig, instrDesc*& id)
 
     return false;
 }
+
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #if defined(TARGET_ARM)
 
@@ -3825,7 +3856,7 @@ void emitter::emitDispIGflags(unsigned flags)
     }
 }
 
-void emitter::emitDispIG(insGroup* ig, bool displayInstructions, bool displayLocation)
+void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstructions, bool displayLocation)
 {
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
@@ -3838,7 +3869,7 @@ void emitter::emitDispIG(insGroup* ig, bool displayInstructions, bool displayLoc
     // distinct from the verbose on Compiler.)
     bool jitdump = emitComp->verbose;
 
-    if (jitdump && ((ig->igPrev == nullptr) || (ig->igPrev->igFuncIdx != ig->igFuncIdx)))
+    if (jitdump && displayFunc)
     {
         printf("func=%02u, ", ig->igFuncIdx);
     }
@@ -4040,10 +4071,19 @@ void emitter::emitDispIG(insGroup* ig, bool displayInstructions, bool displayLoc
 
 void emitter::emitDispIGlist(bool displayInstructions)
 {
-    for (insGroup* ig = emitIGlist; ig; ig = ig->igNext)
+#if EMIT_BACKWARDS_NAVIGATION
+    for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
-        emitDispIG(ig, displayInstructions);
+        const bool displayFunc = (ig->igPrev == nullptr) || (ig->igPrev->igFuncIdx != ig->igFuncIdx);
+        emitDispIG(ig, displayFunc, displayInstructions);
     }
+#else  // !EMIT_BACKWARDS_NAVIGATION
+    for (insGroup *ig = emitIGlist, *igPrev = nullptr; ig != nullptr; igPrev = ig, ig = ig->igNext)
+    {
+        const bool displayFunc = (igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx);
+        emitDispIG(ig, displayFunc, displayInstructions);
+    }
+#endif // !EMIT_BACKWARDS_NAVIGATION
 }
 
 void emitter::emitDispGCinfo()
@@ -4466,9 +4506,9 @@ void emitter::emitRemoveJumpToNextInst()
                     printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
-                    emitDispIG(jmpGroup, /* displayInstructions */ true);
+                    emitDispIG(jmpGroup, /* displayFunc */ false, /* displayInstructions */ true);
                     printf("target group:\n");
-                    emitDispIG(targetGroup, /* displayInstructions */ false);
+                    emitDispIG(targetGroup, /* displayFunc */ false, /* displayInstructions */ false);
                     assert(jmp == id);
                 }
 
@@ -9247,7 +9287,9 @@ void emitter::emitInitIG(insGroup* ig)
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
 
+#if EMIT_BACKWARDS_NAVIGATION
     ig->igLastIns = nullptr;
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #if FEATURE_LOOP_ALIGN
     ig->igLoopBackEdge = nullptr;
@@ -9273,12 +9315,14 @@ void emitter::emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig)
     ig->igNext            = insertAfterIG->igNext;
     insertAfterIG->igNext = ig;
 
+#if EMIT_BACKWARDS_NAVIGATION
     ig->igPrev = insertAfterIG;
 
     if (ig->igNext != nullptr)
     {
         ig->igNext->igPrev = ig;
     }
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     if (emitIGlast == insertAfterIG)
     {

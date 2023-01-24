@@ -38,6 +38,8 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
+#define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+
 /*****************************************************************************/
 
 #ifdef DEBUG
@@ -238,7 +240,10 @@ struct insPlaceholderGroupData
 struct insGroup
 {
     insGroup* igNext;
+
+#if EMIT_BACKWARDS_NAVIGATION
     insGroup* igPrev;
+#endif
 
 #ifdef DEBUG
     insGroup* igSelf; // for consistency checking
@@ -304,9 +309,11 @@ struct insGroup
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
 
+#if EMIT_BACKWARDS_NAVIGATION
     // Last instruction in group, if any (nullptr if none); used for backwards navigation.
     // (Should be type emitter::instrDesc*).
     void* igLastIns;
+#endif
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
@@ -323,9 +330,11 @@ struct insGroup
         insPlaceholderGroupData* igPhData; // when igFlags & IGF_PLACEHOLDER
     };
 
+#if EMIT_BACKWARDS_NAVIGATION
     // Last instruction in group, if any (nullptr if none); used for backwards navigation.
     // (Should be type emitter::instrDesc*).
     void*    igLastIns;
+#endif
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
@@ -784,6 +793,8 @@ protected:
 
 #define ID_EXTRA_RELOC_BITS (2)
 
+#if EMIT_BACKWARDS_NAVIGATION
+
         // "Pointer" to previous instrDesc in this group. If zero, there is
         // no previous instrDesc. If non-zero, then _idScaledPrevOffset * 4
         // is the size in bytes of the previous instrDesc; subtract that from
@@ -793,7 +804,7 @@ protected:
         // on 32-bit.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
+#ifdef HOST_64BIT
         unsigned _idScaledPrevOffset : 5;
 #define ID_EXTRA_PREV_OFFSET_BITS (5)
 #else
@@ -801,13 +812,17 @@ protected:
 #define ID_EXTRA_PREV_OFFSET_BITS (4)
 #endif
 
+#else // !EMIT_BACKWARDS_NAVIGATION
+#define ID_EXTRA_PREV_OFFSET_BITS (0)
+#endif // !EMIT_BACKWARDS_NAVIGATION
+
         ////////////////////////////////////////////////////////////////////////
-        // Space taken up to here:
-        // x86:   52 bits
-        // amd64: 53 bits
-        // arm:   54 bits
-        // arm64: 56 bits
-        // loongarch64: 53 bits
+        // Space taken up to here (with/without prev offset, assuming host==target):
+        // x86:   52/48 bits
+        // amd64: 53/48 bits
+        // arm:   54/50 bits
+        // arm64: 56/51 bits
+        // loongarch64: 53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
@@ -820,12 +835,12 @@ protected:
 #define ID_MAX_SMALL_CNS (int)((1 << ID_BIT_SMALL_CNS) - 1U)
 
         ////////////////////////////////////////////////////////////////////////
-        // Small constant size:
-        // x86:   12 bits
-        // amd64: 12 bits
-        // arm:   10 bits
-        // arm64: 9 bits
-        // loongarch64: 12 bits
+        // Small constant size (with/without prev offset, assuming host==target):
+        // x86:   12/16 bits
+        // amd64: 11/16 bits
+        // arm:   10/14 bits
+        // arm64: 8/13 bits
+        // loongarch64: 11/16 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
 
@@ -1353,6 +1368,8 @@ protected:
             _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
         }
 
+#if EMIT_BACKWARDS_NAVIGATION
+
         // Return the stored size of the previous instrDesc in bytes, or zero if there
         // is no previous instrDesc in this group.
         unsigned idPrevSize()
@@ -1365,6 +1382,8 @@ protected:
             _idScaledPrevOffset = prevInstrDescSizeInBytes / 4;
             assert(idPrevSize() == prevInstrDescSizeInBytes);
         }
+
+#endif // EMIT_BACKWARDS_NAVIGATION
 
         unsigned idSmallCns() const
         {
@@ -1783,7 +1802,10 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, bool displayInstructions = false, bool displayLocation = true);
+    void emitDispIG(insGroup* ig,
+                    bool      displayFunc         = false,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
     void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
@@ -2216,7 +2238,10 @@ private:
 
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
-    unsigned   emitLastInsFullSize;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    unsigned emitLastInsFullSize;
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
@@ -2278,8 +2303,10 @@ private:
 
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
+#if EMIT_BACKWARDS_NAVIGATION
     bool emitPrevID(insGroup*& ig, instrDesc*& id);
     bool emitGetLastIns(insGroup** pig, instrDesc** pid);
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
