@@ -12,7 +12,7 @@ __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 
 __TargetArch=x64
-__TargetOS=Linux
+__TargetOS=linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang

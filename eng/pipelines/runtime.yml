@@ -72,15 +72,15 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - Linux_x86
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_arm
-          - Linux_musl_arm64
-          - Linux_musl_x64
-          - OSX_arm64
-          - Tizen_armel
+          - linux_x86
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_arm
+          - linux_musl_arm64
+          - linux_musl_x64
+          - osx_arm64
+          - tizen_armel
           - windows_x86
           - windows_x64
           - windows_arm
@@ -102,7 +102,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - Linux_x64
+          - linux_x64
           container: debian-11-gcc12-amd64-20220511124845-b7a6185
           jobParameters:
             testGroup: innerloop
@@ -117,7 +117,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR OSX_x64 checked
+      # Build CoreCLR osx_x64 checked
       # Only when CoreCLR or Libraries is changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -125,7 +125,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             condition: >-
@@ -144,19 +144,19 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: release
           platforms:
-          - OSX_arm64
-          - OSX_x64
-          - Linux_x64
-          - Linux_arm
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_musl_arm
-          - Linux_musl_arm64
+          - osx_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
           - windows_x64
           - windows_x86
           - windows_arm
           - windows_arm64
-          - FreeBSD_x64
+          - freebsd_x64
           jobParameters:
             testGroup: innerloop
             # Mono/runtimetests also need this, but skip for wasm
@@ -176,7 +176,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             condition: >-
@@ -197,7 +197,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
           jobParameters:
             testGroup: innerloop
@@ -242,9 +242,9 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
-          - Linux_x64
+          - linux_x64
           - windows_x64
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
@@ -268,8 +268,8 @@ extends:
           buildConfig: Release
           platforms:
           - windows_arm64
-          - Linux_arm64
-          - OSX_arm64
+          - linux_arm64
+          - osx_arm64
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
@@ -293,7 +293,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - Linux_x64
+          - linux_x64
           jobParameters:
             testGroup: clrTools
             timeoutInMinutes: 120
@@ -310,11 +310,11 @@ extends:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
           buildConfig: release
           platforms:
-          - Android_x64
-          #- Browser_wasm - unused
-          - tvOS_arm64
-          - iOS_arm64
-          - MacCatalyst_x64
+          - android_x64
+          - browser_wasm
+          - tvos_arm64
+          - ios_arm64
+          - maccatalyst_x64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             # needed by crossaot
@@ -333,9 +333,9 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - tvOSSimulator_x64
-          - iOSSimulator_x86
-          - Linux_arm
+          - tvossimulator_x64
+          - iossimulator_x86
+          - linux_arm
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -353,8 +353,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - iOS_arm
-          - Linux_musl_x64
+          - ios_arm
+          - linux_musl_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -372,7 +372,7 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           buildAndRunWasi: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
@@ -382,7 +382,7 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
-            - Browser_wasm_win
+            - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - WasmTestOnBrowser
@@ -391,7 +391,7 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           nameSuffix: _EAT
           runAOT: false
           shouldRunSmokeOnly: false
@@ -401,7 +401,7 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           nameSuffix: _AOT
           runAOT: true
           shouldRunSmokeOnly: true
@@ -410,7 +410,7 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
-            - Browser_wasm_win
+            - browser_wasm_win
           nameSuffix: _AOT
           runAOT: true
           shouldRunSmokeOnly: true
@@ -420,40 +420,47 @@ extends:
       - template: /eng/pipelines/common/templates/wasm-build-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
-            - Browser_wasm_win
+            - browser_wasm
+            - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
-            - Browser_wasm_win
+            - browser_wasm
+            - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # BUILD ONLY - Wasm Threading Legs
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           nameSuffix: _Threading
-          extraBuildArgs: /p:WasmEnableThreads=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
           alwaysRun: ${{ variables.isRollingBuild }}
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
           platforms:
-            - Browser_wasm
+            - browser_wasm
           nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:WasmEnablePerfTracing=true
+          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
+          alwaysRun: ${{ variables.isRollingBuild }}
+
+      # BUILD ONLY - WASI/Wasm
+      - template: /eng/pipelines/common/templates/wasi-build-only.yml
+        parameters:
+          platforms:
+            - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
       #
@@ -467,8 +474,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - iOS_arm64
-            - tvOS_arm64
+            - ios_arm64
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -509,9 +516,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - MacCatalyst_x64
+          - maccatalyst_x64
           - ${{ if eq(variables['isRollingBuild'], true) }}:
-            - MacCatalyst_arm64
+            - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -549,7 +556,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -568,8 +575,8 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMJIT
@@ -591,8 +598,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -611,7 +618,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
@@ -634,11 +641,11 @@ extends:
           runtimeFlavor: mono
           buildConfig: debug
           platforms:
-          - OSX_x64
-          - OSX_arm64
-          - Linux_x64
-          - Linux_arm64
-          # - Linux_musl_arm64
+          - osx_x64
+          - osx_arm64
+          - linux_x64
+          - linux_arm64
+          # - linux_musl_arm64
           - windows_x64
           - windows_x86
           # - windows_arm
@@ -659,10 +666,10 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Linux_x64
-          # - Linux_arm64
-          # - Linux_musl_arm64
-          - Windows_x64
+          - linux_x64
+          # - linux_arm64
+          # - linux_musl_arm64
+          - windows_x64
           # - windows_x86
           # - windows_arm
           # - windows_arm64
@@ -670,10 +677,10 @@ extends:
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
-            #- mono_browser_offsets - unused
+            - mono_browser_offsets
             monoCrossAOTTargetOS:
-            - Android
-            #- Browser - unused
+            - android
+            - browser
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -686,24 +693,44 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - OSX_x64
+          - osx_x64
           jobParameters:
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
-            #- mono_browser_offsets - unused
+            - mono_browser_offsets
             - mono_tvos_offsets
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
-            - Android
-            #- Browser - unused
-            - tvOS
-            - iOS
-            - MacCatalyst
+            - android
+            - browser
+            - tvos
+            - ios
+            - maccatalyst
             condition: >-
               or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+                
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - linux_arm64
+          - osx_arm64
+          jobParameters:
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - browser
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
@@ -717,8 +744,8 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Linux_x64
-          # - Linux_musl_arm64
+          - linux_x64
+          # - linux_musl_arm64
           - windows_x64
           - windows_x86
           # - windows_arm
@@ -740,8 +767,8 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - OSX_x64
-          - Linux_arm64
+          - osx_x64
+          - linux_arm64
           jobParameters:
             condition: >-
               or(
@@ -760,8 +787,8 @@ extends:
           runtimeFlavor: mono
           buildConfig: release
           platforms:
-          - Linux_x64
-          - Linux_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             runtimeVariant: llvmaot
             condition: >-
@@ -781,9 +808,9 @@ extends:
           jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: Release
           platforms:
-          - Linux_arm
-          - Linux_musl_arm
-          - Linux_musl_arm64
+          - linux_arm
+          - linux_musl_arm
+          - linux_musl_arm64
           - windows_arm
           - windows_arm64
           - windows_x86
@@ -802,13 +829,13 @@ extends:
           jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - Linux_arm64
-          - Linux_musl_x64
-          - Linux_x64
-          - OSX_arm64
-          - OSX_x64
+          - linux_arm64
+          - linux_musl_x64
+          - linux_x64
+          - osx_arm64
+          - osx_x64
           - windows_x64
-          - FreeBSD_x64
+          - freebsd_x64
           jobParameters:
             testScope: innerloop
             condition:
@@ -846,7 +873,7 @@ extends:
             jobTemplate: /eng/pipelines/libraries/build-job.yml
             buildConfig: Release
             platforms:
-            - Linux_x64
+            - linux_x64
             - windows_x64
             jobParameters:
               condition: >-
@@ -893,12 +920,12 @@ extends:
           jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-            - Linux_musl_arm
-            - Linux_musl_arm64
+            - linux_musl_arm
+            - linux_musl_arm64
             - windows_x86
             - windows_arm
             - windows_arm64
-            - Linux_arm
+            - linux_arm
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: Release
@@ -913,13 +940,13 @@ extends:
           jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: Release
           platforms:
-            - OSX_arm64
-            - OSX_x64
-            - Linux_x64
-            - Linux_arm64
-            - Linux_musl_x64
+            - osx_arm64
+            - osx_x64
+            - linux_x64
+            - linux_arm64
+            - linux_musl_x64
             - windows_x64
-            - FreeBSD_x64
+            - freebsd_x64
           jobParameters:
             liveRuntimeBuildConfig: release
             liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -938,7 +965,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: innerloop
             condition: >-
@@ -956,7 +983,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - Linux_arm
+          - linux_arm
           - windows_x86
           - windows_arm64
           helixQueueGroup: pr
@@ -975,9 +1002,9 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - OSX_x64
-          - Linux_x64
-          - Linux_arm64
+          - osx_x64
+          - linux_x64
+          - linux_arm64
           - windows_x64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
@@ -995,7 +1022,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          - OSX_arm64
+          - osx_arm64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -1015,7 +1042,7 @@ extends:
           buildConfig: release
           runtimeFlavor: mono
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: innerloop
             condition: >-
@@ -1054,7 +1081,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - OSX_x64
+            - osx_x64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1088,7 +1115,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - OSX_x64
+            - osx_x64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1120,9 +1147,9 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - Linux_x64
+            - linux_x64
             # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-            #- Linux_arm64
+            #- linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1156,8 +1183,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - Linux_x64
-            - Linux_arm64
+            - linux_x64
+            - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1191,9 +1218,9 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           # - windows_x64
-          - OSX_x64
-          - Linux_arm64
-          - Linux_x64
+          - osx_x64
+          - linux_arm64
+          - linux_x64
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
             isOfficialBuild: false
@@ -1217,8 +1244,8 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           # - windows_x64
-          #- OSX_x64
-          - Linux_x64
+          #- osx_x64
+          - linux_x64
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
             isOfficialBuild: false
@@ -1262,9 +1289,9 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
-          - OSX_x64
-          - Linux_x64
-          - Linux_musl_x64
+          - osx_x64
+          - linux_x64
+          - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
           jobParameters:
             isOfficialBuild: false
@@ -1299,9 +1326,9 @@ extends:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - Linux_arm64
+          - linux_arm64
           - windows_x86
-          - Linux_musl_x64
+          - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
@@ -1321,9 +1348,9 @@ extends:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: Release
           platforms:
-          - Linux_musl_arm
-          - Linux_musl_arm64
-          - Linux_x64
+          - linux_musl_arm
+          - linux_musl_arm64
+          - linux_x64
           - windows_x64
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
@@ -1340,7 +1367,7 @@ extends:
           jobTemplate: /eng/pipelines/libraries/run-test-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          - OSX_x64
+          - osx_x64
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           helixQueueGroup: libraries
           jobParameters:
@@ -1368,9 +1395,9 @@ extends:
           buildConfig: Release
           helixQueueGroup: pr
           platforms:
-          - SourceBuild_Centos7_x64
+          - SourceBuild_centos7_x64
           jobParameters:
-            nameSuffix: Centos7SourceBuild
+            nameSuffix: centos7SourceBuild
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95
@@ -1382,9 +1409,9 @@ extends:
           buildConfig: Debug
           helixQueueGroup: pr
           platforms:
-          - SourceBuild_Banana24_x64
+          - SourceBuild_banana24_x64
           jobParameters:
-            nameSuffix: Banana24SourceBuild
+            nameSuffix: banana24SourceBuild
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95

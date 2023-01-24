@@ -8,7 +8,7 @@ using System;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 
-static class GitHub_18884
+public static class GitHub_18884
 {
     static ushort s_3;
     static long s_5;

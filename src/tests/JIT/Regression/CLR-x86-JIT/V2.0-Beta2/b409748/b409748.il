@@ -7,6 +7,7 @@
 {
    ret
 }
+.class public auto ansi Test_b409748 extends [mscorlib] System.Object {
 .method public static int32 Exec()
 {
    .entrypoint
@@ -16,4 +17,5 @@
 
    ldc.i4 100
    ret
+}
 }

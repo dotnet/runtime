@@ -30,7 +30,7 @@ public class My
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

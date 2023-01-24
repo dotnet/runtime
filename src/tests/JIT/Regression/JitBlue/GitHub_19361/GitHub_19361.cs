@@ -57,7 +57,7 @@ namespace Repro
         }
     }
 
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -92,7 +92,7 @@ namespace Repro
             return list;
         }
 
-        static int Main()
+        public static int Main()
         {
             Console.WriteLine("Starting stress loop");
             var compositeSources = GetCompositeSources();

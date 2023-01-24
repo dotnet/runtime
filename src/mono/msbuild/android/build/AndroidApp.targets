@@ -1,6 +1,11 @@
 <Project>
-  <UsingTask TaskName="AndroidAppBuilderTask" 
+  <UsingTask TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+  </PropertyGroup>
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
@@ -143,7 +148,7 @@ mono_thread_interruption_request_flag
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
-  
+
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
 
@@ -161,7 +166,7 @@ mono_thread_interruption_request_flag
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)" 
+      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)"
                            Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
@@ -170,7 +175,7 @@ mono_thread_interruption_request_flag
       <_AOT_InternalForceInterpretAssemblies Include="@(_AndroidAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
       <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
     </ItemGroup>
-    
+
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
   </Target>
 
@@ -224,9 +229,10 @@ mono_thread_interruption_request_flag
   </Target>
 
 
-  <Target Name="_AndroidGenerateAppBundle" 
-          Condition="'$(GenerateAppBundle)' == 'true'"
-          DependsOnTargets="_AndroidGenerateRuntimeConfig">
+  <Target
+    Name="_AndroidGenerateAppBundle"
+    Condition="$(AndroidGenerateAppBundle) == 'true'"
+    DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
     <PropertyGroup>
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
@@ -238,7 +244,6 @@ mono_thread_interruption_request_flag
         MonoRuntimeHeaders="$(_MonoHeaderPath)"
         Assemblies="@(_AndroidAssembliesInternal)"
         MainLibraryFileName="$(MainLibraryFileName)"
-        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         EnvironmentVariables="@(AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
@@ -258,7 +263,7 @@ mono_thread_interruption_request_flag
   </Target>
 
   <Target Name="_AfterAndroidBuildApp">
-    
+
   </Target>
 
   <Target Name="_AndroidGenerateRuntimeConfig"

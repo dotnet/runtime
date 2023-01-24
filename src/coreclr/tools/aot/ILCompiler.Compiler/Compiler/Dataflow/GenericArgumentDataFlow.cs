@@ -44,17 +44,17 @@ namespace ILCompiler.Dataflow
                 _origin,
                 _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
                 _logger);
-            return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, new GenericParameterOrigin(genericParameter));
+            return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, genericParameter.GetDisplayName());
         }
 
         private DependencyList RequireDynamicallyAccessedMembers(
             in DiagnosticContext diagnosticContext,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
-            Origin memberWithRequirements)
+            string reason)
         {
-            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
-            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, memberWithRequirements);
+            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, reason);
             requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
             return reflectionMarker.Dependencies;
         }

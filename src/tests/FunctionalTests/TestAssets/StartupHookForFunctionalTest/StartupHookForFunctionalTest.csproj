@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+        <IsTestProject>false</IsTestProject>
+        <IsFunctionalTest>false</IsFunctionalTest>
+        <AndroidGenerateAppBundle>false</AndroidGenerateAppBundle>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="StartupHookForFunctionalTest.cs" />
+    </ItemGroup>
+</Project>

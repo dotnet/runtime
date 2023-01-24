@@ -11,10 +11,10 @@ namespace Microsoft.Extensions.Hosting
     public static class HostEnvironmentEnvExtensions
     {
         /// <summary>
-        /// Checks if the current host environment name is <see cref="EnvironmentName.Development"/>.
+        /// Checks if the current host environment name is <see cref="Environments.Development"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="EnvironmentName.Development"/>, otherwise false.</returns>
+        /// <returns>True if the environment name is <see cref="Environments.Development"/>, otherwise false.</returns>
         public static bool IsDevelopment(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);
@@ -23,10 +23,10 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Checks if the current host environment name is <see cref="EnvironmentName.Staging"/>.
+        /// Checks if the current host environment name is <see cref="Environments.Staging"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="EnvironmentName.Staging"/>, otherwise false.</returns>
+        /// <returns>True if the environment name is <see cref="Environments.Staging"/>, otherwise false.</returns>
         public static bool IsStaging(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);
@@ -35,10 +35,10 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Checks if the current host environment name is <see cref="EnvironmentName.Production"/>.
+        /// Checks if the current host environment name is <see cref="Environments.Production"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="EnvironmentName.Production"/>, otherwise false.</returns>
+        /// <returns>True if the environment name is <see cref="Environments.Production"/>, otherwise false.</returns>
         public static bool IsProduction(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);

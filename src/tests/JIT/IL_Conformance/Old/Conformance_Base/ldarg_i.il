@@ -24,7 +24,6 @@
 	ldsflda		int32 _ldarg::FOO
 	ldc.i4		0x2
 	add
-	conv.i4
 	ldsflda		int32 _ldarg::FOO		
 	call	native int _ldarg::args(native int)
 	ceq

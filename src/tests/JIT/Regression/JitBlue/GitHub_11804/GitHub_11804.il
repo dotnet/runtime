@@ -26,7 +26,7 @@
 // Image base: 0x01590000
 
 
-.class private abstract auto ansi sealed beforefieldinit C
+.class public abstract auto ansi sealed beforefieldinit C
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32
@@ -59,7 +59,7 @@
     IL_0011:  ret
   } // end of method C::IndexerGrab
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

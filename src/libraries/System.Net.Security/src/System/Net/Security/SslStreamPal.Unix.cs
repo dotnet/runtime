@@ -56,7 +56,7 @@ namespace System.Net.Security
             return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }
@@ -176,15 +176,21 @@ namespace System.Net.Security
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out output, out outputSize);
 
-                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
+                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out _);
+                    // this should happen only for clients
+                    Debug.Assert(clientCertificateSelectionCallback != null);
+
+                    // The callback also saves the selected cert in SslStream.LocalCertificate
+                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
+
                     if (clientCertificate != null)
                     {
-                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        // build the cert context only if it was not provided by the user
+                        sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(clientCertificate);
                     }
 
-                    Interop.OpenSsl.UpdateClientCertiticate((SafeSslHandle)context, sslAuthenticationOptions);
+                    Interop.OpenSsl.UpdateClientCertificate((SafeSslHandle)context, sslAuthenticationOptions);
                     errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, null, out output, out outputSize);
                 }
 

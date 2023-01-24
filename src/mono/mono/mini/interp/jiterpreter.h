@@ -21,7 +21,7 @@
 #define JITERPRETER_NOT_JITTED 1
 
 typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
-typedef void (*WasmJitCallThunk) (void *extra_arg, void *ret_sp, void *sp, gboolean *thrown);
+typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
 // Parses a single jiterpreter runtime option. This is used both by driver.c and our typescript
@@ -40,6 +40,9 @@ jiterp_insert_entry_points (void *td);
 //  for a specific callsite, since it can take a while before it happens
 void
 mono_jiterp_register_jit_call_thunk (void *cinfo, WasmJitCallThunk thunk);
+
+extern void
+mono_interp_record_interp_entry (void *fn_ptr);
 
 // jiterpreter-interp-entry.ts
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod
@@ -60,7 +63,7 @@ mono_interp_tier_prepare_jiterpreter (
 //  or JitCallInfo
 extern void
 mono_interp_jit_wasm_jit_call_trampoline (
-	void *rmethod, void *cinfo, void *func,
+	MonoMethod *method, void *rmethod, void *cinfo, void *func,
 	gboolean has_this, int param_count,
 	guint32 *arg_offsets, gboolean catch_exceptions
 );
@@ -74,8 +77,9 @@ mono_interp_flush_jitcall_queue ();
 //  disabled or because the current runtime environment does not support it
 extern void
 mono_interp_invoke_wasm_jit_call_trampoline (
-	WasmJitCallThunk thunk, void *extra_arg,
-	void *ret_sp, void *sp, gboolean *thrown
+	WasmJitCallThunk thunk,
+	void *ret_sp, void *sp,
+	void *ftndesc, gboolean *thrown
 );
 
 extern void
@@ -112,6 +116,9 @@ typedef struct {
 	JiterpEntryDataHeader header;
 	JiterpEntryDataCache cache;
 } JiterpEntryData;
+
+void
+mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);

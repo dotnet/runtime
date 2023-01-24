@@ -1764,7 +1764,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(decimal);
         private static readonly Type s_listValueType = typeof(decimal[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(decimal.MinValue, decimal.MaxValue);
 
         internal override XmlValueConverter CreateValueConverter(XmlSchemaType schemaType)
         {
@@ -3242,7 +3242,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(long);
         private static readonly Type s_listValueType = typeof(long[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(long.MinValue, long.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(long.MinValue, long.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3306,7 +3306,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(int);
         private static readonly Type s_listValueType = typeof(int[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(int.MinValue, int.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(int.MinValue, int.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3363,7 +3363,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(short);
         private static readonly Type s_listValueType = typeof(short[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(short.MinValue, short.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(short.MinValue, short.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3419,7 +3419,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(sbyte);
         private static readonly Type s_listValueType = typeof(sbyte[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(sbyte.MinValue, sbyte.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(sbyte.MinValue, sbyte.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3507,7 +3507,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(ulong);
         private static readonly Type s_listValueType = typeof(ulong[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ulong.MinValue, ulong.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ulong.MinValue, ulong.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3563,7 +3563,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(uint);
         private static readonly Type s_listValueType = typeof(uint[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(uint.MinValue, uint.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(uint.MinValue, uint.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3619,7 +3619,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(ushort);
         private static readonly Type s_listValueType = typeof(ushort[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ushort.MinValue, ushort.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(ushort.MinValue, ushort.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 
@@ -3674,7 +3674,7 @@ namespace System.Xml.Schema
     {
         private static readonly Type s_atomicValueType = typeof(byte);
         private static readonly Type s_listValueType = typeof(byte[]);
-        private static readonly FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(byte.MinValue, byte.MaxValue);
+        private static readonly Numeric10FacetsChecker s_numeric10FacetsChecker = new Numeric10FacetsChecker(byte.MinValue, byte.MaxValue);
 
         internal override FacetsChecker FacetsChecker { get { return s_numeric10FacetsChecker; } }
 

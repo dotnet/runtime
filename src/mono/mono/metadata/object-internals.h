@@ -1997,6 +1997,9 @@ mono_string_hash_internal (MonoString *s);
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
 
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
+
 ICALL_EXPORT
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
@@ -2144,5 +2147,8 @@ mono_string_instance_is_interned (MonoString *str);
 
 gpointer
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
+
+void
+mono_runtime_run_startup_hooks (void);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

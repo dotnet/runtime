@@ -41,7 +41,6 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
         /// </summary>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostBuilder()
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());

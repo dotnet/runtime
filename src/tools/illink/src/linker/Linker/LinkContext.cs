@@ -562,7 +562,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
@@ -579,7 +579,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (MessageOrigin origin, DiagnosticId id, params string[] args)
@@ -595,7 +595,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
@@ -611,7 +611,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
@@ -626,7 +626,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (IMemberDefinition origin, DiagnosticId id, params string[] args)
@@ -641,7 +641,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
@@ -657,7 +657,7 @@ namespace Mono.Linker
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Warning' category</returns>
 		public void LogWarning (string origin, DiagnosticId id, params string[] args)
@@ -670,7 +670,7 @@ namespace Mono.Linker
 		/// Display an error message to the end user.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of errors and possibly add a new one</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
@@ -684,7 +684,7 @@ namespace Mono.Linker
 		/// Display an error message to the end user.
 		/// </summary>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md and https://github.com/dotnet/linker/blob/main/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md and https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
 		public void LogError (MessageOrigin? origin, DiagnosticId id, params string[] args)
