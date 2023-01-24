@@ -2664,19 +2664,17 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
 			MonoFtnDesc ftndesc = {0};
-			void *extra_arg;
 			ftndesc.addr = cinfo->addr;
 			ftndesc.arg = cinfo->extra_arg;
-			extra_arg = cinfo->no_wrapper ? cinfo->extra_arg : &ftndesc;
 			interp_push_lmf (&ext, frame);
 			if (
 				mono_opt_jiterpreter_wasm_eh_enabled ||
 				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
 			) {
-				thunk (extra_arg, ret_sp, sp, &thrown);
+				thunk (ret_sp, sp, &ftndesc, &thrown);
 			} else {
 				mono_interp_invoke_wasm_jit_call_trampoline (
-					thunk, extra_arg, ret_sp, sp, &thrown
+					thunk, ret_sp, sp, &ftndesc, &thrown
 				);
 			}
 			interp_pop_lmf (&ext);
@@ -2686,7 +2684,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
 				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
-					rmethod, cinfo, fn, rmethod->hasthis, rmethod->param_count,
+					rmethod->method, rmethod, cinfo, fn,
+					rmethod->hasthis, rmethod->param_count,
 					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {
@@ -4213,6 +4212,7 @@ call:
 				reinit_frame (child_frame, frame, cmethod, locals + return_offset, locals + call_args_offset);
 				frame = child_frame;
 			}
+			g_assert (((gsize)frame->stack % MINT_STACK_ALIGNMENT) == 0);
 
 			MonoException *call_ex;
 			if (method_entry (context, frame,
@@ -4226,7 +4226,6 @@ call:
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
-			g_assert_checked (((gsize)context->stack_pointer % MINT_STACK_ALIGNMENT) == 0);
 
 			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
 				context->stack_end = context->stack_real_end;
