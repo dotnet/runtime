@@ -2,9 +2,9 @@
 
 open System
 open System.Text.Json
+open System.Text.Json.Serialization
 open System.Text.Json.Serialization.Metadata
 open Xunit
-open System.Text.Json.Serialization
 
 type MySingleCaseUnion = MySingleCaseUnion of string
 type MyTypeSafeEnum = Label1 | Label2 | Label3
