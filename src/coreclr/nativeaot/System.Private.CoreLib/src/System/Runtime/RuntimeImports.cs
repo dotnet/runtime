@@ -172,10 +172,6 @@ namespace System.Runtime
         internal static extern int RhEndNoGCRegion();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpShutdown")]
-        internal static extern void RhpShutdown();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCSegmentSize")]
         internal static extern ulong RhGetGCSegmentSize();
 

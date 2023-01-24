@@ -7,9 +7,9 @@ using System;
 
 namespace Test
 {
-    internal class AA
+    public class AA
     {
-        private static unsafe int Main()
+        public static unsafe int Main()
         {
             byte* p = stackalloc byte[new sbyte[] { 10 }[0]];
             return 100;

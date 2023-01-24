@@ -3,9 +3,9 @@
 //
 
 using System;
-class CC
+public class CC
 {
-    static int Main()
+    public static int Main()
     {
         bool b = false;
         object local19 = b ? null : (object)new CC();

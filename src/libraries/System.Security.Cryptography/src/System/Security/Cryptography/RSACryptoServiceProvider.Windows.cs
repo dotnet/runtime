@@ -674,7 +674,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception PaddingModeNotSupported()
+        private static CryptographicException PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }

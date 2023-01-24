@@ -117,7 +117,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }
@@ -298,12 +298,22 @@ namespace System.Net.Security
                 SafeSslHandle sslHandle = sslContext!.SslContext;
                 SecurityStatusPal status = PerformHandshake(sslHandle);
 
-                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
+                if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
+                    // this should happen only for clients
+                    Debug.Assert(clientCertificateSelectionCallback != null);
+
+                    // The callback also saves the selected cert in SslStream.LocalCertificate
                     X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
+
                     if (clientCertificate != null)
                     {
-                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        // build the cert context only if it was not provided by the user
+                        sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(clientCertificate);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null)
+                    {
                         SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
                     }
 

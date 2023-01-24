@@ -1,5 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __thread_h__
+#define __thread_h__
+
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+
 #include "forward_declarations.h"
 
 struct gc_alloc_context;
@@ -37,18 +44,10 @@ class Thread;
 // can be retrieved via GetInterruptedContext()
 #define INTERRUPTED_THREAD_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-2)
 
-enum SyncRequestResult
-{
-    TryAgain,
-    SuccessUnmanaged,
-    SuccessManaged,
-};
-
 typedef DPTR(PAL_LIMITED_CONTEXT) PTR_PAL_LIMITED_CONTEXT;
 
 struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
-
 
 // Also defined in ExceptionHandling.cs, layouts must match.
 // When adding new fields to this struct, ensure they get properly initialized in the exception handling
@@ -94,7 +93,6 @@ struct ThreadBuffer
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
-    PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
     EEThreadId              m_threadId;                             // OS thread ID
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
     NATIVE_CONTEXT*         m_interruptedContext;                   // context for an asynchronously interrupted thread.
@@ -105,7 +103,6 @@ struct ThreadBuffer
 #ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
 #endif // FEATURE_GC_STRESS
-
 };
 
 struct ReversePInvokeFrame
@@ -141,6 +138,14 @@ public:
                                                     // suspend once resumed.
                                                     // If we see this flag, we skip hijacking as an optimization.
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+        TSF_ActivationPending   = 0x00000100,       // An APC with QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC can interrupt another APC.
+                                                    // For suspension APCs it is mostly harmless, but wasteful and in extreme
+                                                    // cases may force the target thread into stack oveflow.
+                                                    // We use this flag to avoid sending another APC when one is still going through.
+                                                    // 
+                                                    // On Unix this is an optimization to not queue up more signals when one is
+                                                    // still being processed.
     };
 private:
 
@@ -182,13 +187,16 @@ private:
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
 public:
-
-    void Detach(); // First phase of thread destructor, executed with thread store lock taken
-    void Destroy(); // Second phase of thread destructor, executed without thread store lock taken
+    // First phase of thread destructor, disposes stuff related to GC.
+    // Executed with thread store lock taken so GC cannot happen.
+    void Detach();
+    // Second phase of thread destructor.
+    // Executed without thread store lock taken.
+    void Destroy();
 
     bool                IsInitialized();
 
-    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();
 
 #ifndef DACCESS_COMPILE
     uint64_t            GetPalThreadIdForLogging();
@@ -212,11 +220,7 @@ public:
     void                SetSuppressGcStress();
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
-
     void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
-
-    PTR_UInt8           GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset);
-
     void                PushExInfo(ExInfo * pExInfo);
     void                ValidateExInfoPop(ExInfo * pExInfo, void * limitSP);
     void                ValidateExInfoStack();
@@ -293,6 +297,9 @@ public:
 #ifdef FEATURE_SUSPEND_REDIRECTION
     NATIVE_CONTEXT* EnsureRedirectionContext();
 #endif //FEATURE_SUSPEND_REDIRECTION
+
+    bool                IsActivationPending();
+    void                SetActivationPending(bool isPending);
 };
 
 #ifndef __GCENV_BASE_INCLUDED__
@@ -332,3 +339,5 @@ typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 
 #endif // DACCESS_COMPILE
+
+#endif // __thread_h__

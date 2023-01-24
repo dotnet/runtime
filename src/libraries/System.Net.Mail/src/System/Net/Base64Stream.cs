@@ -33,7 +33,7 @@ namespace System.Net
 
         private readonly Base64WriteStateInfo _writeState;
         private ReadStateInfo? _readState;
-        private readonly IByteEncoder _encoder;
+        private readonly Base64Encoder _encoder;
 
         //bytes with this value in the decode map are invalid
         private const byte InvalidBase64Value = 255;

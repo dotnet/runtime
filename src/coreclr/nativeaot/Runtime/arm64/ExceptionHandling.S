@@ -480,8 +480,6 @@ ClearSuccess_Catch:
 
         ldr         x1, [sp, rsp_CatchFunclet_offset_thread]
 
-        ldr x1, [sp, rsp_CatchFunclet_offset_thread]
-
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
         INLINE_THREAD_UNHIJACK x1, x3, x12                      // Thread in x1, trashes x3 and x12

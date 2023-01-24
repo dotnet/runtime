@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
+#pragma warning disable 8500 // address of managed types
+
 namespace System.Buffers
 {
     /// <summary>
@@ -31,7 +33,7 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new IndexOfAny1Value<byte>(values);
+                return new IndexOfAny1ByteValue(values);
             }
 
             // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
@@ -45,8 +47,8 @@ namespace System.Buffers
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
                 return values.Length switch
                 {
-                    2 => new IndexOfAny2Values<byte>(values),
-                    3 => new IndexOfAny3Values<byte>(values),
+                    2 => new IndexOfAny2ByteValues(values),
+                    3 => new IndexOfAny3ByteValues(values),
                     4 => new IndexOfAny4Values<byte, byte>(values),
                     _ => new IndexOfAny5Values<byte, byte>(values),
                 };
@@ -77,7 +79,10 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new IndexOfAny1Value<char>(values);
+                char value = values[0];
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value)
+                    ? new IndexOfAny1CharValue<TrueConst>(value)
+                    : new IndexOfAny1CharValue<FalseConst>(value);
             }
 
             // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
@@ -88,12 +93,21 @@ namespace System.Buffers
 
             if (values.Length == 2)
             {
-                return new IndexOfAny2Values<char>(values);
+                char value0 = values[0];
+                char value1 = values[1];
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
+                    ? new IndexOfAny2CharValue<TrueConst>(value0, value1)
+                    : new IndexOfAny2CharValue<FalseConst>(value0, value1);
             }
 
             if (values.Length == 3)
             {
-                return new IndexOfAny3Values<char>(values);
+                char value0 = values[0];
+                char value1 = values[1];
+                char value2 = values[2];
+                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
+                    ? new IndexOfAny3CharValue<TrueConst>(value0, value1, value2)
+                    : new IndexOfAny3CharValue<FalseConst>(value0, value1, value2);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than IndexOfAny3Values, but faster than IndexOfAny4Values
@@ -130,7 +144,7 @@ namespace System.Buffers
             return new IndexOfAnyCharValuesProbabilistic(values);
         }
 
-        private static IndexOfAnyValues<T>? TryGetSingleRange<T>(ReadOnlySpan<T> values, out T maxInclusive)
+        private static unsafe IndexOfAnyValues<T>? TryGetSingleRange<T>(ReadOnlySpan<T> values, out T maxInclusive)
             where T : struct, INumber<T>, IMinMaxValue<T>
         {
             T min = T.MaxValue;
@@ -165,7 +179,30 @@ namespace System.Buffers
                 return null;
             }
 
-            return (IndexOfAnyValues<T>)(object)new IndexOfAnyValuesInRange<T>(min, max);
+            if (typeof(T) == typeof(byte))
+            {
+                return (IndexOfAnyValues<T>)(object)new IndexOfAnyByteValuesInRange(byte.CreateChecked(min), byte.CreateChecked(max));
+            }
+
+            Debug.Assert(typeof(T) == typeof(char));
+            return (IndexOfAnyValues<T>)(object)(PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(min) && PackedSpanHelpers.CanUsePackedIndexOf(max)
+                ? new IndexOfAnyCharValuesInRange<TrueConst>(*(char*)&min, *(char*)&max)
+                : new IndexOfAnyCharValuesInRange<FalseConst>(*(char*)&min, *(char*)&max));
+        }
+
+        internal interface IRuntimeConst
+        {
+            static abstract bool Value { get; }
+        }
+
+        private readonly struct TrueConst : IRuntimeConst
+        {
+            public static bool Value => true;
+        }
+
+        private readonly struct FalseConst : IRuntimeConst
+        {
+            public static bool Value => false;
         }
     }
 }

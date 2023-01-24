@@ -4322,7 +4322,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 #endif
 
 	/* range checking */
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, bounds_reg,
+	MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, bounds_reg,
 				       arr->dreg, MONO_STRUCT_OFFSET (MonoArray, bounds));
 
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, low1_reg,

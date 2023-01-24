@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal struct AA
+public struct AA
 {
-    private static int Main()
+    public static int Main()
     {
         bool local3 = false;
         do

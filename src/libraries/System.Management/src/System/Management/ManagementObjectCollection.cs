@@ -144,7 +144,7 @@ namespace System.Management
                 //
                 int count = 0;
 
-                IEnumerator enumCol = this.GetEnumerator();
+                ManagementObjectEnumerator enumCol = this.GetEnumerator();
                 while (enumCol.MoveNext())
                 {
                     count++;

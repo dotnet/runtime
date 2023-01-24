@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DEBUG</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,30 +17,25 @@
     <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
-    <PackageReference Include="nunit" Version="3.12.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.1.0" />
+    <PackageReference Include="nunit" Version="$(NUnitVersion)" />
+    <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitTestAdapterVersion)" />
     <!-- This reference is purely so that the linker can resolve this
          dependency of mscorlib. It is not actually required to build
          the tests. -->
-    <PackageReference Include="System.Threading.AccessControl" Version="5.0.0" />
+    <PackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />
 
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
-  <Target Name="PrepareTools" BeforeTargets="Build">
-    <!-- Restore ilasm using ilasm.ilproj. Restore must be done
-         separately from copy with a different set of input
-         properties, to force MSBuild to re-evaluate using new props
-         and targets from the restored package. -->
-    <PropertyGroup>
-      <IlasmProject>$(MSBuildThisFileDirectory)../../ilasm.ilproj</IlasmProject>
-    </PropertyGroup>
-
-    <MSBuild Projects="$(IlasmProject)" Targets="Restore" />
-    <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" />
-  </Target>
+  <!-- Tests require ilasm so we make sure that it is live built before executing the tests. -->
+  <ItemGroup>
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      AdditionalProperties="ClrILToolsSubset=true;Configuration=$(CoreCLRConfiguration)"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="TestCases\Dependencies\PInvokesExpectations.json">
@@ -56,6 +50,9 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
       <Value>$(ArtifactsDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>

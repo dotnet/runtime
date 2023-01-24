@@ -242,7 +242,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "nl-NL", new [] { "nl-NL" } };
             yield return new object[] { "nn", new [] { "nn" }, true };
             yield return new object[] { "nn-NO", new [] { "nn-NO" }, true };
-            yield return new object[] { "no", new [] { "no" }, true };
+            yield return new object[] { "no", new [] { "no" } };
             yield return new object[] { "nso", new [] { "nso" }, true };
             yield return new object[] { "nso-ZA", new [] { "nso-ZA" }, true };
             yield return new object[] { "oc", new [] { "oc" }, true };
@@ -385,6 +385,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public void Ctor_String(string name, string[] expectedNames, bool expectToThrowOnBrowser = false)
         {
             if (!expectToThrowOnBrowser || PlatformDetection.IsNotBrowser)

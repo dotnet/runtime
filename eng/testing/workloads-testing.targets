@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=browser" />
     <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
@@ -157,10 +157,10 @@
   <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
-  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
-      <_DefaultBuildVariant Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
-      <_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
       <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm.$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>

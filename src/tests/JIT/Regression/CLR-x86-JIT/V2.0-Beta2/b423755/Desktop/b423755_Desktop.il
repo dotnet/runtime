@@ -11,6 +11,7 @@
 .assembly 'b423755_Desktop' {
 }
 
+.class public auto ansi Test_b423755_Desktop extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
     .entrypoint
@@ -24,4 +25,5 @@
 
     ldc.i4 100 
     ret
+}
 }

@@ -51,7 +51,7 @@ public class GitHub_18144
         dummy128(vA, vB, vC, vD, vE, vF, vG, vH);
     }
 
-    static int Main()
+    public static int Main()
     {
         int returnVal = 100;
 

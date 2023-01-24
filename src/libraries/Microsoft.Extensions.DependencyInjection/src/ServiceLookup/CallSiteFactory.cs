@@ -11,7 +11,6 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class CallSiteFactory : IServiceProviderIsService
     {
         private const int DefaultSlot = 0;
@@ -244,8 +243,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     Type itemType = serviceType.GenericTypeArguments[0];
-                    CallSiteResultCacheLocation cacheLocation = CallSiteResultCacheLocation.Root;
+                    if (ServiceProvider.VerifyAotCompatibility && itemType.IsValueType)
+                    {
+                        // NativeAOT apps are not able to make Enumerable of ValueType services
+                        // since there is no guarantee the ValueType[] code has been generated.
+                        throw new InvalidOperationException(SR.Format(SR.AotCannotCreateEnumerableValueType, itemType));
+                    }
 
+                    CallSiteResultCacheLocation cacheLocation = CallSiteResultCacheLocation.Root;
                     var callSites = new List<ServiceCallSite>();
 
                     // If item type is not generic we can safely use descriptor cache
@@ -350,6 +355,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Justification = "MakeGenericType here is used to create a closed generic implementation type given the closed service type. " +
             "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set, which is set by default when PublishTrimmed=true. " +
             "That check informs developers when these generic types don't have compatible trimming annotations.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            "this method ensures the generic types being created aren't using ValueTypes.")]
         private ServiceCallSite? TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             if (serviceType.IsConstructedGenericType &&
@@ -366,7 +374,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 Type closedType;
                 try
                 {
-                    closedType = descriptor.ImplementationType.MakeGenericType(serviceType.GenericTypeArguments);
+                    Type[] genericTypeArguments = serviceType.GenericTypeArguments;
+                    if (ServiceProvider.VerifyAotCompatibility)
+                    {
+                        VerifyOpenGenericAotCompatibility(serviceType, genericTypeArguments);
+                    }
+
+                    closedType = descriptor.ImplementationType.MakeGenericType(genericTypeArguments);
                 }
                 catch (ArgumentException)
                 {
@@ -384,7 +398,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private ServiceCallSite CreateConstructorCallSite(
+        private ConstructorCallSite CreateConstructorCallSite(
             ResultCache lifetime,
             Type serviceType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
@@ -524,6 +538,24 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return parameterCallSites;
         }
 
+        /// <summary>
+        /// Verifies none of the generic type arguments are ValueTypes.
+        /// </summary>
+        /// <remarks>
+        /// NativeAOT apps are not guaranteed that the native code for the closed generic of ValueType
+        /// has been generated. To catch these problems early, this verification is enabled at development-time
+        /// to inform the developer early that this scenario will not work once AOT'd.
+        /// </remarks>
+        private static void VerifyOpenGenericAotCompatibility(Type serviceType, Type[] genericTypeArguments)
+        {
+            foreach (Type typeArg in genericTypeArguments)
+            {
+                if (typeArg.IsValueType)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.AotCannotCreateGenericValueType, serviceType, typeArg));
+                }
+            }
+        }
 
         public void Add(Type type, ServiceCallSite serviceCallSite)
         {

@@ -35,12 +35,12 @@
 
   <ItemGroup>
     <!-- iOS & tvOS are aot workloads and loading an embedded assembly results in some dynamic codegen, which is not allowed -->
-    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'tvOS'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
-    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
-    <ProjectReference Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
+    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
+    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
@@ -65,13 +65,13 @@
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
-  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
+  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- want to compute the intersection: apply update test assemblies that are also resolved to publish.
         -->
@@ -86,7 +86,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'Browser'">
+  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->

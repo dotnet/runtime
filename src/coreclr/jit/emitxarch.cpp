@@ -486,6 +486,11 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
+    // Only allow GPRs.
+    // If not a valid register, then return false.
+    if (!genIsValidIntReg(reg))
+        return false;
+
     // Only consider if safe
     //
     if (!emitCanPeepholeLastIns())
@@ -496,26 +501,85 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
 
-    // This isn't meant to be a comprehensive check. Just look for what
-    // seems to be common.
     switch (fmt)
     {
+        case IF_RWR:
+        case IF_RRW:
+
         case IF_RWR_CNS:
         case IF_RRW_CNS:
         case IF_RRW_SHF:
+
         case IF_RWR_RRD:
         case IF_RRW_RRD:
-        case IF_RWR_MRD:
-        case IF_RWR_SRD:
-        case IF_RWR_ARD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
 
-            // Bail if not writing to the right register
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_RWR_MRD_OFF:
+
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        {
             if (id->idReg1() != reg)
             {
+                switch (id->idInsFmt())
+                {
+                    // Handles instructions who write to two registers.
+                    case IF_RRW_RRW:
+                    case IF_RRW_RRW_CNS:
+                    {
+                        if (id->idReg2() == reg)
+                        {
+                            return (id->idOpSize() == EA_4BYTE);
+                        }
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                if (instrHasImplicitRegPairDest(id->idIns()))
+                {
+                    if (id->idReg2() == reg)
+                    {
+                        return (id->idOpSize() == EA_4BYTE);
+                    }
+                }
+
                 return false;
             }
 
-            // Bail if movsx, we always have movsx sign extend to 8 bytes
+            // movsx always sign extends to 8 bytes.
             if (id->idIns() == INS_movsx)
             {
                 return false;
@@ -534,8 +598,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return true;
             }
 
-            // Else rely on operation size.
+            // otherwise rely on operation size.
             return (id->idOpSize() == EA_4BYTE);
+        }
 
         default:
             break;
@@ -11444,8 +11509,12 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_AWR_RRD_RRD:
                 {
-                    reg345 = id->idReg2();
-                    break;
+                    if (ins != INS_extractps)
+                    {
+                        reg345 = id->idReg2();
+                        break;
+                    }
+                    FALLTHROUGH;
                 }
 
                 default:
@@ -15537,8 +15606,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SWR_RRD_CNS:
-            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
-            assert(UseSimdEncoding());
+            assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
