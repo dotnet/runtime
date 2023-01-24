@@ -16,8 +16,7 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 public class WasmCalculateInitialHeapSize : Task
 {
     [Required]
-    [NotNull]
-    public string[]? Assemblies { get; set; }
+    public string[] Assemblies { get; set; } = Array.Empty<string>();
 
     [Required]
     public string[]? AOTDataSegments { get; set; }
