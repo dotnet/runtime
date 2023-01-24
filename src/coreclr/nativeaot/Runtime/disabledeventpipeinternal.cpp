@@ -6,24 +6,9 @@
 
 #ifdef FEATURE_PERFTRACING
 
-struct EventPipeEventInstanceData
-{
-    void *ProviderID;
-    unsigned int EventID;
-    unsigned int ThreadID;
-    LARGE_INTEGER TimeStamp;
-    GUID ActivityId;
-    GUID RelatedActivityId;
-    const uint8_t *Payload;
-    unsigned int PayloadLength;
-};
+struct EventPipeEventInstanceData;
 
-struct EventPipeSessionInfo
-{
-    FILETIME StartTimeAsUTCFileTime;
-    LARGE_INTEGER StartTimeStamp;
-    LARGE_INTEGER TimeStampFrequency;
-};
+struct EventPipeSessionInfo;
 
 EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
     LPCWSTR outputFile,

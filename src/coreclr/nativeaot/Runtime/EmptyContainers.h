@@ -247,10 +247,9 @@ struct SListElem_EP
     { 
     }
 
-    template <typename T1>
-    SListElem_EP(T1&& val)
+    SListElem_EP(ElemT val)
         : m_Link()
-        , m_Value(std::forward<T1>(val))
+        , m_Value(val)
     { 
     }
 

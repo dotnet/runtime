@@ -2871,7 +2871,7 @@ ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
     // TODO: Implement thread creation/management if needed
     // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
     PalDebugBreak();
-    return NULL;
+    return 0;
 }
 
 static
