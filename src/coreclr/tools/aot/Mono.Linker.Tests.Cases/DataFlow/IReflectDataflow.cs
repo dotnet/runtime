@@ -174,12 +174,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				i.GetFields (BindingFlags.Instance | BindingFlags.Public);
 
 #if NATIVEAOT
+				MarkIReflect ();
+#endif
+			}
+
+#if NATIVEAOT
+			[UnconditionalSuppressMessage ("test", "IL2111")]
+			[Kept]
+			static void MarkIReflect ()
+			{
 				// In Native AOT the test infra doesn't setup the compiler in a way where it will force preserve
 				// all external types. Like here, it will actually track usage of methods on IReflect
 				// and remove any which are not used. We don't want that for this test.
 				typeof (IReflect).RequiresAll ();
-#endif
 			}
+#endif
 		}
 	}
 }

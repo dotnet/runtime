@@ -19,6 +19,16 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> DynamicDependencies ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
+		public static IEnumerable<object[]> LinkXml()
+		{
+			return TestNamesBySuiteName();
+		}
+
 		public static IEnumerable<object[]> Repro ()
 		{
 			return TestNamesBySuiteName ();
@@ -55,7 +65,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static TestCase? GetTestCaseFromName (string name)
 		{
-			return AllCases ().FirstOrDefault (c => c.Name == name);
+			return AllCases ().FirstOrDefault (c => c.DisplayName == name);
 		}
 
 		private static IEnumerable<object[]> TestNamesBySuiteName ([CallerMemberName] string suiteName = "")

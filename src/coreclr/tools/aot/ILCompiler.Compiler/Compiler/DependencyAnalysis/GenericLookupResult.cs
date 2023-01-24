@@ -656,7 +656,7 @@ namespace ILCompiler.DependencyAnalysis
                 (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
                 (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
 
-            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary.GetMangledName(factory.NameMangler));
+            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

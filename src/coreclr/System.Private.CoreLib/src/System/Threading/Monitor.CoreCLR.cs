@@ -151,8 +151,7 @@ namespace System.Threading
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return ObjWait(millisecondsTimeout, obj);
         }

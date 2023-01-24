@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
@@ -26,12 +27,6 @@
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
-
-// Specifies whether coreclr is embedded or standalone
-extern bool g_coreclr_embedded;
-
-// Specifies whether hostpolicy is embedded in executable or standalone
-extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>

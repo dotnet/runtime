@@ -11,6 +11,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -1523,6 +1524,7 @@ namespace System.Threading.Tasks
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">TaskStatus.Faulted</see>, and its
         /// <see cref="Exception"/> property will be non-null.
         /// </remarks>
+        [MemberNotNullWhen(true, nameof(Exception))]
         public bool IsFaulted =>
             // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
             (m_stateFlags & (int)TaskStateFlags.Faulted) != 0;
@@ -4391,7 +4393,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
+            var continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)

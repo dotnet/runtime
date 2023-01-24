@@ -78,19 +78,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     bool createdPollBlocks = false;
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgInsertGCPolls() for %s\n", info.compFullName);
-        fgDispBasicBlocks(false);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    BasicBlock* block;
-
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         compCurBB = block;
 
@@ -112,56 +102,36 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         GCPollType pollType = GCPOLL_INLINE;
 
-        // We'd like to inset an inline poll. Below is the list of places where we
+        // We'd like to insert an inline poll. Below is the list of places where we
         // can't or don't want to emit an inline poll. Check all of those. If after all of that we still
         // have INLINE, then emit an inline check.
 
         if (opts.OptimizationDisabled())
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // Don't split blocks and create inlined polls unless we're optimizing.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (genReturnBB == block)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // we don't want to split the single return block
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (BBJ_SWITCH == block->bbJumpKind)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to deal with all the outgoing edges of a switch block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if ((block->bbFlags & BBF_COLD) != 0)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to split a cold block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
 
@@ -176,9 +146,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks(/* useProfileData */ false);
-        constexpr bool computePreds = true;
-        constexpr bool computeDoms  = false;
-        fgUpdateChangedFlowGraph(computePreds, computeDoms);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
     }
 
     return result;
@@ -194,7 +162,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
 // Return Value:
 //    If new basic blocks are inserted, the last inserted block; otherwise, the input block.
 //
-
 BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 {
     bool createdPollBlocks;
@@ -258,7 +225,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             }
         }
 
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(newStmt);
             fgSetStmtSeq(newStmt);
@@ -333,7 +300,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(pollStmt);
             fgSetStmtSeq(pollStmt);
@@ -393,7 +360,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
         gtSetEvalOrder(trapCheck);
         Statement* trapCheckStmt = fgNewStmtAtEnd(top, trapCheck);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(trapCheckStmt);
             fgSetStmtSeq(trapCheckStmt);
@@ -734,42 +701,6 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-//------------------------------------------------------------------------
-// fgIsIndirOfAddrOfLocal: Determine whether "tree" is an indirection of a local.
-//
-// Arguments:
-//    tree - The tree node under consideration
-//
-// Return Value:
-//    If "tree" is a indirection (GT_IND, GT_BLK, or GT_OBJ) whose arg is:
-//    - an ADDR, whose arg in turn is a LCL_VAR, return that LCL_VAR node;
-//    - a LCL_VAR_ADDR, return that LCL_VAR_ADDR;
-//    - else nullptr.
-//
-// static
-GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
-{
-    GenTreeLclVar* res = nullptr;
-    if (tree->OperIsIndir())
-    {
-        GenTree* addr = tree->AsIndir()->Addr();
-
-        if (addr->OperGet() == GT_ADDR)
-        {
-            GenTree* lclvar = addr->AsOp()->gtOp1;
-            if (lclvar->OperGet() == GT_LCL_VAR)
-            {
-                res = lclvar->AsLclVar();
-            }
-        }
-        else if (addr->OperGet() == GT_LCL_VAR_ADDR)
-        {
-            res = addr->AsLclVar();
-        }
-    }
-    return res;
-}
-
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
     bool         bNeedClassID = true;
@@ -885,6 +816,19 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     return result;
 }
 
+//------------------------------------------------------------------------------
+// fgSetPreferredInitCctor: Set CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE as the
+// preferred call constructure if it is undefined.
+//
+void Compiler::fgSetPreferredInitCctor()
+{
+    if (m_preferredInitCctor == CORINFO_HELP_UNDEF)
+    {
+        // This is the cheapest helper that triggers the constructor.
+        m_preferredInitCctor = CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE;
+    }
+}
+
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
@@ -893,8 +837,8 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
         resolvedToken.hClass = cls;
-
-        return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+        fgSetPreferredInitCctor();
+        return impReadyToRunHelperToTree(&resolvedToken, m_preferredInitCctor, TYP_BYREF);
     }
 #endif
 
@@ -919,14 +863,10 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsIconHandle();
 
         case GT_CNS_STR:
-        case GT_ADDR:
         case GT_FIELD_ADDR:
         case GT_LCL_VAR_ADDR:
         case GT_LCL_FLD_ADDR:
         case GT_CLS_VAR_ADDR:
-            // A GT_ADDR node, by itself, never requires null checking.  The expression whose address is being
-            // taken is either a local or static variable, whose address is necessarily non-null, or else it is
-            // a field dereference, which will do its own bounds checking if necessary.
             return false;
 
         case GT_IND:
@@ -1625,8 +1565,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
 #if !FEATURE_EH
     // If we don't support EH, we can't add the EH needed by synchronized methods.
@@ -1655,6 +1595,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a block for the fault.
+    // It gets an artificial ref count.
 
     assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFINALLYRET, tryLastBB, false);
@@ -1662,6 +1603,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(tryLastBB->bbNext == faultBB);
     assert(faultBB->bbNext == nullptr);
     assert(faultBB == fgLastBB);
+
+    faultBB->bbRefs = 1;
 
     { // Scope the EH region creation
 
@@ -1829,8 +1772,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
-    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
     GenTree* tree;
 
     if (info.compIsStatic)
@@ -1965,7 +1907,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     // Add enter pinvoke exit callout at the start of prolog
 
-    GenTree* pInvokeFrameVar = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+    GenTree* pInvokeFrameVar = gtNewLclVarAddrNode(lvaReversePInvokeFrameVar);
 
     GenTree* tree;
 
@@ -2008,7 +1950,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     // Add reverse pinvoke exit callout at the end of epilog
 
-    tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
+    tree = gtNewLclVarAddrNode(lvaReversePInvokeFrameVar);
 
     CorInfoHelpFunc reversePInvokeExitHelper = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS)
                                                    ? CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS
@@ -2245,7 +2187,6 @@ private:
     BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
     {
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
-        newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
         noway_assert(newReturnBB->bbNext == nullptr);
@@ -2405,6 +2346,7 @@ private:
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->bbJumpKind = BBJ_ALWAYS;
                     returnBlock->bbJumpDest = constReturnBlock;
+                    comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -4036,6 +3978,16 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
         }
     };
 
+#ifdef DEBUG
+    if (isLIR)
+    {
+        assert((fgNodeThreading == NodeThreading::LIR) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+    }
+    else
+    {
+        assert((fgNodeThreading == NodeThreading::AllTrees) || (mostRecentlyActivePhase == PHASE_SET_BLOCK_ORDER));
+    }
+#endif
     return SetTreeSeqVisitor(this, tree, isLIR).Sequence();
 }
 
@@ -4140,10 +4092,6 @@ PhaseStatus Compiler::fgSetBlockOrder()
         fgSetBlockOrder(block);
     }
 
-    /* Remember that now the tree list is threaded */
-
-    fgStmtListThreaded = true;
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4233,30 +4181,6 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
     }
 
     return firstNode;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkLocAllocCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    if (tree->gtOper == GT_LCLHEAP)
-    {
-        return Compiler::WALK_ABORT;
-    }
-
-    return Compiler::WALK_CONTINUE;
-}
-
-/*static*/ Compiler::fgWalkResult Compiler::fgChkQmarkCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-
-    if (tree->gtOper == GT_QMARK)
-    {
-        return Compiler::WALK_ABORT;
-    }
-
-    return Compiler::WALK_CONTINUE;
 }
 
 void Compiler::fgLclFldAssign(unsigned lclNum)

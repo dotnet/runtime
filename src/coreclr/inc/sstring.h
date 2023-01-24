@@ -562,9 +562,6 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    // WARNING: The MBCS version of printf function are factory for globalization
-    // issues when used to format Unicode strings (%S). The Unicode versions are
-    // preferred in this case.
     void Printf(const CHAR *format, ...);
     void VPrintf(const CHAR *format, va_list args);
     void AppendPrintf(const CHAR *format, ...);

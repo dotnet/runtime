@@ -94,6 +94,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task InterfaceNeededOnUnrelatedInterfaceList ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task InterfaceTypeInOtherUsedOnlyByCopiedAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);

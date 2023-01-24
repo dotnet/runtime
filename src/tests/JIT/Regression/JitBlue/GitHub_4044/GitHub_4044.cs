@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class C
+public class C
 {
     public static int Main()
     {

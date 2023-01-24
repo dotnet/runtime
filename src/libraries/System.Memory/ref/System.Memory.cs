@@ -315,6 +315,10 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
         public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
+        public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<string> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
@@ -366,6 +370,11 @@ namespace System
         public static System.Span<T> Trim<T>(this System.Span<T> span, T trimElement) where T : System.IEquatable<T>? { throw null; }
         public static bool TryWrite(this System.Span<char> destination, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
         public static bool TryWrite(this System.Span<char> destination, IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination", "provider")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
+        public static bool TryWrite<TArg0>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0) { throw null; }
+        public static bool TryWrite<TArg0, TArg1>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1) { throw null; }
+        public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, System.ReadOnlySpan<object?> args) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler

@@ -17,9 +17,6 @@ namespace System.Diagnostics
     /// <summary>
     /// Carries the <see cref="Activity.Current"/> changed event data.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-    [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivityChangedEventArgs
     {
         internal ActivityChangedEventArgs(Activity? previous, Activity? current)
@@ -219,9 +216,6 @@ namespace System.Diagnostics
         /// </example>
         public string? Id
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -250,9 +244,6 @@ namespace System.Diagnostics
         /// </summary>
         public string? ParentId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
@@ -791,9 +782,6 @@ namespace System.Diagnostics
         /// </summary>
         public ActivitySpanId SpanId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (_spanId is null)
@@ -863,9 +851,6 @@ namespace System.Diagnostics
         /// </summary>
         public ActivitySpanId ParentSpanId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (_parentSpanId is null)
@@ -971,9 +956,6 @@ namespace System.Diagnostics
                    (id[0] != 'f' || id[1] != 'f');
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
@@ -1279,9 +1261,6 @@ namespace System.Diagnostics
         }
 #pragma warning restore CA1822
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private static unsafe long GetRandomNumber()
         {
             // Use the first 8 bytes of the GUID as a random number.
@@ -1300,9 +1279,6 @@ namespace System.Diagnostics
             return canSet;
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private bool TrySetTraceIdFromParent()
         {
             Debug.Assert(_traceId is null);
@@ -1325,9 +1301,6 @@ namespace System.Diagnostics
             return _traceId != null;
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         private void TrySetTraceFlagsFromParent()
         {
             Debug.Assert(!W3CIdFlagsSet);
@@ -1770,9 +1743,6 @@ namespace System.Diagnostics
     /// it has to, and caches the string representation after it was created.
     /// It is mostly useful as an exchange type.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivityTraceId : IEquatable<ActivityTraceId>
     {
         private readonly string? _hexString;
@@ -1954,9 +1924,6 @@ namespace System.Diagnostics
     /// it has to, and caches the string representation after it was created.
     /// It is mostly useful as an exchange type.
     /// </summary>
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
     public readonly struct ActivitySpanId : IEquatable<ActivitySpanId>
     {
         private readonly string? _hexString;

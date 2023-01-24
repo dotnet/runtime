@@ -1,10 +1,9 @@
 <Project>
   <PropertyGroup>
     <TargetArchitecture>wasm</TargetArchitecture>
-    <TargetOS>Browser</TargetOS>
+    <TargetOS>browser</TargetOS>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
 
     <_WasmBuildCoreDependsOn>
         _InitializeCommonProperties;

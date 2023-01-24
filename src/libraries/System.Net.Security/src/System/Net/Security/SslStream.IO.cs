@@ -54,10 +54,10 @@ namespace System.Net.Security
 
             // Ensure a Read or Auth operation is not in progress,
             // block potential future read and auth operations since SslStream is disposing.
-            // This leaves the _nestedRead = 1 and _nestedAuth = 1, but that's ok, since
+            // This leaves the _nestedRead = 2 and _nestedAuth = 2, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 0 &&
-                Interlocked.Exchange(ref _nestedAuth, 1) == 0)
+            if (Interlocked.Exchange(ref _nestedRead, StreamDisposed) == StreamNotInUse &&
+                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse)
             {
                 _buffer.ReturnBuffer();
             }
@@ -162,19 +162,22 @@ namespace System.Net.Security
         private async Task RenegotiateAsync<TIOAdapter>(CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
+            if (Interlocked.CompareExchange(ref _nestedAuth, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
+                ObjectDisposedException.ThrowIf(_nestedAuth == StreamDisposed, this);
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
 
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
+                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
 
-            if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
+            // Write is different since we do not do anything special in Dispose
+            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) != StreamNotInUse)
             {
-                _nestedRead = 0;
+                _nestedRead = StreamNotInUse;
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
 
@@ -231,8 +234,8 @@ namespace System.Net.Security
                     _buffer.ReturnBuffer();
                 }
 
-                _nestedRead = 0;
-                _nestedWrite = 0;
+                _nestedRead = StreamNotInUse;
+                _nestedWrite = StreamNotInUse;
                 _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
@@ -248,7 +251,7 @@ namespace System.Net.Security
             if (reAuthenticationData == null)
             {
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
-                if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
+                if (Interlocked.Exchange(ref _nestedAuth, StreamInUse) == StreamInUse)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
                 }
@@ -335,7 +338,7 @@ namespace System.Net.Security
             {
                 if (reAuthenticationData == null)
                 {
-                    _nestedAuth = 0;
+                    _nestedAuth = StreamNotInUse;
                     _isRenego = false;
                 }
             }
@@ -381,6 +384,12 @@ namespace System.Net.Security
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
                                                                     TlsFrameHelper.ProcessingOptions.ServerName;
+                        if (OperatingSystem.IsMacOS() && _sslAuthenticationOptions.IsServer)
+                        {
+                            // macOS cannot process ALPN on server at the momennt.
+                            // We fallback to our own process similar to SNI bellow.
+                            options |= TlsFrameHelper.ProcessingOptions.RawApplicationProtocol;
+                        }
 
                         // Process SNI from Client Hello message
                         if (!TlsFrameHelper.TryGetFrameInfo(_buffer.EncryptedReadOnlySpan, ref _lastFrame, options))
@@ -494,7 +503,7 @@ namespace System.Net.Security
         {
             ProcessHandshakeSuccess();
 
-            if (_nestedAuth != 1)
+            if (_nestedAuth != StreamInUse)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Ignoring unsolicited renegotiated certificate.");
                 // ignore certificates received outside of handshake or requested renegotiation.
@@ -502,6 +511,28 @@ namespace System.Net.Security
                 chainStatus = X509ChainStatusFlags.NoError;
                 return true;
             }
+
+            if (_selectedClientCertificate != null && !CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+            {
+                // We may select client cert but it may not be used.
+                // This is primarily an issue on Windows with credential caching.
+                _selectedClientCertificate = null;
+            }
+
+#if TARGET_ANDROID
+            // On Android, the remote certificate verification can be invoked from Java TrustManager's callback
+            // during the handshake process. If that has occurred, we shouldn't run the validation again and
+            // return the existing validation result.
+            //
+            // The Java TrustManager callback is called only when the peer has a certificate. It's possible that
+            // the peer didn't provide any certificate (for example when the peer is the client) and the validation
+            // result hasn't been set. In that case we still need to run the verification at this point.
+            if (TryGetRemoteCertificateValidationResult(out sslPolicyErrors, out chainStatus, out alertToken, out bool isValid))
+            {
+                _handshakeCompleted = isValid;
+                return isValid;
+            }
+#endif
 
             if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
@@ -763,12 +794,15 @@ namespace System.Net.Security
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
+            // Throw first if we already have exception.
+            // Check for disposal is not atomic so we will check again below.
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            if (Interlocked.CompareExchange(ref _nestedRead, StreamInUse, StreamNotInUse) != StreamNotInUse)
             {
+                ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
-
-            ThrowIfExceptionalOrNotAuthenticated();
 
             try
             {
@@ -904,7 +938,7 @@ namespace System.Net.Security
             finally
             {
                 ReturnReadBufferIfEmpty();
-                _nestedRead = 0;
+                _nestedRead = StreamNotInUse;
             }
         }
 
@@ -919,7 +953,7 @@ namespace System.Net.Security
                 return;
             }
 
-            if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
+            if (Interlocked.Exchange(ref _nestedWrite, StreamInUse) == StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
@@ -942,7 +976,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _nestedWrite = 0;
+                _nestedWrite = StreamNotInUse;
             }
         }
 

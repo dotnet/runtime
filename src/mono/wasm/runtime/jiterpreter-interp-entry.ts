@@ -12,7 +12,8 @@ import cwraps from "./cwraps";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
-    getWasmFunctionTable, recordFailure
+    getWasmFunctionTable, recordFailure, getOptions,
+    JiterpreterOptions, shortNameBase
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -29,6 +30,13 @@ typedef struct {
 	gpointer args [16];
 	gpointer *many_args;
 } InterpEntryData;
+
+typedef struct {
+	InterpMethod *rmethod; // 0
+	ThreadContext *context; // 4
+	gpointer orig_domain; // 8
+	gpointer attach_cookie; // 12
+} JiterpEntryDataHeader;
 */
 
 const // offsetOfStack = 12,
@@ -45,6 +53,7 @@ let trampImports : Array<[string, string, Function]> | undefined;
 let fnTable : WebAssembly.Table;
 let jitQueueTimeout = 0;
 const jitQueue : TrampolineInfo[] = [];
+const infoTable : { [ptr: number] : TrampolineInfo } = {};
 
 /*
 const enum WasmReftype {
@@ -81,6 +90,7 @@ class TrampolineInfo {
 
     defaultImplementation: number;
     result: number;
+    hitCount: number;
 
     constructor (
         imethod: number, method: MonoMethod, argumentCount: number, pParamTypes: NativePointer,
@@ -112,7 +122,35 @@ class TrampolineInfo {
             subName = `${this.imethod.toString(16)}_${subName}`;
         }
         this.traceName = subName;
+        this.hitCount = 0;
     }
+}
+
+let mostRecentOptions : JiterpreterOptions | undefined = undefined;
+
+export function mono_interp_record_interp_entry (imethod: number) {
+    // clear the unbox bit
+    imethod = imethod & ~0x1;
+
+    const info = infoTable[imethod];
+    // This shouldn't happen but it's not worth crashing over
+    if (!info)
+        return;
+
+    if (!mostRecentOptions)
+        mostRecentOptions = getOptions();
+
+    info.hitCount++;
+    if (info.hitCount === mostRecentOptions!.interpEntryFlushThreshold)
+        flush_wasm_entry_trampoline_jit_queue();
+    else if (info.hitCount !== mostRecentOptions!.interpEntryHitCount)
+        return;
+
+    jitQueue.push(info);
+    if (jitQueue.length >= maxJitQueueLength)
+        flush_wasm_entry_trampoline_jit_queue();
+    else
+        ensure_jit_is_scheduled();
 }
 
 // returns function pointer
@@ -133,19 +171,15 @@ export function mono_interp_jit_wasm_entry_trampoline (
     if (!fnTable)
         fnTable = getWasmFunctionTable();
 
-    jitQueue.push(info);
-
     // We start by creating a function pointer for this interp_entry trampoline, but instead of
     //  compiling it right away, we make it point to the default implementation for that signature
     // This gives us time to wait before jitting it so we can jit multiple trampolines at once.
+    // Some entry wrappers are also only called a few dozen times, so it's valuable to wait
+    //  until a wrapper is called a lot before wasting time/memory jitting it.
     const defaultImplementationFn = fnTable.get(defaultImplementation);
     info.result = addWasmFunctionPointer(defaultImplementationFn);
 
-    if (jitQueue.length >= maxJitQueueLength)
-        flush_wasm_entry_trampoline_jit_queue();
-    else
-        ensure_jit_is_scheduled();
-
+    infoTable[imethod] = info;
     return info.result;
 }
 
@@ -172,11 +206,20 @@ function flush_wasm_entry_trampoline_jit_queue () {
     if (jitQueue.length <= 0)
         return;
 
+    // If the function signature contains types that need stackval_from_data, that'll use
+    //  some constant slots, so make some extra space
+    const constantSlots = (4 * jitQueue.length) + 1;
     let builder = trampBuilder;
     if (!builder)
-        trampBuilder = builder = new WasmBuilder();
+        trampBuilder = builder = new WasmBuilder(constantSlots);
     else
-        builder.clear();
+        builder.clear(constantSlots);
+
+    if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
+        jitQueue.length = 0;
+        return;
+    }
+
     const started = _now();
     let compileStarted = 0;
     let rejected = true, threw = false;
@@ -239,7 +282,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(16) : undefined;
+            const wasmName = compress ? i.toString(shortNameBase) : undefined;
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
         }
 
@@ -275,6 +318,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
             builder.beginFunction(info.traceName, {
                 "sp_args": WasmValtype.i32,
                 "need_unbox": WasmValtype.i32,
+                "scratchBuffer": WasmValtype.i32,
             });
 
             const ok = generate_wasm_body(builder, info);
@@ -290,19 +334,21 @@ function flush_wasm_entry_trampoline_jit_queue () {
         const buffer = builder.getArrayView();
         if (trace > 0)
             console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
+        counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
         const imports : any = {
-            h: (<any>Module).asm.memory
         };
         // Place our function imports into the import dictionary
         for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(16) : trampImports[i][0];
+            const wasmName = compress ? i.toString(36) : trampImports[i][0];
             imports[wasmName] = trampImports[i][2];
         }
 
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports
+            i: imports,
+            c: <any>builder.getConstants(),
+            m: { h: (<any>Module).asm.memory },
         });
 
         // Now that we've jitted the trampolines, go through and fix up the function pointers
@@ -432,7 +478,7 @@ function append_stackval_from_data (
 
         default: {
             // Call stackval_from_data to copy the value and get its size
-            builder.i32_const(<any>type);
+            builder.ptr_const(type);
             // result
             builder.local("sp_args");
             // value
@@ -454,6 +500,12 @@ function generate_wasm_body (
 ) : boolean {
     // FIXME: This is not thread-safe, but the alternative of alloca makes the trampoline
     //  more expensive
+    // The solution is likely to put the address of the scratch buffer in a global that we provide
+    //  at module instantiation time, so each thread can malloc its own copy of the buffer
+    //  and then pass it in when instantiating instead of compiling the constant into the module
+    // FIXME: Pre-allocate these buffers and their constant slots at the start before we
+    //  generate function bodies, so that even if we run out of constant slots for MonoType we
+    //  will always have put the buffers in a constant slot. This will be necessary for thread safety
     const scratchBuffer = <any>Module._malloc(sizeOfJiterpEntryData);
     _zero_region(scratchBuffer, sizeOfJiterpEntryData);
 
@@ -479,7 +531,8 @@ function generate_wasm_body (
     }
 
     // Populate the scratch buffer containing call data
-    builder.i32_const(scratchBuffer);
+    builder.ptr_const(scratchBuffer);
+    builder.local("scratchBuffer", WasmOpcode.tee_local);
 
     builder.local("rmethod");
     // Clear the unbox-this-reference flag if present (see above) so that rmethod is a valid ptr
@@ -492,7 +545,7 @@ function generate_wasm_body (
 
     // prologue takes data->rmethod and initializes data->context, then returns a value for sp_args
     // prologue also performs thread attach
-    builder.i32_const(scratchBuffer);
+    builder.local("scratchBuffer");
     // prologue takes this_arg so it can handle delegates
     if (info.hasThisReference)
         builder.local("this_arg");
@@ -530,7 +583,7 @@ function generate_wasm_body (
         append_stackval_from_data(builder, type, `arg${i}`);
     }
 
-    builder.i32_const(scratchBuffer);
+    builder.local("scratchBuffer");
     builder.local("sp_args");
     if (info.hasReturnValue)
         builder.local("res");

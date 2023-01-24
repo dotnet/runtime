@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using FluentAssertions;
 using ILCompiler;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
@@ -36,6 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
 					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
 					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
+					ILStubMethod => (null, 0), // Ignore compiler generated methods
 					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
 				};
 
@@ -172,11 +174,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (!ShouldIncludeMethod (methodDef))
 					return;
 
+				TypeDesc owningType = methodDef.OwningType;
+
+				// Skip any methods on a delegate - we handle those in the AddType
+				// (AOT generates different methods for delegates compared to IL/metadata shapes)
+				if (owningType?.IsDelegate == true)
+					return;
+
 				if (!AddMember (methodDef))
 					return;
 
-				if (methodDef.OwningType is { } owningType)
+				if (owningType is not null) {
 					AddType (owningType);
+				}
 
 				if (methodDef.GetPropertyForAccessor () is { } property)
 					AddProperty (property);
@@ -197,6 +207,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				if (typeDef is MetadataType { ContainingType: { } containingType }) {
 					AddType (containingType);
+				}
+
+				if (typeDef.IsDelegate) {
+					// AOT's handling of delegates is very different from the IL/metadata picture
+					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
+					foreach (MethodDesc m in typeDef.GetMethods()) {
+						if (ShouldIncludeEntityByDisplayName(m)) {
+							AddMember (m);
+						}
+					}
 				}
 			}
 
@@ -539,13 +559,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			bool expectedKept = ShouldBeKept (src);
 
 			if (!expectedKept) {
-				if (linked != null)
+				if (linked is not null)
 					Assert.True (false, $"Event `{src}' should have been removed");
 
 				return;
 			}
 
-			if (linked == null) {
+			if (linked is null) {
 				Assert.True (false, $"Event `{src}' should have been kept");
 				return;
 			}

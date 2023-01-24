@@ -77,7 +77,7 @@
 
 } // end of class InterfaceImplementation
 
-.class private auto ansi beforefieldinit Test_GitHub_17585
+.class public auto ansi beforefieldinit Test_GitHub_17585
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  CallInterfaceMethod(class Interface iface) cil managed noinlining

@@ -26,7 +26,6 @@
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
-#include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"

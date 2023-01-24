@@ -63,7 +63,7 @@ namespace System.Text
         public Span<ReadOnlyMemory<char>> AsSpan() => new Span<ReadOnlyMemory<char>>(_array, 0, _count);
 
         /// <summary>Creates a string from all the segments in the builder and then disposes of the builder.</summary>
-        public override string ToString()
+        public override unsafe string ToString()
         {
             ReadOnlyMemory<char>[] array = _array;
             var span = new Span<ReadOnlyMemory<char>>(array, 0, _count);
@@ -74,16 +74,19 @@ namespace System.Text
                 length += span[i].Length;
             }
 
-            string result = string.Create(length, this, static (dest, builder) =>
+#pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<ReadOnlyMemory<char>> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+            string result = string.Create(length, (IntPtr)(&tmpSpan), static (dest, spanPtr) =>
             {
-                Span<ReadOnlyMemory<char>> localSpan = builder.AsSpan();
-                for (int i = 0; i < localSpan.Length; i++)
+                Span<ReadOnlyMemory<char>> span = *(Span<ReadOnlyMemory<char>>*)spanPtr;
+                for (int i = 0; i < span.Length; i++)
                 {
-                    ReadOnlySpan<char> segment = localSpan[i].Span;
+                    ReadOnlySpan<char> segment = span[i].Span;
                     segment.CopyTo(dest);
                     dest = dest.Slice(segment.Length);
                 }
             });
+#pragma warning restore CS8500
 
             span.Clear();
             this = default;

@@ -10,7 +10,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class PropertyNameTests_Metadata : PropertyNameTests
     {
         public PropertyNameTests_Metadata()
-            : base(new StringSerializerWrapper(PropertyNameTestsContext_Metadata.Default, (options) => new PropertyNameTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(PropertyNameTestsContext_Metadata.Default))
         {
         }
 
@@ -36,7 +36,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed partial class PropertyNameTests_Default : PropertyNameTests
     {
         public PropertyNameTests_Default()
-            : base(new StringSerializerWrapper(PropertyNameTestsContext_Default.Default, (options) => new PropertyNameTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(PropertyNameTestsContext_Default.Default))
         {
         }
 

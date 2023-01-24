@@ -1015,12 +1015,12 @@ namespace JavaScriptTestHelperNamespace
             return message + "11";
         }
 
-        public partial class NestedClass
+        private partial class NestedClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
         
-            public partial class DoubleNestedClass
+            private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]
                 public static string EchoString(string message) => message + "13";

@@ -71,8 +71,6 @@ STDMETHODIMP RegMeta::EnumCustomAttributes(
     CustomAttributeRec  *pRec;
     ULONG           index;
 
-    LOG((LOGMD, "RegMeta::EnumCustomAttributes(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-            phEnum, tk, tkType, rCustomAttributes, cMax, pcCustomAttributes));
     LOCKREAD();
 
     if ( *ppmdEnum == 0 )

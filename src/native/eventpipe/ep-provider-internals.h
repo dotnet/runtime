@@ -46,7 +46,6 @@ EventPipeProvider *
 provider_create_register (
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	EventPipeCallbackDataFree callback_data_free_func,
 	void *callback_data,
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 

@@ -9,7 +9,7 @@
 }
 .assembly 'b71999' {}
 .assembly extern xunit.core {}
-.class ILGEN_0xaca96c86 {
+.class public ILGEN_0xaca96c86 {
 .method static float64  Method_0x88567f92(native int Arg_0x0, float32 Arg_0x1) {
 .maxstack	3
  .locals (int32 LOCAL_0x7)
@@ -19,7 +19,7 @@ stloc LOCAL_0x7
 conv.r4
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )
