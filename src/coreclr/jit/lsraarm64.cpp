@@ -1059,7 +1059,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            unsigned          regCount      = 0;
+            unsigned     regCount      = 0;
             RefPosition* useRefPos1    = nullptr;
             RefPosition* nextUseRefPos = nullptr;
             switch (intrin.id)

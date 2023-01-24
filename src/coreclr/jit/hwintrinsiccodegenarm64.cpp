@@ -518,7 +518,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
-                GenTree*    firstField = fieldList->Uses().GetHead()->GetNode();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
 
                 if (firstField->IsCopyOrReload())
                 {
