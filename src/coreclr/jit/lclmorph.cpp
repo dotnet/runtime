@@ -5,7 +5,6 @@
 
 class LocalSequencer final : public GenTreeVisitor<LocalSequencer>
 {
-    GenTree* m_rootNode;
     GenTree* m_prevNode;
 
 public:
@@ -15,7 +14,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_rootNode(nullptr), m_prevNode(nullptr)
+    LocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_prevNode(nullptr)
     {
     }
 
@@ -30,12 +29,10 @@ public:
     {
         // We use the root node as a 'sentinel' node that will keep the head
         // and tail of the sequenced list.
-        m_rootNode = stmt->GetRootNode();
-        assert(!m_rootNode->OperIsLocal() && !m_rootNode->OperIsLocalAddr());
-
-        m_rootNode->gtPrev = nullptr;
-        m_rootNode->gtNext = nullptr;
-        m_prevNode         = m_rootNode;
+        GenTree* rootNode = stmt->GetRootNode();
+        rootNode->gtPrev  = nullptr;
+        rootNode->gtNext  = nullptr;
+        m_prevNode        = rootNode;
     }
 
     //-------------------------------------------------------------------
@@ -47,26 +44,35 @@ public:
     //
     void Finish(Statement* stmt)
     {
-        assert(stmt->GetRootNode() == m_rootNode);
+        GenTree* rootNode = stmt->GetRootNode();
 
-        GenTree* firstNode = m_rootNode->gtNext;
+        GenTree* firstNode = rootNode->gtNext;
+        GenTree* lastNode  = m_prevNode;
+
         if (firstNode == nullptr)
         {
-            assert(m_rootNode->gtPrev == nullptr);
+            lastNode = nullptr;
         }
         else
         {
-            GenTree* lastNode = m_prevNode;
+            // In the rare case that the root node becomes part of the linked
+            // list (i.e. top level local) we get a circular linked list here.
+            if (firstNode == rootNode)
+            {
+                assert(firstNode == lastNode);
+                lastNode->gtNext = nullptr;
+            }
+            else
+            {
+                assert(lastNode->gtNext == nullptr);
+                assert(lastNode->OperIsLocal() || lastNode->OperIsLocalAddr());
+            }
 
-            // We only sequence leaf nodes that we shouldn't see as standalone
-            // statements here.
-            assert(m_rootNode != firstNode);
-            assert((m_rootNode->gtPrev == nullptr) && (lastNode->gtNext == nullptr));
-
-            assert(lastNode->OperIsLocal() || lastNode->OperIsLocalAddr());
-            firstNode->gtPrev  = nullptr;
-            m_rootNode->gtPrev = lastNode;
+            firstNode->gtPrev = nullptr;
         }
+
+        stmt->SetTreeList(firstNode);
+        stmt->SetTreeListEnd(lastNode);
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -202,7 +208,7 @@ private:
 //
 void Compiler::fgSequenceLocals(Statement* stmt)
 {
-    assert((fgNodeThreading == NodeThreading::AllLocals) || (mostRecentlyActivePhase == PHASE_STR_ADRLCL));
+    assert(fgNodeThreading == NodeThreading::AllLocals);
     LocalSequencer seq(this);
     seq.Sequence(stmt);
 }
@@ -1466,6 +1472,7 @@ private:
         m_stmtModified |= node->OperIs(GT_LCL_VAR);
     }
 
+public:
     //------------------------------------------------------------------------
     // UpdateEarlyRefCount: updates the ref count for locals
     //
@@ -1545,6 +1552,7 @@ private:
         }
     }
 
+private:
     //------------------------------------------------------------------------
     // IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
     //
@@ -1659,6 +1667,17 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
 #endif
 
             visitor.VisitStmt(stmt);
+        }
+
+        // We could check for GT_JMP inside the visitor, but this node is very
+        // rare so keeping it here avoids pessimizing the hot code.
+        if (block->endsWithJmpMethod(this))
+        {
+            // GT_JMP has implicit uses of all arguments.
+            for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+            {
+                visitor.UpdateEarlyRefCount(lclNum);
+            }
         }
     }
 

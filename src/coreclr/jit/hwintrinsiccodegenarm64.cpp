@@ -704,10 +704,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
                 break;
 
-            case NI_AdvSimd_Store:
-                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
-                break;
-
             case NI_AdvSimd_StoreSelectedScalar:
             {
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
@@ -959,18 +955,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Vector128_AsVector3:
+            {
+                // AsVector3 can be a no-op when it's already in the right register, otherwise
+                // we just need to move the value over. Vector3 operations will themselves mask
+                // out the upper element when it's relevant, so it's not worth us spending extra
+                // cycles doing so here.
+
+                GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
+                break;
+            }
+
             case NI_Vector64_ToScalar:
             case NI_Vector128_ToScalar:
             {
-                const ssize_t indexValue = 0;
-
-                // no-op if vector is float/double, targetReg == op1Reg and fetching for 0th index.
-                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg) && (indexValue == 0)))
+                if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
+                    // no-op if vector is float/double and targetReg == op1Reg
                     break;
                 }
 
-                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, indexValue,
+                GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, /* imm */ 0,
                                             INS_OPTS_NONE);
             }
             break;

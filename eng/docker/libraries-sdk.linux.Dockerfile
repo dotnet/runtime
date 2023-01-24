@@ -12,7 +12,7 @@ RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURAT
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 
@@ -45,6 +45,6 @@ COPY --from=corefxbuild \
 
 # Add AspNetCore bits to testhost:
 ENV _ASPNETCORE_SOURCE="/usr/share/dotnet/shared/Microsoft.AspNetCore.App/$VERSION*"
-ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
+ENV _ASPNETCORE_DEST="/live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App"
 RUN mkdir -p $_ASPNETCORE_DEST
 RUN cp -r $_ASPNETCORE_SOURCE $_ASPNETCORE_DEST

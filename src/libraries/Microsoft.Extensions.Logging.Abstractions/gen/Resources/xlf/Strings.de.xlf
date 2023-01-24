@@ -157,6 +157,16 @@
         <target state="translated">Dieselbe Ereignis-ID kann nicht von mehreren Protokollierungsmethoden innerhalb einer Klasse verwendet werden</target>
         <note />
       </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Der Ereignisname „{0}“ wird in der Klasse „{1}“ von mehreren Protokollierungsmethoden verwendet.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Derselbe Ereignisname kann innerhalb einer Klasse nicht von mehreren Protokollierungsmethoden verwendet werden.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
         <target state="translated">Die Vorlage „{0}“ wird nicht als Argument für die Protokollierungsmethode bereitgestellt</target>

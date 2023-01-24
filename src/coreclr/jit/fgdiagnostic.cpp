@@ -3412,15 +3412,25 @@ void Compiler::fgDebugCheckLinkedLocals()
     {
         for (Statement* stmt : block->Statements())
         {
-            GenTree* first = stmt->GetRootNode()->gtNext;
+            GenTree* first = stmt->GetTreeList();
             CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
 
             seq.Sequence(stmt);
 
             ArrayStack<GenTree*>* expected = seq.GetSequence();
 
-            bool success   = true;
-            int  nodeIndex = 0;
+            bool success = true;
+
+            if (expected->Height() > 0)
+            {
+                success &= (stmt->GetTreeList() == expected->Bottom(0)) && (stmt->GetTreeListEnd() == expected->Top(0));
+            }
+            else
+            {
+                success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
+            }
+
+            int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
                 success &= cur->OperIsLocal() || cur->OperIsLocalAddr();

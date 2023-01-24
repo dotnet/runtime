@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">O argumento '{0}' está usando o modificador de parâmetro out sem suporte</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">O argumento está usando o modificador de parâmetro out sem suporte</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -155,6 +155,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Múltiplos métodos de registro em log não podem usar o mesmo id de evento dentro de uma classe</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Múltiplos métodos de registro em log estão usando o nome de evento {0} na classe {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Múltiplos métodos de registro em log não devem usar o mesmo nome de evento dentro de uma classe</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

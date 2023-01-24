@@ -24,10 +24,10 @@
       <BuildDll Condition="'$(CrossBuild)' == 'true' and '$(CrossDir)' == ''">false</BuildDll>
 
       <BuildPdb>false</BuildPdb>
-      <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'Windows'">true</BuildPdb>
+      <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>
 
       <BuildPerfMap>false</BuildPerfMap>
-      <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'Linux'">true</BuildPerfMap>
+      <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'linux'">true</BuildPerfMap>
     </PropertyGroup>
 
     <ItemGroup>

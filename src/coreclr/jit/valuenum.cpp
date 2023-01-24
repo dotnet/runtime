@@ -5360,6 +5360,7 @@ GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
         case GTF_ICON_CIDMID_HDL:
         case GTF_ICON_TLS_HDL:
         case GTF_ICON_STATIC_BOX_PTR:
+        case GTF_ICON_STATIC_ADDR_PTR:
             return GTF_ICON_CONST_PTR;
         case GTF_ICON_STATIC_HDL:
         case GTF_ICON_GLOBAL_PTR:
@@ -8536,17 +8537,31 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //    tree where only one of the constants is expected to have a field sequence.
 //
 // Arguments:
-//    vnStore  - ValueNumStore object
-//    tree     - tree node to inspect
-//    pAddress - [Out] resulting address with all offsets combined
-//    pFseq    - [Out] field sequence
+//    vnStore    - ValueNumStore object
+//    tree       - tree node to inspect
+//    byteOffset - [Out] resulting byte offset
+//    pFseq      - [Out] field sequence
 //
 // Return Value:
 //    true if the given tree is a static field address
 //
-static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* pAddress, FieldSeq** pFseq)
+static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
     ssize_t val = 0;
+
+    // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
+    // offset
+    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
+    {
+        GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
+        if (cns2->gtFieldSeq != nullptr)
+        {
+            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
+            *pFseq      = cns2->gtFieldSeq;
+            return true;
+        }
+    }
+
     // Accumulate final offset
     while (tree->OperIs(GT_ADD))
     {
@@ -8578,8 +8593,8 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     if ((tree->IsCnsIntOrI()) && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
         (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
     {
-        *pFseq    = tree->AsIntCon()->gtFieldSeq;
-        *pAddress = tree->AsIntCon()->IconValue() + val;
+        *pFseq      = tree->AsIntCon()->gtFieldSeq;
+        *byteOffset = tree->AsIntCon()->IconValue() + val - tree->AsIntCon()->gtFieldSeq->GetOffset();
         return true;
     }
     return false;
@@ -8608,16 +8623,14 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     //   sbyte GetVal() => RVA[1]; // fold to '100'
     //
-    ssize_t   address  = 0;
-    FieldSeq* fieldSeq = nullptr;
-    if (varTypeIsIntegral(tree) && GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &address, &fieldSeq))
+    ssize_t   byteOffset = 0;
+    FieldSeq* fieldSeq   = nullptr;
+    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-        assert(fieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
-        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
-
-        ssize_t   byteOffset     = address - fieldSeq->GetOffset();
-        int       size           = (int)genTypeSize(tree->TypeGet());
-        const int maxElementSize = sizeof(int64_t);
+        CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
+        int                  size           = (int)genTypeSize(tree->TypeGet());
+        const int            maxElementSize = sizeof(int64_t);
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -8677,6 +8690,18 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                     {
                         READ_VALUE(uint64_t);
                         tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
+                        return true;
+                    }
+                    case TYP_FLOAT:
+                    {
+                        READ_VALUE(float);
+                        tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(val));
+                        return true;
+                    }
+                    case TYP_DOUBLE:
+                    {
+                        READ_VALUE(double);
+                        tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
                         return true;
                     }
                     default:

@@ -78,19 +78,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     bool createdPollBlocks = false;
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgInsertGCPolls() for %s\n", info.compFullName);
-        fgDispBasicBlocks(false);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    BasicBlock* block;
-
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         compCurBB = block;
 
@@ -112,56 +102,36 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         GCPollType pollType = GCPOLL_INLINE;
 
-        // We'd like to inset an inline poll. Below is the list of places where we
+        // We'd like to insert an inline poll. Below is the list of places where we
         // can't or don't want to emit an inline poll. Check all of those. If after all of that we still
         // have INLINE, then emit an inline check.
 
         if (opts.OptimizationDisabled())
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // Don't split blocks and create inlined polls unless we're optimizing.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (genReturnBB == block)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // we don't want to split the single return block
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (BBJ_SWITCH == block->bbJumpKind)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to deal with all the outgoing edges of a switch block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if ((block->bbFlags & BBF_COLD) != 0)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to split a cold block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
 
@@ -176,9 +146,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks(/* useProfileData */ false);
-        constexpr bool computePreds = true;
-        constexpr bool computeDoms  = false;
-        fgUpdateChangedFlowGraph(computePreds, computeDoms);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
     }
 
     return result;
@@ -194,7 +162,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
 // Return Value:
 //    If new basic blocks are inserted, the last inserted block; otherwise, the input block.
 //
-
 BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 {
     bool createdPollBlocks;
@@ -1598,8 +1565,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgComputePredsDone);
 
 #if !FEATURE_EH
     // If we don't support EH, we can't add the EH needed by synchronized methods.
@@ -1628,6 +1595,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a block for the fault.
+    // It gets an artificial ref count.
 
     assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFINALLYRET, tryLastBB, false);
@@ -1635,6 +1603,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(tryLastBB->bbNext == faultBB);
     assert(faultBB->bbNext == nullptr);
     assert(faultBB == fgLastBB);
+
+    faultBB->bbRefs = 1;
 
     { // Scope the EH region creation
 
@@ -2217,7 +2187,6 @@ private:
     BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
     {
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
-        newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
         noway_assert(newReturnBB->bbNext == nullptr);
@@ -2377,6 +2346,7 @@ private:
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->bbJumpKind = BBJ_ALWAYS;
                     returnBlock->bbJumpDest = constReturnBlock;
+                    comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));

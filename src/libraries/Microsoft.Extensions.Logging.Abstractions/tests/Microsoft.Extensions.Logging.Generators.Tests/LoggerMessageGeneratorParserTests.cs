@@ -535,6 +535,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task EventNameReuse()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class MyClass
+                {
+                    [LoggerMessage(EventId = 0, EventName = ""MyEvent"", Level = LogLevel.Debug, Message = ""M1"")]
+                    static partial void M1(ILogger logger);
+
+                    [LoggerMessage(EventId = 1, EventName = ""MyEvent"", Level = LogLevel.Debug, Message = ""M1"")]
+                    static partial void M2(ILogger logger);
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.ShouldntReuseEventNames.Id, diagnostics[0].Id);
+            Assert.Contains("MyEvent", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+            Assert.Contains("MyClass", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
         public async Task MethodReturnType()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

@@ -68,7 +68,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 INamedTypeSymbol stringSymbol = _compilation.GetSpecialType(SpecialType.System_String);
 
                 var results = new List<LoggerClass>();
-                var ids = new HashSet<int>();
+                var eventIds = new HashSet<int>();
+                var eventNames = new HashSet<string>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
                 foreach (var group in classes.GroupBy(x => x.SyntaxTree))
@@ -84,7 +85,10 @@ namespace Microsoft.Extensions.Logging.Generators
                         string? loggerField = null;
                         bool multipleLoggerFields = false;
 
-                        ids.Clear();
+                        // events ids and names should be unique in a class
+                        eventIds.Clear();
+                        eventNames.Clear();
+
                         foreach (MemberDeclarationSyntax member in classDec.Members)
                         {
                             var method = member as MethodDeclarationSyntax;
@@ -252,14 +256,16 @@ namespace Microsoft.Extensions.Logging.Generators
                                         keepMethod = false;
                                     }
 
-                                    // ensure there are no duplicate ids.
-                                    if (ids.Contains(lm.EventId))
+                                    // ensure there are no duplicate event ids.
+                                    if (!eventIds.Add(lm.EventId))
                                     {
                                         Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                     }
-                                    else
+
+                                    // ensure there are no duplicate event names.
+                                    if (lm.EventName != null && !eventNames.Add(lm.EventName))
                                     {
-                                        _ = ids.Add(lm.EventId);
+                                        Diag(DiagnosticDescriptors.ShouldntReuseEventNames, ma.GetLocation(), lm.EventName, classDec.Identifier.Text);
                                     }
 
                                     string msg = lm.Message;

@@ -403,11 +403,11 @@ get_context (void)
 	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
-		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		context->stack_start = (guchar*)mono_valloc_aligned (INTERP_STACK_SIZE, MINT_STACK_ALIGNMENT, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
 		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
 		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
 		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
-		context->stack_pointer = context->stack_start + MINT_STACK_SLOT_SIZE;
+		context->stack_pointer = context->stack_start + MINT_STACK_ALIGNMENT;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
 		/* Make sure all data is initialized before publishing the context */
@@ -2226,6 +2226,7 @@ interp_entry (InterpEntryData *data)
 			sp_args = STACK_ADD_BYTES (sp_args, size);
 		}
 	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	InterpFrame frame = {0};
 	frame.imethod = data->rmethod;
@@ -2600,7 +2601,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 			 * that could end up doing a jit call.
 			 */
 			gint32 size = mono_class_value_size (klass, NULL);
-			cinfo->res_size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			cinfo->res_size = ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		} else {
 			cinfo->res_size = MINT_STACK_SLOT_SIZE;
 		}
@@ -2663,19 +2664,17 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
 			MonoFtnDesc ftndesc = {0};
-			void *extra_arg;
 			ftndesc.addr = cinfo->addr;
 			ftndesc.arg = cinfo->extra_arg;
-			extra_arg = cinfo->no_wrapper ? cinfo->extra_arg : &ftndesc;
 			interp_push_lmf (&ext, frame);
 			if (
 				mono_opt_jiterpreter_wasm_eh_enabled ||
 				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
 			) {
-				thunk (extra_arg, ret_sp, sp, &thrown);
+				thunk (ret_sp, sp, &ftndesc, &thrown);
 			} else {
 				mono_interp_invoke_wasm_jit_call_trampoline (
-					thunk, extra_arg, ret_sp, sp, &thrown
+					thunk, ret_sp, sp, &ftndesc, &thrown
 				);
 			}
 			interp_pop_lmf (&ext);
@@ -2685,7 +2684,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
 				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
-					rmethod, cinfo, fn, rmethod->hasthis, rmethod->param_count,
+					rmethod->method, rmethod, cinfo, fn,
+					rmethod->hasthis, rmethod->param_count,
 					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {
@@ -3103,6 +3103,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		}
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
+	newsp = (stackval*)ALIGN_TO (newsp, MINT_STACK_ALIGNMENT);
 	context->stack_pointer = (guchar*)newsp;
 	g_assert (context->stack_pointer < context->stack_end);
 
@@ -3965,6 +3966,15 @@ main_loop:
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CALL_ALIGN_STACK) {
+			int call_offset = ip [1];
+			int aligned_call_offset = call_offset + MINT_STACK_SLOT_SIZE;
+			int params_stack_size = ip [2];
+
+			memmove (locals + aligned_call_offset, locals + call_offset, params_stack_size);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
 			// FIXME We don't need to encode the whole signature, just param_count
 			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
@@ -4215,6 +4225,8 @@ call:
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
+			g_assert_checked (((gsize)context->stack_pointer % MINT_STACK_ALIGNMENT) == 0);
+
 			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
 				context->stack_end = context->stack_real_end;
 				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
@@ -5592,10 +5604,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
 			return_offset = ip [1];
 			call_args_offset = ip [1];
+			int aligned_call_args_offset = ALIGN_TO (call_args_offset, MINT_STACK_ALIGNMENT);
 
 			int param_size = ip [3];
                         if (param_size)
-                                memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+                                memmove (locals + aligned_call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+			call_args_offset = aligned_call_args_offset;
 			LOCAL_VAR (call_args_offset, gpointer) = NULL;
 			ip += 4;
 			goto call;
@@ -5711,19 +5725,21 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gboolean is_vt = ret_size != 0;
 			if (!is_vt)
 				ret_size = MINT_STACK_SLOT_SIZE;
+			return_offset = call_args_offset;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
 
 			MonoClass *newobj_class = cmethod->method->klass;
 
+			call_args_offset = ALIGN_TO (call_args_offset + ret_size, MINT_STACK_ALIGNMENT);
 			// We allocate space on the stack for return value and for this pointer, that is passed to ctor
+			// Here we use return_offset as meaning original call_args_offset
 			if (param_size)
-				memmove (locals + call_args_offset + ret_size + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+				memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + return_offset, param_size);
 
 			if (is_vt) {
-				this_ptr = locals + call_args_offset;
+				this_ptr = locals + return_offset;
 				memset (this_ptr, 0, ret_size);
-				call_args_offset += ret_size;
 			} else {
 				// FIXME push/pop LMF
 				MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
@@ -5735,11 +5751,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				error_init_reuse (error);
 				this_ptr = mono_object_new_checked (newobj_class, error);
 				mono_interp_error_cleanup (error); // FIXME: do not swallow the error
-				LOCAL_VAR (call_args_offset, gpointer) = this_ptr; // return value
-				call_args_offset += MINT_STACK_SLOT_SIZE;
+				LOCAL_VAR (return_offset, gpointer) = this_ptr; // return value
 			}
 			LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
-			return_offset = call_args_offset; // unused, prevent warning
 			ip += 5;
 			goto call;
 		}
@@ -7340,7 +7354,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			int len = LOCAL_VAR (ip [2], gint32);
 			gpointer mem;
 			if (len > 0) {
-				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+				// We align len to 8 so we can safely load all primitive types on all platforms
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
 				if (frame->imethod->init_locals)
 					memset (mem, 0, len);
@@ -7940,6 +7955,7 @@ interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoOb
 		}
 		findex ++;
 	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	/* Allocate frame */
 	InterpFrame frame = {0};

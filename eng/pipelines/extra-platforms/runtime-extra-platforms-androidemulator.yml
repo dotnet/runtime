@@ -21,7 +21,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
-    - Android_x64
+    - android_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -57,7 +57,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isAndroidEmulatorOnlyBuild: ${{ parameters.isAndroidEmulatorOnlyBuild }}
     platforms:
-      - Android_x64
+      - android_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -92,8 +92,8 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x86
-    - Android_x64
+    - android_x86
+    - android_x64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

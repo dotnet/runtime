@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         // Move off the main stack
-        private Expression BuildScopedExpression(ServiceCallSite callSite)
+        private ConditionalExpression BuildScopedExpression(ServiceCallSite callSite)
         {
             ConstantExpression callSiteExpression = Expression.Constant(
                 callSite,

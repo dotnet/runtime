@@ -28,7 +28,7 @@ namespace NetCoreServer
             byte[] bytes = Encoding.ASCII.GetBytes(echoJson);
             var hash = md5.ComputeHash(bytes);
             string encodedHash = Convert.ToBase64String(hash);
-            context.Response.Headers.Add("Content-MD5", encodedHash);
+            context.Response.Headers["Content-MD5"] = encodedHash;
 
             RequestInformation newEcho = RequestInformation.DeSerializeFromJson(echoJson);
             context.Response.ContentType = "text/plain"; //"application/json";
