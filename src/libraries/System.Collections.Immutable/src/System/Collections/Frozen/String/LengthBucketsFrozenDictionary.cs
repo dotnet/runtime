@@ -23,8 +23,8 @@ namespace System.Collections.Frozen
         private readonly bool _ignoreCase;
 
         private LengthBucketsFrozenDictionary(
-            string[] keys, TValue[] values, KeyValuePair<string, int>[][] lengthBuckets, int minLength, IEqualityComparer<string> comparer) :
-            base(comparer)
+            string[] keys, TValue[] values, KeyValuePair<string, int>[][] lengthBuckets, int minLength, IEqualityComparer<string> comparer)
+            : base(comparer)
         {
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
 
