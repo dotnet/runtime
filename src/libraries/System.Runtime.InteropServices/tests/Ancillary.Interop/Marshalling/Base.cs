@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // Types for the COM Source Generator that define the basic vtable interactions and that we would need in the COM source generator in one form or another.
 namespace System.Runtime.InteropServices.Marshalling;
 
