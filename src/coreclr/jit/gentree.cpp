@@ -8407,13 +8407,6 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             tree->gtFlags |= GTF_VAR_CLONED;
             copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
             assert(!copy->AsLclVarCommon()->HasSsaName() || ((copy->gtFlags & GTF_VAR_DEF) == 0));
-
-            if ((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) != 0)
-            {
-                // We should only see this on LCL_VAR today
-                assert(tree->gtOper == GT_LCL_VAR);
-                copy->gtFlags |= GTF_VAR_NEVER_NEGATIVE;
-            }
             break;
 
         default:
@@ -8441,9 +8434,9 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
 
-                if ((tree->gtFlags & GTF_FLD_NEVER_NEGATIVE) != 0)
+                if (tree->AsField()->IsNeverNegative())
                 {
-                    copy->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                    copy->AsField()->SetIsNeverNegative(true);
                 }
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
@@ -8587,11 +8580,6 @@ GenTree* Compiler::gtCloneExpr(
                     copy = gtNewLclvNode(tree->AsLclVar()->GetLclNum(),
                                          tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
-
-                    if ((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) != 0)
-                    {
-                        copy->gtFlags |= GTF_VAR_NEVER_NEGATIVE;
-                    }
                 }
                 goto DONE;
 
@@ -8609,9 +8597,6 @@ GenTree* Compiler::gtCloneExpr(
                         GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                                       tree->AsLclFld()->GetLclOffs(), tree->AsLclFld()->GetLayout());
                     copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
-
-                    // We shouldn't see this on LCL_FLD today
-                    assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
                 }
                 goto DONE;
 
@@ -8650,10 +8635,6 @@ GenTree* Compiler::gtCloneExpr(
             case GT_LCL_VAR_ADDR:
             {
                 copy = new (this, oper) GenTreeLclVar(oper, tree->TypeGet(), tree->AsLclVar()->GetLclNum());
-
-                // We shouldn't see this on LCL_VAR_ADDR today
-                assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
-
                 goto DONE;
             }
 
@@ -8661,10 +8642,6 @@ GenTree* Compiler::gtCloneExpr(
             {
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
-
-                // We shouldn't see this on LCL_FLD_ADDR today
-                assert((tree->gtFlags & GTF_VAR_NEVER_NEGATIVE) == 0);
-
                 goto DONE;
             }
 
@@ -8805,9 +8782,9 @@ GenTree* Compiler::gtCloneExpr(
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
 
-                if ((tree->gtFlags & GTF_FLD_NEVER_NEGATIVE) != 0)
+                if (tree->AsField()->IsNeverNegative())
                 {
-                    copy->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                    copy->AsField()->SetIsNeverNegative(true);
                 }
                 break;
 
@@ -24655,6 +24632,20 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
     return AsLclFld()->GetLayout();
 }
 
+//------------------------------------------------------------------------
+// GenTreeLclVarCommon::IsNeverNegative: Gets true if the lcl var is never negative; otherwise false.
+//
+// Arguments:
+//    comp - the compiler instance
+//
+// Return Value:
+//    true if the lcl var is never negative; otherwise false.
+//
+bool GenTreeLclVarCommon::IsNeverNegative(Compiler* comp) const
+{
+    return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
+}
+
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForFMA: check if the result is written into one of the operands.
@@ -24748,6 +24739,24 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     {
         return AsIntConCommon()->IntegralValue() >= 0;
     }
+
+    if (IsLocal())
+    {
+        if (AsLclVarCommon()->IsNeverNegative(comp))
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+    else if (OperIs(GT_FIELD))
+    {
+        if (AsField()->IsNeverNegative())
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+
     // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }

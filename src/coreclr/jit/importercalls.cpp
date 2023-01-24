@@ -2782,8 +2782,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTree* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                length->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                length->SetIsNeverNegative(true);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2844,7 +2844,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
                 GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                fieldRef->gtFlags |= GTF_FLD_NEVER_NEGATIVE;
+                fieldRef->SetIsNeverNegative(true);
                 return fieldRef;
             }
 

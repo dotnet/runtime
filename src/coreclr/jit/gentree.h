@@ -474,7 +474,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_CLONED         = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT        = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT  = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
-    GTF_VAR_NEVER_NEGATIVE = 0x00100000, // GT_LCL_VAR -- this node can be assumed to never return a negative value
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -493,7 +492,6 @@ enum GenTreeFlags : unsigned int
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
-    GTF_FLD_NEVER_NEGATIVE      = 0x80000000, // GT_FIELD -- this field can be assumed to never return a negative value
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
@@ -3654,6 +3652,8 @@ public:
         return m_ssaNum.IsComposite();
     }
 
+    bool IsNeverNegative(Compiler* comp) const;
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()
     {
@@ -4006,7 +4006,12 @@ struct GenTreeField : public GenTreeUnOp
 {
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
-    bool                 gtFldMayOverlap;
+    bool                 gtFldMayOverlap : 1;
+
+private:
+    bool                 gtFldIsNeverNegative : 1;
+
+public:
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
@@ -4037,6 +4042,16 @@ struct GenTreeField : public GenTreeUnOp
     {
         assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsNeverNegative() const
+    {
+        return gtFldIsNeverNegative;
+    }
+
+    void SetIsNeverNegative(bool value)
+    {
+        gtFldIsNeverNegative = value;
     }
 
     bool IsInstance() const
