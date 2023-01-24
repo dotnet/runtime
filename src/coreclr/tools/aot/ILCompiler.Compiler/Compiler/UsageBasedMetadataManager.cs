@@ -407,32 +407,7 @@ namespace ILCompiler
         {
             base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
 
-            try
-            {
-                if (type.HasBaseType)
-                {
-                    GetDataFlowDependenciesForInstantiation(ref dependencies, factory, type.BaseType, type);
-                }
-
-                foreach (var runtimeInterface in type.RuntimeInterfaces)
-                {
-                    GetDataFlowDependenciesForInstantiation(ref dependencies, factory, runtimeInterface, type);
-                }
-            }
-            catch (TypeSystemException)
-            {
-                // Wasn't able to do dataflow because of missing references or something like that.
-                // This likely won't compile either, so we don't care about missing dependencies.
-            }
-        }
-
-        private void GetDataFlowDependenciesForInstantiation(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, TypeDesc contextType)
-        {
-            if (type.HasInstantiation && FlowAnnotations.HasGenericParameterAnnotation(type))
-            {
-                TypeDesc instantiatedType = type.InstantiateSignature(contextType.Instantiation, Instantiation.Empty);
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, Logger, factory, FlowAnnotations, new Logging.MessageOrigin(contextType), instantiatedType);
-            }
+            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
         }
 
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)

@@ -140,11 +140,11 @@ namespace ILCompiler.Dataflow
             => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
         /// <summary>
-        /// GetFieldValue is called every time the scanner needs to represent a value of the field
+        /// HandleGetField is called every time the scanner needs to represent a value of the field
         /// either as a source or target. It is not called when just a reference to field is created,
         /// But if such reference is dereferenced then it will get called.
         /// </summary>
-        protected override MultiValue GetFieldValue(MethodIL methodBody, int offset, FieldDesc field)
+        protected override MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 

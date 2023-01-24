@@ -67,7 +67,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2091")]
 			class DerivedWithNoAnnotations<TUnknown>
 				: BaseWithPublicMethods<TUnknown>
-			{ }
+			{
+				[ExpectedWarning ("IL2091")]  // Compiler generates an implicit call to BaseWithPublicMethods<TUnknown>..ctor
+				public DerivedWithNoAnnotations () { }
+			}
 
 			[ExpectedWarning ("IL2091")]
 			class DerivedWithMismatchAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
@@ -97,6 +100,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public static void GetDerivedMethods () => GetMethods ();
 			}
 
+			[ExpectedWarning ("IL2091")]
+			static void TestWithUnannotatedTypeArgument<TUnknown> ()
+			{
+				object a;
+				a = new DerivedWithMatchingAnnotation<TUnknown> (); // IL2091 due to the instantiation
+				a = new DerivedWithNoAnnotations<TUnknown> ();
+			}
+
 			public static void Test ()
 			{
 				Type t;
@@ -106,6 +117,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t = typeof (DerivedWithMismatchAnnotation<>);
 				t = typeof (DerivedWithOneMismatch<>);
 				t = typeof (DerivedWithTwoMatching<,>);
+
+				// Also try exact instantiations
+				object a;
+				a = new DerivedWithMatchingAnnotation<TestType> ();
+				a = new DerivedWithMatchingAnnotation<string> ();
+
+				// Also try with unannotated type parameter
+				TestWithUnannotatedTypeArgument<TestType> ();
 
 				DerivedWithOnlyStaticMethodReference<TestType>.GetDerivedMethods ();
 			}

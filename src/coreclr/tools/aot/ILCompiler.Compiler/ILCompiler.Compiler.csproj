@@ -387,6 +387,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />

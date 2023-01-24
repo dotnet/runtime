@@ -41,25 +41,19 @@ namespace ILCompiler.Dataflow
 
         public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, TypeDesc type)
         {
-            if (type.HasInstantiation)
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (typeDefinition != type)
             {
-                TypeDesc typeDefinition = type.GetTypeDefinition();
-                if (typeDefinition != type)
-                {
-                    ProcessGenericInstantiation(diagnosticContext, reflectionMarker, type.Instantiation, typeDefinition.Instantiation);
-                }
+                ProcessGenericInstantiation(diagnosticContext, reflectionMarker, type.Instantiation, typeDefinition.Instantiation);
             }
         }
 
         public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, MethodDesc method)
         {
-            if (method.HasInstantiation)
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+            if (typicalMethod != method)
             {
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-                if (typicalMethod != method)
-                {
-                    ProcessGenericInstantiation(diagnosticContext, reflectionMarker, method.Instantiation, typicalMethod.Instantiation);
-                }
+                ProcessGenericInstantiation(diagnosticContext, reflectionMarker, method.Instantiation, typicalMethod.Instantiation);
             }
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, method.OwningType);

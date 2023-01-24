@@ -1027,7 +1027,7 @@ namespace ILCompiler.Dataflow
                         StoreMethodLocalValue(locals, source, localReference.LocalIndex, curBasicBlock);
                         break;
                     case FieldReferenceValue fieldReference
-                    when GetFieldValue(method, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
+                    when HandleGetField(method, offset, fieldReference.FieldDefinition).AsSingleValue() is FieldValue fieldValue:
                         HandleStoreField(method, offset, fieldValue, source);
                         break;
                     case ParameterReferenceValue parameterReference
@@ -1059,7 +1059,7 @@ namespace ILCompiler.Dataflow
         }
 
         /// <summary>
-        /// GetFieldValue is called every time the scanner needs to represent a value of the field
+        /// HandleGetField is called every time the scanner needs to represent a value of the field
         /// either as a source or target. It is not called when just a reference to field is created,
         /// But if such reference is dereferenced then it will get called.
         /// It is NOT called for hoisted locals.
@@ -1076,7 +1076,7 @@ namespace ILCompiler.Dataflow
         /// need to track those. It makes the design a bit cleaner because hoisted locals are purely handled in here
         /// and don't leak over to the reflection handling code in any way.
         /// </remarks>
-        protected abstract MultiValue GetFieldValue(MethodIL methodBody, int offset, FieldDesc field);
+        protected abstract MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field);
 
         private void ScanLdfld(
             MethodIL methodBody,
@@ -1102,7 +1102,7 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                value = GetFieldValue(methodBody, offset, field);
+                value = HandleGetField(methodBody, offset, field);
             }
             currentStack.Push(new StackSlot(value));
         }
@@ -1138,7 +1138,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            foreach (var value in GetFieldValue(methodBody, offset, field))
+            foreach (var value in HandleGetField(methodBody, offset, field))
             {
                 // GetFieldValue may return different node types, in which case they can't be stored to.
                 // At least not yet.
@@ -1199,7 +1199,7 @@ namespace ILCompiler.Dataflow
                             dereferencedValue,
                             CompilerGeneratedState.IsHoistedLocal(fieldReferenceValue.FieldDefinition)
                                 ? interproceduralState.GetHoistedLocal(new HoistedLocalKey(fieldReferenceValue.FieldDefinition))
-                                : GetFieldValue(methodBody, offset, fieldReferenceValue.FieldDefinition));
+                                : HandleGetField(methodBody, offset, fieldReferenceValue.FieldDefinition));
                         break;
                     case ParameterReferenceValue parameterReferenceValue:
                         dereferencedValue = MultiValue.Meet(

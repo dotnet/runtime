@@ -897,10 +897,6 @@ namespace ILCompiler
         {
         }
 
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-        }
-
         public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
         }
