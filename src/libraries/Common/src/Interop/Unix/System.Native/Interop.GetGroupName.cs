@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 
 internal static partial class Interop
 {
@@ -18,14 +19,14 @@ internal static partial class Interop
         /// </summary>
         /// <param name="gid">The group ID.</param>
         /// <param name="groupName">When this method returns true, gets the value of the group name associated with the specified id. On failure, it is null.</param>
-        /// <returns>On success, return true. On failure, returns false.</returns>
-        internal static bool TryGetGroupName(uint gid, out string? groupName)
+        /// <returns>On success, returns true. On failure, returns false.</returns>
+        internal static bool TryGetGroupName(uint gid, [NotNullWhen(returnValue: true)] out string? groupName)
         {
-            groupName = GetGroupNameInternal(gid);
+            groupName = GetGroupName(gid);
             return groupName != null;
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroupName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        private static unsafe partial string? GetGroupNameInternal(uint uid);
+        private static unsafe partial string? GetGroupName(uint uid);
     }
 }
