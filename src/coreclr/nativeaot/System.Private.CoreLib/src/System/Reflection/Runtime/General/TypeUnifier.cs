@@ -85,9 +85,9 @@ namespace System.Reflection.Runtime.General
             return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType);
         }
 
-        public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        public static RuntimeTypeInfo GetConstructedGenericTypeNoConstraintCheck(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments);
+            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfoNoConstraintCheck(genericTypeDefinition, genericTypeArguments);
         }
 
         public static RuntimeTypeInfo GetConstructedGenericTypeWithTypeHandle(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
@@ -396,7 +396,14 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle: GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments));
+            RuntimeTypeHandle precomputedTypeHandle = GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments, ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponents);
+            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
+        }
+
+        internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfoNoConstraintCheck(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        {
+            RuntimeTypeHandle precomputedTypeHandle = GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments, ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponentsNoConstraintCheck);
+            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
         }
 
         internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeHandle precomputedTypeHandle)
@@ -407,7 +414,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return typeInfo;
         }
 
-        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        delegate bool TryGetConstructedGenericTypeDelegate(RuntimeTypeHandle genericDefinition, RuntimeTypeHandle[] genericArguments, out RuntimeTypeHandle result);
+
+        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, TryGetConstructedGenericTypeDelegate constructor)
         {
             RuntimeTypeHandle genericTypeDefinitionHandle = genericTypeDefinition.InternalTypeHandleIfAvailable;
             if (genericTypeDefinitionHandle.IsNull())
@@ -427,7 +436,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             RuntimeTypeHandle typeHandle;
-            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out typeHandle))
+            if (!constructor(genericTypeDefinitionHandle, genericTypeArgumentHandles, out typeHandle))
                 return default(RuntimeTypeHandle);
 
             return typeHandle;
