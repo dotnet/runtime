@@ -9,6 +9,8 @@ using Xunit;
 
 namespace System.Tests.Types
 {
+    // The "_Unmodified" tests use GetXxxType() and are essentially a baseline since they don't return modifiers.
+    // The "_Modified" tests are based on the same types but use GetModifiedXxxType() in order to return the modifiers.
     public partial class ModifiedTypeTests
     {
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
@@ -52,7 +54,7 @@ namespace System.Tests.Types
             }
         }
 
-        // NOTE: commented out due to compiler issue on NativeAOT:
+        // NOTE: commented out due to compiler issue on NativeAOT: #81117
         /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -67,18 +69,15 @@ namespace System.Tests.Types
             Type genericParam = arrayGenericFcnPtr.GetGenericArguments()[0];
             Assert.False(IsModifiedType(genericParam));
 
-            Type nestedFcnPtr = genericParam.GetElementType();
-            Assert.True(nestedFcnPtr.IsFunctionPointer);
-            Assert.False(IsModifiedType(nestedFcnPtr));
+            Type fcnPtr = genericParam.GetElementType();
+            Assert.True(fcnPtr.IsFunctionPointer);
+            Assert.False(IsModifiedType(fcnPtr));
 
-            Assert.Equal(1, nestedFcnPtr.GetFunctionPointerParameterTypes().Length);
-            Type paramType = nestedFcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.Equal(1, fcnPtr.GetFunctionPointerParameterTypes().Length);
+            Type paramType = fcnPtr.GetFunctionPointerParameterTypes()[0];
             Assert.False(IsModifiedType(paramType));
         }
-        */
 
-        // NOTE: commented out due to compiler issue on NativeAOT
-        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -92,20 +91,17 @@ namespace System.Tests.Types
             Type genericParam = arrayGenericFcnPtr.GetGenericArguments()[0];
             Assert.True(IsModifiedType(genericParam));
 
-            Type nestedFcnPtr = genericParam.GetElementType();
-            Assert.True(nestedFcnPtr.IsFunctionPointer);
-            Assert.True(IsModifiedType(nestedFcnPtr));
+            Type fcnPtr = genericParam.GetElementType();
+            Assert.True(fcnPtr.IsFunctionPointer);
+            Assert.True(IsModifiedType(fcnPtr));
 
-            Assert.Equal(1, nestedFcnPtr.GetFunctionPointerParameterTypes().Length);
-            Type paramType = nestedFcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.Equal(1, fcnPtr.GetFunctionPointerParameterTypes().Length);
+            Type paramType = fcnPtr.GetFunctionPointerParameterTypes()[0];
             Assert.True(IsModifiedType(paramType));
 
             Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
         }
-        */
 
-        // NOTE: commented out due to compiler issue on NativeAOT
-        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -126,10 +122,7 @@ namespace System.Tests.Types
             Type paramType = p1.GetFunctionPointerParameterTypes()[0];
             Assert.False(IsModifiedType(paramType));
         }
-        */
 
-        // NOTE: commented out due to compiler issue on NativeAOT
-        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -190,7 +183,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFields_Nested_Basic()
+        public static unsafe void TestFields_Parameterized_Basic()
         {
             Type ptr_ptr_int = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._ptr_ptr_int), Bindings).GetModifiedFieldType();
             Verify(ptr_ptr_int);
@@ -212,7 +205,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFields_Nested_FcnPtr()
+        public static unsafe void TestFields_Parameterized_FcnPtr()
         {
             Type ptr_fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._ptr_fcnPtr), Bindings).GetModifiedFieldType();
             Assert.True(ptr_fcnPtr.IsPointer);
@@ -249,8 +242,8 @@ namespace System.Tests.Types
             // Call these again to ensure any backing caching strategy works.
             TestFields_Modified();
             TestFields_Unmodified();
-            TestFields_Nested_Basic();
-            TestFields_Nested_FcnPtr();
+            TestFields_Parameterized_Basic();
+            TestFields_Parameterized_FcnPtr();
         }
 
         [Fact]
@@ -281,7 +274,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestConstructorParameters()
+        public static unsafe void TestConstructorParameters_Unmodified()
         {
             ParameterInfo[] parameters = typeof(ModifiedTypeHolder).Project().GetConstructors()[0].GetParameters();
 
@@ -290,11 +283,19 @@ namespace System.Tests.Types
             Assert.False(IsModifiedType(param0));
             Type[] mods = param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers();
             Assert.Equal(0, mods.Length);
+        }
 
-            param0 = parameters[0].GetModifiedParameterType();
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestConstructorParameters_Modified()
+        {
+            ParameterInfo[] parameters = typeof(ModifiedTypeHolder).Project().GetConstructors()[0].GetParameters();
+
+            Type param0 = parameters[0].GetModifiedParameterType();
             Assert.True(param0.IsFunctionPointer);
             Assert.True(IsModifiedType(param0));
-            mods = param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers();
+            Type[] mods = param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers();
             Assert.Equal(1, mods.Length);
             Assert.Equal(typeof(OutAttribute).Project(), mods[0]);
         }
@@ -302,84 +303,169 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFunctionPointerParameters_fcnPtrP0Out()
+        public static unsafe void TestFunctionPointerParameters_fcnPtrP0Out_Unmodified()
         {
-            Type fcnPtr;
-
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).GetModifiedFieldType();
-            Verify(fcnPtr);
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).GetModifiedFieldType();
+            Assert.True(fcnPtr.IsFunctionPointer);
+            Assert.Equal(1, fcnPtr.GetFunctionPointerParameterTypes().Length);
             Assert.True(IsModifiedType(fcnPtr));
             Assert.Equal(typeof(int).Project().MakeByRefType(), fcnPtr.GetFunctionPointerParameterTypes()[0].UnderlyingSystemType);
-
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).FieldType;
-            Verify(fcnPtr);
-            Assert.False(IsModifiedType(fcnPtr));
-            Assert.Equal(typeof(int).Project().MakeByRefType(), fcnPtr.GetFunctionPointerParameterTypes()[0]);
-
-            void Verify(Type type)
-            {
-                Assert.True(type.IsFunctionPointer);
-                Assert.Equal(1, type.GetFunctionPointerParameterTypes().Length);
-            }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFunctionPointerParameters__fcnPtr_fcnPtrP0Out()
+        public static unsafe void TestFunctionPointerParameters_fcnPtrP0Out_Modified()
         {
-            Type fcnPtr;
-            Type param0;
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtrP0Out), Bindings).FieldType;
+            Assert.True(fcnPtr.IsFunctionPointer);
+            Assert.Equal(1, fcnPtr.GetFunctionPointerParameterTypes().Length);
+            Assert.False(IsModifiedType(fcnPtr));
+            Assert.Equal(typeof(int).Project().MakeByRefType(), fcnPtr.GetFunctionPointerParameterTypes()[0]);
+        }
 
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Out), Bindings).GetModifiedFieldType();
-            param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
-            Verify(param0);
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrP0Out_Unmodified()
+        {
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Out), Bindings).FieldType;
+            Type param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.True(param0.IsFunctionPointer);
+            Assert.Equal(1, param0.GetFunctionPointerParameterTypes().Length);
+            Assert.False(IsModifiedType(param0));
+            Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0]);
+            Assert.Equal(0, param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrP0Out_Modified()
+        {
+            // Modified
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Out), Bindings).GetModifiedFieldType();
+            Type param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.True(param0.IsFunctionPointer);
+            Assert.Equal(1, param0.GetFunctionPointerParameterTypes().Length);
             Assert.True(IsModifiedType(param0));
             Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0].UnderlyingSystemType);
             Assert.Equal(1, param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers().Length);
             Assert.Equal(typeof(OutAttribute).Project(), param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers()[0]);
-
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Out), Bindings).FieldType;
-            param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
-            Verify(param0);
-            Assert.False(IsModifiedType(param0));
-            Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0]);
-            Assert.Equal(0, param0.GetFunctionPointerParameterTypes()[0].GetRequiredCustomModifiers().Length);
-
-            void Verify(Type type)
-            {
-                Assert.True(type.IsFunctionPointer);
-                Assert.Equal(1, type.GetFunctionPointerParameterTypes().Length);
-            }
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrP0Ref()
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrP0Ref_Unmodified()
         {
-            Type fcnPtr;
-            Type param0;
-
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).GetModifiedFieldType();
-            param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
-            Verify(param0);
-            Assert.True(IsModifiedType(param0));
-            Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0].UnderlyingSystemType);
-
-            fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).FieldType;
-            param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
-            Verify(param0);
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).FieldType;
+            Type param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.True(param0.IsFunctionPointer);
+            Assert.Equal(1, param0.GetFunctionPointerParameterTypes().Length);
             Assert.False(IsModifiedType(param0));
             Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0]);
-
-            void Verify(Type type)
-            {
-                Assert.True(type.IsFunctionPointer);
-                Assert.Equal(1, type.GetFunctionPointerParameterTypes().Length);
-            }
+            Assert.Equal(0, param0.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, param0.GetOptionalCustomModifiers().Length);
         }
-        
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrP0Ref_Modified()
+        {
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrP0Ref), Bindings).GetModifiedFieldType();
+            Type param0 = fcnPtr.GetFunctionPointerParameterTypes()[0];
+            Assert.True(param0.IsFunctionPointer);
+            Assert.Equal(1, param0.GetFunctionPointerParameterTypes().Length);
+            Assert.True(IsModifiedType(param0));
+            Assert.Equal(typeof(int).Project().MakeByRefType(), param0.GetFunctionPointerParameterTypes()[0].UnderlyingSystemType);
+            Assert.Equal(0, param0.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, param0.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrRetP0Ref_Unmodified()
+        {
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrRetP0Out), Bindings).FieldType;
+            Type param0 = fcnPtr.GetFunctionPointerReturnType().GetFunctionPointerParameterTypes()[0];
+            Assert.False(IsModifiedType(param0));
+            Assert.Equal(0, param0.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, param0.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_fcnPtrRetP0Ref_Modified()
+        {
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._fcnPtr_fcnPtrRetP0Out), Bindings).GetModifiedFieldType();
+            Type param0 = fcnPtr.GetFunctionPointerReturnType().GetFunctionPointerParameterTypes()[0];
+            Assert.True(IsModifiedType(param0));
+            Assert.Equal(typeof(int).Project().MakeByRefType(), param0.UnderlyingSystemType);
+            Assert.Equal(1, param0.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, param0.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_deep_Unmodified()
+        {
+            //public static delegate*<
+            //    delegate*<byte>,
+            //    delegate*<delegate*<int, void>>[][],
+            //    delegate*<delegate*<delegate*<int, string, out bool, void>>>, // Target is the 'ref bool'
+            //    delegate*<sbyte>> _deep;
+
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._deep), Bindings).FieldType;
+            Assert.Equal("System.SByte()(System.Byte(), System.Void(System.Int32)()[][], System.Void(System.Int32, System.String, System.Boolean&)()())", fcnPtr.ToString());
+
+            Type l1 = fcnPtr.GetFunctionPointerParameterTypes()[2];
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)()()", l1.ToString());
+
+            Type l2 = l1.GetFunctionPointerReturnType();
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)()", l2.ToString());
+
+            Type l3 = l2.GetFunctionPointerReturnType();
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)", l3.ToString());
+
+            Type target = l3.GetFunctionPointerParameterTypes()[2];
+            Assert.Equal("System.Boolean&", target.ToString());
+
+            Assert.False(IsModifiedType(target));
+            Assert.Equal(0, target.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, target.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TestFunctionPointerParameters_fcnPtr_deep_Modified()
+        {
+            Type fcnPtr = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._deep), Bindings).GetModifiedFieldType();
+            Assert.Equal("System.SByte()(System.Byte(), System.Void(System.Int32)()[][], System.Void(System.Int32, System.String, System.Boolean&)()())", fcnPtr.ToString());
+
+            Type l1 = fcnPtr.GetFunctionPointerParameterTypes()[2];
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)()()", l1.ToString());
+
+            Type l2 = l1.GetFunctionPointerReturnType();
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)()", l2.ToString());
+
+            Type l3 = l2.GetFunctionPointerReturnType();
+            Assert.Equal("System.Void(System.Int32, System.String, System.Boolean&)", l3.ToString());
+
+            Type target = l3.GetFunctionPointerParameterTypes()[2];
+            Assert.Equal("System.Boolean&", target.ToString());
+
+            Assert.True(IsModifiedType(target));
+            Assert.Equal(1, target.GetRequiredCustomModifiers().Length);
+            Assert.Equal(0, target.GetOptionalCustomModifiers().Length);
+            Assert.Equal(typeof(OutAttribute).Project(), target.GetRequiredCustomModifiers()[0]);
+        }
+
         private static bool IsModifiedType(Type type)
         {
             return !ReferenceEquals(type, type.UnderlyingSystemType);
@@ -396,7 +482,7 @@ namespace System.Tests.Types
 
             // Although function pointers can't be used in generics directly, they can be used indirectly
             // through an array or pointer.
-            // NOTE: commented out due to compiler issue on NativeAOT:
+            // NOTE: commented out due to compiler issue on NativeAOT: #81117
             // public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
 
             public static int** _ptr_ptr_int;
@@ -407,7 +493,7 @@ namespace System.Tests.Types
 
             public static void M_P0IntOut(out int i) { i = 42; }
             public static void M_P0FcnPtrOut(delegate*<out int, void> fp) { }
-            // NOTE: commented out due to compiler issue on NativeAOT:
+            // NOTE: commented out due to compiler issue on NativeAOT: #81117
             // public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
 
             public int InitProperty_Int { get; init; }
@@ -417,6 +503,12 @@ namespace System.Tests.Types
             public static delegate*<out int, void> _fcnPtrP0Out;
             public static delegate*<delegate*<out int, void>, void> _fcnPtr_fcnPtrP0Out;
             public static delegate*<delegate*<ref int, void>, void> _fcnPtr_fcnPtrP0Ref;
+            public static delegate*<delegate*<out int, void>> _fcnPtr_fcnPtrRetP0Out;
+            public static delegate*<
+                delegate*<byte>,
+                delegate*<delegate*<int, void>>[][],
+                delegate*<delegate*<delegate*<int, string, out bool, void>>>,
+                delegate*<sbyte>> _deep;
         }
     }
 }

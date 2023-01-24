@@ -301,12 +301,13 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
 
                 // Handle return type
                 IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
+                if (*isFinished)
+                    return S_OK;
 
                 // Handle args
                 while (fpArgCnt--)
                 {
                     IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
-
                     if (*isFinished)
                         return S_OK;
                 }
@@ -337,7 +338,6 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                             IfFailRet(GetData(NULL)); // Skip lower bounds
                         }
                     }
-
                 }
                 break;
 
@@ -359,7 +359,6 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                 while (argCnt--)
                 {
                     IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
-
                     if (*isFinished)
                         return S_OK;
                 }
