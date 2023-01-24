@@ -2,8 +2,9 @@
 
 open System
 open System.Text.Json
-open System.Text.Json.Serialization
+open System.Text.Json.Serialization.Metadata
 open Xunit
+open System.Text.Json.Serialization
 
 type MySingleCaseUnion = MySingleCaseUnion of string
 type MyTypeSafeEnum = Label1 | Label2 | Label3
@@ -37,3 +38,10 @@ let ``Union serialization should throw NotSupportedException`` (value : 'T) =
 [<MemberData(nameof(getUnionValues))>]
 let ``Union deserialization should throw NotSupportedException`` (value : 'T) =
     Assert.Throws<NotSupportedException>(fun () -> JsonSerializer.Deserialize<'T>("{}") |> ignore)
+
+[<Theory>]
+[<MemberData(nameof(getUnionValues))>]
+let ``Union types should resolve metadata and converters`` (value : 'T) =
+    let options = JsonSerializerOptions.Default
+    Assert.IsAssignableFrom<JsonTypeInfo<'T>>(options.GetTypeInfo(typeof<'T>)) |> ignore
+    Assert.IsAssignableFrom<JsonConverter<'T>>(options.GetConverter(typeof<'T>)) |> ignore

@@ -132,9 +132,8 @@ namespace System.Text.Json.Serialization.Tests
             // - "Path:" is not repeated due to having two try\catch blocks (the second block does not append "Path:" again).
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<TopLevelPocoWithNoConverter>(Json, options));
-            Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
-            Assert.Contains("Path: $.InvalidProperty | LineNumber: 0 | BytePositionInLine: 20.", ex.ToString());
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("Path: $.InvalidProperty.NotSupported", ex.Message);
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
 
             var poco = new TopLevelPocoWithNoConverter()
@@ -152,10 +151,40 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(poco, options));
-            Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
-            Assert.Contains("Path: $.InvalidProperty.", ex.ToString());
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("Path: $.InvalidProperty.NotSupported.", ex.Message);
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
+        }
+
+        [Fact]
+        public static void UnsupportedPropertyWithCustomConverter()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/80914
+            var dto = new PocoWithConverterOnInvalidProperty { NotSupported = new int[,] { { 1, 0 }, { 0, 1 } } };
+
+            string json = JsonSerializer.Serialize(dto);
+            Assert.Equal("""{"NotSupported":null}""", json);
+
+            dto = JsonSerializer.Deserialize<PocoWithConverterOnInvalidProperty>(json);
+            Assert.Null(dto.NotSupported);
+        }
+
+        private class PocoWithConverterOnInvalidProperty
+        {
+            [JsonConverter(typeof(MultiDimArrayConverter))]
+            public int[,] NotSupported { get; set; }
+
+            public class MultiDimArrayConverter : JsonConverter<int[,]>
+            {
+                public override int[,]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    reader.Skip();
+                    return null;
+                }
+
+                public override void Write(Utf8JsonWriter writer, int[,] value, JsonSerializerOptions options)
+                    => writer.WriteNullValue();
+            }
         }
     }
 }
