@@ -542,10 +542,17 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
     for (unsigned i = 0; i < destLclVar->lvFieldCnt; ++i)
     {
-        unsigned   fieldLclNum = destLclVar->lvFieldLclStart + i;
-        LclVarDsc* fieldDesc   = m_comp->lvaGetDesc(fieldLclNum);
-        var_types  fieldType   = fieldDesc->TypeGet();
-        GenTree*   dest        = m_comp->gtNewLclvNode(fieldLclNum, fieldType);
+        unsigned fieldLclNum = destLclVar->lvFieldLclStart + i;
+
+        if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
+        {
+            JITDUMP("Field-by-field init skipping write to dead field V%02u\n", fieldLclNum);
+            continue;
+        }
+
+        LclVarDsc* fieldDesc = m_comp->lvaGetDesc(fieldLclNum);
+        var_types  fieldType = fieldDesc->TypeGet();
+        GenTree*   dest      = m_comp->gtNewLclvNode(fieldLclNum, fieldType);
 
         GenTree* src;
         switch (fieldType)
@@ -608,6 +615,11 @@ void MorphInitBlockHelper::TryInitFieldByField()
         {
             tree = asg;
         }
+    }
+
+    if (tree == nullptr)
+    {
+        tree = m_comp->gtNewNothingNode();
     }
 
     m_result                 = tree;
@@ -1159,7 +1171,7 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
 //
 GenTree* MorphCopyBlockHelper::CopyFieldByField()
 {
-    GenTreeOp* asgFields = nullptr;
+    GenTree* result = nullptr;
 
     GenTree* dstAddr       = nullptr;
     GenTree* srcAddr       = nullptr;
@@ -1169,6 +1181,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     GenTree* addrSpillAsg = nullptr;
 
     unsigned fieldCnt = 0;
+
+    unsigned dyingFieldCnt = 0;
+    if (m_dstDoFldAsg && m_comp->fgGlobalMorph)
+    {
+        dyingFieldCnt = genCountBits(static_cast<unsigned>(m_dstLclNode->gtFlags & m_dstVarDsc->AllFieldDeathFlags()));
+    }
 
     if (m_dstDoFldAsg && m_srcDoFldAsg)
     {
@@ -1189,22 +1207,18 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         {
             srcAddr = m_src->AsIndir()->Addr();
 
-            if (m_comp->gtClone(srcAddr))
+            // "srcAddr" might be a complex expression that we need to clone
+            // and spill, unless we only end up using the address once.
+            if (fieldCnt - dyingFieldCnt > 1)
             {
-                // "srcAddr" is simple expression. No need to spill.
-                noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-            }
-            else
-            {
-                // "srcAddr" is complex expression. Clone and spill it (unless the destination is
-                // a struct local that only has one field, in which case we'd only use the
-                // address value once...)
-                if (m_dstVarDsc->lvFieldCnt > 1)
+                if (m_comp->gtClone(srcAddr))
                 {
-                    // We will spill "srcAddr" (i.e. assign to a temp "BlockOp address local")
-                    // no need to clone a new copy as it is only used once
-                    //
-                    addrSpill = srcAddr; // addrSpill represents the "srcAddr"
+                    // "srcAddr" is simple expression. No need to spill.
+                    noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                }
+                else
+                {
+                    addrSpill = srcAddr;
                 }
             }
         }
@@ -1262,22 +1276,26 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
     // We may have allocated a temp above, and that may have caused the lvaTable to be expanded.
     // So, beyond this point we cannot rely on the old values of 'm_srcVarDsc' and 'm_dstVarDsc'.
+    unsigned numCreated = 0;
+
     for (unsigned i = 0; i < fieldCnt; ++i)
     {
         GenTree* dstFld;
         if (m_dstDoFldAsg)
         {
             noway_assert((m_dstLclNum != BAD_VAR_NUM) && (dstAddr == nullptr));
+
             unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i;
+            if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
+            {
+                JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
+                continue;
+            }
+
             dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
 
             // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
             dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
-
-            if (m_dstLclNode->IsLastUse(i))
-            {
-                dstFld->gtFlags |= GTF_VAR_DEATH;
-            }
 
             // Don't CSE the lhs of an assignment.
             dstFld->gtFlags |= GTF_DONT_CSE;
@@ -1360,6 +1378,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
         }
 
+        numCreated++;
+
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
@@ -1395,7 +1415,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == (fieldCnt - 1))
+                        if (numCreated == fieldCnt - dyingFieldCnt)
                         {
                             // Reuse the original m_srcAddr tree for the last field.
                             srcAddrClone = srcAddr;
@@ -1482,19 +1502,32 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (addrSpillAsg != nullptr)
         {
-            asgFields    = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, addrSpillAsg, asgOneFld)->AsOp();
+            result       = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, addrSpillAsg, asgOneFld)->AsOp();
             addrSpillAsg = nullptr;
         }
-        else if (asgFields != nullptr)
+        else if (result != nullptr)
         {
-            asgFields = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, asgFields, asgOneFld)->AsOp();
+            result = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, result, asgOneFld)->AsOp();
         }
         else
         {
-            asgFields = asgOneFld;
+            result = asgOneFld;
         }
     }
-    return asgFields;
+
+    if (dyingFieldCnt == fieldCnt)
+    {
+        assert(result == nullptr);
+        if (m_srcUseLclFld)
+        {
+            result = m_comp->gtNewNothingNode();
+        }
+        else
+        {
+            result = m_comp->gtNewIndir(TYP_BYTE, srcAddr);
+        }
+    }
+    return result;
 }
 
 //------------------------------------------------------------------------
