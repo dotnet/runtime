@@ -897,74 +897,39 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static AssemblyInfo FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
-            var entries = peReader.ReadDebugDirectory();
-            CodeViewDebugDirectoryData? codeViewData = null;
-            var isPortableCodeView = false;
-            List<PdbChecksum> pdbChecksums = new();
-            foreach (var entry in peReader.ReadDebugDirectory())
-            {
-                if (entry.Type == DebugDirectoryEntryType.CodeView)
-                {
-                    codeViewData = peReader.ReadCodeViewDebugDirectoryData(entry);
-                    if (entry.IsPortableCodeView)
-                        isPortableCodeView = true;
-                }
-                if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
-                {
-                    var checksum = peReader.ReadPdbChecksumDebugDirectoryData(entry);
-                    pdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
-                }
-            }
+
+            var debugProvider = new PortableExecutableDebugMetadataProvider(peReader);
+
             var asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             string name = ReadAssemblyName(asmMetadataReader);
-
-            MetadataReader pdbMetadataReader = null;
-            if (pdb != null)
-            {
-                var pdbStream = new MemoryStream(pdb);
-                try
-                {
-                    // MetadataReaderProvider.FromPortablePdbStream takes ownership of the stream
-                    pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-                }
-                catch (BadImageFormatException)
-                {
-                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {name} (use DebugType=Portable/Embedded)", token);
-                }
-            }
-            else
-            {
-                var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-                if (embeddedPdbEntry.DataSize != 0)
-                {
-                    pdbMetadataReader = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
-                }
-            }
+            ReadDebugEntries(monoProxy, sessionId, name, debugProvider, pdb, out var codeViewData, out var isPortableCodeView, out var pdbChecksums, out var pdbMetadataReader, token);
 
             var assemblyInfo = new AssemblyInfo(peReader, name, asmMetadataReader, codeViewData, pdbChecksums.ToArray(), isPortableCodeView, pdbMetadataReader, logger);
             return assemblyInfo;
         }
 
-        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        private static void ReadDebugEntries(MonoProxy monoProxy, SessionId sessionId, string name, IDebugMetadataProvider provider, byte[] pdb, out CodeViewDebugDirectoryData? codeViewData, out bool isPortableCodeView, out List<PdbChecksum> pdbChecksums, out MetadataReader pdbMetadataReader, CancellationToken token)
         {
-            var entries = wcReader.ReadDebugDirectory();
-            CodeViewDebugDirectoryData? codeViewData = null;
-            var isPortableCodeView = false;
-            List<PdbChecksum> pdbChecksums = new();
+            var entries = provider.ReadDebugDirectory();
+            codeViewData = null;
+            isPortableCodeView = false;
+            pdbChecksums = new();
             foreach (var entry in entries)
             {
-                var codeView = entries[0];
-                if (codeView.Type == DebugDirectoryEntryType.CodeView)
+                if (entry.Type == DebugDirectoryEntryType.CodeView)
                 {
-                    codeViewData = wcReader.ReadCodeViewDebugDirectoryData(codeView);
-                    if (codeView.IsPortableCodeView)
+                    codeViewData = provider.ReadCodeViewDebugDirectoryData(entry);
+                    if (entry.IsPortableCodeView)
                         isPortableCodeView = true;
                 }
+                if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
+                {
+                    var checksum = provider.ReadPdbChecksumDebugDirectoryData(entry);
+                    pdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
+                }
             }
-            var asmMetadataReader = wcReader.GetMetadataReader();
-            string name = ReadAssemblyName(asmMetadataReader);
 
-            MetadataReader pdbMetadataReader = null;
+            pdbMetadataReader = null;
             if (pdb != null)
             {
                 var pdbStream = new MemoryStream(pdb);
@@ -983,9 +948,21 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
                 if (embeddedPdbEntry.DataSize != 0)
                 {
-                    pdbMetadataReader = wcReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
+                    pdbMetadataReader = provider.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
                 }
             }
+
+
+        }
+
+        private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        {
+            var debugProvider = new WebcilDebugMetadataProvider(wcReader);
+            var asmMetadataReader = wcReader.GetMetadataReader();
+            string name = ReadAssemblyName(asmMetadataReader);
+
+            ReadDebugEntries(monoProxy, sessionId, name, debugProvider, pdb, out var codeViewData, out var isPortableCodeView, out var pdbChecksums, out var pdbMetadataReader, token);
+
 
             var assemblyInfo = new AssemblyInfo(wcReader, name, asmMetadataReader, codeViewData, pdbChecksums.ToArray(), isPortableCodeView, pdbMetadataReader, logger);
             return assemblyInfo;

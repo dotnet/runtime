@@ -297,6 +297,8 @@ public sealed class WebcilReader : IDisposable
 
     }
 
+    public PdbChecksumDebugDirectoryData ReadPdbChecksumDebugDirectoryData(DebugDirectoryEntry entry) => throw new NotImplementedException("read pdb checksum");
+
     private long TranslateRVA(uint rva)
     {
         if (_sections == null)
