@@ -2663,18 +2663,15 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	if (mono_opt_jiterpreter_jit_call_enabled) {
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
-			MonoFtnDesc ftndesc = {0};
-			ftndesc.addr = cinfo->addr;
-			ftndesc.arg = cinfo->extra_arg;
 			interp_push_lmf (&ext, frame);
 			if (
 				mono_opt_jiterpreter_wasm_eh_enabled ||
 				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
 			) {
-				thunk (ret_sp, sp, &ftndesc, &thrown);
+				thunk (ret_sp, sp, &thrown);
 			} else {
 				mono_interp_invoke_wasm_jit_call_trampoline (
-					thunk, ret_sp, sp, &ftndesc, &thrown
+					thunk, ret_sp, sp, &thrown
 				);
 			}
 			interp_pop_lmf (&ext);
@@ -2682,10 +2679,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 		} else {
 			int count = cinfo->hit_count;
 			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
-				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
-					rmethod->method, rmethod, cinfo, fn,
-					rmethod->hasthis, rmethod->param_count,
+					rmethod->method, rmethod, cinfo,
 					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {

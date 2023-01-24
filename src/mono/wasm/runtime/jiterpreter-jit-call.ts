@@ -42,8 +42,8 @@ struct _JitCallInfo {
 */
 
 const offsetOfAddr = 0,
-    // offsetOfExtraArg = 4,
-    // offsetOfWrapper = 8,
+    offsetOfExtraArg = 4,
+    offsetOfWrapper = 8,
     offsetOfSig = 12,
     offsetOfArgInfo = 16,
     offsetOfRetMt = 24,
@@ -75,48 +75,53 @@ class TrampolineInfo {
     catchExceptions: boolean;
     target: number; // either cinfo->wrapper or cinfo->addr, depending
     addr: number; // always cinfo->addr
+    wrapper: number; // always cinfo->wrapper
     name: string;
     result: number;
     queue: NativePointer[] = [];
     signature: VoidPtr;
-    signatureParamCount: number;
-    signatureParamTypes: MonoType[];
-    signatureReturnType: MonoType;
+    paramTypes: MonoType[];
+    returnType: MonoType;
     wasmNativeReturnType: WasmValtype;
     wasmNativeSignature: WasmValtype[];
     enableDirect: boolean;
+    rgctx: VoidPtr;
 
     constructor (
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
-        has_this: boolean, param_count: number,
-        arg_offsets: VoidPtr, catch_exceptions: boolean, func: number
+        arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
         this.method = method;
         this.rmethod = rmethod;
+        this.catchExceptions = catch_exceptions;
         this.cinfo = cinfo;
         this.addr = getU32(<any>cinfo + offsetOfAddr);
-        this.hasThisReference = has_this;
-        this.paramCount = param_count;
-        this.catchExceptions = catch_exceptions;
-        this.argOffsets = new Array(param_count);
+        this.wrapper = getU32(<any>cinfo + offsetOfWrapper);
         this.signature = <any>getU32(<any>cinfo + offsetOfSig);
-        this.signatureReturnType = cwraps.mono_jiterp_get_signature_return_type(this.signature);
-        this.signatureParamCount = cwraps.mono_jiterp_get_signature_param_count(this.signature);
+        this.rgctx = <any>getU32(<any>cinfo + offsetOfExtraArg);
         this.noWrapper = getU8(<any>cinfo + offsetOfNoWrapper) !== 0;
-        const ptr = cwraps.mono_jiterp_get_signature_params(this.signature);
-        this.signatureParamTypes = new Array(this.signatureParamCount);
-        for (let i = 0; i < this.signatureParamCount; i++)
-            this.signatureParamTypes[i] = <any>getU32(<any>ptr + (i * 4));
         this.hasReturnValue = getI32(<any>cinfo + offsetOfRetMt) !== -1;
-        for (let i = 0, c = param_count + (has_this ? 1 : 0); i < c; i++)
+
+        this.returnType = cwraps.mono_jiterp_get_signature_return_type(this.signature);
+        this.paramCount = cwraps.mono_jiterp_get_signature_param_count(this.signature);
+        this.hasThisReference = cwraps.mono_jiterp_get_signature_has_this(this.signature) !== 0;
+
+        const ptr = cwraps.mono_jiterp_get_signature_params(this.signature);
+        this.paramTypes = new Array(this.paramCount);
+        for (let i = 0; i < this.paramCount; i++)
+            this.paramTypes[i] = <any>getU32(<any>ptr + (i * 4));
+
+        this.argOffsets = new Array(this.paramCount);
+        for (let i = 0, c = this.paramCount + (this.hasThisReference ? 1 : 0); i < c; i++)
             this.argOffsets[i] = <any>getU32(<any>arg_offsets + (i * 4));
-        this.target = func;
+
+        this.target = this.noWrapper ? this.addr : this.wrapper;
         this.result = 0;
 
-        this.wasmNativeReturnType = this.signatureReturnType && this.hasReturnValue
-            ? (wasmTypeFromCilOpcode as any)[cwraps.mono_jiterp_type_to_stind(this.signatureReturnType)]
+        this.wasmNativeReturnType = this.returnType && this.hasReturnValue
+            ? (wasmTypeFromCilOpcode as any)[cwraps.mono_jiterp_type_to_stind(this.returnType)]
             : WasmValtype.void;
-        this.wasmNativeSignature = this.signatureParamTypes.map(
+        this.wasmNativeSignature = this.paramTypes.map(
             monoType => (wasmTypeFromCilOpcode as any)[cwraps.mono_jiterp_type_to_ldind(monoType)]
         );
         this.enableDirect = getOptions().directJitCalls &&
@@ -143,7 +148,7 @@ class TrampolineInfo {
 
         // FIXME: Without doing this we occasionally get name collisions while jitting.
         const disambiguate = nextDisambiguateIndex++;
-        this.name = `${this.enableDirect ? "jcp" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
+        this.name = `${this.enableDirect ? "jcd" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
     }
 }
 
@@ -161,21 +166,20 @@ function getWasmTableEntry (index: number) {
 }
 
 export function mono_interp_invoke_wasm_jit_call_trampoline (
-    thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
+    thunkIndex: number, ret_sp: number, sp: number, thrown: NativePointer
 ) {
     // FIXME: It's impossible to get emscripten to export this for some reason
     // const thunk = <Function>Module.getWasmTableEntry(thunkIndex);
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
-        thunk(ret_sp, sp, ftndesc, thrown);
+        thunk(ret_sp, sp, thrown);
     } catch (exc) {
         setU32_unchecked(thrown, 1);
     }
 }
 
 export function mono_interp_jit_wasm_jit_call_trampoline (
-    method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr, func: number,
-    has_this: number, param_count: number,
+    method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
 ) : void {
     // multiple cinfos can share the same target function, so for that scenario we want to
@@ -202,8 +206,8 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     }
 
     const info = new TrampolineInfo(
-        method, rmethod, cinfo, has_this !== 0, param_count,
-        arg_offsets, catch_exceptions !== 0, func
+        method, rmethod, cinfo,
+        arg_offsets, catch_exceptions !== 0
     );
     targetCache[cacheKey] = info;
     jitQueue.push(info);
@@ -362,7 +366,6 @@ export function mono_interp_flush_jitcall_queue () : void {
             "trampoline", {
                 "ret_sp": WasmValtype.i32,
                 "sp": WasmValtype.i32,
-                "ftndesc": WasmValtype.i32,
                 "thrown": WasmValtype.i32,
             }, WasmValtype.void
         );
@@ -714,8 +717,8 @@ function generate_wasm_body (
 
         if (info.enableDirect) {
             // The wrapper call convention is byref for all args. Now we convert it to the native calling convention
-            const loadCilOp = cwraps.mono_jiterp_type_to_ldind(info.signatureParamTypes[i]);
-            mono_assert(loadCilOp, () => `No load opcode for ${info.signatureParamTypes[i]}`);
+            const loadCilOp = cwraps.mono_jiterp_type_to_ldind(info.paramTypes[i]);
+            mono_assert(loadCilOp, () => `No load opcode for ${info.paramTypes[i]}`);
 
             // We already performed a ldarg up above, so now we have the address that would've been passed to the wrapper
             /*
@@ -736,7 +739,7 @@ function generate_wasm_body (
             } else {
                 const loadWasmOp = (wasmOpcodeFromCilOpcode as any)[loadCilOp];
                 if (!loadWasmOp) {
-                    console.error(`No wasm load op for arg #${i} type ${info.signatureParamTypes[i]} cil opcode ${loadCilOp}`);
+                    console.error(`No wasm load op for arg #${i} type ${info.paramTypes[i]} cil opcode ${loadCilOp}`);
                     return false;
                 }
 
@@ -756,12 +759,17 @@ function generate_wasm_body (
     mono_mb_emit_byte (mb, CEE_LDIND_I);
     */
 
-    builder.local("ftndesc");
     if (info.enableDirect || info.noWrapper) {
-        // Native calling convention wants an rgctx, not a ftndesc. The rgctx
-        //  lives at offset 4 in the ftndesc, after the call target
-        builder.appendU8(WasmOpcode.i32_load);
-        builder.appendMemarg(4, 0);
+        // TODO: Always use i32_const? This will not change across threads, it's constant
+        builder.ptr_const(info.rgctx);
+    } else {
+        // gsharedvt wrappers expect a MonoFtnDesc containing the actual call target + rgctx value,
+        //  so allocate a persistent one on the heap to use
+        const ftndesc = Module._malloc(8);
+        setU32_unchecked(<any>ftndesc + 0, info.addr);
+        setU32_unchecked(<any>ftndesc + 4, info.rgctx);
+        // TODO: Always use i32_const? This will not change across threads, it's constant
+        builder.ptr_const(ftndesc);
     }
 
     /*
@@ -790,10 +798,10 @@ function generate_wasm_body (
 
     // The stack should now contain [ret_sp, retval], so write retval through the return address
     if (info.hasReturnValue && info.enableDirect) {
-        const storeCilOp = cwraps.mono_jiterp_type_to_stind(info.signatureReturnType);
+        const storeCilOp = cwraps.mono_jiterp_type_to_stind(info.returnType);
         const storeWasmOp = (wasmOpcodeFromCilOpcode as any)[storeCilOp];
         if (!storeWasmOp) {
-            console.error(`No wasm store op for return type ${info.signatureReturnType} cil opcode ${storeCilOp}`);
+            console.error(`No wasm store op for return type ${info.returnType} cil opcode ${storeCilOp}`);
             return false;
         }
 
