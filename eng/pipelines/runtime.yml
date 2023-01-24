@@ -1406,7 +1406,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Debug
+          buildConfig: Release
           helixQueueGroup: pr
           platforms:
           - SourceBuild_banana24_x64
