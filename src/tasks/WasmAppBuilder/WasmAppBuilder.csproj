@@ -7,6 +7,7 @@
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -20,12 +21,13 @@
 
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextVersion)" />
+    <!-- FIXME: is this the correct version of SRM to use when building for .NET Framework? -->
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+  </ItemGroup>
 
-    <!-- When we requested a version that is newer than what comes with Visual Studio version of msbuild, it causes problems with
-         running the task from inside VS. Therefore, we are using the moving version only for source-build. -->
-    <PackageReference Include="System.Text.Json" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="6.0.0" PrivateAssets="all" />
-    <PackageReference Include="System.Text.Json" Condition="'$(DotNetBuildFromSource)' == 'true'" Version="$(SystemTextJsonVersion)" PrivateAssets="all" />
+  <ItemGroup>
+      <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj" Private="true" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
@@ -35,6 +37,9 @@
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\System.Reflection.MetadataLoadContext.dll"
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*"

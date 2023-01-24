@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
-        [SkipOnPlatform(TestPlatforms.Android, "IPv6 loopback with SSL doesn't work on Android")]
+        [SkipOnPlatform(TestPlatforms.Android, "TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -205,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
             {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
@@ -287,7 +287,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
             {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };
@@ -984,13 +984,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(null, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, false)]
+        [InlineData(null, false, false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
-        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming)
+        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked, bool enableWasmStreaming, bool slowChunks)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
@@ -1003,6 +1004,13 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (enableWasmStreaming && !PlatformDetection.IsBrowser)
+            {
+                // enableWasmStreaming makes only sense on Browser platform
+                return;
+            }
+
+            var tcs = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
@@ -1079,11 +1087,21 @@ namespace System.Net.Http.Functional.Tests
 
                         // Various forms of reading
                         var buffer = new byte[1];
+                        var buffer2 = new byte[2];
 
                         if (PlatformDetection.IsBrowser)
                         {
 #if !NETFRAMEWORK
-                            Assert.Equal('h', await responseStream.ReadByteAsync());
+                            if(slowChunks)
+                            {
+                                Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer2)));
+                                Assert.Equal((byte)'h', buffer2[0]);
+                                tcs.SetResult(true);
+                            }
+                            else
+                            {
+                                Assert.Equal('h', await responseStream.ReadByteAsync());
+                            }
                             Assert.Equal('e', await responseStream.ReadByteAsync());
                             Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
                             Assert.Equal((byte)'l', buffer[0]);
@@ -1184,7 +1202,18 @@ namespace System.Net.Http.Functional.Tests
                     {
                         case true:
                             await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
-                            await connection.SendResponseBodyAsync("3\r\nhel\r\n8\r\nlo world\r\n0\r\n\r\n");
+                            if(PlatformDetection.IsBrowser && slowChunks)
+                            {
+                                await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                                await tcs.Task;
+                                await connection.SendResponseBodyAsync("2\r\nel\r\n", false);
+                                await connection.SendResponseBodyAsync("8\r\nlo world\r\n", false);
+                                await connection.SendResponseBodyAsync("0\r\n\r\n", true);
+                            }
+                            else
+                            {
+                                await connection.SendResponseBodyAsync("3\r\nhel\r\n8\r\nlo world\r\n0\r\n\r\n");
+                            }
                             break;
 
                         case false:
@@ -1293,6 +1322,80 @@ namespace System.Net.Http.Functional.Tests
                 }
             },
             server => server.AcceptConnectionSendResponseAndCloseAsync());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        public async Task ReadAsStreamAsync_StreamingCancellation()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+#if !NETFRAMEWORK
+                request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+#endif
+
+                var cts = new CancellationTokenSource();
+                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request, CancellationToken.None))
+                {
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync(TestAsync))
+                    {
+                        var buffer = new byte[1];
+#if !NETFRAMEWORK
+                        Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                        Assert.Equal((byte)'h', buffer[0]);
+                        var sizePromise = responseStream.ReadAsync(new Memory<byte>(buffer), cts.Token);
+                        await tcs2.Task; // wait for the request and response header to be sent
+                        cts.Cancel();
+                        await Assert.ThrowsAsync<TaskCanceledException>(async () => await sizePromise);
+                        tcs.SetResult(true);
+#endif
+                    }
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
+                    await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    tcs2.SetResult(true);
+                    await tcs.Task;
+                });
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task ReadAsStreamAsync_Cancellation()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var tcs2 = new TaskCompletionSource<bool>();
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                var cts = new CancellationTokenSource();
+                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                {
+                    var responsePromise = client.SendAsync(TestAsync, request, cts.Token);
+                    await tcs2.Task; // wait for the request to be sent
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<TaskCanceledException>(async () => await responsePromise);
+                    tcs.SetResult(true);
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync();
+                    tcs2.SetResult(true);
+                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
+                    await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    await tcs.Task;
+                });
+            });
         }
 
         [Fact]

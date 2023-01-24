@@ -13,7 +13,6 @@ namespace System.Security.Cryptography
     {
         private const int NonceSize = 12;
         public static KeySizes NonceByteSizes { get; } = new KeySizes(NonceSize, NonceSize, 1);
-        public static KeySizes TagByteSizes { get; } = new KeySizes(12, 16, 1);
 
         public AesGcm(ReadOnlySpan<byte> key)
         {

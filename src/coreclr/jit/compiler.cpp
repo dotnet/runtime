@@ -1226,11 +1226,10 @@ void DisplayNowayAssertMap()
         NowayAssertCountMap* nacp  = new NowayAssertCountMap[count];
         unsigned             i     = 0;
 
-        for (FileLineToCountMap::KeyIterator iter = NowayAssertMap->Begin(), end = NowayAssertMap->End();
-             !iter.Equal(end); ++iter)
+        for (FileLineToCountMap::Node* const iter : FileLineToCountMap::KeyValueIteration(NowayAssertMap))
         {
-            nacp[i].count = iter.GetValue();
-            nacp[i].fl    = iter.Get();
+            nacp[i].count = iter->GetValue();
+            nacp[i].fl    = iter->GetKey();
             ++i;
         }
 
@@ -1776,9 +1775,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
+
+    compPoisoningAnyImplicitByrefs = false;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
+#if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
     // Initialize the method name and related info, as it is used early in determining whether to
     // apply stress modes, and which ones to apply.
     // Note that even allocating memory can invoke the stress mechanism, so ensure that both
@@ -1789,7 +1790,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = nullptr;
     info.compFullName   = nullptr;
 
-    info.compMethodName = eeGetMethodName(methodHnd, nullptr);
+    info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
     info.compPerfScore  = 0.0;
@@ -1849,13 +1850,12 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     fgInit();
     lvaInit();
+    optInit();
 
     if (!compIsForInlining())
     {
         codeGen = getCodeGenerator(this);
-        optInit();
         hashBv::Init(this);
-
         compVarScopeMap = nullptr;
 
         // If this method were a real constructor for Compiler, these would
@@ -1947,9 +1947,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // DEBUG
 
     vnStore                    = nullptr;
-    m_opAsgnVarDefSsaNums      = nullptr;
+    m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
+    fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -1967,6 +1968,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
+
+    m_preferredInitCctor = CORINFO_HELP_UNDEF;
 }
 
 /*****************************************************************************
@@ -2252,38 +2255,49 @@ void Compiler::compSetProcessor()
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
-        opts.compUseCMOV                    = !compStressCompile(STRESS_USE_CMOV, 50);
+        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
 #endif // TARGET_X86
-
-    // The VM will set the ISA flags depending on actual hardware support
-    // and any specified config switches specified by the user. The exception
-    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
-    // don't actually exist. The JIT is in charge of adding those and ensuring
-    // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
+// The VM will set the ISA flags depending on actual hardware support
+// and any specified config switches specified by the user. The exception
+// here is for certain "artificial ISAs" such as Vector64/128/256 where they
+// don't actually exist. The JIT is in charge of adding those and ensuring
+// the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-#endif // TARGET_XARCH
-
-#if defined(TARGET_ARM64)
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+    }
+#elif defined(TARGET_ARM64)
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
+    {
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    }
 #endif // TARGET_ARM64
 
-    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
     opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
+        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
@@ -2700,6 +2714,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     fgPgoQueryResult = E_FAIL;
     fgPgoFailReason  = nullptr;
     fgPgoSource      = ICorJitInfo::PgoSource::Unknown;
+    fgPgoHaveWeights = false;
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
@@ -2755,6 +2770,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (SUCCEEDED(fgPgoQueryResult))
         {
             assert(fgPgoSchema != nullptr);
+
+            for (UINT32 i = 0; i < fgPgoSchemaCount; i++)
+            {
+                ICorJitInfo::PgoInstrumentationKind kind = fgPgoSchema[i].InstrumentationKind;
+                if (kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ||
+                    kind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount)
+                {
+                    fgPgoHaveWeights = true;
+                    break;
+                }
+            }
         }
 
         // A failed result implies a NULL fgPgoSchema
@@ -3850,6 +3878,9 @@ _SetMinOpts:
     {
         opts.compFlags &= ~CLFLG_MAXOPT;
         opts.compFlags |= CLFLG_MINOPT;
+
+        lvaEnregEHVars &= compEnregLocals();
+        lvaEnregMultiRegVars &= compEnregLocals();
     }
 
     if (!compIsForInlining())
@@ -4095,13 +4126,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
     }
     else if (tier1)
     {
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+        if (opts.IsOSR())
         {
             return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
-            return "Tier1";
+            return instrumenting ? "Instrumented Tier1" : "Tier1";
         }
     }
     else if (opts.OptimizationEnabled())
@@ -4360,13 +4391,21 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
     }
 
+    // If we are doing OSR, update flow to initially reach the appropriate IL offset.
+    //
+    if (opts.IsOSR())
+    {
+        fgFixEntryFlowForOSR();
+    }
+
+    // Enable the post-phase checks that use internal logic to decide when checking makes sense.
+    //
+    activePhaseChecks = PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
+                        PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
-
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // If instrumenting, add block and class probes.
     //
@@ -4374,6 +4413,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
+
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
 
     // Transform indirect calls that require control flow expansion.
     //
@@ -4423,6 +4466,24 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
+    //
+    auto computePredsPhase = [this]() {
+        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+        fgRenumberBlocks();
+        noway_assert(!fgComputePredsDone);
+        fgComputePreds();
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks::CHECK_FG;
+    };
+    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
@@ -4523,26 +4584,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        noway_assert(!fgComputePredsDone);
-        fgComputePreds();
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
-
-    // Now that we have pred lists, do some flow-related optimizations
+    // Do some flow-related optimizations
     //
     if (opts.OptimizationEnabled())
     {
+        // Tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE, &Compiler::fgTailMerge);
+
         // Merge common throw blocks
         //
         DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
@@ -4560,13 +4609,26 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     lvaRefCountState = RCS_EARLY;
 
+    if (opts.OptimizationEnabled())
+    {
+        fgNodeThreading = NodeThreading::AllLocals;
+    }
+
     // Figure out what locals are address-taken.
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    // Do an early pass of liveness for forward sub and morph. This data is
+    // valid until after morph.
+    //
+    DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
+
+    // Locals tree list is no longer kept valid.
+    fgNodeThreading = NodeThreading::None;
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -4587,7 +4649,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
-        lvaRefCountState = RCS_INVALID;
+        lvaRefCountState       = RCS_INVALID;
+        fgLocalVarLivenessDone = false;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         if (fgNeedToAddFinallyTargetBits)
@@ -4613,8 +4676,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             fgRenumberBlocks();
         }
 
-        // We can now enable all phase checking
-        activePhaseChecks = PhaseChecks::CHECK_ALL;
+        // Enable IR checks
+        activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
     DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
 
@@ -4643,6 +4706,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run some flow graph optimizations (but don't reorder)
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
+
+        // Second pass of tail merge
+        //
+        DoPhase(this, PHASE_TAIL_MERGE2, &Compiler::fgTailMerge);
 
         // Compute reachability sets and dominators.
         //
@@ -4706,30 +4773,34 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SET_BLOCK_ORDER, &Compiler::fgSetBlockOrder);
 
+    fgNodeThreading = NodeThreading::AllTrees;
+
     // At this point we know if we are fully interruptible or not
     if (opts.OptimizationEnabled())
     {
-        bool doSsa           = true;
-        bool doEarlyProp     = true;
-        bool doValueNum      = true;
-        bool doLoopHoisting  = true;
-        bool doCopyProp      = true;
-        bool doBranchOpt     = true;
-        bool doCse           = true;
-        bool doAssertionProp = true;
-        bool doRangeAnalysis = true;
-        int  iterations      = 1;
+        bool doSsa                     = true;
+        bool doEarlyProp               = true;
+        bool doValueNum                = true;
+        bool doLoopHoisting            = true;
+        bool doCopyProp                = true;
+        bool doBranchOpt               = true;
+        bool doCse                     = true;
+        bool doAssertionProp           = true;
+        bool doRangeAnalysis           = true;
+        bool doVNBasedDeadStoreRemoval = true;
+        int  iterations                = 1;
 
 #if defined(OPT_CONFIG)
-        doSsa           = (JitConfig.JitDoSsa() != 0);
-        doEarlyProp     = doSsa && (JitConfig.JitDoEarlyProp() != 0);
-        doValueNum      = doSsa && (JitConfig.JitDoValueNumber() != 0);
-        doLoopHoisting  = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
-        doCopyProp      = doValueNum && (JitConfig.JitDoCopyProp() != 0);
-        doBranchOpt     = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
-        doCse           = doValueNum;
-        doAssertionProp = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
-        doRangeAnalysis = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doSsa                     = (JitConfig.JitDoSsa() != 0);
+        doEarlyProp               = doSsa && (JitConfig.JitDoEarlyProp() != 0);
+        doValueNum                = doSsa && (JitConfig.JitDoValueNumber() != 0);
+        doLoopHoisting            = doValueNum && (JitConfig.JitDoLoopHoisting() != 0);
+        doCopyProp                = doValueNum && (JitConfig.JitDoCopyProp() != 0);
+        doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
+        doCse                     = doValueNum;
+        doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
+        doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
+        doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
         if (opts.optRepeat)
         {
@@ -4781,6 +4852,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doBranchOpt)
             {
+                // Optimize redundant branches
+                //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
 
@@ -4789,6 +4862,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Remove common sub-expressions
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+            }
+
+            // Assertion prop can do arbitrary statement remorphing, which
+            // can clone code and disrupt our simpleminded SSA accounting.
+            //
+            // So, disable the ssa checks.
+            //
+            if (fgSsaChecksEnabled)
+            {
+                JITDUMP("Disabling SSA checking before assertion prop\n");
+                fgSsaChecksEnabled = false;
             }
 
             if (doAssertionProp)
@@ -4803,6 +4887,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Bounds check elimination via range analysis
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
+            }
+
+            if (doVNBasedDeadStoreRemoval)
+            {
+                // Note: this invalidates SSA and value numbers on tree nodes.
+                //
+                DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
             if (fgModified)
@@ -4842,6 +4933,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
 
+        // If conversion
+        //
+        DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
@@ -4871,6 +4966,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
+
+    fgNodeThreading = NodeThreading::LIR;
 
     // Here we do "simple lowering".  When the RyuJIT backend works for all
     // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
@@ -5320,11 +5417,11 @@ void Compiler::ResetOptAnnotations()
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    m_blockToEHPreds      = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore              = nullptr;
+    m_blockToEHPreds     = nullptr;
+    fgSsaPassesCompleted = 0;
+    fgVNPassesCompleted  = 0;
+    fgSsaChecksEnabled   = false;
 
     for (BasicBlock* const block : Blocks())
     {
@@ -5993,7 +6090,7 @@ void Compiler::compCompileFinish()
 
         printf("%08X | ", currentMethodToken);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             if (fgCalledCount < 1000)
             {
@@ -6446,7 +6543,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         InlineResult prejitResult(this, methodHnd, "prejit");
 
         // Profile data allows us to avoid early "too many IL bytes" outs.
-        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE_WEIGHTS, fgHaveSufficientProfileWeights());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);
@@ -6507,13 +6604,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         // We are jitting the root method, or inlining.
         fgFindBasicBlocks();
-
-        // If we are doing OSR, update flow to initially reach the appropriate IL offset.
-        //
-        if (opts.IsOSR())
-        {
-            fgFixEntryFlowForOSR();
-        }
     }
 
     // If we're inlining and the candidate is bad, bail out.
@@ -7140,7 +7230,7 @@ struct WrapICorJitInfo : public ICorJitInfo
             {
                 // If you get a build error here due to 'WrapICorJitInfo' being
                 // an abstract class, it's very likely that the wrapper bodies
-                // in ICorJitInfo_API_wrapper.hpp are no longer in sync with
+                // in ICorJitInfo_wrapper_generated.hpp are no longer in sync with
                 // the EE interface; please be kind and update the header file.
                 wrap = new (inst, jitstd::placement_t()) WrapICorJitInfo();
 
@@ -7160,7 +7250,7 @@ private:
     COMP_HANDLE wrapHnd; // the "real thing"
 
 public:
-#include "ICorJitInfo_API_wrapper.hpp"
+#include "ICorJitInfo_wrapper_generated.hpp"
 };
 
 #endif // MEASURE_CLRAPI_CALLS
@@ -7840,10 +7930,6 @@ const char* PhaseEnums[] = {
 #include "compphases.h"
 };
 
-const LPCWSTR PhaseEnumsW[] = {
-#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) W(#enum_nm),
-#include "compphases.h"
-};
 #endif // defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 
 #ifdef FEATURE_JIT_METHOD_PERF
@@ -8164,7 +8250,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
 
         static const char* APInames[] = {
 #define DEF_CLR_API(name) #name,
-#include "ICorJitInfo_API_names.h"
+#include "ICorJitInfo_names_generated.h"
         };
 
         unsigned shownCalls  = 0;
@@ -8543,7 +8629,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%I64u,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -8554,9 +8640,9 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     comp->m_inlineStrategy->DumpCsvData(s_csvFile);
 
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
-    fprintf(s_csvFile, "%Iu,", comp->compInfoBlkSize);
-    fprintf(s_csvFile, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%I64u,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
+    fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
+    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9239,7 +9325,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         genTreeOps op = tree->OperGet();
         switch (op)
         {
-
             case GT_LCL_VAR:
             case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
@@ -9262,9 +9347,35 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_CLONED]");
                 }
-                if (tree->gtFlags & GTF_VAR_DEATH)
+                if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
-                    chars += printf("[VAR_DEATH]");
+                    if (tree->gtFlags & GTF_VAR_DEATH)
+                    {
+                        chars += printf("[VAR_DEATH]");
+                    }
+                }
+                else
+                {
+                    if (tree->gtFlags & GTF_VAR_FIELD_DEATH0)
+                    {
+                        chars += printf("[VAR_FIELD_DEATH0]");
+                    }
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH1)
+                {
+                    chars += printf("[VAR_FIELD_DEATH1]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH2)
+                {
+                    chars += printf("[VAR_FIELD_DEATH2]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH3)
+                {
+                    chars += printf("[VAR_FIELD_DEATH3]");
+                }
+                if (tree->gtFlags & GTF_VAR_EXPLICIT_INIT)
+                {
+                    chars += printf("[VAR_EXPLICIT_INIT]");
                 }
 #if defined(DEBUG)
                 if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
@@ -9310,9 +9421,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_TGT_HEAP]");
                 }
-                if (tree->gtFlags & GTF_IND_TLS_REF)
+                if (tree->gtFlags & GTF_IND_REQ_ADDR_IN_REG)
                 {
-                    chars += printf("[IND_TLS_REF]");
+                    chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
                 if (tree->gtFlags & GTF_IND_ASG_LHS)
                 {
@@ -9502,6 +9613,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STATIC_BOX_PTR:
 
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_ADDR_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
                         break;
 
                     default:
@@ -10034,10 +10150,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_storeBlkSrc++;
                 break;
 
-            case DoNotEnregisterReason::OneAsgRetyping:
-                m_oneAsgRetyping++;
-                break;
-
             case DoNotEnregisterReason::SwizzleArg:
                 m_swizzleArg++;
                 break;
@@ -10095,6 +10207,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
                 case AddressExposedReason::DISPATCH_RET_BUF:
                     m_dispatchRetBuf++;
+                    break;
+
+                case AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS:
+                    m_stressPoisonImplicitByrefs++;
                     break;
 
                 default:
@@ -10172,7 +10288,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
-    PRINT_STATS(m_oneAsgRetyping, notEnreg);
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
@@ -10193,5 +10308,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
+    PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

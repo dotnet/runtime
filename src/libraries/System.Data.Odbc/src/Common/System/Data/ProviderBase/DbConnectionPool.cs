@@ -22,7 +22,7 @@ namespace System.Data.ProviderBase
 
         private sealed class PendingGetConnection
         {
-            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion, DbConnectionOptions? userOptions)
+            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion)
             {
                 DueTime = dueTime;
                 Owner = owner;
@@ -31,7 +31,6 @@ namespace System.Data.ProviderBase
             public long DueTime { get; private set; }
             public DbConnection Owner { get; private set; }
             public TaskCompletionSource<DbConnectionInternal> Completion { get; private set; }
-            public DbConnectionOptions? UserOptions { get; private set; }
         }
 
 
@@ -626,7 +625,7 @@ namespace System.Data.ProviderBase
                         {
                             bool allowCreate = true;
                             bool onlyOneCheckConnection = false;
-                            timeout = !TryGetConnection(next.Owner, delay, allowCreate, onlyOneCheckConnection, next.UserOptions, out connection);
+                            timeout = !TryGetConnection(next.Owner, delay, allowCreate, onlyOneCheckConnection, null, out connection);
                         }
                         catch (Exception e)
                         {
@@ -699,8 +698,7 @@ namespace System.Data.ProviderBase
                 new PendingGetConnection(
                     CreationTimeout == 0 ? Timeout.Infinite : ADP.TimerCurrent() + ADP.TimerFromSeconds(CreationTimeout / 1000),
                     owningObject,
-                    retry,
-                    userOptions);
+                    retry);
             _pendingOpens.Enqueue(pendingGetConnection);
 
             // it is better to StartNew too many times than not enough

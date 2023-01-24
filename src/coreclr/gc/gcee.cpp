@@ -157,7 +157,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)",
+    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
@@ -450,6 +450,9 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_next(seg) = 0;
     heap_segment_used(seg) = heap_segment_allocated(seg);
     heap_segment_plan_allocated(seg) = 0;
+#ifdef USE_REGIONS
+    heap_segment_gen_num(seg) = max_generation;
+#endif //USE_REGIONS
     seg->flags = heap_segment_flags_readonly;
 
 #ifdef MULTIPLE_HEAPS

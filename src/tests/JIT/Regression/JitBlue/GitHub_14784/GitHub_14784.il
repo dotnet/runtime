@@ -15,10 +15,10 @@
 .assembly extern System.Console {auto}
 .assembly GitHub_14784 {}
 
-.class private auto ansi abstract sealed beforefieldinit Program
+.class public auto ansi abstract sealed beforefieldinit Program
 extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32 Main (string[] args) cil managed 
+  .method public hidebysig static int32 Main () cil managed
   {
     .maxstack 8
     .entrypoint

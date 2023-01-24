@@ -53,6 +53,10 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+if [[ -n "$PREPEND_PATH" ]]; then
+    export PATH=$PREPEND_PATH:$PATH
+fi
+
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT
@@ -75,6 +79,12 @@ function set_env_vars()
         export SDK_HAS_WORKLOAD_INSTALLED=false
     fi
 
+    if [ "x$TEST_USING_WEBCIL" = "xtrue" ]; then
+        export USE_WEBCIL_FOR_TESTS=true
+    else
+        export USE_WEBCIL_FOR_TESTS=false
+    fi
+
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         cp -r $BASE_DIR/$_DIR_NAME $EXECUTION_DIR
@@ -85,7 +95,6 @@ function set_env_vars()
 
     export PATH=$_SDK_DIR:$PATH
     export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
-    export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs

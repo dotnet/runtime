@@ -542,6 +542,8 @@ enum BasicBlockFlags : unsigned __int64
     BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(41), // Block is a source of a backward jump
     BBF_HAS_MDARRAYREF                 = MAKE_BBFLAG(42), // Block has a multi-dimensional array reference
 
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(43), // Block has recursive tailcall that may turn into a loop
+
     // The following are sets of flags.
 
     // Flags that relate blocks to loop structure.
@@ -562,7 +564,7 @@ enum BasicBlockFlags : unsigned __int64
     // For example, the top block might or might not have BBF_GC_SAFE_POINT,
     // but we assume it does not have BBF_GC_SAFE_POINT any more.
 
-    BBF_SPLIT_LOST = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END,
+    BBF_SPLIT_LOST = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_RECURSIVE_TAILCALL,
 
     // Flags gained by the bottom block when a block is split.
     // Note, this is a conservative guess.
@@ -1198,10 +1200,10 @@ struct BasicBlock : private LIR::Range
 
     bool bbFallsThrough() const;
 
-    // Our slop fraction is 1/100 of the block weight.
+    // Our slop fraction is 1/50 of the block weight.
     static weight_t GetSlopFraction(weight_t weightBlk)
     {
-        return weightBlk / 100.0;
+        return weightBlk / 50.0;
     }
 
     // Given an the edge b1 -> b2, calculate the slop fraction by

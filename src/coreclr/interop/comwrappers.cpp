@@ -135,12 +135,12 @@ namespace ABI
                 // Insert the 'this' pointer at the appropriate locations
                 // e.g.:
                 //       32-bit         |      64-bit
-                //   (0 * 4) % 16 =  0  |  (0 * 8) % 16 = 0
-                //   (1 * 4) % 16 =  4  |  (1 * 8) % 16 = 8
-                //   (2 * 4) % 16 =  8  |  (2 * 8) % 16 = 0
-                //   (3 * 4) % 16 = 12  |  (3 * 8) % 16 = 8
-                //   (4 * 4) % 16 =  0  |  (4 * 8) % 16 = 0
-                //   (5 * 4) % 16 =  4  |  (5 * 8) % 16 = 8
+                //   (0 * 4) % 16 =  0  |  (0 * 8) % 64 =  0
+                //   (1 * 4) % 16 =  4  |  (1 * 8) % 64 =  8
+                //   (2 * 4) % 16 =  8  |  (2 * 8) % 64 = 16
+                //   (3 * 4) % 16 = 12  |  ...
+                //   (4 * 4) % 16 =  0  |  (7 * 8) % 64 = 56
+                //   (5 * 4) % 16 =  4  |  (8 * 8) % 64 =  0
                 //
                 if (((dispCount * sizeof(void*)) % ABI::DispatchAlignmentThisPtr) == 0)
                 {
@@ -338,6 +338,41 @@ namespace
     static_assert(sizeof(ManagedObjectWrapper_IReferenceTrackerTargetImpl) == (7 * sizeof(void*)), "Unexpected vtable size");
 }
 
+namespace
+{
+    // This IID represents an internal interface we define to tag any ManagedObjectWrappers we create.
+    // This interface type and GUID do not correspond to any public interface; it is an internal implementation detail.
+    // 5c13e51c-4f32-4726-a3fd-f3edd63da3a0
+    const GUID IID_TaggedImpl = { 0x5c13e51c, 0x4f32, 0x4726, { 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0 } };
+
+    class DECLSPEC_UUID("5c13e51c-4f32-4726-a3fd-f3edd63da3a0") ITaggedImpl : public IUnknown
+    {
+    public:
+        STDMETHOD(IsCurrentVersion)(_In_ void* version) = 0;
+    };
+
+    HRESULT STDMETHODCALLTYPE ITaggedImpl_IsCurrentVersion(_In_ void*, _In_ void* version)
+    {
+        return (version == (void*)&ITaggedImpl_IsCurrentVersion) ? S_OK : E_FAIL;
+    }
+
+    // Hard-coded ManagedObjectWrapper tagged vtable.
+    const struct
+    {
+        decltype(&ManagedObjectWrapper_QueryInterface) QueryInterface;
+        decltype(&ManagedObjectWrapper_AddRef) AddRef;
+        decltype(&ManagedObjectWrapper_Release) Release;
+        decltype(&ITaggedImpl_IsCurrentVersion) IsCurrentVersion;
+    } ManagedObjectWrapper_TaggedImpl {
+        &ManagedObjectWrapper_QueryInterface,
+        &ManagedObjectWrapper_AddRef,
+        &ManagedObjectWrapper_Release,
+        &ITaggedImpl_IsCurrentVersion,
+    };
+
+    static_assert(sizeof(ManagedObjectWrapper_TaggedImpl) == (4 * sizeof(void*)), "Unexpected vtable size");
+}
+
 void ManagedObjectWrapper::GetIUnknownImpl(
     _Out_ void** fpQueryInterface,
     _Out_ void** fpAddRef,
@@ -357,12 +392,37 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 {
     _ASSERTE(pUnk != nullptr);
 
-    // If the first Vtable entry is part of the ManagedObjectWrapper IUnknown impl,
+    // If the first Vtable entry is part of a ManagedObjectWrapper impl,
     // we know how to interpret the IUnknown.
     void** vtable = *reinterpret_cast<void***>(pUnk);
     if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface
         && *vtable != ManagedObjectWrapper_IReferenceTrackerTargetImpl.QueryInterface)
+    {
         return nullptr;
+    }
+
+    ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);
+    return ABI::ToManagedObjectWrapper(disp);
+}
+
+ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknownWithQueryInterface(_In_ IUnknown* pUnk)
+{
+    ManagedObjectWrapper* wrapper = MapFromIUnknown(pUnk);
+    if (wrapper != nullptr)
+        return wrapper;
+
+    // It is possible the user has defined their own IUnknown impl so
+    // we fallback to the tagged interface approach to be sure. This logic isn't
+    // handled by the DAC logic and that is by-design. Care must be taken when
+    // performing this QueryInterface() since users are free to implement a wrapper
+    // using managed code and therefore performing this operation may not be
+    // possible during a GC.
+    ComHolder<ITaggedImpl> implMaybe;
+    if (S_OK != pUnk->QueryInterface(IID_TaggedImpl, (void**)&implMaybe)
+        || S_OK != implMaybe->IsCurrentVersion((void*)&ITaggedImpl_IsCurrentVersion))
+    {
+        return nullptr;
+    }
 
     ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);
     return ABI::ToManagedObjectWrapper(disp);
@@ -381,7 +441,7 @@ HRESULT ManagedObjectWrapper::Create(
     _ASSERTE((flags & CreateComInterfaceFlagsEx::InternalMask) == CreateComInterfaceFlagsEx::None);
 
     // Maximum number of runtime supplied vtables.
-    ABI::ComInterfaceEntry runtimeDefinedLocal[4];
+    ABI::ComInterfaceEntry runtimeDefinedLocal[3];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table.
@@ -400,7 +460,15 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
 
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
+    // Always add the tagged interface. This is used to confirm at run-time with certainty
+    // the wrapper is created by the ComWrappers API.
+    {
+        ABI::ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
+        curr.IID = IID_TaggedImpl;
+        curr.Vtable = &ManagedObjectWrapper_TaggedImpl;
+    }
+
+    _ASSERTE(runtimeDefinedCount <= static_cast<int32_t>(ARRAY_SIZE(runtimeDefinedLocal)));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);

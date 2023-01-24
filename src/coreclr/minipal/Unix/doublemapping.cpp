@@ -198,7 +198,10 @@ bool VMToOSInterface::ReleaseDoubleMappedMemory(void *mapperHandle, void* pStart
 {
 #ifndef TARGET_OSX
     int fd = (int)(size_t)mapperHandle;
-    mmap(pStart, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, offset);
+    if (mmap(pStart, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, offset) == MAP_FAILED)
+    {
+        return false;
+    }
     memset(pStart, 0, size);
 #endif // TARGET_OSX
     return munmap(pStart, size) != -1;
@@ -208,7 +211,12 @@ void* VMToOSInterface::GetRWMapping(void *mapperHandle, void* pStart, size_t off
 {
 #ifndef TARGET_OSX
     int fd = (int)(size_t)mapperHandle;
-    return mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    void* result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
+    if (result == MAP_FAILED)
+    {
+        result = NULL;
+    }
+    return result;
 #else // TARGET_OSX
 #ifdef TARGET_AMD64
     vm_address_t startRW;

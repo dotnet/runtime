@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization.Json
             {
                 context.IncrementArrayCount(jsonWriter, (Array)obj);
                 Type itemType = collectionContract.ItemType;
-                if (!ReflectionTryWritePrimitiveArray(jsonWriter, obj, collectionContract.UnderlyingType, itemType, itemName))
+                if (!ReflectionTryWritePrimitiveArray(jsonWriter, obj, itemType, itemName))
                 {
                     ReflectionWriteArrayAttribute(jsonWriter);
 
@@ -141,7 +141,7 @@ namespace System.Runtime.Serialization.Json
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private static bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type underlyingType, Type itemType, XmlDictionaryString collectionItemName)
+        private static bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type itemType, XmlDictionaryString collectionItemName)
         {
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
             if (primitiveContract == null)
@@ -246,7 +246,7 @@ namespace System.Runtime.Serialization.Json
                     memberValue ??= ReflectionGetMemberValue(obj, member);
                     bool requiresNameAttribute = DataContractJsonSerializer.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
                     PrimitiveDataContract? primitiveContract = member.MemberPrimitiveContract;
-                    if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberType, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))
+                    if (requiresNameAttribute || !ReflectionTryWritePrimitive(xmlWriter, context, memberValue, memberNames[i + childElementIndex] /*name*/, null/*ns*/, primitiveContract))
                     {
                         // Note: DataContractSerializer has member-conflict logic here to deal with the schema export
                         //       requirement that the same member can't be of two different types.

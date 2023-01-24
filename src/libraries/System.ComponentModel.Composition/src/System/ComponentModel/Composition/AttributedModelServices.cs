@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition
 
             string typeIdentity = AttributedModelServices.GetTypeIdentity(typeof(T));
 
-            IDictionary<string, object?> metadata = new Dictionary<string, object?>();
+            var metadata = new Dictionary<string, object?>();
             metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
             return batch.AddExport(new Export(contractName, metadata, () => exportedValue));

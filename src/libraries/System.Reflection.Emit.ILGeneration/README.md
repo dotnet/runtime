@@ -3,7 +3,10 @@ Contains types used with [`System.Reflection.Emit`](../System.Reflection.Emit/RE
 
 The primary class is [`ILGenerator`](https://learn.microsoft.com/dotnet/api/system.reflection.emit.ilgenerator).
 
-## Status: [Inactive](../../libraries/README.md#development-statuses)
+## Contribution Bar
+- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+
+See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Reflection.Emit+label%3A%22help+wanted%22) issues.
 
 ## Deployment
 [System.Reflection.Emit.ILGeneration](https://www.nuget.org/packages/System.Reflection.Emit.ILGeneration) is included in the shared framework.

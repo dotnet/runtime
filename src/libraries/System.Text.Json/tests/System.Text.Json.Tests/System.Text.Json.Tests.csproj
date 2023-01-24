@@ -10,9 +10,9 @@
 
     <!-- these tests depend on the pdb files. Causes test failures like:
           [FAIL] System.Text.Json.Tests.DebuggerTests.DefaultJsonElement -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
-    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'Browser'">true</MetadataUpdaterSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
@@ -58,9 +58,11 @@
     <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.Deserialize.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.Deserialize.cs" />
     <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.IgnoreCycles.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="..\Common\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ReferenceHandlerTests\ReferenceHandlerTests.Serialize.cs" />
+    <Compile Include="..\Common\RequiredKeywordTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\RequiredKeywordTests.cs" />
     <Compile Include="..\Common\SampleTestData.OrderPayload.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
     <Compile Include="..\Common\Utf8MemoryStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Utf8MemoryStream.cs" />
+    <Compile Include="..\Common\UnmappedMemberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.cs" />
@@ -116,7 +118,6 @@
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
-    <Compile Include="Serialization\CamelCaseUnitTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ContinuationTests.cs" />
@@ -175,6 +176,7 @@
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\MetadataTests\TestResolver.cs" />
+    <Compile Include="Serialization\NamingPolicyUnitTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
@@ -199,6 +201,7 @@
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\TypeInfoResolverFunctionalTests.cs" />
+    <Compile Include="Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
@@ -217,6 +220,20 @@
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.String.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.StringArray.g.cs" />
     <Compile Include="SourceGenRegressionTests\Net60\Net60GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70RegressionTests.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ClassWithCustomConverter.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.DictionaryStringHighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.GetJsonTypeInfo.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.HighLowTemps.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.Int32.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.ListDateTimeOffset.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.PropertyNames.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.String.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.StringArray.g.cs" />
+    <Compile Include="SourceGenRegressionTests\Net70\Net70GeneratedContext.WeatherForecastWithPOCOs.g.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />

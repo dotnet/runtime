@@ -489,7 +489,7 @@ namespace System.Collections.Tests
             ICollection<T> collection = GenericICollectionFactory(count);
             T[] array = new T[count];
             if (count > 0)
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(array, count));
+                Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(array, count));
             else
                 collection.CopyTo(array, count); // does nothing since the array is empty
         }
@@ -511,7 +511,7 @@ namespace System.Collections.Tests
             {
                 ICollection<T> collection = GenericICollectionFactory(count);
                 T[] array = new T[count];
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(array, 1));
+                Assert.ThrowsAny<ArgumentException>(() => collection.CopyTo(array, 1));
             }
         }
 

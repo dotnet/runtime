@@ -24,6 +24,16 @@ namespace System.Net.Security
         {
         }
 
+        public static SecurityStatusPal SelectApplicationProtocol(
+            SafeFreeCredentials? credentialsHandle,
+            SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            ReadOnlySpan<byte> clientProtocols)
+        {
+            throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
+        }
+
+#pragma warning disable IDE0060
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
@@ -37,7 +47,7 @@ namespace System.Net.Security
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
-            string? targetName,
+            string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
@@ -46,12 +56,12 @@ namespace System.Net.Security
             return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }
 
-        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)
+        public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int _ /*headerSize*/, int _1 /*trailerSize*/, ref byte[] output, out int resultSize)
         {
             try
             {
@@ -141,7 +151,7 @@ namespace System.Net.Security
             return HandshakeInternal(ref context!, null, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
-        public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
+        public static void QueryContextStreamSizes(SafeDeleteContext? _ /*securityContext*/, out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
         }
@@ -166,15 +176,21 @@ namespace System.Net.Security
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out output, out outputSize);
 
-                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded && clientCertificateSelectionCallback != null)
+                if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out _);
+                    // this should happen only for clients
+                    Debug.Assert(clientCertificateSelectionCallback != null);
+
+                    // The callback also saves the selected cert in SslStream.LocalCertificate
+                    X509Certificate2? clientCertificate = clientCertificateSelectionCallback(out bool _);
+
                     if (clientCertificate != null)
                     {
-                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                        // build the cert context only if it was not provided by the user
+                        sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(clientCertificate);
                     }
 
-                    Interop.OpenSsl.UpdateClientCertiticate((SafeSslHandle)context, sslAuthenticationOptions);
+                    Interop.OpenSsl.UpdateClientCertificate((SafeSslHandle)context, sslAuthenticationOptions);
                     errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, null, out output, out outputSize);
                 }
 
@@ -216,15 +232,16 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
             // SSLHandshake.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
+#pragma warning restore IDE0060
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteSslContext context)
+        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext context)
         {
             // Unset the quiet shutdown option initially configured.
             Interop.Ssl.SslSetQuietShutdown((SafeSslHandle)context, 0);

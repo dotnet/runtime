@@ -4,6 +4,7 @@
 #include "strike.h"
 #include "util.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <minipal/utils.h>
 
@@ -15,14 +16,9 @@ class MapViewHolder
     void* whatever;
 };
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#ifdef HOST_WINDOWS
-typedef long long int64_t;
-#else
+#ifndef HOST_WINDOWS
 #define FEATURE_PAL
 #endif
-typedef size_t uint64_t;
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"
@@ -124,8 +120,6 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
     }
     CQuickBytes fullname;
     void** argsPtr = args;
-    const SIZE_T capacity_buff = 2048;
-    LPWSTR buff = (LPWSTR)alloca(capacity_buff * sizeof(WCHAR));
     static char formatCopy[256];
 
     int iArgCount = 0;
@@ -187,13 +181,17 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     MethodDescData.Request(g_sos,(CLRDATA_ADDRESS)arg);
 
                                     static WCHAR wszNameBuffer[1024]; // should be large enough
-                                    if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
+                                    static char szNameBuffer[(ARRAY_SIZE(wszNameBuffer) * 3) + 1];
+                                    if (g_sos->GetMethodDescName(arg, ARRAY_SIZE(wszNameBuffer), wszNameBuffer, NULL) == S_OK)
                                     {
-                                        wcscpy_s(wszNameBuffer, ARRAY_SIZE(wszNameBuffer), W("UNKNOWN METHODDESC"));
+                                        WideCharToMultiByte(CP_UTF8, 0, wszNameBuffer, -1, szNameBuffer, ARRAY_SIZE(szNameBuffer), NULL, NULL);
+                                    }
+                                    else
+                                    {
+                                        strcpy_s(szNameBuffer, ARRAY_SIZE(szNameBuffer), "UNKNOWN METHODDESC");
                                     }
 
-                                    wcscpy_s(buff, capacity_buff, wszNameBuffer);
-                                    fprintf(file, " (%S)", wszNameBuffer);
+                                    fprintf(file, " (%s)", szNameBuffer);
                                 }
                             }
                             break;
@@ -218,7 +216,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                 else
                                 {
                                     NameForMT_s (arg, g_mdName, mdNameLen);
-                                    fprintf(file, " (%S)", g_mdName);
+                                    fprintf(file, " (%s)", g_mdName);
                                 }
                             }
                             break;

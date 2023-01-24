@@ -78,4 +78,15 @@ namespace Internal.Runtime
         CastClass,
         AllocateArray,
     }
+
+    /// <summary>
+    /// Constants that describe the bits of the Flags field of MethodFixupCell.
+    /// </summary>
+    internal static class MethodFixupCellFlagsConstants
+    {
+        public const int CharSetMask = 0x7;
+        public const int IsObjectiveCMessageSendMask = 0x8;
+        public const int ObjectiveCMessageSendFunctionMask = 0x70;
+        public const int ObjectiveCMessageSendFunctionShift = 4;
+    }
 }

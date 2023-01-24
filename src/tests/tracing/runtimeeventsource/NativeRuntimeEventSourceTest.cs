@@ -17,7 +17,7 @@ namespace Tracing.Tests
 {
     public sealed class NativeRuntimeEventSourceTest
     {
-        static int Main(string[] args)
+        static int Main()
         {
             SimpleEventListener.EnableKeywords = (EventKeywords)0;
             using (SimpleEventListener noEventsListener = new SimpleEventListener("NoEvents"))

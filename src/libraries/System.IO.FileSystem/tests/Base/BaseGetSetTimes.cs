@@ -255,7 +255,7 @@ namespace System.IO.Tests
                     // If it's the OS/Filesystem often returns 0 for the millisecond part, this may
                     // help prove it. This should only be written 1/1000 runs, unless the test is going to
                     // fail.
-                    Console.WriteLine($"## TimesIncludeMillisecondPart got a file time of {time.ToString("o")} on {driveFormat}");
+                    Console.WriteLine($"## TimesIncludeMillisecondPart got a file time of {time:o} on {driveFormat}");
 
                     item = GetExistingItem(); // try a new file/directory
                 }

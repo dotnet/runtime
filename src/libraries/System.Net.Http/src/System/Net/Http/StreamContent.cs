@@ -28,11 +28,7 @@ namespace System.Net.Http
         public StreamContent(Stream content, int bufferSize)
         {
             ArgumentNullException.ThrowIfNull(content);
-
-            if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             InitializeContent(content, bufferSize);
         }

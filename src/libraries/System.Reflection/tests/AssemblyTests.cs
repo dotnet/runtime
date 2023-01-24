@@ -148,7 +148,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -881,6 +881,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/77821", TestPlatforms.Android)]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

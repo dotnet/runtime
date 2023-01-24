@@ -14,15 +14,12 @@ namespace ILCompiler.DependencyAnalysis
             _owner = owner;
         }
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                if (_owner.Type.Context.Target.IsWindows)
-                    return ObjectNodeSection.FoldableReadOnlyDataSection;
-                else
-                    return ObjectNodeSection.DataSection;
-            }
+            if (factory.Target.IsWindows)
+                return ObjectNodeSection.FoldableReadOnlyDataSection;
+            else
+                return ObjectNodeSection.DataSection;
         }
 
         public override bool StaticDependenciesAreComputed => true;

@@ -429,7 +429,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -800,6 +800,17 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     else
     {
         m_nRuntimeFunctions = 0;
+    }
+
+    IMAGE_DATA_DIRECTORY * pHotColdMapDir = m_pComposite->FindSection(ReadyToRunSectionType::HotColdMap);
+    if (pHotColdMapDir != NULL)
+    {
+        m_pHotColdMap = (PTR_ULONG)m_pComposite->GetLayout()->GetDirectoryData(pHotColdMapDir);
+        m_nHotColdMap = pHotColdMapDir->Size / sizeof(ULONG);
+    }
+    else
+    {
+        m_nHotColdMap = 0;
     }
 
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);

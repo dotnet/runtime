@@ -217,10 +217,8 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -306,10 +304,8 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -409,7 +405,9 @@ namespace System.Runtime.InteropServices
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
 
-            return (uint)Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+            return (uint)sizeof(T);
+#pragma warning restore 8500
         }
     }
 }

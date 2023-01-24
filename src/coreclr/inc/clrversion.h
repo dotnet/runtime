@@ -26,4 +26,3 @@
 #define VER_FILEVERSION_STR_L       QUOTE_MACRO_L(RuntimeFileMajorVersion.RuntimeFileMinorVersion.RuntimeFileBuildVersion.RuntimeFileRevisionVersion)
 
 #define VER_LEGALCOPYRIGHT_LOGO_STR    "Copyright (c) Microsoft Corporation.  All rights reserved."
-#define VER_LEGALCOPYRIGHT_LOGO_STR_L L"Copyright (c) Microsoft Corporation.  All rights reserved."

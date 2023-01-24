@@ -8,6 +8,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
 
-    <CLRTestEnvironmentVariable Include="COMPlus_GCStress" Value="3" />
+    <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="3" />
   </ItemGroup>
 </Project>

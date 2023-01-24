@@ -15,8 +15,8 @@
 //
 
 //
-// Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/main/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
+// Note: This file gets parsed by the IL Linker (https://github.com/dotnet/runtime/blob/main/src/tools/illink) which may throw an exception during parsing.
+// Specifically, this (https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -484,6 +484,7 @@ DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallback
 DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
 DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
+DEFINE_CLASS(VECTOR512T,            Intrinsics,             Vector512`1)
 
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
@@ -693,8 +694,6 @@ DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_NULLREF,          NullRef, NoSig)
 DEFINE_METHOD(UNSAFE,               AS_REF_IN,              AsRef, GM_RefT_RetRefT)
-DEFINE_METHOD(UNSAFE,               AS_REF_POINTER,         AsRef, GM_VoidPtr_RetRefT)
-DEFINE_METHOD(UNSAFE,               SIZEOF,                 SizeOf, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, GM_RefTFrom_RetRefTTo)
 DEFINE_METHOD(UNSAFE,               OBJECT_AS,              As, GM_Obj_RetT)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
@@ -733,7 +732,6 @@ DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
 DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
-DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDataReference, SM_Array_RetRefByte)
 
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
@@ -816,7 +814,7 @@ DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrame
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, PROCESS_STARTUP_HOOKS, ProcessStartupHooks, SM_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
@@ -939,11 +937,12 @@ DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,          
 DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
 DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
 
-DEFINE_CLASS_U(System,                 WeakReference,          WeakReferenceObject)
-DEFINE_FIELD_U(m_handle,               WeakReferenceObject,    m_Handle)
+DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
+DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
 DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
+DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
-DEFINE_CLASS_U(Threading,              WaitHandle,             WaitHandleBase)
+DEFINE_CLASS_U(Threading,           WaitHandle,             WaitHandleBase)
 DEFINE_FIELD_U(_waitHandle,         WaitHandleBase,         m_safeHandle)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)

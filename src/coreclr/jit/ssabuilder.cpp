@@ -64,6 +64,7 @@ PhaseStatus Compiler::fgSsaBuild()
     SsaBuilder builder(this);
     builder.Build();
     fgSsaPassesCompleted++;
+    fgSsaChecksEnabled = true;
 #ifdef DEBUG
     JitTestCheckSSA();
 #endif // DEBUG
@@ -81,6 +82,11 @@ void Compiler::fgResetForSsa()
     for (MemoryKind memoryKind : allMemoryKinds())
     {
         m_memorySsaMap[memoryKind] = nullptr;
+    }
+
+    if (m_outlinedCompositeSsaNums != nullptr)
+    {
+        m_outlinedCompositeSsaNums->Reset();
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -581,6 +587,10 @@ void SsaBuilder::AddPhiArg(
     phiArg->gtNext = head;
     head->gtPrev   = phiArg;
 
+    LclVarDsc* const    varDsc  = m_pCompiler->lvaGetDesc(lclNum);
+    LclSsaVarDsc* const ssaDesc = varDsc->GetPerSsaData(ssaNum);
+    ssaDesc->AddPhiUse(block);
+
 #ifdef DEBUG
     unsigned seqNum = 1;
     for (GenTree* const node : stmt->TreeList())
@@ -738,62 +748,57 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 
     GenTreeLclVarCommon* lclNode;
     bool                 isFullDef = false;
-    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef);
+    ssize_t              offset    = 0;
+    unsigned             storeSize = 0;
+    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef, &offset, &storeSize);
 
     if (isLocal)
     {
+        // This should have been marked as definition.
+        assert(((lclNode->gtFlags & GTF_VAR_DEF) != 0) && (((lclNode->gtFlags & GTF_VAR_USEASG) != 0) == !isFullDef));
+
         unsigned   lclNum = lclNode->GetLclNum();
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
 
-        if (!m_pCompiler->lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(m_pCompiler))
-        {
-            lclNum = varDsc->lvFieldLclStart;
-            varDsc = m_pCompiler->lvaGetDesc(lclNum);
-            assert(isFullDef);
-        }
-
         if (m_pCompiler->lvaInSsa(lclNum))
         {
-            // Promoted variables are not in SSA, only their fields are.
-            assert(!m_pCompiler->lvaGetDesc(lclNum)->lvPromoted);
-            // This should have been marked as definition.
-            assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
-
-            unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block,
-                                                               defNode->OperIs(GT_ASG) ? defNode->AsOp() : nullptr);
-
-            if (!isFullDef)
-            {
-                assert((lclNode->gtFlags & GTF_VAR_USEASG) != 0);
-
-                // This is a partial definition of a variable. The node records only the SSA number
-                // of the use that is implied by this partial definition. The SSA number of the new
-                // definition will be recorded in the m_opAsgnVarDefSsaNums map.
-                lclNode->SetSsaNum(m_renameStack.Top(lclNum));
-                m_pCompiler->GetOpAsgnVarDefSsaNums()->Set(lclNode, ssaNum);
-            }
-            else
-            {
-                assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
-                lclNode->SetSsaNum(ssaNum);
-            }
-
-            m_renameStack.Push(block, lclNum, ssaNum);
-
-            // If necessary, add "lclNum/ssaNum" to the arg list of a phi def in any
-            // handlers for try blocks that "block" is within.  (But only do this for "real" definitions,
-            // not phi definitions.)
-            if (!defNode->IsPhiDefn())
-            {
-                AddDefToHandlerPhis(block, lclNum, ssaNum);
-            }
-
-            // If it's a SSA local then it cannot be address exposed and thus does not define SSA memory.
-            assert(!m_pCompiler->lvaVarAddrExposed(lclNum));
+            lclNode->SetSsaNum(RenamePushDef(defNode, block, lclNum, isFullDef));
+            assert(!varDsc->IsAddressExposed()); // Cannot define SSA memory.
             return;
         }
 
-        lclNode->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+        if (varDsc->lvPromoted)
+        {
+            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            {
+                unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
+                LclVarDsc* fieldVarDsc = m_pCompiler->lvaGetDesc(fieldLclNum);
+                if (m_pCompiler->lvaInSsa(fieldLclNum))
+                {
+                    ssize_t  fieldStoreOffset;
+                    unsigned fieldStoreSize;
+                    unsigned ssaNum = SsaConfig::RESERVED_SSA_NUM;
+
+                    // Fast-path the common case of an "entire" store.
+                    if (isFullDef)
+                    {
+                        ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
+                    }
+                    else if (m_pCompiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset,
+                                                              &fieldStoreSize))
+                    {
+                        ssaNum = RenamePushDef(defNode, block, fieldLclNum,
+                                               ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc),
+                                                                                fieldStoreOffset, fieldStoreSize));
+                    }
+
+                    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                    {
+                        lclNode->SetSsaNum(m_pCompiler, index, ssaNum);
+                    }
+                }
+            }
+        }
     }
     else if (defNode->OperIs(GT_CALL))
     {
@@ -801,7 +806,6 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         // the memory effect of the call is captured by the live out state from the block and doesn't need special
         // handling here. If we ever change liveness to more carefully model call effects (from interprecedural
         // information) we might need to revisit this.
-
         return;
     }
 
@@ -859,17 +863,65 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// RenamePushDef: Create and push a new definition on the renaming stack.
+//
+// Arguments:
+//    defNode   - The store node for the definition
+//    block     - The block in which it occurs
+//    lclNum    - Number of the local being defined
+//    isFullDef - Whether the def is "entire"
+//
+// Return Value:
+//    The pushed SSA number.
+//
+unsigned SsaBuilder::RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned lclNum, bool isFullDef)
+{
+    // Promoted variables are not in SSA, only their fields are.
+    assert(m_pCompiler->lvaInSsa(lclNum) && !m_pCompiler->lvaGetDesc(lclNum)->lvPromoted);
+
+    LclVarDsc* const varDsc = m_pCompiler->lvaGetDesc(lclNum);
+    unsigned const   ssaNum =
+        varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block, defNode->OperIs(GT_ASG) ? defNode->AsOp() : nullptr);
+
+    if (!isFullDef)
+    {
+        // This is a partial definition of a variable. The node records only the SSA number
+        // of the def. The SSA number of the old definition (the "use" portion) will be
+        // recorded in the SSA descriptor.
+        LclSsaVarDsc* const ssaDesc   = varDsc->GetPerSsaData(ssaNum);
+        unsigned const      useSsaNum = m_renameStack.Top(lclNum);
+        ssaDesc->SetUseDefSsaNum(useSsaNum);
+
+        LclSsaVarDsc* const useSsaDesc = varDsc->GetPerSsaData(useSsaNum);
+        useSsaDesc->AddUse(block);
+    }
+
+    m_renameStack.Push(block, lclNum, ssaNum);
+
+    // If necessary, add SSA name to the arg list of a phi def in any handlers for try
+    // blocks that "block" is within. (But only do this for "real" definitions, not phis.)
+    if (!defNode->IsPhiDefn())
+    {
+        AddDefToHandlerPhis(block, lclNum, ssaNum);
+    }
+
+    return ssaNum;
+}
+
+//------------------------------------------------------------------------
 // RenameLclUse: Rename a use of a local variable.
 //
 // Arguments:
 //    lclNode - A GT_LCL_VAR or GT_LCL_FLD node that is not a definition
+//      block - basic block containing the use
 //
-void SsaBuilder::RenameLclUse(GenTreeLclVarCommon* lclNode)
+void SsaBuilder::RenameLclUse(GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
     assert((lclNode->gtFlags & GTF_VAR_DEF) == 0);
 
-    unsigned lclNum = lclNode->GetLclNum();
-    unsigned ssaNum;
+    unsigned const   lclNum = lclNode->GetLclNum();
+    LclVarDsc* const lclVar = m_pCompiler->lvaGetDesc(lclNum);
+    unsigned         ssaNum;
 
     if (!m_pCompiler->lvaInSsa(lclNum))
     {
@@ -878,9 +930,10 @@ void SsaBuilder::RenameLclUse(GenTreeLclVarCommon* lclNode)
     else
     {
         // Promoted variables are not in SSA, only their fields are.
-        assert(!m_pCompiler->lvaGetDesc(lclNum)->lvPromoted);
-
-        ssaNum = m_renameStack.Top(lclNum);
+        assert(!lclVar->lvPromoted);
+        ssaNum                      = m_renameStack.Top(lclNum);
+        LclSsaVarDsc* const ssaDesc = lclVar->GetPerSsaData(ssaNum);
+        ssaDesc->AddUse(block);
     }
 
     lclNode->SetSsaNum(ssaNum);
@@ -1070,7 +1123,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
             // PHI_ARG nodes already have SSA numbers so we only need to check LCL_VAR and LCL_FLD nodes.
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
             {
-                RenameLclUse(tree->AsLclVarCommon());
+                RenameLclUse(tree->AsLclVarCommon(), block);
             }
         }
     }
@@ -1437,60 +1490,34 @@ void SsaBuilder::RenameVariables()
     visitor.WalkTree();
 }
 
-#ifdef DEBUG
-/**
- * Print the blocks, the phi nodes get printed as well.
- * @example:
- * After SSA BB02:
- *                [0027CC0C] -----------                 stmtExpr  void  (IL 0x019...0x01B)
- * N001 (  1,  1)       [0027CB70] -----------                 const     int    23
- * N003 (  3,  3)    [0027CBD8] -A------R--                 =         int
- * N002 (  1,  1)       [0027CBA4] D------N---                 lclVar    int    V01 arg1         d:5
- *
- * After SSA BB04:
- *                [0027D530] -----------                 stmtExpr  void  (IL   ???...  ???)
- * N002 (  0,  0)       [0027D4C8] -----------                 phi       int
- *                            [0027D8CC] -----------                 lclVar    int    V01 arg1         u:5
- *                            [0027D844] -----------                 lclVar    int    V01 arg1         u:4
- * N004 (  2,  2)    [0027D4FC] -A------R--                 =         int
- * N003 (  1,  1)       [0027D460] D------N---                 lclVar    int    V01 arg1         d:3
- */
-void SsaBuilder::Print(BasicBlock** postOrder, int count)
-{
-    for (int i = count - 1; i >= 0; --i)
-    {
-        printf("After SSA " FMT_BB ":\n", postOrder[i]->bbNum);
-        m_pCompiler->gtDispBlockStmts(postOrder[i]);
-    }
-}
-#endif // DEBUG
-
-/**
- * Build SSA form.
- *
- * Sorts the graph topologically.
- *   - Collects them in postOrder array.
- *
- * Identifies each block's immediate dominator.
- *   - Computes this in bbIDom of each BasicBlock.
- *
- * Computes DOM tree relation.
- *   - Computes domTree as block -> set of blocks.
- *   - Computes pre/post order traversal of the DOM tree.
- *
- * Inserts phi nodes.
- *   - Computes dominance frontier as block -> set of blocks.
- *   - Allocates block use/def/livein/liveout and computes it.
- *   - Inserts phi nodes with only rhs at the beginning of the blocks.
- *
- * Renames variables.
- *   - Walks blocks in evaluation order and gives uses and defs names.
- *   - Gives empty phi nodes their rhs arguments as they become known while renaming.
- *
-  * @see "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J. Harvey, Ken Kennedy.
- * @see Briggs, Cooper, Harvey and Simpson "Practical Improvements to the Construction
- *      and Destruction of Static Single Assignment Form."
- */
+//------------------------------------------------------------------------
+// Build: Build SSA form
+//
+// Notes:
+//
+// Sorts the graph topologically.
+//   - Collects them in postOrder array.
+//
+// Identifies each block's immediate dominator.
+//   - Computes this in bbIDom of each BasicBlock.
+//
+// Computes DOM tree relation.
+//   - Computes domTree as block -> set of blocks.
+//   - Computes pre/post order traversal of the DOM tree.
+//
+// Inserts phi nodes.
+//   - Computes dominance frontier as block -> set of blocks.
+//   - Allocates block use/def/livein/liveout and computes it.
+//   - Inserts phi nodes with only rhs at the beginning of the blocks.
+//
+// Renames variables.
+//   - Walks blocks in evaluation order and gives uses and defs names.
+//   - Gives empty phi nodes their rhs arguments as they become known while renaming.
+//
+// @see "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J. Harvey, Ken Kennedy.
+// @see Briggs, Cooper, Harvey and Simpson "Practical Improvements to the Construction
+//      and Destruction of Static Single Assignment Form."
+//
 void SsaBuilder::Build()
 {
 #ifdef DEBUG
@@ -1557,7 +1584,7 @@ void SsaBuilder::Build()
     // Mark all variables that will be tracked by SSA
     for (unsigned lclNum = 0; lclNum < m_pCompiler->lvaCount; lclNum++)
     {
-        m_pCompiler->lvaTable[lclNum].lvInSsa = IncludeInSsa(lclNum);
+        m_pCompiler->lvaTable[lclNum].lvInSsa = m_pCompiler->lvaGetDesc(lclNum)->lvTracked;
     }
 
     // Insert phi functions.
@@ -1567,13 +1594,7 @@ void SsaBuilder::Build()
     RenameVariables();
     EndPhase(PHASE_BUILD_SSA_RENAME);
 
-#ifdef DEBUG
-    // At this point we are in SSA form. Print the SSA form.
-    if (m_pCompiler->verboseSsa)
-    {
-        Print(postOrder, count);
-    }
-#endif
+    JITDUMPEXEC(m_pCompiler->DumpSsaSummary());
 }
 
 void SsaBuilder::SetupBBRoot()
@@ -1620,50 +1641,48 @@ void SsaBuilder::SetupBBRoot()
     }
 }
 
+#ifdef DEBUG
+
 //------------------------------------------------------------------------
-// IncludeInSsa: Check if the specified variable can be included in SSA.
+// DumpSsaSummary: dump info about each SSA lifetime
 //
-// Arguments:
-//    lclNum - the variable number
-//
-// Return Value:
-//    true if the variable is included in SSA
-//
-bool SsaBuilder::IncludeInSsa(unsigned lclNum)
+void Compiler::DumpSsaSummary()
 {
-    LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
 
-    if (varDsc->IsAddressExposed())
-    {
-        return false; // We exclude address-exposed variables.
-    }
-    if (!varDsc->lvTracked)
-    {
-        return false; // SSA is only done for tracked variables
-    }
-    // lvPromoted structs are never tracked...
-    assert(!varDsc->lvPromoted);
+        if (!varDsc->lvInSsa)
+        {
+            continue;
+        }
 
-    if (varDsc->lvIsStructField &&
-        (m_pCompiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))
-    {
-        // SSA must exclude struct fields that are not independent
-        // - because we don't model the struct assignment properly when multiple fields can be assigned by one struct
-        //   assignment.
-        // - SSA doesn't allow a single node to contain multiple SSA definitions.
-        // - and PROMOTION_TYPE_DEPENDEDNT fields  are never candidates for a register.
-        //
-        return false;
+        const SsaDefArray<LclSsaVarDsc>& ssaDefs = varDsc->lvPerSsaData;
+        unsigned const                   numDefs = ssaDefs.GetCount();
+
+        if (numDefs == 0)
+        {
+            printf("V%02u: in SSA but no defs\n", lclNum);
+        }
+        else
+        {
+            for (unsigned i = 0; i < numDefs; i++)
+            {
+                // Dump BB00 for def with no block.
+                //
+                LclSsaVarDsc* const ssaVarDsc = ssaDefs.GetSsaDefByIndex(i);
+                const unsigned      ssaNum    = ssaDefs.GetSsaNum(ssaVarDsc);
+                BasicBlock* const   block     = ssaVarDsc->GetBlock();
+                const unsigned      blockNum  = block != nullptr ? block->bbNum : 0;
+
+                printf("V%02u.%u: defined in " FMT_BB " %u uses (%s)%s\n", lclNum, ssaNum, blockNum,
+                       ssaVarDsc->GetNumUses(), ssaVarDsc->HasGlobalUse() ? "global" : "local",
+                       ssaVarDsc->HasPhiUse() ? ", has phi uses" : "");
+            }
+        }
     }
-    else if (varDsc->lvIsStructField && m_pCompiler->lvaGetDesc(varDsc->lvParentLcl)->lvIsMultiRegRet)
-    {
-        return false;
-    }
-    // otherwise this variable is included in SSA
-    return true;
 }
 
-#ifdef DEBUG
 // This method asserts that SSA name constraints specified are satisfied.
 void Compiler::JitTestCheckSSA()
 {
@@ -1704,10 +1723,9 @@ void Compiler::JitTestCheckSSA()
     {
         printf("\nJit Testing: SSA names.\n");
     }
-    for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
+    for (GenTree* const node : NodeToTestDataMap::KeyIteration(testData))
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node       = ki.Get();
         bool            nodeExists = testData->Lookup(node, &tlAndN);
         assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)

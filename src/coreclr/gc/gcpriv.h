@@ -62,6 +62,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+#define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
 // FEATURE_STRUCTALIGN was added by Midori. In CLR we are not interested
@@ -189,6 +190,10 @@ void GCLogConfig (const char *fmt, ... );
 #endif //SERVER_GC
 
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
+
+#ifdef USE_REGIONS
+#define MAX_REGION_SIZE 0x80000000 
+#endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
 #define MIN_NUM_FREE_SPACES 5
@@ -1222,9 +1227,11 @@ enum bookkeeping_element
 
 class mark_queue_t
 {
+#ifdef MARK_PHASE_PREFETCH
     static const size_t slot_count = 16;
     uint8_t* slot_table[slot_count];
     size_t curr_slot_index;
+#endif //MARK_PHASE_PREFETCH
 
 public:
     mark_queue_t();
@@ -3088,7 +3095,7 @@ protected:
 
         void print()
         {
-            dprintf (3, ("last plug: %Ix, last plug reloc: %Ix, before last: %Ix, b: %Ix",
+            dprintf (3, ("last plug: %p, last plug reloc: %zu, before last: %p, b: %zu",
                 last_plug, last_plug_relocation, before_last_plug, current_compacted_brick));
         }
     };
@@ -3134,15 +3141,15 @@ protected:
     void copy_mark_bits_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
 #endif //BACKGROUND_GC
 
+    PER_HEAP_ISOLATED
+    bool is_in_find_object_range (uint8_t* o);
+
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
     PER_HEAP_ISOLATED
     bool is_in_condemned_gc (uint8_t* o);
-    // requires checking if o is in the heap range first.
-    PER_HEAP_ISOLATED
-    bool is_in_bookkeeping_range (uint8_t* o);
     PER_HEAP_ISOLATED
     bool should_check_brick_for_reloc (uint8_t* o);
 #endif //USE_REGIONS
@@ -4111,12 +4118,6 @@ public:
 
     PER_HEAP_ISOLATED
     size_t heap_hard_limit_oh[total_oh_count];
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_heap;
-
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_for_bookkeeping;
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
@@ -5741,6 +5742,7 @@ public:
     uint8_t*        saved_allocated;
     uint8_t*        saved_bg_allocated;
 #ifdef USE_REGIONS
+    size_t          survived;
     // These generation numbers are initialized to -1.
     // For plan_gen_num:
     // for all regions in condemned generations it needs
@@ -5755,7 +5757,6 @@ public:
     // swept_in_plan_p can be folded into gen_num.
     bool            swept_in_plan_p;
     int             plan_gen_num;
-    int             survived;
     int             old_card_survived;
     int             pinned_survived;
     // at the end of each GC, we increase each region in the region free list
@@ -5936,9 +5937,9 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
-    bool allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
+    bool allocate_region (int gen_num, size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
+    bool allocate_basic_region (int gen_num, uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
+    bool allocate_large_region (int gen_num, uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
     void delete_region (uint8_t* start);
     void delete_region_impl (uint8_t* start);
     uint32_t get_va_memory_load()
@@ -6194,7 +6195,7 @@ int& heap_segment_age_in_free (heap_segment* inst)
     return inst->age_in_free;
 }
 inline
-int& heap_segment_survived (heap_segment* inst)
+size_t& heap_segment_survived (heap_segment* inst)
 {
     return inst->survived;
 }

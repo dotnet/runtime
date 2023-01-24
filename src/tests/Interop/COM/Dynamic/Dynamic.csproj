@@ -4,7 +4,7 @@
     <ApplicationManifest>App.manifest</ApplicationManifest>
     <IsManagedCOMClient>true</IsManagedCOMClient>
     <UseManagedCOMServer>true</UseManagedCOMServer>
-    <!-- This test is very slow under some GCStress variations, especially with COMPlus_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
+    <!-- This test is very slow under some GCStress variations, especially with DOTNET_HeapVerify=1, so disable it under GCStress to avoid test timeouts in the CI.
          Issue: https://github.com/dotnet/runtime/issues/39584
     -->
     <GCStressIncompatible>true</GCStressIncompatible>

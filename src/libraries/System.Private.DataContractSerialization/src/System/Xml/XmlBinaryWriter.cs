@@ -184,7 +184,7 @@ namespace System.Xml
                 if (string.IsNullOrEmpty(prefix))
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryElement);
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -193,13 +193,13 @@ namespace System.Xml
                     if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryElementA, ch - 'a');
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                     else
                     {
                         WriteNode(XmlBinaryNodeType.DictionaryElement);
                         WriteName(prefix);
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                 }
             }
@@ -272,7 +272,7 @@ namespace System.Xml
                 if (prefix.Length == 0)
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryAttribute);
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -280,13 +280,13 @@ namespace System.Xml
                     if (prefix.Length == 1 && char.IsAsciiLetterLower(ch))
                     {
                         WritePrefixNode(XmlBinaryNodeType.PrefixDictionaryAttributeA, ch - 'a');
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                     else
                     {
                         WriteNode(XmlBinaryNodeType.DictionaryAttribute);
                         WriteName(prefix);
-                        WriteDictionaryString(localName, key);
+                        WriteDictionaryString(key);
                     }
                 }
                 _inAttribute = true;
@@ -331,13 +331,13 @@ namespace System.Xml
                 if (string.IsNullOrEmpty(prefix))
                 {
                     WriteNode(XmlBinaryNodeType.ShortDictionaryXmlnsAttribute);
-                    WriteDictionaryString(ns, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
                     WriteNode(XmlBinaryNodeType.DictionaryXmlnsAttribute);
                     WriteName(prefix);
-                    WriteDictionaryString(ns, key);
+                    WriteDictionaryString(key);
                 }
             }
         }
@@ -370,7 +370,7 @@ namespace System.Xml
             return true;
         }
 
-        private void WriteDictionaryString(XmlDictionaryString s, int key)
+        private void WriteDictionaryString(int key)
         {
             WriteMultiByteInt32(key);
         }
@@ -598,7 +598,7 @@ namespace System.Xml
                 else
                 {
                     WriteTextNode(XmlBinaryNodeType.DictionaryText);
-                    WriteDictionaryString(value, key);
+                    WriteDictionaryString(key);
                 }
             }
         }
@@ -1059,7 +1059,7 @@ namespace System.Xml
                 {
                     WriteTextNode(XmlBinaryNodeType.QNameDictionaryText);
                     WriteByte((byte)(ch - 'a'));
-                    WriteDictionaryString(localName, key);
+                    WriteDictionaryString(key);
                 }
                 else
                 {
@@ -1102,7 +1102,7 @@ namespace System.Xml
                     ArraySegment<byte> arraySegment;
                     bool result = _captureStream.TryGetBuffer(out arraySegment);
                     DiagnosticUtility.DebugAssert(result, "");
-                    _captureText = XmlConverter.Base64Encoding.GetString(arraySegment.Array!, arraySegment.Offset, arraySegment.Count);
+                    _captureText = DataContractSerializer.Base64Encoding.GetString(arraySegment.Array!, arraySegment.Offset, arraySegment.Count);
                     _captureStream = null;
                 }
 
@@ -1140,9 +1140,9 @@ namespace System.Xml
                 {
                     if (trailByteCount > 0)
                     {
-                        WriteText(XmlConverter.Base64Encoding.GetString(trailBytes!, 0, trailByteCount));
+                        WriteText(DataContractSerializer.Base64Encoding.GetString(trailBytes!, 0, trailByteCount));
                     }
-                    WriteText(XmlConverter.Base64Encoding.GetString(buffer, offset, count));
+                    WriteText(DataContractSerializer.Base64Encoding.GetString(buffer, offset, count));
                 }
                 else
                 {

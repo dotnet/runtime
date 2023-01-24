@@ -11,7 +11,7 @@ class Exception2 : Exception { }
 
 delegate void NoArg();
 
-class SmallRepro
+public class SmallRepro
 {
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -70,7 +70,7 @@ class SmallRepro
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         bool bPassed = true;
         // Works

@@ -4040,11 +4040,12 @@ BuildCreateDumpCommandLine(
         }
     }
 
-    commandLine.AppendASCII(DumpGeneratorName);
+    commandLine.AppendUTF8(DumpGeneratorName);
 
     if (dumpName != nullptr)
     {
-        commandLine.AppendPrintf(" --name %S", dumpName);
+        commandLine.AppendUTF8(" --name ");
+        commandLine.Append(dumpName);
     }
 
     const char* dumpTypeOption = nullptr;
@@ -5102,7 +5103,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
         if (!message.IsEmpty())
         {
-            NPrintToStdErrW(message, message.GetCount());
+            PrintToStdErrW(message);
         }
 
         PrintToStdErrA("\n");

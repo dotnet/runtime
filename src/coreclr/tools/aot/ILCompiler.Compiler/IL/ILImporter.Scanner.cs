@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     // Implements an IL scanner that scans method bodies to be compiled by the code generation
@@ -245,7 +247,7 @@ namespace Internal.IL
                 _compilation.DetectGenericCycles(_canonMethod, method);
             }
 
-            return _factory.MethodEntrypoint(method);
+            return _factory.MethodEntrypointOrTentativeMethod(method);
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -419,6 +421,8 @@ namespace Internal.IL
                     resolvedConstraint = true;
 
                     exactType = directMethod.OwningType;
+
+                    _factory.MetadataManager.NoteOverridingMethod(method, directMethod);
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -936,6 +940,9 @@ namespace Internal.IL
             else if (obj is MethodDesc)
             {
                 var method = (MethodDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
+
                 if (method.IsRuntimeDeterminedExactMethod)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, method), "ldtoken");
@@ -949,7 +956,9 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(obj is FieldDesc);
+                var field = (FieldDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
                 // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
@@ -967,7 +976,6 @@ namespace Internal.IL
                     }
                 }
 
-                var field = (FieldDesc)obj;
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.FieldHandle, field), "ldtoken");

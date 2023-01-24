@@ -60,11 +60,12 @@ typedef enum {
 #define MINT_SWITCH_LEN(n) (4 + (n) * 2)
 
 #define MINT_IS_NOP(op) ((op) == MINT_NOP || (op) == MINT_DEF || (op) == MINT_DUMMY_USE || (op) == MINT_IL_SEQ_POINT)
-#define MINT_IS_MOV(op) ((op) >= MINT_MOV_I1 && (op) <= MINT_MOV_VT)
+#define MINT_IS_MOV(op) ((op) >= MINT_MOV_I4_I1 && (op) <= MINT_MOV_VT)
 #define MINT_IS_UNCONDITIONAL_BRANCH(op) ((op) >= MINT_BR && (op) <= MINT_CALL_HANDLER_S)
 #define MINT_IS_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BLT_UN_R8_S)
-#define MINT_IS_UNOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BRTRUE_R8_S)
+#define MINT_IS_UNOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BRFALSE_I4 && (op) <= MINT_BRTRUE_I8_S)
 #define MINT_IS_BINOP_CONDITIONAL_BRANCH(op) ((op) >= MINT_BEQ_I4 && (op) <= MINT_BLT_UN_R8_S)
+#define MINT_IS_COMPARE(op) ((op) >= MINT_CEQ_I4 && (op) <= MINT_CLT_UN_R8)
 #define MINT_IS_SUPER_BRANCH(op) ((op) >= MINT_BRFALSE_I4_SP && (op) <= MINT_BLT_UN_I8_IMM_SP)
 #define MINT_IS_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_JIT_CALL)
 #define MINT_IS_PATCHABLE_CALL(op) ((op) >= MINT_CALL && (op) <= MINT_VCALL)
@@ -79,6 +80,10 @@ typedef enum {
 #define MINT_IS_LDIND(op) ((op) >= MINT_LDIND_I1 && (op) <= MINT_LDIND_R8)
 #define MINT_IS_STIND_INT(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_I8)
 #define MINT_IS_STIND(op) ((op) >= MINT_STIND_I1 && (op) <= MINT_STIND_REF)
+#define MINT_IS_LDIND_OFFSET(op) ((op) >= MINT_LDIND_OFFSET_I1 && (op) <= MINT_LDIND_OFFSET_I8)
+
+// TODO Add more
+#define MINT_NO_SIDE_EFFECTS(op) (MINT_IS_MOV (op) || MINT_IS_LDC_I4 (op) || MINT_IS_LDC_I8 (op) || op == MINT_MONO_LDPTR)
 
 #define MINT_CALL_ARGS 2
 #define MINT_CALL_ARGS_SREG -2

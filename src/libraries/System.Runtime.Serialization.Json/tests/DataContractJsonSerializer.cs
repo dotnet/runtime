@@ -2665,7 +2665,7 @@ public static partial class DataContractJsonSerializerTests
     {
         var jsonTypes = new JsonTypes();
         var dateTime = new DateTime(DateTime.Now.Year, 12, 1);
-        var expectedString = "\"" + dateTime.ToString("MMMM") + "\"";
+        var expectedString = $"\"{dateTime:MMMM}\"";
         var dcjsSettings = new DataContractJsonSerializerSettings()
         {
             DateTimeFormat = jsonTypes.DTF_MMMM,

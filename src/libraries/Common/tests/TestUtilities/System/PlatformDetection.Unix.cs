@@ -14,7 +14,7 @@ namespace System
         // do it in a way that failures don't cascade.
         //
 
-        private static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsDebian => IsDistroAndVersion("debian");
@@ -54,10 +54,6 @@ namespace System
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
-
-        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
@@ -213,7 +209,7 @@ namespace System
                 //       SunOS 5.11 illumos-63878f749f
                 //   on SmartOS:
                 //       SunOS 5.11 joyent_20200408T231825Z
-                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                string versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
                 switch (versionDescription)
                 {
                     case string version when version.StartsWith("omnios"):

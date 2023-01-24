@@ -18,7 +18,7 @@
   .class auto ansi ZZ
   {
     .field public static int32 exitcode
-    .method public static int32  Main(string[] args) il managed
+    .method public static int32  Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

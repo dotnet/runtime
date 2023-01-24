@@ -96,7 +96,7 @@ struct QMethodDefinition
     public MethodHandle NativeFormatHandle { get { return _handle.AsHandle().ToMethodHandle(NativeFormatReader); } }
 }
 
-class GitHub_18408
+public class GitHub_18408
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static object foo(QMethodDefinition methodHandle)
@@ -105,7 +105,7 @@ class GitHub_18408
         return (method.Flags != (MethodAttributes)0) ? new object() : null;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         MetadataReader r = new MetadataReader();
 

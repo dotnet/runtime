@@ -18,6 +18,7 @@
 #include <hostpolicy.h>
 #include "hostpolicy_context.h"
 #include "bundle/runner.h"
+#include "shared_store.h"
 
 namespace
 {
@@ -862,12 +863,8 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     arguments_t args;
     if (!init_arguments(
             component_main_assembly_path,
-            g_init.host_info,
-            g_init.tfm,
             host_mode,
-            /* additional_deps_serialized */ pal::string_t(), // Additional deps - don't use those from the app, they're already in the app
             /* deps_file */ pal::string_t(), // Avoid using any other deps file than the one next to the component
-            g_init.probe_paths,
             /* init_from_file_system */ true,
             args))
     {
@@ -903,12 +900,15 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     // TODO Review: Since we're only passing the one component framework, the resolver will not consider
     // frameworks from the app for probing paths. So potential references to paths inside frameworks will not resolve.
 
-    // The RID graph still has to come from the actual root framework, so take that from the g_init.fx_definitions
-    // which are the frameworks for the app.
+    // The RID graph still has to come from the actual root framework, so take that from the g_init.root_rid_fallback_graph,
+    // which stores the fallback graph for the app's root framework.
     deps_resolver_t resolver(
         args,
         component_fx_definitions,
-        &get_root_framework(g_init.fx_definitions).get_deps().get_rid_fallback_graph(),
+        /* additional_deps_serialized */ nullptr, // Additional deps - don't use those from the app, they're already in the app
+        shared_store::get_paths(g_init.tfm, host_mode, g_init.host_info.host_path),
+        g_init.probe_paths,
+        &g_init.root_rid_fallback_graph,
         true);
 
     pal::string_t resolver_errors;

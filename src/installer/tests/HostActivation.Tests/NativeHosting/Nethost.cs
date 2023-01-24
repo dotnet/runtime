@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 result.Should().Fail()
                     .And.ExitWith(1)
                     .And.HaveStdOutContaining($"{GetHostFxrPath} failed: 0x{Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x")}")
-                    .And.HaveStdErrContaining($"The folder [{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
+                    .And.HaveStdErrContaining($"[{Path.Combine(dotNetRoot, "host", "fxr")}] does not exist");
             }
         }
 

@@ -97,7 +97,7 @@ namespace System.Net.Mail
             _statusCode = (SmtpStatusCode)serializationInfo.GetInt32("Status");
         }
 
-        internal SmtpException(SmtpStatusCode statusCode, string? serverMessage, bool serverResponse) : base(GetMessageForStatus(statusCode, serverMessage))
+        internal SmtpException(SmtpStatusCode statusCode, string? serverMessage, bool _) : base(GetMessageForStatus(statusCode, serverMessage))
         {
             _statusCode = statusCode;
         }

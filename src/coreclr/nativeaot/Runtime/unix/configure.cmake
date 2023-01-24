@@ -15,9 +15,6 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
-check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
-check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
@@ -44,8 +41,6 @@ set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES signal.h)
 check_type_size(siginfo_t SIGINFO_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES ucontext.h)
-check_type_size(ucontext_t UCONTEXT_T)
 
 check_cxx_source_compiles("
 #include <lwp.h>
@@ -54,21 +49,6 @@ int main(int argc, char **argv)
 {
     return (int)_lwp_self();
 }" HAVE_LWP_SELF)
-
-set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <sched.h>
-
-int main(void)
-{
-  if (sched_getcpu() >= 0)
-  {
-    exit(0);
-  }
-  exit(1);
-}" HAVE_SCHED_GETCPU)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_cxx_source_runs("
 #include <stdlib.h>

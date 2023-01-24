@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable IDE0005
+
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -104,7 +106,7 @@ namespace ILCompiler
             //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValueForArgument(_command.InputFilePaths))
+            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
             {
                 try
                 {
@@ -182,14 +184,6 @@ namespace ILCompiler
                     compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                string[] runtimeOptions = Get(_command.RuntimeOptions);
-                if (entrypointModule != null)
-                {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
-                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
-                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                }
-
                 bool nativeLib = Get(_command.NativeLib);
                 if (multiFile)
                 {
@@ -219,11 +213,18 @@ namespace ILCompiler
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
+                string[] runtimeOptions = Get(_command.RuntimeOptions);
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
+                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                }
+                else if (entrypointModule != null)
+                {
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                 }
@@ -255,7 +256,7 @@ namespace ILCompiler
                 // same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
                 compilationRoots.Add(
                     new GenericRootProvider<ModuleDesc>(module,
-                    (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(module.GetGlobalModuleType(), "Command line root")));
+                    (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
             //
@@ -280,6 +281,15 @@ namespace ILCompiler
 
             ILProvider ilProvider = new NativeAotILProvider();
 
+            var suppressedWarningCategories = new List<string>();
+            if (Get(_command.NoTrimWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (Get(_command.NoAotWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+
             List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
             foreach (var switchPair in Get(_command.FeatureSwitches))
             {
@@ -289,16 +299,9 @@ namespace ILCompiler
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
                 featureSwitches.Add(new KeyValuePair<string, bool>(switchAndValue[0], switchValue));
             }
-            ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var suppressedWarningCategories = new List<string>();
-            if (Get(_command.NoTrimWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
-            if (Get(_command.NoAotWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches);
 
-            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
@@ -312,7 +315,7 @@ namespace ILCompiler
                 mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
                     new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
-                resBlockingPolicy = new ManifestResourceBlockingPolicy(featureSwitches);
+                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
@@ -334,6 +337,10 @@ namespace ILCompiler
 
             var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
+            MetadataManagerOptions metadataOptions = default;
+            if (Get(_command.Dehydrate))
+                metadataOptions |= MetadataManagerOptions.DehydrateData;
+
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
                     typeSystemContext,
@@ -344,6 +351,7 @@ namespace ILCompiler
                     invokeThunkGenerationPolicy,
                     flowAnnotations,
                     metadataGenerationOptions,
+                    metadataOptions,
                     logger,
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),
@@ -367,7 +375,10 @@ namespace ILCompiler
                 (_command.OptimizationMode != OptimizationMode.None && !multiFile);
             preinitStatics &= !Get(_command.NoPreinitStatics);
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics);
+            TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
+                new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
+
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy);
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -439,6 +450,14 @@ namespace ILCompiler
                 // compilation, but before RyuJIT gets there, it might ask questions that we don't
                 // have answers for because we didn't scan the entire method.
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
+
+                // If we're doing preinitialization, use a new preinitialization manager that
+                // has the whole program view.
+                if (preinitStatics)
+                {
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
+                    builder.UsePreinitializationManager(preinitManager);
+                }
             }
 
             string ilDump = Get(_command.IlDump);
@@ -615,8 +634,7 @@ namespace ILCompiler
             if (method == null)
                 throw new CommandLineException($"Method '{singleMethodName}' not found in '{singleMethodTypeName}'");
 
-            if (method.HasInstantiation != (singleMethodGenericArgs != null) ||
-                (method.HasInstantiation && (method.Instantiation.Length != singleMethodGenericArgs.Length)))
+            if (method.Instantiation.Length != singleMethodGenericArgs.Length)
             {
                 throw new CommandLineException(
                     $"Expected {method.Instantiation.Length} generic arguments for method '{singleMethodName}' on type '{singleMethodTypeName}'");
@@ -648,12 +666,12 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
                 .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("-v")
+                .UseVersionOption("--version", "-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
                 .Build()

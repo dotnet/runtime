@@ -133,6 +133,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ComAwareWeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
@@ -207,7 +208,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
@@ -228,7 +228,7 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
@@ -236,7 +236,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
@@ -244,8 +243,6 @@
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />
@@ -346,12 +343,4 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
-
-  <!-- Import refererence assembly and ApiCompat logic -->
-  <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
-    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
-  </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

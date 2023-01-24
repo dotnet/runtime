@@ -11,27 +11,6 @@ namespace ILCompiler.Dataflow
 {
     internal static class DiagnosticUtilities
     {
-        internal static Origin GetMethodParameterFromIndex(MethodDesc method, int parameterIndex)
-        {
-            int declaredParameterIndex;
-            if (!method.Signature.IsStatic)
-            {
-                if (parameterIndex == 0)
-                    return new MethodOrigin(method);
-
-                declaredParameterIndex = parameterIndex - 1;
-            }
-            else
-                declaredParameterIndex = parameterIndex;
-
-            return new ParameterOrigin(method, declaredParameterIndex);
-        }
-
-        internal static string GetParameterNameForErrorMessage(ParameterOrigin origin)
-        {
-            return GetParameterNameForErrorMessage(origin.Method, origin.Index);
-        }
-
         internal static string GetParameterNameForErrorMessage(MethodDesc method, int parameterIndex)
         {
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
@@ -45,9 +24,9 @@ namespace ILCompiler.Dataflow
             return method.GetDisplayName();
         }
 
-        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterOrigin origin)
+        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterDesc genericParameter)
         {
-            var param = (EcmaGenericParameter)origin.GenericParameter;
+            var param = (EcmaGenericParameter)genericParameter;
             var parent = param.Module.GetObject(param.MetadataReader.GetGenericParameter(param.Handle).Parent);
             if (parent is MethodDesc m)
                 return m.GetDisplayName();

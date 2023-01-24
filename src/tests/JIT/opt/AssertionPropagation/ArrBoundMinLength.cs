@@ -10,7 +10,7 @@ class Program
 
     private static int[] arr = new int[6];
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         RunTestThrows(Tests.GreaterOutOfBound);
         RunTestThrows(Tests.GreaterEqualOutOfBound);

@@ -236,7 +236,7 @@ namespace ILCompiler
             return false;
         }
 
-        internal static bool IsWarningAsError(int code)
+        internal static bool IsWarningAsError(int _/*code*/)
         {
             // TODO: warnaserror
             return false;
@@ -299,6 +299,9 @@ namespace ILCompiler
             if (originMember is MethodDesc method &&
                 method.IsInRequiresScope(requiresAttribute))
                 return true;
+
+            if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
+                return false;
 
             MethodDesc owningMethod;
             if (_compilerGeneratedState != null)

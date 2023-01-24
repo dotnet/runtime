@@ -12,5 +12,6 @@
 LC_OPT(LcMdArray)
 LC_OPT(LcJaggedArray)
 LC_OPT(LcTypeTest)
+LC_OPT(LcMethodAddrTest)
 
 #undef LC_OPT

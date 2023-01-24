@@ -134,7 +134,7 @@ public class CriticalHandleArrayTest
         Assert.Throws<MarshalDirectiveException>(() => Native.RefModify(handleValue2, ref myCriticalHandleArray));
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

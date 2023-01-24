@@ -11,7 +11,7 @@ namespace Tracing.Tests.ExceptionThrown_V1
 {
     public class ProviderValidation
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             var providers = new List<EventPipeProvider>()
             {

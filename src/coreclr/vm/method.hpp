@@ -1993,6 +1993,8 @@ public:
         QuickJitted,
         OptimizedTier1,
         OptimizedTier1OSR,
+        InstrumentedTier,
+        InstrumentedTierOptimized,
 
         Count
     };

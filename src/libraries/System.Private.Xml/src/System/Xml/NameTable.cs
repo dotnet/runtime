@@ -94,10 +94,7 @@ namespace System.Xml
             }
 
             // Compatibility check for len < 0, just throw the same exception as new string(key, start, len)
-            if (len < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(len));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(len);
 
             int hashCode = string.GetHashCode(key.AsSpan(start, len));
 

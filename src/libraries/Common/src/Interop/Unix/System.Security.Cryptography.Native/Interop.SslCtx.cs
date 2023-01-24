@@ -134,7 +134,7 @@ namespace Microsoft.Win32.SafeHandles
             if (!string.IsNullOrEmpty(targetName))
             {
                 // We do this only for lookup in RemoveSession.
-                // Since this is part of chache manipulation and no function impact it is done here.
+                // Since this is part of cache manipulation and no function impact it is done here.
                 // This will use strdup() so it is safe to pass in raw pointer.
                 Interop.Ssl.SessionSetHostname(session, namePtr);
 
@@ -158,7 +158,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal void RemoveSession(IntPtr namePtr)
         {
             Debug.Assert(_sslSessions != null);
 

@@ -20,6 +20,7 @@
 #include "gcenv.os.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "numasupport.h"
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -135,36 +136,6 @@ typedef cpuset_t cpu_set_t;
 #endif
 #endif // __APPLE__
 
-#if HAVE_NUMA_H
-
-#include <numa.h>
-#include <numaif.h>
-#include <dlfcn.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-// List of all functions from the numa library that are used
-#define FOR_ALL_NUMA_FUNCTIONS \
-    PER_FUNCTION_BLOCK(mbind) \
-    PER_FUNCTION_BLOCK(numa_available) \
-    PER_FUNCTION_BLOCK(numa_max_node) \
-    PER_FUNCTION_BLOCK(numa_node_of_cpu)
-
-// Declare pointers to all the used numa functions
-#define PER_FUNCTION_BLOCK(fn) extern decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-// Redefine all calls to numa functions as calls through pointers that are set
-// to the functions of libnuma in the initialization.
-#define mbind(...) mbind_ptr(__VA_ARGS__)
-#define numa_available() numa_available_ptr()
-#define numa_max_node() numa_max_node_ptr()
-#define numa_node_of_cpu(...) numa_node_of_cpu_ptr(__VA_ARGS__)
-
-#endif // HAVE_NUMA_H
-
 #if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
@@ -233,120 +204,8 @@ uint32_t g_pageSizeUnixInl = 0;
 
 AffinitySet g_processAffinitySet;
 
-// The highest NUMA node available
-int g_highestNumaNode = 0;
-// Is numa available
-bool g_numaAvailable = false;
-
-void* g_numaHandle = nullptr;
-
-#if HAVE_NUMA_H
-#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-#if defined(__linux__)
-static bool ShouldOpenLibNuma()
-{
-    // This is a simple heuristic to determine if libnuma.so should be opened.  There's
-    // no point in linking and resolving everything in this library if we're running on
-    // a system that's not NUMA-capable.
-    int fd = open("/sys/devices/system/node/possible", O_RDONLY | O_CLOEXEC);
-
-    if (fd == -1)
-    {
-        // sysfs might not be mounted, not available, or the interface might have
-        // changed.  Return `true' here so NUMASupportInitialize() can try initializing
-        // NUMA support with libnuma.
-        return true;
-    }
-
-    while (true)
-    {
-        char buffer[32];
-        ssize_t bytesRead = read(fd, buffer, 32);
-
-        if (bytesRead == -1 && errno == EINTR)
-        {
-            continue;
-        }
-
-        close(fd);
-
-        // If an unknown error happened (bytesRead < 0), or the file was empty
-        // (bytesRead = 0), let libnuma handle this.  Otherwise, if there's just
-        // one NUMA node, don't bother linking in libnuma.
-        return (bytesRead <= 0) ? true : strncmp(buffer, "0\n", bytesRead) != 0;
-    }
-}
-#else
-static bool ShouldOpenLibNuma()
-{
-    return true;
-}
-#endif // __linux__
-
-#endif // HAVE_NUMA_H
-
-// Initialize data structures for getting and setting thread affinities to processors and
-// querying NUMA related processor information.
-// On systems with no NUMA support, it behaves as if there was a single NUMA node with
-// a single group of processors.
-void NUMASupportInitialize()
-{
-#if HAVE_NUMA_H
-    if (!ShouldOpenLibNuma())
-    {
-        g_numaAvailable = false;
-        g_highestNumaNode = 0;
-        return;
-    }
-
-    g_numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
-    if (g_numaHandle == 0)
-    {
-        g_numaHandle = dlopen("libnuma.so.1.0.0", RTLD_LAZY);
-        if (g_numaHandle == 0)
-        {
-            g_numaHandle = dlopen("libnuma.so", RTLD_LAZY);
-        }
-    }
-    if (g_numaHandle != 0)
-    {
-#define PER_FUNCTION_BLOCK(fn) \
-    fn##_ptr = (decltype(fn)*)dlsym(g_numaHandle, #fn); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
-FOR_ALL_NUMA_FUNCTIONS
-#undef PER_FUNCTION_BLOCK
-
-        if (numa_available() == -1)
-        {
-            dlclose(g_numaHandle);
-        }
-        else
-        {
-            g_numaAvailable = true;
-            g_highestNumaNode = numa_max_node();
-        }
-    }
-#endif // HAVE_NUMA_H
-    if (!g_numaAvailable)
-    {
-        // No NUMA
-        g_highestNumaNode = 0;
-    }
-}
-
-// Cleanup of the NUMA support data structures
-void NUMASupportCleanup()
-{
-#if HAVE_NUMA_H
-    if (g_numaAvailable)
-    {
-        dlclose(g_numaHandle);
-    }
-#endif // HAVE_NUMA_H
-}
+extern "C" int g_highestNumaNode;
+extern "C" bool g_numaAvailable;
 
 // Initialize the interface implementation
 // Return:
@@ -641,7 +500,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
-    if (pRetVal != NULL)
+    if (pRetVal != MAP_FAILED)
     {
         void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
         size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
@@ -659,9 +518,14 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
+#ifdef MADV_DONTDUMP
+        // Do not include reserved memory in coredump.
+        madvise(pRetVal, size, MADV_DONTDUMP);
+#endif
+        return pRetVal;
     }
 
-    return pRetVal;
+    return NULL; // return NULL if mmap failed
 }
 
 // Reserve virtual memory range.
@@ -724,6 +588,14 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
+#ifdef MADV_DODUMP
+    if (success)
+    {
+        // Include committed memory in coredump.
+        madvise(address, size, MADV_DODUMP);
+    }
+#endif
+
 #if HAVE_NUMA_H
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
@@ -760,7 +632,17 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // that much more clear to the operating system that we no
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
+    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
+
+#ifdef MADV_DONTDUMP
+    if (bRetVal)
+    {
+        // Do not include freed memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
+
+    return  bRetVal;
 }
 
 // Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
@@ -790,6 +672,14 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
         st = EINVAL;
 #endif
     }
+
+#ifdef MADV_DONTDUMP
+    if (st == 0)
+    {
+        // Do not include reset memory in coredump.
+        madvise(address, size, MADV_DONTDUMP);
+    }
+#endif
 
     return (st == 0);
 }

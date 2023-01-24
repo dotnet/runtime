@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -114,6 +115,28 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(expectedJson, stream.AsString());
             Assert.Equal(1, asyncEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, asyncEnumerable.TotalDisposedEnumerators);
+        }
+
+        [Fact]
+        public async Task WriteAsyncEnumerable_CancellationToken_IsPassedToAsyncEnumerator()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/79556
+            using var utf8Stream = new Utf8MemoryStream(ignoreCancellationTokenOnWriteAsync: true);
+            using var cts = new CancellationTokenSource();
+
+            IAsyncEnumerable<int> value = CreateEnumerable();
+            await JsonSerializer.SerializeAsync(utf8Stream, value, cancellationToken: cts.Token);
+            Assert.Equal("[1,2]", utf8Stream.AsString());
+
+            async IAsyncEnumerable<int> CreateEnumerable([EnumeratorCancellation] CancellationToken cancellationToken = default)
+            {
+                yield return 1;
+                await Task.Delay(20);
+                Assert.False(cancellationToken.IsCancellationRequested);
+                cts.Cancel();
+                Assert.True(cancellationToken.IsCancellationRequested);
+                yield return 2;
+            }
         }
 
         [Theory, OuterLoop]

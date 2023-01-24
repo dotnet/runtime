@@ -95,6 +95,8 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Apple.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.dex" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.Android.jar" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
@@ -205,11 +207,18 @@
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-marshal-ilgen-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libmono-ilgen.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
@@ -241,6 +250,8 @@
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
@@ -281,6 +292,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'WorkloadBuildTasks.dll'))</WorkloadTasksAssemblyPath>
   </PropertyGroup>
 </Project>

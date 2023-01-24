@@ -18,12 +18,12 @@
 enum instruction : unsigned
 {
 #if defined(TARGET_XARCH)
-    #define INST0(id, nm, um, mr,                 flags) INS_##id,
-    #define INST1(id, nm, um, mr,                 flags) INS_##id,
-    #define INST2(id, nm, um, mr, mi,             flags) INS_##id,
-    #define INST3(id, nm, um, mr, mi, rm,         flags) INS_##id,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     flags) INS_##id,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) INS_##id,
+    #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 tt, flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             tt, flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -96,57 +96,66 @@ enum GCtype : unsigned
 
 #if defined(TARGET_XARCH)
 
-enum insFlags : uint32_t
+enum insFlags : uint64_t
 {
-    INS_FLAGS_None = 0,
+    INS_FLAGS_None = 0ULL,
 
     // Reads
-    Reads_OF = 1 << 0,
-    Reads_SF = 1 << 1,
-    Reads_ZF = 1 << 2,
-    Reads_PF = 1 << 3,
-    Reads_CF = 1 << 4,
-    Reads_DF = 1 << 5,
+    Reads_OF = 1ULL << 0,
+    Reads_SF = 1ULL << 1,
+    Reads_ZF = 1ULL << 2,
+    Reads_PF = 1ULL << 3,
+    Reads_CF = 1ULL << 4,
+    Reads_DF = 1ULL << 5,
 
     // Writes
-    Writes_OF = 1 << 6,
-    Writes_SF = 1 << 7,
-    Writes_ZF = 1 << 8,
-    Writes_AF = 1 << 9,
-    Writes_PF = 1 << 10,
-    Writes_CF = 1 << 11,
+    Writes_OF = 1ULL << 6,
+    Writes_SF = 1ULL << 7,
+    Writes_ZF = 1ULL << 8,
+    Writes_AF = 1ULL << 9,
+    Writes_PF = 1ULL << 10,
+    Writes_CF = 1ULL << 11,
 
     // Resets
-    Resets_OF = 1 << 12,
-    Resets_SF = 1 << 13,
-    Resets_AF = 1 << 14,
-    Resets_PF = 1 << 15,
-    Resets_CF = 1 << 16,
+    Resets_OF = 1ULL << 12,
+    Resets_SF = 1ULL << 13,
+    Resets_AF = 1ULL << 14,
+    Resets_PF = 1ULL << 15,
+    Resets_CF = 1ULL << 16,
 
     // Undefined
-    Undefined_OF = 1 << 17,
-    Undefined_SF = 1 << 18,
-    Undefined_ZF = 1 << 19,
-    Undefined_AF = 1 << 20,
-    Undefined_PF = 1 << 21,
-    Undefined_CF = 1 << 22,
+    Undefined_OF = 1ULL << 17,
+    Undefined_SF = 1ULL << 18,
+    Undefined_ZF = 1ULL << 19,
+    Undefined_AF = 1ULL << 20,
+    Undefined_PF = 1ULL << 21,
+    Undefined_CF = 1ULL << 22,
 
     // Restore
-    Restore_SF_ZF_AF_PF_CF = 1 << 23,
+    Restore_SF_ZF_AF_PF_CF = 1ULL << 23,
 
     // x87 instruction
-    INS_FLAGS_x87Instr = 1 << 24,
+    INS_FLAGS_x87Instr = 1ULL << 24,
 
     // Avx
-    INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
+    INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 25,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 26,
 
     // w and s bits
-    INS_FLAGS_Has_Wbit = 1 << 27,
-    INS_FLAGS_Has_Sbit = 1 << 28,
+    INS_FLAGS_Has_Wbit = 1ULL << 27,
+    INS_FLAGS_Has_Sbit = 1ULL << 28,
+
+    // instruction input size
+    // if not input size is set, instruction defaults to using
+    // the emitAttr for size
+    Input_8Bit  = 1ULL << 29,
+    Input_16Bit = 1ULL << 30,
+    Input_32Bit = 1ULL << 31,
+    Input_64Bit = 1ULL << 32,
+    Input_Mask = (0xFULL) << 29,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
-    INS_FLAGS_DONT_CARE = 0x00,
+    INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -327,6 +336,31 @@ enum insBarrier : unsigned
     INS_BARRIER_ACQ   =  INS_BARRIER_FULL,//17,
     INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
     INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
+};
+#endif
+
+#if defined(TARGET_XARCH)
+// Represents tupletype attribute of instruction.
+// This is used in determining factor N while calculating compressed displacement in EVEX encoding
+// Reference: Section 2.6.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
+enum insTupleType : uint32_t
+{
+    INS_TT_NONE             = 0x00000,
+    INS_TT_FULL             = 0x00001,
+    INS_TT_HALF             = 0x00002,
+    INS_TT_IS_BROADCAST     = 0x00003,
+    INS_TT_FULL_MEM         = 0x00010,
+    INS_TT_TUPLE1_SCALAR    = 0x00020,
+    INS_TT_TUPLE1_FIXED     = 0x00040,
+    INS_TT_TUPLE2           = 0x00080,
+    INS_TT_TUPLE4           = 0x00100,
+    INS_TT_TUPLE8           = 0x00200,
+    INS_TT_HALF_MEM         = 0x00400,
+    INS_TT_QUARTER_MEM      = 0x00800,
+    INS_TT_EIGHTH_MEM       = 0x01000,
+    INS_TT_MEM128           = 0x02000,
+    INS_TT_MOVDDUP          = 0x04000,
+    INS_TT_IS_NON_BROADCAST = 0x7FFFC
 };
 #endif
 

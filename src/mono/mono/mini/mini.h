@@ -127,6 +127,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_INT_32_64(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I4 && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 #define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
@@ -2881,7 +2882,8 @@ typedef enum {
 									  | MONO_CPU_X86_AES            | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 #endif
 #ifdef TARGET_WASM
-	MONO_CPU_WASM_SIMD = 1 << 1,
+	MONO_CPU_WASM_BASE = 1 << 1,
+	MONO_CPU_WASM_SIMD = 1 << 2,
 #endif
 #ifdef TARGET_ARM64
 	MONO_CPU_ARM64_BASE   = 1 << 1,
@@ -2921,6 +2923,7 @@ MonoCPUFeatures mono_arch_get_cpu_features (void);
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
+MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);

@@ -190,6 +190,7 @@ namespace System.Threading.RateLimiting
                             {
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -322,8 +323,18 @@ namespace System.Threading.RateLimiting
                           ? _queue.PeekHead()
                           : _queue.PeekTail();
 
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? _queue.DequeueHead()
+                            : _queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
                     // If we have enough permits after replenishing to serve the queued requests
-                    if (_permitCount >= nextPendingRequest.Count)
+                    else if (_permitCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =

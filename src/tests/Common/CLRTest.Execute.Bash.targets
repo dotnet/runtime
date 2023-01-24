@@ -63,9 +63,9 @@ WARNING:   When setting properties based on their current state (for example:
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_GCStress" ]
+if [ ! -z "$DOTNET_GCStress" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_GCStress IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -88,22 +88,22 @@ fi
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true' And '$(RuntimeFlavor)' != 'mono'">
     <![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [[ ( ! -z "$COMPlus_JitStress" ) || ( ! -z "$COMPlus_JitStressRegs" ) || ( ! -z "$COMPlus_JITMinOpts" ) || ( ! -z "$COMPlus_TailcallStress" ) ]]
+if [[ ( ! -z "$DOTNET_JitStress" ) || ( ! -z "$DOTNET_JitStressRegs" ) || ( ! -z "$DOTNET_JITMinOpts" ) || ( ! -z "$DOTNET_TailcallStress" ) ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET"
+  echo "SKIPPING EXECUTION BECAUSE ONE OR MORE OF (DOTNET_JitStress, DOTNET_JitStressRegs, DOTNET_JITMinOpts, DOTNET_TailcallStress) IS SET"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
-if [[ "$COMPlus_TieredCompilation" != "0" ]]
+if [[ "$DOTNET_TieredCompilation" != "0" ]]
 then
-  echo "SKIPPING EXECUTION BECAUSE COMPlus_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
+  echo "SKIPPING EXECUTION BECAUSE DOTNET_TieredCompilation has not been disabled and this test is marked JitOptimizationSensitive"
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(HeapVerifyIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$COMPlus_HeapVerify" ]
+if [ ! -z "$DOTNET_HeapVerify" ]
 then
-  echo SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  echo SKIPPING EXECUTION BECAUSE DOTNET_HeapVerify IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -112,6 +112,14 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$RunningIlasmRoundTrip" ]
 then
   echo SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
+      ]]></BashCLRTestEnvironmentCompatibilityCheck>
+      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
+$(BashCLRTestEnvironmentCompatibilityCheck)
+if [ ! -z "$CrossGen2SynthesizePgo" ]
+then
+  echo SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
@@ -276,8 +284,8 @@ fi
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
 
-      <BashCLRTestPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'">
-   <![CDATA[
+      <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
+      <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
 # Build wasm app containing the test dll
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -292,9 +300,9 @@ export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
 $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
-      </BashCLRTestPreCommands>
+      </CLRTestBashPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' != 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' != 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -331,7 +339,7 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' == 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' == 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -359,14 +367,14 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">
       <![CDATA[
 # run Android app
 __Command=""
@@ -391,7 +399,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'iOSSimulator' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'iossimulator'">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -430,13 +438,8 @@ echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecuti
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
-
-      <BashCLRTestPostCommands><![CDATA[
-$(BashDisasmCheckPostCommands)
-$(CLRTestBashPostCommands)
-      ]]></BashCLRTestPostCommands>
-
     </PropertyGroup>
+
     <PropertyGroup>
       <BashEnvironmentVariables>
 @(CLRTestBashEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
@@ -495,12 +498,12 @@ done
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
 
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) == 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' == 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
 set -e
       ]]></CLRTestExecutionScriptHeader>
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' != 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
       ]]></CLRTestExecutionScriptHeader>
@@ -548,11 +551,11 @@ ExePath=$(InputAssemblyName)
 export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
 $(BashEnvironmentVariables)
 # PreCommands
-$(BashCLRTestPreCommands)
+$(CLRTestBashPreCommands)
 # Launch
 $(BashCLRTestLaunchCmds)
 # PostCommands
-$(BashCLRTestPostCommands)
+$(CLRTestBashPostCommands)
 $(BashCLRTestExitCodeCheck)
       ]]>
       </_CLRTestExecutionScriptText>

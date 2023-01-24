@@ -118,9 +118,45 @@ public class TestFilter
     // issues.targets file as a split model would be very confusing for developers
     // and test monitors.
     private readonly HashSet<string>? _testExclusionList;
+    private readonly int _stripe = 0;
+    private readonly int _stripeCount = 1;
+    private int _shouldRunQuery = -1;
 
-    public TestFilter(string? filterString, HashSet<string>? testExclusionList)
+    public TestFilter(string? filterString, HashSet<string>? testExclusionList) : 
+        this(filterString == null ? Array.Empty<string>() : new string[]{filterString}, testExclusionList)
     {
+    }
+
+    public TestFilter(string[] filterArgs, HashSet<string>? testExclusionList)
+    {
+        string? filterString = null;
+
+        for (int i = 0; i < filterArgs.Length; i++)
+        {
+            if (filterArgs[i].StartsWith("-stripe"))
+            {
+                _stripe = Int32.Parse(filterArgs[++i]);
+                _stripeCount = Int32.Parse(filterArgs[++i]);
+            }
+            else
+            {
+                if (filterString == null)
+                    filterString = filterArgs[0];
+            }
+        }
+
+        var stripeEnvironment = Environment.GetEnvironmentVariable("TEST_HARNESS_STRIPE_TO_EXECUTE");
+        if (!String.IsNullOrEmpty(stripeEnvironment) && stripeEnvironment != ".0.1")
+        {
+            var stripes = stripeEnvironment.Split('.');
+            if (stripes.Length == 3)
+            {
+                Console.WriteLine($"Test striping enabled via TEST_HARNESS_STRIPE_TO_EXECUTE environment variable set to '{stripeEnvironment}'");
+                _stripe = Int32.Parse(stripes[1]);
+                _stripeCount = Int32.Parse(stripes[2]);
+            }
+        }
+
         if (filterString is not null)
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
@@ -140,15 +176,26 @@ public class TestFilter
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
     {
+        bool shouldRun = false;
         if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
         {
-            return false;
+            shouldRun = false;
         }
-        if (_filter is null)
+        else if (_filter is null)
         {
-            return true;
+            shouldRun = true;
         }
-        return _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+        else
+        {
+            shouldRun = _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+        }
+
+        if (shouldRun)
+        {
+            // Test stripe, if true, then report success
+            return ((System.Threading.Interlocked.Increment(ref _shouldRunQuery)) % _stripeCount) == _stripe;
+        }
+        return false;
     }
     
     public static HashSet<string> LoadTestExclusionList()

@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
-  framework: net7.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
+  framework: net8.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   runtimeType: 'coreclr'
@@ -55,7 +55,7 @@ jobs:
     pgoRunType: ${{ parameters.pgoRunType }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
-    timeoutInMintues: ${{ parameters.timeoutInMinutes }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'aot')) }}:
       helixTypeSuffix: '/wasm/aot'
@@ -74,19 +74,19 @@ jobs:
       - ${{ if and(eq(parameters.runtimeType, 'mono'), ne(parameters.codeGenType, 'AOT')) }}:
         - ${{ format('mono_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       - ${{ if eq(parameters.runtimeType, 'wasm')}}:
-        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'Browser', '', 'wasm', 'Linux', parameters.buildConfig, parameters.runtimeType) }}
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}_{5}', 'browser', '', 'wasm', 'linux', parameters.buildConfig, parameters.runtimeType) }}
       - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
-        - ${{ 'build_Android_arm64_release_AndroidMono' }}
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+        - ${{ 'build_android_arm64_release_AndroidMono' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet7' }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMobileNet6')}}:
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet6' }}
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
-        - ${{ 'build_iOS_arm64_release_iOSMono' }}
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet7' }}
+        - ${{ 'build_ios_arm64_release_iOSMono' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet7' }}
       - ${{ if eq(parameters.runtimeType, 'iOSMobileNet6')}}:
-        - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMauiNet6' }}
+        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMauiNet6' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono', 'AndroidMobileNet6',  'iOSMobileNet6'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
@@ -133,6 +133,9 @@ jobs:
       - ${{ parameters.framework }}
     steps:
     # Extra steps that will be passed to the performance template and run before sending the job to helix (all of which is done in the template)
+    - script: |
+        $(Build.SourcesDirectory)/eng/common/msbuild.sh $(Build.SourcesDirectory)/eng/testing/performance/add_properties_to_pipeline.proj /t:SetVariables
+      displayName: Add Properties To Pipeline Env
 
     # Optionally download live-built libraries
     - ${{ if and(ne(parameters.liveLibrariesBuildConfig, ''), eq(parameters.skipLiveLibrariesDownload, 'false')) }}:
@@ -185,7 +188,7 @@ jobs:
       - script: >-
           mkdir -p $(librariesDownloadDir)/bin/wasm/wasm-data &&
           mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
-          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-net7+latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
+          cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp src/mono/wasm/Wasm.Build.Tests/data/test-main-7.0.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
@@ -200,7 +203,7 @@ jobs:
           artifactName: LinuxMonoAOT${{ parameters.archType }}
           displayName: AOT Mono Artifacts
 
-      - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
+      - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
 
     # Download AndroidMono and MauiAndroid
@@ -373,10 +376,10 @@ jobs:
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'))
 
     # Copy the runtime directory into the testhost folder to include OOBs.
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\8.0.0 /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\8.0.0\\corerun.exe"
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\$(productVersion) /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\$(productVersion)\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6')))
 
-    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/8.0.0 -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/$(_Framework)-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/8.0.0/corerun"
+    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/$(productVersion) -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/$(productVersion)/corerun"
       displayName: "Create mono dotnet (Linux)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'AndroidMobileNet6', 'iOSMobileNet6')))

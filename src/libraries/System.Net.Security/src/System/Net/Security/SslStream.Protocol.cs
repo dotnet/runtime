@@ -30,8 +30,6 @@ namespace System.Net.Security
         private int _trailerSize = 16;
         private int _maxDataSize = 16354;
 
-        private bool _refreshCredentialNeeded = true;
-
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
@@ -104,11 +102,6 @@ namespace System.Net.Security
             }
         }
 
-        internal void SetRefreshCredentialNeeded()
-        {
-            _refreshCredentialNeeded = true;
-        }
-
         internal void CloseContext()
         {
             if (!_remoteCertificateExposed)
@@ -119,6 +112,10 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
+
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy?.Dispose();
+#endif
         }
 
         //
@@ -268,7 +265,22 @@ namespace System.Net.Security
             List<X509Certificate>? filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
             string[] issuers;                                 // This is a list of issuers sent by the server, only valid if we do know what the server cert is.
 
-            if (_sslAuthenticationOptions.CertSelectionDelegate != null)
+            if (_sslAuthenticationOptions.CertificateContext != null)
+            {
+                if (NetEventSource.Log.IsEnabled())
+                    NetEventSource.Log.CertificateFromCertContext(this);
+
+                //
+                // SslStreamCertificateContext can only be constructed with a cert with a
+                // private key, so we don't have to do any further processing.
+                //
+
+                sessionRestartAttempt = _credentialsHandle == null;
+                _selectedClientCertificate = _sslAuthenticationOptions.CertificateContext.Certificate;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {_selectedClientCertificate}");
+                return _sslAuthenticationOptions.CertificateContext.Certificate;
+            }
+            else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Info(this, "Calling CertificateSelectionCallback");
@@ -470,6 +482,7 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Selected cert = {selectedCert}");
 
             _selectedClientCertificate = clientCertificate;
+
             return selectedCert;
         }
 
@@ -510,7 +523,7 @@ namespace System.Net.Security
 
         --*/
 
-        private bool AcquireClientCredentials(ref byte[]? thumbPrint)
+        private bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
             // Acquire possible Client Certificate information and set it on the handle.
 
@@ -518,7 +531,6 @@ namespace System.Net.Security
             bool cachedCred = false;                   // this is a return result from this method.
 
             X509Certificate2? selectedCert = SelectClientCertificate(out sessionRestartAttempt);
-
             try
             {
                 // Try to locate cached creds first.
@@ -566,25 +578,25 @@ namespace System.Net.Security
                     cachedCred = true;
                     if (selectedCert != null)
                     {
-                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
                     }
                 }
                 else
                 {
                     if (selectedCert != null)
                     {
-                        _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
+                        _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
                     }
 
-                    _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
+                    _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions, newCredentialsRequested);
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                 }
             }
             finally
             {
-                if (selectedCert != null && _sslAuthenticationOptions.CertificateContext != null)
+                if (selectedCert != null)
                 {
-                    _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert);
+                    _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert);
                 }
             }
 
@@ -671,8 +683,11 @@ namespace System.Net.Security
             //
             byte[] guessedThumbPrint = selectedCert.GetCertHash();
             bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
-            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, sendTrustedList);
-
+            SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint,
+                                                                _sslAuthenticationOptions.EnabledSslProtocols,
+                                                                _sslAuthenticationOptions.IsServer,
+                                                                _sslAuthenticationOptions.EncryptionPolicy,
+                                                                sendTrustedList);
             if (cachedCredentialHandle != null)
             {
                 _credentialsHandle = cachedCredentialHandle;
@@ -687,9 +702,9 @@ namespace System.Net.Security
             return cachedCred;
         }
 
-        private static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        private static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested = false)
         {
-            SafeFreeCredentials? cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions);
+            SafeFreeCredentials? cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions, newCredentialsRequested);
 
             if (sslAuthenticationOptions.CertificateContext != null && cred != null)
             {
@@ -743,16 +758,6 @@ namespace System.Net.Security
         {
             byte[]? nextmsg = null;
             SecurityStatusPal status = GenerateToken(incomingBuffer, ref nextmsg);
-
-            if (!_sslAuthenticationOptions.IsServer && status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
-            {
-                if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(this, "NextMessage() returned SecurityStatusPal.CredentialsNeeded");
-
-                SetRefreshCredentialNeeded();
-                status = GenerateToken(incomingBuffer, ref nextmsg);
-            }
-
             ProtocolToken token = new ProtocolToken(nextmsg, status);
 
             if (NetEventSource.Log.IsEnabled())
@@ -788,6 +793,10 @@ namespace System.Net.Security
             bool sendTrustList = false;
             byte[]? thumbPrint = null;
 
+            // We need to try get credentials at the beginning.
+            // _credentialsHandle may be always null on some platforms but
+            // _securityContext will be allocated on first call.
+            bool refreshCredentialNeeded = _securityContext == null;
             //
             // Looping through ASC or ISC with potentially cached credential that could have been
             // already disposed from a different thread before ISC or ASC dir increment a cred ref count.
@@ -797,7 +806,7 @@ namespace System.Net.Security
                 do
                 {
                     thumbPrint = null;
-                    if (_refreshCredentialNeeded)
+                    if (refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
@@ -817,6 +826,24 @@ namespace System.Net.Security
                                       inputBuffer,
                                       ref result,
                                       _sslAuthenticationOptions);
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
+                        {
+                            status = SslStreamPal.SelectApplicationProtocol(
+                                        _credentialsHandle!,
+                                        _securityContext!,
+                                        _sslAuthenticationOptions,
+                                        _lastFrame.RawApplicationProtocols);
+
+                            if (status.ErrorCode == SecurityStatusPalErrorCode.OK)
+                            {
+                                status = SslStreamPal.AcceptSecurityContext(
+                                        ref _credentialsHandle!,
+                                        ref _securityContext,
+                                        ReadOnlySpan<byte>.Empty,
+                                        ref result,
+                                        _sslAuthenticationOptions);
+                            }
+                        }
                     }
                     else
                     {
@@ -829,15 +856,31 @@ namespace System.Net.Security
                                        _sslAuthenticationOptions,
                                        SelectClientCertificate
                                        );
+
+                        if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
+                        {
+                            refreshCredentialNeeded = true;
+                            cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
+
+                            if (NetEventSource.Log.IsEnabled())
+                                NetEventSource.Info(this, "InitializeSecurityContext() returned 'CredentialsNeeded'.");
+
+                            status = SslStreamPal.InitializeSecurityContext(
+                                       ref _credentialsHandle!,
+                                       ref _securityContext,
+                                       _sslAuthenticationOptions.TargetHost,
+                                       inputBuffer,
+                                       ref result,
+                                       _sslAuthenticationOptions,
+                                       SelectClientCertificate);
+                        }
                     }
                 } while (cachedCreds && _credentialsHandle == null);
             }
             finally
             {
-                if (_refreshCredentialNeeded)
+                if (refreshCredentialNeeded)
                 {
-                    _refreshCredentialNeeded = false;
-
                     //
                     // Assuming the ISC or ASC has referenced the credential,
                     // we want to call dispose so to decrement the effective ref count.
@@ -977,7 +1020,6 @@ namespace System.Net.Security
                 }
 
                 _remoteCertificate = certificate;
-
                 if (_remoteCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled() && RemoteCertRequired) NetEventSource.Error(this, $"Remote certificate required, but no remote certificate received");
@@ -1100,7 +1142,7 @@ namespace System.Net.Security
                 NetEventSource.Info(this, $"alertMessage:{alertMessage}");
 
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyAlertToken(ref _credentialsHandle, _securityContext, TlsAlertType.Fatal, alertMessage);
+            status = SslStreamPal.ApplyAlertToken(_securityContext, TlsAlertType.Fatal, alertMessage);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {
@@ -1121,7 +1163,7 @@ namespace System.Net.Security
         private ProtocolToken? CreateShutdownToken()
         {
             SecurityStatusPal status;
-            status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);
+            status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
             if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
             {

@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+using SourceGenerators.Tests;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -456,7 +457,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks can be generated.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, false };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, false };
@@ -465,7 +466,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -474,7 +475,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -483,7 +484,7 @@ namespace LibraryImportGenerator.UnitTests
             // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
             {
                 string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net5, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
@@ -501,6 +502,7 @@ namespace LibraryImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(targetFramework)),
                 out var generatorDiags,
                 new Microsoft.Interop.LibraryImportGenerator());
 
@@ -611,7 +613,7 @@ namespace LibraryImportGenerator.UnitTests
 
             var newComp = TestUtils.RunGenerators(
                 comp,
-                new LibraryImportGeneratorOptionsProvider(useMarshalType: true, generateForwarders: false),
+                new LibraryImportGeneratorOptionsProvider(TestTargetFramework.Net, useMarshalType: true, generateForwarders: false),
                 out var generatorDiags,
                 new Microsoft.Interop.LibraryImportGenerator());
 
@@ -641,33 +643,30 @@ namespace LibraryImportGenerator.UnitTests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToCompileToValidateAllowUnsafeBlocks()
+        public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
         {
-            yield return new object[] { ID(), CodeSnippets.TrivialClassDeclarations, TestTargetFramework.Net, true };
-
-            {
-                string source = @"
+            string source = @"
 using System.Runtime.InteropServices;
 public class Basic { }
 ";
-                yield return new object[] { ID(), source, TestTargetFramework.Standard, false };
-                yield return new object[] { ID(), source, TestTargetFramework.Framework, false };
-                yield return new object[] { ID(), source, TestTargetFramework.Net, false };
-            }
+            yield return new object[] { ID(), source, TestTargetFramework.Standard };
+            yield return new object[] { ID(), source, TestTargetFramework.Framework };
+            yield return new object[] { ID(), source, TestTargetFramework.Net };
         }
 
         [Theory]
-        [MemberData(nameof(CodeSnippetsToCompileToValidateAllowUnsafeBlocks))]
-        public async Task ValidateRequireAllowUnsafeBlocksDiagnosticNoTrigger(string id, string source, TestTargetFramework framework, bool allowUnsafe)
+        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
+        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: allowUnsafe);
+            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            var newComp = TestUtils.RunGenerators(comp, new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(framework)), out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            // Assert we didn't generate any syntax trees, even empty ones
+            Assert.Same(comp, newComp);
         }
     }
 }

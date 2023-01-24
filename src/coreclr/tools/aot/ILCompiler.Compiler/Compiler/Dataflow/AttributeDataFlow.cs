@@ -82,14 +82,14 @@ namespace ILCompiler.Dataflow
 
         private void ProcessAttributeDataflow(MethodDesc method, ImmutableArray<object?> arguments, ref DependencyList? result)
         {
-            for (int i = 0; i < method.Signature.Length; i++)
+            foreach (var parameter in method.GetMetadataParameters())
             {
-                var parameterValue = _annotations.GetMethodParameterValue(method, i);
+                var parameterValue = _annotations.GetMethodParameterValue(parameter);
                 if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
                 {
-                    MultiValue value = GetValueForCustomAttributeArgument(arguments[i]);
+                    MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
                     var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
-                    RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin, ref result);
+                    RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, method.GetDisplayName(), ref result);
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace ILCompiler.Dataflow
             {
                 MultiValue valueNode = GetValueForCustomAttributeArgument(value);
                 var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue, new FieldOrigin(field), ref result);
+                RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue, field.GetDisplayName(), ref result);
             }
         }
 
@@ -120,11 +120,11 @@ namespace ILCompiler.Dataflow
             in DiagnosticContext diagnosticContext,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
-            Origin memberWithRequirements,
+            string reason,
             ref DependencyList? result)
         {
-            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
-            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, memberWithRequirements);
+            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, reason);
             requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
 
             if (result == null)

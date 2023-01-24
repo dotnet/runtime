@@ -17,12 +17,12 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 
-REM Suppress some COMPlus variables for the duration of Crossgen2 execution
+REM Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
 setlocal
-set "COMPlus_GCName="
-set "COMPlus_GCStress="
-set "COMPlus_HeapVerify="
-set "COMPlus_ReadyToRun="
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
 
 md IL_DLLS
 if not exist IL_DLLS\fieldgetter.dll (
@@ -81,11 +81,11 @@ if not exist mainv2.map (
 
 endlocal
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 
-# Suppress some COMPlus variables for the duration of Crossgen2 execution
-export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 
 mkdir IL_DLLS
 
@@ -152,7 +152,7 @@ then
   exit 1
 fi
 
-export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
-]]></BashCLRTestPreCommands>
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

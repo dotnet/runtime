@@ -18,6 +18,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Playwright;
 
 #nullable enable
 
@@ -27,8 +28,8 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net7.0";
-        public const string DefaultTargetFrameworkForBlazor = "net7.0";
+        public const string DefaultTargetFramework = "net8.0";
+        public const string DefaultTargetFrameworkForBlazor = "net8.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -49,6 +50,7 @@ namespace Wasm.Build.Tests
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
+        public static bool UseWebcil => s_buildEnv.UseWebcil;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                             // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
@@ -70,6 +72,8 @@ namespace Wasm.Build.Tests
                 Console.WriteLine ("");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
+                if (UseWebcil)
+                    Console.WriteLine($"=============== Using .webcil ===============");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ("");
             }
@@ -335,6 +339,10 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
+            if (UseWebcil) {
+                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+            }
+
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
                                         .Replace("##EXTRA_ITEMS##", extraItems)
@@ -422,7 +430,8 @@ namespace Wasm.Build.Tests
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
-                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
+                                         options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
+                                         UseWebcil);
                 }
 
                 if (options.UseCache)
@@ -463,7 +472,7 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "")
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
         {
             InitPaths(id);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -483,7 +492,12 @@ namespace Wasm.Build.Tests
                     .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
                     .EnsureSuccessful();
 
-            return Path.Combine(_projectDir!, $"{id}.csproj");
+            string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
+            if (runAnalyzers)
+                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectfile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            return projectfile;
         }
 
         public string CreateBlazorWasmTemplateProject(string id)
@@ -495,11 +509,17 @@ namespace Wasm.Build.Tests
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
-            return Path.Combine(_projectDir!, $"{id}.csproj");
+            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
+            if (UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            return projectFile;
         }
 
         protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
         {
+            if (options.WarnAsError)
+                extraArgs = extraArgs.Append("/warnaserror").ToArray();
+
             var res = BuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
             _testOutput.WriteLine($"BlazorBuild, options.tfm: {options.TargetFramework}");
             AssertDotNetNativeFiles(options.ExpectedFileType, options.Config, forPublish: false, targetFramework: options.TargetFramework);
@@ -543,6 +563,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
+                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
@@ -609,7 +630,8 @@ namespace Wasm.Build.Tests
                                                    bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
-                                                   bool dotnetWasmFromRuntimePack = true)
+                                                   bool dotnetWasmFromRuntimePack = true,
+                                                   bool useWebcil = true)
         {
             AssertFilesExist(bundleDir, new []
             {
@@ -625,7 +647,9 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
-            AssertFilesExist(managedDir, new[] { $"{projectName}.dll" });
+            string bundledMainAppAssembly =
+                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+            AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
             if (is_debug)
@@ -668,7 +692,8 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
-            Assert.True(Directory.Exists(dir), $"[{label}] {dir} not found");
+            if (!Directory.Exists(dir))
+                throw new XunitException($"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
                 string path = Path.Combine(dir, filename);
@@ -788,16 +813,64 @@ namespace Wasm.Build.Tests
             CreateBlazorWasmTemplateProject(id);
 
             string extraItems = @$"
-                <PackageReference Include=""SkiaSharp"" Version=""2.88.1-preview.63"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.1-preview.63"" />
-
-                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.7\*.a"" />
+                {GetSkiaSharpReferenceItems()}
                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
             ";
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             return projectFile;
+        }
+
+        public void BlazorAddRazorButton(string buttonText, string customCode, string methodName="test", string razorPage="Pages/Counter.razor")
+        {
+            string additionalCode = $$"""
+                <p role="{{methodName}}">Output: @outputText</p>
+                <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
+
+                @code {
+                    private string outputText = string.Empty;
+                    public void {{methodName}}()
+                    {
+                        {{customCode}}
+                    }
+                }
+            """;
+
+            // find blazor's Counter.razor
+            string counterRazorPath = Path.Combine(_projectDir!, razorPage);
+            if (!File.Exists(counterRazorPath))
+                throw new FileNotFoundException($"Could not find {counterRazorPath}");
+
+            string oldContent = File.ReadAllText(counterRazorPath);
+            File.WriteAllText(counterRazorPath, oldContent + additionalCode);
+        }
+
+        public async Task BlazorRun(string config, Func<IPage, Task>? test=null, string extraArgs="--no-build")
+        {
+            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+
+            await using var runner = new BrowserRunner(_testOutput);
+            var page = await runner.RunAsync(runCommand, $"run -c {config} {extraArgs}", onConsoleMessage: OnConsoleMessage);
+
+            await page.Locator("text=Counter").ClickAsync();
+            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 0", txt);
+
+            await page.Locator("text=\"Click me\"").ClickAsync();
+            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.Equal("Current count: 1", txt);
+
+            if (test is not null)
+                await test(page);
+
+            void OnConsoleMessage(IConsoleMessage msg)
+            {
+                if (EnvironmentVariables.ShowBuildOutput)
+                    Console.WriteLine($"[{msg.Type}] {msg.Text}");
+                _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+            }
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
@@ -934,6 +1007,8 @@ namespace Wasm.Build.Tests
 
         public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
         {
+            if (!File.Exists(projectFile))
+                throw new Exception ($"{projectFile} does not exist");
             if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
 
@@ -1002,6 +1077,11 @@ namespace Wasm.Build.Tests
             return table;
         }
 
+        protected static string GetSkiaSharpReferenceItems()
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.3"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.3"" />
+                <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.12\st\*.a"" />";
+
         protected static string s_mainReturns42 = @"
             public class TestClass {
                 public static int Main()
@@ -1031,7 +1111,7 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
+        bool HasV8Script = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
@@ -1044,7 +1124,8 @@ namespace Wasm.Build.Tests
         string Id,
         string Config,
         NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor
+        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
+        bool WarnAsError = true
     );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

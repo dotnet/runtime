@@ -144,7 +144,7 @@ namespace System.Xml.Linq
         {
         }
 
-        private XElement(AsyncConstructionSentry s)
+        private XElement(AsyncConstructionSentry _)
         {
             // Dummy ctor used to avoid public default ctor.  This is used
             // by async methods meant to perform the same operations as

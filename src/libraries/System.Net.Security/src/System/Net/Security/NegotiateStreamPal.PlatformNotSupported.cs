@@ -15,6 +15,7 @@ namespace System.Net.Security
     [UnsupportedOSPlatform("tvos")]
     internal static partial class NegotiateStreamPal
     {
+#pragma warning disable IDE0060
         internal static IIdentity GetIdentity(NTAuthentication context)
         {
             throw new PlatformNotSupportedException();
@@ -29,5 +30,6 @@ namespace System.Net.Security
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

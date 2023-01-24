@@ -41,7 +41,7 @@ namespace DefaultNamespace
 
     public class jitBug
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             V3[] V3Array = new V3[5];
             for (int i = 0; i < V3Array.Length; i++)

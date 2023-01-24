@@ -3406,19 +3406,12 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_ENTRY_POINT;
 
-    LONG result = EXCEPTION_CONTINUE_SEARCH;
-
-    // This function can be called during the handling of a SO
-    //BEGIN_ENTRYPOINT_VOIDRET;
-
-    result = CLRVectoredExceptionHandler(pExceptionInfo);
+    LONG result = CLRVectoredExceptionHandler(pExceptionInfo);
 
     if (EXCEPTION_EXECUTE_HANDLER == result)
     {
         result = EXCEPTION_CONTINUE_SEARCH;
     }
-
-    //END_ENTRYPOINT_VOIDRET;
 
     return result;
 #else  // !FEATURE_EH_FUNCLETS

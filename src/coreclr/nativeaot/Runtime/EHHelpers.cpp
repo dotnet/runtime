@@ -9,7 +9,6 @@
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "TypeManager.h"
 #include "varint.h"
 #include "PalRedhawkCommon.h"

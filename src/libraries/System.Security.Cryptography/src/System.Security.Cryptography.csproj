@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>$(NoWarn);CA5350;CA5351;CA5379;CA5384;SYSLIB0026</NoWarn>
     <!-- PasswordDeriveBytes.GetBytes is obsolete but DeriveBytes.GetBytes intentionally isn't. -->
     <NoWarn>$(NoWarn);CS0809</NoWarn>
@@ -12,10 +12,10 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemSecurityCryptography_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
-    <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</UseAppleCrypto>
-    <UseOpenSsl Condition="'$(TargetPlatformIdentifier)' == 'Unix'">true</UseOpenSsl>
-    <UseOpenSslAead Condition="'$(UseOpenSsl)' == 'true' or '$(TargetPlatformIdentifier)' == 'OSX'">true</UseOpenSslAead>
+    <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'android'">true</UseAndroidCrypto>
+    <UseAppleCrypto Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</UseAppleCrypto>
+    <UseOpenSsl Condition="'$(TargetPlatformIdentifier)' == 'unix'">true</UseOpenSsl>
+    <UseOpenSslAead Condition="'$(UseOpenSsl)' == 'true' or '$(TargetPlatformIdentifier)' == 'osx'">true</UseOpenSslAead>
     <NeedOpenSslInitializer Condition="'$(UseOpenSslAead)' == 'true'">true</NeedOpenSslInitializer>
   </PropertyGroup>
 
@@ -549,7 +549,7 @@
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\PolicyInformationAsn.xml</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <!-- GetRandomBytes is identical on Unix and Browser -->
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
@@ -783,6 +783,7 @@
              Link="Common\System\Text\UrlBase64Encoding.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CapiHelper.DSA.Shared.cs" />
@@ -870,7 +871,6 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEvpCipherCtxHandle.Unix.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.OpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\AesGcm.OpenSsl.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
@@ -1219,7 +1219,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.ECKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.X500Name.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs"
@@ -1292,6 +1292,7 @@
              Link="Common\System\Security\Cryptography\RSASecurityTransforms.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\AesGcm.macOS.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.macOS.cs" />
     <Compile Include="System\Security\Cryptography\DSA.Create.SecurityTransforms.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProvider.Unix.cs" />
@@ -1311,7 +1312,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.LoaderPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.macOS.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' != 'OSX'">
+  <ItemGroup Condition="'$(UseAppleCrypto)' == 'true' and '$(TargetPlatformIdentifier)' != 'osx'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.iOS.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.iOS.cs"
@@ -1835,7 +1836,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier' != 'browser'">
     <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
   <ItemGroup>

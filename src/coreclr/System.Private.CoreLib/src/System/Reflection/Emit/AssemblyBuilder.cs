@@ -56,6 +56,8 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException();
             }
 
+            EnsureDynamicCodeSupported();
+
             _access = access;
 
             _internalAssembly = CreateDynamicAssembly(assemblyLoadContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!, name, access);

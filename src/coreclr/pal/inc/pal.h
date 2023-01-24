@@ -2619,6 +2619,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
+#elif defined(__FreeBSD__) && defined(HOST_ARM64)
+#define PAL_CS_NATIVE_DATA_SIZE 24
 #elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
 #elif defined(__linux__) && defined(HOST_ARM64)
@@ -2867,14 +2869,6 @@ BOOL
 PALAPI
 FreeLibrary(
     IN OUT HMODULE hLibModule);
-
-PALIMPORT
-PAL_NORETURN
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode);
 
 PALIMPORT
 BOOL
@@ -3637,7 +3631,7 @@ to the variable that 'Addend' points to.
 Parameters
 
 lpAddend
-[in/out] Pointer to the variable to to added.
+[in/out] Pointer to the variable to added.
 
 Return Values
 
@@ -3724,23 +3718,6 @@ YieldProcessor()
     return;
 #endif
 }
-
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber();
-
-/*++
-Function:
-PAL_HasGetCurrentProcessorNumber
-
-Checks if GetCurrentProcessorNumber is available in the current environment
-
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber();
 
 #define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
 #define FORMAT_MESSAGE_IGNORE_INSERTS  0x00000200
@@ -3914,34 +3891,6 @@ PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
 
-//
-// NUMA related APIs
-//
-
-PALIMPORT
-BOOL
-PALAPI
-GetNumaHighestNodeNumber(
-  OUT PULONG HighestNodeNumber
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetNumaProcessorNode(WORD procNo, WORD* node);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAllocExNuma(
-  IN HANDLE hProcess,
-  IN OPTIONAL LPVOID lpAddress,
-  IN SIZE_T dwSize,
-  IN DWORD flAllocationType,
-  IN DWORD flProtect,
-  IN DWORD nndPreferred
-);
-
 PALIMPORT
 BOOL
 PALAPI
@@ -4069,30 +4018,7 @@ typedef unsigned int wint_t;
 #endif
 
 #ifndef PAL_STDCPP_COMPAT
-
-#if defined(_DEBUG)
-
-/*++
-Function:
-PAL_memcpy
-
-Overlapping buffer-safe version of memcpy.
-See MSDN doc for memcpy
---*/
-EXTERN_C
-PALIMPORT
-DLLEXPORT
-void *PAL_memcpy (void *dest, const void * src, size_t count);
-
-PALIMPORT void * __cdecl memcpy(void *, const void *, size_t) THROW_DECL;
-
-#define memcpy PAL_memcpy
-#define IS_PAL_memcpy 1
-#define TEST_PAL_DEFERRED(def) IS_##def
-#define IS_REDEFINED_IN_PAL(def) TEST_PAL_DEFERRED(def)
-#else //defined(_DEBUG)
 PALIMPORT void * __cdecl memcpy(void *, const void *, size_t);
-#endif //defined(_DEBUG)
 PALIMPORT int    __cdecl memcmp(const void *, const void *, size_t);
 PALIMPORT void * __cdecl memset(void *, int, size_t);
 PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
@@ -4150,13 +4076,8 @@ PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
 PALIMPORT int __cdecl _wcsnicmp(const WCHAR *, const WCHAR *, size_t);
 PALIMPORT int __cdecl _vsnprintf(char *, size_t, const char *, va_list);
 PALIMPORT DLLEXPORT int __cdecl _vsnprintf_s(char *, size_t, size_t, const char *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _vsnwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, va_list);
-PALIMPORT DLLEXPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
 PALIMPORT DLLEXPORT int __cdecl _snprintf_s(char *, size_t, size_t, const char *, ...);
 PALIMPORT DLLEXPORT int __cdecl sprintf_s(char *, size_t, const char *, ... );
-PALIMPORT DLLEXPORT int __cdecl swprintf_s(WCHAR *, size_t, const WCHAR *, ... );
-PALIMPORT int __cdecl _snwprintf_s(WCHAR *, size_t, size_t, const WCHAR *, ...);
-PALIMPORT int __cdecl vswprintf_s( WCHAR *, size_t, const WCHAR *, va_list);
 PALIMPORT DLLEXPORT int __cdecl sscanf_s(const char *, const char *, ...);
 PALIMPORT DLLEXPORT errno_t __cdecl _itow_s(int, WCHAR *, size_t, int);
 
@@ -4323,6 +4244,12 @@ inline __int64 abs(__int64 _X) {
     return llabs(_X);
 }
 
+#ifdef __APPLE__
+inline __int64 abs(SSIZE_T _X) {
+    return llabs((__int64)_X);
+}
+#endif
+
 }
 #endif
 
@@ -4404,7 +4331,6 @@ PALIMPORT int __cdecl PAL_ferror(PAL_FILE *);
 PALIMPORT PAL_FILE * __cdecl PAL_fopen(const char *, const char *);
 PALIMPORT int __cdecl PAL_setvbuf(PAL_FILE *stream, char *, int, size_t);
 
-PALIMPORT PAL_FILE * __cdecl _fdopen(int, const char *);
 PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 /* Maximum value that can be returned by the rand function. */

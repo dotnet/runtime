@@ -16,7 +16,7 @@ namespace DefaultNamespace
             return (UInt16)i;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             // Looks like what's happening is the JIT sees I'm casting an int
             // to an unsigned short then back to an int and it messes up by

@@ -4,8 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq;
 using Internal.JitInterface;
+using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -20,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private FrameInfo[] _coldFrameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
         private byte[] _debugLocInfos;
@@ -28,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
+        private DependencyList _nonRelocationDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -44,6 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
                 InitializeFrameInfos(Array.Empty<FrameInfo>());
+                InitializeColdFrameInfos(Array.Empty<FrameInfo>());
             }
             _lateTriggeredCompilation = context.CompilationCurrentPhase != 0;
             RegisterInlineeModuleIndices(context);
@@ -130,10 +134,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public MethodColdCodeNode ColdCodeNode { get; set; }
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
             Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
+
+            if (ColdCodeNode != null)
+            {
+                Relocation[] coldRelocations = ColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
+                if (relocations == null)
+                {
+                    relocations = coldRelocations;
+                }
+                else if (coldRelocations != null)
+                {
+                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
+                }
+            }
 
             if (relocations == null)
             {
@@ -246,9 +264,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
 
+            if (this.ColdCodeNode != null)
+            {
+                dependencyList.Add(this.ColdCodeNode, "cold");
+            }
+
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+            }
+
+            if (_nonRelocationDependencies != null)
+            {
+                dependencyList.AddRange(_nonRelocationDependencies);
             }
 
             return dependencyList;
@@ -272,15 +300,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 315213488;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                return _method.Context.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
-            }
+            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
+
+        public FrameInfo[] ColdFrameInfos => _coldFrameInfos;
+
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
         public MethodDesc[] InlinedMethods => _inlinedMethods;
@@ -300,6 +328,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     new FrameInfo((FrameInfoFlags)0, startOffset: 0, endOffset: 0, blobData: Array.Empty<byte>())
                 };
             }
+        }
+
+        public void InitializeColdFrameInfos(FrameInfo[] coldFrameInfos)
+        {
+            Debug.Assert(_coldFrameInfos == null);
+            _coldFrameInfos = coldFrameInfos;
+            // TODO: x86 (see InitializeFrameInfos())
         }
 
         public void InitializeGCInfo(byte[] gcInfo)
@@ -352,6 +387,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _inlinedMethods = inlinedMethods;
             if (this.Marked)
                 RegisterInlineeModuleIndices(factory);
+        }
+
+        public void InitializeNonRelocationDependencies(DependencyList dependencies)
+        {
+            _nonRelocationDependencies = dependencies;
         }
 
         public int Offset => 0;

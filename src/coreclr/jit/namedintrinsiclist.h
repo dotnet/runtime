@@ -60,6 +60,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_GC_KeepAlive,
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
+    NI_System_Type_get_IsEnum,
+    NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
     NI_System_Type_get_IsByRefLike,
     NI_System_Type_IsAssignableFrom,
@@ -91,13 +93,17 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
 
+    NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
+
     NI_System_String_Equals,
     NI_System_String_get_Chars,
     NI_System_String_get_Length,
     NI_System_String_op_Implicit,
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
+    NI_System_Span_get_Length,
     NI_System_ReadOnlySpan_get_Item,
+    NI_System_ReadOnlySpan_get_Length,
 
     NI_System_MemoryExtensions_AsSpan,
     NI_System_MemoryExtensions_Equals,
@@ -110,7 +116,9 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported_True,
     NI_IsSupported_False,
     NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
     NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
@@ -145,6 +153,11 @@ enum NamedIntrinsic : unsigned short
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
+
+#if defined(FEATURE_SIMD)
+    NI_SIMD_UpperRestore,
+    NI_SIMD_UpperSave,
+#endif // FEATURE_SIMD
 
     NI_SRCS_UNSAFE_START,
 

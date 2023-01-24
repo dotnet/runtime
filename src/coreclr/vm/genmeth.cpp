@@ -380,8 +380,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
+                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
                 }
 #endif // _DEBUG
             }

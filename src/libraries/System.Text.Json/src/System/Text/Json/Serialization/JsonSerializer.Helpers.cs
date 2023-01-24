@@ -54,6 +54,23 @@ namespace System.Text.Json
             return info;
         }
 
+        private static void ValidateInputType(object? value, Type inputType)
+        {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
+            if (value is not null)
+            {
+                Type runtimeType = value.GetType();
+                if (!inputType.IsAssignableFrom(runtimeType))
+                {
+                    ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+                }
+            }
+        }
+
         internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
             JsonHelpers.IsInRangeInclusive((int)handling, 0,
                 (int)(
@@ -61,5 +78,55 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
+            handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;
+
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static T? UnboxOnRead<T>(object? value)
+        {
+            if (value is null)
+            {
+                if (default(T) is not null)
+                {
+                    // Casting null values to a non-nullable struct throws NullReferenceException.
+                    ThrowUnableToCastValue(value);
+                }
+
+                return default;
+            }
+
+            if (value is T typedValue)
+            {
+                return typedValue;
+            }
+
+            ThrowUnableToCastValue(value);
+            return default!;
+
+            static void ThrowUnableToCastValue(object? value)
+            {
+                if (value is null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(declaredType: typeof(T));
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue: value.GetType(), declaredType: typeof(T));
+                }
+            }
+        }
+
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static T? UnboxOnWrite<T>(object? value)
+        {
+            if (default(T) is not null && value is null)
+            {
+                // Casting null values to a non-nullable struct throws NullReferenceException.
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(T));
+            }
+
+            return (T?)value;
+        }
     }
 }

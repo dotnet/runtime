@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -120,9 +121,9 @@ namespace System
         private const ulong TicksPer6Hours = TicksPerHour * 6;
         private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
-        private static readonly uint[] s_daysToMonth365 = {
+        internal static ReadOnlySpan<uint> DaysToMonth365 => new uint[] {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly uint[] s_daysToMonth366 = {
+        internal static ReadOnlySpan<uint> DaysToMonth366 => new uint[] {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
 
         private static ReadOnlySpan<byte> DaysInMonth365 => new byte[] { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -176,6 +177,40 @@ namespace System
             if ((ulong)ticks > MaxTicks) ThrowTicksOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
             _dateData = (ulong)ticks | ((ulong)(uint)kind << KindShift);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// The new instance will have the <see cref="DateTimeKind.Unspecified"/> kind.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time)
+        {
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/> respecting a <see cref="DateTimeKind"/>.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="date"/>
+        /// and <paramref name="time"/> specify a local time, Coordinated Universal Time (UTC), or neither.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time, DateTimeKind kind)
+        {
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks) | ((ulong)(uint)kind << KindShift);
         }
 
         internal DateTime(long ticks, DateTimeKind kind, bool isAmbiguousDst)
@@ -273,7 +308,7 @@ namespace System
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
                 _dateData = ticks | ((ulong)kind << KindShift);
@@ -291,7 +326,7 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second)
         {
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             }
@@ -307,7 +342,7 @@ namespace System
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 _dateData = ticks | ((ulong)kind << KindShift);
@@ -327,7 +362,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, 0).UTicks;
             }
@@ -500,7 +535,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
             }
@@ -777,7 +812,7 @@ namespace System
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 ticks += (uint)millisecond * (uint)TicksPerMillisecond;
@@ -953,7 +988,7 @@ namespace System
             y += q;
             m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
-            uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> daysTo = IsLeapYear(y) ? DaysToMonth366 : DaysToMonth365;
             uint daysToMonth = daysTo[m - 1];
             int days = (int)(daysTo[m] - daysToMonth);
             if (d > days) d = days;
@@ -1016,12 +1051,12 @@ namespace System
             int m = month - 1, d = day - 1;
             if (IsLeapYear(y))
             {
-                n += s_daysToMonth366[m];
+                n += DaysToMonth366[m];
             }
             else
             {
                 if (d == 28 && m == 1) d--;
-                n += s_daysToMonth365[m];
+                n += DaysToMonth365[m];
             }
             n += (uint)d;
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
@@ -1071,7 +1106,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
@@ -1257,12 +1292,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return FromFileTimeLeapSecondsAware((ulong)fileTime);
             }
-#pragma warning restore 162
 
             // This is the ticks in Universal time for this fileTime.
             ulong universalTicks = (ulong)fileTime + FileTimeOffset;
@@ -1347,7 +1380,7 @@ namespace System
         // are needed rather than redoing the computations for each.
         //
         // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
-        //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
+        //   Cassio Neri, Lorenz Schneider - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
         internal void GetDate(out int year, out int month, out int day)
         {
             // y100 = number of whole 100-year periods since 3/1/0000
@@ -1696,12 +1729,10 @@ namespace System
             // Treats the input as universal if it is not specified
             long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().Ticks : Ticks;
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return (long)ToFileTimeLeapSecondsAware(ticks);
             }
-#pragma warning restore 162
 
             ticks -= FileTimeOffset;
             if (ticks < 0)
@@ -1883,6 +1914,40 @@ namespace System
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
 
+        /// <summary>
+        /// Deconstructs <see cref="DateTime"/> into <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time)
+        {
+            date = DateOnly.FromDateTime(this);
+            time = TimeOnly.FromDateTime(this);
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="DateOnly"/> by <see cref="Year"/>, <see cref="Month"/> and <see cref="Day"/>.
+        /// </summary>
+        /// <param name="year">
+        /// Deconstructed parameter for <see cref="Year"/>.
+        /// </param>
+        /// <param name="month">
+        /// Deconstructed parameter for <see cref="Month"/>.
+        /// </param>
+        /// <param name="day">
+        /// Deconstructed parameter for <see cref="Day"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day)
+        {
+            GetDate(out year, out month, out day);
+        }
+
         // Returns a string array containing all of the known date and time options for the
         // current culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
@@ -1935,7 +2000,7 @@ namespace System
         double IConvertible.ToDouble(IFormatProvider? provider) => throw InvalidCast(nameof(Double));
         decimal IConvertible.ToDecimal(IFormatProvider? provider) => throw InvalidCast(nameof(Decimal));
 
-        private static Exception InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
+        private static InvalidCastException InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider) => this;
 
@@ -1956,7 +2021,7 @@ namespace System
                 return false;
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 return false;
@@ -1967,7 +2032,7 @@ namespace System
             {
                 ticks += TimeToTicks(hour, minute, second) + (uint)millisecond * (uint)TicksPerMillisecond;
             }
-            else if (second == 60 && s_systemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
+            else if (second == 60 && SystemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
             {
                 // if we have leap second (second = 60) then we'll need to check if it is valid time.
                 // if it is valid, then we adjust the second to 59 so DateTime will consider this second is last second

@@ -16,7 +16,7 @@ unsafe public class GitHub_24846
         Unsafe.InitBlockUnaligned(destination, 0xff, 0);
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         int returnVal = 100;
         var destination = new byte[1];

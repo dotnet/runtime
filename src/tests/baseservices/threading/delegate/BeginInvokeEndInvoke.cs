@@ -16,7 +16,7 @@ namespace DelegateTest
     class BeginInvokeEndInvokeTest
     {
         public delegate string AsyncMethodCaller(int input);
-        static int Main(string[] args)
+        static int Main()
         {
             IAsyncResult result = null;
             AsyncMethodCaller caller = new AsyncMethodCaller(DelegateCommon.TestMethod);

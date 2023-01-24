@@ -9,6 +9,8 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable IDE0060
+
 namespace System.Threading
 {
 #if !FEATURE_WASM_THREADS
@@ -84,12 +86,6 @@ namespace System.Threading
         {
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
-        {
-            return true;
-        }
-
         internal static bool NotifyThreadBlocked() => false;
 
         internal static void NotifyThreadUnblocked()
@@ -97,6 +93,11 @@ namespace System.Threading
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+
+        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        {
+            return true;
+        }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,

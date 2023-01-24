@@ -184,6 +184,7 @@ namespace System.Threading.RateLimiting
                             {
                                 Interlocked.Increment(ref _failedLeasesCount);
                             }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
@@ -214,7 +215,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private RateLimitLease CreateFailedTokenLease(int tokenCount)
+        private TokenBucketLease CreateFailedTokenLease(int tokenCount)
         {
             int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
@@ -327,7 +328,17 @@ namespace System.Threading.RateLimiting
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
-                    if (_tokenCount >= nextPendingRequest.Count)
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? queue.DequeueHead()
+                            : queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
+                    else if (_tokenCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =

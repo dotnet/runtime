@@ -168,8 +168,9 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
     PathString libPath = GetInternalSystemDirectory();
     libPath.Append(libFileName);
 
+    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %s\n", libPath.GetUTF8()));
+
     LPCWSTR libraryName = libPath.GetUnicode();
-    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", libraryName));
     return CLRLoadLibrary(libraryName);
 }
 #endif // FEATURE_STANDALONE_GC
@@ -192,7 +193,10 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     if (!hMod)
     {
         HRESULT err = GetLastError();
-        LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
+#ifdef LOGGING
+        MAKE_UTF8PTR_FROMWIDE(standaloneGcLocationUtf8, standaloneGcLocation);
+        LOG((LF_GC, LL_FATALERROR, "Load of %s failed\n", standaloneGcLocationUtf8));
+#endif // LOGGING
         return __HRESULT_FROM_WIN32(err);
     }
 
@@ -214,17 +218,21 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
+    g_gc_version_info.MajorVersion = GC_INTERFACE_MAJOR_VERSION;
+    g_gc_version_info.MinorVersion = GC_INTERFACE_MINOR_VERSION;
+    g_gc_version_info.BuildVersion = 0;
     versionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;
 
-    if (g_gc_version_info.MajorVersion != GC_INTERFACE_MAJOR_VERSION)
+    if (g_gc_version_info.MajorVersion < GC_INTERFACE_MAJOR_VERSION)
     {
-        LOG((LF_GC, LL_FATALERROR, "Loaded GC has incompatible major version number (expected %d, got %d)\n",
+        LOG((LF_GC, LL_FATALERROR, "Loaded GC has incompatible major version number (expected at least %d, got %d)\n",
             GC_INTERFACE_MAJOR_VERSION, g_gc_version_info.MajorVersion));
         return E_FAIL;
     }
 
-    if (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION)
+    if ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION))
     {
         LOG((LF_GC, LL_INFO100, "Loaded GC has lower minor version number (%d) than EE was compiled against (%d)\n",
             g_gc_version_info.MinorVersion, GC_INTERFACE_MINOR_VERSION));

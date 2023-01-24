@@ -15,7 +15,6 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
@@ -218,7 +217,7 @@ namespace System
         }
 
         // This function is known to the compiler backend.
-        private void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
+        private void InitializeOpenStaticThunk(object _ /*firstParameter*/, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
@@ -421,49 +420,6 @@ namespace System
                 }
             }
             return del;
-        }
-
-        private string GetTargetMethodsDescriptionForDebugger()
-        {
-            if (m_functionPointer == GetThunk(MulticastThunk))
-            {
-                // Multi-cast delegates return the Target of the last delegate in the list
-                Delegate[] invocationList = (Delegate[])m_helperObject;
-                int invocationCount = (int)m_extraFunctionPointerOrData;
-                StringBuilder builder = new StringBuilder();
-                for (int c = 0; c < invocationCount; c++)
-                {
-                    if (c != 0)
-                        builder.Append(", ");
-
-                    builder.Append(invocationList[c].GetTargetMethodsDescriptionForDebugger());
-                }
-
-                return builder.ToString();
-            }
-            else
-            {
-                RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
-                if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
-                {
-                    return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);
-                }
-                else
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* pointerDef = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
-                        return DebuggerFunctionPointerFormattingHook(pointerDef->InstantiationArgument, typeOfFirstParameterIfInstanceDelegate);
-                    }
-                }
-            }
-        }
-
-        private static string DebuggerFunctionPointerFormattingHook(IntPtr functionPointer, RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
-        {
-            // This method will be hooked by the debugger and the debugger will cause it to return a description for the function pointer
-            throw new NotSupportedException();
         }
     }
 }

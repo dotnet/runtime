@@ -36,12 +36,12 @@ const char* CodeGen::genInsName(instruction ins)
     const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
-        #define INST0(id, nm, um, mr,                 flags) nm,
-        #define INST1(id, nm, um, mr,                 flags) nm,
-        #define INST2(id, nm, um, mr, mi,             flags) nm,
-        #define INST3(id, nm, um, mr, mi, rm,         flags) nm,
-        #define INST4(id, nm, um, mr, mi, rm, a4,     flags) nm,
-        #define INST5(id, nm, um, mr, mi, rm, a4, rr, flags) nm,
+        #define INST0(id, nm, um, mr,                 tt, flags) nm,
+        #define INST1(id, nm, um, mr,                 tt, flags) nm,
+        #define INST2(id, nm, um, mr, mi,             tt, flags) nm,
+        #define INST3(id, nm, um, mr, mi, rm,         tt, flags) nm,
+        #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) nm,
+        #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -101,7 +101,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsAVXInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
+    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
         retbuf = buf[curBuf];
@@ -702,10 +702,37 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
         }
         else
         {
+            assert(op->OperIsHWIntrinsic());
+
 #if defined(FEATURE_HW_INTRINSICS)
-            assert(op->AsHWIntrinsic()->OperIsMemoryLoad());
-            assert(op->AsHWIntrinsic()->GetOperandCount() == 1);
-            addr = op->AsHWIntrinsic()->Op(1);
+            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            switch (intrinsicId)
+            {
+                case NI_Vector128_CreateScalarUnsafe:
+                case NI_Vector256_CreateScalarUnsafe:
+                {
+                    // The hwintrinsic should be contained and its
+                    // op1 should be either contained or spilled. This
+                    // allows us to transparently "look through" the
+                    // CreateScalarUnsafe and treat it directly like
+                    // a load from memory.
+
+                    assert(hwintrinsic->isContained());
+                    op = hwintrinsic->Op(1);
+                    return genOperandDesc(op);
+                }
+
+                default:
+                {
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+
+                    addr = hwintrinsic->Op(1);
+                    break;
+                }
+            }
 #else
             unreached();
 #endif // FEATURE_HW_INTRINSICS
@@ -960,7 +987,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOp->GetRegNum(), ival);
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival);
             break;
 
         default:
@@ -1013,7 +1040,7 @@ void CodeGen::inst_RV_RV_TT(
 
         case OperandKind::Reg:
         {
-            regNumber op2Reg = op2->GetRegNum();
+            regNumber op2Reg = op2Desc.GetReg();
 
             if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
             {
@@ -1378,11 +1405,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1641,11 +1663,6 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1788,8 +1805,18 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
     }
 }
 
-// Conversions to or from floating point values
-instruction CodeGen::ins_FloatConv(var_types to, var_types from)
+//------------------------------------------------------------------------
+// ins_FloatConv: Conversions to or from floating point values.
+//
+// Arguments:
+//    to - Destination type.
+//    from - Source type.
+//    attr - Input size.
+//
+// Returns:
+//    The correct conversion instruction to use based on src and dst types.
+//
+instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
     // AVX: For now we support only conversion from Int/Long -> float
 
@@ -1801,9 +1828,29 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             switch (to)
             {
                 case TYP_FLOAT:
-                    return INS_cvtsi2ss;
+                {
+                    if (EA_SIZE(attr) == EA_4BYTE)
+                    {
+                        return INS_cvtsi2ss32;
+                    }
+                    else if (EA_SIZE(attr) == EA_8BYTE)
+                    {
+                        return INS_cvtsi2ss64;
+                    }
+                    unreached();
+                }
                 case TYP_DOUBLE:
-                    return INS_cvtsi2sd;
+                {
+                    if (EA_SIZE(attr) == EA_4BYTE)
+                    {
+                        return INS_cvtsi2sd32;
+                    }
+                    else if (EA_SIZE(attr) == EA_8BYTE)
+                    {
+                        return INS_cvtsi2sd64;
+                    }
+                    unreached();
+                }
                 default:
                     unreached();
             }

@@ -10,7 +10,7 @@ namespace AAAA
     public class CtTest
     {
         private static int iTest = 5;
-        public static int Main(String[] args)
+        public static int Main()
         {
             iTest++;
             Console.WriteLine("iTest is " + iTest);

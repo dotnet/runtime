@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
@@ -16,14 +17,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class ILCompilerDriver
 	{
-		private const string DefaultSystemModule = "System.Private.CoreLib";
+		internal const string DefaultSystemModule = "System.Private.CoreLib";
 
-		public void Trim (ILCompilerOptions options, ILogWriter logWriter)
+		public ILScanResults Trim (ILCompilerOptions options, ILogWriter logWriter)
 		{
 			ComputeDefaultOptions (out var targetOS, out var targetArchitecture);
 			var targetDetails = new TargetDetails (targetArchitecture, targetOS, TargetAbi.NativeAot);
 			CompilerTypeSystemContext typeSystemContext =
-				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+				new CompilerTypeSystemContext (targetDetails, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, genericCycleCutoffPoint: -1);
 
 			typeSystemContext.InputFilePaths = options.InputFilePaths;
 			typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
@@ -35,7 +36,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				inputModules.Add (module);
 			}
 
-			CompilationModuleGroup compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
+			foreach (var trimAssembly in options.TrimAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleFromPath (trimAssembly);
+				inputModules.Add (module);
+			}
+
+			CompilationModuleGroup compilationGroup;
+			if (options.FrameworkCompilation)
+				compilationGroup = new SingleFileCompilationModuleGroup ();
+			else
+				compilationGroup = new TestInfraMultiFileSharedCompilationModuleGroup (typeSystemContext, inputModules);
 
 			List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider> ();
 			EcmaModule? entrypointModule = null;
@@ -55,26 +65,38 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			ILProvider ilProvider = new NativeAotILProvider ();
 
-			ilProvider = new FeatureSwitchManager (ilProvider, options.FeatureSwitches);
+			foreach (var descriptor in options.Descriptors) {
+				if (!File.Exists (descriptor))
+					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
+				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
+			}
 
 			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
+
+			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
+
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
 			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
 				compilationGroup,
 				typeSystemContext,
 				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (options.FeatureSwitches),
+				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),
 				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
+				options: default,
 				logger,
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),
-				Array.Empty<string> (),
+				options.AdditionalRootAssemblies.ToArray (),
 				options.TrimAssemblies.ToArray ());
+
+			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
+			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
+			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
 
 			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
@@ -84,9 +106,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseCompilationRoots (compilationRoots)
 				.UseMetadataManager (metadataManager)
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
+				.UseInteropStubManager (interopStubManager)
 				.ToILScanner ();
 
-			_ = scanner.Scan ();
+			return scanner.Scan ();
 		}
 
 		public static void ComputeDefaultOptions (out TargetOS os, out TargetArchitecture arch)

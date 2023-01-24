@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode EndSymbol => _endSymbol;
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection Section => _externalReferences.Section;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
@@ -50,17 +50,10 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (TypeDesc type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (TypeDesc type in factory.MetadataManager.GetTypeTemplates())
             {
-                if (!IsEligibleToHaveATemplate(type))
-                    continue;
-
                 // Type's native layout info
                 NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(type);
-
-                // If this template isn't considered necessary, don't emit it.
-                if (!templateNode.Marked)
-                    continue;
                 Vertex nativeLayout = templateNode.SavedVertex;
 
                 // Hashtable Entry

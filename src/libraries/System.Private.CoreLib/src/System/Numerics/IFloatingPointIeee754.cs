@@ -34,14 +34,14 @@ namespace System.Numerics
         /// <param name="y">The y-coordinate of a point.</param>
         /// <param name="x">The x-coordinate of a point.</param>
         /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />.</returns>
-        /// <remarks>This computes <c>arctan(y / x)</c> in the interval <c>[-π, +π]</c> radians.</remarks>
+        /// <remarks>This computes <c>arctan(y / x)</c> in the interval <c>[-PI, +PI]</c> radians.</remarks>
         static abstract TSelf Atan2(TSelf y, TSelf x);
 
         /// <summary>Computes the arc-tangent for the quotient of two values and divides the result by <c>pi</c>.</summary>
         /// <param name="y">The y-coordinate of a point.</param>
         /// <param name="x">The x-coordinate of a point.</param>
         /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />, divided by <c>pi</c>.</returns>
-        /// <remarks>This computes <c>arctan(y / x) / π</c> in the interval <c>[-1, +1]</c>.</remarks>
+        /// <remarks>This computes <c>arctan(y / x) / PI</c> in the interval <c>[-1, +1]</c>.</remarks>
         static abstract TSelf Atan2Pi(TSelf y, TSelf x);
 
         /// <summary>Decrements a value to the largest value that compares less than a given value.</summary>

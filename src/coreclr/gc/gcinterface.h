@@ -6,12 +6,16 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 5
+#define GC_INTERFACE_MAJOR_VERSION 6
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interopate correctly, with some care.
 #define GC_INTERFACE_MINOR_VERSION 1
+
+// The major version of the GC/EE interface. Breaking changes to this interface
+// require bumps in the major version number.
+#define GC_INTERFACE2_MAJOR_VERSION 6
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -465,6 +469,10 @@ typedef enum
      * code holding onto a native weak reference can always access an RCW to the
      * underlying COM object as long as it has not been released by all of its strong
      * references.
+     *
+     * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM starting .NET 8
+     *       but we are keeping it here for backward compatibility purposes"
+     * 
      */
     HNDTYPE_WEAK_NATIVE_COM   = 9
 } HandleType;

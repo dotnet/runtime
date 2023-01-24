@@ -33,6 +33,12 @@
          SYSLIB0036: Regex.CompileToAssembly
     -->
     <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032;SYSLIB0036</NoWarn>
+
+    <!-- Ignore analyzers that recommend APIs introduced in .NET Core when targeting frameworks that lack those APIs
+         to avoid issues with multitargeting.
+    -->
+    <NoWarn Condition="$(TargetFrameworks.Contains('net4')) or $(TargetFrameworks.Contains('netstandard'))">$(NoWarn);CA1510;CA1511;CA1512;CA1513</NoWarn>
+
     <!-- Microsoft.NET.Sdk enables some warnings as errors out of the box.
          We want to remove some items from this list so they don't fail the build.
          Can't use 'WarningsNotAsErrors' element because vbproj doesn't honor it.
@@ -55,6 +61,8 @@
                                 !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
     <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
                                      $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
+    <!-- Inbox analyzers shouldn't use the live targeting / runtime pack. They better depend on an LKG to avoid layering concerns. -->
+    <UseLocalTargetingRuntimePack Condition="'$(IsNETCoreAppAnalyzer)' == 'true'">false</UseLocalTargetingRuntimePack>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -86,7 +94,7 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'@(BinPlaceTargetFrameworks)' == ''">
+  <ItemGroup>
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)"
                               Condition="'$(BinPlaceForTargetVertical)' == 'true'">
@@ -95,8 +103,10 @@
       <RuntimePath>$(LibrariesAllBinArtifactsPath)</RuntimePath>
     </BinPlaceTargetFrameworks>
 
+    <!-- Source generator projects might multi-target. Make sure that only the netstandard2.0 compiled assets get binplaced. -->
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRefPackDir)analyzers\dotnet\$(AnalyzerLanguage)"
-                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true'" />
+                 Condition="'$(IsNETCoreAppAnalyzer)' == 'true' and
+                            '$(TargetFramework)' == 'netstandard2.0'" />
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceTargetFrameworks Include="$(NetCoreAppCurrent)-$(TargetOS)">
@@ -110,8 +120,6 @@
       <RefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(MicrosoftNetCoreAppRefPackRefDir)</RefPath>
       <RuntimePath Condition="'$(IsNETCoreAppSrc)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</RuntimePath>
     </BinPlaceTargetFrameworks>
-
-    <BinPlaceTargetFrameworks Include="@(AdditionalBinPlaceTargetFrameworks)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
@@ -125,7 +133,6 @@
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\linker\trimmingTests.targets" Condition="'$(IsPublishedAppTestProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\runtimeConfiguration.targets" />
@@ -135,22 +142,20 @@
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true'" />
 
   <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
-  <!-- Use the apicompat task package instead of the in-built SDK functionality to consume newer features. -->
-  <ItemGroup Condition="'$(EnablePackageValidation)' == 'true' or
-                        '$(ApiCompatValidateAssemblies)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(IsPartialFacadeAssembly)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.GenAPI" Condition="'$(DotNetBuildFromSource)' != 'true'" Version="$(MicrosoftDotNetGenApiVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  <!-- Reference the GenFacades package when the assembly is a partial facade or a PNSE throwing. -->
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' or
+                        '$(GeneratePlatformNotSupportedAssembly)' == 'true' or
+                        '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <!-- GenFacades target that is intentionally empty since we no longer need it. -->
+  <Target Name="ResolveMatchingContract" />
 
   <!--
     Do not clean binplace assets in the ref targeting pack to avoid incremental build failures
@@ -216,23 +221,4 @@
       </ItemGroup>
     </When>
   </Choose>
-
-  <Target Name="GetAnalyzerPackFiles"
-          DependsOnTargets="$(GenerateNuspecDependsOn)"
-          Returns="@(_AnalyzerPackFile)">
-    <PropertyGroup>
-      <_analyzerPath>analyzers/dotnet</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
-      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
-      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
-    </ItemGroup>
-
-    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
-           Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
-  </Target>
 </Project>

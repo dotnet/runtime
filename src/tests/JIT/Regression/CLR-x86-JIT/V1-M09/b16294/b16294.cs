@@ -24,7 +24,7 @@ namespace DefaultNamespace
             Object o = ((UInt64)rand.Next((int)UInt64.MinValue, Int32.MaxValue));
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             new Bug().runTest();
             return 100;

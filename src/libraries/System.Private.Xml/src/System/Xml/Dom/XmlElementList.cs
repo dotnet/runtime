@@ -42,7 +42,7 @@ namespace System.Xml
 
         ~XmlElementList()
         {
-            Dispose(false);
+            Dispose();
         }
 
         internal void ConcurrencyCheck(XmlNodeChangedEventArgs args)
@@ -272,7 +272,7 @@ namespace System.Xml
         public override IEnumerator GetEnumerator()
         {
             if (_empty)
-                return new XmlEmptyElementListEnumerator(this);
+                return new XmlEmptyElementListEnumerator();
 
             return new XmlElementListEnumerator(this);
         }
@@ -280,10 +280,10 @@ namespace System.Xml
         protected override void PrivateDisposeNodeList()
         {
             GC.SuppressFinalize(this);
-            Dispose(true);
+            Dispose();
         }
 
-        private void Dispose(bool disposing)
+        private void Dispose()
         {
             if (_listener != null)
             {
@@ -339,7 +339,7 @@ namespace System.Xml
 
     internal sealed class XmlEmptyElementListEnumerator : IEnumerator
     {
-        public XmlEmptyElementListEnumerator(XmlElementList list)
+        public XmlEmptyElementListEnumerator()
         {
         }
 

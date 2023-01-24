@@ -28,7 +28,7 @@ namespace System.Threading
             _stopped = new ManualResetEvent(false);
         }
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         private ThreadPriority GetPriorityLive()
         {
             return ThreadPriority.Normal;
@@ -38,7 +38,7 @@ namespace System.Threading
         {
             return true;
         }
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
 
         [UnmanagedCallersOnly]
         private static void OnThreadExit()
@@ -154,18 +154,6 @@ namespace System.Threading
         internal static void RestoreReentrantWaits()
         {
             throw new PlatformNotSupportedException();
-        }
-
-        private static int ComputeCurrentProcessorId()
-        {
-            int processorId = Interop.Sys.SchedGetCpu();
-
-            // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim
-            // returns -1.  As a fallback in that case and to spread the threads across the buckets
-            // by default, we use the current managed thread ID as a proxy.
-            if (processorId < 0) processorId = Environment.CurrentManagedThreadId;
-
-            return processorId;
         }
     }
 }

@@ -1,0 +1,8 @@
+parameters:
+  teamName: ''
+
+variables:
+  - name: TeamName
+    value: ${{ parameters.teamName }}
+  - name: PostBuildSign
+    value: true
