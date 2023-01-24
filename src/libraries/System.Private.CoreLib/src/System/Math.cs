@@ -324,8 +324,6 @@ namespace System
 
         public static long DivRem(long a, long b, out long result)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             long div = a / b;
             result = a - (div * b);
             return div;
@@ -340,8 +338,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (sbyte Quotient, sbyte Remainder) DivRem(sbyte left, sbyte right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             sbyte quotient = (sbyte)(left / right);
             return (quotient, (sbyte)(left - (quotient * right)));
         }
@@ -354,8 +350,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             byte quotient = (byte)(left / right);
             return (quotient, (byte)(left - (quotient * right)));
         }
@@ -368,8 +362,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (short Quotient, short Remainder) DivRem(short left, short right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             short quotient = (short)(left / right);
             return (quotient, (short)(left - (quotient * right)));
         }
@@ -383,8 +375,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ushort Quotient, ushort Remainder) DivRem(ushort left, ushort right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             ushort quotient = (ushort)(left / right);
             return (quotient, (ushort)(left - (quotient * right)));
         }
@@ -397,8 +387,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (int Quotient, int Remainder) DivRem(int left, int right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             int quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -412,8 +400,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (uint Quotient, uint Remainder) DivRem(uint left, uint right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             uint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -426,8 +412,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (long Quotient, long Remainder) DivRem(long left, long right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             long quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -441,8 +425,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             ulong quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -455,8 +437,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             nint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
@@ -470,8 +450,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right)
         {
-            // TODO: implement DivRem intrinsic for Mono
-
             nuint quotient = left / right;
             return (quotient, left - (quotient * right));
         }
