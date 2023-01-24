@@ -20,7 +20,7 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                string gname = Interop.Sys.GetGroupName(status.Gid);
+                Interop.Sys.TryGetGroupName(status.Gid, out string gname);
                 string uname = Interop.Sys.GetUserNameFromPasswd(status.Uid);
 
                 Assert.Equal(gname, posix.GroupName);
