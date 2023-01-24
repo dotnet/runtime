@@ -4009,7 +4009,7 @@ struct GenTreeField : public GenTreeUnOp
     bool                 gtFldMayOverlap : 1;
 
 private:
-    bool                 gtFldIsNeverNegative : 1;
+    bool gtFldIsNeverNegative : 1;
 
 public:
 #ifdef FEATURE_READYTORUN
