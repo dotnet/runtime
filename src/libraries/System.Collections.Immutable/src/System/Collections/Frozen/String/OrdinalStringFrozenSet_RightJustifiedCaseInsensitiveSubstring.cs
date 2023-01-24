@@ -24,6 +24,6 @@ namespace System.Collections.Frozen
         private protected override int FindItemIndex(string item) => base.FindItemIndex(item);
 
         private protected override bool Equals(string? x, string? y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
-        private protected  override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(s.Length + HashIndex, HashCount));
+        private protected override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(s.Length + HashIndex, HashCount));
     }
 }
