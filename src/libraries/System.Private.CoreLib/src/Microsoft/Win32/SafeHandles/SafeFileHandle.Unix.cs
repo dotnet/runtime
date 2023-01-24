@@ -170,7 +170,7 @@ namespace Microsoft.Win32.SafeHandles
         internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out Interop.Sys.FileStatus status)
         {
             SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status, out var readStatus, null);
-            Debug.Assert(readStatus == true);
+            Debug.Assert(readStatus);
             return handle;
         }
 
