@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 // Types for the COM source generator that implement the COM-specific interactions.
 // All of these APIs need to be exposed to implement the COM source generator in one form or another.
 

@@ -37,7 +37,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                     public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                     {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                     }
 
                     """;
@@ -57,7 +57,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                     public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                     {
-                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                     }
 
                     """;
@@ -79,7 +79,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -100,7 +100,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -121,7 +121,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -142,7 +142,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -163,7 +163,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -184,7 +184,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -209,7 +209,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -235,7 +235,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -257,7 +257,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -279,7 +279,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -305,7 +305,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -331,7 +331,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -357,7 +357,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -383,7 +383,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -409,7 +409,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -441,7 +441,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -465,7 +465,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -489,7 +489,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -517,7 +517,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -545,7 +545,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -573,7 +573,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -601,7 +601,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -629,7 +629,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
-                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 1; return null;}
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
