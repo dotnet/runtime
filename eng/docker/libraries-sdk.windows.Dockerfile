@@ -5,7 +5,7 @@ FROM $SDK_BASE_IMAGE as target
 
 SHELL ["pwsh", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 ARG CONFIGURATION=Release
 
