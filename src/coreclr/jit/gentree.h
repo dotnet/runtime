@@ -7449,6 +7449,7 @@ public:
     Statement(GenTree* expr DEBUGARG(unsigned stmtID))
         : m_rootNode(expr)
         , m_treeList(nullptr)
+        , m_treeListEnd(nullptr)
         , m_next(nullptr)
         , m_prev(nullptr)
 #ifdef DEBUG
@@ -7478,9 +7479,29 @@ public:
         return m_treeList;
     }
 
+    GenTree** GetTreeListPointer()
+    {
+        return &m_treeList;
+    }
+
     void SetTreeList(GenTree* treeHead)
     {
         m_treeList = treeHead;
+    }
+
+    GenTree* GetTreeListEnd() const
+    {
+        return m_treeListEnd;
+    }
+
+    GenTree** GetTreeListEndPointer()
+    {
+        return &m_treeListEnd;
+    }
+
+    void SetTreeListEnd(GenTree* end)
+    {
+        m_treeListEnd = end;
     }
 
     GenTreeList       TreeList() const;
@@ -7558,6 +7579,12 @@ private:
     // The tree list head (for forward walks in evaluation order).
     // The value is `nullptr` until we have set the sequencing of the nodes.
     GenTree* m_treeList;
+
+    // The tree list tail. Only valid when locals are linked (fgNodeThreading
+    // == AllLocals), in which case this is the last local.
+    // When all nodes are linked (fgNodeThreading == AllTrees), m_rootNode
+    // should be considered the last node.
+    GenTree* m_treeListEnd;
 
     // The statement nodes are doubly-linked. The first statement node in a block points
     // to the last node in the block via its `m_prev` link. Note that the last statement node
