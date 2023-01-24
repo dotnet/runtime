@@ -6918,20 +6918,21 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     if (srcReg != REG_NA)
     {
 #ifdef TARGET_AMD64
-        // if (cast->usedForIndexing)
-        // {
+        if (compiler->opts.OptimizationEnabled() && cast->usedForIndexing)
+        {
             GenTree* leaOper = cast->gtNext;
-            if (leaOper != nullptr && leaOper->OperIs(GT_LEA))
+            if (leaOper != nullptr && leaOper->OperIs(GT_LEA) && leaOper->AsAddrMode()->gtOp2 == cast)
             {
                 GenTree* indirOper = leaOper->gtNext;
-                if (indirOper != nullptr && indirOper->OperIs(GT_IND))
+                if (indirOper != nullptr && indirOper->OperIs(GT_IND) && indirOper->AsIndir()->gtOp1 == leaOper)
                 {
                     GenTree* indexOper = indirOper->AsIndir()->Index();
-                    if (indexOper != nullptr && indexOper->GetRegNum() != REG_NA) {
+                    if (indexOper != nullptr && indexOper == cast && indexOper->GetRegNum() != REG_NA) {
                         regNumber indexReg = indexOper->GetRegNum();
                         regNumber indirReg = indirOper->GetRegNum();
+                        regNumber baseReg  = indirOper->AsIndir()->Base()->GetRegNum();
 
-                        if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg)
+                        if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg && baseReg != dstReg && baseReg != srcReg && baseReg != indexReg)
                         {
                             cast->skippedGenForIndexing = true;
                             return;
@@ -6939,7 +6940,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                     }
                 }
             }
-        // }
+        }
 #endif
 
         emit->emitIns_Mov(ins, EA_ATTR(insSize), dstReg, srcReg, canSkip);
